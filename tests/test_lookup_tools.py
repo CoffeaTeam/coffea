@@ -1,4 +1,4 @@
-from __future__ import print_function
+from __future__ import print_function, division
 
 from fnal_column_analysis_tools import lookup_tools
 import uproot
@@ -46,5 +46,6 @@ def test_lookup_tools():
     diff = np.abs(test_out-expected_output)
     print("Max diff: %.16f" % diff.max())
     print("Median diff: %.16f" % np.median(diff))
+    print("Diff over threshold rate: %.1f %%" % ((diff >= 1.e-8).sum()/diff.size))
     assert (diff < 1.e-8).all()
 
