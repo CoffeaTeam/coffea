@@ -5,6 +5,6 @@ def dummy_pt_eta():
     counts = np.random.exponential(2, size=50).astype(int)
     entries = np.sum(counts)
     test_in1 = np.random.uniform(-3., 3., size=entries)
-    test_in2 = np.random.exponential(50., size=entries)+20.
+    test_in2 = np.random.exponential(10., size=entries)+np.random.exponential(10, size=entries)
     return (counts, test_in1, test_in2)
 
