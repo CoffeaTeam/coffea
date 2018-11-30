@@ -37,9 +37,15 @@ class JaggedDecoratedFourVector(awkward.JaggedArray,):
             return JaggedDecoratedFourVector(raw)
         return raw
     
+    def distincts(self):
+        return self.pairs(same=False)
+    
     def pairs(self, same=True):
-        outs = super(JaggedDecoratedFourVector, self).pairs(same)
-        outs['p4'] = outs.at(0)['p4'] + outs.at(1)['p4']
+        outs = super(JaggedDecoratedFourVector, self).pairs(same)        
+        if( sum(outs.counts) > 0 ):
+            outs['p4'] = outs.at(0)['p4'] + outs.at(1)['p4']
+        else:
+            outs['p4'] = JaggedWithLorentz.fromcounts(outs.counts,[])        
         outs._ispair = True
         return JaggedDecoratedFourVector(outs)
     
@@ -78,6 +84,4 @@ class JaggedDecoratedFourVector(awkward.JaggedArray,):
     def __getattr__(self,what):
         if what in self.columns:
             return self[what]
-        if what[0] == '_' and what[1:].isdigit() :
-            return self[what[1:]]
         return getattr(super(JaggedDecoratedFourVector,self),what)
