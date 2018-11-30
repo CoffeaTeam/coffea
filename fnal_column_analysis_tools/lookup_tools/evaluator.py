@@ -1,6 +1,5 @@
 import numpy as np
 from awkward.array.jagged import JaggedArray
-import awkward as ak
 from copy import deepcopy
 
 class denselookup(object):
@@ -19,29 +18,23 @@ class denselookup(object):
     
     def __call__(self,*args):        
         inputs = list(args)
-        #print inputs
-        counts = None
-        #print
+        offsets = None
+        # TODO: check can use offsets (this should always be true for striped)
+        # Alternatively we can just use starts and stops
         for i in xrange(len(inputs)):
-            #print i,type(inputs[i])
             if isinstance(inputs[i], JaggedArray):
-                if counts is not None and set(counts) != set(inputs[i].counts) and len(counts) == len(inputs[i].counts):
-                    if counts == -1:
+                if offsets is not None and offsets.base is not inputs[i].offsets.base:
+                    if type(offsets) is int:
                         raise Exception('do not mix JaggedArrays and numpy arrays when calling denselookup')
                     else:
-                        raise Exception('counts not uniform between all input jagged arrays!')
-                counts = inputs[i].counts
-                inputs[i] = inputs[i].flatten()
-                #print type(inputs[i])
+                        raise Exception('All input jagged arrays must have a common structure (offsets)!')
+                offsets = inputs[i].offsets
+                inputs[i] = inputs[i].content
             elif isinstance(inputs[i], np.ndarray):
-                counts = -1
+                offsets = -1
         retval = self.__evaluate(*tuple(inputs))
-        for arg in args:
-            if isinstance(arg, JaggedArray):
-                retval = JaggedArray.fromcounts(arg.counts,retval)
-                break
-        #print retval
-        #print
+        if offsets is not None and type(offsets) is not int:
+            retval = JaggedArray.fromoffsets(offsets,retval)
         return retval
                                                
     
@@ -50,11 +43,11 @@ class denselookup(object):
         for arg in args: 
             if type(arg) == JaggedArray: raise Exception('JaggedArray in inputs')
         if self.__dimension == 1:
-            indices.append(np.maximum(np.minimum(np.searchsorted(self.__axes, args[0], side='right')-1,self.__values.shape[0]-1),0))
+            indices.append(np.clip(np.searchsorted(self.__axes, args[0], side='right')-1,0,self.__values.shape[0]-1))
         else:
             for dim in xrange(self.__dimension):
                 #print self.__axes[dim], self.__values.shape
-                indices.append(np.maximum(np.minimum(np.searchsorted(self.__axes[dim], args[dim], side='right')-1,self.__values.shape[len(self.__axes)-dim-1]-1),0))
+                indices.append(np.clip(np.searchsorted(self.__axes[dim], args[dim], side='right')-1,0,self.__values.shape[len(self.__axes)-dim-1]-1))
         indices.reverse()
         return self.__values[tuple(indices)]
     
@@ -81,4 +74,4 @@ class evaluator(object):
         
     def __getitem__(self, key):
         return self.__functions[key]
-        
+
