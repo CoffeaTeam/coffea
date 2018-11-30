@@ -46,6 +46,6 @@ def test_lookup_tools():
     diff = np.abs(test_out-expected_output)
     print("Max diff: %.16f" % diff.max())
     print("Median diff: %.16f" % np.median(diff))
-    print("Diff over threshold rate: %.1f %%" % ((diff >= 1.e-8).sum()/diff.size))
+    print("Diff over threshold rate: %.1f %%" % (100*(diff >= 1.e-8).sum()/diff.size))
     assert (diff < 1.e-8).all()
 
