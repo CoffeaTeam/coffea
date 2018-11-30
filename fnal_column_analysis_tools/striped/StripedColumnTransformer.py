@@ -59,3 +59,4 @@ class PhysicalColumnGroup(ColumnGroup):
     
     def otherColumns(self):
         return self.columnsWithout(self.p4Name())
+
