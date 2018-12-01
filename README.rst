@@ -1,6 +1,9 @@
 fnal-column-analysis-tools
 ==========================
 
+.. image:: https://travis-ci.com/CoffeaTeam/fnal-column-analysis-tools.svg?branch=master
+    :target: https://travis-ci.com/CoffeaTeam/fnal-column-analysis-tools
+
 .. inclusion-marker-1-do-not-remove
 
 Basic tools and wrappers for enabling not-to-alien syntax when running columnar Collider HEP analysis.
