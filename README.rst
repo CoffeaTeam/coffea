@@ -9,7 +9,7 @@ fnal-column-analysis-tools
 
 .. inclusion-marker-1-do-not-remove
 
-Basic tools and wrappers for enabling not-to-alien syntax when running columnar Collider HEP analysis.
+Basic tools and wrappers for enabling not-too-alien syntax when running columnar Collider HEP analysis.
 
 .. inclusion-marker-1-5-do-not-remove
 
