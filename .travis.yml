@@ -3,11 +3,7 @@ os:
 - linux
 python:
 - 2.7
-- 3.4
-- 3.5
-- 3.6
 - pypy2.7-5.10.0
-- pypy3.5
 env:
   matrix:
   - AWKWARD="awkward>=0.5.2"
@@ -32,4 +28,4 @@ deploy:
   on:
     tags: true
     branch: master
-    condition: $TRAVIS_PYTHON_VERSION = "3.6" && $NUMPY = "numpy>=1.15"
+    condition: $TRAVIS_PYTHON_VERSION = "2.7" && $NUMPY = "numpy>=1.15"
