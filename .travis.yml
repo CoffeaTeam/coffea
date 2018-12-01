@@ -1,0 +1,35 @@
+language: python
+os:
+- linux
+python:
+- 2.7
+- 3.4
+- 3.5
+- 3.6
+- pypy2.7-5.10.0
+- pypy3.5
+env:
+  matrix:
+  - AWKWARD="awkward>=0.5.2"
+matrix:
+addons:
+  apt:
+    packages:
+    - python-setuptools
+script: python setup.py pytest
+install:
+- pip install --upgrade setuptools_scm
+- pip install awkward
+- python -c 'import numpy; print(numpy.__version__)'
+- pip install pytest pytest-runner
+- if [[ $TRAVIS_PYTHON_VERSION != pypy* ]] ; then pip install h5py ; fi
+deploy:
+  provider: pypi
+  user: lgray
+  password:
+    secure: 1NKjVcEvz9Ju2jEZf651GbAE/jzciBkzu2f8mJ8SUY6W9ogzp00Z8Mjy/Hm1E84vOz5V82TdGl8HTh098gfofR1LiULI0yyrkDmrEEuUJVVTHYOh6btyeXrGOPUIABIkZjEFHo7tU/2rs8CXJkIblZDEaRoJGJuHn7sMPO+BAwo8/xHyirLxVG/b4jpr8cbkuEqxXy3ZLR1M4Q9FAQe6/3Rgobnl9cLXZ5kWAuoHuW1OoExPejUOXXGP437QbZhKqWuGO1nW10bhJni1mZuBg9sINp/Coiw8phYyRJ8CDFyobatsuRe63uVOd/+2kiCnMSpxx6HRQ2W91lo9XpXvXlqYSiUf6oRNReSuWG1ke245kQ7MZ4hFMr+Q3XOWEZR4vyulFeNcuHhG7KwcfpXDSoCOSvjQd4gxZSvayC8Z/OVCwqZy5ZoTPsc0Zwy8F35OiCFZnIKunyEiMJ/x3VAYICCebt36WWjATAtwa5WRVyI2c+7jr56nAgzYRyFc9wNHK2PFEea9gtA5k1gbc4y7cg7d9Qh5gZLO+0Xah5tB7HIRhLGKIS+75efvSuNXKPX0eKbzFhgQH8DKnuUYk1toWA4sJfwnmluCUQ2PmDU7kIlmtQVw5CvVWDvF+IT8wA8vmBgJzQVXpsSLOx1+0ez3jZcleURUt4PCLV0BlkSvwvM=
+  distributions: sdist bdist_wheel --universal
+  on:
+    tags: true
+    branch: master
+    condition: $TRAVIS_PYTHON_VERSION = "3.6" && $NUMPY = "numpy>=1.15"
