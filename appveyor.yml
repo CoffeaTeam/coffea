@@ -1,0 +1,19 @@
+environment:
+  matrix:
+    - PYTHON: "C:\\Python27"
+      PYTHON_VERSION: "2.7.10"
+      PYTHON_ARCH: "32"
+      AWKWARD: "awkward==0.5.2"
+
+    - PYTHON: "C:\\Python27"
+      PYTHON_VERSION: "2.7.10"
+      PYTHON_ARCH: "64"
+      AWKWARD: "awkward==0.5.2"
+
+install:
+  - "python --version"
+
+build_script:
+  - "pip install %AWKWARD%"
+  - "pip install pytest pytest-runner h5py"
+  - "python setup.py pytest"
