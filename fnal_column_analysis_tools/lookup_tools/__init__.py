@@ -1,2 +1,2 @@
-from extractor import extractor as extractor
-from evaluator import evaluator as evaluator
+from fnal_column_analysis_tools.lookup_tools.extractor import extractor as extractor
+from fnal_column_analysis_tools.lookup_tools.evaluator import evaluator as evaluator

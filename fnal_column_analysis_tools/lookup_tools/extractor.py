@@ -1,5 +1,5 @@
 import uproot
-from evaluator import evaluator
+from fnal_column_analysis_tools.lookup_tools.evaluator import evaluator
 
 TH1D = "<class 'uproot.rootio.TH1D'>"
 TH2D = "<class 'uproot.rootio.TH2D'>"
@@ -109,11 +109,13 @@ class extractor(object):
             self.__filecache[file] = file_converters[file.split('.')[-1].strip()](file)
     
     def extract_from_file(self, file, name):        
-        self.import_file(file)       
-        weights = self.__filecache[file]        
-        if name not in weights.keys(): 
+        self.import_file(file)
+        weights = self.__filecache[file]
+        bname = name.encode()
+        if bname not in weights.keys(): 
+            print(weights.keys())
             raise Exception('Weights named "{}" not in {}!'.format(name,file))        
-        return weights[name]
+        return weights[bname]
           
     def finalize(self):
         if self.__finalized: 

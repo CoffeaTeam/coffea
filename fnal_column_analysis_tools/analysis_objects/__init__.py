@@ -1,2 +1,2 @@
-from JaggedDecoratedFourVector import JaggedDecoratedFourVector
-from JaggedDecoratedFourVector import JaggedWithLorentz
+from fnal_column_analysis_tools.analysis_objects.JaggedDecoratedFourVector import JaggedDecoratedFourVector
+from fnal_column_analysis_tools.analysis_objects.JaggedDecoratedFourVector import JaggedWithLorentz

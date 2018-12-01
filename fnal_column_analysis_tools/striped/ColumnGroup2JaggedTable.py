@@ -1,5 +1,5 @@
-from ..analysis_objects.JaggedDecoratedFourVector import JaggedWithLorentz, JaggedDecoratedFourVector
-from StripedColumnTransformer import PhysicalColumnGroup
+from fnal_column_analysis_tools.analysis_objects.JaggedDecoratedFourVector import JaggedWithLorentz, JaggedDecoratedFourVector
+from fnal_column_analysis_tools.striped.StripedColumnTransformer import PhysicalColumnGroup
 import awkward
 
 def jaggedFromColumnGroup(cgroup):
