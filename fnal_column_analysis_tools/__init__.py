@@ -30,7 +30,7 @@
 #OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import lookup_tools
-import analysis_objects
-import striped
+import fnal_column_analysis_tools.lookup_tools
+import fnal_column_analysis_tools.analysis_objects
+import fnal_column_analysis_tools.striped
 

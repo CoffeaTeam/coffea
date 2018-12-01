@@ -1,3 +1,3 @@
-from StripedColumnTransformer import ColumnGroup
-from StripedColumnTransformer import PhysicalColumnGroup
-from ColumnGroup2JaggedTable import jaggedFromColumnGroup
+from fnal_column_analysis_tools.striped.StripedColumnTransformer import ColumnGroup
+from fnal_column_analysis_tools.striped.StripedColumnTransformer import PhysicalColumnGroup
+from fnal_column_analysis_tools.striped.ColumnGroup2JaggedTable import jaggedFromColumnGroup
