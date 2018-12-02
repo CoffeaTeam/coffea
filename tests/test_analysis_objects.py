@@ -22,10 +22,10 @@ def test_analysis_objects():
     jtlva1_selection1 = jtlva1[jtlva1.counts > 0]
     jtlva1_selection2 = jtlva1_selection1[jtlva1_selection1.pt > 5]
     
-    diffx = jtlva1.x - jtlva2.x
-    diffy = jtlva1.y - jtlva2.y
-    diffz = jtlva1.z - jtlva2.z
-    difft = jtlva1.t - jtlva2.t
+    diffx = np.abs(jtlva1.x - jtlva2.x)
+    diffy = np.abs(jtlva1.y - jtlva2.y)
+    diffz = np.abs(jtlva1.z - jtlva2.z)
+    difft = np.abs(jtlva1.t - jtlva2.t)
     assert (diffx < 1e-8).flatten().all()
     assert (diffy < 1e-8).flatten().all()
     assert (diffz < 1e-8).flatten().all()
@@ -39,19 +39,22 @@ def test_analysis_objects():
     addon2 = jca2.ones_like()
     jca1['addon'] = addon1
     jca2['addon'] = addon2
+
+    print(jca1.addon)
+    print(jca2.addon)
     
-    diffm = jca1.p4.mass - jca2.p4.mass
-    diffpt = jca1.p4.pt - jca2.p4.pt
-    diffeta = jca1.p4.eta - jca2.p4.eta
+    diffm = np.abs(jca1.p4.mass - jca2.p4.mass)
+    diffpt = np.abs(jca1.p4.pt - jca2.p4.pt)
+    diffeta = np.abs(jca1.p4.eta - jca2.p4.eta)
     assert (diffm < 1e-8).flatten().all()
     assert (diffpt < 1e-8).flatten().all()
     assert (diffeta < 1e-8).flatten().all()
 
     #check fast functions
-    diffm = jca1.mass - jca1.p4.mass
-    diffpt = jca1.pt - jca1.p4.pt
-    diffeta = jca1.eta - jca1.p4.eta
-    diffphi = jca1.phi - jca1.p4.phi
+    diffm = np.abs(jca1.mass - jca1.p4.mass)
+    diffpt = np.abs(jca1.pt - jca1.p4.pt)
+    diffeta = np.abs(jca1.eta - jca1.p4.eta)
+    diffphi = np.abs(jca1.phi - jca1.p4.phi)
     assert (diffm < 1e-8).flatten().all()
     assert (diffpt < 1e-8).flatten().all()
     assert (diffeta < 1e-8).flatten().all()
@@ -68,9 +71,9 @@ def test_analysis_objects():
     admsum = (adistinct.at(0).p4 + adistinct.at(1).p4).mass
     apmsum = (apair.at(0).p4 + apair.at(1).p4).mass
     acmsum = (across.at(0).p4 + across.at(1).p4).mass
-    diffadm = adistinct.p4.mass - admsum
-    diffapm = apair.p4.mass - apmsum
-    diffacm = across.p4.mass - acmsum
+    diffadm = np.abs(adistinct.p4.mass - admsum)
+    diffapm = np.abs(apair.p4.mass - apmsum)
+    diffacm = np.abs(across.p4.mass - acmsum)
     
     assert (diffadm < 1e-8).flatten().all()
     assert (diffapm < 1e-8).flatten().all()
@@ -83,7 +86,7 @@ def test_analysis_objects():
     selection22 = selection21[selection21.p4.pt > 5]
 
     diffcnts = selection12.counts - jtlva1_selection2.counts
-    diffm = selection12.p4.mass - jtlva1_selection2.mass
+    diffm = np.abs(selection12.p4.mass - jtlva1_selection2.mass)
     diffaddon = selection12.addon - selection22.addon
     assert (diffcnts == 0).flatten().all()
     assert (diffm < 1e-8).flatten().all()
