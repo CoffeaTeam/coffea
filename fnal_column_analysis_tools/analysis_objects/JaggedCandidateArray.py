@@ -68,7 +68,12 @@ class JaggedCandidateMethods(awkward.Methods):
     
     def pairs(self, same=True):
         outs = super(JaggedCandidateMethods, self).pairs(same)
-        outs['p4'] = outs.at(0)['p4'] + outs.at(1)['p4']
+        thep4 = outs.at(0)['p4'] + outs.at(1)['p4']
+        outs['p4'] = thep4
+        outs['__fast_mass'] = awkward.JaggedArray.fromcounts(thep4.counts,fast_mass(thep4.x,thep4.y,thep4.z,thep4.t))
+        outs['__fast_pt'] = awkward.JaggedArray.fromcounts(thep4.counts,fast_pt(thep4.x,thep4.y))
+        outs['__fast_eta'] = awkward.JaggedArray.fromcounts(thep4.counts,fast_eta(thep4.x,thep4.y,thep4.z))
+        outs['__fast_phi'] = awkward.JaggedArray.fromcounts(thep4.counts,fast_phi(thep4.x,thep4.y))
         return self.fromjagged(outs)
     
     def cross(self, other):
@@ -97,6 +102,19 @@ class JaggedCandidateMethods(awkward.Methods):
                 outs['p4'] = outs.at(int(key))['p4']
             else:
                 outs['p4'] = outs['p4'] + outs.at(int(key))['p4']
+        thep4 = outs['p4']
+        p4content = thep4.content
+        outs['__fast_mass'] = awkward.JaggedArray.fromcounts(thep4.counts,fast_mass(p4content.x,
+                                                                                    p4content.y,
+                                                                                    p4content.z,
+                                                                                    p4content.t))
+        outs['__fast_pt'] = awkward.JaggedArray.fromcounts(thep4.counts,fast_pt(p4content.x,
+                                                                                p4content.y))
+        outs['__fast_eta'] = awkward.JaggedArray.fromcounts(thep4.counts,fast_eta(p4content.x,
+                                                                                  p4content.y,
+                                                                                  p4content.z))
+        outs['__fast_phi'] = awkward.JaggedArray.fromcounts(thep4.counts,fast_phi(p4content.x,
+                                                                                  p4content.y))
         return self.fromjagged(outs)
 
     def __getattr__(self,what):
