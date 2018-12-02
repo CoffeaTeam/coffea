@@ -11,8 +11,6 @@ from dummy_distributions import dummy_four_momenta
 def test_analysis_objects():
     counts, px, py, pz, energy = dummy_four_momenta()
     thep4 = np.stack((px,py,pz,energy)).T
-    print(px.shape,energy.shape)
-    print(thep4.shape)
     
     #test JaggedTLorentzVectorArray
     tlva1 = uproot_methods.TLorentzVectorArray(px,py,pz,energy)
@@ -48,6 +46,16 @@ def test_analysis_objects():
     assert (diffm < 1e-8).flatten().all()
     assert (diffpt < 1e-8).flatten().all()
     assert (diffeta < 1e-8).flatten().all()
+
+    #check fast functions
+    diffm = jca1.mass - jca1.p4.mass
+    diffpt = jca1.pt - jca1.p4.pt
+    diffeta = jca1.eta - jca1.p4.eta
+    diffphi = jca1.phi - jca1.p4.phi
+    assert (diffm < 1e-8).flatten().all()
+    assert (diffpt < 1e-8).flatten().all()
+    assert (diffeta < 1e-8).flatten().all()
+    assert (diffphi < 1e-8).flatten().all()
 
     adistinct = jca1.distincts()
     apair = jca1.pairs()
