@@ -12,7 +12,7 @@ class ColumnGroup(object):
         for arg in args:
             callStack = arg.split('.')
             retval = getattr(eventObj,callStack[0])
-            for i in xrange(1,len(callStack)):
+            for i in range(1,len(callStack)):
                 retval = getattr(retval,callStack[i])
             self.__map[arg] = retval
             
