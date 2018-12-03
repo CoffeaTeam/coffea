@@ -1,5 +1,6 @@
 from __future__ import print_function, division
 
+import fnal_column_analysis_tools
 from fnal_column_analysis_tools.analysis_objects import JaggedCandidateArray, JaggedTLorentzVectorArray
 import uproot
 import uproot_methods
@@ -21,6 +22,9 @@ def test_analysis_objects():
     
     jtlva1_selection1 = jtlva1[jtlva1.counts > 0]
     jtlva1_selection2 = jtlva1_selection1[jtlva1_selection1.pt > 5]
+
+    jtlva2_selection1 = jtlva2[jtlva2.counts > 0]
+    jtlva2_selection2 = jtlva1_selection1[jtlva2_selection1.pt > 5]
     
     diffx = np.abs(jtlva1.x - jtlva2.x)
     diffy = np.abs(jtlva1.y - jtlva2.y)
@@ -31,34 +35,37 @@ def test_analysis_objects():
     assert (diffz < 1e-8).flatten().all()
     assert (difft < 1e-8).flatten().all()
 
-    #test JaggedCandidateArray
-    jca1 = JaggedCandidateArray.candidatesfromcounts(counts,p4=tlva1)
+    #test JaggedCandidateArray
+    jca1 = JaggedCandidateArray.candidatesfromcounts(counts,p4=thep4)
     jca2 = JaggedCandidateArray.candidatesfromcounts(counts,p4=thep4)
-    
+    assert( (jca1.offsets == jca2.offsets).all() )
+
     addon1 = jca1.zeros_like()
     addon2 = jca2.ones_like()
     jca1['addon'] = addon1
     jca2['addon'] = addon2
-
-    print(jca1.addon)
-    print(jca2.addon)
     
     diffm = np.abs(jca1.p4.mass - jca2.p4.mass)
+    assert( (jca1.offsets == jca2.offsets).all() )
     diffpt = np.abs(jca1.p4.pt - jca2.p4.pt)
+    assert( (jca1.offsets == jca2.offsets).all() )
+    eta2 = jca2.p4.eta
+    eta1 = jca1.p4.eta
+    print (np.sum(eta1.counts),np.sum(eta2.counts))
+    diffeta_temp = np.abs(eta1 - eta2)
     diffeta = np.abs(jca1.p4.eta - jca2.p4.eta)
+    assert( (jca1.offsets == jca2.offsets).all() )
     assert (diffm < 1e-8).flatten().all()
     assert (diffpt < 1e-8).flatten().all()
     assert (diffeta < 1e-8).flatten().all()
-
-    #check fast functions
-    diffm = np.abs(jca1.mass - jca1.p4.mass)
-    diffpt = np.abs(jca1.pt - jca1.p4.pt)
-    diffeta = np.abs(jca1.eta - jca1.p4.eta)
-    diffphi = np.abs(jca1.phi - jca1.p4.phi)
-    assert (diffm < 1e-8).flatten().all()
-    assert (diffpt < 1e-8).flatten().all()
-    assert (diffeta < 1e-8).flatten().all()
-    assert (diffphi < 1e-8).flatten().all()
+    
+    #test fast functions
+    fastfs = ['pt','eta','phi','mass']
+    for func in fastfs:
+        func1 = getattr(jca1,func)        
+        func2 = getattr(jca1.p4,func)
+        dfunc = np.abs(func1 - func2)
+        assert (dfunc < 1e-8).flatten().all()
 
     adistinct = jca1.distincts()
     apair = jca1.pairs()
