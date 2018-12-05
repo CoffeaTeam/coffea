@@ -34,3 +34,4 @@ import fnal_column_analysis_tools.lookup_tools
 import fnal_column_analysis_tools.analysis_objects
 import fnal_column_analysis_tools.striped
 
+from version import __version__

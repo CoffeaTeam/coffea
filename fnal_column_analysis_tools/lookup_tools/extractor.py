@@ -1,5 +1,11 @@
+from __future__ import print_function
+
+import re
 import uproot
+import numpy as np
 from fnal_column_analysis_tools.lookup_tools.evaluator import evaluator
+
+from numexpr import NumExpr
 
 TH1D = "<class 'uproot.rootio.TH1D'>"
 TH2D = "<class 'uproot.rootio.TH2D'>"
@@ -31,43 +37,71 @@ def convert_root_file(file):
             converted_file[key[:-2]] = [tempArrX, tempArrY]
     return converted_file
 
-def csvToVec(csvFilePath):
-    p = csvFilePath
-    f = open(p).readlines()
+def bTagCsvToVec(csvFilePath):
+    f = open(csvFilePath).readlines()
+    retVec = {}
+    columns = f.pop(0)
+    nameandcols = columns.split(';')
+    name = nameandcols[0].strip()
+    columns = nameandcols[1].strip()
+    columns = [column.strip() for column in columns.split(',')]
     
-    retVec = []
-    for line in f:
-        line = re.sub(',', '', line)
-        vec = line.split()
-        retVec.append(vec)
-    retVec.pop(0)
-    for i, e in enumerate(retVec):
-        retVec[i][0]= int(e[0])
-        retVec[i][3]=int(e[3])
-        retVec[i][4]=float(e[4])
-        retVec[i][5]=float(e[5])
-        retVec[i][6]=float(e[6])
-        retVec[i][7]=float(e[7])
-        retVec[i][8]=float(e[8])
-        retVec[i][9]=float(e[9])
-        retVec[i][10]=eval(e[10])
-        
-    return retVec
+    corrections = np.genfromtxt(csvFilePath,
+                                dtype=None,
+                                names=tuple(columns),
+                                converters={1:lambda s: s.strip(),
+                                            2:lambda s: s.strip(),
+                                           10:lambda s: s.strip(' "')},
+                                delimiter = ',',
+                                skip_header=1,
+                                unpack=True
+                                )
+    
+    all_names = corrections[[columns[i] for i in range(4)]]
+    labels = np.unique(corrections[[columns[i] for i in range(4)]])
+    names_and_bins = np.unique(corrections[[columns[i] for i in [0,1,2,3,4,6,8]]])
+    print(len(names_and_bins),len(all_names))
+    wrapped_up = {}
+    for label in labels:
+        etaMins = np.unique(corrections[np.where(all_names == label)][columns[4]])
+        etaMaxs = np.unique(corrections[np.where(all_names == label)][columns[5]])
+        etaBins = np.union1d(etaMins,etaMaxs)
+        ptMins = np.unique(corrections[np.where(all_names == label)][columns[6]])
+        ptMaxs = np.unique(corrections[np.where(all_names == label)][columns[7]])
+        ptBins = np.union1d(ptMins,ptMaxs)
+        discrMins = np.unique(corrections[np.where(all_names == label)][columns[8]])
+        discrMaxs = np.unique(corrections[np.where(all_names == label)][columns[9]])
+        discrBins = np.union1d(discrMins,discrMaxs)
+        vals = np.zeros(shape=(len(etaBins)-1,len(ptBins)-1,len(discrBins)-1),
+                        dtype=corrections.dtype[10])
+        for i,eta_bin in enumerate(etaBins[:-1]):
+            for j,pt_bin in enumerate(ptBins[:-1]):
+                for k,discr_bin in enumerate(discrBins[:-1]):
+                    this_bin = np.where((all_names == label) &
+                                        (corrections[columns[4]] == eta_bin) &
+                                        (corrections[columns[6]] == pt_bin)  &
+                                        (corrections[columns[8]] == discr_bin))
+                    vals[i,j,k] = corrections[this_bin][columns[10]][0]
+        str_label = '_'.join([name]+[str(lbl) for lbl in label])
+        wrapped_up[str_label] = (vals,(etaBins,ptBins,discrBins))
+    print('CSVv2_0_comb_central_1',':',wrapped_up['CSVv2_0_comb_central_1'])
+    
+    return wrapped_up
 
-def makeSfSpecificVec(csvVec,OP, mType,sysType, flavor):
-    retVec = []
-    for i,e in enumerate(csvVec):
-        if e[0] == OP and e[1] ==mType and e[2]==sysType and e[3] == flavor:
-            e.pop(0)
-            e.pop(0)
-            e.pop(0)
-            e.pop(0)
-            retVec.append(e)
-    
+def makeSfSpecificVec(csvVec,OP,mType,sysType,flavor):
+    retVec = {}
+    columns = csvVec['columns']
+    for key in csvVec.keys():
+        thebtag = e[key]
+        if( thebtag[columns[0]] == OP and
+            thebtag[columns[1]] == mType and
+            thebtag[columns[2]] == sysType and
+            thebtag[columns[3]] == flavor ):
+            retVec[key] = {k:v for k,v in thebtag.items() if k not in columns}
     return retVec
 
 file_converters = {'root':convert_root_file,
-                   'csv':csvToVec}
+                   'csv':bTagCsvToVec}
 
 class extractor(object):
     def __init__(self):
