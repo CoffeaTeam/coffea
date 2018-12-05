@@ -3,6 +3,7 @@ from __future__ import print_function
 import re
 import uproot
 import numpy as np
+import numba
 from fnal_column_analysis_tools.lookup_tools.evaluator import evaluator
 
 from numexpr import NumExpr
@@ -36,6 +37,16 @@ def convert_root_file(file):
             tempArrY= dumFile[key[:-2]]._fEY
             converted_file[key[:-2]] = [tempArrX, tempArrY]
     return converted_file
+
+def numbaize(fstr, varlist):
+    """
+    Convert function string to numba function
+        Supports only simple math for now
+    """
+    lstr = "lambda %s: %s" % (",".join(varlist), fstr)
+    func = eval(lstr)
+    nfunc = numba.njit(func)
+    return nfunc
 
 def bTagCsvToVec(csvFilePath):
     f = open(csvFilePath).readlines()
@@ -73,7 +84,7 @@ def bTagCsvToVec(csvFilePath):
         discrMaxs = np.unique(corrections[np.where(all_names == label)][columns[9]])
         discrBins = np.union1d(discrMins,discrMaxs)
         vals = np.zeros(shape=(len(discrBins)-1,len(ptBins)-1,len(etaBins)-1),
-                        dtype=corrections.dtype[10])
+                        dtype='O')
         for i,eta_bin in enumerate(etaBins[:-1]):
             for j,pt_bin in enumerate(ptBins[:-1]):
                 for k,discr_bin in enumerate(discrBins[:-1]):
@@ -81,9 +92,10 @@ def bTagCsvToVec(csvFilePath):
                                         (corrections[columns[4]] == eta_bin) &
                                         (corrections[columns[6]] == pt_bin)  &
                                         (corrections[columns[8]] == discr_bin))
-                    vals[k,j,i] = corrections[this_bin][columns[10]][0]
+                    vals[k,j,i] = numbaize(corrections[this_bin][columns[10]][0], ['x'])
         str_label = '_'.join([name]+[str(lbl) for lbl in label])
-        wrapped_up[str_label] = (vals,(etaBins,ptBins,discrBins))
+        feval_dim = 1 # TODO: pt except for reshaping, then discriminant
+        wrapped_up[str_label] = (vals,(etaBins,ptBins,discrBins),feval_dim)
     return wrapped_up
 
 def makeSfSpecificVec(csvVec,OP,mType,sysType,flavor):
