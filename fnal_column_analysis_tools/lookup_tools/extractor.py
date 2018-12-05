@@ -6,8 +6,6 @@ import numpy as np
 import numba
 from fnal_column_analysis_tools.lookup_tools.evaluator import evaluator
 
-from numexpr import NumExpr
-
 TH1D = "<class 'uproot.rootio.TH1D'>"
 TH2D = "<class 'uproot.rootio.TH2D'>"
 TH1F = "<class 'uproot.rootio.TH1F'>"
@@ -47,6 +45,8 @@ def numbaize(fstr, varlist):
     func = eval(lstr)
     nfunc = numba.njit(func)
     return nfunc
+
+btag_feval_dims = {0:1,1:1,2:1,3:2}
 
 def bTagCsvToVec(csvFilePath):
     f = open(csvFilePath).readlines()
@@ -94,21 +94,9 @@ def bTagCsvToVec(csvFilePath):
                                         (corrections[columns[8]] == discr_bin))
                     vals[k,j,i] = numbaize(corrections[this_bin][columns[10]][0], ['x'])
         str_label = '_'.join([name]+[str(lbl) for lbl in label])
-        feval_dim = 1 # TODO: pt except for reshaping, then discriminant
+        feval_dim = btag_feval_dims[label[0]] # TODO: pt except for reshaping, then discriminant
         wrapped_up[str_label] = (vals,(etaBins,ptBins,discrBins),feval_dim)
     return wrapped_up
-
-def makeSfSpecificVec(csvVec,OP,mType,sysType,flavor):
-    retVec = {}
-    columns = csvVec['columns']
-    for key in csvVec.keys():
-        thebtag = e[key]
-        if( thebtag[columns[0]] == OP and
-            thebtag[columns[1]] == mType and
-            thebtag[columns[2]] == sysType and
-            thebtag[columns[3]] == flavor ):
-            retVec[key] = {k:v for k,v in thebtag.items() if k not in columns}
-    return retVec
 
 file_converters = {'root':convert_root_file,
                    'csv':bTagCsvToVec}

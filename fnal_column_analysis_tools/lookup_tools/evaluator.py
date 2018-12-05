@@ -6,7 +6,7 @@ import numba
 @numba.jit
 def numba_apply_1d(functions, variables):
     out = np.empty(variables.shape)
-    for i in range(functions.size):
+    for i in range(len(functions)):
         out[i] = functions[i](variables[i])
     return out
 
