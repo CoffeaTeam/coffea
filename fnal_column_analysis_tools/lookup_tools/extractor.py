@@ -123,5 +123,19 @@ class extractor(object):
         del self.__filecache
         self.__finalized = True
     
-    def make_evaluator(self):
-        return evaluator(self.__names,self.__weights)
+    def make_evaluator(self,reduce_list=None):
+        names = None
+        weights = None
+        if reduce_list is not None:
+            names = {}
+            weights = []
+            for i,name in enumerate(reduce_list):
+                if name not in self.__names:
+                    raise Exception('Weights named "{}" not in extractor!'.format(name))
+                names[name] = i
+                weights.append(self.__weights[self.__names[name]])
+        else:
+            names = self.__names
+            weights = self.__weights
+        
+        return evaluator(names,weights)
