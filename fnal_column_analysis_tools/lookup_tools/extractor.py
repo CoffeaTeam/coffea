@@ -72,7 +72,7 @@ def bTagCsvToVec(csvFilePath):
         discrMins = np.unique(corrections[np.where(all_names == label)][columns[8]])
         discrMaxs = np.unique(corrections[np.where(all_names == label)][columns[9]])
         discrBins = np.union1d(discrMins,discrMaxs)
-        vals = np.zeros(shape=(len(etaBins)-1,len(ptBins)-1,len(discrBins)-1),
+        vals = np.zeros(shape=(len(discrBins)-1,len(ptBins)-1,len(etaBins)-1),
                         dtype=corrections.dtype[10])
         for i,eta_bin in enumerate(etaBins[:-1]):
             for j,pt_bin in enumerate(ptBins[:-1]):
@@ -81,11 +81,9 @@ def bTagCsvToVec(csvFilePath):
                                         (corrections[columns[4]] == eta_bin) &
                                         (corrections[columns[6]] == pt_bin)  &
                                         (corrections[columns[8]] == discr_bin))
-                    vals[i,j,k] = corrections[this_bin][columns[10]][0]
+                    vals[k,j,i] = corrections[this_bin][columns[10]][0]
         str_label = '_'.join([name]+[str(lbl) for lbl in label])
         wrapped_up[str_label] = (vals,(etaBins,ptBins,discrBins))
-    print('CSVv2_0_comb_central_1',':',wrapped_up['CSVv2_0_comb_central_1'])
-    
     return wrapped_up
 
 def makeSfSpecificVec(csvVec,OP,mType,sysType,flavor):
@@ -173,3 +171,4 @@ class extractor(object):
             weights = self.__weights
         
         return evaluator(names,weights)
+

@@ -46,7 +46,6 @@ class denselookup(object):
             indices.append(np.clip(np.searchsorted(self.__axes, args[0], side='right')-1,0,self.__values.shape[0]-1))
         else:
             for dim in range(self.__dimension):
-                #print self.__axes[dim], self.__values.shape
                 indices.append(np.clip(np.searchsorted(self.__axes[dim], args[dim], side='right')-1,0,self.__values.shape[len(self.__axes)-dim-1]-1))
         indices.reverse()
         return self.__values[tuple(indices)]
