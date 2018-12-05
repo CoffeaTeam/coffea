@@ -3,10 +3,9 @@ from awkward.array.jagged import JaggedArray
 from copy import deepcopy
 import numba
 
-# TODO
-#@numba.njit
+@numba.jit
 def numba_apply_1d(functions, variables):
-    out = np.empty_like(variables)
+    out = np.empty(variables.shape)
     for i in range(functions.size):
         out[i] = functions[i](variables[i])
     return out
