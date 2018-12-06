@@ -14,6 +14,7 @@ Basic tools and wrappers for enabling not-too-alien syntax when running columnar
 .. inclusion-marker-1-5-do-not-remove
 
 This package is currently organized into three subpackages:
+
 1) lookup_tools - This package manages importing corrections and scale factors, and provides a unified interface for evaluating those corrections on physics objects.
     - lookup_tools.extractor: handles importing the lookups from root files
     - lookup_tools.evaluator: handles organizing, providing an interface for, and evaluating the lookups
