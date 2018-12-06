@@ -5,24 +5,24 @@ import uproot
 import awkward
 import numpy as np
 
-from dummy_distributions import dummy_pt_eta
+from dummy_distributions import dummy_jagged_eta_pt
 
-def test_lookup_tools():
+def test_root_scalefactors():
     extractor = lookup_tools.extractor()
     extractor.add_weight_sets(["testSF2d scalefactors_Tight_Electron tests/samples/testSF2d.root"])
     extractor.finalize()
 
     evaluator = extractor.make_evaluator()
 
-    counts, test_in1, test_in2 = dummy_pt_eta()
+    counts, test_eta, test_pt = dummy_jagged_eta_pt()
 
     # test flat eval
-    test_out = evaluator["testSF2d"](test_in1, test_in2)
+    test_out = evaluator["testSF2d"](test_eta, test_pt)
 
     # test structured eval
-    test_in1_jagged = awkward.JaggedArray.fromcounts(counts, test_in1)
-    test_in2_jagged = awkward.JaggedArray.fromcounts(counts, test_in2)
-    test_out_jagged = evaluator["testSF2d"](test_in1_jagged, test_in2_jagged)
+    test_eta_jagged = awkward.JaggedArray.fromcounts(counts, test_eta)
+    test_pt_jagged = awkward.JaggedArray.fromcounts(counts, test_pt)
+    test_out_jagged = evaluator["testSF2d"](test_eta_jagged, test_pt_jagged)
 
     assert (test_out_jagged.counts==counts).all()
     assert (test_out==test_out_jagged.flatten()).all()
@@ -49,3 +49,17 @@ def test_lookup_tools():
     print("Diff over threshold rate: %.1f %%" % (100*(diff >= 1.e-8).sum()/diff.size))
     assert (diff < 1.e-8).all()
 
+
+def test_csv_scalefactors():
+    extractor = lookup_tools.extractor()
+    extractor.add_weight_sets(["testBTag * tests/samples/testBTagSF.csv"])
+    extractor.finalize()
+
+    evaluator = extractor.make_evaluator()
+
+    counts, test_eta, test_pt = dummy_jagged_eta_pt()
+    # discriminant used for reshaping, zero otherwise
+    test_discr = np.zeros_like(test_eta)
+
+    sf_out = evaluator['testBTagCSVv2_1_comb_up_0'](test_eta, test_pt, test_discr)
+    print(sf_out)
