@@ -36,6 +36,7 @@ class denselookup(object):
         self._axes = deepcopy(dims)
         self._feval_dim = None
         vals_are_strings = ('string' in values.dtype.name or
+                            'str' in values.dtype.name or
                             'unicode' in values.dtype.name or
                             'bytes' in values.dtype.name) #....
         if not isinstance(values, np.ndarray):
