@@ -3,12 +3,25 @@ from awkward.array.jagged import JaggedArray
 from copy import deepcopy
 import numba
 
+### methods for dealing with b-tag SFs
 @numba.jit
 def numba_apply_1d(functions, variables):
     out = np.empty(variables.shape)
-    for i in range(len(functions)):
+    for i in range(functions.size):
         out[i] = functions[i](variables[i])
     return out
+
+def numbaize(fstr, varlist):
+    """
+        Convert function string to numba function
+        Supports only simple math for now
+        """
+    lstr = "lambda %s: %s" % (",".join(varlist), fstr)
+    func = eval(lstr)
+    nfunc = numba.njit(func)
+    return nfunc
+
+### methods for dealing with b-tag SFs
 
 class denselookup(object):
     def __init__(self,values,dims,feval_dim=None): 
@@ -21,13 +34,23 @@ class denselookup(object):
         if self._dimension == 0:
             raise Exception('Could not define dimension for {}'.format(whattype))
         self._axes = deepcopy(dims)
-        self._values = deepcopy(values)
+        #self._values = deepcopy(values)
+        vals_are_strings = 'string' in values.dtype.name
         if not isinstance(values, np.ndarray):
             raise TypeError("values is not a numpy array, but %r" % type(values))
-        if values.dtype == np.object and feval_dim is None:
+        if vals_are_strings and feval_dim is None:
             raise Exception('Function objects passed to denselookup without knowing the arguments needed')
-        # TODO: support multidimensional functions
-        self._feval_dim = feval_dim
+        elif vals_are_strings and feval_dim is not None: #convert strings to numba functions here
+            funcs = np.zeros(shape=values.shape,dtype='O')
+            for i in range(values.size):
+                idx = np.unravel_index(i,dims=values.shape)
+                funcs[idx] = numbaize(values[idx],['x'])
+            self._values=deepcopy(funcs)
+        else:
+            self._values=deepcopy(values)
+        # TODO: support for multidimensional functions and functions with variables other than 'x'
+        if len(feval_dim) > 1: raise Exception('lookup_tools.evaluator only accepts 1D functions right now!')
+        self._feval_dim = feval_dim[0]
     
     def __call__(self,*args):        
         inputs = list(args)
@@ -38,7 +61,7 @@ class denselookup(object):
             if isinstance(inputs[i], JaggedArray):
                 if offsets is not None:
                     if type(offsets) is int:
-                        raise Exception('do not mix JaggedArrays and numpy arrays when calling denselookup')
+                        raise Exception('Do not mix JaggedArrays and numpy arrays when calling denselookup')
                     elif type(offsets) is np.ndarray and offsets.base is not inputs[i].offsets.base:
                         raise Exception('All input jagged arrays must have a common structure (offsets)!')
                 offsets = inputs[i].offsets

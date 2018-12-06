@@ -3,7 +3,6 @@ from __future__ import print_function
 import re
 import uproot
 import numpy as np
-import numba
 from fnal_column_analysis_tools.lookup_tools.evaluator import evaluator
 
 TH1D = "<class 'uproot.rootio.TH1D'>"
@@ -36,19 +35,10 @@ def convert_root_file(file):
             converted_file[key[:-2]] = [tempArrX, tempArrY]
     return converted_file
 
-def numbaize(fstr, varlist):
-    """
-    Convert function string to numba function
-        Supports only simple math for now
-    """
-    lstr = "lambda %s: %s" % (",".join(varlist), fstr)
-    func = eval(lstr)
-    nfunc = numba.njit(func)
-    return nfunc
+#pt except for reshaping, then discriminant
+btag_feval_dims = {0:[1],1:[1],2:[1],3:[2]}
 
-btag_feval_dims = {0:1,1:1,2:1,3:2}
-
-def bTagCsvToVec(csvFilePath):
+def convert_btag_csv(csvFilePath):
     f = open(csvFilePath).readlines()
     retVec = {}
     columns = f.pop(0)
@@ -84,7 +74,7 @@ def bTagCsvToVec(csvFilePath):
         discrMaxs = np.unique(corrections[np.where(all_names == label)][columns[9]])
         discrBins = np.union1d(discrMins,discrMaxs)
         vals = np.zeros(shape=(len(discrBins)-1,len(ptBins)-1,len(etaBins)-1),
-                        dtype='O')
+                        dtype=corrections.dtype[10])
         for i,eta_bin in enumerate(etaBins[:-1]):
             for j,pt_bin in enumerate(ptBins[:-1]):
                 for k,discr_bin in enumerate(discrBins[:-1]):
@@ -92,14 +82,14 @@ def bTagCsvToVec(csvFilePath):
                                         (corrections[columns[4]] == eta_bin) &
                                         (corrections[columns[6]] == pt_bin)  &
                                         (corrections[columns[8]] == discr_bin))
-                    vals[k,j,i] = numbaize(corrections[this_bin][columns[10]][0], ['x'])
+                    vals[k,j,i] = corrections[this_bin][columns[10]][0]
         str_label = '_'.join([name]+[str(lbl) for lbl in label])
-        feval_dim = btag_feval_dims[label[0]] # TODO: pt except for reshaping, then discriminant
-        wrapped_up[str_label] = (vals,(etaBins,ptBins,discrBins),feval_dim)
+        feval_dim = btag_feval_dims[label[0]]
+        wrapped_up[str_label] = (vals,(etaBins,ptBins,discrBins),tuple(feval_dim))
     return wrapped_up
 
 file_converters = {'root':convert_root_file,
-                   'csv':bTagCsvToVec}
+                   'csv':convert_btag_csv}
 
 class extractor(object):
     def __init__(self):
