@@ -46,7 +46,7 @@ Strict dependencies:
 
 The following are installed automatically when you install uproot with pip:
 
-- `Numpy <https://scipy.org/install.html>`__ (1.13.1+)
+- `Numpy <https://scipy.org/install.html>`__ (1.15+)
 - `awkward-array <https://pypi.org/project/awkward>`__ to manipulate data from non-flat TTrees, such as jagged arrays (`part of Scikit-HEP <https://github.com/scikit-hep/awkward-array>`__)
 - `uproot-methods <https://pypi.org/project/uproot-methods>`__ to allow expressions of things as lorentz vectors
 
