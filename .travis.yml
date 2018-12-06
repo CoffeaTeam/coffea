@@ -18,6 +18,7 @@ install:
   - pip install --upgrade setuptools_scm
   - pip install awkward
   - pip install numba
+  - pip install numpy --upgrade
   - python -c 'import numpy; print(numpy.__version__)'
   - pip install pytest pytest-runner
   - if [[ $TRAVIS_PYTHON_VERSION != pypy* ]] ; then pip install h5py ; fi
