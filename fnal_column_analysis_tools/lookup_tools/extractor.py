@@ -99,18 +99,18 @@ file_converters = {'root':convert_root_file,
 
 class extractor(object):
     def __init__(self):
-        self.__weights = []
-        self.__names = {}
-        self.__filecache = {}
-        self.__finalized = False
+        self._weights = []
+        self._names = {}
+        self._filecache = {}
+        self._finalized = False
     
     def add_weight_set(self,local_name,weights):
-        if self.__finalized: 
+        if self._finalized:
             raise Exception('extractor is finalized cannot add new weights!')
-        if local_name in self.__names.keys():
+        if local_name in self._names.keys():
             raise Exception('weights name "{}" already defined'.format(local_name))
-        self.__names[local_name] = len(self.__weights)
-        self.__weights.append(weights)
+        self._names[local_name] = len(self._weights)
+        self._weights.append(weights)
     
     def add_weight_sets(self,weightsdescs):
         # expect file to be formatted <local name> <name> <weights file>
@@ -122,7 +122,7 @@ class extractor(object):
             (local_name,name,file) = tuple(temp)
             if name == '*':
                 self.import_file(file)
-                weights = self.__filecache[file]
+                weights = self._filecache[file]
                 for key, value in weights.items():
                     if local_name == '*':
                         self.add_weight_set(key,value)
@@ -133,12 +133,12 @@ class extractor(object):
                 self.add_weight_set(local_name,weights)
     
     def import_file(self,file):
-        if file not in self.__filecache.keys():
-            self.__filecache[file] = file_converters[file.split('.')[-1].strip()](file)
+        if file not in self._filecache.keys():
+            self._filecache[file] = file_converters[file.split('.')[-1].strip()](file)
     
     def extract_from_file(self, file, name):        
         self.import_file(file)
-        weights = self.__filecache[file]
+        weights = self._filecache[file]
         bname = name.encode()
         if bname not in weights.keys(): 
             print(weights.keys())
@@ -146,10 +146,10 @@ class extractor(object):
         return weights[bname]
           
     def finalize(self):
-        if self.__finalized: 
+        if self._finalized:
             raise Exception('extractor is already finalized!')
-        del self.__filecache
-        self.__finalized = True
+        del self._filecache
+        self._finalized = True
     
     def make_evaluator(self,reduce_list=None):
         names = None
@@ -158,13 +158,13 @@ class extractor(object):
             names = {}
             weights = []
             for i,name in enumerate(reduce_list):
-                if name not in self.__names:
+                if name not in self._names:
                     raise Exception('Weights named "{}" not in extractor!'.format(name))
                 names[name] = i
-                weights.append(self.__weights[self.__names[name]])
+                weights.append(self._weights[self._names[name]])
         else:
-            names = self.__names
-            weights = self.__weights
+            names = self._names
+            weights = self._weights
         
         return evaluator(names,weights)
 
