@@ -55,13 +55,13 @@ def convert_btag_csv(csvFilePath):
                                            10:lambda s: s.strip(' "')},
                                 delimiter = ',',
                                 skip_header=1,
-                                unpack=True
+                                unpack=True,
+                                encoding=None
                                 )
     
     all_names = corrections[[columns[i] for i in range(4)]]
     labels = np.unique(corrections[[columns[i] for i in range(4)]])
     names_and_bins = np.unique(corrections[[columns[i] for i in [0,1,2,3,4,6,8]]])
-    print(len(names_and_bins),len(all_names))
     wrapped_up = {}
     for label in labels:
         etaMins = np.unique(corrections[np.where(all_names == label)][columns[4]])
@@ -83,7 +83,14 @@ def convert_btag_csv(csvFilePath):
                                         (corrections[columns[6]] == pt_bin)  &
                                         (corrections[columns[8]] == discr_bin))
                     vals[k,j,i] = corrections[this_bin][columns[10]][0]
-        str_label = '_'.join([name]+[str(lbl) for lbl in label])
+        label_decode = []
+        for i in range(len(label)):
+            label_decode.append(label[i])
+            if isinstance(label_decode[i],bytes):
+                label_decode[i] = label_decode[i].decode()
+            else:
+                label_decode[i] = str(label_decode[i])
+        str_label = '_'.join([name]+label_decode)
         feval_dim = btag_feval_dims[label[0]]
         wrapped_up[str_label] = (vals,(etaBins,ptBins,discrBins),tuple(feval_dim))
     return wrapped_up
@@ -117,7 +124,7 @@ class extractor(object):
             if name == '*':
                 self.import_file(file)
                 weights = self.__filecache[file]
-                for key, value in weights.iteritems():
+                for key, value in weights.items():
                     if local_name == '*':
                         self.add_weight_set(key,value)
                     else:

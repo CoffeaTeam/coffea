@@ -35,8 +35,7 @@ class denselookup(object):
             raise Exception('Could not define dimension for {}'.format(whattype))
         self._axes = deepcopy(dims)
         self._feval_dim = None
-        #self._values = deepcopy(values)
-        vals_are_strings = 'string' in values.dtype.name
+        vals_are_strings = ('unicode' in values.dtype.name or 'str' in values.dtype.name)
         if not isinstance(values, np.ndarray):
             raise TypeError("values is not a numpy array, but %r" % type(values))
         if vals_are_strings and feval_dim is None:
