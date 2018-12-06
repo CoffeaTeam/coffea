@@ -6,22 +6,22 @@
 
 class ColumnGroup(object):
     def __init__(self,events,objName,*args):
-        self.__map = {}        
+        self._map = {}
         eventObj = getattr(events,objName)
-        self.__counts = getattr(events,objName).count        
+        self._counts = getattr(events,objName).count
         for arg in args:
             callStack = arg.split('.')
             retval = getattr(eventObj,callStack[0])
             for i in range(1,len(callStack)):
                 retval = getattr(retval,callStack[i])
-            self.__map[arg] = retval
+            self._map[arg] = retval
             
     def __getitem__(self,name):
-        return self.__map[name]
+        return self._map[name]
     
     def columnsWithout(self,toremove):
         out = {}
-        out.update(self.__map)
+        out.update(self._map)
         if isinstance(toremove,str):
             del out[toremove]
         else:
@@ -30,14 +30,14 @@ class ColumnGroup(object):
         return out
     
     def columns(self):
-        return self.__map
+        return self._map
     
     def counts(self):
-        return self.__counts
+        return self._counts
     
 class PhysicalColumnGroup(ColumnGroup):
     def __init__(self,events,objName,p4Name,*args):
-        self.__p4  = p4Name
+        self._p4  = p4Name
         allargs = [p4Name]
         allargs.extend(args)        
         super(PhysicalColumnGroup,self).__init__(events,objName,*allargs)
@@ -47,12 +47,12 @@ class PhysicalColumnGroup(ColumnGroup):
     def setP4Name(self,name):
         if name not in self.columns().keys():
             raise Exception('{} not an available name in this PhysicalColumnGroup'.format(name))
-        self.__p4 = name
+        self._p4 = name
     
     def p4Name(self):
-        if self.__p4 is None:
+        if self._p4 is None:
             raise Exception('p4 is not set for this PhysicalColumnGroup')
-        return self.__p4
+        return self._p4
     
     def p4Column(self):        
         return self[self.p4Name()]
