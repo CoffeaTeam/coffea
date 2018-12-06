@@ -40,7 +40,6 @@ btag_feval_dims = {0:[1],1:[1],2:[1],3:[2]}
 
 def convert_btag_csv(csvFilePath):
     f = open(csvFilePath).readlines()
-    retVec = {}
     columns = f.pop(0)
     nameandcols = columns.split(';')
     name = nameandcols[0].strip()
@@ -52,10 +51,11 @@ def convert_btag_csv(csvFilePath):
                                 names=tuple(columns),
                                 converters={1:lambda s: s.strip(),
                                             2:lambda s: s.strip(),
-                                           10:lambda s: s.decode().strip(' "')},
+                                           10:lambda s: s.strip(' "')},
                                 delimiter = ',',
                                 skip_header=1,
                                 unpack=True
+                                #encoding='ascii'
                                 )
     
     all_names = corrections[[columns[i] for i in range(4)]]
