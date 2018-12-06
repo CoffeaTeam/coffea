@@ -55,8 +55,7 @@ def convert_btag_csv(csvFilePath):
                                            10:lambda s: s.strip(' "')},
                                 delimiter = ',',
                                 skip_header=1,
-                                unpack=True,
-                                encoding=None
+                                unpack=True
                                 )
     
     all_names = corrections[[columns[i] for i in range(4)]]
