@@ -16,7 +16,7 @@ def numbaize(fstr, varlist):
         Convert function string to numba function
         Supports only simple math for now
         """
-    lstr = "lambda %s: %s" % (",".join(varlist), fstr.decode())
+    lstr = "lambda %s: %s" % (",".join(varlist), fstr)
     func = eval(lstr)
     nfunc = numba.njit(func)
     return nfunc

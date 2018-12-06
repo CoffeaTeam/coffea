@@ -51,11 +51,11 @@ def convert_btag_csv(csvFilePath):
                                 names=tuple(columns),
                                 converters={1:lambda s: s.strip(),
                                             2:lambda s: s.strip(),
-                                           10:lambda s: s.decode().strip(' "')},
+                                           10:lambda s: s.strip(' "')},
                                 delimiter = ',',
                                 skip_header=1,
-                                unpack=True
-                                #encoding='ascii'
+                                unpack=True,
+                                encoding='ascii'
                                 )
     
     all_names = corrections[[columns[i] for i in range(4)]]
