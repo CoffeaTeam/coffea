@@ -4,7 +4,7 @@ from copy import deepcopy
 import numba
 
 ### methods for dealing with b-tag SFs
-@numba.jit
+@numba.jit(forceobj=True)
 def numba_apply_1d(functions, variables):
     out = np.empty(variables.shape)
     for i in range(functions.size):
@@ -34,6 +34,7 @@ class denselookup(object):
         if self._dimension == 0:
             raise Exception('Could not define dimension for {}'.format(whattype))
         self._axes = deepcopy(dims)
+        self._feval_dim = None
         #self._values = deepcopy(values)
         vals_are_strings = 'string' in values.dtype.name
         if not isinstance(values, np.ndarray):
@@ -49,8 +50,10 @@ class denselookup(object):
         else:
             self._values=deepcopy(values)
         # TODO: support for multidimensional functions and functions with variables other than 'x'
-        if len(feval_dim) > 1: raise Exception('lookup_tools.evaluator only accepts 1D functions right now!')
-        self._feval_dim = feval_dim[0]
+        if feval_dim is not None:
+            if len(feval_dim) > 1:
+                raise Exception('lookup_tools.evaluator only accepts 1D functions right now!')
+            self._feval_dim = feval_dim[0]
     
     def __call__(self,*args):        
         inputs = list(args)
