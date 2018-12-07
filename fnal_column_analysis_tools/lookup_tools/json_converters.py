@@ -71,8 +71,8 @@ def convert_histo_json_file(filename):
                 valsdict[vname][iflat] = thevals[vname]
             valsdict[vname] = valsdict[vname].reshape(theshape)
         bins_in_order = []
-        for axis in reversed(names_and_orders[name]):
+        for axis in names_and_orders[name]:
             bins_in_order.append(axes[axis])
         for vname in valsdict:
-            wrapped_up[name+'_'+vname] = (valsdict[vname],tuple(bins_in_order))
+            wrapped_up[name+'_'+vname] = (valsdict[vname].T,tuple(bins_in_order))
     return wrapped_up

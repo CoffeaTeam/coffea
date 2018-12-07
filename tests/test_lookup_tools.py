@@ -72,8 +72,8 @@ def test_histo_json_scalefactors():
     evaluator = extractor.make_evaluator()
     
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
-    # discriminant used for reshaping, zero otherwise
-    test_discr = np.zeros_like(test_eta)
     
-    sf_out = evaluator['testJsonEIDISO_WH/eta_pt_ratio_value'](test_pt, test_eta)
+    sf_out = evaluator['testJsonEIDISO_WH/eta_pt_ratio_value'](test_eta, test_pt)
+    sf_err_out = evaluator['testJsonEIDISO_WH/eta_pt_ratio_error'](test_eta, test_pt)
     print(sf_out)
+    print(sf_err_out)
