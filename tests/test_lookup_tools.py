@@ -9,7 +9,7 @@ from dummy_distributions import dummy_jagged_eta_pt
 
 def test_root_scalefactors():
     extractor = lookup_tools.extractor()
-    extractor.add_weight_sets(["testSF2d scalefactors_Tight_Electron tests/samples/testSF2d.root"])
+    extractor.add_weight_sets(["testSF2d scalefactors_Tight_Electron tests/samples/testSF2d.histo.root"])
     extractor.finalize()
 
     evaluator = extractor.make_evaluator()
@@ -50,9 +50,9 @@ def test_root_scalefactors():
     assert (diff < 1.e-8).all()
 
 
-def test_csv_scalefactors():
+def test_btag_csv_scalefactors():
     extractor = lookup_tools.extractor()
-    extractor.add_weight_sets(["testBTag * tests/samples/testBTagSF.csv"])
+    extractor.add_weight_sets(["testBTag * tests/samples/testBTagSF.btag.csv"])
     extractor.finalize()
 
     evaluator = extractor.make_evaluator()
@@ -63,3 +63,17 @@ def test_csv_scalefactors():
 
     sf_out = evaluator['testBTagCSVv2_1_comb_up_0'](test_eta, test_pt, test_discr)
     print(sf_out)
+
+def test_histo_json_scalefactors():
+    extractor = lookup_tools.extractor()
+    extractor.add_weight_sets(["testJson * tests/samples/EIDISO_WH_out.histo.json"])
+    extractor.finalize()
+    
+    evaluator = extractor.make_evaluator()
+    
+    counts, test_eta, test_pt = dummy_jagged_eta_pt()
+    
+    sf_out = evaluator['testJsonEIDISO_WH/eta_pt_ratio_value'](test_eta, test_pt)
+    sf_err_out = evaluator['testJsonEIDISO_WH/eta_pt_ratio_error'](test_eta, test_pt)
+    print(sf_out)
+    print(sf_err_out)
