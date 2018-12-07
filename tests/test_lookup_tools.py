@@ -75,5 +75,5 @@ def test_histo_json_scalefactors():
     # discriminant used for reshaping, zero otherwise
     test_discr = np.zeros_like(test_eta)
     
-    sf_out = evaluator['testJsonEIDISO_WH/eta_pt_ratio'](test_pt, test_eta)
+    sf_out = evaluator['testJsonEIDISO_WH/eta_pt_ratio_value'](test_pt, test_eta)
     print(sf_out)
