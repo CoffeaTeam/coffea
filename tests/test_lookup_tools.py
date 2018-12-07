@@ -50,7 +50,7 @@ def test_root_scalefactors():
     assert (diff < 1.e-8).all()
 
 
-def test_csv_scalefactors():
+def test_btag_csv_scalefactors():
     extractor = lookup_tools.extractor()
     extractor.add_weight_sets(["testBTag * tests/samples/testBTagSF.csv"])
     extractor.finalize()
@@ -62,4 +62,18 @@ def test_csv_scalefactors():
     test_discr = np.zeros_like(test_eta)
 
     sf_out = evaluator['testBTagCSVv2_1_comb_up_0'](test_eta, test_pt, test_discr)
+    print(sf_out)
+
+def test_histo_json_scalefactors():
+    extractor = lookup_tools.extractor()
+    extractor.add_weight_sets(["testJson * tests/samples/EIDISO_WH_out.json"])
+    extractor.finalize()
+    
+    evaluator = extractor.make_evaluator()
+    
+    counts, test_eta, test_pt = dummy_jagged_eta_pt()
+    # discriminant used for reshaping, zero otherwise
+    test_discr = np.zeros_like(test_eta)
+    
+    sf_out = evaluator['testJsonEIDISO_WH/eta_pt_ratio'](test_pt, test_eta)
     print(sf_out)
