@@ -7,9 +7,12 @@ from fnal_column_analysis_tools.lookup_tools.root_converters import convert_hist
 from fnal_column_analysis_tools.lookup_tools.csv_converters import convert_btag_csv_file
 from fnal_column_analysis_tools.lookup_tools.json_converters import convert_histo_json_file
 
-file_converters = {'root':convert_histo_root_file,
-                   'csv':convert_btag_csv_file,
-                   'json':convert_histo_json_file}
+file_converters = {'root':{'default':convert_histo_root_file,
+                           'histo':convert_histo_root_file},
+                   'csv':{'default':convert_btag_csv_file,
+                          'btag':convert_btag_csv_file},
+                   'json':{'default':convert_histo_json_file,
+                           'histo':convert_histo_json_file}}
 
 class extractor(object):
     def __init__(self):
@@ -48,7 +51,12 @@ class extractor(object):
     
     def import_file(self,file):
         if file not in self._filecache.keys():
-            self._filecache[file] = file_converters[file.split('.')[-1].strip()](file)
+            file_dots = file.split('.')
+            format = file_dots[-1].strip()
+            type = 'default'
+            if len(file_dots) > 2:
+                type = file_dots[-2]
+            self._filecache[file] = file_converters[format][type](file)
     
     def extract_from_file(self, file, name):        
         self.import_file(file)

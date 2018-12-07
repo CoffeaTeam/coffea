@@ -9,7 +9,7 @@ from dummy_distributions import dummy_jagged_eta_pt
 
 def test_root_scalefactors():
     extractor = lookup_tools.extractor()
-    extractor.add_weight_sets(["testSF2d scalefactors_Tight_Electron tests/samples/testSF2d.root"])
+    extractor.add_weight_sets(["testSF2d scalefactors_Tight_Electron tests/samples/testSF2d.histo.root"])
     extractor.finalize()
 
     evaluator = extractor.make_evaluator()
@@ -52,7 +52,7 @@ def test_root_scalefactors():
 
 def test_btag_csv_scalefactors():
     extractor = lookup_tools.extractor()
-    extractor.add_weight_sets(["testBTag * tests/samples/testBTagSF.csv"])
+    extractor.add_weight_sets(["testBTag * tests/samples/testBTagSF.btag.csv"])
     extractor.finalize()
 
     evaluator = extractor.make_evaluator()
@@ -66,7 +66,7 @@ def test_btag_csv_scalefactors():
 
 def test_histo_json_scalefactors():
     extractor = lookup_tools.extractor()
-    extractor.add_weight_sets(["testJson * tests/samples/EIDISO_WH_out.json"])
+    extractor.add_weight_sets(["testJson * tests/samples/EIDISO_WH_out.histo.json"])
     extractor.finalize()
     
     evaluator = extractor.make_evaluator()
