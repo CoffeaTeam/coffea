@@ -77,3 +77,19 @@ def test_histo_json_scalefactors():
     sf_err_out = evaluator['testJsonEIDISO_WH/eta_pt_ratio_error'](test_eta, test_pt)
     print(sf_out)
     print(sf_err_out)
+
+def test_jec_txt_scalefactors():
+    extractor = lookup_tools.extractor()
+    extractor.add_weight_sets(["testJEC * tests/samples/Fall17_17Nov2017_V32_MC_L1FastJet_AK4PF.jec.txt"])
+    extractor.finalize()
+
+    evaluator = extractor.make_evaluator()
+
+    counts, test_eta, test_pt = dummy_jagged_eta_pt()
+    # discriminant used for reshaping, zero otherwise                                                                
+    test_discr = np.zeros_like(test_eta)
+
+    print(evaluator['testJECFall17_17Nov2017_V32_MC_L1FastJet_AK4PF'])
+
+    #sf_out = evaluator['testJECFall17_17Nov2017_V32_MC_L1FastJet_AK4PF'](test_eta, test_pt, test_discr)
+    #print(sf_out)

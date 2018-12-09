@@ -1,8 +1,10 @@
 from fnal_column_analysis_tools.lookup_tools.dense_lookup import dense_lookup
 from fnal_column_analysis_tools.lookup_tools.dense_evaluated_lookup import dense_evaluated_lookup
+from fnal_column_analysis_tools.lookup_tools.jet_energy_corrector import jet_energy_corrector
 
 lookup_types = {'dense_lookup':dense_lookup,
-                'dense_evaluated_lookup':dense_evaluated_lookup
+                'dense_evaluated_lookup':dense_evaluated_lookup,
+                'jet_energy_corrector':jet_energy_corrector
                }
 
 class evaluator(object):

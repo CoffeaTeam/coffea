@@ -58,7 +58,7 @@ def convert_jec_txt_file(jecFilePath):
         columns.append('p%i'%i)
         dtypes.append('<f8')
 
-    pars = np.genfromtxt(jec_fname,
+    pars = np.genfromtxt(jecFilePath,
                          dtype=tuple(dtypes),
                          names=tuple(columns),
                          skip_header=1,
@@ -121,5 +121,8 @@ def convert_jec_txt_file(jecFilePath):
         parm_order.append('p%i'%(i))
     
     wrapped_up = {}
-    wrapped_up[(name,'JEC')] = ()
+    wrapped_up[(name,'jet_energy_corrector')] = (formula,
+                                                 (bins,bin_order),
+                                                 (clamp_mins,clamp_maxs,var_order),
+                                                 (parms,parm_order))
     return wrapped_up
