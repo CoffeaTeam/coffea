@@ -4,9 +4,9 @@ import numpy as np
 btag_feval_dims = {0:[1],1:[1],2:[1],3:[2]}
 
 def convert_btag_csv_file(csvFilePath):
-    f = open(csvFilePath).readlines()
-    columns = f.pop(0)
-    nameandcols = columns.split(';')
+    btag_f = open(csvFilePath)
+    nameandcols = btag_f.readline().split(';')
+    btag_f.close()
     name = nameandcols[0].strip()
     columns = nameandcols[1].strip()
     columns = [column.strip() for column in columns.split(',')]
@@ -56,5 +56,5 @@ def convert_btag_csv_file(csvFilePath):
                 label_decode[i] = str(label_decode[i])
         str_label = '_'.join([name]+label_decode)
         feval_dim = btag_feval_dims[label[0]]
-        wrapped_up[str_label] = (vals,(etaBins,ptBins,discrBins),tuple(feval_dim))
+        wrapped_up[(str_label,'dense_evaluated_lookup')] = (vals,(etaBins,ptBins,discrBins),tuple(feval_dim))
     return wrapped_up
