@@ -74,5 +74,5 @@ def convert_histo_json_file(filename):
         for axis in names_and_orders[name]:
             bins_in_order.append(axes[axis])
         for vname in valsdict:
-            wrapped_up[name+'_'+vname] = (valsdict[vname].T,tuple(bins_in_order))
+            wrapped_up[(name+'_'+vname,'dense_lookup')] = (valsdict[vname].T,tuple(bins_in_order))
     return wrapped_up
