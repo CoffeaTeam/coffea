@@ -3,25 +3,25 @@ environment:
     - PYTHON: "C:\\Python27"
       PYTHON_VERSION: "2.7.10"
       PYTHON_ARCH: "32"
-      AWKWARD: "awkward>=0.5.3"
+      AWKWARD: "awkward>=0.6.2"
       NUMBA: "numba"
 
     - PYTHON: "C:\\Python27"
       PYTHON_VERSION: "2.7.10"
       PYTHON_ARCH: "64"
-      AWKWARD: "awkward>=0.5.3"
+      AWKWARD: "awkward>=0.6.2"
       NUMBA: "numba"
 
     - PYTHON: "C:\\Python36"
       PYTHON_VERSION: "3.6.x"
       PYTHON_ARCH: "32"
-      AWKWARD: "awkward>=0.5.3"
+      AWKWARD: "awkward>=0.6.2"
       NUMBA: "numba"
     
     - PYTHON: "C:\\Python36-x64"
       PYTHON_VERSION: "3.6.x"
       PYTHON_ARCH: "64"
-      AWKWARD: "awkward>=0.5.3"
+      AWKWARD: "awkward>=0.6.2"
       NUMBA: "numba"
 
 install:
