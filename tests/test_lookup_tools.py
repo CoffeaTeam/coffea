@@ -80,16 +80,14 @@ def test_histo_json_scalefactors():
 
 def test_jec_txt_scalefactors():
     extractor = lookup_tools.extractor()
-    extractor.add_weight_sets(["testJEC * tests/samples/Fall17_17Nov2017_V32_MC_L1FastJet_AK4PF.jec.txt"])
+    extractor.add_weight_sets(["testJEC * tests/samples/Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi.jec.txt"])
     extractor.finalize()
 
     evaluator = extractor.make_evaluator()
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
-    # discriminant used for reshaping, zero otherwise                                                                
-    test_discr = np.zeros_like(test_eta)
+    
+    jec_out = evaluator['testJECFall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi'](test_eta,test_pt)
 
-    print(evaluator['testJECFall17_17Nov2017_V32_MC_L1FastJet_AK4PF'])
-
-    #sf_out = evaluator['testJECFall17_17Nov2017_V32_MC_L1FastJet_AK4PF'](test_eta, test_pt, test_discr)
-    #print(sf_out)
+    print(jec_out)
+    

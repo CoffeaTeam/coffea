@@ -64,24 +64,14 @@ class jet_energy_corrector(lookup_base):
         bin_vals  = {argname:args[self._dim_args[argname]] for argname in self._dim_order}
         eval_vals = {argname:args[self._eval_args[argname]] for argname in self._eval_vars}
     
-        print(bin_vals)
-        print(eval_vals)
-    
         #lookup the bins that we care about
         dim1_name = self._dim_order[0]
-        print(dim1_name)
-        print(self._bins[dim1_name])
-        print(bin_vals[dim1_name])
         dim1_indices = np.searchsorted(self._bins[dim1_name],bin_vals[dim1_name],side='right')
-        print(dim1_indices)
         dim1_indices = np.clip(dim1_indices-1,0,self._bins[dim1_name].size-1)
         bin_indices = [dim1_indices]
-        print(self._bins[dim1_name][dim1_indices])
         for binname in self._dim_order[1:]:
             bin_indices.append(masked_bin_eval(bin_indices[0],self._bins[binname],bin_vals[binname]))
-        print(bin_indices)
         bin_tuple = tuple(bin_indices)
-        print(bin_tuple)
                 
         #get clamp values and clip the inputs
         eval_values = []
