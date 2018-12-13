@@ -7,6 +7,7 @@ import numba
 
 from numpy import sqrt,log
 from numpy import maximum as max
+from numpy import minimum as min
 
 def numbaize(fstr, varlist):
     """
@@ -18,13 +19,13 @@ def numbaize(fstr, varlist):
     nfunc = numba.njit(func)
     return nfunc
 
-@numba.jit(nopython=False)
-def masked_bin_eval(dim1_indices, dim1_size, dimN_bins, dimN_vals):
+@numba.njit
+def masked_bin_eval(dim1_indices, dimN_bins, dimN_vals):
     dimN_indices = np.empty_like(dim1_indices)
-    for i in range(dim1_size):
-        dimN_indices[dim1_indices==i] = np.searchsorted(dimN_bins[i],dimN_vals[dim1_indices==i])
-        dimN_indices[dim1_indices==i] = np.clip(dimN_indices[dimN_indices==i]-1,
-                                                0,dimN_bins[i].size-1)
+    for i in np.unique(dim1_indices):
+        dimN_indices[dim1_indices==i] = np.searchsorted(dimN_bins[i],dimN_vals[dim1_indices==i],side='right')
+        dimN_indices[dim1_indices==i] = min(dimN_indices[dim1_indices==i]-1,len(dimN_bins[i])-1)
+        dimN_indices[dim1_indices==i] = max(dimN_indices[dim1_indices==i]-1,0)
     return dimN_indices
 
 class jet_energy_corrector(lookup_base):
@@ -40,6 +41,14 @@ class jet_energy_corrector(lookup_base):
         self._formula_str = formula
         self._formula = numbaize(formula,self._parm_order+self._eval_vars)
     
+        for binname in self._dim_order[1:]:
+            binsaslists = self._bins[binname].tolist()
+            self._bins[binname] = [np.array(bins) for bins in binsaslists]
+        
+        #get the jit to compile if we've got more than one bin dim
+        if len(self._dim_order) > 1:
+            masked_bin_eval(np.array([0]),self._bins[self._dim_order[1]],np.array([0.0]))
+    
         self._signature = deepcopy(self._dim_order)
         for eval in self._eval_vars:
             if eval not in self._signature:
@@ -53,22 +62,30 @@ class jet_energy_corrector(lookup_base):
 
     def _evaluate(self,*args):
         bin_vals  = {argname:args[self._dim_args[argname]] for argname in self._dim_order}
-        eval_vals = {argname:args[self._eval_args[argname]] for argname in self._eval_order}
+        eval_vals = {argname:args[self._eval_args[argname]] for argname in self._eval_vars}
+    
+        print(bin_vals)
+        print(eval_vals)
     
         #lookup the bins that we care about
-        dim1_name = bins_and_orders[0]
-        dim1_indices = np.searchsorted(self._bins[dim1_name],args[bin_vals[dim1_name]],side='right')
+        dim1_name = self._dim_order[0]
+        print(dim1_name)
+        print(self._bins[dim1_name])
+        print(bin_vals[dim1_name])
+        dim1_indices = np.searchsorted(self._bins[dim1_name],bin_vals[dim1_name],side='right')
+        print(dim1_indices)
         dim1_indices = np.clip(dim1_indices-1,0,self._bins[dim1_name].size-1)
         bin_indices = [dim1_indices]
+        print(self._bins[dim1_name][dim1_indices])
         for binname in self._dim_order[1:]:
-            bin_indices.append(masked_bin_eval(bin_indices[0],bin_indices[0].size,
-                                               self._bins[binname],bin_vals[binname]))
+            bin_indices.append(masked_bin_eval(bin_indices[0],self._bins[binname],bin_vals[binname]))
         print(bin_indices)
         bin_tuple = tuple(bin_indices)
+        print(bin_tuple)
                 
         #get clamp values and clip the inputs
         eval_values = []
-        for eval_name in self._eval_order:
+        for eval_name in self._eval_vars:
             clamp_mins = self._eval_clamp_mins[eval_name][bin_tuple]
             clamp_maxs = self._eval_clamp_maxs[eval_name][bin_tuple]
             eval_values.append(np.clip(eval_vals[eval_name],clamp_mins,clamp_maxs))
