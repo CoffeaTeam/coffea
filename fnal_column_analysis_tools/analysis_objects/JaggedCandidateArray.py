@@ -57,13 +57,6 @@ class JaggedCandidateMethods(awkward.Methods):
             del items['eta']
             del items['phi']
             del items['energy']
-        elif 'pt' in argkeys and 'phi' in argkeys and 'pz' in argkeys and 'energy' in argkeys:
-            p4 = uproot_methods.TLorentzVectorArray.from_cylindrical(items['pt'],items['phi'],
-                                                                     items['pz'],items['energy'])
-            del items['pt']
-            del items['phi']
-            del items['pz']
-            del items['energy']
         elif 'px' in argkeys and 'py' in argkeys and 'pz' in argkeys and 'mass' in argkeys:
             p4 = uproot_methods.TLorentzVectorArray.from_xyzm(items['px'],items['py'],
                                                               items['pz'],items['mass'])
@@ -71,6 +64,20 @@ class JaggedCandidateMethods(awkward.Methods):
             del items['py']
             del items['pz']
             del items['mass']
+        elif 'pt' in argkeys and 'phi' in argkeys and 'pz' in argkeys and 'energy' in argkeys:
+            p4 = uproot_methods.TLorentzVectorArray.from_cylindrical(items['pt'],items['phi'],
+                                                                     items['pz'],items['energy'])
+            del items['pt']
+            del items['phi']
+            del items['pz']
+            del items['energy']
+        elif 'px' in argkeys and 'py' in argkeys and 'pz' in argkeys and 'energy' in argkeys:
+            p4 = uproot_methods.TLorentzVectorArray.from_cartesian(items['px'],items['py'],
+                                                                   items['pz'],items['energy'])
+            del items['px']
+            del items['py']
+            del items['pz']
+            del items['energy']
         elif 'p' in argkeys and 'theta' in argkeys and 'phi' in argkeys and 'energy' in argkeys:
             p4 = uproot_methods.TLorentzVectorArray.from_spherical(items['p'],items['theta'],
                                                                    items['phi'],items['energy'])
