@@ -75,9 +75,9 @@ def test_analysis_objects():
     assert 'p4' in apair.columns
     assert 'p4' in across.columns
     
-    admsum = (adistinct.at(0).p4 + adistinct.at(1).p4).mass
-    apmsum = (apair.at(0).p4 + apair.at(1).p4).mass
-    acmsum = (across.at(0).p4 + across.at(1).p4).mass
+    admsum = (adistinct.i0.p4 + adistinct.i1.p4).mass
+    apmsum = (apair.i0.p4 + apair.i1.p4).mass
+    acmsum = (across.i0.p4 + across.i1.p4).mass
     diffadm = np.abs(adistinct.p4.mass - admsum)
     diffapm = np.abs(apair.p4.mass - apmsum)
     diffacm = np.abs(across.p4.mass - acmsum)

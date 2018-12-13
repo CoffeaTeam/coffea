@@ -69,15 +69,69 @@ class JaggedCandidateMethods(awkward.Methods):
     def mass(self):
         return self['__fast_mass']
     
-    def at(self,what):
-        thewhat = super(JaggedCandidateMethods,self).at(what)
-        if 'p4' in thewhat.columns:
-            return self.fromjagged(thewhat)
-        return thewhat
+    @property
+    def i0(self):
+        if 'p4' in self['0'].columns: return self.fromjagged(self['0'])
+        return self['0']
     
-    def pairs(self, same=True):
-        outs = super(JaggedCandidateMethods, self).pairs(same)
-        outs['p4'] = outs.at(0)['p4'] + outs.at(1)['p4']
+    @property
+    def i1(self):
+        if 'p4' in self['1'].columns: return self.fromjagged(self['1'])
+        return self['1']
+
+    @property
+    def i2(self):
+        if 'p4' in self['2'].columns: return self.fromjagged(self['2'])
+        return self['2']
+
+    @property
+    def i3(self):
+        if 'p4' in self['3'].columns: return self.fromjagged(self['3'])
+        return self['3']
+
+    @property
+    def i4(self):
+        if 'p4' in self['4'].columns: return self.fromjagged(self['4'])
+        return self['4']
+    
+    @property
+    def i5(self):
+        if 'p4' in self['5'].columns: return self.fromjagged(self['5'])
+        return self['5']
+
+    @property
+    def i6(self):
+        if 'p4' in self['6'].columns: return self.fromjagged(self['6'])
+        return self['6']
+    
+    @property
+    def i7(self):
+        if 'p4' in self['7'].columns: return self.fromjagged(self['7'])
+        return self['7']
+
+    @property
+    def i8(self):
+        if 'p4' in self['8'].columns: return self.fromjagged(self['8'])
+        return self['8']
+    
+    @property
+    def i9(self):
+        if 'p4' in self['9'].columns: return self.fromjagged(self['9'])
+        return self['9']
+
+    def distincts(self, nested=False):
+        outs = super(JaggedCandidateMethods, self).distincts(nested)
+        outs['p4'] = outs.i0['p4'] + outs.i1['p4']
+        thep4 = outs['p4']
+        outs['__fast_pt'] = awkward.JaggedArray.fromoffsets(outs.offsets,fast_pt(thep4.content))
+        outs['__fast_eta'] = awkward.JaggedArray.fromoffsets(outs.offsets,fast_eta(thep4.content))
+        outs['__fast_phi'] = awkward.JaggedArray.fromoffsets(outs.offsets,fast_phi(thep4.content))
+        outs['__fast_mass'] = awkward.JaggedArray.fromoffsets(outs.offsets,fast_mass(thep4.content))
+        return self.fromjagged(outs)
+
+    def pairs(self, nested=False):
+        outs = super(JaggedCandidateMethods, self).pairs(nested)
+        outs['p4'] = outs.i0['p4'] + outs.i1['p4']
         thep4 = outs['p4']
         outs['__fast_pt'] = awkward.JaggedArray.fromoffsets(outs.offsets,fast_pt(thep4.content))
         outs['__fast_eta'] = awkward.JaggedArray.fromoffsets(outs.offsets,fast_eta(thep4.content))
@@ -85,8 +139,8 @@ class JaggedCandidateMethods(awkward.Methods):
         outs['__fast_mass'] = awkward.JaggedArray.fromoffsets(outs.offsets,fast_mass(thep4.content))
         return self.fromjagged(outs)
     
-    def cross(self, other):
-        outs = super(JaggedCandidateMethods, self).cross(other)
+    def cross(self, other, nested=False):
+        outs = super(JaggedCandidateMethods, self).cross(other,nested)
         #currently JaggedArray.cross() has some funny behavior when it encounters the
         # p4 column and makes some wierd new column... for now I just delete it and reorder
         # everything looks ok after that
@@ -121,6 +175,8 @@ class JaggedCandidateMethods(awkward.Methods):
     def __getattr__(self,what):
         if what in self.columns:
             return self[what]
-        return getattr(super(JaggedCandidateMethods,self),what)
+        thewhat = getattr(super(JaggedCandidateMethods,self),what)
+        if 'p4' in thewhat.columns: return self.fromjagged(thewhat)
+        return thewhat
 
 JaggedCandidateArray = awkward.Methods.mixin(JaggedCandidateMethods, awkward.JaggedArray)
