@@ -26,9 +26,7 @@ def convert_histo_root_file(file):
                     else:
                         converted_file[key[:-2]+'/'+key2[:-2]] = dumFile[key[:-2]][key2[:-2]].numpy()
         elif histType==TGraphAsymmErrors:
-            tempArrX= dumFile[key[:-2]].xvalues
-            tempArrY= dumFile[key[:-2]].yvalues
-            corrDict[key[:-2]] = [tempArrX, tempArrY]
+            continue
         else:
             tempArrX= dumFile[key[:-2]]._fEX
             tempArrY= dumFile[key[:-2]]._fEY
