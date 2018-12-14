@@ -27,6 +27,14 @@ def dummy_events():
     class obj(object):
         def __init__(self):
             self.p4 = thep4
+            self.px = px
+            self.py = py
+            self.pz = pz
+            self.en = energy
+            self.pt = np.hypot(px,py)
+            self.phi = np.arctan2(py,px)
+            self.eta = np.arctanh(pz/np.sqrt(px*px + py*py + pz*pz))
+            self.mass = np.sqrt(np.abs(energy*energy - (px*px + py*py + pz*pz)))
             self.blah = energy*px
             self.count = counts
     
