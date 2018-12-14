@@ -5,6 +5,7 @@ TH1D = "<class 'uproot.rootio.TH1D'>"
 TH2D = "<class 'uproot.rootio.TH2D'>"
 TH1F = "<class 'uproot.rootio.TH1F'>"
 TH2F = "<class 'uproot.rootio.TH2F'>"
+TGraphAsymmErrors = "<class 'uproot.rootio.TGraphAsymmErrors'>"
 RootDir = "<class 'uproot.rootio.ROOTDirectory'>"
 
 def convert_histo_root_file(file):
@@ -25,6 +26,8 @@ def convert_histo_root_file(file):
                         converted_file[(key[:-2]+'/'+key2[:-2],'dense_lookup')] = dumFile[key[:-2]][key2[:-2]].numpy
                     else:
                         converted_file[(key[:-2]+'/'+key2[:-2],'dense_lookup')] = dumFile[key[:-2]][key2[:-2]].numpy()
+        elif histType==TGraphAsymmErrors:
+            continue
         else:
             tempArrX= dumFile[key[:-2]]._fEX
             tempArrY= dumFile[key[:-2]]._fEY
