@@ -269,6 +269,12 @@ class Hist(object):
         out += other
         return out
 
+    def sparse_dim(self):
+        return len(self._sparse_dims)
+
+    def dense_dim(self):
+        return len(self._dense_dims)
+
     # TODO: could be sped up for multi-axis reduction
     # TODO: project_sparse / project_dense ?
     def project(self, axis_name, lo_hi=None, pattern=None, regex=None):
@@ -334,10 +340,8 @@ class Hist(object):
 
     def rebin_sparse(self, axis_name, new_name, new_title, mapping):
         iax = self._sparse_dims.index(axis_name)
-        for key in mapping.keys():
-            mapping[key] = self._sparse_dims[iax]._iloc(mapping[key])
         new_ax = Cat(new_name, new_title)
-        new_dims = self._sparse_dims[:iax] + new_ax + self._sparse_dims[iax+1:]
+        new_dims = self._sparse_dims[:iax] + [new_ax,] + self._sparse_dims[iax+1:]
         out = Hist(self._title, *(new_dims + self._dense_dims))
         if self._sumw2 != None:
             out._init_sumw2()
@@ -361,7 +365,7 @@ class Hist(object):
     # TODO: useful?
     def values(self, sparse=True, errors=False):
         no_ovf = slice(1, -2)
-        if len(self._dense_dims) == 1:
+        if self.dense_dim() == 1:
             if sparse:
                 out = {}
                 for sparse_key in self._sumw.keys():
@@ -376,18 +380,20 @@ class Hist(object):
                 return out
             else:
                 raise NotImplementedError("Make rectangular table for missing sparse dimensions")
-        elif len(self._dense_dims) == 2:
+        elif self.dense_dim() == 2:
             raise NotImplementedError("2D values formatted for plotting with matplotlib")
         else:
             raise NotImplementedError("Higher-than-two-dimensional values for plotting?")
 
     def scale(self, factor, axis=None):
-        if axis is None:
+        if isinstance(factor, numbers.Number) and axis is None:
             for key in self._sumw.keys():
                 self._sumw[key] *= factor
                 if self._sumw2:
                     self._sumw2[key] *= factor
-        elif isinstance(factor, dict) and axis in self._sparse_dims:
+        elif isinstance(factor, dict):
+            if axis not in self._sparse_dims:
+                raise ValueError("No axis %s in %r" % (axis, self))
             iax = self._sparse_dims.index(axis)
             for key in self._sumw.keys():
                 if key[iax] in factor:
@@ -396,4 +402,5 @@ class Hist(object):
                         self._sumw2[key] *= factor[key[iax]]
         elif isinstance(factor, np.ndarray) and axis in self._dense_dims:
             raise NotImplementedError("Scale dense dimension by a factor")
-        raise ValueError("Could not interpret scale factor")
+        else:
+            raise ValueError("Could not interpret scale factor")
