@@ -8,8 +8,7 @@ import numpy as np
 
 
 class Axis(object):
-    # TODO: ABC?
-    # All derived must implement index(scalar), size(), equality
+    # TODO: ABC? All derived must implement index(scalar), size(), equality
     def __init__(self, name, title):
         self._name = name
         self._title = title
@@ -33,10 +32,10 @@ class Axis(object):
         if isinstance(other, Axis):
             if self._name != other._name:
                 return False
-            # TODO: Title?
+            # Title doesn't matter
             return True
         elif isinstance(other, str):
-            # Convenience for finding axis name
+            # Convenient for testing axis in list by name
             if self._name != other:
                 return False
             return True
@@ -176,13 +175,12 @@ class Hist(object):
             dtype: underlying numpy dtype of frequencies
             *axes: positional list of Cat or Bin objects
     """
-    def __init__(self, title, *axes, dtype='d'):
+    def __init__(self, title, dtype='d', *axes):
         self._title = title
         self._dtype = dtype
         if not all(isinstance(ax, Axis) for ax in axes):
             raise TypeError("All axes must be derived from Axis class")
         self._dense_dims = [ax for ax in axes if isinstance(ax, Bin)]
-        # TODO: handle no dense dims
         self._dense_dims_shape = tuple([ax.size for ax in self._dense_dims])
         if np.prod(self._dense_dims_shape) > 1000000:
             warnings.warn("Allocating a large (>1M bin) histogram!", RuntimeWarning)
@@ -365,7 +363,22 @@ class Hist(object):
     # TODO: useful?
     def values(self, sparse=True, errors=False):
         no_ovf = slice(1, -2)
-        if self.dense_dim() == 1:
+        if self.dense_dim() == 0:
+            if sparse:
+                out = {}
+                for sparse_key in self._sumw.keys():
+                    if errors:
+                        if self._sumw2 != None:
+                            errs = np.sqrt(self._sumw2[sparse_key])
+                        else:
+                            errs = np.sqrt(self._sumw[sparse_key])
+                        out[sparse_key] = (self._sumw[sparse_key], errs)
+                    else:
+                        out[sparse_key] = self._sumw[sparse_key]
+                return out
+            else:
+                raise NotImplementedError("Make rectangular table for missing sparse dimensions")
+        elif self.dense_dim() == 1:
             if sparse:
                 out = {}
                 for sparse_key in self._sumw.keys():
