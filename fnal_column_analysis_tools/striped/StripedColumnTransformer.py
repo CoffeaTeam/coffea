@@ -36,26 +36,46 @@ class ColumnGroup(object):
         return self._counts
     
 class PhysicalColumnGroup(ColumnGroup):
-    def __init__(self,events,objName,p4Name,*args):
-        self._p4  = p4Name
-        allargs = [p4Name]
-        allargs.extend(args)        
+    def __init__(self,events,objName,*args,**kwargs):
+        self._hasp4 = False
+        argkeys = kwargs.keys()
+        self._p4 = None
+        if 'p4' in argkeys:
+            self._hasp4 = True
+            self._p4 = {'p4':kwargs['p4']}
+        elif 'pt' in argkeys and 'eta' in argkeys and 'phi' in argkeys and 'mass' in argkeys:
+            self._hasp4 = True
+            self._p4 = {key:kwargs[key] for key in ['pt','eta','phi','mass']}
+        elif 'pt' in argkeys and 'eta' in argkeys and 'phi' in argkeys and 'energy' in argkeys:
+            self._hasp4 = True
+            self._p4 = {key:kwargs[key] for key in ['pt','eta','phi','energy']}
+        elif 'px' in argkeys and 'py' in argkeys and 'pz' in argkeys and 'mass' in argkeys:
+            self._hasp4 = True
+            self._p4 = {key:kwargs[key] for key in ['px','py','pz','mass']}
+        elif 'pt' in argkeys and 'phi' in argkeys and 'pz' in argkeys and 'energy' in argkeys:
+            self._hasp4 = True
+            self._p4 = {key:kwargs[key] for key in ['pt','phi','pz','energy']}
+        elif 'px' in argkeys and 'py' in argkeys and 'pz' in argkeys and 'energy' in argkeys:
+            self._hasp4 = True
+            self._p4 = {key:kwargs[key] for key in ['px','py','pz','energy']}
+        elif 'p' in argkeys and 'theta' in argkeys and 'phi' in argkeys and 'energy' in argkeys:
+            self._hasp4 = True
+            self._p4 = {key:kwargs[key] for key in ['p','theta','phi','energy']}
+        elif 'p3' in argkeys and 'energy' in argkeys:
+            self._hasp4 = True
+            self._p4 = {key:kwargs[key] for key in ['p3','energy']}
+        else:
+            raise Exception('No valid definition of four-momentum found to build JaggedCandidateArray')
+        allargs = list(args) + [val for val in kwargs.values()]
         super(PhysicalColumnGroup,self).__init__(events,objName,*allargs)
-        if p4Name is not None:
-            self.setP4Name(p4Name)
-    
-    def setP4Name(self,name):
-        if name not in self.columns().keys():
-            raise Exception('{} not an available name in this PhysicalColumnGroup'.format(name))
-        self._p4 = name
-    
+        
     def p4Name(self):
         if self._p4 is None:
             raise Exception('p4 is not set for this PhysicalColumnGroup')
-        return self._p4
+        return self._p4.values()
     
-    def p4Column(self):        
-        return self[self.p4Name()]
+    def p4Columns(self):
+        return {key:self.columns()[value] for key,value in self._p4.items()}
     
     def otherColumns(self):
         return self.columnsWithout(self.p4Name())

@@ -44,6 +44,8 @@ def test_analysis_objects():
     addon2 = jca2.ones_like()
     jca1['addon'] = addon1
     jca2['addon'] = addon2
+
+    jca1.add_attributes(addonFlat=addon1.flatten(),addonJagged=addon1)
     
     diffm = np.abs(jca1.p4.mass - jca2.p4.mass)
     assert( (jca1.offsets == jca2.offsets).all() )
