@@ -199,7 +199,7 @@ class Hist(object):
         self._sumw2 = None
     
     def __repr__(self):
-        return "<%s (%s) instance at 0x%0x>" % (self.__class__.__name__, ",".join(d.name for d in self._sparse_dims+self._dense_dims), id(self))
+        return "<%s (%s) instance at 0x%0x>" % (self.__class__.__name__, ",".join(d.name for d in self.axes()), id(self))
 
     def copy(self):
         out = Hist(self._title, *(self._dense_dims + self._sparse_dims))
@@ -360,6 +360,10 @@ class Hist(object):
             return self._sparse_dims[self._sparse_dims.index(axis_name)]
         raise ValueError("No axis named %s found in %r" % (axis_name, self))
 
+    def axes(self):
+        return self._sparse_dims + self._dense_dims
+
+    # TODO: multi-axis
     def rebin_sparse(self, axis_name, new_name, new_title, mapping):
         iax = self._sparse_dims.index(axis_name)
         new_ax = Cat(new_name, new_title)
@@ -385,22 +389,26 @@ class Hist(object):
         return out
 
     # TODO: replace with __getitem__ with all the usual fancy indexing
-    def values(self, errors=False):
-        no_ovf = slice(1, -2)
+    def values(self, sumw2=False, overflow_view=slice(1,-2)):
+        """
+            Returns dict of (sparse axis, ...): frequencies
+            sumw2: if True, frequencies is a tuple (sum weights, sum sqaured weights)
+            overflow_view: pass a slice object to control if underflow (0), overflow(-1), or nanflow(-2) are included
+        """
         def view_dim(arr):
             if self.dense_dim() == 0:
                 return arr
             else:
-                return arr[tuple(no_ovf for _ in range(self.dense_dim()))]
+                return arr[tuple(overflow_view for _ in range(self.dense_dim()))]
 
         out = {}
         for sparse_key in self._sumw.keys():
-            if errors:
+            if sumw2:
                 if self._sumw2 is not None:
-                    errs = np.sqrt(view_dim(self._sumw2[sparse_key]))
+                    w2 = view_dim(self._sumw2[sparse_key])
                 else:
-                    errs = np.sqrt(view_dim(self._sumw[sparse_key]))
-                out[sparse_key] = (view_dim(self._sumw[sparse_key]), errs)
+                    w2 = view_dim(self._sumw[sparse_key])
+                out[sparse_key] = (view_dim(self._sumw[sparse_key]), w2)
             else:
                 out[sparse_key] = view_dim(self._sumw[sparse_key])
         return out
@@ -410,7 +418,7 @@ class Hist(object):
             for key in self._sumw.keys():
                 self._sumw[key] *= factor
                 if self._sumw2:
-                    self._sumw2[key] *= factor
+                    self._sumw2[key] *= factor**2
         elif isinstance(factor, dict):
             if axis not in self._sparse_dims:
                 raise ValueError("No named axis %s in %r" % (axis, self))
@@ -419,7 +427,7 @@ class Hist(object):
                 if key[iax] in factor:
                     self._sumw[key] *= factor[key[iax]]
                     if self._sumw2:
-                        self._sumw2[key] *= factor[key[iax]]
+                        self._sumw2[key] *= factor[key[iax]]**2
         elif isinstance(factor, np.ndarray) and axis in self._dense_dims:
             raise NotImplementedError("Scale dense dimension by a factor")
         else:
