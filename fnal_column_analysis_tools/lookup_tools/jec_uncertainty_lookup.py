@@ -60,8 +60,7 @@ class jec_uncertainty_lookup(lookup_base):
             self._eval_args[argname] = i + len(self._dim_order)
             if argname in self._dim_args.keys():
                 self._eval_args[argname] = self._dim_args[argname]
-        print self._eval_args
-
+    
     def _evaluate(self,*args):
         bin_vals  = {argname:args[self._dim_args[argname]] for argname in self._dim_order}
         eval_vals = {argname:args[self._eval_args[argname]] for argname in self._eval_vars}
