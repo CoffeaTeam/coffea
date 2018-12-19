@@ -10,6 +10,8 @@ import numpy as np
 class Axis(object):
     # TODO: ABC? All derived must implement index(scalar), size(), equality
     def __init__(self, name, title):
+        if name == "weight":
+            raise ValueError("Cannot create axis: 'weight' is a reserved keyword for histograms")
         self._name = name
         self._title = title
 
@@ -70,7 +72,7 @@ class Cat(Axis):
         
     def _ireduce(self, pattern, regex=False):
         if not regex:
-            pattern = pattern.replace('*', '.*')
+            pattern = "^" + pattern.replace('*', '.*')
         m = re.compile(pattern)
         return [v for v in self._categories if m.match(v)]
 
@@ -290,8 +292,6 @@ class Hist(object):
     def dense_dim(self):
         return len(self._dense_dims)
 
-    # TODO: could be sped up for multi-axis reduction
-    # TODO: project_sparse / project_dense ?
     def project(self, axis_name, lo_hi=None, values=None, regex=None):
         """
             Projects current histogram down one dimension
@@ -355,9 +355,9 @@ class Hist(object):
 
     def axis(self, axis_name):
         if axis_name in self._dense_dims:
-            return self._dense_dims[self._dense_dims.index[axis_name]]
+            return self._dense_dims[self._dense_dims.index(axis_name)]
         elif axis_name in self._sparse_dims:
-            return self._sparse_dims[self._sparse_dims.index[axis_name]]
+            return self._sparse_dims[self._sparse_dims.index(axis_name)]
         raise ValueError("No axis named %s found in %r" % (axis_name, self))
 
     def rebin_sparse(self, axis_name, new_name, new_title, mapping):
@@ -384,43 +384,26 @@ class Hist(object):
                         out._sumw2[new_key] = self._sumw2[key].copy()
         return out
 
-    # TODO: useful?
-    def values(self, sparse=True, errors=False):
+    # TODO: replace with __getitem__ with all the usual fancy indexing
+    def values(self, errors=False):
         no_ovf = slice(1, -2)
-        if self.dense_dim() == 0:
-            if sparse:
-                out = {}
-                for sparse_key in self._sumw.keys():
-                    if errors:
-                        if self._sumw2 is not None:
-                            errs = np.sqrt(self._sumw2[sparse_key])
-                        else:
-                            errs = np.sqrt(self._sumw[sparse_key])
-                        out[sparse_key] = (self._sumw[sparse_key], errs)
-                    else:
-                        out[sparse_key] = self._sumw[sparse_key]
-                return out
+        def view_dim(arr):
+            if self.dense_dim() == 0:
+                return arr
             else:
-                raise NotImplementedError("Make rectangular table for missing sparse dimensions")
-        elif self.dense_dim() == 1:
-            if sparse:
-                out = {}
-                for sparse_key in self._sumw.keys():
-                    if errors:
-                        if self._sumw2 is not None:
-                            errs = np.sqrt(self._sumw2[sparse_key][no_ovf])
-                        else:
-                            errs = np.sqrt(self._sumw[sparse_key][no_ovf])
-                        out[sparse_key] = (self._sumw[sparse_key][no_ovf], errs)
-                    else:
-                        out[sparse_key] = self._sumw[sparse_key][no_ovf]
-                return out
+                return arr[tuple(no_ovf for _ in range(self.dense_dim()))]
+
+        out = {}
+        for sparse_key in self._sumw.keys():
+            if errors:
+                if self._sumw2 is not None:
+                    errs = np.sqrt(view_dim(self._sumw2[sparse_key]))
+                else:
+                    errs = np.sqrt(view_dim(self._sumw[sparse_key]))
+                out[sparse_key] = (view_dim(self._sumw[sparse_key]), errs)
             else:
-                raise NotImplementedError("Make rectangular table for missing sparse dimensions")
-        elif self.dense_dim() == 2:
-            raise NotImplementedError("2D values formatted for plotting with matplotlib")
-        else:
-            raise NotImplementedError("Higher-than-two-dimensional values for plotting?")
+                out[sparse_key] = view_dim(self._sumw[sparse_key])
+        return out
 
     def scale(self, factor, axis=None):
         if isinstance(factor, numbers.Number) and axis is None:
