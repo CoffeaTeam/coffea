@@ -29,7 +29,7 @@ def plot(ax, hist, stack=False, param_dict=None):
     if isinstance(ax, plt.Axes) and hist.sparse_dim() == 0:
         raise NotImplementedError("Single dense dimension")
     elif isinstance(ax, plt.Axes) and hist.sparse_dim() == 1:
-        bins = hist._dense_dims[0].bin_boundaries()
+        bins = hist.dense_axes()[0].bin_boundaries()
         all_frequencies = hist.values(sumw2=True, overflow_view=slice(1,-1))
         stacked_freq = None
         out = {}

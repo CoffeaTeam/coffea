@@ -17,7 +17,7 @@ def test_hist():
     nentries = np.sum(counts)
     assert h_regular_bins.project("x").project("y").values(sumw2=True)[()] == (nentries, nentries)
     count_some_bin = np.sum((test_pt>=0.)&(test_pt<10.)&(test_eta>=0.)&(test_eta<0.12))
-    assert h_regular_bins.project("y", lo_hi=(0, 0.12)).values()[()][0] == count_some_bin
+    assert h_regular_bins.project("y", slice(0, 0.12)).values()[()][0] == count_some_bin
     
     animal = hist.Cat("animal", "type of animal")
     vocalization = hist.Cat("vocalization", "onomatopoiea is that how you spell it?")
@@ -28,7 +28,7 @@ def test_hist():
     h_cat_bins.fill(animal="dog", vocalization="ruff")
     assert h_cat_bins.values()[("cat", "meow")] == 2.
     assert h_cat_bins.values(sumw2=True)[("dog", "meow")] == (-7., 27.)
-    assert h_cat_bins.project("vocalization", values=["woof", "ruff"]).values(sumw2=True)[("dog",)] == (101., 10001.)
+    assert h_cat_bins.project("vocalization", ["woof", "ruff"]).values(sumw2=True)[("dog",)] == (101., 10001.)
 
     height = hist.Bin("height", "height [m]", 10, 0, 5)
     h_mascots_1 = hist.Hist("fermi mascot showdown",
@@ -57,7 +57,7 @@ def test_hist():
     h_mascots_2.fill(animal="fox", vocalization="none", height=1., mass=30.)
 
     h_mascots = h_mascots_1 + h_mascots_2
-    assert h_mascots.project("vocalization", values="h*").project("height").project("mass").project("animal").values()[()] == 1040.
+    assert h_mascots.project("vocalization", "h*").project("height").project("mass").project("animal").values()[()] == 1040.
 
     species_class = hist.Cat("species_class", "where the subphylum is vertibrates")
     classes = {
@@ -82,4 +82,4 @@ def test_hist():
 
     assert h_species.axis("vocalization") is vocalization
     assert h_species.axis("height") is height
-    assert h_species.project("vocalization", values="h*").axis("height") is height
+    assert h_species.project("vocalization", "h*").axis("height") is height

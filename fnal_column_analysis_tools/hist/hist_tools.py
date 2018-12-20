@@ -6,6 +6,8 @@ import copy
 import re
 import numpy as np
 
+# Different in python 2 and 3
+_regex_pattern = re.compile("dummy").__class__
 
 class Axis(object):
     # TODO: ABC? All derived must implement index(scalar), size(), equality
@@ -17,15 +19,15 @@ class Axis(object):
 
     def __repr__(self):
         return "<%s (name=%s) instance at 0x%0x>" % (self.__class__.__name__, self._name, id(self))
-    
+
     @property
     def name(self):
         return self._name
-    
+
     @property
     def label(self):
         return self._label
-    
+
     @label.setter
     def label(self, label):
         self._label = label
@@ -43,7 +45,7 @@ class Axis(object):
             return True
         raise TypeError("Cannot compare an Axis with a %r" % other)
 
-    
+
 class Cat(Axis):
     """
         Specify a category axis with name and label
@@ -53,15 +55,17 @@ class Cat(Axis):
     """
     def __init__(self, name, label):
         super(Cat, self).__init__(name, label)
-        self._categories = set()
-    
+        # TODO: SortedList from sortedcontainers ?
+        self._categories = []
+
     def index(self, scalar):
         if not isinstance(scalar, str):
             raise TypeError("Cat axis supports only string categories")
         # TODO: do we need some sort of hashing or just go by string?
-        self._categories.add(scalar)
+        if scalar not in self._categories:
+            self._categories.append(scalar)
         return scalar
-    
+
     @property
     def size(self):
         return len(self._categories)
@@ -69,12 +73,29 @@ class Cat(Axis):
     def __eq__(self, other):
         # Sparse, so as long as name is the same
         return super(Cat, self).__eq__(other)
-        
-    def _ireduce(self, pattern, regex=False):
-        if not regex:
-            pattern = "^" + pattern.replace('*', '.*')
-        m = re.compile(pattern)
-        return [v for v in self._categories if m.match(v)]
+
+    def _ireduce(self, the_slice):
+        self._categories.sort()
+        if isinstance(the_slice, _regex_pattern):
+            return [v for v in self._categories if the_slice.match(v)]
+        elif isinstance(the_slice, str):
+            pattern = "^" + the_slice.replace('*', '.*')
+            m = re.compile(pattern)
+            return [v for v in self._categories if m.match(v)]
+        elif isinstance(the_slice, list):
+            if not all(v in self._categories for v in the_slice):
+                raise KeyError("Not all requested indices present in %r" % self)
+            return the_slice
+        elif isinstance(the_slice, slice):
+            if the_slice.step is not None:
+                raise IndexError("Not sure how to use slice step for categories...")
+            start, stop = 0, len(self._categories)
+            if isinstance(the_slice.start, str):
+                start = self._categories.index(the_slice.start)
+            if isinstance(the_slice.stop, str):
+                stop = self._categories.index(the_slice.stop)
+            return self._categories[start:stop]
+        raise IndexError("Cannot understand slice %r on axis %r" % (the_slice, self))
 
 
 class Bin(Axis):
@@ -96,7 +117,7 @@ class Bin(Axis):
             self._bins = np.array(n_or_arr, dtype='d')
             if not all(np.sort(self._bins)==self._bins):
                 raise ValueError("Binning not sorted!")
-            
+
             self._lo = self._bins[0]
             self._hi = self._bins[-1]
             # to make searchsorted differentiate inf from nan
@@ -110,7 +131,7 @@ class Bin(Axis):
             self._bins = n_or_arr
         else:
             raise TypeError("Cannot understand n_or_arr (nbins or binning array) type %r" % n_or_arr)
-    
+
     def index(self, scalar):
         if (isinstance(scalar, np.ndarray) and len(scalar.shape)==1) or isinstance(scalar, numbers.Number):
             if self._uniform:
@@ -126,7 +147,7 @@ class Bin(Axis):
             else:
                 return np.searchsorted(self._bins, scalar, side='right')
         raise TypeError("Request bin indices with a scalar or 1-D array only")
-    
+
     @property
     def size(self):
         if self._uniform:
@@ -145,22 +166,40 @@ class Bin(Axis):
             return True
         return super(Bin, self).__eq__(other)
 
-    def _ireduce(self, lo_hi):
-        if self._uniform:
-            blo = self.index(lo_hi[0])
-            bhi = self.index(lo_hi[1])
-            blo_ceil = np.clip(np.ceil((lo_hi[0]-self._lo)*self._bins/(self._hi-self._lo)) + 1, 0, self._bins+1)
-            bhi_ceil = np.clip(np.ceil((lo_hi[1]-self._lo)*self._bins/(self._hi-self._lo)) + 1, 0, self._bins+1)
-            if blo == 0 or bhi >= self.size-2:
-                warnings.warn("Reducing along axis %r with a range [%f, %f] that exceeds bin boundaries" % ((self, )+lo_hi), RuntimeWarning)
-            elif blo_ceil != blo or bhi_ceil != bhi:
-                warnings.warn("Reducing along axis %r with a range [%f, %f] between bin boundaries, no interpolation is performed" % ((self,)+lo_hi), RuntimeWarning)
-        else:
-            if not (lo_hi[0] in self._bins and lo_hi[1] in self._bins):
-                warnings.warn("Reducing along axis %r with a range [%f, %f] between bin boundaries, no interpolation is performed" % ((self,)+lo_hi), RuntimeWarning)
-            blo = self.index(lo_hi[0])
-            bhi = self.index(lo_hi[1]) - 1
-        return (blo, bhi+1)
+    def _ireduce(self, the_slice):
+        if isinstance(the_slice, numbers.Number):
+            the_slice = slice(the_slice, the_slice)
+        if isinstance(the_slice, slice):
+            blo, bhi = None, None
+            if the_slice.start is not None:
+                if self._uniform:
+                    blo = self.index(the_slice.start)
+                    blo_ceil = np.clip(np.ceil((the_slice.start-self._lo)*self._bins/(self._hi-self._lo)) + 1, 0, self._bins+1)
+                    if blo == 0:
+                        warnings.warn("Reducing along axis %r: requested start %r exceeds bin boundaries" % (self, the_slice.start), RuntimeWarning)
+                    elif blo_ceil != blo:
+                        warnings.warn("Reducing along axis %r: requested start %r between bin boundaries, no interpolation is performed" % (self, the_slice.start), RuntimeWarning)
+                else:
+                    if the_slice.start not in self._bins:
+                        warnings.warn("Reducing along axis %r: requested start %r between bin boundaries, no interpolation is performed" % (self, the_slice.start), RuntimeWarning)
+                    blo = self.index(the_slice.start)
+            if the_slice.stop is not None:
+                if self._uniform:
+                    bhi = self.index(the_slice.stop)
+                    bhi_ceil = np.clip(np.ceil((the_slice.stop-self._lo)*self._bins/(self._hi-self._lo)) + 1, 0, self._bins+1)
+                    if bhi >= self.size-2:
+                        warnings.warn("Reducing along axis %r: requested stop %r exceeds bin boundaries" % (self, the_slice.stop), RuntimeWarning)
+                    elif bhi_ceil != bhi:
+                        warnings.warn("Reducing along axis %r: requested stop %r between bin boundaries, no interpolation is performed" % (self, the_slice.stop), RuntimeWarning)
+                else:
+                    if the_slice.stop not in self._bins:
+                        warnings.warn("Reducing along axis %r: requested stop %r between bin boundaries, no interpolation is performed" % (self, the_slice.stop), RuntimeWarning)
+                    bhi = self.index(the_slice.stop)
+                # Assume null ranges (start==stop) mean we want the bin containing the value
+                if blo is not None and blo == bhi:
+                    bhi += 1
+            return slice(blo, bhi, the_slice.step)
+        raise IndexError("Cannot understand slice %r on axis %r" % (the_slice, self))
 
     def bin_boundaries(self, extended=False):
         if self._uniform:
@@ -173,7 +212,7 @@ class Bin(Axis):
             out = np.append(out, np.nan)
         return out
 
-            
+
 class Hist(object):
     """
         Specify a multidimensional histogram
@@ -188,6 +227,8 @@ class Hist(object):
         self._dtype = kwargs.pop('dtype', 'd')  # Much nicer in python3 :(
         if not all(isinstance(ax, Axis) for ax in axes):
             raise TypeError("All axes must be derived from Axis class")
+        # if we stably partition axes to sparse, then dense, some things simplify
+        # ..but then the user would then see the order change under them
         self._axes = axes
         self._dense_shape = tuple([ax.size for ax in self._axes if isinstance(ax, Bin)])
         if np.prod(self._dense_shape) > 1000000:
@@ -195,17 +236,19 @@ class Hist(object):
         self._sumw = {}
         # Storage of sumw2 starts at first use of weight keyword in fill()
         self._sumw2 = None
-    
+
     def __repr__(self):
         return "<%s (%s) instance at 0x%0x>" % (self.__class__.__name__, ",".join(d.name for d in self.axes()), id(self))
 
     def copy(self, content=True):
         out = Hist(self._label, *self._axes, dtype=self._dtype)
+        if self._sumw2 is not None:
+            out._sumw2 = {}
         if content:
             out._sumw = copy.deepcopy(self._sumw)
             out._sumw2 = copy.deepcopy(self._sumw2)
         return out
-        
+
     def clear(self):
         self._sumw = {}
         self._sumw2 = None
@@ -240,11 +283,79 @@ class Hist(object):
         self._sumw2 = {}
         for key in self._sumw.keys():
             self._sumw2[key] = self._sumw[key].copy()
-    
+
+    def __iadd__(self, other):
+        if len(self._axes)!=len(other._axes):
+            raise ValueError("Cannot add this histogram with histogram %r of dissimilar dimensions" % other)
+        if set(d.name for d in self._axes) != set(d.name for d in other._axes):
+            raise ValueError("Cannot add this histogram with histogram %r of dissimilar dimensions" % other)
+
+        raxes = other.sparse_axes()
+        def add_dict(l, r):
+            for rkey in r.keys():
+                lkey = tuple(self.axis(rax).index(rval) for rax, rval in zip(raxes, rkey))
+                if lkey in l:
+                    l[lkey] += r[rkey]
+                else:
+                    l[lkey] = copy.deepcopy(r[rkey])
+
+        if self._sumw2 is None and other._sumw2 is None:
+            pass
+        elif self._sumw2 is None:
+            self._init_sumw2()
+            add_dict(self._sumw2, other._sumw2)
+        elif other._sumw2 is None:
+            add_dict(self._sumw2, other._sumw)
+        else:
+            add_dict(self._sumw2, other._sumw2)
+        add_dict(self._sumw, other._sumw)
+        return self
+
+    def __add__(self, other):
+        out = self.copy()
+        out += other
+        return out
+
+    def __getitem__(self, keys):
+        if not isinstance(keys, tuple):
+            keys = (keys,)
+        if len(keys) > len(self._axes):
+            raise IndexError("Too many indices for this histogram")
+        elif len(keys) < len(self._axes):
+            if Ellipsis in keys:
+                idx = keys.index(Ellipsis)
+                slices = (slice(None),)*(len(self._axes)-len(keys)+1)
+                keys = keys[:idx] + slices + keys[idx+1:]
+            else:
+                slices = (slice(None),)*(len(self._axes)-len(keys))
+                keys += slices
+        sparse_idx = []
+        dense_idx = []
+        for s,ax in zip(keys, self._axes):
+            if isinstance(ax, Cat):
+                sparse_idx.append(ax._ireduce(s))
+            else:
+                dense_idx.append(ax._ireduce(s))
+        dense_idx = tuple(dense_idx)
+
+        out = self.copy(content=False)
+        for sparse_key in self._sumw:
+            if not all(k in idx for k,idx in zip(sparse_key, sparse_idx)):
+                continue
+            if sparse_key in out._sumw:
+                out._sumw[sparse_key] += self._sumw[sparse_key][dense_idx]
+                if self._sumw2 is not None:
+                    out._sumw2[sparse_key] += self._sumw2[sparse_key][dense_idx]
+            else:
+                out._sumw[sparse_key] = self._sumw[sparse_key][dense_idx].copy()
+                if self._sumw2 is not None:
+                    out._sumw2[sparse_key] = self._sumw2[sparse_key][dense_idx].copy()
+        return out
+
     def fill(self, **values):
         if not all(d.name in values for d in self._axes):
             raise ValueError("Not all axes specified for this histogram!")
-            
+
         if "weight" in values and self._sumw2 is None:
             self._init_sumw2()
 
@@ -253,7 +364,7 @@ class Hist(object):
             self._sumw[sparse_key] = np.zeros(shape=self._dense_shape, dtype=self._dtype)
             if self._sumw2 is not None:
                 self._sumw2[sparse_key] = np.zeros(shape=self._dense_shape, dtype=self._dtype)
-            
+
         if self.dense_dim() > 0:
             dense_indices = tuple(d.index(values[d.name]) for d in self._axes if isinstance(d, Bin))
             if "weight" in values:
@@ -271,64 +382,25 @@ class Hist(object):
                 self._sumw[sparse_key] += 1.
                 if self._sumw2 is not None:
                     self._sumw2[sparse_key] += 1.
-    
-    def __iadd__(self, other):
-        if len(self._axes)!=len(other._axes):
-            raise ValueError("Cannot add this histogram with histogram %r of dissimilar dimensions" % other)
-        if not all(d1==d2 for (d1,d2) in zip(self._axes, other._axes)):
-            if set(d.name for d in self._axes) == set(d.name for d in other._axes):
-                # Need to permute key order
-                raise NotImplementedError("Adding histograms with shuffled dimensions")
-            raise ValueError("Cannot add this histogram with histogram %r of dissimilar dimensions" % other)
 
-        def add_dict(l, r):
-            for key in r.keys():
-                if key in l:
-                    l[key] += r[key]
-                else:
-                    l[key] = copy.deepcopy(r[key])
-        
-        if self._sumw2 is None and other._sumw2 is None:
-            pass
-        elif self._sumw2 is None:
-            self._init_sumw2()
-            add_dict(self._sumw2, other._sumw2)
-        elif other._sumw2 is None:
-            add_dict(self._sumw2, other._sumw)
-        else:
-            add_dict(self._sumw2, other._sumw2)
-        add_dict(self._sumw, other._sumw)
-        return self
-    
-    def __add__(self, other):
-        out = self.copy()
-        out += other
-        return out
-
-    def project(self, axis_name, lo_hi=None, values=None, regex=None):
+    def sum(self, axis, overflow='all'):
         """
-            Projects current histogram down one dimension
-                axis_name: dimension to reduce on
-                lo_hi: if the dimension is dense, specify range as a tuple (inclusive of bounds)
-                values: if the dimension is sparse, reduce according to either a:
-                    value (wildcard * supported, or regular expression if regex=True)
-                    list of values
+            Projects current histogram down one dimension, summing along an axis
+                axis: axis to integrate (either name or Axis object)
+                overflow: 'none', 'all', 'nonan' (only applies to dense axes)
         """
-        axis = self.axis(axis_name)
+        axis = self.axis(axis)
         reduced_dims = [ax for ax in self._axes if ax != axis]
         out = Hist(self._label, *reduced_dims, dtype=self._dtype)
         if self._sumw2 is not None:
             out._init_sumw2()
         if isinstance(axis, Bin):
-            if values is not None:
-                raise ValueError("Use lo_hi= keyword argument for dense dimensions")
-            s = [slice(None) for _ in self._dense_shape]
+            s = [slice(None)]*self.dense_dim()
             idense = self._idense(axis)
-            if lo_hi is not None:
-                if not isinstance(lo_hi, tuple):
-                    raise TypeError("Specify a tuple (lo, hi) when profiling dense dimensions (boundary is a closed interval)")
-                indices = axis._ireduce(lo_hi)
-                s[idense] = slice(*indices)
+            if overflow == 'none':
+                s[idense] = slice(1, -2)
+            elif overflow == 'nonan':
+                s[idense] = slice(1, -1)
             s = tuple(s)
             for key in self._sumw.keys():
                 out._sumw[key] = np.sum(self._sumw[key][s], axis=idense)
@@ -336,18 +408,8 @@ class Hist(object):
                     out._sumw2[key] = np.sum(self._sumw2[key][s], axis=idense)
             return out
         elif isinstance(axis, Cat):
-            if lo_hi is not None:
-                raise ValueError("Use values= keyword argument for sparse dimensions")
-            if values is None:
-                values = "*"
             isparse = self._isparse(axis)
-            if isinstance(values, str):
-                values = axis._ireduce(values, regex)
-            elif not isinstance(values, list):
-                raise TypeError("Specify a values string or list of strings when profiling sparse dimensions")
             for key in self._sumw.keys():
-                if key[isparse] not in values:
-                    continue
                 new_key = key[:isparse] + key[isparse+1:]
                 if new_key in out._sumw:
                     out._sumw[new_key] += self._sumw[key]
@@ -358,7 +420,16 @@ class Hist(object):
                     if self._sumw2 is not None:
                         out._sumw2[new_key] = self._sumw2[key].copy()
             return out
-        raise ValueError("No axis named %s found in %r" % (axis_name, self))
+
+    def project(self, axis_name, the_slice=slice(None)):
+        """
+            Projects current histogram down one dimension
+                axis_name: dimension to reduce on
+                the_slice: any slice, list, string, or other object that the axis will understand
+        """
+        axis = self.axis(axis_name)
+        full_slice = tuple(slice(None) if ax != axis else the_slice for ax in self._axes)
+        return self[full_slice].sum(axis)
 
     def profile(self, axis_name):
         raise NotImplementedError("Profiling along an axis")
@@ -374,7 +445,7 @@ class Hist(object):
         if not isinstance(new_axis, Cat):
             raise TypeError("New axis must be a sparse axis")
         isparse = self._isparse(old_axis)
-        new_dims = [ax if ax != old_axis else new_axis for ax in self._axes]
+        new_dims = self._axes[:isparse] + (new_axis,) + self._axes[isparse+1:]
         out = Hist(self._label, *new_dims, dtype=self._dtype)
         if self._sumw2 is not None:
             out._init_sumw2()
