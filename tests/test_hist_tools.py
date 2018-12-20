@@ -65,7 +65,7 @@ def test_hist():
     }
     h_subphylum = h_mascots.rebin_sparse("animal", new_name="subphylum", new_title="subphylum", mapping=subphylums)
 
-    assert h_subphylum.project("vocalization").values().keys() == [('birds',), ('mammals',)]
+    assert list(h_subphylum.project("vocalization").values().keys()) == [('birds',), ('mammals',)]
     nbirds_bin = np.sum((goose_h>=0.5)&(goose_h<1)&(goose_w>10)&(goose_w<100))
     nbirds_bin += np.sum((crane_h>=0.5)&(crane_h<1)&(crane_w>10)&(crane_w<100))
     assert h_subphylum.project("vocalization").values()[('birds',)][1,2] == nbirds_bin
