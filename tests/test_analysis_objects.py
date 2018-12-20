@@ -7,7 +7,7 @@ import uproot_methods
 import awkward
 import numpy as np
 
-from dummy_distributions import dummy_four_momenta
+from dummy_distributions import dummy_four_momenta, gen_reco_TLV
 
 def test_analysis_objects():
     counts, px, py, pz, energy = dummy_four_momenta()
@@ -101,4 +101,11 @@ def test_analysis_objects():
     assert (diffm < 1e-8).flatten().all()
     assert (diffaddon == -1).flatten().all()
 
-
+    #test gen-reco matching
+    gen, reco = gen_reco_TLV()
+    jca_gen = JaggedCandidateArray.candidatesfromcounts(gen.counts,p4=gen.flatten())
+    jca_reco = JaggedCandidateArray.candidatesfromcounts(reco.counts,p4=reco.flatten())
+    assert (jca_gen.argmatch(jca_reco).flatten().flatten().sum()==3)
+    assert (jca_gen.argmatch(jca_reco,0.3).flatten().flatten().sum()==2)
+    assert (jca_gen.match(jca_reco, 0.3).flatten().flatten().sum()==3)
+    assert (jca_gen.match(jca_reco,0.3,0.1).flatten().flatten().sum()==2)
