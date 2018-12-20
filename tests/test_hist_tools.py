@@ -59,26 +59,27 @@ def test_hist():
     h_mascots = h_mascots_1 + h_mascots_2
     assert h_mascots.project("vocalization", values="h*").project("height").project("mass").project("animal").values()[()] == 1040.
 
-    subphylums = {
+    species_class = hist.Cat("species_class", "where the subphylum is vertibrates")
+    classes = {
         'birds': ['goose', 'crane', 'robin'],
         'mammals': ['bison', 'fox', 'human'],
     }
-    h_subphylum = h_mascots.rebin_sparse("animal", new_name="subphylum", new_title="subphylum", mapping=subphylums)
+    h_species = h_mascots.rebin_sparse(species_class, old_axis="animal", mapping=classes)
 
-    assert list(h_subphylum.project("vocalization").values().keys()) == [('birds',), ('mammals',)]
+    assert list(h_species.project("vocalization").values().keys()) == [('birds',), ('mammals',)]
     nbirds_bin = np.sum((goose_h>=0.5)&(goose_h<1)&(goose_w>10)&(goose_w<100))
     nbirds_bin += np.sum((crane_h>=0.5)&(crane_h<1)&(crane_w>10)&(crane_w<100))
-    assert h_subphylum.project("vocalization").values()[('birds',)][1,2] == nbirds_bin
-    tally = h_subphylum.project("mass").project("height").project("vocalization").values()
+    assert h_species.project("vocalization").values()[('birds',)][1,2] == nbirds_bin
+    tally = h_species.project("mass").project("height").project("vocalization").values()
     assert tally[('birds',)] == 1004.
     assert tally[('mammals',)] == 91.
 
-    h_subphylum.scale({"honk": 0.1, "huff": 0.9}, axis="vocalization")
-    h_subphylum.scale(5.)
-    tally = h_subphylum.project("mass").project("height").project("vocalization").values()
+    h_species.scale({"honk": 0.1, "huff": 0.9}, axis="vocalization")
+    h_species.scale(5.)
+    tally = h_species.project("mass").project("height").project("vocalization").values()
     assert tally[('birds',)] == 520.
     assert tally[('mammals',)] == 435.
 
-    assert h_subphylum.axis("vocalization") is vocalization
-    assert h_subphylum.axis("height") is height
-    assert h_subphylum.project("vocalization", values="h*").axis("height") is height
+    assert h_species.axis("vocalization") is vocalization
+    assert h_species.axis("height") is height
+    assert h_species.project("vocalization", values="h*").axis("height") is height

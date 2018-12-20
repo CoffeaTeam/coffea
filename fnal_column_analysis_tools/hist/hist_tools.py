@@ -9,11 +9,11 @@ import numpy as np
 
 class Axis(object):
     # TODO: ABC? All derived must implement index(scalar), size(), equality
-    def __init__(self, name, title):
+    def __init__(self, name, label):
         if name == "weight":
             raise ValueError("Cannot create axis: 'weight' is a reserved keyword for histograms")
         self._name = name
-        self._title = title
+        self._label = label
 
     def __repr__(self):
         return "<%s (name=%s) instance at 0x%0x>" % (self.__class__.__name__, self._name, id(self))
@@ -23,18 +23,18 @@ class Axis(object):
         return self._name
     
     @property
-    def title(self):
-        return self._title
+    def label(self):
+        return self._label
     
-    @title.setter
-    def title(self, title):
-        self._title = title
+    @label.setter
+    def label(self, label):
+        self._label = label
 
     def __eq__(self, other):
         if isinstance(other, Axis):
             if self._name != other._name:
                 return False
-            # Title doesn't matter
+            # label doesn't matter
             return True
         elif isinstance(other, str):
             # Convenient for testing axis in list by name
@@ -46,13 +46,13 @@ class Axis(object):
     
 class Cat(Axis):
     """
-        Specify a category axis with name and title
+        Specify a category axis with name and label
             name: is used as a keyword in histogram filling, immutable
-            title: describes the meaning of the axis, can be changed
+            label: describes the meaning of the axis, can be changed
         Number of categories is arbitrary, and filled sparsely
     """
-    def __init__(self, name, title):
-        super(Cat, self).__init__(name, title)
+    def __init__(self, name, label):
+        super(Cat, self).__init__(name, label)
         self._categories = set()
     
     def index(self, scalar):
@@ -79,9 +79,9 @@ class Cat(Axis):
 
 class Bin(Axis):
     """
-        Specify a binned axis with name and title, and binning
+        Specify a binned axis with name and label, and binning
             name: is used as a keyword in histogram filling, immutable
-            title: describes the meaning of the axis, can be changed
+            label: describes the meaning of the axis, can be changed
             n_or_arr: number of bins, if uniform binning, otherwise a list (or numpy 1D array) of bin boundaries
             lo: if uniform binning, minimum value
             hi: if uniform binning, maximum value
@@ -89,8 +89,8 @@ class Bin(Axis):
             0 = underflow, n+1 = overflow, n+2 = nanflow
         Bin boundaries are [lo, hi)
     """
-    def __init__(self, name, title, n_or_arr, lo=None, hi=None):
-        super(Bin, self).__init__(name, title)
+    def __init__(self, name, label, n_or_arr, lo=None, hi=None):
+        super(Bin, self).__init__(name, label)
         if isinstance(n_or_arr, (list, np.ndarray)):
             self._uniform = False
             self._bins = np.array(n_or_arr, dtype='d')
@@ -177,14 +177,14 @@ class Bin(Axis):
 class Hist(object):
     """
         Specify a multidimensional histogram
-            title: description of meaning of frequencies (axis descriptions specified in axis constructor)
+            label: description of meaning of frequencies (axis descriptions specified in axis constructor)
             dtype: underlying numpy dtype of frequencies
             *axes: positional list of Cat or Bin objects
     """
-    def __init__(self, title, *axes, **kwargs):
-        if not isinstance(title, str):
-            raise TypeError("Title must be a string")
-        self._title = title
+    def __init__(self, label, *axes, **kwargs):
+        if not isinstance(label, str):
+            raise TypeError("label must be a string")
+        self._label = label
         self._dtype = kwargs.pop('dtype', 'd')  # Much nicer in python3 :(
         if not all(isinstance(ax, Axis) for ax in axes):
             raise TypeError("All axes must be derived from Axis class")
@@ -202,7 +202,7 @@ class Hist(object):
         return "<%s (%s) instance at 0x%0x>" % (self.__class__.__name__, ",".join(d.name for d in self.axes()), id(self))
 
     def copy(self):
-        out = Hist(self._title, *(self._dense_dims + self._sparse_dims))
+        out = Hist(self._label, *(self._dense_dims + self._sparse_dims))
         out._sumw = copy.deepcopy(self._sumw)
         out._sumw2 = copy.deepcopy(self._sumw2)
         return out
@@ -306,7 +306,7 @@ class Hist(object):
                 raise ValueError("Use lo_hi= keyword argument for dense dimensions")
             iax = self._dense_dims.index(axis_name)
             reduced_dims = self._dense_dims[:iax] + self._dense_dims[iax+1:]
-            out = Hist(self._title, *(self._sparse_dims + reduced_dims))
+            out = Hist(self._label, *(self._sparse_dims + reduced_dims))
             if self._sumw2 is not None:
                 out._init_sumw2()
             s = [slice(None) for _ in self._dense_dims]
@@ -328,7 +328,7 @@ class Hist(object):
                 values = "*"
             iax = self._sparse_dims.index(axis_name)
             reduced_dims = self._sparse_dims[:iax] + self._sparse_dims[iax+1:]
-            out = Hist(self._title, *(reduced_dims + self._dense_dims))
+            out = Hist(self._label, *(reduced_dims + self._dense_dims))
             if self._sumw2 is not None:
                 out._init_sumw2()
             if isinstance(values, str):
@@ -363,16 +363,23 @@ class Hist(object):
     def axes(self):
         return self._sparse_dims + self._dense_dims
 
-    # TODO: multi-axis
-    def rebin_sparse(self, axis_name, new_name, new_title, mapping):
-        iax = self._sparse_dims.index(axis_name)
-        new_ax = Cat(new_name, new_title)
-        new_dims = self._sparse_dims[:iax] + [new_ax,] + self._sparse_dims[iax+1:]
-        out = Hist(self._title, *(new_dims + self._dense_dims))
+    # TODO: multi-axis?
+    def rebin_sparse(self, new_axis, old_axis, mapping):
+        """
+            Rebin sparse dimension(s)
+                new_axis: A new sparse dimension
+                old_axis: axis or name of axis which is being re-binned
+                mapping: dictionary of {'new_bin': ['old_bin_1', 'old_bin_2', ...], ...}
+        """
+        if not isinstance(new_axis, Cat):
+            raise TypeError("New axis must be a sparse axis")
+        iax = self._sparse_dims.index(old_axis)
+        new_dims = self._sparse_dims[:iax] + [new_axis,] + self._sparse_dims[iax+1:]
+        out = Hist(self._label, *(new_dims + self._dense_dims))
         if self._sumw2 is not None:
             out._init_sumw2()
         for new_cat in mapping.keys():
-            new_idx = new_ax.index(new_cat)
+            new_idx = new_axis.index(new_cat)
             old_indices = mapping[new_cat]
             for key in self._sumw.keys():
                 if key[iax] not in old_indices:
