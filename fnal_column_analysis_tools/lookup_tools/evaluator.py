@@ -1,10 +1,14 @@
-from fnal_column_analysis_tools.lookup_tools.dense_lookup import dense_lookup
-from fnal_column_analysis_tools.lookup_tools.dense_evaluated_lookup import dense_evaluated_lookup
-from fnal_column_analysis_tools.lookup_tools.jet_energy_corrector import jet_energy_corrector
+from .dense_lookup import dense_lookup
+from .dense_evaluated_lookup import dense_evaluated_lookup
+from .jme_standard_function import jme_standard_function
+from .jersf_lookup import jersf_lookup
+from .jec_uncertainty_lookup import jec_uncertainty_lookup
 
 lookup_types = {'dense_lookup':dense_lookup,
                 'dense_evaluated_lookup':dense_evaluated_lookup,
-                'jet_energy_corrector':jet_energy_corrector
+                'jme_standard_function':jme_standard_function,
+                'jersf_lookup':jersf_lookup,
+                'jec_uncertainty_lookup':jec_uncertainty_lookup
                }
 
 class evaluator(object):

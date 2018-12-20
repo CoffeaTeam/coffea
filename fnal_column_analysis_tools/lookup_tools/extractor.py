@@ -1,13 +1,12 @@
 from __future__ import print_function
 
 import numpy as np
-from fnal_column_analysis_tools.lookup_tools.evaluator import evaluator
+from .evaluator import evaluator
 
-from fnal_column_analysis_tools.lookup_tools.root_converters import convert_histo_root_file
-from fnal_column_analysis_tools.lookup_tools.csv_converters import convert_btag_csv_file
-from fnal_column_analysis_tools.lookup_tools.json_converters import convert_histo_json_file
-from fnal_column_analysis_tools.lookup_tools.txt_converters import convert_jec_txt_file
-
+from .root_converters import convert_histo_root_file
+from .csv_converters import convert_btag_csv_file
+from .json_converters import convert_histo_json_file
+from .txt_converters import *
 
 file_converters = {'root':{'default':convert_histo_root_file,
                            'histo':convert_histo_root_file},
@@ -16,7 +15,10 @@ file_converters = {'root':{'default':convert_histo_root_file,
                    'json':{'default':convert_histo_json_file,
                            'histo':convert_histo_json_file},
                    'txt':{'default':convert_jec_txt_file,
-                          'jec':convert_jec_txt_file}
+                          'jec':convert_jec_txt_file,
+                          'jersf':convert_jersf_txt_file,
+                          'jr':convert_jr_txt_file,
+                          'junc':convert_junc_txt_file}
                    }
 
 class extractor(object):
@@ -40,7 +42,8 @@ class extractor(object):
         # expect file to be formatted <local name> <name> <weights file>
         # allow * * <file> and <prefix> * <file> to do easy imports of whole file
         for weightdesc in weightsdescs:
-            temp = weightdesc.split(' ')
+            if weightdesc[0] == '#': continue #skip comment lines
+            temp = weightdesc.strip().split(' ')
             if len(temp) != 3: 
                 raise Exception('"{}" not formatted as "<local name> <name> <weights file>"'.format(weightdesc))
             (local_name,name,file) = tuple(temp)
