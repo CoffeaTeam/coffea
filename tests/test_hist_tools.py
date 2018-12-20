@@ -76,9 +76,9 @@ def test_hist():
 
     h_species.scale({"honk": 0.1, "huff": 0.9}, axis="vocalization")
     h_species.scale(5.)
-    tally = h_species.project("mass").project("height").project("vocalization").values()
-    assert tally[('birds',)] == 520.
-    assert tally[('mammals',)] == 435.
+    tally = h_species.project("mass").project("height").project("vocalization").values(sumw2=True)
+    assert tally[('birds',)] == (520., 350.)
+    assert tally[('mammals',)] == (435., 25*(40*(0.9**2)+20*(2.5**2)+1))
 
     assert h_species.axis("vocalization") is vocalization
     assert h_species.axis("height") is height

@@ -208,11 +208,8 @@ class Hist(object):
         return out
         
     def clear(self):
-        for key in self._sumw.keys():
-            self._sumw[key].fill(0.)
-        if self._sumw2 is not None:
-            for key in self._sumw2.keys():
-                self._sumw2[key].fill(0.)
+        self._sumw = {}
+        self._sumw2 = None
 
     def _init_sumw2(self):
         self._sumw2 = {}
@@ -271,14 +268,16 @@ class Hist(object):
                 else:
                     l[key] = copy.deepcopy(r[key])
         
-        add_dict(self._sumw, other._sumw)
-        if self._sumw2 is not None and other._sumw2 is not None:
+        if self._sumw2 is None and other._sumw2 is None:
+            pass
+        elif self._sumw2 is None:
+            self._init_sumw2()
             add_dict(self._sumw2, other._sumw2)
-        elif other._sumw2 is not None:
-            self._sumw2 = copy.deepcopy(other._sumw2)
-            for key in self._sumw:
-                if key not in self._sumw2:
-                    self._sumw2[key] = self._sumw[key].copy()
+        elif other._sumw2 is None:
+            add_dict(self._sumw2, other._sumw)
+        else:
+            add_dict(self._sumw2, other._sumw2)
+        add_dict(self._sumw, other._sumw)
         return self
     
     def __add__(self, other):
@@ -421,11 +420,12 @@ class Hist(object):
         return out
 
     def scale(self, factor, axis=None):
+        if self._sumw2 is None:
+            self._init_sumw2()
         if isinstance(factor, numbers.Number) and axis is None:
             for key in self._sumw.keys():
                 self._sumw[key] *= factor
-                if self._sumw2:
-                    self._sumw2[key] *= factor**2
+                self._sumw2[key] *= factor**2
         elif isinstance(factor, dict):
             if axis not in self._sparse_dims:
                 raise ValueError("No named axis %s in %r" % (axis, self))
@@ -433,8 +433,7 @@ class Hist(object):
             for key in self._sumw.keys():
                 if key[iax] in factor:
                     self._sumw[key] *= factor[key[iax]]
-                    if self._sumw2:
-                        self._sumw2[key] *= factor[key[iax]]**2
+                    self._sumw2[key] *= factor[key[iax]]**2
         elif isinstance(factor, np.ndarray) and axis in self._dense_dims:
             raise NotImplementedError("Scale dense dimension by a factor")
         else:
