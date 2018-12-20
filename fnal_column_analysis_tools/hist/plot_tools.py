@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats
 import copy
@@ -20,6 +19,7 @@ def centers(bins):
     return bins[:-1] + np.diff(bins)/2.
 
 def plot(ax, hist, stack=False, param_dict=None):
+    import matplotlib.pyplot as plt
     if hist.dense_dim() != 1:
         raise NotImplementedError("plot() supports only histograms with a single dense dimension")
 

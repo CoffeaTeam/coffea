@@ -15,7 +15,7 @@ def test_hist():
     h_regular_bins = hist.Hist("regular joe", hist.Bin("x", "x", 20, 0, 200), hist.Bin("y", "why", 50, -3, 3))
     h_regular_bins.fill(x=test_pt, y=test_eta)
     nentries = np.sum(counts)
-    assert h_regular_bins.project("x").project("y").values(errors=True)[()] == (nentries, np.sqrt(nentries))
+    assert h_regular_bins.project("x").project("y").values(sumw2=True)[()] == (nentries, nentries)
     count_some_bin = np.sum((test_pt>=0.)&(test_pt<10.)&(test_eta>=0.)&(test_eta<0.12))
     assert h_regular_bins.project("y", lo_hi=(0, 0.12)).values()[()][0] == count_some_bin
     
@@ -27,8 +27,8 @@ def test_hist():
     h_cat_bins.fill(animal="dog", vocalization="woof", weight=100.)
     h_cat_bins.fill(animal="dog", vocalization="ruff")
     assert h_cat_bins.values()[("cat", "meow")] == 2.
-    assert h_cat_bins.values(errors=True)[("dog", "meow")] == (-7., np.sqrt(27.))
-    assert h_cat_bins.project("vocalization", values=["woof", "ruff"]).values(errors=True)[("dog",)] == (101., np.sqrt(10001.))
+    assert h_cat_bins.values(sumw2=True)[("dog", "meow")] == (-7., 27.)
+    assert h_cat_bins.project("vocalization", values=["woof", "ruff"]).values(sumw2=True)[("dog",)] == (101., 10001.)
 
     height = hist.Bin("height", "height [m]", 10, 0, 5)
     h_mascots_1 = hist.Hist("fermi mascot showdown",
