@@ -6,6 +6,7 @@ TH2D = "<class 'uproot.rootio.TH2D'>"
 TH1F = "<class 'uproot.rootio.TH1F'>"
 TH2F = "<class 'uproot.rootio.TH2F'>"
 TGraphAsymmErrors = "<class 'uproot.rootio.TGraphAsymmErrors'>"
+TGraph2D = "<class 'uproot.rootio.TGraph2D'>"
 RootDir = "<class 'uproot.rootio.ROOTDirectory'>"
 
 def convert_histo_root_file(file):
@@ -21,12 +22,20 @@ def convert_histo_root_file(file):
         elif histType == RootDir: #means there are subdirectories wihin main directory
             for j, key2 in enumerate(dumFile[key[:-2]].keys()):
                 histType2 = str(type(dumFile[key[:-2]][key2[:-2]]))
-                if histType2 == TH1D or histType2 == TH2D or histType2==TH1F or histTyp2==TH2F:
+                if histType2 == TH1D or histType2 == TH2D or histType2==TH1F or histType2==TH2F:
                     if not ("bound method" in str(dumFile[key[:-2]][key2[:-2]].numpy)):
                         converted_file[(key[:-2]+'/'+key2[:-2],'dense_lookup')] = dumFile[key[:-2]][key2[:-2]].numpy
                     else:
                         converted_file[(key[:-2]+'/'+key2[:-2],'dense_lookup')] = dumFile[key[:-2]][key2[:-2]].numpy()
-        elif histType==TGraphAsymmErrors:
+                elif histType == RootDir:
+                    for k, key3 in enumerate(dumFile[key[:-2]][key2[:-2]].keys()):
+                        histType3 = str(type(dumFile[key[:-2]][key2[:-2]][key3[:-2]]))
+                        if histType3 == TH1D or histType3 == TH2D or histType3==TH1F or histType3==TH2F:
+                            if not ("bound method" in str(dumFile[key[:-2]][key2[:-2]][key3[:-2]].numpy)):
+                                converted_file[(key[:-2]+'/'+key2[:-2]+'/'+key3[:-2],'dense_lookup')] = dumFile[key[:-2]][key2[:-2]][key3[:-2]].numpy
+                            else:
+                                converted_file[(key[:-2]+'/'+key2[:-2]+'/'+key3[:-2],'dense_lookup')] = dumFile[key[:-2]][key2[:-2]][key3[:-2]].numpy()
+        elif histType==TGraphAsymmErrors or histType==TGraph2D:
             continue
         else:
             tempArrX= dumFile[key[:-2]]._fEX
