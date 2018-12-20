@@ -66,7 +66,7 @@ def test_hist():
     }
     h_species = h_mascots.rebin_sparse(species_class, old_axis="animal", mapping=classes)
 
-    assert list(h_species.project("vocalization").values().keys()) == [('birds',), ('mammals',)]
+    assert set(h_species.project("vocalization").values().keys()) == set([('birds',), ('mammals',)])
     nbirds_bin = np.sum((goose_h>=0.5)&(goose_h<1)&(goose_w>10)&(goose_w<100))
     nbirds_bin += np.sum((crane_h>=0.5)&(crane_h<1)&(crane_w>10)&(crane_w<100))
     assert h_species.project("vocalization").values()[('birds',)][1,2] == nbirds_bin
