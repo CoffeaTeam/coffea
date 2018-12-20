@@ -188,12 +188,10 @@ class Hist(object):
         self._dtype = kwargs.pop('dtype', 'd')  # Much nicer in python3 :(
         if not all(isinstance(ax, Axis) for ax in axes):
             raise TypeError("All axes must be derived from Axis class")
-        self._dense_dims = [ax for ax in axes if isinstance(ax, Bin)]
-        self._dense_dims_shape = tuple([ax.size for ax in self._dense_dims])
-        if np.prod(self._dense_dims_shape) > 1000000:
+        self._axes = axes
+        self._dense_shape = tuple([ax.size for ax in self._axes if isinstance(ax, Bin)])
+        if np.prod(self._dense_shape) > 1000000:
             warnings.warn("Allocating a large (>1M bin) histogram!", RuntimeWarning)
-        # TODO: other sparse dimensions besides Cat could be used?
-        self._sparse_dims = [ax for ax in axes if isinstance(ax, Cat)]
         self._sumw = {}
         # Storage of sumw2 starts at first use of weight keyword in fill()
         self._sumw2 = None
@@ -201,15 +199,42 @@ class Hist(object):
     def __repr__(self):
         return "<%s (%s) instance at 0x%0x>" % (self.__class__.__name__, ",".join(d.name for d in self.axes()), id(self))
 
-    def copy(self):
-        out = Hist(self._label, *(self._dense_dims + self._sparse_dims))
-        out._sumw = copy.deepcopy(self._sumw)
-        out._sumw2 = copy.deepcopy(self._sumw2)
+    def copy(self, content=True):
+        out = Hist(self._label, *self._axes, dtype=self._dtype)
+        if content:
+            out._sumw = copy.deepcopy(self._sumw)
+            out._sumw2 = copy.deepcopy(self._sumw2)
         return out
         
     def clear(self):
         self._sumw = {}
         self._sumw2 = None
+
+    def axis(self, axis_name):
+        if axis_name in self._axes:
+            return self._axes[self._axes.index(axis_name)]
+        raise KeyError("No axis named %s found in %r" % (axis_name, self))
+
+    def axes(self):
+        return self._axes
+
+    def dense_dim(self):
+        return len(self._dense_shape)
+
+    def sparse_dim(self):
+        return len(self._axes) - self.dense_dim()
+
+    def dense_axes(self):
+        return [ax for ax in self._axes if isinstance(ax, Bin)]
+
+    def sparse_axes(self):
+        return [ax for ax in self._axes if isinstance(ax, Cat)]
+
+    def _idense(self, axis):
+        return self.dense_axes().index(axis)
+
+    def _isparse(self, axis):
+        return self.sparse_axes().index(axis)
 
     def _init_sumw2(self):
         self._sumw2 = {}
@@ -217,20 +242,20 @@ class Hist(object):
             self._sumw2[key] = self._sumw[key].copy()
     
     def fill(self, **values):
-        if not all(d.name in values for d in self._dense_dims+self._sparse_dims):
+        if not all(d.name in values for d in self._axes):
             raise ValueError("Not all axes specified for this histogram!")
             
         if "weight" in values and self._sumw2 is None:
             self._init_sumw2()
 
-        sparse_key = tuple(d.index(values[d.name]) for d in self._sparse_dims)
+        sparse_key = tuple(d.index(values[d.name]) for d in self.sparse_axes())
         if sparse_key not in self._sumw:
-            self._sumw[sparse_key] = np.zeros(shape=self._dense_dims_shape, dtype=self._dtype)
+            self._sumw[sparse_key] = np.zeros(shape=self._dense_shape, dtype=self._dtype)
             if self._sumw2 is not None:
-                self._sumw2[sparse_key] = np.zeros(shape=self._dense_dims_shape, dtype=self._dtype)
+                self._sumw2[sparse_key] = np.zeros(shape=self._dense_shape, dtype=self._dtype)
             
         if self.dense_dim() > 0:
-            dense_indices = tuple(d.index(values[d.name]) for d in self._dense_dims)
+            dense_indices = tuple(d.index(values[d.name]) for d in self._axes if isinstance(d, Bin))
             if "weight" in values:
                 np.add.at(self._sumw[sparse_key], dense_indices, values["weight"])
                 np.add.at(self._sumw2[sparse_key], dense_indices, values["weight"]**2)
@@ -248,18 +273,13 @@ class Hist(object):
                     self._sumw2[sparse_key] += 1.
     
     def __iadd__(self, other):
-        if len(self._dense_dims)!=len(other._dense_dims):
-            raise ValueError("Cannot add this histogram with histogram %r of dissimilar dense dimension" % other)
-        if not all(d1==d2 for (d1,d2) in zip(self._dense_dims, other._dense_dims)):
-            if set(d.name for d in self._dense_dims) == set(d.name for d in other._dense_dims):
-                # Need to reorder dense array
-                raise NotImplementedError("Adding histograms with shuffled dense dimensions")
-            raise ValueError("Cannot add this histogram with histogram %r (mismatch in dense dimensions)" % other)
-        if not all(d1==d2 for (d1,d2) in zip(self._sparse_dims, other._sparse_dims)):
-            if set(d.name for d in self._sparse_dims) == set(d.name for d in other._sparse_dims):
+        if len(self._axes)!=len(other._axes):
+            raise ValueError("Cannot add this histogram with histogram %r of dissimilar dimensions" % other)
+        if not all(d1==d2 for (d1,d2) in zip(self._axes, other._axes)):
+            if set(d.name for d in self._axes) == set(d.name for d in other._axes):
                 # Need to permute key order
-                raise NotImplementedError("Adding histograms with shuffled sparse dimensions")
-            raise ValueError("Cannot add this histogram with histogram %r (mismatch in sparse dimensions)" % other)
+                raise NotImplementedError("Adding histograms with shuffled dimensions")
+            raise ValueError("Cannot add this histogram with histogram %r of dissimilar dimensions" % other)
 
         def add_dict(l, r):
             for key in r.keys():
@@ -285,12 +305,6 @@ class Hist(object):
         out += other
         return out
 
-    def sparse_dim(self):
-        return len(self._sparse_dims)
-
-    def dense_dim(self):
-        return len(self._dense_dims)
-
     def project(self, axis_name, lo_hi=None, values=None, regex=None):
         """
             Projects current histogram down one dimension
@@ -300,44 +314,41 @@ class Hist(object):
                     value (wildcard * supported, or regular expression if regex=True)
                     list of values
         """
-        if axis_name in self._dense_dims:
+        axis = self.axis(axis_name)
+        reduced_dims = [ax for ax in self._axes if ax != axis]
+        out = Hist(self._label, *reduced_dims, dtype=self._dtype)
+        if self._sumw2 is not None:
+            out._init_sumw2()
+        if isinstance(axis, Bin):
             if values is not None:
                 raise ValueError("Use lo_hi= keyword argument for dense dimensions")
-            iax = self._dense_dims.index(axis_name)
-            reduced_dims = self._dense_dims[:iax] + self._dense_dims[iax+1:]
-            out = Hist(self._label, *(self._sparse_dims + reduced_dims))
-            if self._sumw2 is not None:
-                out._init_sumw2()
-            s = [slice(None) for _ in self._dense_dims]
+            s = [slice(None) for _ in self._dense_shape]
+            idense = self._idense(axis)
             if lo_hi is not None:
                 if not isinstance(lo_hi, tuple):
                     raise TypeError("Specify a tuple (lo, hi) when profiling dense dimensions (boundary is a closed interval)")
-                indices = self._dense_dims[iax]._ireduce(lo_hi)
-                s[iax] = slice(*indices)
+                indices = axis._ireduce(lo_hi)
+                s[idense] = slice(*indices)
             s = tuple(s)
             for key in self._sumw.keys():
-                out._sumw[key] = np.sum(self._sumw[key][s], axis=iax)
+                out._sumw[key] = np.sum(self._sumw[key][s], axis=idense)
                 if self._sumw2 is not None:
-                    out._sumw2[key] = np.sum(self._sumw2[key][s], axis=iax)
+                    out._sumw2[key] = np.sum(self._sumw2[key][s], axis=idense)
             return out
-        elif axis_name in self._sparse_dims:
+        elif isinstance(axis, Cat):
             if lo_hi is not None:
                 raise ValueError("Use values= keyword argument for sparse dimensions")
             if values is None:
                 values = "*"
-            iax = self._sparse_dims.index(axis_name)
-            reduced_dims = self._sparse_dims[:iax] + self._sparse_dims[iax+1:]
-            out = Hist(self._label, *(reduced_dims + self._dense_dims))
-            if self._sumw2 is not None:
-                out._init_sumw2()
+            isparse = self._isparse(axis)
             if isinstance(values, str):
-                values = self._sparse_dims[iax]._ireduce(values, regex)
+                values = axis._ireduce(values, regex)
             elif not isinstance(values, list):
                 raise TypeError("Specify a values string or list of strings when profiling sparse dimensions")
             for key in self._sumw.keys():
-                if key[iax] not in values:
+                if key[isparse] not in values:
                     continue
-                new_key = key[:iax] + key[iax+1:]
+                new_key = key[:isparse] + key[isparse+1:]
                 if new_key in out._sumw:
                     out._sumw[new_key] += self._sumw[key]
                     if self._sumw2 is not None:
@@ -352,16 +363,6 @@ class Hist(object):
     def profile(self, axis_name):
         raise NotImplementedError("Profiling along an axis")
 
-    def axis(self, axis_name):
-        if axis_name in self._dense_dims:
-            return self._dense_dims[self._dense_dims.index(axis_name)]
-        elif axis_name in self._sparse_dims:
-            return self._sparse_dims[self._sparse_dims.index(axis_name)]
-        raise ValueError("No axis named %s found in %r" % (axis_name, self))
-
-    def axes(self):
-        return self._sparse_dims + self._dense_dims
-
     # TODO: multi-axis?
     def rebin_sparse(self, new_axis, old_axis, mapping):
         """
@@ -372,18 +373,18 @@ class Hist(object):
         """
         if not isinstance(new_axis, Cat):
             raise TypeError("New axis must be a sparse axis")
-        iax = self._sparse_dims.index(old_axis)
-        new_dims = self._sparse_dims[:iax] + [new_axis,] + self._sparse_dims[iax+1:]
-        out = Hist(self._label, *(new_dims + self._dense_dims))
+        isparse = self._isparse(old_axis)
+        new_dims = [ax if ax != old_axis else new_axis for ax in self._axes]
+        out = Hist(self._label, *new_dims, dtype=self._dtype)
         if self._sumw2 is not None:
             out._init_sumw2()
         for new_cat in mapping.keys():
             new_idx = new_axis.index(new_cat)
             old_indices = mapping[new_cat]
             for key in self._sumw.keys():
-                if key[iax] not in old_indices:
+                if key[isparse] not in old_indices:
                     continue
-                new_key = key[:iax] + (new_idx,) + key[iax+1:]
+                new_key = key[:isparse] + (new_idx,) + key[isparse+1:]
                 if new_key in out._sumw:
                     out._sumw[new_key] += self._sumw[key]
                     if self._sumw2 is not None:
@@ -427,14 +428,14 @@ class Hist(object):
                 self._sumw[key] *= factor
                 self._sumw2[key] *= factor**2
         elif isinstance(factor, dict):
-            if axis not in self._sparse_dims:
-                raise ValueError("No named axis %s in %r" % (axis, self))
-            iax = self._sparse_dims.index(axis)
+            axis = self.axis(axis)
+            isparse = self._isparse(axis)
             for key in self._sumw.keys():
-                if key[iax] in factor:
-                    self._sumw[key] *= factor[key[iax]]
-                    self._sumw2[key] *= factor[key[iax]]**2
-        elif isinstance(factor, np.ndarray) and axis in self._dense_dims:
+                if key[isparse] in factor:
+                    self._sumw[key] *= factor[key[isparse]]
+                    self._sumw2[key] *= factor[key[isparse]]**2
+        elif isinstance(factor, np.ndarray):
+            axis = self.axis(axis)
             raise NotImplementedError("Scale dense dimension by a factor")
         else:
             raise TypeError("Could not interpret scale factor")
