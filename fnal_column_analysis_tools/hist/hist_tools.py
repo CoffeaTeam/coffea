@@ -201,16 +201,22 @@ class Bin(Axis):
             return slice(blo, bhi, the_slice.step)
         raise IndexError("Cannot understand slice %r on axis %r" % (the_slice, self))
 
-    def bin_boundaries(self, extended=False):
+    def edges(self, extended=False):
+        """
+            Bin boundaries
+                extended: create overflow and underflow bins by adding a bin of same width to each end
+        """
         if self._uniform:
             out = np.linspace(self._lo, self._hi, self._bins+1)
         else:
             out = self._bins.copy()
         if extended:
-            out = np.insert(out, 0, -np.inf)
-            out = np.append(out, np.inf)
-            out = np.append(out, np.nan)
+            out = np.r_[2*out[0]-out[1], out, 2*out[-1]-out[-2]]
         return out
+
+    def centers(self, extended=False):
+        edges = self.edges(extended)
+        return (edges[:-1]+edges[1:])/2
 
 
 class Hist(object):
