@@ -486,49 +486,59 @@ class Hist(object):
                 if self._sumw2 is not None:
                     self._sumw2[sparse_key] += 1.
 
-    def sum(self, axis, overflow='all'):
+    def sum(self, *axes, **kwargs):
         """
-            Projects current histogram down one dimension, summing along an axis
-                axis: axis to integrate (either name or Axis object)
+            Integrates out a set of axes, producing a new histogram
+                *axes: axes to integrate out (either name or Axis object)
                 overflow: 'none', 'all', 'nonan' (only applies to dense axes)
         """
-        axis = self.axis(axis)
-        reduced_dims = [ax for ax in self._axes if ax != axis]
+        overflow = kwargs.pop('overflow', 'all')
+        axes = [self.axis(ax) for ax in axes]
+        reduced_dims = [ax for ax in self._axes if ax not in axes]
         out = Hist(self._label, *reduced_dims, dtype=self._dtype)
         if self._sumw2 is not None:
             out._init_sumw2()
-        if isinstance(axis, DenseAxis):
-            s = [slice(None)]*self.dense_dim()
-            idense = self._idense(axis)
-            if overflow == 'none':
-                s[idense] = slice(1, -2)
-            elif overflow == 'nonan':
-                s[idense] = slice(1, -1)
-            s = tuple(s)
-            for key in self._sumw.keys():
-                out._sumw[key] = np.sum(self._sumw[key][s], axis=idense)
+
+        sparse_drop = []
+        dense_slice = [slice(None)]*self.dense_dim()
+        dense_sum_dim = []
+        for axis in axes:
+            if isinstance(axis, DenseAxis):
+                idense = self._idense(axis)
+                dense_sum_dim.append(idense)
+                if overflow == 'none':
+                    dense_slice[idense] = slice(1, -2)
+                elif overflow == 'nonan':
+                    dense_slice[idense] = slice(1, -1)
+            elif isinstance(axis, SparseAxis):
+                isparse = self._isparse(axis)
+                sparse_drop.append(isparse)
+        dense_slice = tuple(dense_slice)
+        dense_sum_dim = tuple(dense_sum_dim)
+
+        def dense_op(array):
+            if len(dense_sum_dim) > 0:
+                return np.sum(array[dense_slice], axis=dense_sum_dim)
+            return array
+
+        for key in self._sumw.keys():
+            new_key = tuple(k for i,k in enumerate(key) if i not in sparse_drop)
+            if new_key in out._sumw:
+                out._sumw[new_key] += dense_op(self._sumw[key])
                 if self._sumw2 is not None:
-                    out._sumw2[key] = np.sum(self._sumw2[key][s], axis=idense)
-            return out
-        elif isinstance(axis, SparseAxis):
-            isparse = self._isparse(axis)
-            for key in self._sumw.keys():
-                new_key = key[:isparse] + key[isparse+1:]
-                if new_key in out._sumw:
-                    out._sumw[new_key] += self._sumw[key]
-                    if self._sumw2 is not None:
-                        out._sumw2[new_key] += self._sumw2[key]
-                else:
-                    out._sumw[new_key] = self._sumw[key].copy()
-                    if self._sumw2 is not None:
-                        out._sumw2[new_key] = self._sumw2[key].copy()
-            return out
+                    out._sumw2[new_key] += dense_op(self._sumw2[key])
+            else:
+                out._sumw[new_key] = dense_op(self._sumw[key]).copy()
+                if self._sumw2 is not None:
+                    out._sumw2[new_key] = dense_op(self._sumw2[key]).copy()
+        return out
 
     def project(self, axis_name, the_slice=slice(None)):
         """
             Projects current histogram down one dimension
                 axis_name: dimension to reduce on
                 the_slice: any slice, list, string, or other object that the axis will understand
+            N.B. the more idiomatic way is to slice and sum, although this may be more readable
         """
         axis = self.axis(axis_name)
         full_slice = tuple(slice(None) if ax != axis else the_slice for ax in self._axes)

@@ -15,7 +15,7 @@ def test_hist():
     h_regular_bins = hist.Hist("regular joe", hist.Bin("x", "x", 20, 0, 200), hist.Bin("y", "why", 50, -3, 3))
     h_regular_bins.fill(x=test_pt, y=test_eta)
     nentries = np.sum(counts)
-    assert h_regular_bins.project("x").project("y").values(sumw2=True)[()] == (nentries, nentries)
+    assert h_regular_bins.sum("x", "y").values(sumw2=True)[()] == (nentries, nentries)
     count_some_bin = np.sum((test_pt>=0.)&(test_pt<10.)&(test_eta>=0.)&(test_eta<0.12))
     assert h_regular_bins.project("y", slice(0, 0.12)).values()[()][0] == count_some_bin
     
@@ -57,7 +57,7 @@ def test_hist():
     h_mascots_2.fill(animal="fox", vocalization="none", height=1., mass=30.)
 
     h_mascots = h_mascots_1 + h_mascots_2
-    assert h_mascots.project("vocalization", "h*").project("height").project("mass").project("animal").values()[()] == 1040.
+    assert h_mascots.project("vocalization", "h*").sum("height", "mass", "animal").values()[()] == 1040.
 
     species_class = hist.Cat("species_class", "where the subphylum is vertibrates")
     classes = {
@@ -70,13 +70,13 @@ def test_hist():
     nbirds_bin = np.sum((goose_h>=0.5)&(goose_h<1)&(goose_w>10)&(goose_w<100))
     nbirds_bin += np.sum((crane_h>=0.5)&(crane_h<1)&(crane_w>10)&(crane_w<100))
     assert h_species.project("vocalization").values()[('birds',)][1,2] == nbirds_bin
-    tally = h_species.project("mass").project("height").project("vocalization").values()
+    tally = h_species.sum("mass", "height", "vocalization").values()
     assert tally[('birds',)] == 1004.
     assert tally[('mammals',)] == 91.
 
     h_species.scale({"honk": 0.1, "huff": 0.9}, axis="vocalization")
     h_species.scale(5.)
-    tally = h_species.project("mass").project("height").project("vocalization").values(sumw2=True)
+    tally = h_species.sum("mass", height, vocalization).values(sumw2=True)
     assert tally[('birds',)] == (520., 350.)
     assert tally[('mammals',)] == (435., 25*(40*(0.9**2)+20*(2.5**2)+1))
 
