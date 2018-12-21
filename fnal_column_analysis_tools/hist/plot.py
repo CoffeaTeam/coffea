@@ -41,8 +41,8 @@ def plot(ax, hist, stack=False, overflow=False, line_opts=None, fill_opts=None, 
         raise ValueError("plot() can only support up to one sparse dimension (to stack or overlay)")
 
     axis = hist.dense_axes()[0]
-    ax.set_xlabel(axis._label)  # TODO: property
-    ax.set_ylabel(hist._label)
+    ax.set_xlabel(axis.label)
+    ax.set_ylabel(hist.label)
     edges = axis.edges(extended=overflow)
     # Only errorbar uses centers, and if we draw a step too, we need
     #   the step to go to the edge of the end bins, so place edges
@@ -56,7 +56,7 @@ def plot(ax, hist, stack=False, overflow=False, line_opts=None, fill_opts=None, 
         # step expects edges to match frequencies (why?!)
         sumw = np.r_[sumw, sumw[-1]]
         sumw2 = np.r_[sumw2, sumw2[-1]]
-        label = sparse_key[0] if len(sparse_key)>0 else hist._label
+        label = sparse_key[0] if len(sparse_key)>0 else hist.label
         out[label] = []
         first_color = None
         if stack:
