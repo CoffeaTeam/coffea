@@ -547,37 +547,41 @@ class Hist(object):
     def profile(self, axis_name):
         raise NotImplementedError("Profiling along an axis")
 
-    # TODO: multi-axis?
-    def rebin_sparse(self, new_axis, old_axis, mapping):
+    def group(self, new_axis, old_axes, mapping):
         """
-            Rebin sparse dimension(s)
+            Group a set of slices on old axes into a single new axis
                 new_axis: A new sparse dimension
-                old_axis: axis or name of axis which is being re-binned
-                mapping: dictionary of {'new_bin': ['old_bin_1', 'old_bin_2', ...], ...}
+                old_axes: axis or tuple of axes which are being grouped
+                mapping: dictionary of {'new_bin': (slice, ...), ...}
+                    where each slice is on the axes being re-binned
         """
         if not isinstance(new_axis, SparseAxis):
             raise TypeError("New axis must be a sparse axis")
-        old_axis = self.axis(old_axis)
-        isparse = self._isparse(old_axis)
-        new_dims = self._axes[:isparse] + (new_axis,) + self._axes[isparse+1:]
+        if not isinstance(old_axes, tuple):
+            old_axes = (old_axes,)
+        old_axes = [self.axis(ax) for ax in old_axes]
+        old_indices = [i for i, ax in enumerate(self._axes) if ax in old_axes]
+        new_dims = [new_axis] + [ax for ax in self._axes if ax not in old_axes]
         out = Hist(self._label, *new_dims, dtype=self._dtype)
         if self._sumw2 is not None:
             out._init_sumw2()
         for new_cat in mapping.keys():
+            the_slice = mapping[new_cat]
+            if not isinstance(the_slice, tuple):
+                the_slice = (the_slice,)
+            if len(the_slice) != len(old_axes):
+                raise Exception("Slicing does not match number of axes being rebinned")
+            full_slice = [slice(None)]*len(self._axes)
+            for idx, s in zip(old_indices, the_slice):
+                full_slice[idx] = s
+            full_slice = tuple(full_slice)
+            reduced_hist = self[full_slice].sum(*old_axes)
             new_idx = new_axis.index(new_cat)
-            old_indices = [old_axis.index(v) for v in mapping[new_cat]]
-            for key in self._sumw.keys():
-                if key[isparse] not in old_indices:
-                    continue
-                new_key = key[:isparse] + (new_idx,) + key[isparse+1:]
-                if new_key in out._sumw:
-                    out._sumw[new_key] += self._sumw[key]
-                    if self._sumw2 is not None:
-                        out._sumw2[new_key] += self._sumw2[key]
-                else:
-                    out._sumw[new_key] = self._sumw[key].copy()
-                    if self._sumw2 is not None:
-                        out._sumw2[new_key] = self._sumw2[key].copy()
+            for key in reduced_hist._sumw:
+                new_key = (new_idx,) + key
+                out._sumw[new_key] = reduced_hist._sumw[key]
+                if self._sumw is not None:
+                    out._sumw2[new_key] = reduced_hist._sumw2[key]
         return out
 
     def values(self, sumw2=False, overflow_view=slice(1,-2)):

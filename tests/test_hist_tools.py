@@ -61,10 +61,10 @@ def test_hist():
 
     species_class = hist.Cat("species_class", "where the subphylum is vertibrates")
     classes = {
-        'birds': ['goose', 'crane', 'robin'],
-        'mammals': ['bison', 'fox', 'human'],
+        'birds': ['goose', 'crane'],
+        'mammals': ['bison', 'fox'],
     }
-    h_species = h_mascots.rebin_sparse(species_class, old_axis="animal", mapping=classes)
+    h_species = h_mascots.group(species_class, "animal", classes)
 
     assert set(h_species.project("vocalization").values().keys()) == set([('birds',), ('mammals',)])
     nbirds_bin = np.sum((goose_h>=0.5)&(goose_h<1)&(goose_w>10)&(goose_w<100))
@@ -83,3 +83,14 @@ def test_hist():
     assert h_species.axis("vocalization") is vocalization
     assert h_species.axis("height") is height
     assert h_species.project("vocalization", "h*").axis("height") is height
+
+    tall_class = hist.Cat("tall_class", "species class (species above 1m)")
+    mapping = {
+        'birds': (['goose', 'crane'], slice(1., None)),
+        'mammals': (['bison', 'fox'], slice(1., None)),
+    }
+    h_tall = h_mascots.group(tall_class, (animal, height), mapping)
+    tall_bird_count = np.sum(goose_h>=1.) + np.sum(crane_h>=1)
+    assert h_tall.sum("mass", "vocalization").values()[('birds',)] == tall_bird_count
+    tall_mammal_count = np.sum(adult_bison_h>=1.) + np.sum(baby_bison_h>=1) + 1
+    assert h_tall.sum("mass", "vocalization").values()[('mammals',)] == tall_mammal_count
