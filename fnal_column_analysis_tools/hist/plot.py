@@ -3,7 +3,7 @@ import numpy as np
 import scipy.stats
 import copy
 
-from .hist_tools import Hist, Bin, Cat
+import matplotlib.pyplot as plt
 
 # Plotting is always terrible
 # Let's try our best to follow matplotlib idioms
@@ -33,7 +33,6 @@ def poisson_interval(sumw, sumw2, sigma=1):
 
 
 def plot(ax, hist, stack=False, overflow=False, line_opts=None, fill_opts=None, error_opts=None):
-    import matplotlib.pyplot as plt
     if hist.dense_dim() != 1:
         raise NotImplementedError("plot() supports only histograms with a single dense dimension")
     if not isinstance(ax, plt.Axes):
