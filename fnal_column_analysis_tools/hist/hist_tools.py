@@ -86,11 +86,15 @@ class SparseAxis(Axis):
     """
         SparseAxis: ABC for a sparse axis
         Derived should implement:
-            index(identifier): return a hash
+            index(identifier): return a hashable object for indexing
             __eq__(axis): axis has same definition (not necessarily same bins)
-            __getitem__(hash): return an identifier
+            __getitem__(index): return an identifier
             _ireduce(slice): return a list of hashes, slice is arbitrary
+
         What we really want here is a hashlist with some slice sugar on top
+        It is usually the case that the identifier is already hashable,
+          in which case index and __getitem__ are trivial, but this mechanism
+          supports mapping a range of identifiers into a single bin
     """
     pass
 
@@ -101,6 +105,7 @@ class Cat(SparseAxis):
             name: is used as a keyword in histogram filling, immutable
             label: describes the meaning of the axis, can be changed
         Number of categories is arbitrary, and filled sparsely
+        Identifiers are strings, comparison is lexicographical
     """
     def __init__(self, name, label):
         super(Cat, self).__init__(name, label)
@@ -110,17 +115,16 @@ class Cat(SparseAxis):
     def index(self, identifier):
         if not isinstance(identifier, str):
             raise TypeError("Cat axis supports only string categories")
-        # TODO: do we need some sort of hashing or just go by string?
         if identifier not in self._categories:
             self._categories.append(identifier)
-        return identifier + "_wahoo"
+        return identifier
 
     def __eq__(self, other):
         # Sparse, so as long as name is the same
         return super(Cat, self).__eq__(other)
 
     def __getitem__(self, index):
-        identifier = index[:-6]
+        identifier = index
         if identifier not in self._categories:
             raise KeyError("No identifier %r in this Category axis")
         return identifier
