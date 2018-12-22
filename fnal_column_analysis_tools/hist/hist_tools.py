@@ -104,13 +104,15 @@ class Cat(SparseAxis):
         Specify a category axis with name and label
             name: is used as a keyword in histogram filling, immutable
             label: describes the meaning of the axis, can be changed
+            sorting: axis sorting, 'identifier' or 'placement' order
         Number of categories is arbitrary, and filled sparsely
-        Identifiers are strings, comparison is lexicographical
+        Identifiers are strings
     """
-    def __init__(self, name, label):
+    def __init__(self, name, label, sorting='identifier'):
         super(Cat, self).__init__(name, label)
         # TODO: SortedList from sortedcontainers ?
         self._categories = []
+        self._sorting = sorting
 
     def index(self, identifier):
         if not isinstance(identifier, str):
@@ -130,7 +132,8 @@ class Cat(SparseAxis):
         return identifier
 
     def _ireduce(self, the_slice):
-        self._categories.sort()
+        if self._sorting == 'identifier':
+            self._categories.sort()
         out = None
         if isinstance(the_slice, _regex_pattern):
             out = [v for v in self._categories if the_slice.match(v)]
@@ -156,10 +159,14 @@ class Cat(SparseAxis):
             raise IndexError("Cannot understand slice %r on axis %r" % (the_slice, self))
         return [self.index(v) for v in out]
 
-
     @property
     def size(self):
         return len(self._categories)
+
+    def identifiers(self):
+        if self._sorting == 'identifier':
+            self._categories.sort()
+        return self._categories
 
 
 class DenseAxis(Axis):
@@ -169,7 +176,8 @@ class DenseAxis(Axis):
             index(identifier): return an index
             __eq__(axis): axis has same definition and binning
             __getitem__(index): return an identifier
-            _ireduce(slice): return a slice or list of indices, input slice is arbitrary
+            _ireduce(slice): return a slice or list of indices, input slice to be interpred as values
+            reduced(islice): return a new axis with binning corresponding to the index slice (from _ireduce)
     """
     pass
 
@@ -249,6 +257,8 @@ class Bin(DenseAxis):
     def _ireduce(self, the_slice):
         if isinstance(the_slice, numbers.Number):
             the_slice = slice(the_slice, the_slice)
+        elif isinstance(the_slice, Interval):
+            the_slice = slice(the_slice._lo, the_slice._hi)
         if isinstance(the_slice, slice):
             blo, bhi = None, None
             if the_slice.start is not None:
@@ -257,10 +267,10 @@ class Bin(DenseAxis):
                     blo_ceil = np.clip(np.ceil((the_slice.start-self._lo)*self._bins/(self._hi-self._lo)) + 1, 0, self._bins+1)
                     if blo == 0:
                         warnings.warn("Reducing along axis %r: requested start %r exceeds bin boundaries" % (self, the_slice.start), RuntimeWarning)
-                    elif blo_ceil != blo:
+                    elif blo_ceil != blo and the_slice.start != -np.inf:
                         warnings.warn("Reducing along axis %r: requested start %r between bin boundaries, no interpolation is performed" % (self, the_slice.start), RuntimeWarning)
                 else:
-                    if the_slice.start not in self._bins:
+                    if the_slice.start not in self._bins and the_slice.start != -np.inf:
                         warnings.warn("Reducing along axis %r: requested start %r between bin boundaries, no interpolation is performed" % (self, the_slice.start), RuntimeWarning)
                     blo = self.index(the_slice.start)
             if the_slice.stop is not None:
@@ -269,19 +279,27 @@ class Bin(DenseAxis):
                     bhi_ceil = np.clip(np.ceil((the_slice.stop-self._lo)*self._bins/(self._hi-self._lo)) + 1, 0, self._bins+1)
                     if bhi >= self.size-2:
                         warnings.warn("Reducing along axis %r: requested stop %r exceeds bin boundaries" % (self, the_slice.stop), RuntimeWarning)
-                    elif bhi_ceil != bhi:
+                    elif bhi_ceil != bhi and the_slice.stop != np.inf:
                         warnings.warn("Reducing along axis %r: requested stop %r between bin boundaries, no interpolation is performed" % (self, the_slice.stop), RuntimeWarning)
                 else:
-                    if the_slice.stop not in self._bins:
+                    if the_slice.stop not in self._bins and the_slice.stop != np.inf:
                         warnings.warn("Reducing along axis %r: requested stop %r between bin boundaries, no interpolation is performed" % (self, the_slice.stop), RuntimeWarning)
                     bhi = self.index(the_slice.stop)
                 # Assume null ranges (start==stop) mean we want the bin containing the value
                 if blo is not None and blo == bhi:
                     bhi += 1
+            if the_slice.step is not None:
+                raise NotImplementedError("Step slicing can be interpreted as a rebin factor")
             return slice(blo, bhi, the_slice.step)
         elif isinstance(the_slice, list) and all(isinstance(v, Interval) for v in the_slice):
             raise NotImplementedError("Slice histogram from list of intervals")
         raise IndexError("Cannot understand slice %r on axis %r" % (the_slice, self))
+
+    def reduced(self, islice):
+        # Big TODO here!
+        # need to restructure index and _ireduce to allow a binned axis without overflow
+        # in the event that a slice cuts them off
+        return self
 
     @property
     def size(self):
@@ -306,6 +324,11 @@ class Bin(DenseAxis):
     def centers(self, extended=False):
         edges = self.edges(extended)
         return (edges[:-1]+edges[1:])/2
+
+    def identifiers(self, extended=False):
+        if extended:
+            return self._intervals
+        return self._intervals[1:-1]
 
 
 class Hist(object):
@@ -364,11 +387,14 @@ class Hist(object):
     def axes(self):
         return self._axes
 
+    def dim(self):
+        return len(self._axes)
+
     def dense_dim(self):
         return len(self._dense_shape)
 
     def sparse_dim(self):
-        return len(self._axes) - self.dense_dim()
+        return self.dim() - self.dense_dim()
 
     def dense_axes(self):
         return [ax for ax in self._axes if isinstance(ax, DenseAxis)]
@@ -388,7 +414,7 @@ class Hist(object):
             self._sumw2[key] = self._sumw[key].copy()
 
     def __iadd__(self, other):
-        if len(self._axes)!=len(other._axes):
+        if self.dim()!=len(other._axes):
             raise ValueError("Cannot add this histogram with histogram %r of dissimilar dimensions" % other)
         if set(d.name for d in self._axes) != set(d.name for d in other._axes):
             raise ValueError("Cannot add this histogram with histogram %r of dissimilar dimensions" % other)
@@ -422,26 +448,32 @@ class Hist(object):
     def __getitem__(self, keys):
         if not isinstance(keys, tuple):
             keys = (keys,)
-        if len(keys) > len(self._axes):
+        if len(keys) > self.dim():
             raise IndexError("Too many indices for this histogram")
-        elif len(keys) < len(self._axes):
+        elif len(keys) < self.dim():
             if Ellipsis in keys:
                 idx = keys.index(Ellipsis)
-                slices = (slice(None),)*(len(self._axes)-len(keys)+1)
+                slices = (slice(None),)*(self.dim()-len(keys)+1)
                 keys = keys[:idx] + slices + keys[idx+1:]
             else:
-                slices = (slice(None),)*(len(self._axes)-len(keys))
+                slices = (slice(None),)*(self.dim()-len(keys))
                 keys += slices
         sparse_idx = []
         dense_idx = []
+        new_dims = []
         for s,ax in zip(keys, self._axes):
             if isinstance(ax, SparseAxis):
                 sparse_idx.append(ax._ireduce(s))
+                new_dims.append(ax)
             else:
-                dense_idx.append(ax._ireduce(s))
+                islice = ax._ireduce(s)
+                dense_idx.append(islice)
+                new_dims.append(ax.reduced(islice))
         dense_idx = tuple(dense_idx)
 
-        out = self.copy(content=False)
+        out = Hist(self._label, *new_dims, dtype=self._dtype)
+        if self._sumw2 is not None:
+            out._init_sumw2()
         for sparse_key in self._sumw:
             if not all(k in idx for k,idx in zip(sparse_key, sparse_idx)):
                 continue
@@ -571,7 +603,7 @@ class Hist(object):
                 the_slice = (the_slice,)
             if len(the_slice) != len(old_axes):
                 raise Exception("Slicing does not match number of axes being rebinned")
-            full_slice = [slice(None)]*len(self._axes)
+            full_slice = [slice(None)]*self.dim()
             for idx, s in zip(old_indices, the_slice):
                 full_slice[idx] = s
             full_slice = tuple(full_slice)
@@ -610,6 +642,11 @@ class Hist(object):
         return out
 
     def scale(self, factor, axis=None):
+        """
+            Scale histogram in-place by factor
+                factor: number of dict of numbers
+                axis: which (sparse) axis the dict applies to
+        """
         if self._sumw2 is None:
             self._init_sumw2()
         if isinstance(factor, numbers.Number) and axis is None:
@@ -629,3 +666,19 @@ class Hist(object):
             raise NotImplementedError("Scale dense dimension by a factor")
         else:
             raise TypeError("Could not interpret scale factor")
+
+    def identifiers(self, axis):
+        """
+            Return identifiers of axis which appear in histogram.
+                axis: name or Axis object
+        """
+        axis = self.axis(axis)
+        if isinstance(axis, SparseAxis):
+            out = []
+            isparse = self._isparse(axis)
+            for identifier in axis.identifiers():
+                if any(k[isparse]==axis.index(identifier) for k in self._sumw.keys()):
+                    out.append(identifier)
+            return out
+        elif isinstance(axis, DenseAxis):
+            return axis.identifiers(extended=True)
