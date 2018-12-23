@@ -1,7 +1,7 @@
 from __future__ import print_function, division
 
 import fnal_column_analysis_tools
-from fnal_column_analysis_tools import JaggedCandidateArray, JaggedTLorentzVectorArray
+from fnal_column_analysis_tools.analysis_objects import JaggedCandidateArray, JaggedTLorentzVectorArray
 import uproot
 import uproot_methods
 import awkward
