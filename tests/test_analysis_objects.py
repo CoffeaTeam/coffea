@@ -1,7 +1,7 @@
 from __future__ import print_function, division
 
 import fnal_column_analysis_tools
-from fnal_column_analysis_tools.analysis_objects import JaggedCandidateArray, JaggedTLorentzVectorArray
+from fnal_column_analysis_tools import JaggedCandidateArray, JaggedTLorentzVectorArray
 import uproot
 import uproot_methods
 import awkward
@@ -105,7 +105,9 @@ def test_analysis_objects():
     gen, reco = gen_reco_TLV()
     jca_gen = JaggedCandidateArray.candidatesfromcounts(gen.counts,p4=gen.flatten())
     jca_reco = JaggedCandidateArray.candidatesfromcounts(reco.counts,p4=reco.flatten())
-    assert (jca_gen.argmatch(jca_reco).flatten().flatten().sum()==3)
-    assert (jca_gen.argmatch(jca_reco,0.3).flatten().flatten().sum()==2)
+    assert (jca_gen.argmatch(jca_reco).flatten().flatten().size==5)
+    assert (jca_gen.argmatch(jca_reco,0.3).flatten().flatten().size==3)
+    assert (jca_gen.argmatch(jca_reco,0.3,0.1).flatten().flatten().size==2)
     assert (jca_gen.match(jca_reco, 0.3).flatten().flatten().sum()==3)
     assert (jca_gen.match(jca_reco,0.3,0.1).flatten().flatten().sum()==2)
+

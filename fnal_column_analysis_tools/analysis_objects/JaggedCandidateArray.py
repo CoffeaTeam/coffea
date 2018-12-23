@@ -233,20 +233,23 @@ class JaggedCandidateMethods(awkward.Methods):
     #Optional parameter to add a cut on the percent pt difference between the objects
     def match(self, cands, deltaRCut,deltaPtCut=10000):
         combinations = self.p4.cross(cands.p4, nested=True)
-        if(~((combinations.i0.pt >0).flatten().flatten().all())):
+        if((~(combinations.i0.pt >0).flatten().flatten().all())|(~(combinations.i1.pt >0).flatten().flatten().all()) ):
             raise Exception("At least one particle has pt = 0")
         passPtCut =(( abs(combinations.i0.pt - combinations.i1.pt)/combinations.i0.pt ) < deltaPtCut)
-        mask = (combinations.i0.delta_r(combinations.i1) < deltaRCut)&(combinations.i0.pt>0)&passPtCut
+        mask = (combinations.i0.delta_r(combinations.i1) < deltaRCut)&passPtCut
         return mask.any()
     
     #Function returns a fancy indexing.
     #At each object 1 location is the index of object 2 that it matched best with
     #Optional parameter to return an empty list if the best match is not within the deltaRCut
-    def argmatch(self, cands, deltaRCut=10000):
+    def argmatch(self, cands, deltaRCut=10000, deltaPtCut=10000):
         combinations = self.p4.cross(cands.p4, nested=True)
+        if((~(combinations.i0.pt >0).flatten().flatten().all())|(~(combinations.i1.pt >0).flatten().flatten().all()) ):
+            raise Exception("At least one particle has pt = 0")
+        deltaPts = ( abs(combinations.i0.pt - combinations.i1.pt)/combinations.i0.pt )
         deltaRs = combinations.i0.delta_r(combinations.i1)
         indexOfMin = deltaRs.argmin()
-        passesCut = deltaRs[indexOfMin] < deltaRCut
+        passesCut = (deltaRs[indexOfMin] < deltaRCut)&(deltaPts[indexOfMin] < deltaPtCut)
         return indexOfMin[passesCut]
     
     def __getattr__(self,what):
