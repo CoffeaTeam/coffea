@@ -249,8 +249,13 @@ class JaggedCandidateMethods(awkward.Methods):
         deltaPts = ( abs(combinations.i0.pt - combinations.i1.pt)/combinations.i0.pt )
         deltaRs = combinations.i0.delta_r(combinations.i1)
         indexOfMin = deltaRs.argmin()
+        indexOfMinOutShape = indexOfMin.flatten(axis=1)
         passesCut = (deltaRs[indexOfMin] < deltaRCut)&(deltaPts[indexOfMin] < deltaPtCut)
-        return indexOfMin[passesCut]
+        passesCutOutShape = passesCut.flatten(axis=1)
+        flatPass = passesCutOutShape.flatten()
+        flatIdxMin = indexOfMinOutShape.flatten()
+        flatIdxMin[~flatPass] = -1
+        return awkward.JaggedArray.fromoffsets(passesCutOutShape.offsets,flatIdxMin)
     
     def __getattr__(self,what):
         if what in self.columns:
