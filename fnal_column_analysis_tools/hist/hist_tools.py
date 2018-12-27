@@ -1,4 +1,5 @@
 from __future__ import division
+from collections import namedtuple
 import copy
 import functools
 import math
@@ -9,6 +10,36 @@ import warnings
 
 # Different in python 2 and 3
 _regex_pattern = re.compile("dummy").__class__
+
+MaybeSumSlice = namedtuple('MaybeSumSlice', ['start', 'stop', 'sum'])
+
+def assemble_blocks(array, ndslice, depth=0):
+    """
+        Turns an n-dimensional slice of array (tuple of slices)
+         into a nested list of numpy arrays that can be passed to np.block()
+
+        Under the assumption that index 0 of any dimension is underflow, -2 overflow, -1 nanflow,
+         this function will add the range not in the slice to the appropriate (over/under)flow bins
+    """
+    if depth == 0:
+        ndslice = [MaybeSumSlice(s.start, s.stop, False) for s in ndslice]
+    if depth == len(ndslice):
+        slice_op = tuple(slice(s.start, s.stop) for s in ndslice)
+        sum_op = tuple(i for i,s in enumerate(ndslice) if s.sum)
+        return array[slice_op].sum(axis=sum_op, keepdims=True)
+    slist = []
+    newslice = ndslice[:]
+    if ndslice[depth].start is not None:
+        newslice[depth] = MaybeSumSlice(None, ndslice[depth].start, True)
+        slist.append(assemble_blocks(array, newslice, depth+1))
+    newslice[depth] = MaybeSumSlice(ndslice[depth].start, ndslice[depth].stop, False)
+    slist.append(assemble_blocks(array, newslice, depth+1))
+    if ndslice[depth].stop is not None:
+        newslice[depth] = MaybeSumSlice(ndslice[depth].stop, -1, True)
+        slist.append(assemble_blocks(array, newslice, depth+1))
+        newslice[depth] = MaybeSumSlice(-1, None, False)
+        slist.append(assemble_blocks(array, newslice, depth+1))
+    return slist
 
 
 @functools.total_ordering
@@ -244,7 +275,9 @@ class Bin(DenseAxis):
                 return False
             if self._uniform != other._uniform:
                 return False
-            if not ((self._uniform and self._bins==other._bins) or all(self._bins==other._bins)):
+            if self._uniform and self._bins != other._bins:
+                return False
+            if not self._uniform and not all(self._bins==other._bins):
                 return False
             return True
         return super(Bin, self).__eq__(other)
@@ -262,27 +295,27 @@ class Bin(DenseAxis):
         if isinstance(the_slice, slice):
             blo, bhi = None, None
             if the_slice.start is not None:
+                if the_slice.start < self._lo:
+                    raise ValueError("Reducing along axis %r: requested start %r exceeds bin boundaries (use open slicing, e.g. x[:stop])" % (self, the_slice.start))
                 if self._uniform:
-                    blo = self.index(the_slice.start)
-                    blo_ceil = np.clip(np.ceil((the_slice.start-self._lo)*self._bins/(self._hi-self._lo)) + 1, 0, self._bins+1)
-                    if blo == 0:
-                        warnings.warn("Reducing along axis %r: requested start %r exceeds bin boundaries" % (self, the_slice.start), RuntimeWarning)
-                    elif blo_ceil != blo and the_slice.start != -np.inf:
+                    blo_real = (the_slice.start-self._lo)*self._bins/(self._hi-self._lo) + 1
+                    blo = np.clip(np.round(blo_real).astype(int), 0, self._bins+1)
+                    if abs(blo-blo_real) > 1.e-14:
                         warnings.warn("Reducing along axis %r: requested start %r between bin boundaries, no interpolation is performed" % (self, the_slice.start), RuntimeWarning)
                 else:
-                    if the_slice.start not in self._bins and the_slice.start != -np.inf:
+                    if the_slice.start not in self._bins:
                         warnings.warn("Reducing along axis %r: requested start %r between bin boundaries, no interpolation is performed" % (self, the_slice.start), RuntimeWarning)
                     blo = self.index(the_slice.start)
             if the_slice.stop is not None:
+                if the_slice.stop > self._hi:
+                    raise ValueError("Reducing along axis %r: requested stop %r exceeds bin boundaries (use open slicing, e.g. x[start:])" % (self, the_slice.stop))
                 if self._uniform:
-                    bhi = self.index(the_slice.stop)
-                    bhi_ceil = np.clip(np.ceil((the_slice.stop-self._lo)*self._bins/(self._hi-self._lo)) + 1, 0, self._bins+1)
-                    if bhi >= self.size-2:
-                        warnings.warn("Reducing along axis %r: requested stop %r exceeds bin boundaries" % (self, the_slice.stop), RuntimeWarning)
-                    elif bhi_ceil != bhi and the_slice.stop != np.inf:
+                    bhi_real = (the_slice.stop-self._lo)*self._bins/(self._hi-self._lo) + 1
+                    bhi = np.clip(np.round(bhi_real).astype(int), 0, self._bins+1)
+                    if abs(bhi-bhi_real) > 1.e-14:
                         warnings.warn("Reducing along axis %r: requested stop %r between bin boundaries, no interpolation is performed" % (self, the_slice.stop), RuntimeWarning)
                 else:
-                    if the_slice.stop not in self._bins and the_slice.stop != np.inf:
+                    if the_slice.stop not in self._bins:
                         warnings.warn("Reducing along axis %r: requested stop %r between bin boundaries, no interpolation is performed" % (self, the_slice.stop), RuntimeWarning)
                     bhi = self.index(the_slice.stop)
                 # Assume null ranges (start==stop) mean we want the bin containing the value
@@ -296,10 +329,36 @@ class Bin(DenseAxis):
         raise IndexError("Cannot understand slice %r on axis %r" % (the_slice, self))
 
     def reduced(self, islice):
-        # Big TODO here!
-        # need to restructure index and _ireduce to allow a binned axis without overflow
-        # in the event that a slice cuts them off
-        return self
+        """
+            Return a new axis with binning corresponding to the slice made on this axis
+            overflow will be taken care of by Hist.__getitem__
+            islice should be as returned from _ireduce, start and stop should be None or within [1, size()-1]
+        """
+        if islice.step is not None:
+            raise NotImplementedError("Step slicing can be interpreted as a rebin factor")
+        if islice.start is None and islice.stop is None:
+            return self
+        if self._uniform:
+            lo = self._lo
+            ilo = 0
+            if islice.start is not None:
+                lo += (islice.start-1)*(self._hi-self._lo)/self._bins
+                ilo = islice.start - 1
+            hi = self._hi
+            ihi = self._bins
+            if islice.stop is not None:
+                hi = self._lo + (islice.stop-1)*(self._hi-self._lo)/self._bins
+                ihi = islice.stop - 1
+            bins = ihi - ilo
+            assert abs(bins - (hi-lo)*self._bins/(self._hi-self._lo)) < 1e-15
+            ax = Bin(self._name, self._label, bins, lo, hi)
+            return ax
+        else:
+            lo = None if islice.start is None else islice.start - 1
+            hi = None if islice.stop is None else islice.stop - 1
+            bins = self._bins[slice(lo, hi)]
+            ax = Bin(self._name, self._label, bins)
+            return ax
 
     @property
     def size(self):
@@ -382,7 +441,7 @@ class Hist(object):
     def axis(self, axis_name):
         if axis_name in self._axes:
             return self._axes[self._axes.index(axis_name)]
-        raise KeyError("No axis named %s found in %r" % (axis_name, self))
+        raise KeyError("No axis %s found in %r" % (axis_name, self))
 
     def axes(self):
         return self._axes
@@ -471,6 +530,9 @@ class Hist(object):
                 new_dims.append(ax.reduced(islice))
         dense_idx = tuple(dense_idx)
 
+        def dense_op(array):
+            return np.block(assemble_blocks(array, dense_idx))
+
         out = Hist(self._label, *new_dims, dtype=self._dtype)
         if self._sumw2 is not None:
             out._init_sumw2()
@@ -478,13 +540,13 @@ class Hist(object):
             if not all(k in idx for k,idx in zip(sparse_key, sparse_idx)):
                 continue
             if sparse_key in out._sumw:
-                out._sumw[sparse_key] += self._sumw[sparse_key][dense_idx]
+                out._sumw[sparse_key] += dense_op(self._sumw[sparse_key])
                 if self._sumw2 is not None:
-                    out._sumw2[sparse_key] += self._sumw2[sparse_key][dense_idx]
+                    out._sumw2[sparse_key] += dense_op(self._sumw2[sparse_key])
             else:
-                out._sumw[sparse_key] = self._sumw[sparse_key][dense_idx].copy()
+                out._sumw[sparse_key] = dense_op(self._sumw[sparse_key]).copy()
                 if self._sumw2 is not None:
-                    out._sumw2[sparse_key] = self._sumw2[sparse_key][dense_idx].copy()
+                    out._sumw2[sparse_key] = dense_op(self._sumw2[sparse_key]).copy()
         return out
 
     def fill(self, **values):
@@ -522,9 +584,9 @@ class Hist(object):
         """
             Integrates out a set of axes, producing a new histogram
                 *axes: axes to integrate out (either name or Axis object)
-                overflow: 'none', 'all', 'nonan' (only applies to dense axes)
+                overflow: 'none', 'under', 'over', 'all', 'nonan' (only applies to dense axes)
         """
-        overflow = kwargs.pop('overflow', 'all')
+        overflow = kwargs.pop('overflow', 'none')
         axes = [self.axis(ax) for ax in axes]
         reduced_dims = [ax for ax in self._axes if ax not in axes]
         out = Hist(self._label, *reduced_dims, dtype=self._dtype)
@@ -541,6 +603,10 @@ class Hist(object):
                 if overflow == 'none':
                     dense_slice[idense] = slice(1, -2)
                 elif overflow == 'nonan':
+                    dense_slice[idense] = slice(None, -1)
+                elif overflow == 'under':
+                    dense_slice[idense] = slice(None, -2)
+                elif overflow == 'over':
                     dense_slice[idense] = slice(1, -1)
             elif isinstance(axis, SparseAxis):
                 isparse = self._isparse(axis)
@@ -565,27 +631,29 @@ class Hist(object):
                     out._sumw2[new_key] = dense_op(self._sumw2[key]).copy()
         return out
 
-    def project(self, axis_name, the_slice=slice(None)):
+    def project(self, axis_name, the_slice=slice(None), overflow='none'):
         """
             Projects current histogram down one dimension
                 axis_name: dimension to reduce on
                 the_slice: any slice, list, string, or other object that the axis will understand
+                overflow: see sum() description for allowed values
             N.B. the more idiomatic way is to slice and sum, although this may be more readable
         """
         axis = self.axis(axis_name)
         full_slice = tuple(slice(None) if ax != axis else the_slice for ax in self._axes)
-        return self[full_slice].sum(axis)
+        return self[full_slice].sum(axis.name, overflow=overflow)  # slice may make new axis, use name
 
     def profile(self, axis_name):
         raise NotImplementedError("Profiling along an axis")
 
-    def group(self, new_axis, old_axes, mapping):
+    def group(self, new_axis, old_axes, mapping, overflow='none'):
         """
             Group a set of slices on old axes into a single new axis
                 new_axis: A new sparse dimension
                 old_axes: axis or tuple of axes which are being grouped
                 mapping: dictionary of {'new_bin': (slice, ...), ...}
                     where each slice is on the axes being re-binned
+                overflow: see sum() description for allowed values
         """
         if not isinstance(new_axis, SparseAxis):
             raise TypeError("New axis must be a sparse axis")
@@ -607,7 +675,7 @@ class Hist(object):
             for idx, s in zip(old_indices, the_slice):
                 full_slice[idx] = s
             full_slice = tuple(full_slice)
-            reduced_hist = self[full_slice].sum(*old_axes)
+            reduced_hist = self[full_slice].sum(*tuple(ax.name for ax in old_axes), overflow=overflow)  # slice may change old axis binning
             new_idx = new_axis.index(new_cat)
             for key in reduced_hist._sumw:
                 new_key = (new_idx,) + key

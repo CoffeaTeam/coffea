@@ -12,13 +12,23 @@ def test_hist():
     assert h_nothing.sparse_dim() == h_nothing.dense_dim() == 0
     assert h_nothing.values() == {}
 
-    h_regular_bins = hist.Hist("regular joe", hist.Bin("x", "x", 20, 0, 200), hist.Bin("y", "why", 50, -3, 3))
+    h_regular_bins = hist.Hist("regular joe", hist.Bin("x", "x", 20, 0, 200), hist.Bin("y", "why", 20, -3, 3))
     h_regular_bins.fill(x=test_pt, y=test_eta)
     nentries = np.sum(counts)
-    assert h_regular_bins.sum("x", "y").values(sumw2=True)[()] == (nentries, nentries)
-    count_some_bin = np.sum((test_pt>=0.)&(test_pt<10.)&(test_eta>=0.)&(test_eta<0.12))
-    assert h_regular_bins.project("y", slice(0, 0.12)).values()[()][0] == count_some_bin
-    
+    assert h_regular_bins.sum("x", "y", overflow='all').values(sumw2=True)[()] == (nentries, nentries)
+    # bin x=2, y=10 (when overflow removed)
+    count_some_bin = np.sum((test_pt>=20.)&(test_pt<30.)&(test_eta>=0.)&(test_eta<0.3))
+    assert h_regular_bins.project("x", slice(20, 30)).values()[()][10] == count_some_bin
+    assert h_regular_bins.project("y", slice(0, 0.3)).values()[()][2] == count_some_bin
+
+    h_reduced = h_regular_bins[10:,-.6:]
+    # bin x=1, y=2
+    assert h_reduced.project("x", slice(20, 30)).values()[()][2] == count_some_bin
+    assert h_reduced.project("y", slice(0, 0.3)).values()[()][1] == count_some_bin
+    h_reduced.fill(x=23, y=0.1)
+    assert h_reduced.project("x", slice(20, 30)).values()[()][2] == count_some_bin + 1
+    assert h_reduced.project("y", slice(0, 0.3)).values()[()][1] == count_some_bin + 1
+
     animal = hist.Cat("animal", "type of animal")
     vocalization = hist.Cat("vocalization", "onomatopoiea is that how you spell it?")
     h_cat_bins = hist.Hist("I like cats", animal, vocalization)
