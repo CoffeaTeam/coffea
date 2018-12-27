@@ -78,16 +78,10 @@ class extractor(object):
             raise Exception('Weights named "{}" not in {}!'.format(name,file))
         return (weights[(bname,names[bname])],names[bname])
           
-    def finalize(self):
+    def finalize(self,reduce_list=None):
         if self._finalized:
             raise Exception('extractor is already finalized!')
         del self._filecache
-        self._finalized = True
-    
-    def make_evaluator(self,reduce_list=None):
-        names = self._names
-        types = self._types
-        weights = self._weights
         if reduce_list is not None:
             names = {}
             types = []
@@ -98,6 +92,13 @@ class extractor(object):
                 names[name] = i
                 types.append(self._types[self._names[name]])
                 weights.append(self._weights[self._names[name]])
-        
-        return evaluator(names,types,weights)
+            self._names = names
+            self._types = types
+            self._weights = weights
+        self._finalized = True
+    
+    def make_evaluator(self):
+        return evaluator(self._names,
+                         self._types,
+                         self._weights)
 
