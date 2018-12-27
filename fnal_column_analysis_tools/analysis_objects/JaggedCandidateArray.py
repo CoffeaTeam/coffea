@@ -12,8 +12,8 @@ def fast_eta(p4):
     px = p4.x
     py = p4.y
     pz = p4.z
-    p3mag = np.sqrt(px*px + py*py + pz*pz)
-    return np.arctanh(pz/p3mag)
+    pT = np.sqrt(px*px + py*py)
+    return np.arcsinh(pz/(pT))
 
 def fast_phi(p4):
     return np.arctan2(p4.y,p4.x)
