@@ -18,7 +18,8 @@ file_converters = {'root':{'default':convert_histo_root_file,
                           'jec':convert_jec_txt_file,
                           'jersf':convert_jersf_txt_file,
                           'jr':convert_jr_txt_file,
-                          'junc':convert_junc_txt_file}
+                          'junc':convert_junc_txt_file,
+                          'ea':convert_effective_area_file}
                    }
 
 class extractor(object):
