@@ -228,7 +228,35 @@ class JaggedCandidateMethods(awkward.Methods):
         outs['__fast_phi'] = awkward.JaggedArray.fromoffsets(outs.offsets,fast_phi(thep4.content))
         outs['__fast_mass'] = awkward.JaggedArray.fromoffsets(outs.offsets,fast_mass(thep4.content))
         return self.fromjagged(outs)
-        
+    
+    #Function returns a mask with true or false at each location for whether object 1 matched with any object 2s
+    #Optional parameter to add a cut on the percent pt difference between the objects
+    def match(self, cands, deltaRCut,deltaPtCut=10000):
+        combinations = self.p4.cross(cands.p4, nested=True)
+        if((~(combinations.i0.pt >0).flatten().flatten().all())|(~(combinations.i1.pt >0).flatten().flatten().all()) ):
+            raise Exception("At least one particle has pt = 0")
+        passPtCut =(( abs(combinations.i0.pt - combinations.i1.pt)/combinations.i0.pt ) < deltaPtCut)
+        mask = (combinations.i0.delta_r(combinations.i1) < deltaRCut)&passPtCut
+        return mask.any()
+    
+    #Function returns a fancy indexing.
+    #At each object 1 location is the index of object 2 that it matched best with
+    #Optional parameter to return an empty list if the best match is not within the deltaRCut
+    def argmatch(self, cands, deltaRCut=10000, deltaPtCut=10000):
+        combinations = self.p4.cross(cands.p4, nested=True)
+        if((~(combinations.i0.pt >0).flatten().flatten().all())|(~(combinations.i1.pt >0).flatten().flatten().all()) ):
+            raise Exception("At least one particle has pt = 0")
+        deltaPts = ( abs(combinations.i0.pt - combinations.i1.pt)/combinations.i0.pt )
+        deltaRs = combinations.i0.delta_r(combinations.i1)
+        indexOfMin = deltaRs.argmin()
+        indexOfMinOutShape = indexOfMin.flatten(axis=1)
+        passesCut = (deltaRs[indexOfMin] < deltaRCut)&(deltaPts[indexOfMin] < deltaPtCut)
+        passesCutOutShape = passesCut.flatten(axis=1)
+        flatPass = passesCutOutShape.flatten()
+        flatIdxMin = indexOfMinOutShape.flatten()
+        flatIdxMin[~flatPass] = -1
+        return awkward.JaggedArray.fromoffsets(passesCutOutShape.offsets,flatIdxMin)
+    
     def __getattr__(self,what):
         if what in self.columns:
             return self[what]
