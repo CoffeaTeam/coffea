@@ -40,6 +40,19 @@ def poisson_interval(sumw, sumw2, sigma=1):
 
 def plot1d(ax, hist, axis, stack=False, overflow='none', line_opts=None, fill_opts=None, error_opts=None, overlay_overflow='none'):
     """
+        ax: matplotlib Axes object
+        hist: Hist object with maximum of two dimensions
+        axis: the axis of hist we want to use as the x axis
+        stack: whether to stack or overlay the other dimension (if one exists)
+        overflow: overflow behavior of plot axis (see Hist.sum() docs)
+
+        The draw options are passed as dicts.  If none of *_opts is specified, nothing will be plotted!
+        Pass an empty dict (e.g. line_opts={}) for defaults
+            line_opts: options to plot a step without errors
+            fill_opts: to plot a filled area
+            error_opts: to plot an errorbar, with a step or marker
+
+        overlay_overflow: overflow behavior of dense overlay axis, if one exists
     """
     if not isinstance(ax, plt.Axes):
         raise ValueError("ax must be a matplotlib Axes object")
