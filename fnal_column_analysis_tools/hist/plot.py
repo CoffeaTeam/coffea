@@ -2,7 +2,8 @@ from __future__ import division
 import numpy as np
 import scipy.stats
 import copy
-from .hist_tools import SparseAxis, DenseAxis
+import warnings
+from .hist_tools import SparseAxis, DenseAxis, overflow_behavior
 
 import matplotlib.pyplot as plt
 
@@ -16,12 +17,16 @@ def poisson_interval(sumw, sumw2, sigma=1):
             c.f. http://ms.mcmaster.ca/peter/s743/poissonalpha.html
         For weighted data, approximate the observed count by sumw**2/sumw2
             When a bin is zero, find the scale of the nearest nonzero bin
+            If all bins zero, raise warning and set interval to sumw
     """
     scale = np.empty_like(sumw)
     scale[sumw!=0] = sumw2[sumw!=0] / sumw[sumw!=0]
     if np.sum(sumw==0) > 0:
         missing = np.where(sumw==0)
         available = np.nonzero(sumw)
+        if len(available[0]) == 0:
+            warnings.warn("All sumw are zero!  Cannot compute meaningful error bars", RuntimeWarning)
+            return np.vstack([sumw, sumw])
         nearest = sum([np.subtract.outer(d,d0)**2 for d,d0 in zip(available, missing)]).argmin(axis=0)
         argnearest = tuple(dim[nearest] for dim in available)
         scale[missing] = scale[argnearest]
@@ -33,7 +38,7 @@ def poisson_interval(sumw, sumw2, sigma=1):
     return interval
 
 
-def plot1d(ax, hist, axis, stack=False, overflow=False, line_opts=None, fill_opts=None, error_opts=None):
+def plot1d(ax, hist, axis, stack=False, overflow='none', line_opts=None, fill_opts=None, error_opts=None, overlay_overflow='none'):
     """
     """
     if not isinstance(ax, plt.Axes):
@@ -48,19 +53,28 @@ def plot1d(ax, hist, axis, stack=False, overflow=False, line_opts=None, fill_opt
     elif isinstance(axis, DenseAxis):
         ax.set_xlabel(axis.label)
         ax.set_ylabel(hist.label)
-        edges = axis.edges(extended=overflow)
+        edges = axis.edges(overflow=overflow)
         # Only errorbar uses centers, and if we draw a step too, we need
         #   the step to go to the edge of the end bins, so place edges
         #   and only draw errorbars for the interior points
-        centers = np.r_[edges[0], axis.centers(extended=overflow), edges[-1]]
+        centers = np.r_[edges[0], axis.centers(overflow=overflow), edges[-1]]
+        # but if there's a marker, then it shows up in the extra spots
+        center_view = slice(1, -1) if error_opts is not None and 'marker' in error_opts else slice(None)
         stack_sumw, stack_sumw2 = None, None
         out = {}
-        identifiers = hist.identifiers(other_axis) if other_axis else [None]
-        for identifier in identifiers:
+        identifiers = hist.identifiers(other_axis, overflow=overlay_overflow) if other_axis else [None]
+        for i, identifier in enumerate(identifiers):
             if identifier is None:
-                sumw, sumw2 = hist.values(sumw2=True, overflow_view=slice(None, -1) if overflow else slice(1, -2))[()]
+                sumw, sumw2 = hist.values(sumw2=True, overflow=overflow)[()]
+            elif isinstance(other_axis, SparseAxis):
+                sumw, sumw2 = hist.project(other_axis, identifier).values(sumw2=True, overflow=overflow)[()]
             else:
-                sumw, sumw2 = hist.project(other_axis, identifier).values(sumw2=True, overflow_view=slice(None, -1) if overflow else slice(1, -2))[()]
+                sumw, sumw2 = hist.values(sumw2=True, overflow='allnan')[()]
+                the_slice = (i if overflow_behavior(overlay_overflow).start is None else i+1, overflow_behavior(overflow))
+                if hist._idense(other_axis) == 1:
+                    the_slice = (the_slice[1], the_slice[0])
+                sumw = sumw[the_slice]
+                sumw2 = sumw2[the_slice]
             # step expects edges to match frequencies (why?!)
             sumw = np.r_[sumw, sumw[-1]]
             sumw2 = np.r_[sumw2, sumw2[-1]]
@@ -112,13 +126,13 @@ def plot1d(ax, hist, axis, stack=False, overflow=False, line_opts=None, fill_opt
                     if first_color is not None:
                         opts['color'] = first_color
                     opts.update(error_opts)
-                    y = np.r_[sumw[0], sumw[:-1], sumw[-2]]
+                    y = np.r_[sumw[0], sumw]
                     yerr = np.c_[np.zeros(2).reshape(2,1), err[:,:-1], np.zeros(2).reshape(2,1)]
-                    el = ax.errorbar(x=centers, y=y, yerr=yerr[0], uplims=True, **opts)
+                    el = ax.errorbar(x=centers[center_view], y=y[center_view], yerr=yerr[0,center_view], uplims=True, **opts)
                     opts['label'] = '_nolabel_'
                     opts['linestyle'] = 'none'
                     opts['color'] = el.get_children()[2].get_color()[0]
-                    eh = ax.errorbar(x=centers, y=y, yerr=yerr[1], lolims=True, **opts)
+                    eh = ax.errorbar(x=centers[center_view], y=y[center_view], yerr=yerr[1,center_view], lolims=True, **opts)
                     el[1][0].set_marker(emarker)
                     eh[1][0].set_marker(emarker)
                     out[label].append((el,eh))

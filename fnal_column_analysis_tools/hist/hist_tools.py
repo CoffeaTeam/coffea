@@ -13,6 +13,7 @@ _regex_pattern = re.compile("dummy").__class__
 
 MaybeSumSlice = namedtuple('MaybeSumSlice', ['start', 'stop', 'sum'])
 
+
 def assemble_blocks(array, ndslice, depth=0):
     """
         Turns an n-dimensional slice of array (tuple of slices)
@@ -42,10 +43,27 @@ def assemble_blocks(array, ndslice, depth=0):
     return slist
 
 
+def overflow_behavior(overflow):
+    if overflow == 'none':
+        return slice(1, -2)
+    elif overflow == 'under':
+        return slice(None, -2)
+    elif overflow == 'over':
+        return slice(1, -1)
+    elif overflow == 'all':
+        return slice(None, -1)
+    elif overflow == 'allnan':
+        return slice(None)
+    else:
+        raise ValueError("Unrecognized overflow behavior: %s" % overflow)
+
+
 @functools.total_ordering
 class Interval(object):
     """
         Real number interval
+        Totally ordered, assuming no overlap in intervals
+        special nan interval is greater than [*, inf)
     """
     def __init__(self, lo, hi):
         self._lo = float(lo)
@@ -55,22 +73,33 @@ class Interval(object):
         return "<%s (%s) instance at 0x%0x>" % (self.__class__.__name__, str(self), id(self))
 
     def __str__(self):
-        return "[%f, %f)" % (self._lo, self._hi)
+        if self.nan():
+            return "nanflow"
+        return "%s%f, %f)" % ("(" if self._lo==-np.inf else "[", self._lo, self._hi)
 
     def __hash__(self):
         return hash(self._lo, self._hi)
 
     def __lt__(self, other):
-        if self._lo < other._lo:
+        if other.nan() and not self.nan():
+            return True
+        elif self.nan():
+            return False
+        elif self._lo < other._lo:
             if self._hi > other._lo:
                 raise ValueError("Intervals %r and %r intersect! What are you doing?!" % (self, other))
             return True
         return False
 
     def __eq__(self, other):
+        if other.nan() and self.nan():
+            return True
         if self._lo == other._lo and self._hi == other._hi:
             return True
         return False
+
+    def nan(self):
+        return np.isnan(self._hi)
 
 
 class Axis(object):
@@ -125,7 +154,8 @@ class SparseAxis(Axis):
         What we really want here is a hashlist with some slice sugar on top
         It is usually the case that the identifier is already hashable,
           in which case index and __getitem__ are trivial, but this mechanism
-          supports mapping a range of identifiers into a single bin
+          may be useful if the size of the tuple of identifiers in a
+          sparse-binned histogram becomes too large
     """
     pass
 
@@ -142,6 +172,7 @@ class Cat(SparseAxis):
     def __init__(self, name, label, sorting='identifier'):
         super(Cat, self).__init__(name, label)
         # TODO: SortedList from sortedcontainers ?
+        # If moving to dense packing, better to maintain a separate argsort list
         self._categories = []
         self._sorting = sorting
 
@@ -236,8 +267,8 @@ class Bin(DenseAxis):
             self._lo = self._bins[0]
             self._hi = self._bins[-1]
             # to make searchsorted differentiate inf from nan
-            np.append(self._bins, np.inf)
-            interval_bins = np.r_[-np.inf, self._bins]
+            self._bins = np.append(self._bins, np.inf)
+            interval_bins = np.r_[-np.inf, self._bins, np.nan]
             self._intervals = [Interval(lo, hi) for lo,hi in zip(interval_bins[:-1], interval_bins[1:])]
         elif isinstance(n_or_arr, numbers.Integral):
             if lo is None or hi is None:
@@ -246,7 +277,7 @@ class Bin(DenseAxis):
             self._lo = lo
             self._hi = hi
             self._bins = n_or_arr
-            interval_bins = np.r_[-np.inf, np.linspace(self._lo, self._hi, self._bins+1), np.inf]
+            interval_bins = np.r_[-np.inf, np.linspace(self._lo, self._hi, self._bins+1), np.inf, np.nan]
             self._intervals = [Interval(lo, hi) for lo,hi in zip(interval_bins[:-1], interval_bins[1:])]
         else:
             raise TypeError("Cannot understand n_or_arr (nbins or binning array) type %r" % n_or_arr)
@@ -283,15 +314,15 @@ class Bin(DenseAxis):
         return super(Bin, self).__eq__(other)
 
     def __getitem__(self, index):
-        if index == self.size()-1:
-            return np.nan
         return self._intervals[index]
 
     def _ireduce(self, the_slice):
         if isinstance(the_slice, numbers.Number):
             the_slice = slice(the_slice, the_slice)
         elif isinstance(the_slice, Interval):
-            the_slice = slice(the_slice._lo, the_slice._hi)
+            lo = the_slice._lo if the_slice._lo > -np.inf else None
+            hi = the_slice._hi if the_slice._hi < np.inf else None
+            the_slice = slice(lo, hi)
         if isinstance(the_slice, slice):
             blo, bhi = None, None
             if the_slice.start is not None:
@@ -350,12 +381,14 @@ class Bin(DenseAxis):
                 hi = self._lo + (islice.stop-1)*(self._hi-self._lo)/self._bins
                 ihi = islice.stop - 1
             bins = ihi - ilo
-            assert abs(bins - (hi-lo)*self._bins/(self._hi-self._lo)) < 1e-15
+            # TODO: remove this once satisfied it works
+            rbins = (hi-lo)*self._bins/(self._hi-self._lo)
+            assert abs(bins - rbins) < 1e-14, "%d %f %r" % (bins, rbins, self)
             ax = Bin(self._name, self._label, bins, lo, hi)
             return ax
         else:
             lo = None if islice.start is None else islice.start - 1
-            hi = None if islice.stop is None else islice.stop - 1
+            hi = -1 if islice.stop is None else islice.stop
             bins = self._bins[slice(lo, hi)]
             ax = Bin(self._name, self._label, bins)
             return ax
@@ -365,29 +398,27 @@ class Bin(DenseAxis):
         if self._uniform:
             return self._bins + 3
         # (inf added at constructor)
-        return len(self._bins)+2
+        return len(self._bins) + 1
 
-    def edges(self, extended=False):
+    def edges(self, overflow='none'):
         """
             Bin boundaries
-                extended: create overflow and underflow bins by adding a bin of same width to each end
+                overflow: create overflow and/or underflow bins by adding a bin of same width to each end
+                    only 'none', 'under', 'over', 'all' types are supported
         """
         if self._uniform:
             out = np.linspace(self._lo, self._hi, self._bins+1)
         else:
-            out = self._bins.copy()
-        if extended:
-            out = np.r_[2*out[0]-out[1], out, 2*out[-1]-out[-2]]
-        return out
+            out = self._bins[:-1].copy()
+        out = np.r_[2*out[0]-out[1], out, 2*out[-1]-out[-2], 3*out[-1]-2*out[-2]]
+        return out[overflow_behavior(overflow)]
 
-    def centers(self, extended=False):
-        edges = self.edges(extended)
+    def centers(self, overflow='none'):
+        edges = self.edges(overflow)
         return (edges[:-1]+edges[1:])/2
 
-    def identifiers(self, extended=False):
-        if extended:
-            return self._intervals
-        return self._intervals[1:-1]
+    def identifiers(self, overflow='none'):
+        return self._intervals[overflow_behavior(overflow)]
 
 
 class Hist(object):
@@ -584,7 +615,7 @@ class Hist(object):
         """
             Integrates out a set of axes, producing a new histogram
                 *axes: axes to integrate out (either name or Axis object)
-                overflow: 'none', 'under', 'over', 'all', 'nonan' (only applies to dense axes)
+                overflow: 'none', 'under', 'over', 'all', 'allnan' (only applies to dense axes)
         """
         overflow = kwargs.pop('overflow', 'none')
         axes = [self.axis(ax) for ax in axes]
@@ -600,14 +631,7 @@ class Hist(object):
             if isinstance(axis, DenseAxis):
                 idense = self._idense(axis)
                 dense_sum_dim.append(idense)
-                if overflow == 'none':
-                    dense_slice[idense] = slice(1, -2)
-                elif overflow == 'nonan':
-                    dense_slice[idense] = slice(None, -1)
-                elif overflow == 'under':
-                    dense_slice[idense] = slice(None, -2)
-                elif overflow == 'over':
-                    dense_slice[idense] = slice(1, -1)
+                dense_slice[idense] = overflow_behavior(overflow)
             elif isinstance(axis, SparseAxis):
                 isparse = self._isparse(axis)
                 sparse_drop.append(isparse)
@@ -684,17 +708,17 @@ class Hist(object):
                     out._sumw2[new_key] = reduced_hist._sumw2[key]
         return out
 
-    def values(self, sumw2=False, overflow_view=slice(1,-2)):
+    def values(self, sumw2=False, overflow='none'):
         """
             Returns dict of (sparse identifier, ...): np.array(frequencies)
             sumw2: if True, frequencies is a tuple (sum weights, sum sqaured weights)
-            overflow_view: pass a slice object to control if underflow (0), overflow(-1), or nanflow(-2) are included
+            overflow: see sum() description for allowed values
         """
         def view_dim(arr):
             if self.dense_dim() == 0:
                 return arr
             else:
-                return arr[tuple(overflow_view for _ in range(self.dense_dim()))]
+                return arr[tuple(overflow_behavior(overflow) for _ in range(self.dense_dim()))]
 
         out = {}
         for sparse_key in self._sumw.keys():
@@ -735,10 +759,11 @@ class Hist(object):
         else:
             raise TypeError("Could not interpret scale factor")
 
-    def identifiers(self, axis):
+    def identifiers(self, axis, overflow='none'):
         """
             Return identifiers of axis which appear in histogram.
                 axis: name or Axis object
+                overflow: see sum() description
         """
         axis = self.axis(axis)
         if isinstance(axis, SparseAxis):
@@ -749,4 +774,4 @@ class Hist(object):
                     out.append(identifier)
             return out
         elif isinstance(axis, DenseAxis):
-            return axis.identifiers(extended=True)
+            return axis.identifiers(overflow=overflow)
