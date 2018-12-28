@@ -101,6 +101,14 @@ class Interval(object):
     def nan(self):
         return np.isnan(self._hi)
 
+    @property
+    def lo(self):
+        return self._lo
+
+    @property
+    def hi(self):
+        return self._hi
+
 
 class Axis(object):
     """
