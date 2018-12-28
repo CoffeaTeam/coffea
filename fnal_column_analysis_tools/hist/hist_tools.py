@@ -54,6 +54,8 @@ def overflow_behavior(overflow):
         return slice(None, -1)
     elif overflow == 'allnan':
         return slice(None)
+    elif overflow == 'justnan':
+        return slice(-1, None)
     else:
         raise ValueError("Unrecognized overflow behavior: %s" % overflow)
 
@@ -74,8 +76,8 @@ class Interval(object):
 
     def __str__(self):
         if self.nan():
-            return "nanflow"
-        return "%s%f, %f)" % ("(" if self._lo==-np.inf else "[", self._lo, self._hi)
+            return "(nanflow)"
+        return "%s%s, %s)" % ("(" if self._lo==-np.inf else "[", str(self._lo), str(self._hi))
 
     def __hash__(self):
         return hash(self._lo, self._hi)
@@ -328,6 +330,8 @@ class Bin(DenseAxis):
         if isinstance(the_slice, numbers.Number):
             the_slice = slice(the_slice, the_slice)
         elif isinstance(the_slice, Interval):
+            if the_slice.nan():
+                return slice(-1, None)
             lo = the_slice._lo if the_slice._lo > -np.inf else None
             hi = the_slice._hi if the_slice._hi < np.inf else None
             the_slice = slice(lo, hi)
@@ -673,6 +677,14 @@ class Hist(object):
         """
         axis = self.axis(axis_name)
         full_slice = tuple(slice(None) if ax != axis else the_slice for ax in self._axes)
+        if isinstance(the_slice, Interval):
+            # Handle overflow intervals nicely
+            if the_slice.nan():
+                overflow = 'justnan'
+            elif the_slice.lo == -np.inf:
+                overflow = 'under'
+            elif the_slice.hi == np.inf:
+                overflow = 'over'
         return self[full_slice].sum(axis.name, overflow=overflow)  # slice may make new axis, use name
 
     def profile(self, axis_name):
