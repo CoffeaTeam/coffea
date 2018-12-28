@@ -26,6 +26,23 @@ def _fast_mass(p4):
     p3mag2 = (px*px + py*py + pz*pz)
     return np.sqrt(np.abs(en*en - p3mag2))
 
+def _default_match(combs,deltaRCut=10000, deltaPtCut=10000):
+    passPtCut =(( np.abs(combs.i0.pt - combs.i1.pt)/combs.i0.pt ) < deltaPtCut)
+    mask = (combs.i0.delta_r(combs.i1) < deltaRCut)&passPtCut
+    return mask.any()
+
+def _default_argmatch(combs,deltaRCut=10000, deltaPtCut=10000):
+    deltaPts = ( np.abs(combs.i0.pt - combs.i1.pt)/combs.i0.pt )
+    deltaRs = combs.i0.delta_r(combs.i1)
+    indexOfMin = deltaRs.argmin()
+    indexOfMinOutShape = indexOfMin.flatten(axis=1)
+    passesCut = (deltaRs[indexOfMin] < deltaRCut)&(deltaPts[indexOfMin] < deltaPtCut)
+    passesCutOutShape = passesCut.flatten(axis=1)
+    flatPass = passesCutOutShape.flatten()
+    flatIdxMin = indexOfMinOutShape.flatten()
+    flatIdxMin[~flatPass] = -1
+    return awkward.JaggedArray.fromoffsets(passesCutOutShape.offsets,flatIdxMin)
+
 class JaggedCandidateMethods(awkward.Methods):
     
     @classmethod
@@ -267,31 +284,22 @@ class JaggedCandidateMethods(awkward.Methods):
     
     #Function returns a mask with true or false at each location for whether object 1 matched with any object 2s
     #Optional parameter to add a cut on the percent pt difference between the objects
-    def match(self, cands, deltaRCut,deltaPtCut=10000):
+    def _matchcombs(self,cands):
         combinations = self.p4.cross(cands.p4, nested=True)
         if((~(combinations.i0.pt >0).flatten().flatten().all())|(~(combinations.i1.pt >0).flatten().flatten().all()) ):
             raise Exception("At least one particle has pt = 0")
-        passPtCut =(( abs(combinations.i0.pt - combinations.i1.pt)/combinations.i0.pt ) < deltaPtCut)
-        mask = (combinations.i0.delta_r(combinations.i1) < deltaRCut)&passPtCut
-        return mask.any()
+        return combinations
+
+    def match(self, cands, matchfunc=_default_match, **kwargs):
+        combinations = self._matchcombs(cands)        
+        return matchfunc(combinations,**kwargs)
     
     #Function returns a fancy indexing.
     #At each object 1 location is the index of object 2 that it matched best with
-    #Optional parameter to return an empty list if the best match is not within the deltaRCut
-    def argmatch(self, cands, deltaRCut=10000, deltaPtCut=10000):
-        combinations = self.p4.cross(cands.p4, nested=True)
-        if((~(combinations.i0.pt >0).flatten().flatten().all())|(~(combinations.i1.pt >0).flatten().flatten().all()) ):
-            raise Exception("At least one particle has pt = 0")
-        deltaPts = ( abs(combinations.i0.pt - combinations.i1.pt)/combinations.i0.pt )
-        deltaRs = combinations.i0.delta_r(combinations.i1)
-        indexOfMin = deltaRs.argmin()
-        indexOfMinOutShape = indexOfMin.flatten(axis=1)
-        passesCut = (deltaRs[indexOfMin] < deltaRCut)&(deltaPts[indexOfMin] < deltaPtCut)
-        passesCutOutShape = passesCut.flatten(axis=1)
-        flatPass = passesCutOutShape.flatten()
-        flatIdxMin = indexOfMinOutShape.flatten()
-        flatIdxMin[~flatPass] = -1
-        return awkward.JaggedArray.fromoffsets(passesCutOutShape.offsets,flatIdxMin)
+    #<<<<important>>>> selves without a match will get a -1 to preserve counts structure
+    def argmatch(self, cands, argmatchfunc=_default_argmatch, **kwargs):
+        combinations = self._matchcombs(cands)
+        return argmatchfunc(combinations,**kwargs)
     
     def __getattr__(self,what):
         if what in self.columns:
