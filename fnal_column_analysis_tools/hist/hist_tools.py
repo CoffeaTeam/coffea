@@ -297,7 +297,7 @@ class Bin(DenseAxis):
             if self._uniform:
                 idx = np.clip(np.floor((identifier-self._lo)*self._bins/(self._hi-self._lo)) + 1, 0, self._bins+1)
                 if isinstance(idx, np.ndarray):
-                    idx[idx==np.nan] = self.size-1
+                    idx[np.isnan(idx)] = self.size-1
                     idx = idx.astype(int)
                 elif np.isnan(idx):
                     idx = self.size-1
