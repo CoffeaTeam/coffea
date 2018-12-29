@@ -25,8 +25,12 @@ def _parse_jme_formatted_file(jmeFilePath,interpolatedFunc=False,parmsFromColumn
     while( formula.count('[%i]'%nParms) ):
         formula = formula.replace('[%i]'%nParms,'p%i'%nParms)
         nParms += 1
+    #get rid of TMath
+    tmath = {'TMath::Max':'max','TMath::Log':'log','TMath::Power':'pow'}
+    for key,rpl in tmath.items():
+        formula = formula.replace(key,rpl)
     #protect function names with vars in them
-    funcs_to_cap = ['max','exp']
+    funcs_to_cap = ['max','exp','pow']
     for f in funcs_to_cap:
         formula = formula.replace(f,f.upper())
     
