@@ -33,5 +33,6 @@
 import fnal_column_analysis_tools.lookup_tools
 import fnal_column_analysis_tools.analysis_objects
 import fnal_column_analysis_tools.striped
+import fnal_column_analysis_tools.jetmet_tools
 
 from fnal_column_analysis_tools.version import __version__

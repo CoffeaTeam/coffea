@@ -85,6 +85,10 @@ class jme_standard_function(lookup_base):
         
         return self._formula(*tuple(parm_values+eval_values))
     
+    @property
+    def signature(self):
+        return self._signature
+    
     def __repr__(self):
         out  = 'binned dims: %s\n'%(self._dim_order)
         out += 'eval vars  : %s\n'%(self._eval_vars)
