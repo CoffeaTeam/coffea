@@ -101,10 +101,11 @@ class FactorizedJetCorrector(object):
         return out
 
     def getCorrection(self,**kwargs):
-        return self.getSubCorrections(**kwargs)[-1]
+        subCorrs = self.getSubCorrections(**kwargs)
+        return subCorrs[-1]
 
     def getSubCorrections(self,**kwargs):
-        localargs = deepcopy(kwargs)
+        localargs = kwargs
         firstarg = localargs[self._signature[0]]
         cumulativeCorrection = 1.0
         if isinstance(firstarg,JaggedArray):
@@ -124,10 +125,9 @@ class FactorizedJetCorrector(object):
             args = []
             for input in sig:
                 args.append(localargs[input])
-            print func
             corr = func(*tuple(args))
             for var in corrVars:
-                localargs[var] *= corr
-            cumulativeCorrection *= func
+                localargs[var] = corr * localargs[var]
+            cumulativeCorrection = corr * cumulativeCorrection
             corrections.append(cumulativeCorrection)
         return corrections

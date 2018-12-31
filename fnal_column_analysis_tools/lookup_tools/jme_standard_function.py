@@ -5,27 +5,34 @@ from awkward.array.jagged import JaggedArray
 from copy import deepcopy
 import numba
 
-from numpy import sqrt,log,exp
+from numpy import sqrt,log,exp,abs
 from numpy import maximum as max
 from numpy import minimum as min
+from numpy import power as pow
 
 def numbaize(fstr, varlist):
     """
         Convert function string to numba function
         Supports only simple math for now
         """
+    val = fstr
+    try:
+        val = float(fstr)
+        fstr = 'np.full_like(%s,%f)' % ( varlist[0], val )
+    except ValueError:
+        val = fstr
     lstr = "lambda %s: %s" % (",".join(varlist), fstr)
     func = eval(lstr)
     nfunc = numba.njit(func)
     return nfunc
 
-@numba.njit
+#@numba.njit ### somehow the unjitted form is ~20% faster?, and we can make fewer masks this way
 def masked_bin_eval(dim1_indices, dimN_bins, dimN_vals):
     dimN_indices = np.empty_like(dim1_indices)
     for i in np.unique(dim1_indices):
-        dimN_indices[dim1_indices==i] = np.searchsorted(dimN_bins[i],dimN_vals[dim1_indices==i],side='right')
-        dimN_indices[dim1_indices==i] = min(dimN_indices[dim1_indices==i]-1,len(dimN_bins[i])-1)
-        dimN_indices[dim1_indices==i] = max(dimN_indices[dim1_indices==i]-1,0)
+        mask = (dim1_indices==i)
+        dimN_indices[mask] = np.clip(np.searchsorted(dimN_bins[i],dimN_vals[mask],side='right')-1,
+                                     0,len(dimN_bins[i])-1)
     return dimN_indices
 
 class jme_standard_function(lookup_base):
@@ -47,7 +54,12 @@ class jme_standard_function(lookup_base):
         
         #get the jit to compile if we've got more than one bin dim
         if len(self._dim_order) > 1:
-            masked_bin_eval(np.array([0]),self._bins[self._dim_order[1]],np.array([0.0]))
+            masked_bin_eval(np.array([0,0]),self._bins[self._dim_order[1]],np.array([0.0,0.0]))
+    
+        #compile the formula
+        argsize = len(self._parm_order) + len(self._eval_vars)
+        some_ones = [50*np.ones(argsize) for i in range(argsize)]
+        _ = self._formula(*tuple(some_ones))
     
         self._signature = deepcopy(self._dim_order)
         for eval in self._eval_vars:
@@ -70,14 +82,26 @@ class jme_standard_function(lookup_base):
         dim1_indices = np.clip(dim1_indices-1,0,self._bins[dim1_name].size-1)
         bin_indices = [dim1_indices]
         for binname in self._dim_order[1:]:
-            bin_indices.append(masked_bin_eval(bin_indices[0],self._bins[binname],bin_vals[binname]))
+            bin_indices.append(masked_bin_eval(bin_indices[0],
+                                               self._bins[binname],
+                                               bin_vals[binname]))
         bin_tuple = tuple(bin_indices)
-                
+        
         #get clamp values and clip the inputs
         eval_values = []
         for eval_name in self._eval_vars:
             clamp_mins = self._eval_clamp_mins[eval_name][bin_tuple]
+            if isinstance(clamp_mins,JaggedArray):
+                if clamp_mins.content.size == 1:
+                    clamp_mins = clamp_mins.content[0]
+                else:
+                    clamp_mins = clamp_mins.flatten()
             clamp_maxs = self._eval_clamp_maxs[eval_name][bin_tuple]
+            if isinstance(clamp_maxs,JaggedArray):
+                if clamp_maxs.content.size == 1:
+                    clamp_maxs = clamp_maxs.content[0]
+                else:
+                    clamp_maxs = clamp_maxs.flatten()
             eval_values.append(np.clip(eval_vals[eval_name],clamp_mins,clamp_maxs))
 
         #get parameter values
