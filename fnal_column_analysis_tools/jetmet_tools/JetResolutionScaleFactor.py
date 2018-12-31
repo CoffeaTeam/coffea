@@ -1,4 +1,4 @@
-from ..lookup_tools.jme_standard_function import jme_standard_function
+from ..lookup_tools.jersf_lookup import jersf_lookup
 import warnings
 import re
 import numpy as np
@@ -18,12 +18,12 @@ _levelre = re.compile('[L1-7]+')
 def _getLevel(levelName):
     matches = _levelre.findall(levelName)
     if len(matches) > 1:
-        raise Exception('Malformed JEC level name: {}'.format(levelName))
+        raise Exception('Malformed JERSF level name: {}'.format(levelName))
     return matches[0]
 
 _level_order = ['L1','L2','L3','L2L3']
 
-class FactorizedJetCorrector(object):
+class JetResolutionScaleFactor(object):
     def __init__(self,**kwargs):
         jettype = None
         levels = []
@@ -32,9 +32,8 @@ class FactorizedJetCorrector(object):
         campaign = None
         dataera = None
         for name,func in kwargs.items():
-            if not isinstance(func,jme_standard_function):
-                raise Exception('{} is a {} and not a jme_standard_function!'.format(name,
-                                                                                     type(func)))
+            if not isinstance(func,jersf_lookup):
+                raise Exception('{} is a {} and not a jersf_lookup!'.format(name,type(func)))
             info = name.split('_')
             if len(info) != 5:
                 raise Exception('Corrector name is not properly formatted!')
@@ -45,7 +44,7 @@ class FactorizedJetCorrector(object):
             levels.append(info[3])
             funcs.append(func)
             jettype  = _checkConsistency(jettype,info[4])
-    
+        
         if campaign is None:
             raise Exception('Unable to determine production campaign of JECs!')
         else:
@@ -55,30 +54,30 @@ class FactorizedJetCorrector(object):
             raise Exception('Unable to determine data era of JECs!')
         else:
             self._dataera = dataera
-
+        
         if datatype is None:
             raise Exception('Unable to determine if JECs are for MC or Data!')
         else:
             self._datatype = datatype
-    
+        
         if len(levels) == 0:
             raise Exception('No levels provided?')
         else:
             self._levels = levels
             self._funcs = funcs
-    
+        
         if jettype is None:
             raise Exception('Unable to determine type of jet to correct!')
         else:
             self._jettype = jettype
-
+        
         for i,level in enumerate(self._levels):
             this_level = _getLevel(level)
             ord_idx = _level_order.index(this_level)
             if i != this_level:
                 self._levels[i],self._levels[ord_idx] = self._levels[ord_idx],self._levels[i]
                 self._funcs[i],self._funcs[ord_idx] = self._funcs[ord_idx],self._funcs[i]
-
+    
         #now we setup the call signature for this factorized JEC
         self._signature = []
         for func in self._funcs:
@@ -99,35 +98,15 @@ class FactorizedJetCorrector(object):
         out += 'levels     : %s\n'%(','.join(self._levels))
         out += 'signature  : (%s)\n'%(','.join(self._signature))
         return out
-
-    def getCorrection(self,**kwargs):
-        return self.getSubCorrections(**kwargs)[-1]
-
-    def getSubCorrections(self,**kwargs):
-        localargs = deepcopy(kwargs)
-        firstarg = localargs[self._signature[0]]
-        cumulativeCorrection = 1.0
-        if isinstance(firstarg,JaggedArray):
-            cumulatedCorrection = firstarg.ones_like()
-        else:
-            cumulativeCorrection = np.ones_like(firstarg)
-        corrVars = []
-        if 'JetPt' in localargs.keys():
-            corrVars.append('JetPt')
-        if 'JetE' in localargs.keys():
-            corrVars.append('JetE')
-        if len(corrVars) == 0:
-            raise Exception('No variable to correct, need JetPt or JetE in inputs!')
-        corrections = []
+    
+    def getScaleFactor(self,**kwargs):
+        sfs = []
         for i,func in enumerate(self._funcs):
             sig = func.signature
             args = []
             for input in sig:
                 args.append(localargs[input])
-            print func
-            corr = func(*tuple(args))
-            for var in corrVars:
-                localargs[var] *= corr
-            cumulativeCorrection *= func
-            corrections.append(cumulativeCorrection)
-        return corrections
+            sfs.append(func(*tuple(args)))
+        return tuple(sfs)
+    
+    

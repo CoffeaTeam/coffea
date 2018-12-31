@@ -86,6 +86,10 @@ class jec_uncertainty_lookup(lookup_base):
         
         return np.vstack((central,1.+eval_ups,1.-eval_downs)).T
     
+    @property
+    def signature(self):
+        return self._signature
+    
     def __repr__(self):
         out  = 'binned dims   : %s\n'%(self._dim_order)
         out += 'eval vars     : %s\n'%(self._eval_vars)
