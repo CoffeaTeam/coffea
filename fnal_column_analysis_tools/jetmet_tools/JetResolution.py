@@ -14,14 +14,14 @@ def _checkConsistency(against,tocheck):
                             'with correctors for {}!'.format(tocheck,against))
     return tocheck
 
-_levelre = re.compile('[L1-7]+')
+_levelre = re.compile('Resolution')
 def _getLevel(levelName):
     matches = _levelre.findall(levelName)
     if len(matches) > 1:
         raise Exception('Malformed JEC level name: {}'.format(levelName))
     return matches[0]
 
-_level_order = ['L1','L2','L3','L2L3']
+_level_order = ['Resolution']
 
 class JetResolution(object):
     def __init__(self,**kwargs):
@@ -106,6 +106,6 @@ class JetResolution(object):
             sig = func.signature
             args = []
             for input in sig:
-                args.append(localargs[input])
+                args.append(kwargs[input])
             resos.append(func(*tuple(args)))                        
-        return tuple(resos)
+        return resos[-1]

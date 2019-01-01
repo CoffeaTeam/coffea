@@ -11,13 +11,13 @@ from numpy import sqrt,log
 from numpy import maximum as max
 from numpy import minimum as min
 
-@numba.njit
+#@numba.njit ### somehow the unjitted form is ~20% faster?, and we can make fewer masks this way
 def masked_bin_eval(dim1_indices, dimN_bins, dimN_vals):
     dimN_indices = np.empty_like(dim1_indices)
     for i in np.unique(dim1_indices):
-        dimN_indices[dim1_indices==i] = np.searchsorted(dimN_bins[i],dimN_vals[dim1_indices==i],side='right')
-        dimN_indices[dim1_indices==i] = min(dimN_indices[dim1_indices==i]-1,len(dimN_bins[i])-1)
-        dimN_indices[dim1_indices==i] = max(dimN_indices[dim1_indices==i]-1,0)
+        mask = (dim1_indices==i)
+        dimN_indices[mask] = np.clip(np.searchsorted(dimN_bins[i],dimN_vals[mask],side='right')-1,
+                                     0,len(dimN_bins[i])-2)
     return dimN_indices
 
 class jec_uncertainty_lookup(lookup_base):
@@ -67,20 +67,20 @@ class jec_uncertainty_lookup(lookup_base):
     
         #lookup the bins that we care about
         dim1_name = self._dim_order[0]
-        dim1_indices = np.searchsorted(self._bins[dim1_name],bin_vals[dim1_name],side='right')
-        dim1_indices = np.clip(dim1_indices-1,0,self._bins[dim1_name].size-1)
-        bin_indices = [dim1_indices]
-        for binname in self._dim_order[1:]:
-            bin_indices.append(masked_bin_eval(bin_indices[0],self._bins[binname],
-                                               bin_vals[binname]))
-        bin_tuple = tuple(bin_indices)
+        dim1_indices = np.clip(np.searchsorted(self._bins[dim1_name],
+                                               bin_vals[dim1_name],
+                                               side='right')-1,
+                               0,self._bins[dim1_name].size-2)
         
         #get clamp values and clip the inputs
         eval_ups = np.zeros_like(args[0])
         eval_downs = np.zeros_like(args[0])
         for i in np.unique(dim1_indices):
-            eval_ups[dim1_indices==i] = self._eval_ups[i](eval_vals[self._eval_vars[0]][dim1_indices==i])
-            eval_downs[dim1_indices==i] = self._eval_downs[i](eval_vals[self._eval_vars[0]][dim1_indices==i])
+            mask = (dim1_indices==i)
+            vals = np.clip(eval_vals[self._eval_vars[0]][mask],
+                           self._eval_knots[0],self._eval_knots[-1])
+            eval_ups[mask] = self._eval_ups[i](vals)
+            eval_downs[mask] = self._eval_downs[i](vals)
         
         central = np.ones_like(eval_ups)
         

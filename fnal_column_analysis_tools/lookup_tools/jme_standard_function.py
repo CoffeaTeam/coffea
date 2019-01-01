@@ -24,7 +24,7 @@ def numbaize(fstr, varlist):
     lstr = "lambda %s: %s" % (",".join(varlist), fstr)
     func = eval(lstr)
     nfunc = numba.njit(func)
-    return nfunc
+    return func
 
 #@numba.njit ### somehow the unjitted form is ~20% faster?, and we can make fewer masks this way
 def masked_bin_eval(dim1_indices, dimN_bins, dimN_vals):
@@ -32,7 +32,7 @@ def masked_bin_eval(dim1_indices, dimN_bins, dimN_vals):
     for i in np.unique(dim1_indices):
         mask = (dim1_indices==i)
         dimN_indices[mask] = np.clip(np.searchsorted(dimN_bins[i],dimN_vals[mask],side='right')-1,
-                                     0,len(dimN_bins[i])-1)
+                                     0,len(dimN_bins[i])-2)
     return dimN_indices
 
 class jme_standard_function(lookup_base):
@@ -78,8 +78,10 @@ class jme_standard_function(lookup_base):
     
         #lookup the bins that we care about
         dim1_name = self._dim_order[0]
-        dim1_indices = np.searchsorted(self._bins[dim1_name],bin_vals[dim1_name],side='right')
-        dim1_indices = np.clip(dim1_indices-1,0,self._bins[dim1_name].size-1)
+        dim1_indices = np.clip(np.searchsorted(self._bins[dim1_name],
+                                               bin_vals[dim1_name],
+                                               side='right')-1,
+                                0,self._bins[dim1_name].size-2)
         bin_indices = [dim1_indices]
         for binname in self._dim_order[1:]:
             bin_indices.append(masked_bin_eval(bin_indices[0],
@@ -90,18 +92,26 @@ class jme_standard_function(lookup_base):
         #get clamp values and clip the inputs
         eval_values = []
         for eval_name in self._eval_vars:
-            clamp_mins = self._eval_clamp_mins[eval_name][bin_tuple]
-            if isinstance(clamp_mins,JaggedArray):
-                if clamp_mins.content.size == 1:
-                    clamp_mins = clamp_mins.content[0]
-                else:
-                    clamp_mins = clamp_mins.flatten()
-            clamp_maxs = self._eval_clamp_maxs[eval_name][bin_tuple]
-            if isinstance(clamp_maxs,JaggedArray):
-                if clamp_maxs.content.size == 1:
-                    clamp_maxs = clamp_maxs.content[0]
-                else:
-                    clamp_maxs = clamp_maxs.flatten()
+            clamp_mins = None
+            if self._eval_clamp_mins[eval_name].content.size == 1:
+                clamp_mins = self._eval_clamp_mins[eval_name].content[0]
+            else:
+                clamp_mins = self._eval_clamp_mins[eval_name][bin_tuple]
+                if isinstance(clamp_mins,JaggedArray):
+                    if clamp_mins.content.size == 1:
+                        clamp_mins = clamp_mins.content[0]
+                    else:
+                        clamp_mins = clamp_mins.flatten()
+            clamp_maxs = None
+            if self._eval_clamp_maxs[eval_name].content.size == 1:
+                clamp_maxs = self._eval_clamp_maxs[eval_name].content[0]
+            else:
+                clamp_maxs = self._eval_clamp_maxs[eval_name][bin_tuple]
+                if isinstance(clamp_maxs,JaggedArray):
+                    if clamp_maxs.content.size == 1:
+                        clamp_maxs = clamp_maxs.content[0]
+                    else:
+                        clamp_maxs = clamp_maxs.flatten()
             eval_values.append(np.clip(eval_vals[eval_name],clamp_mins,clamp_maxs))
 
         #get parameter values

@@ -106,6 +106,6 @@ class JetCorrectionUncertainty(object):
             sig = func.signature
             args = []
             for input in sig:
-                args.append(localargs[input])
+                args.append(kwargs[input])
             uncs.append(func(*tuple(args)))
-        return tuple(uncs)
+        return uncs[-1]

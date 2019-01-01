@@ -14,14 +14,14 @@ def _checkConsistency(against,tocheck):
                             'with correctors for {}!'.format(tocheck,against))
     return tocheck
 
-_levelre = re.compile('[L1-7]+')
+_levelre = re.compile('SF+')
 def _getLevel(levelName):
     matches = _levelre.findall(levelName)
     if len(matches) > 1:
         raise Exception('Malformed JERSF level name: {}'.format(levelName))
     return matches[0]
 
-_level_order = ['L1','L2','L3','L2L3']
+_level_order = ['SF']
 
 class JetResolutionScaleFactor(object):
     def __init__(self,**kwargs):
@@ -105,8 +105,8 @@ class JetResolutionScaleFactor(object):
             sig = func.signature
             args = []
             for input in sig:
-                args.append(localargs[input])
+                args.append(kwargs[input])
             sfs.append(func(*tuple(args)))
-        return tuple(sfs)
+        return sfs[-1]
     
     

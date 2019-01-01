@@ -129,14 +129,15 @@ def _build_standard_jme_lookup(name,layout,pars,nBinnedVars,nBinColumns,
     offset_name = nBinnedVars + 2
     jagged_counts = np.ones(bins[bin_order[0]].size-1,dtype=np.int)
     if len(bin_order) > 1:
-        jagged_counts = np.maximum(bins[bin_order[1]].counts - 1,0) #need counts-1 since we only care about Nbins
+        jagged_counts = np.maximum(bins[bin_order[1]].counts-1,0) #need counts-1 since we only care about Nbins
     for i in range(nEvalVars):
         var_order.append(layout[i+offset_name])
         if not interpolatedFunc:
             clamp_mins[layout[i+offset_name]] = JaggedArray.fromcounts(jagged_counts,np.atleast_1d(pars[columns[i+offset_col]]))
             clamp_maxs[layout[i+offset_name]] = JaggedArray.fromcounts(jagged_counts,np.atleast_1d(pars[columns[i+offset_col+1]]))
             offset_col += 1
-    
+
+
     #now get the parameters, which we will look up with the clamped values
     parms = []
     parm_order = []
