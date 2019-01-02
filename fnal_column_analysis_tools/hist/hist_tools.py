@@ -66,15 +66,19 @@ class Interval(object):
         Real number interval
         Totally ordered, assuming no overlap in intervals
         special nan interval is greater than [*, inf)
+        string representation can be overriden by custom label
     """
     def __init__(self, lo, hi):
         self._lo = float(lo)
         self._hi = float(hi)
+        self._label = None
 
     def __repr__(self):
         return "<%s (%s) instance at 0x%0x>" % (self.__class__.__name__, str(self), id(self))
 
     def __str__(self):
+        if self._label is not None:
+            return self._label
         if self.nan():
             return "(nanflow)"
         return "%s%s, %s)" % ("(" if self._lo==-np.inf else "[", str(self._lo), str(self._hi))
@@ -110,6 +114,14 @@ class Interval(object):
     @property
     def hi(self):
         return self._hi
+
+    @property
+    def label(self):
+        return self._label
+
+    @label.setter
+    def label(self, lbl):
+        self._label = lbl
 
 
 class Axis(object):
