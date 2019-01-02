@@ -3,7 +3,7 @@ import numpy as np
 import scipy.stats
 import copy
 import warnings
-from .hist_tools import SparseAxis, DenseAxis, overflow_behavior
+from .hist_tools import SparseAxis, DenseAxis, overflow_behavior, Interval
 
 import matplotlib.pyplot as plt
 
@@ -38,7 +38,7 @@ def poisson_interval(sumw, sumw2, sigma=1):
     return interval
 
 
-def plot1d(ax, hist, axis, stack=False, overflow='none', line_opts=None, fill_opts=None, error_opts=None, overlay_overflow='none'):
+def plot1d(ax, hist, axis, stack=False, overflow='none', line_opts=None, fill_opts=None, error_opts=None, overlay_overflow='none', density=False):
     """
         ax: matplotlib Axes object
         hist: Hist object with maximum of two dimensions
@@ -88,6 +88,11 @@ def plot1d(ax, hist, axis, stack=False, overflow='none', line_opts=None, fill_op
                     the_slice = (the_slice[1], the_slice[0])
                 sumw = sumw[the_slice]
                 sumw2 = sumw2[the_slice]
+            if density:
+                integral = np.sum(sumw * np.diff(edges)) / np.sum(np.diff(edges))
+                if integral > 0:
+                    sumw = sumw/integral
+                    sumw2 = sumw2 / integral**2
             # step expects edges to match frequencies (why?!)
             sumw = np.r_[sumw, sumw[-1]]
             sumw2 = np.r_[sumw2, sumw2[-1]]
@@ -158,9 +163,63 @@ def plot1d(ax, hist, axis, stack=False, overflow='none', line_opts=None, fill_op
         return out
 
 
-def row(hist, axis):
-    raise NotImplementedError("Row of plots")
+def plotgrid(h, row=None, col=None, overlay=None, row_overflow='none', col_overflow='none', figsize=(4,4), **plot_opts):
+    """
+        Create a grid of plots, enumerating identifiers on up to 3 axes:
+            row: name of row axis
+            col: name of column axis
+            overlay: name of overlay axis
+        The remaining axis will be passed to plot1d as the plot axis
+    """
+    haxes = set(ax.name for ax in h.axes())
+    nrow,ncol = 1,1
+    if row:
+        row_identifiers = h.identifiers(row, overflow=row_overflow)
+        nrow = len(row_identifiers)
+        haxes.remove(row)
+    if col:
+        col_identifiers = h.identifiers(col, overflow=col_overflow)
+        ncol = len(col_identifiers)
+        haxes.remove(col)
+    if overlay:
+        haxes.remove(overlay)
+    if len(haxes) > 1:
+        raise ValueError("More than one dimension left: %s" % (",".join(ax for ax in haxes),))
+    elif len(haxes) == 0:
+        raise ValueError("Not enough dimensions available in %r" % h)
+    plotaxis = haxes.pop()
 
+    fig, axes = plt.subplots(nrow, ncol, figsize=(figsize[0]*ncol,figsize[1]*nrow), squeeze=False, sharex=True, sharey=True)
 
-def grid(hist, axis1, axis2):
-    raise NotImplementedError("Grid of plots")
+    for icol in range(ncol):
+        hcol = h
+        coltitle = None
+        if col:
+            vcol = col_identifiers[icol]
+            hcol = h.project(col, vcol)
+            coltitle = str(vcol)
+            if isinstance(vcol, Interval) and vcol.label is None:
+                coltitle = "%s ∈ %s" % (h.axis(col).label, coltitle)
+        for irow in range(nrow):
+            ax = axes[irow][icol]
+            hplot = hcol
+            rowtitle = None
+            if row:
+                vrow = row_identifiers[irow]
+                hplot = hcol.project(row, vrow)
+                rowtitle = str(vrow)
+                if isinstance(vrow, Interval) and vrow.label is None:
+                    rowtitle = "%s ∈ %s" % (h.axis(row).label, rowtitle)
+
+            plot1d(ax, hplot, plotaxis, **plot_opts)
+            if row is not None and col is not None:
+                ax.set_title("%s, %s" % (rowtitle, coltitle))
+            elif row is not None:
+                ax.set_title(rowtitle)
+            elif col is not None:
+                ax.set_title(coltitle)
+            ax.autoscale(axis='x', tight=True)
+            ax.set_ylim(0, None)
+            if overlay is not None:
+                ax.legend(title=h.axis(overlay).label)
+    return fig, axes
