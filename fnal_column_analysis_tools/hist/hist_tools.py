@@ -451,8 +451,8 @@ class Hist(object):
         # ..but then the user would then see the order change under them
         self._axes = axes
         self._dense_shape = tuple([ax.size for ax in self._axes if isinstance(ax, DenseAxis)])
-        if np.prod(self._dense_shape) > 1000000:
-            warnings.warn("Allocating a large (>1M bin) histogram!", RuntimeWarning)
+        if np.prod(self._dense_shape) > 10000000:
+            warnings.warn("Allocating a large (>10M bin) histogram!", RuntimeWarning)
         self._sumw = {}
         # Storage of sumw2 starts at first use of weight keyword in fill()
         self._sumw2 = None
