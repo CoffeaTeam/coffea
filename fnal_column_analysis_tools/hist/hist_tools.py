@@ -54,6 +54,8 @@ def overflow_behavior(overflow):
         return slice(None, -1)
     elif overflow == 'allnan':
         return slice(None)
+    elif overflow == 'justnan':
+        return slice(-1, None)
     else:
         raise ValueError("Unrecognized overflow behavior: %s" % overflow)
 
@@ -64,18 +66,22 @@ class Interval(object):
         Real number interval
         Totally ordered, assuming no overlap in intervals
         special nan interval is greater than [*, inf)
+        string representation can be overriden by custom label
     """
     def __init__(self, lo, hi):
         self._lo = float(lo)
         self._hi = float(hi)
+        self._label = None
 
     def __repr__(self):
         return "<%s (%s) instance at 0x%0x>" % (self.__class__.__name__, str(self), id(self))
 
     def __str__(self):
+        if self._label is not None:
+            return self._label
         if self.nan():
-            return "nanflow"
-        return "%s%f, %f)" % ("(" if self._lo==-np.inf else "[", self._lo, self._hi)
+            return "(nanflow)"
+        return "%s%s, %s)" % ("(" if self._lo==-np.inf else "[", str(self._lo), str(self._hi))
 
     def __hash__(self):
         return hash(self._lo, self._hi)
@@ -108,6 +114,14 @@ class Interval(object):
     @property
     def hi(self):
         return self._hi
+
+    @property
+    def label(self):
+        return self._label
+
+    @label.setter
+    def label(self, lbl):
+        self._label = lbl
 
 
 class Axis(object):
@@ -248,6 +262,8 @@ class DenseAxis(Axis):
             __getitem__(index): return an identifier
             _ireduce(slice): return a slice or list of indices, input slice to be interpred as values
             reduced(islice): return a new axis with binning corresponding to the index slice (from _ireduce)
+        TODO: hasoverflow(), not all dense axes might have an overflow concept, currently its implicitly assumed
+            they do (as the only dense type is a numeric axis)
     """
     pass
 
@@ -295,7 +311,7 @@ class Bin(DenseAxis):
             if self._uniform:
                 idx = np.clip(np.floor((identifier-self._lo)*self._bins/(self._hi-self._lo)) + 1, 0, self._bins+1)
                 if isinstance(idx, np.ndarray):
-                    idx[idx==np.nan] = self.size-1
+                    idx[np.isnan(idx)] = self.size-1
                     idx = idx.astype(int)
                 elif np.isnan(idx):
                     idx = self.size-1
@@ -305,6 +321,8 @@ class Bin(DenseAxis):
             else:
                 return np.searchsorted(self._bins, identifier, side='right')
         elif isinstance(identifier, Interval):
+            if identifier.nan():
+                return self.size-1
             return self.index(identifier._lo)
         raise TypeError("Request bin indices with a identifier or 1-D array only")
 
@@ -328,6 +346,8 @@ class Bin(DenseAxis):
         if isinstance(the_slice, numbers.Number):
             the_slice = slice(the_slice, the_slice)
         elif isinstance(the_slice, Interval):
+            if the_slice.nan():
+                return slice(-1, None)
             lo = the_slice._lo if the_slice._lo > -np.inf else None
             hi = the_slice._hi if the_slice._hi < np.inf else None
             the_slice = slice(lo, hi)
@@ -447,8 +467,8 @@ class Hist(object):
         # ..but then the user would then see the order change under them
         self._axes = axes
         self._dense_shape = tuple([ax.size for ax in self._axes if isinstance(ax, DenseAxis)])
-        if np.prod(self._dense_shape) > 1000000:
-            warnings.warn("Allocating a large (>1M bin) histogram!", RuntimeWarning)
+        if np.prod(self._dense_shape) > 10000000:
+            warnings.warn("Allocating a large (>10M bin) histogram!", RuntimeWarning)
         self._sumw = {}
         # Storage of sumw2 starts at first use of weight keyword in fill()
         self._sumw2 = None
@@ -673,6 +693,14 @@ class Hist(object):
         """
         axis = self.axis(axis_name)
         full_slice = tuple(slice(None) if ax != axis else the_slice for ax in self._axes)
+        if isinstance(the_slice, Interval):
+            # Handle overflow intervals nicely
+            if the_slice.nan():
+                overflow = 'justnan'
+            elif the_slice.lo == -np.inf:
+                overflow = 'under'
+            elif the_slice.hi == np.inf:
+                overflow = 'over'
         return self[full_slice].sum(axis.name, overflow=overflow)  # slice may make new axis, use name
 
     def profile(self, axis_name):
@@ -712,8 +740,40 @@ class Hist(object):
             for key in reduced_hist._sumw:
                 new_key = (new_idx,) + key
                 out._sumw[new_key] = reduced_hist._sumw[key]
-                if self._sumw is not None:
+                if self._sumw2 is not None:
                     out._sumw2[new_key] = reduced_hist._sumw2[key]
+        return out
+
+    def rebin(self, old_axis, new_axis):
+        """
+            Rebin a dense axis
+                old_axis: name or Axis object to rebin
+                new_axis: Dense Axis object defining new axis
+            This function will construct the mapping from old to new axis
+        """
+        old_axis = self.axis(old_axis)
+        new_dims = [ax if ax != old_axis else new_axis for ax in self._axes]
+        out = Hist(self._label, *new_dims, dtype=self._dtype)
+        if self._sumw2 is not None:
+            out._init_sumw2()
+
+        # would have been nice to use ufunc.reduceat, but we should support arbitrary reshuffling
+        idense = self._idense(old_axis)
+        def view_ax(idx):
+            fullindex = [slice(None)]*self.dense_dim()
+            fullindex[idense] = idx
+            return tuple(fullindex)
+        binmap = [new_axis.index(i) for i in old_axis.identifiers(overflow='allnan')]
+        def dense_op(array):
+            anew = np.zeros(out._dense_shape, dtype=out._dtype)
+            for iold, inew in enumerate(binmap):
+                anew[view_ax(inew)] += array[view_ax(iold)]
+            return anew
+
+        for key in self._sumw:
+            out._sumw[key] = dense_op(self._sumw[key])
+            if self._sumw2 is not None:
+                out._sumw2[key] = dense_op(self._sumw2[key])
         return out
 
     def values(self, sumw2=False, overflow='none'):
