@@ -250,6 +250,8 @@ class DenseAxis(Axis):
             __getitem__(index): return an identifier
             _ireduce(slice): return a slice or list of indices, input slice to be interpred as values
             reduced(islice): return a new axis with binning corresponding to the index slice (from _ireduce)
+        TODO: hasoverflow(), not all dense axes might have an overflow concept, currently its implicitly assumed
+            they do (as the only dense type is a numeric axis)
     """
     pass
 
@@ -307,6 +309,8 @@ class Bin(DenseAxis):
             else:
                 return np.searchsorted(self._bins, identifier, side='right')
         elif isinstance(identifier, Interval):
+            if identifier.nan():
+                return self.size-1
             return self.index(identifier._lo)
         raise TypeError("Request bin indices with a identifier or 1-D array only")
 
@@ -724,8 +728,40 @@ class Hist(object):
             for key in reduced_hist._sumw:
                 new_key = (new_idx,) + key
                 out._sumw[new_key] = reduced_hist._sumw[key]
-                if self._sumw is not None:
+                if self._sumw2 is not None:
                     out._sumw2[new_key] = reduced_hist._sumw2[key]
+        return out
+
+    def rebin(self, old_axis, new_axis):
+        """
+            Rebin a dense axis
+                old_axis: name or Axis object to rebin
+                new_axis: Dense Axis object defining new axis
+            This function will construct the mapping from old to new axis
+        """
+        old_axis = self.axis(old_axis)
+        new_dims = [ax if ax != old_axis else new_axis for ax in self._axes]
+        out = Hist(self._label, *new_dims, dtype=self._dtype)
+        if self._sumw2 is not None:
+            out._init_sumw2()
+
+        # would have been nice to use ufunc.reduceat, but we should support arbitrary reshuffling
+        idense = self._idense(old_axis)
+        def view_ax(idx):
+            fullindex = [slice(None)]*self.dense_dim()
+            fullindex[idense] = idx
+            return tuple(fullindex)
+        binmap = [new_axis.index(i) for i in old_axis.identifiers(overflow='allnan')]
+        def dense_op(array):
+            anew = np.zeros(out._dense_shape, dtype=out._dtype)
+            for iold, inew in enumerate(binmap):
+                anew[view_ax(inew)] += array[view_ax(iold)]
+            return anew
+
+        for key in self._sumw:
+            out._sumw[key] = dense_op(self._sumw[key])
+            if self._sumw2 is not None:
+                out._sumw2[key] = dense_op(self._sumw2[key])
         return out
 
     def values(self, sumw2=False, overflow='none'):
