@@ -108,8 +108,12 @@ class FactorizedJetCorrector(object):
         localargs = kwargs
         firstarg = localargs[self._signature[0]]
         cumulativeCorrection = 1.0
+        offsets = None
         if isinstance(firstarg,JaggedArray):
-            cumulatedCorrection = firstarg.ones_like()
+            offsets = firstarg.offsets
+            cumulativeCorrection = firstarg.ones_like().content
+            for key in localargs.keys():
+                localargs[key] = localargs[key].content
         else:
             cumulativeCorrection = np.ones_like(firstarg)
         corrVars = []
@@ -127,7 +131,10 @@ class FactorizedJetCorrector(object):
                 args.append(localargs[input])
             corr = func(*tuple(args))
             for var in corrVars:
-                localargs[var] = corr * localargs[var]
-            cumulativeCorrection = corr * cumulativeCorrection
+                localargs[var] *= corr
+            cumulativeCorrection *= corr
             corrections.append(cumulativeCorrection)
+        if offsets is not None:
+            for i in range(len(corrections)):
+                corrections[i] = JaggedArray.fromoffsets(offsets,corrections[i])
         return corrections

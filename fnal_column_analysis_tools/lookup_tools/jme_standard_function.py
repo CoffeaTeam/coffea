@@ -23,17 +23,41 @@ def numbaize(fstr, varlist):
         val = fstr
     lstr = "lambda %s: %s" % (",".join(varlist), fstr)
     func = eval(lstr)
-    nfunc = numba.njit(func)
+    #nfunc = numba.njit(func)
     return func
 
 #@numba.njit ### somehow the unjitted form is ~20% faster?, and we can make fewer masks this way
 def masked_bin_eval(dim1_indices, dimN_bins, dimN_vals):
     dimN_indices = np.empty_like(dim1_indices)
     for i in np.unique(dim1_indices):
-        mask = (dim1_indices==i)
-        dimN_indices[mask] = np.clip(np.searchsorted(dimN_bins[i],dimN_vals[mask],side='right')-1,
+        idx = np.where(dim1_indices == i)
+        dimN_indices[idx] = np.clip(np.searchsorted(dimN_bins[i],
+                                                    dimN_vals[idx],
+                                                    side='right')-1,
                                      0,len(dimN_bins[i])-2)
     return dimN_indices
+
+#idx_in is a tuple of indices in increasing jaggedness
+#idx_out is a list of flat indices
+def flatten_idxs(idx_in,jaggedarray):
+    if len(idx_in) == 0: return np.array([],dtype=np.int)
+    idx_out = jaggedarray.starts[idx_in[0]]
+    if len(idx_in) == 1:
+        pass
+    elif len(idx_in) == 2:
+        idx_out += idx_in[1]
+    else:
+        raise Exception('jme_standard_function only works for two binning dimensions!')
+
+    good_idx = (idx_out < jaggedarray.content.size)
+    if( (~good_idx).any() ):
+        input_idxs = tuple([idx_out[~good_idx]]+
+                           [idx_in[i][~good_idx] for i in range(len(idx_in))])
+        raise Exception('Calculated invalid index {} for'\
+                        ' array with length {}'.format(np.vstack(input_idxs),
+                                                       jaggedarray.content.size))
+
+    return idx_out
 
 class jme_standard_function(lookup_base):
     def __init__(self,formula,bins_and_orders,clamps_and_vars,parms_and_orders):
@@ -87,6 +111,7 @@ class jme_standard_function(lookup_base):
             bin_indices.append(masked_bin_eval(bin_indices[0],
                                                self._bins[binname],
                                                bin_vals[binname]))
+        
         bin_tuple = tuple(bin_indices)
         
         #get clamp values and clip the inputs
@@ -96,7 +121,8 @@ class jme_standard_function(lookup_base):
             if self._eval_clamp_mins[eval_name].content.size == 1:
                 clamp_mins = self._eval_clamp_mins[eval_name].content[0]
             else:
-                clamp_mins = self._eval_clamp_mins[eval_name][bin_tuple]
+                idxs = flatten_idxs(bin_tuple,self._eval_clamp_mins[eval_name])
+                clamp_mins = self._eval_clamp_mins[eval_name].content[idxs]
                 if isinstance(clamp_mins,JaggedArray):
                     if clamp_mins.content.size == 1:
                         clamp_mins = clamp_mins.content[0]
@@ -106,7 +132,8 @@ class jme_standard_function(lookup_base):
             if self._eval_clamp_maxs[eval_name].content.size == 1:
                 clamp_maxs = self._eval_clamp_maxs[eval_name].content[0]
             else:
-                clamp_maxs = self._eval_clamp_maxs[eval_name][bin_tuple]
+                idxs = flatten_idxs(bin_tuple,self._eval_clamp_maxs[eval_name])
+                clamp_maxs = self._eval_clamp_maxs[eval_name].content[idxs]
                 if isinstance(clamp_maxs,JaggedArray):
                     if clamp_maxs.content.size == 1:
                         clamp_maxs = clamp_maxs.content[0]
@@ -115,7 +142,11 @@ class jme_standard_function(lookup_base):
             eval_values.append(np.clip(eval_vals[eval_name],clamp_mins,clamp_maxs))
 
         #get parameter values
-        parm_values = [parm[bin_tuple] for parm in self._parms]
+        parm_values = []
+        if len(self._parms) > 0:
+            idxs = flatten_idxs(bin_tuple,self._parms[0])
+            parm_values = [parm.content[idxs] for parm in self._parms]
+            
         
         return self._formula(*tuple(parm_values+eval_values))
     

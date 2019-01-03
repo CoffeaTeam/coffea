@@ -73,18 +73,15 @@ class jec_uncertainty_lookup(lookup_base):
                                0,self._bins[dim1_name].size-2)
         
         #get clamp values and clip the inputs
-        eval_ups = np.zeros_like(args[0])
-        eval_downs = np.zeros_like(args[0])
+        outs = np.ones(shape=(args[0].size,2),dtype=np.float)
         for i in np.unique(dim1_indices):
-            mask = (dim1_indices==i)
+            mask = np.where(dim1_indices==i)
             vals = np.clip(eval_vals[self._eval_vars[0]][mask],
                            self._eval_knots[0],self._eval_knots[-1])
-            eval_ups[mask] = self._eval_ups[i](vals)
-            eval_downs[mask] = self._eval_downs[i](vals)
+            outs[:,1][mask] += self._eval_ups[i](vals)
+            outs[:,0][mask] -= self._eval_downs[i](vals)
         
-        central = np.ones_like(eval_ups)
-        
-        return np.vstack((central,1.+eval_ups,1.-eval_downs)).T
+        return outs
     
     @property
     def signature(self):
