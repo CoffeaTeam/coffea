@@ -88,11 +88,10 @@ def plot1d(ax, hist, axis, stack=False, overflow='none', line_opts=None, fill_op
                     the_slice = (the_slice[1], the_slice[0])
                 sumw = sumw[the_slice]
                 sumw2 = sumw2[the_slice]
-            if density:
-                integral = np.sum(sumw * np.diff(edges)) / np.sum(np.diff(edges))
-                if integral > 0:
-                    sumw = sumw/integral
-                    sumw2 = sumw2 / integral**2
+            if density and np.sum(sumw)>0:
+                binwnorm = 1. / (np.diff(edges)*np.sum(sumw))
+                sumw = sumw * binwnorm
+                sumw2 = sumw2 * binwnorm**2
             # step expects edges to match frequencies (why?!)
             sumw = np.r_[sumw, sumw[-1]]
             sumw2 = np.r_[sumw2, sumw2[-1]]
