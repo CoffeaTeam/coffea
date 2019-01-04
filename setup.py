@@ -30,6 +30,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os.path
+import six
 
 from setuptools import find_packages
 from setuptools import setup
@@ -67,7 +68,15 @@ setup(name = "fnal-column-analysis-tools",
       download_url = "https://github.com/CoffeaTeam/fnal-column-analysis-tools/releases",
       license = "BSD 3-clause",
       test_suite = "tests",
-      install_requires = ["numpy>=1.13.1", "awkward>=0.5.0", "uproot>=3.2.12", "uproot-methods>=0.2.7"],
+      install_requires = [
+          "awkward>=0.5.0",
+          "matplotlib<3" if six.PY2 else "matplotlib>=3",
+          "numba>=0.42.0",
+          "numpy>=1.13.1",
+          "scipy>=1.1.0",
+          "uproot-methods>=0.2.7",
+          "uproot>=3.2.12",
+      ],
       setup_requires = ["pytest-runner"],
       tests_require = ["pytest"],
       classifiers = [
@@ -81,8 +90,6 @@ setup(name = "fnal-column-analysis-tools",
           "Operating System :: Unix",
           "Programming Language :: Python",
           "Programming Language :: Python :: 2.7",
-          "Programming Language :: Python :: 3.4",
-          "Programming Language :: Python :: 3.5",
           "Programming Language :: Python :: 3.6",
           "Programming Language :: Python :: 3.7",
           "Topic :: Scientific/Engineering",
@@ -91,6 +98,6 @@ setup(name = "fnal-column-analysis-tools",
           "Topic :: Scientific/Engineering :: Physics",
           "Topic :: Software Development",
           "Topic :: Utilities",
-          ],
+      ],
       platforms = "Any",
       )
