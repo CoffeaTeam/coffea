@@ -81,7 +81,9 @@ class Interval(object):
             return self._label
         if self.nan():
             return "(nanflow)"
-        return "%s%s, %s)" % ("(" if self._lo==-np.inf else "[", str(self._lo), str(self._hi))
+        # string representation of floats is apparently a touchy subject.. further reading:
+        # https://stackoverflow.com/questions/25898733/why-does-strfloat-return-more-digits-in-python-3-than-python-2
+        return "%s%.12g, %.12g)" % ("(" if self._lo==-np.inf else "[", self._lo, self._hi)
 
     def __hash__(self):
         return hash(self._lo, self._hi)
