@@ -42,13 +42,17 @@ or similar (use ``sudo``, ``--user``, ``virtualenv``, or pip-in-conda if you wis
 Strict dependencies:
 ====================
 
-- `Python <http://docs.python-guide.org/en/latest/starting/installation/>`__ (2.7+, 3.4+)
+- `Python <http://docs.python-guide.org/en/latest/starting/installation/>`__ (2.7+, 3.6+)
 
 The following are installed automatically when you install uproot with pip:
 
-- `Numpy <https://scipy.org/install.html>`__ (1.15+)
+- `numpy <https://scipy.org/install.html>`__ (1.15+)
 - `awkward-array <https://pypi.org/project/awkward>`__ to manipulate data from non-flat TTrees, such as jagged arrays (`part of Scikit-HEP <https://github.com/scikit-hep/awkward-array>`__)
 - `uproot-methods <https://pypi.org/project/uproot-methods>`__ to allow expressions of things as lorentz vectors
+- `numba <https://numba.pydata.org/>`__ just-in-time compilation of python functions
+- ``scipy`` for statistical functions
+- ``matplitlib`` as a plotting backend
+- ``uproot`` for interacting with ROOT files
 
 .. inclusion-marker-3-do-not-remove
 
