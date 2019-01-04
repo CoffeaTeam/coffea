@@ -70,7 +70,7 @@ setup(name = "fnal-column-analysis-tools",
       test_suite = "tests",
       install_requires = [
           "awkward>=0.5.0",
-          "matplotlib<=3" if six.PY2 else "matplotlib>=3",
+          "matplotlib<3" if six.PY2 else "matplotlib>=3",
           "numba>=0.42.0",
           "numpy>=1.13.1",
           "scipy>=1.1.0",
