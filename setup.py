@@ -30,6 +30,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os.path
+import six
 
 from setuptools import find_packages
 from setuptools import setup
@@ -69,7 +70,7 @@ setup(name = "fnal-column-analysis-tools",
       test_suite = "tests",
       install_requires = [
           "awkward>=0.5.0",
-          "matplotlib>=2.2.3",
+          "matplotlib<=3" if six.PY2 else "matplotlib>=3",
           "numba>=0.42.0",
           "numpy>=1.13.1",
           "scipy>=1.1.0",
