@@ -3,6 +3,7 @@ import numpy as np
 import scipy.stats
 import copy
 import warnings
+import numbers
 from .hist_tools import SparseAxis, DenseAxis, overflow_behavior, Interval
 
 import matplotlib.pyplot as plt
@@ -38,7 +39,7 @@ def poisson_interval(sumw, sumw2, sigma=1):
     return interval
 
 
-def plot1d(ax, hist, axis, stack=False, overflow='none', line_opts=None, fill_opts=None, error_opts=None, overlay_overflow='none', density=False):
+def plot1d(ax, hist, axis, stack=False, overflow='none', line_opts=None, fill_opts=None, error_opts=None, overlay_overflow='none', density=False, binwnorm=None):
     """
         ax: matplotlib Axes object
         hist: Hist object with maximum of two dimensions
@@ -53,11 +54,18 @@ def plot1d(ax, hist, axis, stack=False, overflow='none', line_opts=None, fill_op
             error_opts: to plot an errorbar, with a step or marker
 
         overlay_overflow: overflow behavior of dense overlay axis, if one exists
+        density: Convert sum weights to probability density (i.e. integrates to 1 over domain of axis) (NB: conflicts with binwnorm)
+        binwnorm: Convert sum weights to bin-width-normalized, with units equal to supplied value (usually you want to specify 1.)
     """
     if not isinstance(ax, plt.Axes):
         raise ValueError("ax must be a matplotlib Axes object")
     if hist.dim() > 2:
         raise ValueError("plot1d() can only support up to two dimensions (one for axis, one to stack or overlay)")
+    if density and binwnorm is not None:
+        raise ValueError("Cannot use density and binwnorm at the same time!")
+    if binwnorm is not None:
+        if not isinstance(binwnorm, numbers.Number):
+            raise ValueError("Bin width normalization not a number, but a %r" % binwnorm.__class__)
 
     axis = hist.axis(axis)
     other_axis = next((ax for ax in hist.axes() if ax != axis), None)
@@ -88,10 +96,11 @@ def plot1d(ax, hist, axis, stack=False, overflow='none', line_opts=None, fill_op
                     the_slice = (the_slice[1], the_slice[0])
                 sumw = sumw[the_slice]
                 sumw2 = sumw2[the_slice]
-            if density and np.sum(sumw)>0:
-                binwnorm = 1. / (np.diff(edges)*np.sum(sumw))
-                sumw = sumw * binwnorm
-                sumw2 = sumw2 * binwnorm**2
+            if (density or binwnorm is not None) and np.sum(sumw)>0:
+                overallnorm = np.sum(sumw)*binwnorm if binwnorm is not None else 1.
+                binnorms = overallnorm / (np.diff(edges)*np.sum(sumw))
+                sumw = sumw * binnorms
+                sumw2 = sumw2 * binnorms**2
             # step expects edges to match frequencies (why?!)
             sumw = np.r_[sumw, sumw[-1]]
             sumw2 = np.r_[sumw2, sumw2[-1]]
