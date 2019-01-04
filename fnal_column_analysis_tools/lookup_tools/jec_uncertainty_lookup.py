@@ -78,8 +78,8 @@ class jec_uncertainty_lookup(lookup_base):
             mask = np.where(dim1_indices==i)
             vals = np.clip(eval_vals[self._eval_vars[0]][mask],
                            self._eval_knots[0],self._eval_knots[-1])
-            outs[:,1][mask] += self._eval_ups[i](vals)
-            outs[:,0][mask] -= self._eval_downs[i](vals)
+            outs[:,0][mask] += self._eval_ups[i](vals)
+            outs[:,1][mask] -= self._eval_downs[i](vals)
         
         return outs
     
