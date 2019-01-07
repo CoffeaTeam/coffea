@@ -19,6 +19,8 @@ def convert_histo_root_file(file):
                 converted_file[(key[:-2],'dense_lookup')] = dumFile[key[:-2]].numpy
             else:
                 converted_file[(key[:-2],'dense_lookup')] = dumFile[key[:-2]].numpy()
+            temp = converted_file[(key[:-2],'dense_lookup')]
+            converted_file[(key[:-2],'dense_lookup')] = tuple([temp[0],tuple(temp[1:])])
         elif histType == RootDir: #means there are subdirectories wihin main directory
             for j, key2 in enumerate(dumFile[key[:-2]].keys()):
                 histType2 = str(type(dumFile[key[:-2]][key2[:-2]]))
@@ -27,6 +29,8 @@ def convert_histo_root_file(file):
                         converted_file[(key[:-2]+'/'+key2[:-2],'dense_lookup')] = dumFile[key[:-2]][key2[:-2]].numpy
                     else:
                         converted_file[(key[:-2]+'/'+key2[:-2],'dense_lookup')] = dumFile[key[:-2]][key2[:-2]].numpy()
+                    temp = converted_file[(key[:-2]+'/'+key2[:-2],'dense_lookup')]
+                    converted_file[(key[:-2]+'/'+key2[:-2],'dense_lookup')] = tuple([temp[0],tuple(temp[1:])])
                 elif histType == RootDir:
                     for k, key3 in enumerate(dumFile[key[:-2]][key2[:-2]].keys()):
                         histType3 = str(type(dumFile[key[:-2]][key2[:-2]][key3[:-2]]))
@@ -35,6 +39,8 @@ def convert_histo_root_file(file):
                                 converted_file[(key[:-2]+'/'+key2[:-2]+'/'+key3[:-2],'dense_lookup')] = dumFile[key[:-2]][key2[:-2]][key3[:-2]].numpy
                             else:
                                 converted_file[(key[:-2]+'/'+key2[:-2]+'/'+key3[:-2],'dense_lookup')] = dumFile[key[:-2]][key2[:-2]][key3[:-2]].numpy()
+                            temp = converted_file[(key[:-2]+'/'+key2[:-2]+'/'+key3[:-2],'dense_lookup')]
+                            converted_file[(key[:-2]+'/'+key2[:-2]+'/'+key3[:-2],'dense_lookup')] = tuple([temp[0],tuple(temp[1:])])
         elif histType==TGraphAsymmErrors or histType==TGraph2D:
             continue
         else:
