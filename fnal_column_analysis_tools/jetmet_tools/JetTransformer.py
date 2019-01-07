@@ -16,6 +16,10 @@ _signature_map = {'JetPt':'pt',
                  }
 
 def _update_jet_ptm(corr,jet,fromRaw=False):
+    """
+        This is a hack to update the jet pt and jet mass in place
+        as we apply corrections and smearings.
+    """
     if fromRaw:
         jet._content._contents['__fast_pt']   = corr * jet.ptRaw.content
         jet._content._contents['__fast_mass'] = corr * jet.massRaw.content
@@ -27,6 +31,22 @@ def _update_jet_ptm(corr,jet,fromRaw=False):
 #the class below does use hacks of JaggedCandidateArray to achieve the desired behavior
 #no monkey patches though
 class JetTransformer(object):
+    """
+        This class is a columnar implementation of the the standard recipes for apply JECs, and
+        the various scale factors and uncertainties therein.
+           - Only the stochastic smearing method is implemented at the moment.
+        It uses the FactorizedJetCorrector, JetResolution, JetResolutionScaleFactor, and
+        JetCorrectionUncertainty classes to calculate the ingredients for the final updated jet
+        object, which will be modified in place.
+        The jet object must be a "JaggedCandidateArray" and have the additional properties:
+           - ptRaw
+           - massRaw
+        These will be used to reset the jet pT and mass, and then calculate the updated pTs and
+        masses for various corrections and smearings.
+        You can use this class like:
+        xformer = JetTransformer(name1=corrL1,...)
+        xformer.transform(jet)
+    """
     def __init__(self,jec=None,junc=None,jer=None,jersf=None):
         if jec is None:
             raise Exception('JetTransformer must have "jec" specified as an argument!')
@@ -54,6 +74,15 @@ class JetTransformer(object):
         self._jersf = jersf
 
     def transform(self,jet):
+        """
+            precondition - jet is a JaggedCandidateArray with additional attributes:
+                             - 'ptRaw'
+                             - 'massRaw'
+            xformer = JetTransformer(name1=corrL1,...)
+            xformer.transform(jet)
+            postcondition - jet.pt, jet.mass, jet.p4 are updated to represent the corrected jet
+                            based on the input correction set
+        """
         if not isinstance(jet,JaggedCandidateArray):
             raise Exception('Input data must be a JaggedCandidateArray!')
         if ( 'ptRaw' not in jet.columns or 'massRaw' not in jet.columns ):

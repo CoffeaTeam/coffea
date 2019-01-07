@@ -17,7 +17,19 @@ def masked_bin_eval(dim1_indices, dimN_bins, dimN_vals):
     return dimN_indices
 
 class jec_uncertainty_lookup(lookup_base):
+    """
+        This class defines a lookup table for jet energy scale uncertainties.
+        The uncertainty values can be looked up with a call as follows:
+            junc_lut = jec_uncertainty_lookup()
+            uncertainties = junc_lut(JetProperty1=jet.property1,...)
+        "uncertainties" will be of the same shape as the input jet properties.
+        The list of required jet properties are given in junc_lut.signature
+    """
     def __init__(self,formula,bins_and_orders,knots_and_vars):
+        """
+            The constructor takes the output of the "convert_junc_txt_file"
+            text file converter, which returns a formula, bins, and an interpolation table.
+        """
         super(jec_uncertainty_lookup,self).__init__()
         self._dim_order = bins_and_orders[1]
         self._bins = bins_and_orders[0]
@@ -58,6 +70,7 @@ class jec_uncertainty_lookup(lookup_base):
                 self._eval_args[argname] = self._dim_args[argname]
     
     def _evaluate(self,*args):
+        """ uncertainties = f(args) """
         bin_vals  = {argname:args[self._dim_args[argname]] for argname in self._dim_order}
         eval_vals = {argname:args[self._eval_args[argname]] for argname in self._eval_vars}
     
@@ -81,6 +94,7 @@ class jec_uncertainty_lookup(lookup_base):
     
     @property
     def signature(self):
+        """ the list of all needed jet properties to be passed as kwargs to this lookup """
         return self._signature
     
     def __repr__(self):

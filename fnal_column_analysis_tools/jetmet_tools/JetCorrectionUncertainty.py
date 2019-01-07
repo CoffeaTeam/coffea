@@ -24,7 +24,19 @@ def _getLevel(levelName):
 _level_order = ['Uncertainty']
 
 class JetCorrectionUncertainty(object):
+    """
+        This class is a columnar implementation of the JetCorrectionUncertainty tool in
+        CMSSW and FWLite. It calculates the jet energy scale uncertainty for a corrected jet
+        in a given binning.
+        You can use this class as follows:
+        jcu = JetCorrectionUncertainty(name1=corrL1,...)
+        jetUncs = jcu(JetParameter1=jet.parameter1,...)
+    """
     def __init__(self,**kwargs):
+        """
+            You construct a JetCorrectionUncertainty by passing in a dict of names and functions.
+            Names must be formatted as '<campaign>_<dataera>_<datatype>_<level>_<jettype>'.
+        """
         jettype = None
         levels = []
         funcs = []
@@ -89,6 +101,7 @@ class JetCorrectionUncertainty(object):
 
     @property
     def signature(self):
+        """ list the necessary jet properties that must be input to this function """
         return self._signature
     
     def __repr__(self):
@@ -101,6 +114,12 @@ class JetCorrectionUncertainty(object):
         return out
     
     def getUncertainty(self,**kwargs):
+        """
+            Returns the set of uncertainties for all input jets at the highest available level
+            use like:
+            juncs = uncertainty.getUncertainty(JetProperty1=jet.property1,...)
+            'juncs' will be formatted like [[[up_val down_val]_jet1 ... ] ...]
+        """
         uncs = []
         for i,func in enumerate(self._funcs):
             sig = func.signature

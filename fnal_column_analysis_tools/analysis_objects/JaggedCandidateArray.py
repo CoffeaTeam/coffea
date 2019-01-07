@@ -6,9 +6,11 @@ JaggedTLorentzVectorArray = awkward.Methods.mixin(uproot_methods.classes.TLorent
 
 #functions to quickly cash useful quantities
 def _fast_pt(p4):
+    """ quick pt calculation for caching """
     return np.hypot(p4.x,p4.y)
 
 def _fast_eta(p4):
+    """ quick eta calculation for caching """
     px = p4.x
     py = p4.y
     pz = p4.z
@@ -16,9 +18,11 @@ def _fast_eta(p4):
     return np.arcsinh(pz/pT)
 
 def _fast_phi(p4):
+    """ quick phi calculation for caching """
     return np.arctan2(p4.y,p4.x)
 
 def _fast_mass(p4):
+    """ quick mass calculation for caching """
     px = p4.x
     py = p4.y
     pz = p4.z
@@ -27,11 +31,13 @@ def _fast_mass(p4):
     return np.sqrt(np.abs(en*en - p3mag2))
 
 def _default_match(combs,deltaRCut=10000, deltaPtCut=10000):
+    """ default matching function for match(), match in deltaR / deltaPt """
     passPtCut =(( np.abs(combs.i0.pt - combs.i1.pt)/combs.i0.pt ) < deltaPtCut)
     mask = (combs.i0.delta_r(combs.i1) < deltaRCut)&passPtCut
     return mask.any()
 
 def _default_argmatch(combs,deltaRCut=10000, deltaPtCut=10000):
+    """ default matching function for argmatch(), match in deltaR / deltaPt """
     deltaPts = ( np.abs(combs.i0.pt - combs.i1.pt)/combs.i0.pt )
     deltaRs = combs.i0.delta_r(combs.i1)
     indexOfMin = deltaRs.argmin()
@@ -44,14 +50,35 @@ def _default_argmatch(combs,deltaRCut=10000, deltaPtCut=10000):
     return awkward.JaggedArray.fromoffsets(passesCutOutShape.offsets,flatIdxMin)
 
 class JaggedCandidateMethods(awkward.Methods):
+    """
+        JaggedCandidateMethods defines the additional methods that turn a JaggedArray
+        into a JaggedCandidateArray suitable for most analysis work. Additional user-
+        supplied attributes can be accessed via getattr or dot operators.
+    """
     
     @classmethod
     def candidatesfromcounts(cls,counts,**kwargs):
+        """
+            cands = JaggedCandidateArray.candidatesfromcounts(counts=counts,
+                                                              pt=column1,
+                                                              eta=column2,
+                                                              phi=column3,
+                                                              mass=column4,
+                                                              ...)
+        """
         offsets = awkward.array.jagged.counts2offsets(counts)
         return cls.candidatesfromoffsets(offsets,**kwargs)
     
     @classmethod
     def candidatesfromoffsets(cls,offsets,**kwargs):
+        """
+            cands = JaggedCandidateArray.candidatesfromoffsets(offsets=offsets,
+                                                               pt=column1,
+                                                               eta=column2,
+                                                               phi=column3,
+                                                               mass=column4,
+                                                               ...)
+        """
         items = kwargs
         argkeys = items.keys()
         p4 = None
@@ -154,75 +181,95 @@ class JaggedCandidateMethods(awkward.Methods):
     
     @property
     def p4(self):
+        """ return TLorentzVectorArray of candidates """
         return self['p4']
     
     @property
     def pt(self):
+        """ fast-cache version of pt """
         return self['__fast_pt']
     
     @property
     def eta(self):
+        """ fast-cache version of eta """
         return self['__fast_eta']
     
     @property
     def phi(self):
+        """ fast-cache version of phi """
         return self['__fast_phi']
     
     @property
     def mass(self):
+        """ fast-cache version of mass """
         return self['__fast_mass']
     
     @property
     def i0(self):
+        """ forward i0 from base """
         if 'p4' in self['0'].columns: return self.fromjagged(self['0'])
         return self['0']
     
     @property
     def i1(self):
+        """ forward i1 from base """
         if 'p4' in self['1'].columns: return self.fromjagged(self['1'])
         return self['1']
 
     @property
     def i2(self):
+        """ forward i2 from base """
         if 'p4' in self['2'].columns: return self.fromjagged(self['2'])
         return self['2']
 
     @property
     def i3(self):
+        """ forward i3 from base """
         if 'p4' in self['3'].columns: return self.fromjagged(self['3'])
         return self['3']
 
     @property
     def i4(self):
+        """ forward i4 from base """
         if 'p4' in self['4'].columns: return self.fromjagged(self['4'])
         return self['4']
     
     @property
     def i5(self):
+        """ forward i5 from base """
         if 'p4' in self['5'].columns: return self.fromjagged(self['5'])
         return self['5']
 
     @property
     def i6(self):
+        """ forward i6 from base """
         if 'p4' in self['6'].columns: return self.fromjagged(self['6'])
         return self['6']
     
     @property
     def i7(self):
+        """ forward i7 from base """
         if 'p4' in self['7'].columns: return self.fromjagged(self['7'])
         return self['7']
 
     @property
     def i8(self):
+        """ forward i8 from base """
         if 'p4' in self['8'].columns: return self.fromjagged(self['8'])
         return self['8']
     
     @property
     def i9(self):
+        """ forward i9 from base """
         if 'p4' in self['9'].columns: return self.fromjagged(self['9'])
         return self['9']
 
     def add_attributes(self,**kwargs):
+        """
+            cands.add_attributes( name1 = column1,
+                                  name2 = column2,
+                                  ... )
+        """
         for key,item in kwargs.items():
             if isinstance(item,awkward.JaggedArray):
                 self[key] = awkward.JaggedArray.fromoffsets(self.offsets,item.flatten())
@@ -230,6 +277,12 @@ class JaggedCandidateMethods(awkward.Methods):
                 self[key] = awkward.JaggedArray.fromoffsets(self.offsets,item)
 
     def distincts(self, nested=False):
+        """
+            This method calls the distincts method of JaggedArray to get all unique
+            pairs per-event contained in a JaggedCandidateArray.
+            The resulting JaggedArray of that call is dressed with the jagged candidate
+            array four-momentum and cached fast access pt/eta/phi/mass.
+        """
         outs = super(JaggedCandidateMethods, self).distincts(nested)
         outs['p4'] = outs.i0['p4'] + outs.i1['p4']
         thep4 = outs['p4']
@@ -240,6 +293,12 @@ class JaggedCandidateMethods(awkward.Methods):
         return self.fromjagged(outs)
 
     def pairs(self, nested=False):
+        """
+            This method calls the pairs method of JaggedArray to get all pairs
+            per-event contained in a JaggedCandidateArray.
+            The resulting JaggedArray of that call is dressed with the jagged candidate
+            array four-momentum and cached fast access pt/eta/phi/mass.
+        """
         outs = super(JaggedCandidateMethods, self).pairs(nested)
         outs['p4'] = outs.i0['p4'] + outs.i1['p4']
         thep4 = outs['p4']
@@ -250,6 +309,12 @@ class JaggedCandidateMethods(awkward.Methods):
         return self.fromjagged(outs)
     
     def cross(self, other, nested=False):
+        """
+            This method calls the cross method of JaggedArray to get all pairs
+            per-event with another JaggedCandidateArray.
+            The resulting JaggedArray of that call is dressed with the jagged candidate
+            array four-momentum and cached fast access pt/eta/phi/mass.
+        """
         outs = super(JaggedCandidateMethods, self).cross(other,nested)
         #currently JaggedArray.cross() has some funny behavior when it encounters the
         # p4 column and makes some wierd new column... for now I just delete it and reorder
@@ -285,12 +350,17 @@ class JaggedCandidateMethods(awkward.Methods):
     #Function returns a mask with true or false at each location for whether object 1 matched with any object 2s
     #Optional parameter to add a cut on the percent pt difference between the objects
     def _matchcombs(self,cands):
+        """
+            Wrapper function that returns all p4 combinations of this JaggedCandidateArray
+            with another input JaggedCandidateArray.
+        """
         combinations = self.p4.cross(cands.p4, nested=True)
         if((~(combinations.i0.pt >0).flatten().flatten().all())|(~(combinations.i1.pt >0).flatten().flatten().all()) ):
             raise Exception("At least one particle has pt = 0")
         return combinations
 
     def match(self, cands, matchfunc=_default_match, **kwargs):
+        """ returns a mask of candidates that pass matchfunc() """
         combinations = self._matchcombs(cands)        
         return matchfunc(combinations,**kwargs)
     
@@ -298,10 +368,19 @@ class JaggedCandidateMethods(awkward.Methods):
     #At each object 1 location is the index of object 2 that it matched best with
     #<<<<important>>>> selves without a match will get a -1 to preserve counts structure
     def argmatch(self, cands, argmatchfunc=_default_argmatch, **kwargs):
+        """
+            returns a jagged array of indices that pass argmatchfunc.
+            if there is no match a -1 is used to preserve the shape of
+            the array represented by self
+        """
         combinations = self._matchcombs(cands)
         return argmatchfunc(combinations,**kwargs)
     
     def __getattr__(self,what):
+        """
+            extend get attr to allow access to columns,
+            gracefully thunk down to base methods
+        """
         if what in self.columns:
             return self[what]
         thewhat = getattr(super(JaggedCandidateMethods,self),what)

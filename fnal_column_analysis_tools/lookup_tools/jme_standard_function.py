@@ -13,7 +13,7 @@ def wrap_formula(fstr, varlist):
     """
         Convert function string to python function
         Supports only simple math for now
-        """
+    """
     val = fstr
     try:
         val = float(fstr)
@@ -37,6 +37,10 @@ def masked_bin_eval(dim1_indices, dimN_bins, dimN_vals):
 #idx_in is a tuple of indices in increasing jaggedness
 #idx_out is a list of flat indices
 def flatten_idxs(idx_in,jaggedarray):
+    """
+        This provides a faster way to convert between tuples of
+        jagged indices and flat indices in a jagged array's contents
+    """
     if len(idx_in) == 0: return np.array([],dtype=np.int)
     idx_out = jaggedarray.starts[idx_in[0]]
     if len(idx_in) == 1:
@@ -57,7 +61,19 @@ def flatten_idxs(idx_in,jaggedarray):
     return idx_out
 
 class jme_standard_function(lookup_base):
+    """
+        This class defines a lookup table for jet energy corrections and resolutions.
+        The JEC and JER values can be looked up with a call as follows:
+        jerc_lut = jme_standard_function()
+        jercs = jerc_lut(JetProperty1=jet.property1,...)
+        "jercs" will be of the same shape as the input jet properties.
+        The list of required jet properties are given in jersf_lut.signature
+    """
     def __init__(self,formula,bins_and_orders,clamps_and_vars,parms_and_orders):
+        """
+            The constructor takes the output of the "convert_jec(jr)_txt_file"
+            text file converter, which returns a formula, bins, and parameter values.
+        """
         super(jme_standard_function,self).__init__()
         self._dim_order = bins_and_orders[1]
         self._bins = bins_and_orders[0]
@@ -94,6 +110,7 @@ class jme_standard_function(lookup_base):
                 self._eval_args[argname] = self._dim_args[argname]
 
     def _evaluate(self,*args):
+        """ jec/jer = f(args) """
         bin_vals  = {argname:args[self._dim_args[argname]] for argname in self._dim_order}
         eval_vals = {argname:args[self._eval_args[argname]] for argname in self._eval_vars}
     
@@ -149,6 +166,7 @@ class jme_standard_function(lookup_base):
     
     @property
     def signature(self):
+        """ the list of all needed jet properties to be passed as kwargs to this lookup """
         return self._signature
     
     def __repr__(self):

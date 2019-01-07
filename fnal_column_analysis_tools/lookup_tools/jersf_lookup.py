@@ -15,7 +15,19 @@ def masked_bin_eval(dim1_indices, dimN_bins, dimN_vals):
     return dimN_indices
 
 class jersf_lookup(lookup_base):
+    """
+        This class defines a lookup table for jet energy resolution scale factors.
+        The uncertainty values can be looked up with a call as follows:
+        jersf_lut = jersf_lookup()
+        SFs = jersf_lut(JetProperty1=jet.property1,...)
+        "SFs" will be of the same shape as the input jet properties.
+        The list of required jet properties are given in jersf_lut.signature
+    """
     def __init__(self,formula,bins_and_orders,clamps_and_vars,parms_and_orders):
+        """
+            The constructor takes the output of the "convert_jersf_txt_file"
+            text file converter, which returns a formula, bins, and values.
+        """
         super(jersf_lookup,self).__init__()
         self._dim_order = bins_and_orders[1]
         self._bins = bins_and_orders[0]
@@ -49,6 +61,7 @@ class jersf_lookup(lookup_base):
                 self._eval_args[argname] = self._dim_args[argname]
 
     def _evaluate(self,*args):
+        """ SFs = f(args) """
         bin_vals  = {argname:args[self._dim_args[argname]] for argname in self._dim_order}
         eval_vals = {argname:args[self._eval_args[argname]] for argname in self._eval_vars}
     
@@ -78,6 +91,7 @@ class jersf_lookup(lookup_base):
     
     @property
     def signature(self):
+        """ the list of all needed jet properties to be passed as kwargs to this lookup """
         return self._signature
     
     def __repr__(self):
