@@ -1,45 +1,30 @@
 import numpy as np
 import uproot
+import re
 
-TH1D = "<class 'uproot.rootio.TH1D'>"
-TH2D = "<class 'uproot.rootio.TH2D'>"
-TH1F = "<class 'uproot.rootio.TH1F'>"
-TH2F = "<class 'uproot.rootio.TH2F'>"
-TGraphAsymmErrors = "<class 'uproot.rootio.TGraphAsymmErrors'>"
-TGraph2D = "<class 'uproot.rootio.TGraph2D'>"
-RootDir = "<class 'uproot.rootio.ROOTDirectory'>"
+cycle = re.compile(br";\d+")
+killcycle = lambda s: cycle.sub(b"", s)
+
+histTypes = [b'TH1D', b'TH1F', b'TH2D', b'TH2F']
+graphTypes = [b'TGraphAsymmErrors', b'TGraph2D']
+
 
 def convert_histo_root_file(file):
     converted_file = {}
-    dumFile = uproot.open(file.strip())
-    for i, key in enumerate(dumFile.keys()):
-        histType = str(type(dumFile[key[:-2]]))
-        if histType == TH1D or histType == TH2D or histType==TH1F or histType==TH2F:
-            if  not ("bound method" in str(dumFile[key[:-2]].numpy)):
-                converted_file[(key[:-2],'dense_lookup')] = dumFile[key[:-2]].numpy
-            else:
-                converted_file[(key[:-2],'dense_lookup')] = dumFile[key[:-2]].numpy()
-        elif histType == RootDir: #means there are subdirectories wihin main directory
-            for j, key2 in enumerate(dumFile[key[:-2]].keys()):
-                histType2 = str(type(dumFile[key[:-2]][key2[:-2]]))
-                if histType2 == TH1D or histType2 == TH2D or histType2==TH1F or histType2==TH2F:
-                    if not ("bound method" in str(dumFile[key[:-2]][key2[:-2]].numpy)):
-                        converted_file[(key[:-2]+'/'+key2[:-2],'dense_lookup')] = dumFile[key[:-2]][key2[:-2]].numpy
-                    else:
-                        converted_file[(key[:-2]+'/'+key2[:-2],'dense_lookup')] = dumFile[key[:-2]][key2[:-2]].numpy()
-                elif histType == RootDir:
-                    for k, key3 in enumerate(dumFile[key[:-2]][key2[:-2]].keys()):
-                        histType3 = str(type(dumFile[key[:-2]][key2[:-2]][key3[:-2]]))
-                        if histType3 == TH1D or histType3 == TH2D or histType3==TH1F or histType3==TH2F:
-                            if not ("bound method" in str(dumFile[key[:-2]][key2[:-2]][key3[:-2]].numpy)):
-                                converted_file[(key[:-2]+'/'+key2[:-2]+'/'+key3[:-2],'dense_lookup')] = dumFile[key[:-2]][key2[:-2]][key3[:-2]].numpy
-                            else:
-                                converted_file[(key[:-2]+'/'+key2[:-2]+'/'+key3[:-2],'dense_lookup')] = dumFile[key[:-2]][key2[:-2]][key3[:-2]].numpy()
-        elif histType==TGraphAsymmErrors or histType==TGraph2D:
+    fin = uproot.open(file.strip())
+    for path, item in fin.iteritems(recursive=True):
+        nicepath = killcycle(path)
+        rootclass = item._classname
+        if rootclass in histTypes:
+            converted_file[(nicepath, 'dense_lookup')] = item.values, item.edges
+        elif rootclass in graphTypes:
+            # TODO: convert TGraph into interpolated lookup
             continue
-        else:
-            tempArrX= dumFile[key[:-2]]._fEX
-            tempArrY= dumFile[key[:-2]]._fEY
-            converted_file[(key[:-2],'dense_lookup')] = [tempArrX, tempArrY]
+        elif hasattr(item, '_fEX') and hasattr(item, '_fEY'):
+            # TODO what is this?
+            tempArrX = item._fEX
+            tempArrY = item._fEY
+            converted_file[(nicepath, 'dense_lookup')] = [tempArrX, tempArrY]
+
     return converted_file
 
