@@ -12,7 +12,23 @@ lookup_types = {'dense_lookup':dense_lookup,
                }
 
 class evaluator(object):
+    """
+        The evaluator class serves as a single point of extry for
+        looking up values of histograms and other functions read in
+        with the extractor class. Stored look ups can be indexed by
+        name and then called through an overloaded __call__ function.
+        Example:
+            evaluate = extractor.make_evaluator()
+            vals = evaluate[XYZ](arg1,arg2,...)
+        The returned 'vals' has the same shape as the input args.
+        
+        lookup_types is a map of possible contructors for extracted data
+    """
     def __init__(self,names,types,primitives):
+        """
+            initialize the evaluator from a list of inputs names,
+            lookup types, and input primitive data
+        """
         self._functions = {}
         for key in names.keys():
             lookup_type = types[names[key]]
@@ -20,7 +36,11 @@ class evaluator(object):
             self._functions[key] = lookup_types[lookup_type](*lookup_def)
             
     def __dir__(self):
+        """ dir is overloaded to list all available functions
+            in the evaluator
+        """
         return self._functions.keys()
         
     def __getitem__(self, key):
+        """ return a function named 'key' """
         return self._functions[key]
