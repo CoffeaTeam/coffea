@@ -25,8 +25,12 @@ def _parse_jme_formatted_file(jmeFilePath,interpolatedFunc=False,parmsFromColumn
     while( formula.count('[%i]'%nParms) ):
         formula = formula.replace('[%i]'%nParms,'p%i'%nParms)
         nParms += 1
+    #get rid of TMath
+    tmath = {'TMath::Max':'max','TMath::Log':'log','TMath::Power':'pow'}
+    for key,rpl in tmath.items():
+        formula = formula.replace(key,rpl)
     #protect function names with vars in them
-    funcs_to_cap = ['max','exp']
+    funcs_to_cap = ['max','exp','pow']
     for f in funcs_to_cap:
         formula = formula.replace(f,f.upper())
     
@@ -125,14 +129,15 @@ def _build_standard_jme_lookup(name,layout,pars,nBinnedVars,nBinColumns,
     offset_name = nBinnedVars + 2
     jagged_counts = np.ones(bins[bin_order[0]].size-1,dtype=np.int)
     if len(bin_order) > 1:
-        jagged_counts = np.maximum(bins[bin_order[1]].counts - 1,0) #need counts-1 since we only care about Nbins
+        jagged_counts = np.maximum(bins[bin_order[1]].counts-1,0) #need counts-1 since we only care about Nbins
     for i in range(nEvalVars):
         var_order.append(layout[i+offset_name])
         if not interpolatedFunc:
             clamp_mins[layout[i+offset_name]] = JaggedArray.fromcounts(jagged_counts,np.atleast_1d(pars[columns[i+offset_col]]))
             clamp_maxs[layout[i+offset_name]] = JaggedArray.fromcounts(jagged_counts,np.atleast_1d(pars[columns[i+offset_col+1]]))
             offset_col += 1
-    
+
+
     #now get the parameters, which we will look up with the clamped values
     parms = []
     parm_order = []
@@ -198,7 +203,78 @@ def convert_junc_txt_file(juncFilePath):
         knots = np.array([np.unique(knot.flatten())[0] for knot in knots])
         vallist[2] = ({'knots':knots,'ups':ups.T,'downs':downs.T},vallist[2][-1])
         vallist = vallist[:-1]
-        #for down in downs: print down
-        #for up in ups: print up
         wrapped_up[newkey] = tuple(vallist)
+    return wrapped_up
+
+def convert_effective_area_file(eaFilePath):
+    ea_f = open(eaFilePath,'r')
+    layoutstr = ea_f.readline().strip().strip('{}')
+    ea_f.close()
+
+    name = eaFilePath.split('/')[-1].split('.')[0]
+    
+    layout = layoutstr.split()
+    if not layout[0].isdigit():
+        raise Exception('First column of Effective Area File Header must be a digit!')
+    
+    #setup the file format
+    nBinnedVars = int(layout[0])
+    nBinColumns = 2*nBinnedVars
+    nEvalVars   = int(layout[nBinnedVars+1])
+
+    minMax = ['Min','Max']
+    columns = []
+    dtypes = []
+    offset=1
+    for i in range(nBinnedVars):
+        columns.extend(['%s%s'%(layout[i+offset],mm) for mm in minMax])
+        dtypes.extend(['<f8','<f8'])
+    offset += nBinnedVars + 1
+    for i in range(nEvalVars):
+        columns.append('%s'%(layout[i+offset]))
+        dtypes.append('<f8')
+
+    pars = np.genfromtxt(eaFilePath,
+                         dtype=tuple(dtypes),
+                         names=tuple(columns),
+                         skip_header=1,
+                         unpack=True,
+                         encoding='ascii'
+                         )
+
+    bins = {}
+    offset_col = 0
+    offset_name = 1
+    bin_order = []
+    for i in range(nBinnedVars):
+        binMins = None
+        binMaxs = None
+        if i == 0:
+            binMins = np.unique(pars[columns[0]])
+            binMaxs = np.unique(pars[columns[1]])
+            bins[layout[i+offset_name]] = np.union1d(binMins,binMaxs)
+        else:
+            counts = np.zeros(0,dtype=np.int)
+            allBins = np.zeros(0,dtype=np.double)
+            for binMin in bins[bin_order[0]][:-1]:
+                binMins = np.unique(pars[np.where(pars[columns[0]] == binMin)][columns[i+offset_col]])
+                binMaxs = np.unique(pars[np.where(pars[columns[0]] == binMin)][columns[i+offset_col+1]])
+                theBins = np.union1d(binMins,binMaxs)
+                allBins = np.append(allBins,theBins)
+                counts  = np.append(counts,theBins.size)
+            bins[layout[i+offset_name]] = JaggedArray.fromcounts(counts,allBins)
+        bin_order.append(layout[i+offset_name])
+        offset_col += 1
+
+    # again this is only for one dimension of binning, fight me
+    # we can figure out a 2D EA when we get there
+    offset_name += 1
+    wrapped_up = {}
+    lookup_type = 'dense_lookup'
+    dims = bins[layout[1]]
+    for i in range(nEvalVars):
+        ea_name = '_'.join([name,columns[offset_name+i]])
+        values = pars[columns[offset_name+i]]
+        wrapped_up[(ea_name,lookup_type)] = (values,dims)
+
     return wrapped_up
