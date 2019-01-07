@@ -3,20 +3,16 @@ from fnal_column_analysis_tools.lookup_tools.lookup_base import lookup_base
 import numpy as np
 from awkward.array.jagged import JaggedArray
 from copy import deepcopy
-import numba
 
 from scipy.interpolate import interp1d
 
-from numpy import sqrt,log
-from numpy import maximum as max
-from numpy import minimum as min
-
-#@numba.njit ### somehow the unjitted form is ~20% faster?, and we can make fewer masks this way
 def masked_bin_eval(dim1_indices, dimN_bins, dimN_vals):
     dimN_indices = np.empty_like(dim1_indices)
     for i in np.unique(dim1_indices):
-        mask = (dim1_indices==i)
-        dimN_indices[mask] = np.clip(np.searchsorted(dimN_bins[i],dimN_vals[mask],side='right')-1,
+        idx = np.where(dim1_indices==i)
+        dimN_indices[idx] = np.clip(np.searchsorted(dimN_bins[i],
+                                                    dimN_vals[idx],
+                                                    side='right')-1,
                                      0,len(dimN_bins[i])-2)
     return dimN_indices
 
