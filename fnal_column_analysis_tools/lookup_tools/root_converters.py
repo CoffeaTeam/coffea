@@ -18,12 +18,13 @@ def convert_histo_root_file(file):
         if rootclass in histTypes:
             converted_file[(nicepath, 'dense_lookup')] = item.values, item.edges
         elif rootclass in graphTypes:
+            # TODO: convert TGraph into interpolated lookup
             continue
         elif hasattr(item, '_fEX') and hasattr(item, '_fEY'):
             # TODO what is this?
             tempArrX = item._fEX
             tempArrY = item._fEY
             converted_file[(nicepath, 'dense_lookup')] = [tempArrX, tempArrY]
-    print(converted_file)
+
     return converted_file
 
