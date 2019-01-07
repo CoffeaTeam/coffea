@@ -507,6 +507,13 @@ class Hist(object):
     def axes(self):
         return self._axes
 
+    @property
+    def fields(self):
+        """
+            Stub for histbook compatibility in striped
+        """
+        return [ax.name for ax in self._axes]
+
     def dim(self):
         return len(self._axes)
 
