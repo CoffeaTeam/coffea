@@ -1,4 +1,6 @@
 import uproot_methods
+
+import math
 from fnal_column_analysis_tools.util import awkward
 from fnal_column_analysis_tools.util import numpy as np
 
@@ -48,6 +50,22 @@ def _default_argmatch(combs,deltaRCut=10000, deltaPtCut=10000):
     flatIdxMin = indexOfMinOutShape.flatten()
     flatIdxMin[~flatPass] = -1
     return awkward.JaggedArray.fromoffsets(passesCutOutShape.offsets,flatIdxMin)
+
+def _default_fastmatch(first,second,deltaRCut=10000):
+    drCut2 = deltaRCut**2
+    args = first.eta._argcross(second.eta)
+    argsnested = awkward.JaggedArray.fromcounts(first.eta.counts, awkward.JaggedArray.fromcounts(first.eta._broadcast(second.eta.counts).flatten(), args._content))
+    eta0s  = first.eta.content[argsnested.content.content.i0]
+    eta1s  = second.eta.content[argsnested.content.content.i1]
+    phi0s  = first.phi.content[argsnested.content.content.i0]
+    phi1s  = second.phi.content[argsnested.content.content.i1]
+    offsets_outer = argsnested.offsets
+    offsets_inner = argsnested.content.offsets
+    detas = np.abs(eta0s - eta1s)
+    dphis = (phi0s - phi1s + math.pi) % (2*math.pi) - math.pi
+    passdr = ((detas**2 + dphis**2) < drCut2)
+    passdr = awkward.JaggedArray.fromoffsets(offsets_inner,passdr)
+    return awkward.JaggedArray.fromoffsets(offsets_outer,passdr.any())
 
 class JaggedCandidateMethods(awkward.Methods):
     """
@@ -363,6 +381,9 @@ class JaggedCandidateMethods(awkward.Methods):
         """ returns a mask of candidates that pass matchfunc() """
         combinations = self._matchcombs(cands)        
         return matchfunc(combinations,**kwargs)
+    
+    def fastmatch(self,cands,matchfunc=_default_fastmatch, **kwargs):
+        return matchfunc(self,cands,**kwargs)
     
     #Function returns a fancy indexing.
     #At each object 1 location is the index of object 2 that it matched best with
