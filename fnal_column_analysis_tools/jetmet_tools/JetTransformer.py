@@ -114,9 +114,10 @@ class JetTransformer(object):
             args = {key:getattr(jet,_signature_map[key]).content for key in self._jersf.signature}
             jersf = self._jersf.getScaleFactor(**args)
             
-            jsmear_cen  = 1. + np.sqrt(jersf[:, 0]**2 - 1.0)*jer*np.random.normal(size=jer.size)
-            jsmear_up   = 1. + np.sqrt(jersf[:, 1]**2 - 1.0)*jer*np.random.normal(size=jer.size)
-            jsmear_down = 1. + np.sqrt(jersf[:,-1]**2 - 1.0)*jer*np.random.normal(size=jer.size)
+            jersmear = jer*np.random.normal(size=jer.size)
+            jsmear_cen  = 1. + np.sqrt(jersf[:, 0]**2 - 1.0)*jersmear
+            jsmear_up   = 1. + np.sqrt(jersf[:, 1]**2 - 1.0)*jersmear
+            jsmear_down = 1. + np.sqrt(jersf[:,-1]**2 - 1.0)*jersmear
             
             # need to apply up and down jer-smear before applying central correction
             jet.add_attributes( pt_jer_up     = jsmear_up * jet.pt.content,
