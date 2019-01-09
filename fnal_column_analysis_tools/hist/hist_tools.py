@@ -8,8 +8,13 @@ import numpy as np
 import re
 import warnings
 
-# Different in python 2 and 3
+# Python 2 and 3 compatibility
 _regex_pattern = re.compile("dummy").__class__
+try:
+    basestring
+except:
+    basestring = str
+
 
 MaybeSumSlice = namedtuple('MaybeSumSlice', ['start', 'stop', 'sum'])
 
@@ -158,7 +163,7 @@ class Axis(object):
                 return False
             # label doesn't matter
             return True
-        elif isinstance(other, str):
+        elif isinstance(other, basestring):
             # Convenient for testing axis in list by name
             if self._name != other:
                 return False
@@ -201,7 +206,7 @@ class Cat(SparseAxis):
         self._sorting = sorting
 
     def index(self, identifier):
-        if not isinstance(identifier, str):
+        if not isinstance(identifier, basestring):
             raise TypeError("Cat axis supports only string categories")
         if identifier not in self._categories:
             self._categories.append(identifier)
@@ -223,7 +228,7 @@ class Cat(SparseAxis):
         out = None
         if isinstance(the_slice, _regex_pattern):
             out = [v for v in self._categories if the_slice.match(v)]
-        elif isinstance(the_slice, str):
+        elif isinstance(the_slice, basestring):
             pattern = "^" + the_slice.replace('*', '.*')
             m = re.compile(pattern)
             out = [v for v in self._categories if m.match(v)]
@@ -235,9 +240,9 @@ class Cat(SparseAxis):
             if the_slice.step is not None:
                 raise IndexError("Not sure how to use slice step for categories...")
             start, stop = 0, len(self._categories)
-            if isinstance(the_slice.start, str):
+            if isinstance(the_slice.start, basestring):
                 start = self._categories.index(the_slice.start)
-            if isinstance(the_slice.stop, str):
+            if isinstance(the_slice.stop, basestring):
                 stop = self._categories.index(the_slice.stop)
             out = self._categories[start:stop]
 
@@ -459,7 +464,7 @@ class Hist(object):
             *axes: positional list of Cat or Bin objects
     """
     def __init__(self, label, *axes, **kwargs):
-        if not isinstance(label, str):
+        if not isinstance(label, basestring):
             raise TypeError("label must be a string")
         self._label = label
         self._dtype = kwargs.pop('dtype', 'd')  # Much nicer in python3 :(
