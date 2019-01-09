@@ -290,7 +290,7 @@ class JaggedCandidateMethods(awkward.Methods):
         """
         for key,item in kwargs.items():
             if isinstance(item,awkward.JaggedArray):
-                self[key] = awkward.JaggedArray.fromoffsets(self.offsets,item.flatten())
+                self[key] = awkward.JaggedArray.fromoffsets(self.offsets,item.content)
             elif isinstance(item,np.ndarray):
                 self[key] = awkward.JaggedArray.fromoffsets(self.offsets,item)
 
