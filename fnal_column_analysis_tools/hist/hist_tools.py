@@ -534,6 +534,9 @@ class Hist(object):
     def sparse_axes(self):
         return [ax for ax in self._axes if isinstance(ax, SparseAxis)]
 
+    def sparse_nbins(self):
+        return len(self._sumw)
+
     def _idense(self, axis):
         return self.dense_axes().index(axis)
 
