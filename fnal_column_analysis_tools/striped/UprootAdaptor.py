@@ -5,8 +5,6 @@ import multiprocessing
 import copy
 
 import threading
-from IPython.display import display
-import ipywidgets
 
 xrdconfig = {'timeout': None, 'chunkbytes': 1<<14, 'limitbytes': 1<<24}
 
@@ -126,6 +124,9 @@ class UprootJob(object):
 
         pbar = None
         if progress:
+            from IPython.display import display
+            import ipywidgets
+
             lbl = ipywidgets.Label(self._dataset, layout=ipywidgets.Layout(width="70%"))
             info = ipywidgets.Label("- kevt/s", layout=ipywidgets.Layout(width="10%", display='flex', justify_content='flex-end'))
             pbar = ipywidgets.IntProgress(min=0, max=len(self._filelist), layout=ipywidgets.Layout(width="17%"))
