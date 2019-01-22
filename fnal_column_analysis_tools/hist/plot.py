@@ -40,10 +40,11 @@ def poisson_interval(sumw, sumw2, sigma=1):
     return interval
 
 
-def plot1d(hist, ax=None, overlay=None, stack=False, overflow='none', line_opts=None, fill_opts=None, error_opts=None, overlay_overflow='none', density=False, binwnorm=None):
+def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none', line_opts=None, fill_opts=None, error_opts=None, overlay_overflow='none', density=False, binwnorm=None):
     """
         hist: Hist object with maximum of two dimensions
         ax: matplotlib Axes object (if None, one is created)
+        clear: clear Axes before drawing (if passed)
         overlay: the axis of hist to overlay (remaining one will be x axis)
         stack: whether to stack or overlay the other dimension (if one exists)
         overflow: overflow behavior of plot axis (see Hist.sum() docs)
@@ -72,7 +73,8 @@ def plot1d(hist, ax=None, overlay=None, stack=False, overflow='none', line_opts=
     else:
         if not isinstance(ax, plt.Axes):
             raise ValueError("ax must be a matplotlib Axes object")
-        ax.clear()
+        if clear:
+            ax.clear()
         fig = ax.figure
     if hist.dim() > 2:
         raise ValueError("plot1d() can only support up to two dimensions (one for axis, one to stack or overlay)")

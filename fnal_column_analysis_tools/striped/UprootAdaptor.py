@@ -2,6 +2,7 @@ from __future__ import division
 import time
 import uproot
 import multiprocessing
+import copy
 
 import threading
 from IPython.display import display
@@ -39,14 +40,15 @@ class JobDummy(object):
     def __init__(self, fname, treename, user_params, eventsdef, worker):
         self._fname = fname
         self._treename = treename
-        self._user_params = user_params
+        self._user_params = copy.deepcopy(user_params)
+        if 'hists' in self._user_params:
+            for h in self._user_params['hists'].values():
+                h.clear()
         self._eventsdef = eventsdef
         self._worker = worker
         self._out = None
         
     def __getitem__(self, key):
-        if key not in self._user_params:
-            raise KeyError
         return self._user_params[key]
     
     def send(self, **kwargs):
@@ -58,9 +60,11 @@ class JobDummy(object):
         file = uproot.open(self._fname, xrootdsource=xrdconfig)
         tree = file[self._treename]
         nevents = tree.numentries
-        arrays = tree.arrays(branches=self._eventsdef.arraynames(),
-                                namedecode='ascii',
-                                )
+        # FIXME: big hack for reading datasets that don't have all columns
+        #   up to the worker to handle missing columns, and I'm not sure how striped
+        #   will handle this (it doesn't currently)
+        bnames = [b for b in self._eventsdef.arraynames() if b in tree]
+        arrays = tree.arrays(branches=bnames, namedecode='ascii')
         eventsdummy = self._eventsdef.make_dummy(arrays, nevents)
         self._worker.run(eventsdummy, self)
         return (eventsdummy.nevents, self._out)
@@ -106,15 +110,19 @@ class UprootJob(object):
     def work(self, fname):
         return jobdummy()
 
-    def run(self, workers=1, progress=True):
-        thread = threading.Thread(target=self._run, args=(workers, progress))
-        thread.start()
-        return thread
+    def run(self, workers=0, progress=True, threaded=True):
+        if threaded:
+            thread = threading.Thread(target=self._run, args=(workers, progress))
+            thread.start()
+            return thread
+        self._run(workers, progress)
 
     def _run(self, workers, progress):
         self.TStart = time.time()
 
-        pool = multiprocessing.Pool(processes=workers)
+        pool = None
+        if workers > 0:
+            pool = multiprocessing.Pool(processes=workers)
 
         pbar = None
         if progress:
@@ -132,30 +140,52 @@ class UprootJob(object):
 
         try:
             jobs = (JobDummy(fname, self._treename, self._user_params, self._eventsdef, self._worker) for fname in self._filelist)
-            res = set(pool.apply_async(job) for job in jobs)
-            while True:
-                finished = set()
-                for r in res:
-                    if r.ready():
-                        if not r.successful():
-                            pool.terminate()
-                            raise r.get()
-                        out = r.get()
-                        with self._user_callback.lock:
-                            self._user_callback.on_streams_update(*out)
-                        self.EventsProcessed += out[0]
-                        self._filesProcessed += 1
-                        finished.add(r)
-                res -= finished
-                finished = None
-                if pbar:
-                    pbar.value = self._filesProcessed
-                    info.value = "{:>5.0f} kevt/s".format(self.EventsProcessed/(time.time()-self.TStart)/1000)
-                if len(res) == 0 or cancel.disabled:
-                    break
-                time.sleep(0.2)
+            if pool is not None:
+                res = set(pool.apply_async(job) for job in jobs)
+                while True:
+                    finished = set()
+                    for r in res:
+                        if r.ready():
+                            if not r.successful():
+                                raise r.get()
+                            out = r.get()
+                            with self._user_callback.lock:
+                                self._user_callback.on_streams_update(*out)
+                            self.EventsProcessed += out[0]
+                            self._filesProcessed += 1
+                            finished.add(r)
+                    res -= finished
+                    finished = None
+                    if progress:
+                        pbar.value = self._filesProcessed
+                        info.value = "{:>5.0f} kevt/s".format(self.EventsProcessed/(time.time()-self.TStart)/1000)
+                        if cancel.disabled:
+                            break
+                    if len(res) == 0:
+                        if progress:
+                            cancel.disabled = True
+                        break
+                    time.sleep(0.2)
+            else:
+                for job in jobs:
+                    out = job()
+                    with self._user_callback.lock:
+                        self._user_callback.on_streams_update(*out)
+                    self.EventsProcessed += out[0]
+                    self._filesProcessed += 1
+                    if progress:
+                        pbar.value = self._filesProcessed
+                        info.value = "{:>5.0f} kevt/s".format(self.EventsProcessed/(time.time()-self.TStart)/1000)
+                        if cancel.disabled:
+                            break
+                if progress:
+                    cancel.disabled = True
         except:
-            pool.terminate()
+            if pool is not None:
+                pool.terminate()
+            if progress:
+                cancel.disabled = True
+                info.value = "Exception"
             raise
 
         pool = None
