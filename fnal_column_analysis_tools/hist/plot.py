@@ -86,9 +86,11 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         if not isinstance(binwnorm, numbers.Number):
             raise ValueError("Bin width normalization not a number, but a %r" % binwnorm.__class__)
 
+    axis = hist.axes()[0]
     if overlay is not None:
         overlay = hist.axis(overlay)
-    axis = next((ax for ax in hist.axes() if ax != overlay))
+        if axis == overlay:
+            axis = hist.axes()[1]
     if isinstance(axis, SparseAxis):
         raise NotImplementedError("Plot a sparse axis (e.g. bar chart)")
     elif isinstance(axis, DenseAxis):
