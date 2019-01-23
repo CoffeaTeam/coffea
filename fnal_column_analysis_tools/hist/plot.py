@@ -44,7 +44,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
     """
         hist: Hist object with maximum of two dimensions
         ax: matplotlib Axes object (if None, one is created)
-        clear: clear Axes before drawing (if passed)
+        clear: clear Axes before drawing (if passed); if False, this function will skip drawing the legend
         overlay: the axis of hist to overlay (remaining one will be x axis)
         stack: whether to stack or overlay the other dimension (if one exists)
         overflow: overflow behavior of plot axis (see Hist.sum() docs)
@@ -188,6 +188,13 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             opts.update(error_opts)
             eh = ax.fill_between(x=edges, y1=err[0,:], y2=err[1,:], **opts)
             primitives['stack_uncertainty'] = [eh]
+
+    if clear:
+        if overlay is not None:
+            primitives['legend'] = ax.legend(title=overlay.label)
+        ax.autoscale(axis='x', tight=True)
+        ax.set_ylim(0, None)
+
     return fig, ax, primitives
 
 
@@ -262,8 +269,9 @@ def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='non
                 ax.set_title(rowtitle)
             elif col is not None:
                 ax.set_title(coltitle)
-            ax.autoscale(axis='x', tight=True)
-            ax.set_ylim(0, None)
-            if overlay is not None:
-                ax.legend(title=h.axis(overlay).label)
+
+    for ax in axes.flatten():
+        ax.autoscale(axis='y')
+        ax.set_ylim(0, None)
+
     return fig, axes
