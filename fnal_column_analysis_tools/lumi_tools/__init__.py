@@ -11,7 +11,7 @@ class LumiData(object):
                 -u /pb --byls --output-style csv -i Cert_294927-306462_13TeV_PromptReco_Collisions17_JSON.txt > lumi2017.csv
     """
     def __init__(self, lumi_csv):
-        self._lumidata = np.loadtxt("lumi2017.csv", delimiter=',', usecols=(0,1,6,7), converters={
+        self._lumidata = np.loadtxt(lumi_csv, delimiter=',', usecols=(0,1,6,7), converters={
             0: lambda s: s.split(b':')[0],
             1: lambda s: s.split(b':')[0], # not sure what lumi:0 means, appears to be always zero (DAQ off before beam dump?)
         })
