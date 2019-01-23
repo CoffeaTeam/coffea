@@ -234,8 +234,8 @@ class Cat(SparseAxis):
             out = [v for v in self._categories if m.match(v)]
         elif isinstance(the_slice, list):
             if not all(v in self._categories for v in the_slice):
-                raise KeyError("Not all requested indices present in %r" % self)
-            out = the_slice
+                warnings.warn("Not all requested indices present in %r" % self, RuntimeWarning)
+            out = [v for v in the_slice if v in self._categories]
         elif isinstance(the_slice, slice):
             if the_slice.step is not None:
                 raise IndexError("Not sure how to use slice step for categories...")
@@ -533,6 +533,9 @@ class Hist(object):
 
     def sparse_axes(self):
         return [ax for ax in self._axes if isinstance(ax, SparseAxis)]
+
+    def sparse_nbins(self):
+        return len(self._sumw)
 
     def _idense(self, axis):
         return self.dense_axes().index(axis)
