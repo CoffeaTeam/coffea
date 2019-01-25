@@ -8,6 +8,8 @@ import numbers
 from .hist_tools import SparseAxis, DenseAxis, overflow_behavior, Interval
 
 import matplotlib.pyplot as plt
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import Rectangle
 
 # Plotting is always terrible
 # Let's try our best to follow matplotlib idioms
@@ -196,6 +198,91 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             primitives['legend'] = ax.legend(title=overlay.label)
         ax.autoscale(axis='x', tight=True)
         ax.set_ylim(0, None)
+
+    return fig, ax, primitives
+
+
+def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none', patch_opts=None, density=False, binwnorm=None):
+    """
+        hist: Hist object with two dimensions
+        xaxis: which of the two dimensions to use as x axis
+        ax: matplotlib Axes object (if None, one is created)
+        clear: clear Axes before drawing (if passed); if False, this function will skip drawing the colorbar
+        xoverflow: overflow behavior of x axis (see Hist.sum() docs)
+        yoverflow: overflow behavior of y axis (see Hist.sum() docs)
+
+        The draw options are passed as dicts.  If none of *_opts is specified, nothing will be plotted!
+        Pass an empty dict (e.g. patch_opts={}) for defaults
+            patch_opts: options to plot a rectangular patch for each bin
+                See https://matplotlib.org/api/collections_api.html#matplotlib.collections.PatchCollection for details
+                Special options interpreted by this function and not passed to matplotlib:
+                    (none)
+
+            text_opts: TODO options to draw text values at bin centers
+
+        density: Convert sum weights to probability density (i.e. integrates to 1 over domain of axes) (NB: conflicts with binwnorm)
+        binwnorm: Convert sum weights to bin-area-normalized, with units equal to supplied value (usually you want to specify 1.)
+    """
+    if ax is None:
+        fig, ax = plt.subplots(1, 1)
+    else:
+        if not isinstance(ax, plt.Axes):
+            raise ValueError("ax must be a matplotlib Axes object")
+        if clear:
+            ax.clear()
+        fig = ax.figure
+    if hist.dim() != 2:
+        raise ValueError("plot2d() can only support exactly two dimensions")
+    if density and binwnorm is not None:
+        raise ValueError("Cannot use density and binwnorm at the same time!")
+    if binwnorm is not None:
+        if not isinstance(binwnorm, numbers.Number):
+            raise ValueError("Bin width normalization not a number, but a %r" % binwnorm.__class__)
+
+    xaxis = hist.axis(xaxis)
+    yaxis = hist.axes()[1]
+    transpose = False
+    if yaxis == xaxis:
+        yaxis = hist.axes()[0]
+        transpose = True
+    if isinstance(xaxis, SparseAxis) or isinstance(yaxis, SparseAxis):
+        raise NotImplementedError("Plot a sparse axis (e.g. bar chart or labeled bins)")
+    else:
+        xedges = xaxis.edges(overflow=xoverflow)
+        yedges = yaxis.edges(overflow=yoverflow)
+        sumw, sumw2 = hist.values(sumw2=True, overflow='allnan')[()]
+        if transpose:
+           sumw = sumw.T
+           sumw2 = sumw2.T
+        sumw = sumw[overflow_behavior(xoverflow),overflow_behavior(yoverflow)]
+        sumw2 = sumw2[overflow_behavior(xoverflow),overflow_behavior(yoverflow)]
+        if (density or binwnorm is not None) and np.sum(sumw)>0:
+            overallnorm = np.sum(sumw)*binwnorm if binwnorm is not None else 1.
+            areas = np.multiply.outer(np.diff(xedges), np.diff(yedges))
+            binnorms = overallnorm / (areas*np.sum(sumw))
+            sumw = sumw * binnorms
+            sumw2 = sumw2 * binnorms**2
+
+        primitives = {}
+        if patch_opts is not None:
+            patches = []
+            for x, dx in zip(xedges[:-1], np.diff(xedges)):
+                for y, dy in zip(yedges[:-1], np.diff(yedges)):
+                    patches.append(Rectangle((x,y), width=dx, height=dy))
+
+            opts = {'cmap': 'viridis'}
+            opts.update(patch_opts)
+            pc = PatchCollection(patches, **opts)
+            pc.set_array(sumw.flatten())
+            ax.add_collection(pc)
+            primitives['patches'] = pc
+            if clear:
+                fig.colorbar(pc, ax=ax, label=hist.label)
+
+    if clear:
+        ax.set_xlabel(xaxis.label)
+        ax.set_ylabel(yaxis.label)
+        ax.autoscale(tight=True)
 
     return fig, ax, primitives
 
