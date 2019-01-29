@@ -17,11 +17,14 @@ from matplotlib.patches import Rectangle
 
 def poisson_interval(sumw, sumw2, sigma=1):
     """
-        The so-called 'exact' interval
-            c.f. http://ms.mcmaster.ca/peter/s743/poissonalpha.html
+        The so-called 'Garwood' interval
+            c.f. https://www.ine.pt/revstat/pdf/rs120203.pdf
+            or http://ms.mcmaster.ca/peter/s743/poissonalpha.html
         For weighted data, approximate the observed count by sumw**2/sumw2
-            When a bin is zero, find the scale of the nearest nonzero bin
-            If all bins zero, raise warning and set interval to sumw
+            This choice effectively scales the unweighted poisson interval by the average weight
+            Maybe not the best... see https://arxiv.org/pdf/1309.1287.pdf for a proper treatment
+        When a bin is zero, find the scale of the nearest nonzero bin
+        If all bins zero, raise warning and set interval to sumw
     """
     scale = np.empty_like(sumw)
     scale[sumw!=0] = sumw2[sumw!=0] / sumw[sumw!=0]
