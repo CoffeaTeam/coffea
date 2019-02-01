@@ -1,6 +1,6 @@
-import awkward
 import uproot_methods
-import numpy as np
+from fnal_column_analysis_tools.util import awkward
+from fnal_column_analysis_tools.util import numpy as np
 
 JaggedTLorentzVectorArray = awkward.Methods.mixin(uproot_methods.classes.TLorentzVector.ArrayMethods, awkward.JaggedArray)
 
@@ -66,7 +66,7 @@ class JaggedCandidateMethods(awkward.Methods):
                                                               mass=column4,
                                                               ...)
         """
-        offsets = awkward.array.jagged.counts2offsets(counts)
+        offsets = awkward.JaggedArray.counts2offsets(counts)
         return cls.candidatesfromoffsets(offsets,**kwargs)
     
     @classmethod
@@ -322,7 +322,7 @@ class JaggedCandidateMethods(awkward.Methods):
         keys = outs.columns
         reorder = False
         for key in keys:
-            if not isinstance(outs[key].content,awkward.array.table.Table):
+            if not isinstance(outs[key].content,awkward.Table):
                 del outs[key]
                 reorder = True
         if reorder:

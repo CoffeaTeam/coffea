@@ -1,10 +1,10 @@
 from __future__ import division
 from collections import namedtuple
+from fnal_column_analysis_tools.util import numpy as np
 import copy
 import functools
 import math
 import numbers
-import numpy as np
 import re
 import warnings
 
