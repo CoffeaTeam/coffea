@@ -1,4 +1,5 @@
 from __future__ import print_function
+import os
 
 import numpy as np
 from .evaluator import evaluator
@@ -78,7 +79,7 @@ class extractor(object):
     def import_file(self,file):
         """ cache the whole contents of a file for later processing """
         if file not in self._filecache.keys():
-            file_dots = file.split('.')
+            file_dots = os.path.basename(file).split('.')
             format = file_dots[-1].strip()
             type = 'default'
             if len(file_dots) > 2:
