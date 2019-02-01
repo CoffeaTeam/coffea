@@ -1,5 +1,5 @@
-import numpy as np
-import awkward
+from fnal_column_analysis_tools.util import awkward
+from fnal_column_analysis_tools.util import numpy as np
 import uproot_methods
 
 
@@ -48,14 +48,14 @@ def dummy_events():
     return events()
 
 def gen_reco_TLV():
-    gen_pt = awkward.fromiter([[10.0, 20.0, 30.0], [], [40.0, 50.0]])
-    reco_pt = awkward.fromiter([[20.2, 10.1, 30.3, 50.5], [50.5], [60]])
+    gen_pt = awkward.JaggedArray.fromiter([[10.0, 20.0, 30.0], [], [40.0, 50.0]])
+    reco_pt = awkward.JaggedArray.fromiter([[20.2, 10.1, 30.3, 50.5], [50.5], [60]])
 
-    gen_eta = awkward.fromiter([[-3.0, -2.0, 2.0], [], [-1.0, 1.0]])
-    reco_eta = awkward.fromiter([[-2.2, -3.3, 2.2, 0.0], [0.0], [1.1]])
+    gen_eta = awkward.JaggedArray.fromiter([[-3.0, -2.0, 2.0], [], [-1.0, 1.0]])
+    reco_eta = awkward.JaggedArray.fromiter([[-2.2, -3.3, 2.2, 0.0], [0.0], [1.1]])
 
-    gen_phi = awkward.fromiter([[-1.5, 0.0, 1.5], [], [0.78, -0.78]])
-    reco_phi = awkward.fromiter([[ 0.1, -1.4, 1.4, 0.78], [0.78], [-0.77]])
+    gen_phi = awkward.JaggedArray.fromiter([[-1.5, 0.0, 1.5], [], [0.78, -0.78]])
+    reco_phi = awkward.JaggedArray.fromiter([[ 0.1, -1.4, 1.4, 0.78], [0.78], [-0.77]])
 
     gen = uproot_methods.TLorentzVectorArray.from_ptetaphim(gen_pt, gen_eta, gen_phi, 0.2)
     reco = uproot_methods.TLorentzVectorArray.from_ptetaphim(reco_pt, reco_eta, reco_phi, 0.2)

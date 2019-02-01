@@ -1,7 +1,7 @@
 from fnal_column_analysis_tools.lookup_tools.lookup_base import lookup_base
 
-import numpy as np
-from awkward.array.jagged import JaggedArray
+from fnal_column_analysis_tools.util import awkward
+from fnal_column_analysis_tools.util import numpy as np
 from copy import deepcopy
 
 class dense_lookup(lookup_base):
@@ -30,7 +30,7 @@ class dense_lookup(lookup_base):
     def _evaluate(self,*args):        
         indices = [] 
         for arg in args: 
-            if type(arg) == JaggedArray: raise Exception('JaggedArray in inputs')
+            if type(arg) == awkward.JaggedArray: raise Exception('JaggedArray in inputs')
         if self._dimension == 1:
             indices.append(np.clip(np.searchsorted(self._axes, args[0], side='right')-1,0,self._values.shape[0]-1))
         else:

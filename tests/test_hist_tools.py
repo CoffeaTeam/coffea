@@ -1,7 +1,7 @@
 from __future__ import print_function, division
 
 from fnal_column_analysis_tools import hist
-import numpy as np
+from fnal_column_analysis_tools.util import numpy as np
 
 from dummy_distributions import dummy_jagged_eta_pt
 

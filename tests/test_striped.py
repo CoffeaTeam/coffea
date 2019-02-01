@@ -3,8 +3,8 @@ from __future__ import print_function, division
 from fnal_column_analysis_tools.striped import ColumnGroup, PhysicalColumnGroup, jaggedFromColumnGroup
 import uproot
 import uproot_methods
-import awkward
-import numpy as np
+from fnal_column_analysis_tools.util import awkward
+from fnal_column_analysis_tools.util import numpy as np
 
 from dummy_distributions import dummy_events
 

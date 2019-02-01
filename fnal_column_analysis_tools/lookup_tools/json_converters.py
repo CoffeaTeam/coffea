@@ -1,4 +1,4 @@
-import numpy as np
+from fnal_column_analysis_tools.util import numpy as np
 import json
 
 def extract_json_histo_structure(parselevel,axis_names,axes):

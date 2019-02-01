@@ -1,5 +1,5 @@
-import numpy as np
-from awkward import JaggedArray
+from fnal_column_analysis_tools.util import awkward
+from fnal_column_analysis_tools.util import numpy as np
 
 #base class for all objects that do some sort of value or function lookup
 class lookup_base(object):
@@ -12,7 +12,7 @@ class lookup_base(object):
         # TODO: check can use offsets (this should always be true for striped)
         # Alternatively we can just use starts and stops
         for i in range(len(inputs)):
-            if isinstance(inputs[i], JaggedArray):
+            if isinstance(inputs[i], awkward.JaggedArray):
                 if offsets is not None and offsets.base is not inputs[i].offsets.base:
                     if type(offsets) is int:
                         raise Exception('Do not mix JaggedArrays and numpy arrays when calling derived class of lookup_base')
@@ -27,7 +27,7 @@ class lookup_base(object):
                 offsets = -1
         retval = self._evaluate(*tuple(inputs))
         if offsets is not None and type(offsets) is not int:
-            retval = JaggedArray.fromoffsets(offsets,retval)
+            retval = awkward.JaggedArray.fromoffsets(offsets,retval)
         return retval
     
     def _evaluate(self,*args):
