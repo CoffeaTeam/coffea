@@ -17,6 +17,8 @@ def convert_histo_root_file(file):
         rootclass = item._classname
         if rootclass in histTypes:
             converted_file[(nicepath, 'dense_lookup')] = item.values, item.edges
+            if hasattr(item,'variances'):
+                converted_file[(nicepath+'_error', 'dense_lookup')] = np.sqrt(item.variances), item.edges
         elif rootclass in graphTypes:
             # TODO: convert TGraph into interpolated lookup
             continue
