@@ -7,7 +7,7 @@ python:
   - 3.6
 env:
   matrix:
-  - AWKWARD="awkward>=0.7.0"
+  - AWKWARD="awkward>=0.8.1"
 matrix:
 addons:
   apt:
@@ -17,6 +17,7 @@ script: python setup.py pytest
 install:
   - pip install --upgrade setuptools_scm
   - pip install awkward
+  - pip install awkward-numba
   - pip install numba
   - pip install scipy
   - pip install numpy --upgrade

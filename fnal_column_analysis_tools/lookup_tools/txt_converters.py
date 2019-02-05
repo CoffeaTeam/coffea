@@ -1,6 +1,5 @@
-import numpy as np
-import awkward
-from awkward import JaggedArray
+from fnal_column_analysis_tools.util import awkward
+from fnal_column_analysis_tools.util import numpy as np
 
 #for later
 #func = numbaize(formula,['p%i'%i for i in range(nParms)]+[varnames[i] for i in range(nEvalVars)])
@@ -112,7 +111,7 @@ def _build_standard_jme_lookup(name,layout,pars,nBinnedVars,nBinColumns,
                 theBins = np.union1d(binMins,binMaxs)
                 allBins = np.append(allBins,theBins)
                 counts  = np.append(counts,theBins.size)
-            bins[layout[i+offset_name]] = JaggedArray.fromcounts(counts,allBins)
+            bins[layout[i+offset_name]] = awkward.JaggedArray.fromcounts(counts,allBins)
         bin_order.append(layout[i+offset_name])
         offset_col += 1
     
@@ -133,8 +132,8 @@ def _build_standard_jme_lookup(name,layout,pars,nBinnedVars,nBinColumns,
     for i in range(nEvalVars):
         var_order.append(layout[i+offset_name])
         if not interpolatedFunc:
-            clamp_mins[layout[i+offset_name]] = JaggedArray.fromcounts(jagged_counts,np.atleast_1d(pars[columns[i+offset_col]]))
-            clamp_maxs[layout[i+offset_name]] = JaggedArray.fromcounts(jagged_counts,np.atleast_1d(pars[columns[i+offset_col+1]]))
+            clamp_mins[layout[i+offset_name]] = awkward.JaggedArray.fromcounts(jagged_counts,np.atleast_1d(pars[columns[i+offset_col]]))
+            clamp_maxs[layout[i+offset_name]] = awkward.JaggedArray.fromcounts(jagged_counts,np.atleast_1d(pars[columns[i+offset_col+1]]))
             offset_col += 1
 
 
@@ -143,7 +142,7 @@ def _build_standard_jme_lookup(name,layout,pars,nBinnedVars,nBinColumns,
     parm_order = []
     offset_col = 2*nBinnedVars+1 + (interpolatedFunc==False)*2*nEvalVars
     for i in range(nParms):
-        parms.append(JaggedArray.fromcounts(jagged_counts,pars[columns[i+offset_col]]))
+        parms.append(awkward.JaggedArray.fromcounts(jagged_counts,pars[columns[i+offset_col]]))
         parm_order.append('p%i'%(i))
     
     wrapped_up = {}
@@ -262,7 +261,7 @@ def convert_effective_area_file(eaFilePath):
                 theBins = np.union1d(binMins,binMaxs)
                 allBins = np.append(allBins,theBins)
                 counts  = np.append(counts,theBins.size)
-            bins[layout[i+offset_name]] = JaggedArray.fromcounts(counts,allBins)
+            bins[layout[i+offset_name]] = awkward.JaggedArray.fromcounts(counts,allBins)
         bin_order.append(layout[i+offset_name])
         offset_col += 1
 

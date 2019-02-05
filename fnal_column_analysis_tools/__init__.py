@@ -36,3 +36,5 @@ import fnal_column_analysis_tools.striped
 import fnal_column_analysis_tools.jetmet_tools
 
 from fnal_column_analysis_tools.version import __version__
+
+import fnal_column_analysis_tools.util
