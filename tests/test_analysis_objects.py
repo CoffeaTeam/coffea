@@ -4,8 +4,8 @@ import fnal_column_analysis_tools
 from fnal_column_analysis_tools.analysis_objects import JaggedCandidateArray, JaggedTLorentzVectorArray
 import uproot
 import uproot_methods
-import awkward
-import numpy as np
+from fnal_column_analysis_tools.util import awkward
+from fnal_column_analysis_tools.util import numpy as np
 
 from dummy_distributions import dummy_four_momenta, gen_reco_TLV
 

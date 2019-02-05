@@ -1,7 +1,7 @@
 from fnal_column_analysis_tools.lookup_tools.lookup_base import lookup_base
 
-import numpy as np
-from awkward.array.jagged import JaggedArray
+from fnal_column_analysis_tools.util import awkward
+from fnal_column_analysis_tools.util import numpy as np
 from copy import deepcopy
 
 def masked_bin_eval(dim1_indices, dimN_bins, dimN_vals):

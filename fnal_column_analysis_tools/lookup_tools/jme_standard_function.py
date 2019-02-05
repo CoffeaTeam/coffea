@@ -1,7 +1,7 @@
 from fnal_column_analysis_tools.lookup_tools.lookup_base import lookup_base
 
-import numpy as np
-from awkward.array.jagged import JaggedArray
+from fnal_column_analysis_tools.util import awkward
+from fnal_column_analysis_tools.util import numpy as np
 from copy import deepcopy
 
 from numpy import sqrt,log,exp,abs
@@ -137,7 +137,7 @@ class jme_standard_function(lookup_base):
             else:
                 idxs = flatten_idxs(bin_tuple,self._eval_clamp_mins[eval_name])
                 clamp_mins = self._eval_clamp_mins[eval_name].content[idxs]
-                if isinstance(clamp_mins,JaggedArray):
+                if isinstance(clamp_mins,awkward.JaggedArray):
                     if clamp_mins.content.size == 1:
                         clamp_mins = clamp_mins.content[0]
                     else:
@@ -148,7 +148,7 @@ class jme_standard_function(lookup_base):
             else:
                 idxs = flatten_idxs(bin_tuple,self._eval_clamp_maxs[eval_name])
                 clamp_maxs = self._eval_clamp_maxs[eval_name].content[idxs]
-                if isinstance(clamp_maxs,JaggedArray):
+                if isinstance(clamp_maxs,awkward.JaggedArray):
                     if clamp_maxs.content.size == 1:
                         clamp_maxs = clamp_maxs.content[0]
                     else:
