@@ -3,3 +3,4 @@ from .JetResolution import JetResolution
 from .JetResolutionScaleFactor import JetResolutionScaleFactor
 from .JetCorrectionUncertainty import JetCorrectionUncertainty
 from .JetTransformer import JetTransformer
+from .MetUncertaintyCalculator import calculateType1MetXY

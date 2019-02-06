@@ -1,9 +1,9 @@
 from ..lookup_tools.jersf_lookup import jersf_lookup
 import warnings
 import re
-import numpy as np
+from fnal_column_analysis_tools.util import awkward
+from fnal_column_analysis_tools.util import numpy as np
 from copy import deepcopy
-from awkward import JaggedArray
 
 def _checkConsistency(against,tocheck):
     if against is None:
