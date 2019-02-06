@@ -1,9 +1,9 @@
 from ..lookup_tools.jme_standard_function import jme_standard_function
 import warnings
 import re
-import numpy as np
+from fnal_column_analysis_tools.util import awkward
+from fnal_column_analysis_tools.util import numpy as np
 from copy import deepcopy
-from awkward import JaggedArray
 
 def _checkConsistency(against,tocheck):
     if against is None:
@@ -133,7 +133,7 @@ class FactorizedJetCorrector(object):
         firstarg = localargs[self._signature[0]]
         cumulativeCorrection = 1.0
         offsets = None
-        if isinstance(firstarg,JaggedArray):
+        if isinstance(firstarg,awkward.JaggedArray):
             offsets = firstarg.offsets
             cumulativeCorrection = firstarg.ones_like().content
             for key in localargs.keys():
@@ -160,5 +160,5 @@ class FactorizedJetCorrector(object):
             corrections.append(cumulativeCorrection)
         if offsets is not None:
             for i in range(len(corrections)):
-                corrections[i] = JaggedArray.fromoffsets(offsets,corrections[i])
+                corrections[i] = awkward.JaggedArray.fromoffsets(offsets,corrections[i])
         return corrections
