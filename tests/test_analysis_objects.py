@@ -103,8 +103,16 @@ def test_analysis_objects():
 
     #test gen-reco matching
     gen, reco = gen_reco_TLV()
-    jca_gen = JaggedCandidateArray.candidatesfromcounts(gen.counts,p4=gen.flatten())
-    jca_reco = JaggedCandidateArray.candidatesfromcounts(reco.counts,p4=reco.flatten())
+    flat_gen = gen.flatten()
+    gen_px,gen_py,gen_pz,gen_e = flat_gen.x,flat_gen.y,flat_gen.z,flat_gen.t
+    flat_reco = reco.flatten()
+    reco_px,reco_py,reco_pz,reco_e = flat_reco.x,flat_reco.y,flat_reco.z,flat_reco.t
+    jca_gen = JaggedCandidateArray.candidatesfromcounts(gen.counts,
+                                                        px=gen_px,py=gen_py,
+                                                        pz=gen_pz,energy=gen_e)
+    jca_reco = JaggedCandidateArray.candidatesfromcounts(reco.counts,
+                                                         px=reco_px,py=reco_py,
+                                                         pz=reco_pz,energy=reco_e)
     print('gen eta: ',jca_gen.p4.eta,'\n gen phi:',jca_gen.p4.phi)
     print('reco eta: ',jca_reco.p4.eta,'\n reco phi:',jca_reco.p4.phi)
     print('match mask: ',jca_reco.match(jca_gen,deltaRCut=0.3) )
