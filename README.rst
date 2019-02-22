@@ -31,7 +31,7 @@ This package is currently organized into three subpackages:
 Installation
 ============
 
-Install uproot-methods like any other Python package:
+Install fnal-column-analysis-tools like any other Python package:
 
 .. code-block:: bash
 
