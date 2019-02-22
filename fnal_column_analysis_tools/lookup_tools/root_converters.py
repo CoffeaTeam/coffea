@@ -5,7 +5,7 @@ import re
 cycle = re.compile(br";\d+")
 killcycle = lambda s: cycle.sub(b"", s)
 
-histTypes = [b'TH1D', b'TH1F', b'TH2D', b'TH2F']
+histTypes = [b'TH1D', b'TH1F', b'TH2D', b'TH2F',b'TH3D', b'TH3F']
 graphTypes = [b'TGraphAsymmErrors', b'TGraph2D']
 
 
