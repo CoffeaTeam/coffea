@@ -13,12 +13,12 @@ def convert_histo_root_file(file):
     converted_file = {}
     fin = uproot.open(file.strip())
     for path, item in fin.iteritems(recursive=True):
-        nicepath = killcycle(path)
+        nicepath = killcycle(path).decode()
         rootclass = item._classname
         if rootclass in histTypes:
             converted_file[(nicepath, 'dense_lookup')] = item.values, item.edges
             if hasattr(item,'variances'):
-                converted_file[(nicepath+'_error'.encode(), 'dense_lookup')] = np.sqrt(item.variances), item.edges
+                converted_file[(nicepath+'_error', 'dense_lookup')] = np.sqrt(item.variances), item.edges
         elif rootclass in graphTypes:
             # TODO: convert TGraph into interpolated lookup
             continue
