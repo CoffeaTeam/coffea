@@ -43,14 +43,14 @@ class extractor(object):
         self._filecache = {}
         self._finalized = False
     
-    def add_weight_set(self,local_name,type,weights):
+    def add_weight_set(self,local_name,thetype,weights):
         """ adds one extracted weight to the extractor """
         if self._finalized:
             raise Exception('extractor is finalized cannot add new weights!')
         if local_name in self._names.keys():
             raise Exception('weights name "{}" already defined'.format(local_name))
         self._names[local_name] = len(self._weights)
-        self._types.append(type)
+        self._types.append(thetype)
         self._weights.append(weights)
     
     def add_weight_sets(self,weightsdescs):
@@ -63,38 +63,40 @@ class extractor(object):
             temp = weightdesc.strip().split(' ')
             if len(temp) != 3: 
                 raise Exception('"{}" not formatted as "<local name> <name> <weights file>"'.format(weightdesc))
-            (local_name,name,file) = tuple(temp)
+            (local_name,name,thefile) = tuple(temp)
             if name == '*':
-                self.import_file(file)
-                weights = self._filecache[file]
+                self.import_file(thefile)
+                weights = self._filecache[thefile]
                 for key, value in weights.items():
                     if local_name == '*':
                         self.add_weight_set(key[0],key[1],value)
                     else:
-                        self.add_weight_set(local_name+key[0],key[1],value)
+                        keyfilename,keymyname = key[0],key[1]
+                        if isinstance(keyfilename,bytes): keyfilename = keyfilename.decode()
+                        if isinstance(keymyname,bytes): keymyname = keymyname.decode()
+                        self.add_weight_set(local_name+keyfilename,keymyname,value)
             else:
-                weights,type = self.extract_from_file(file,name)
-                self.add_weight_set(local_name,type,weights)
+                weights,thetype = self.extract_from_file(thefile,name)
+                self.add_weight_set(local_name,thetype,weights)
     
-    def import_file(self,file):
+    def import_file(self,thefile):
         """ cache the whole contents of a file for later processing """
-        if file not in self._filecache.keys():
-            file_dots = os.path.basename(file).split('.')
-            format = file_dots[-1].strip()
-            type = 'default'
+        if thefile not in self._filecache.keys():
+            file_dots = os.path.basename(thefile).split('.')
+            theformat = file_dots[-1].strip()
+            thetype = 'default'
             if len(file_dots) > 2:
-                type = file_dots[-2]
-            self._filecache[file] = file_converters[format][type](file)
+                thetype = file_dots[-2]
+            self._filecache[thefile] = file_converters[theformat][thetype](thefile)
     
-    def extract_from_file(self, file, name):
+    def extract_from_file(self, thefile, name):
         """ import a file and then extract a lookup set """
-        self.import_file(file)
-        weights = self._filecache[file]
+        self.import_file(thefile)
+        weights = self._filecache[thefile]
         names = {key[0]:key[1] for key in weights.keys()}
-        bname = name.encode()
-        if bname not in names.keys():
-            raise Exception('Weights named "{}" not in {}!'.format(name,file))
-        return (weights[(bname,names[bname])],names[bname])
+        if name not in names.keys():
+            raise Exception('Weights named "{}" not in {}!'.format(name,thefile))
+        return (weights[(name,names[name])],names[name])
           
     def finalize(self,reduce_list=None):
         """
