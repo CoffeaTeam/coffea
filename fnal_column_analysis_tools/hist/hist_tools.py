@@ -551,10 +551,20 @@ class Hist(object):
         for key in self._sumw.keys():
             self._sumw2[key] = self._sumw[key].copy()
 
+    def compatible(self, other):
+        """
+            Checks if this histogram is compatible with another, i.e. they have identical binning
+        """
+        if self.dim() != other.dim():
+            return False
+        if set(d.name for d in self.sparse_axes()) != set(d.name for d in other.sparse_axes()):
+            return False
+        if not all(d1 == d2 for d1, d2 in zip(self.dense_axes(), other.dense_axes())):
+            return False
+        return True
+
     def __iadd__(self, other):
-        if self.dim()!=len(other._axes):
-            raise ValueError("Cannot add this histogram with histogram %r of dissimilar dimensions" % other)
-        if set(d.name for d in self._axes) != set(d.name for d in other._axes):
+        if not self.compatible(other):
             raise ValueError("Cannot add this histogram with histogram %r of dissimilar dimensions" % other)
 
         raxes = other.sparse_axes()
