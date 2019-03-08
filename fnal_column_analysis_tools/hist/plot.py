@@ -13,8 +13,14 @@ import matplotlib.pyplot as plt
 # Let's try our best to follow matplotlib idioms
 # https://matplotlib.org/tutorials/introductory/usage.html#coding-styles
 
-def poisson_interval(sumw, sumw2, sigma=1):
+_coverage1sd = scipy.stats.norm.cdf(1) - scipy.stats.norm.cdf(-1)
+
+def poisson_interval(sumw, sumw2, coverage=_coverage1sd):
     """
+        sumw: sum of weights
+        sumw2: sum weights**2
+        coverage: coverage, default to 68%
+
         The so-called 'Garwood' interval
             c.f. https://www.ine.pt/revstat/pdf/rs120203.pdf
             or http://ms.mcmaster.ca/peter/s743/poissonalpha.html
@@ -36,10 +42,25 @@ def poisson_interval(sumw, sumw2, sigma=1):
         argnearest = tuple(dim[nearest] for dim in available)
         scale[missing] = scale[argnearest]
     counts = sumw / scale
-    lo = scale * scipy.stats.chi2.ppf(scipy.stats.norm.cdf(-sigma), 2*counts) / 2.
-    hi = scale * scipy.stats.chi2.ppf(scipy.stats.norm.cdf(sigma), 2*(counts+1)) / 2.
+    lo = scale * scipy.stats.chi2.ppf((1-coverage)/2, 2*counts) / 2.
+    hi = scale * scipy.stats.chi2.ppf((1+coverage)/2, 2*(counts+1)) / 2.
     interval = np.array([lo, hi])
     interval[interval==np.nan] = 0.  # chi2.ppf produces nan for counts=0
+    return interval
+
+
+def clopper_pearson_interval(num, denom, coverage=_coverage1sd):
+    """
+        Compute Clopper-Pearson coverage interval for binomial distribution
+        num: successes
+        denom: trials
+        coverage: coverage, default to 68%
+
+        c.f. http://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval
+    """
+    lo = scipy.stats.beta.ppf((1-coverage)/2, k, n-k+1)
+    hi = scipy.stats.beta.ppf((1+coverage)/2, k+1, n-k)
+    interval = np.array([lo, hi])
     return interval
 
 
@@ -52,7 +73,8 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         stack: whether to stack or overlay the other dimension (if one exists)
         overflow: overflow behavior of plot axis (see Hist.sum() docs)
 
-        The draw options are passed as dicts.  If none of *_opts is specified, nothing will be plotted!
+        The draw options are passed as dicts to the relevant matplotlib function, with some exceptions in case
+        it is especially common or useful.  If none of *_opts is specified, nothing will be plotted!
         Pass an empty dict (e.g. line_opts={}) for defaults
             line_opts: options to plot a step without errors
                 Special options interpreted by this function and not passed to matplotlib:
@@ -174,11 +196,11 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
                     primitives[label].append(f)
                 if error_opts is not None:
                     err = np.abs(poisson_interval(sumw, sumw2) - sumw)
-                    emarker = error_opts.pop('emarker', '')
                     opts = {'label': label, 'drawstyle': 'steps-mid'}
                     if first_color is not None:
                         opts['color'] = first_color
                     opts.update(error_opts)
+                    emarker = opts.pop('emarker', '')
                     y = np.r_[sumw[0], sumw]
                     yerr = np.c_[np.zeros(2).reshape(2,1), err[:,:-1], np.zeros(2).reshape(2,1)]
                     el = ax.errorbar(x=centers[center_view], y=y[center_view], yerr=yerr[0,center_view], uplims=True, **opts)
@@ -205,6 +227,117 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
     return fig, ax, primitives
 
 
+def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None, denom_fill_opts=None, guide_opts=None, unc='clopper-pearson', label=None):
+    """
+        Create a ratio plot, dividing two compatible histograms
+        num: Hist object with single axis
+        denom: Hist object with identical axis to num
+        ax: matplotlib Axes object (if None, one is created)
+        clear: clear Axes before drawing (if passed); if False, this function will skip drawing the legend
+        overflow: overflow behavior of plot axis (see Hist.sum() docs)
+
+        The draw options are passed as dicts to the relevant matplotlib function, with some exceptions in case
+        it is especially common or useful.  If none of *_opts is specified, nothing will be plotted!
+        Pass an empty dict (e.g. error_opts={}) for defaults.
+            error_opts: to plot an errorbar, with a step or marker
+                Special options interpreted by this function and not passed to matplotlib:
+                    'emarker' (default: '') marker to place at cap of errorbar
+
+            denom_fill_opts: to plot a filled area centered at 1, representing denominator uncertainty
+                Special options interpreted by this function and not passed to matplotlib:
+                    (none)
+
+            guide_opts: to plot a horizontal guide line at ratio of 1.
+                Special options interpreted by this function and not passed to matplotlib:
+                    (none)
+
+
+        unc: Uncertainty calculation option
+            'clopper-pearson': interval for efficiencies
+            'poisson-ratio': interval for ratio of poisson distributions
+            'num': poisson interval of numerator scaled by denominator value
+                    (common for data/mc, for better or worse...)
+        label: associate a label with this entry (note: y axis label set by num.label)
+    """
+    if ax is None:
+        fig, ax = plt.subplots(1, 1)
+    else:
+        if not isinstance(ax, plt.Axes):
+            raise ValueError("ax must be a matplotlib Axes object")
+        if clear:
+            ax.clear()
+        fig = ax.figure
+    if not num.compatible(denom):
+        raise ValueError("numerator and denominator histograms have incompatible axis definitions")
+    if num.dim() > 1:
+        raise ValueError("plotratio() can only support one-dimensional histograms")
+    if error_opts is None and denom_fill_opts is None and guide_opts is None:
+        raise ValueError("No plot options specified, will not draw anything.")
+
+    axis = num.axes()[0]
+    if isinstance(axis, SparseAxis):
+        raise NotImplementedError("Ratio for sparse axes (labeled axis with errorbars)")
+    elif isinstance(axis, DenseAxis):
+        ax.set_xlabel(axis.label)
+        ax.set_ylabel(num.label)
+        edges = axis.edges(overflow=overflow)
+        # Only errorbar uses centers, and if we draw a step too, we need
+        #   the step to go to the edge of the end bins, so place edges
+        #   and only draw errorbars for the interior points
+        centers = np.r_[edges[0], axis.centers(overflow=overflow), edges[-1]]
+        # but if there's a marker, then it shows up in the extra spots
+        center_view = slice(1, -1) if error_opts is not None and 'marker' in error_opts else slice(None)
+
+        sumw_num, sumw2_num = num.values(sumw2=True, overflow=overflow)[()]
+        sumw_num = np.r_[sumw_num, sumw_num[-1]]
+        sumw2_num = np.r_[sumw2_num, sumw2_num[-1]]
+        sumw_denom, sumw2_denom = denom.values(sumw2=True, overflow=overflow)[()]
+        sumw_denom = np.r_[sumw_denom, sumw_denom[-1]]
+        sumw2_denom = np.r_[sumw2_denom, sumw2_denom[-1]]
+
+        rsumw = sumw_num / sumw_denom
+        if unc == 'clopper-pearson':
+            rsum_err = np.abs(clopper_pearson_interval(sumw_num, sumw_denom) - rsumw)
+        elif unc == 'poisson-ratio':
+            # poisson ratio n/m is equivalent to binomial n/(n+m)
+            rsum_err = np.abs(clopper_pearson_interval(sumw_num, sumw_num+sumw_denom) - rsumw)
+        elif unc == 'num':
+            rsumw_err = np.abs(poisson_interval(rsumw, sumw2_num/sumw_denom**2) - rsumw)
+
+        primitives = {}
+        if error_opts is not None:
+            opts = {'label': label, 'drawstyle': 'steps-mid'}
+            opts.update(error_opts)
+            emarker = opts.pop('emarker', '')
+            y = np.r_[rsumw[0], rsumw]
+            yerr = np.c_[np.zeros(shape=(2,1)), rsumw_err[:,:-1], np.zeros(shape=(2,1))]
+            el = ax.errorbar(x=centers[center_view], y=y[center_view], yerr=yerr[0,center_view], uplims=True, **opts)
+            opts['label'] = '_nolabel_'
+            opts['linestyle'] = 'none'
+            opts['color'] = el.get_children()[2].get_color()[0]
+            eh = ax.errorbar(x=centers[center_view], y=y[center_view], yerr=yerr[1,center_view], lolims=True, **opts)
+            el[1][0].set_marker(emarker)
+            eh[1][0].set_marker(emarker)
+            primitives['error'] = (el,eh)
+        if denom_fill_opts is not None:
+            unity = np.ones_like(sumw_denom)
+            denom_unc = poisson_interval(unity, sumw2_denom/sumw_denom**2)
+            opts = {'step': 'post', 'facecolor': (0,0,0,0.3), 'linewidth': 0}
+            opts.update(denom_fill_opts)
+            fill = ax.fill_between(edges, denom_unc[0], denom_unc[1], **opts)
+            primitives['denom_fill'] = fill
+        if guide_opts is not None:
+            opts = {'linestyle': '--', 'color': (0,0,0,0.5), 'linewidth': 1}
+            opts.update(guide_opts)
+            primitives['guide'] = ax.axhline(1., **opts)
+
+    if clear:
+        ax.autoscale(axis='x', tight=True)
+        ax.set_ylim(0, None)
+
+    return fig, ax, primitives
+
+
 def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none', patch_opts=None, density=False, binwnorm=None):
     """
         hist: Hist object with two dimensions
@@ -214,7 +347,8 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
         xoverflow: overflow behavior of x axis (see Hist.sum() docs)
         yoverflow: overflow behavior of y axis (see Hist.sum() docs)
 
-        The draw options are passed as dicts.  If none of *_opts is specified, nothing will be plotted!
+        The draw options are passed as dicts to the relevant matplotlib function, with some exceptions in case
+        it is especially common or useful.  If none of *_opts is specified, nothing will be plotted!
         Pass an empty dict (e.g. patch_opts={}) for defaults
             patch_opts: options to plot a rectangular grid of patches colored according to the bin values
                 See https://matplotlib.org/api/_as_gen/matplotlib.pyplot.pcolormesh.html for details
