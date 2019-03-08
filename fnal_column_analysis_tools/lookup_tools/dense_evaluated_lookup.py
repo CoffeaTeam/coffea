@@ -50,7 +50,7 @@ class dense_evaluated_lookup(lookup_base):
             raise Exception('Evaluation dimensions not specified in dense_evaluated_lookup')
         funcs = np.zeros(shape=values.shape,dtype='O')
         for i in range(values.size):
-            idx = np.unravel_index(i,dims=values.shape)
+            idx = np.unravel_index(i,shape=values.shape)
             funcs[idx] = numbaize(values[idx],['x'])
         self._values=deepcopy(funcs)
         # TODO: support for multidimensional functions and functions with variables other than 'x'
