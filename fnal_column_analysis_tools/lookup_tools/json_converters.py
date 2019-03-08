@@ -61,7 +61,7 @@ def convert_histo_json_file(filename):
         for vname in names_and_valnames[histname]:
             valsdict[vname] = np.zeros(shape=theshape).flatten()
         flatidx = np.arange(np.zeros(shape=theshape).size)
-        binidx = np.unravel_index(flatidx,dims=theshape)
+        binidx = np.unravel_index(flatidx, shape=theshape)
         for vname in valsdict:
             for iflat in flatidx:
                 binlows = []
