@@ -8,8 +8,6 @@ import numbers
 from .hist_tools import SparseAxis, DenseAxis, overflow_behavior, Interval
 
 import matplotlib.pyplot as plt
-from matplotlib.collections import PatchCollection
-from matplotlib.patches import Rectangle
 
 # Plotting is always terrible
 # Let's try our best to follow matplotlib idioms
@@ -90,6 +88,8 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
     if binwnorm is not None:
         if not isinstance(binwnorm, numbers.Number):
             raise ValueError("Bin width normalization not a number, but a %r" % binwnorm.__class__)
+    if line_opts is None and fill_opts is None and error_opts is None:
+        raise ValueError("No plot options specified, will not draw anything.")
 
     axis = hist.axes()[0]
     if overlay is not None:
@@ -216,8 +216,8 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
 
         The draw options are passed as dicts.  If none of *_opts is specified, nothing will be plotted!
         Pass an empty dict (e.g. patch_opts={}) for defaults
-            patch_opts: options to plot a rectangular patch for each bin
-                See https://matplotlib.org/api/collections_api.html#matplotlib.collections.PatchCollection for details
+            patch_opts: options to plot a rectangular grid of patches colored according to the bin values
+                See https://matplotlib.org/api/_as_gen/matplotlib.pyplot.pcolormesh.html for details
                 Special options interpreted by this function and not passed to matplotlib:
                     (none)
 
@@ -241,6 +241,8 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
     if binwnorm is not None:
         if not isinstance(binwnorm, numbers.Number):
             raise ValueError("Bin width normalization not a number, but a %r" % binwnorm.__class__)
+    if patch_opts is None:
+        raise ValueError("No plot options specified, will not draw anything.")
 
     xaxis = hist.axis(xaxis)
     yaxis = hist.axes()[1]
@@ -257,6 +259,7 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
         if transpose:
            sumw = sumw.T
            sumw2 = sumw2.T
+        # no support for different overflow behavior per axis, do it ourselves
         sumw = sumw[overflow_behavior(xoverflow),overflow_behavior(yoverflow)]
         sumw2 = sumw2[overflow_behavior(xoverflow),overflow_behavior(yoverflow)]
         if (density or binwnorm is not None) and np.sum(sumw)>0:
@@ -268,15 +271,9 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
 
         primitives = {}
         if patch_opts is not None:
-            patches = []
-            for x, dx in zip(xedges[:-1], np.diff(xedges)):
-                for y, dy in zip(yedges[:-1], np.diff(yedges)):
-                    patches.append(Rectangle((x,y), width=dx, height=dy))
-
             opts = {'cmap': 'viridis'}
             opts.update(patch_opts)
-            pc = PatchCollection(patches, **opts)
-            pc.set_array(sumw.flatten())
+            pc = ax.pcolormesh(xedges, yedges, sumw.T, **opts)
             ax.add_collection(pc)
             primitives['patches'] = pc
             if clear:
