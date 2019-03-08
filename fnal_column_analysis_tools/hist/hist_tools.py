@@ -206,8 +206,11 @@ class Cat(SparseAxis):
         self._sorting = sorting
 
     def index(self, identifier):
+        if '*' in identifier:
+            raise ValueError("Cat axis does not support character '*' in category names, "
+                             "as it conflicts with wildcard mapping.\nAxis: %r, identifier: %r" % (self, identifier))
         if not isinstance(identifier, basestring):
-            raise TypeError("Cat axis supports only string categories")
+            raise TypeError("Cat axis supports only string categories, received a %r in index request" % identifier)
         if identifier not in self._categories:
             self._categories.append(identifier)
         return identifier
@@ -229,7 +232,7 @@ class Cat(SparseAxis):
         if isinstance(the_slice, _regex_pattern):
             out = [v for v in self._categories if the_slice.match(v)]
         elif isinstance(the_slice, basestring):
-            pattern = "^" + the_slice.replace('*', '.*')
+            pattern = "^" + re.escape(the_slice).replace(r'\*', '.*')
             m = re.compile(pattern)
             out = [v for v in self._categories if m.match(v)]
         elif isinstance(the_slice, list):
@@ -548,10 +551,20 @@ class Hist(object):
         for key in self._sumw.keys():
             self._sumw2[key] = self._sumw[key].copy()
 
+    def compatible(self, other):
+        """
+            Checks if this histogram is compatible with another, i.e. they have identical binning
+        """
+        if self.dim() != other.dim():
+            return False
+        if set(d.name for d in self.sparse_axes()) != set(d.name for d in other.sparse_axes()):
+            return False
+        if not all(d1 == d2 for d1, d2 in zip(self.dense_axes(), other.dense_axes())):
+            return False
+        return True
+
     def __iadd__(self, other):
-        if self.dim()!=len(other._axes):
-            raise ValueError("Cannot add this histogram with histogram %r of dissimilar dimensions" % other)
-        if set(d.name for d in self._axes) != set(d.name for d in other._axes):
+        if not self.compatible(other):
             raise ValueError("Cannot add this histogram with histogram %r of dissimilar dimensions" % other)
 
         raxes = other.sparse_axes()
