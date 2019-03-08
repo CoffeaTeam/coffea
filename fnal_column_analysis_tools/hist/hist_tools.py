@@ -206,8 +206,11 @@ class Cat(SparseAxis):
         self._sorting = sorting
 
     def index(self, identifier):
+        if '*' in identifier:
+            raise ValueError("Cat axis does not support character '*' in category names, "
+                             "as it conflicts with wildcard mapping.\nAxis: %r, identifier: %r" % (self, identifier))
         if not isinstance(identifier, basestring):
-            raise TypeError("Cat axis supports only string categories")
+            raise TypeError("Cat axis supports only string categories, received a %r in index request" % identifier)
         if identifier not in self._categories:
             self._categories.append(identifier)
         return identifier
@@ -229,7 +232,7 @@ class Cat(SparseAxis):
         if isinstance(the_slice, _regex_pattern):
             out = [v for v in self._categories if the_slice.match(v)]
         elif isinstance(the_slice, basestring):
-            pattern = "^" + the_slice.replace('*', '.*')
+            pattern = "^" + re.escape(the_slice).replace(r'\*', '.*')
             m = re.compile(pattern)
             out = [v for v in self._categories if m.match(v)]
         elif isinstance(the_slice, list):
