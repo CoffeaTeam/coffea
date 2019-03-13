@@ -7,6 +7,9 @@ fnal-column-analysis-tools
 .. image:: https://ci.appveyor.com/api/projects/status/93pk94vu1xlk83q5?svg=true
     :target: https://ci.appveyor.com/project/lgray/fnal-column-analysis-tools
 
+.. image:: https://mybinder.org/badge_logo.svg
+   :target: https://mybinder.org/v2/gh/CoffeaTeam/fnal-column-analysis-tools/master?filepath=binder/
+
 .. inclusion-marker-1-do-not-remove
 
 Basic tools and wrappers for enabling not-too-alien syntax when running columnar Collider HEP analysis.
