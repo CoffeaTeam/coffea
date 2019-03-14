@@ -3,37 +3,25 @@ environment:
     - PYTHON: "C:\\Python27"
       PYTHON_VERSION: "2.7.10"
       PYTHON_ARCH: "32"
-      AWKWARD: "awkward>=0.7.0"
-      NUMBA: "numba"
-      SCIPY: "scipy"
 
     - PYTHON: "C:\\Python27"
       PYTHON_VERSION: "2.7.10"
       PYTHON_ARCH: "64"
-      AWKWARD: "awkward>=0.7.0"
-      NUMBA: "numba"
-      SCIPY: "scipy"
 
     - PYTHON: "C:\\Python36"
       PYTHON_VERSION: "3.6.x"
       PYTHON_ARCH: "32"
-      AWKWARD: "awkward>=0.7.0"
-      NUMBA: "numba"
-      SCIPY: "scipy"
     
     - PYTHON: "C:\\Python36-x64"
       PYTHON_VERSION: "3.6.x"
       PYTHON_ARCH: "64"
-      AWKWARD: "awkward>=0.7.0"
-      NUMBA: "numba"
-      SCIPY: "scipy"
 
 install:
   - "python --version"
 
 build_script:
-  - "pip install %AWKWARD%"
+  - "pip install awkward numba scipy"
   - "pip install %NUMBA%"
   - "pip install %SCIPY"
-  - "pip install pytest pytest-runner h5py"
+  - "pip install pytest pytest-runner"
   - "python setup.py pytest"
