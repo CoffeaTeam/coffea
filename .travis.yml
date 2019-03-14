@@ -4,10 +4,10 @@ os:
 python:
   - 2.7
   - 3.6
-  - 3.7
 env:
   matrix:
   - AWKWARD="awkward>=0.8.1"
+  - AWKWARD="awkward-numba"
 matrix:
 addons:
   apt:
@@ -16,9 +16,7 @@ addons:
 script: python setup.py pytest
 install:
   - pip install --upgrade setuptools_scm
-  - pip install awkward
-  - pip install awkward-numba
-  - pip install numba
+  - pip install ${AWKWARD}
   - pip install scipy
   - pip install numpy --upgrade
   - python -c 'import numpy; print(numpy.__version__)'
