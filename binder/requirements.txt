@@ -1,0 +1,7 @@
+awkward>=0.8.4
+matplotlib>=3
+numba>=0.42.0
+numpy>=1.13.1
+scipy>=1.1.0
+uproot-methods>=0.4.3
+uproot>=3.4.5
