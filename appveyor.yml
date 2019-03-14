@@ -21,7 +21,5 @@ install:
 
 build_script:
   - "pip install awkward numba scipy"
-  - "pip install %NUMBA%"
-  - "pip install %SCIPY"
   - "pip install pytest pytest-runner"
   - "python setup.py pytest"
