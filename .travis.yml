@@ -3,8 +3,8 @@ os:
   - linux
 python:
   - 2.7
-  - 3.5
   - 3.6
+  - 3.7
 env:
   matrix:
   - AWKWARD="awkward>=0.8.1"
@@ -23,7 +23,6 @@ install:
   - pip install numpy --upgrade
   - python -c 'import numpy; print(numpy.__version__)'
   - pip install pytest pytest-runner
-  - if [[ $TRAVIS_PYTHON_VERSION != pypy* ]] ; then pip install h5py ; fi
 deploy:
   provider: pypi
   user: lgray
