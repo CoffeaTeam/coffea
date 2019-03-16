@@ -640,7 +640,8 @@ class Hist(object):
 
     def fill(self, **values):
         if not all(d.name in values for d in self._axes):
-            raise ValueError("Not all axes specified for this histogram!")
+            missing = ", ".join(d.name for d in self._axes if d.name not in values)
+            raise ValueError("Not all axes specified for %r.  Missing: %s" % (self, missing))
 
         if "weight" in values and self._sumw2 is None:
             self._init_sumw2()
