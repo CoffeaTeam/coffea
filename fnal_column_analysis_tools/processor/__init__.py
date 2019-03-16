@@ -12,7 +12,7 @@ class ProcessorBase(object):
         """
         Initialize with:
             all accumulator definitions (preferably constructed empty Hist objects)
-            all external data (evaluator instance or dictionary, or whatever)
+            all external input data (evaluator instance or dictionary, or whatever)
         These objects should be cloudpickle-able, and read-only (or evaluate-only in the case of
         function definitions) TODO: enforce by special class?
         Copies of accumulator definitions must be made via accumulators() for writing
@@ -31,14 +31,7 @@ class ProcessorBase(object):
     def process(self, df):
         """
         Processes a single DataFrame
-        Returns arbitrary output, to be handled by collect() on the originating executable
+        Returns a filled clone of accumulators, to be summed by some external process
         """
         raise NotImplementedError
 
-    def collect(self, output):
-        """
-        Receiver of output from (possibly many distributed) process() calls.
-        Again, some writeable copy of accumulators should be made, and stored
-        as a member variable.
-        """
-        raise NotImplementedError
