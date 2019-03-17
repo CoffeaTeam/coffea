@@ -117,10 +117,6 @@ class PackedSelection(object):
     def all(self, *names):
         """
         Shorthand for require, where all the values must be True
-        Can be called with an arbitrary number of positional arguments,
-        or a single argument that is iterable.
         """
-        if len(names) == 1 and isinstance(names[0], collections.abc.Iterable):
-            names = names[0]
         return self.require(**{name: True for name in names})
 
