@@ -232,7 +232,7 @@ class Cat(SparseAxis):
         if isinstance(the_slice, _regex_pattern):
             out = [v for v in self._categories if the_slice.match(v)]
         elif isinstance(the_slice, basestring):
-            pattern = "^" + re.escape(the_slice).replace(r'\*', '.*')
+            pattern = "^" + re.escape(the_slice).replace(r'\*', '.*') + "$"
             m = re.compile(pattern)
             out = [v for v in self._categories if m.match(v)]
         elif isinstance(the_slice, list):

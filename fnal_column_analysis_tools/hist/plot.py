@@ -158,6 +158,8 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             sumw = np.r_[sumw, sumw[-1]]
             sumw2 = np.r_[sumw2, sumw2[-1]]
             label = str(identifier)
+            if label == '':
+                label = '<blank>'
             primitives[label] = []
             first_color = None
             if stack:
