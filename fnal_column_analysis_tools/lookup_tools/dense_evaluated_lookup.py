@@ -1,9 +1,10 @@
-from fnal_column_analysis_tools.lookup_tools.lookup_base import lookup_base
+from ..lookup_tools.lookup_base import lookup_base
 
-from fnal_column_analysis_tools.util import numpy as np
-from fnal_column_analysis_tools.util import awkward
+from ..util import numpy as np
+from ..util import awkward
+from ..util import numba
+
 from copy import deepcopy
-import numba
 
 ### methods for dealing with b-tag SFs
 @numba.jit(forceobj=True)
