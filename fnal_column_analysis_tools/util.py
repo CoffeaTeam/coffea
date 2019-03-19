@@ -4,3 +4,5 @@ except :
     import awkward as awkward
 
 from awkward.util import numpy
+
+import numba
