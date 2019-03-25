@@ -105,6 +105,8 @@ class Interval(object):
         return False
 
     def __eq__(self, other):
+        if not isinstance(other, Interval):
+            return False
         if other.nan() and self.nan():
             return True
         if self._lo == other._lo and self._hi == other._hi:
