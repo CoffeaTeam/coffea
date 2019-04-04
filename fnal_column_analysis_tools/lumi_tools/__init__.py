@@ -53,8 +53,8 @@ class LumiData(object):
     def get_lumi_kernel(runs, lumis, index, tot_lumi):
         ks_done = set()
         for iev in range(len(runs)):
-            run = runs[iev]
-            lumi = lumis[iev]
+            run = np.uint32(runs[iev])
+            lumi = np.uint32(lumis[iev])
             k = (run, lumi)
             if not k in ks_done:
                 ks_done.add(k)
@@ -94,8 +94,8 @@ class LumiMask(object):
     @numba.njit(parallel=True, fastmath=True)
     def apply_run_lumi_mask_kernel(masks, runs, lumis, mask_out):
         for iev in numba.prange(len(runs)):
-            run = runs[iev]
-            lumi = lumis[iev]
+            run = np.uint32(runs[iev])
+            lumi = np.uint32(lumis[iev])
 
             if run in masks:
                 lumimask = masks[run]
