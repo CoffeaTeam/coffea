@@ -22,6 +22,3 @@ def test_lumimask():
     print("mask:", mask)
     assert(mask[0] == True)
     assert(mask[1] == False)
-
-test_lumidata()
-test_lumimask()
