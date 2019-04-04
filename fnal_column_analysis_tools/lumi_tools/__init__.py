@@ -72,15 +72,14 @@ class LumiMask(object):
             goldenjson = json.load(fin)
             
         self._masks = Dict.empty(
-            key_type=types.int64,
-            value_type=types.int64[:]
+            key_type=types.uint32,
+            value_type=types.uint32[:]
         )
 
         for run, lumilist in goldenjson.items():
-            run = int(run)
-            mask = np.array(lumilist).flatten()
+            mask = np.array(lumilist, dtype=np.uint32).flatten()
             mask[::2] -= 1
-            self._masks[int(run)] = mask
+            self._masks[np.uint32(run)] = mask
 
     def __call__(self, runs, lumis):
         mask_out = np.zeros(dtype='bool', shape=runs.shape)
