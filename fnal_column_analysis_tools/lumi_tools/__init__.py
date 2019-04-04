@@ -89,9 +89,10 @@ class LumiMask(object):
     @staticmethod
     def apply_run_lumi_mask(masks, runs, lumis, mask_out):
         LumiMask.apply_run_lumi_mask_kernel(masks, runs, lumis, mask_out)
-    
+   
+    #This could be run in parallel, but windows does not support it
     @staticmethod
-    @numba.njit(parallel=True, fastmath=True)
+    @numba.njit(parallel=False, fastmath=True)
     def apply_run_lumi_mask_kernel(masks, runs, lumis, mask_out):
         for iev in numba.prange(len(runs)):
             run = np.uint32(runs[iev])
