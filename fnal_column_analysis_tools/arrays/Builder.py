@@ -1,5 +1,5 @@
-import awkward
-import uproot, uproot_methods
+from ..util import awkward
+import uproot_methods
 
 class Dangerousness(object):
     def __getattr__(self,what):
