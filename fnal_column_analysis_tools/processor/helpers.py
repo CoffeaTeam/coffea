@@ -21,6 +21,8 @@ class Weights(object):
             weightDown: weight with correction uncertainty shifted down (leave None if symmetric)
             shift: if True, interpret weightUp and weightDown as a difference relative to the nominal value
         """
+        if 'Up' in name or 'Down' in name:
+            raise ValueError("Avoid using 'Up' and 'Down' in weight names, instead pass appropriate shifts to add() call")
         self._weight *= weight
         if weightUp is not None:
             if shift:
@@ -55,7 +57,11 @@ class Weights(object):
         """
         List of modifiers (systematic variations) available
         """
-        return self._modifiers.keys()
+        keys = set(self._modifiers.keys())
+        # add any missing 'Down' variation
+        for k in self._modifiers.keys():
+            keys.add(k.replace('Up','Down'))
+        return keys
 
 
 class PackedSelection(object):
