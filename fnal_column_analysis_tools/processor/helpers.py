@@ -1,5 +1,5 @@
-import collections
 from ..util import numpy as np
+
 
 class Weights(object):
     """
@@ -60,7 +60,7 @@ class Weights(object):
         keys = set(self._modifiers.keys())
         # add any missing 'Down' variation
         for k in self._modifiers.keys():
-            keys.add(k.replace('Up','Down'))
+            keys.add(k.replace('Up', 'Down'))
         return keys
 
 
@@ -116,8 +116,8 @@ class PackedSelection(object):
             if not isinstance(val, bool):
                 raise ValueError("Please use only booleans in PackedSelection.require(), received %r for %s" % (val, name))
             idx = self._names.index(name)
-            mask |= 1<<idx
-            require |= int(val)<<idx
+            mask |= 1 << idx
+            require |= int(val) << idx
         return (self._mask & mask) == require
 
     def all(self, *names):
@@ -125,4 +125,3 @@ class PackedSelection(object):
         Shorthand for require, where all the values must be True
         """
         return self.require(**{name: True for name in names})
-
