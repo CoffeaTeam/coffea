@@ -1,5 +1,8 @@
 from fnal_column_analysis_tools.util import awkward
 from fnal_column_analysis_tools.util import numpy as np
+import tempfile
+import shutil
+import os
 
 #for later
 #func = numbaize(formula,['p%i'%i for i in range(nParms)]+[varnames[i] for i in range(nEvalVars)])
@@ -179,6 +182,38 @@ def convert_jersf_txt_file(jersfFilePath):
     return wrapped_up
 
 def convert_junc_txt_file(juncFilePath):
+    components = []
+    tmpdir = tempfile.mkdtemp()
+    tmpfile = None
+    basename = os.path.basename(juncFilePath).split('.')[0]
+    with open(juncFilePath) as uncfile:
+        for line in uncfile:
+            if line.startswith('#'):
+                continue
+            elif line.startswith('['):
+                if tmpfile is not None: tmpfile.close()
+                component_name = line.strip()[1:-1] # remove leading and trailing []
+                cname = f'{basename}_{component_name}'
+                cfile = os.path.join(tmpdir,cname)+'.junc.txt'
+                tmpfile = open(cfile, 'w')
+                components.append(cfile)
+            elif tmpfile is not None:
+                tmpfile.write(line)
+            else:
+                continue
+                    
+    if not components: #there are no components in the file
+        components.append(juncFilePath)
+        
+    retval = {}
+    for component in components:
+        retval.update(
+            convert_junc_txt_component(component)
+        )
+    shutil.rmtree(tmpdir)
+    return retval
+
+def convert_junc_txt_component(juncFilePath):
     name,layout,pars,nBinnedVars,nBinColumns, \
     nEvalVars,formula,nParms,columns,dtypes = _parse_jme_formatted_file(juncFilePath,
                                                                         interpolatedFunc=True,
