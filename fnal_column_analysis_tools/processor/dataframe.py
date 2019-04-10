@@ -2,12 +2,13 @@ import collections
 import warnings
 from ..util import awkward
 
+
 class DataFrame(collections.abc.MutableMapping):
     """
     Simple delayed uproot reader (a la lazyarrays)
     Keeps track of values accessed, for later parsing.
     """
-    def __init__(self, tree, stride=None, index=None):
+    def __init__(self, tree, stride=None, index=None, preload_items=None):
         self._tree = tree
         self._branchargs = {'awkwardlib': awkward}
         self._stride = None
@@ -17,6 +18,8 @@ class DataFrame(collections.abc.MutableMapping):
             self._branchargs['entrystop'] = min(self._tree.numentries, (index+1)*stride)
         self._dict = {}
         self._materialized = set()
+        if preload_items:
+            self.preload(preload_items)
 
     def __delitem__(self, key):
         del self._dict[key]
@@ -44,6 +47,10 @@ class DataFrame(collections.abc.MutableMapping):
         self._dict[key] = value
 
     @property
+    def available(self):
+        return self._tree.keys()
+
+    @property
     def materialized(self):
         return self._materialized
 
@@ -53,4 +60,7 @@ class DataFrame(collections.abc.MutableMapping):
             return self._tree.numentries
         return (self._branchargs['entrystop'] - self._branchargs['entrystart'])
 
-
+    def preload(self, columns):
+        for name in columns:
+            if name in self._tree:
+                _ = self[name]

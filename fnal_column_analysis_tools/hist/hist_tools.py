@@ -1,6 +1,7 @@
 from __future__ import division
 from collections import namedtuple
-from fnal_column_analysis_tools.util import numpy as np
+from ..util import numpy as np
+from ..processor.accumulator import AccumulatorABC
 import copy
 import functools
 import math
@@ -461,18 +462,20 @@ class Bin(DenseAxis):
         return self._intervals[overflow_behavior(overflow)]
 
 
-class Hist(object):
+class Hist(AccumulatorABC):
     """
         Specify a multidimensional histogram
             label: description of meaning of frequencies (axis descriptions specified in axis constructor)
             dtype: underlying numpy dtype of frequencies
             *axes: positional list of Cat or Bin objects
     """
+    DEFAULT_DTYPE = 'd'
+
     def __init__(self, label, *axes, **kwargs):
         if not isinstance(label, basestring):
             raise TypeError("label must be a string")
         self._label = label
-        self._dtype = kwargs.pop('dtype', 'd')  # Much nicer in python3 :(
+        self._dtype = kwargs.pop('dtype', Hist.DEFAULT_DTYPE)  # Much nicer in python3 :(
         if not all(isinstance(ax, Axis) for ax in axes):
             raise TypeError("All axes must be derived from Axis class")
         # if we stably partition axes to sparse, then dense, some things simplify
@@ -504,6 +507,9 @@ class Hist(object):
             out._sumw = copy.deepcopy(self._sumw)
             out._sumw2 = copy.deepcopy(self._sumw2)
         return out
+
+    def identity(self):
+        return self.copy(content=False)
 
     def clear(self):
         self._sumw = {}
@@ -565,7 +571,7 @@ class Hist(object):
             return False
         return True
 
-    def __iadd__(self, other):
+    def add(self, other):
         if not self.compatible(other):
             raise ValueError("Cannot add this histogram with histogram %r of dissimilar dimensions" % other)
 
@@ -589,11 +595,6 @@ class Hist(object):
             add_dict(self._sumw2, other._sumw2)
         add_dict(self._sumw, other._sumw)
         return self
-
-    def __add__(self, other):
-        out = self.copy()
-        out += other
-        return out
 
     def __getitem__(self, keys):
         if not isinstance(keys, tuple):
