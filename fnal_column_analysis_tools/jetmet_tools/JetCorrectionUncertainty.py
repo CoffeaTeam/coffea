@@ -14,15 +14,6 @@ def _checkConsistency(against,tocheck):
                             'with correctors for {}!'.format(tocheck,against))
     return tocheck
 
-_levelre = re.compile('Uncertainty')
-def _getLevel(levelName):
-    matches = _levelre.findall(levelName)
-    if len(matches) != 1:
-        raise Exception('Malformed JUNC level name: {}'.format(levelName))
-    return matches[0]
-
-_level_order = ['Uncertainty']
-
 class JetCorrectionUncertainty(object):
     """
         This class is a columnar implementation of the JetCorrectionUncertainty tool in
@@ -48,13 +39,17 @@ class JetCorrectionUncertainty(object):
                 raise Exception('{} is a {} and not a jec_uncertainty_lookup!'.format(name,
                                                                                       type(func)))
             info = name.split('_')
+            if len(info) == 6: #this is when we are using split sources
+                lvl = info.pop()
+                info[3] = lvl
+            
             if len(info) != 5:
                 raise Exception('Corrector name is not properly formatted!')
             
             campaign = _checkConsistency(campaign,info[0])
             dataera  = _checkConsistency(dataera,info[1])
             datatype = _checkConsistency(datatype,info[2])
-            levels.append(info[3])
+            levels.append(info[3].replace('Uncertainty', 'jes')) #use a generic 'jes' for normal uncertainty
             funcs.append(func)
             jettype  = _checkConsistency(jettype,info[4])
         
@@ -83,14 +78,7 @@ class JetCorrectionUncertainty(object):
             raise Exception('Unable to determine type of jet to correct!')
         else:
             self._jettype = jettype
-        
-        for i,level in enumerate(self._levels):
-            this_level = _getLevel(level)
-            ord_idx = _level_order.index(this_level)
-            if i != this_level:
-                self._levels[i],self._levels[ord_idx] = self._levels[ord_idx],self._levels[i]
-                self._funcs[i],self._funcs[ord_idx] = self._funcs[ord_idx],self._funcs[i]
-    
+            
         #now we setup the call signature for this factorized JEC
         self._signature = []
         for func in self._funcs:
@@ -103,6 +91,11 @@ class JetCorrectionUncertainty(object):
     def signature(self):
         """ list the necessary jet properties that must be input to this function """
         return self._signature
+
+    @property
+    def levels(self):
+        """ list the different sources of uncertainty """
+        return self._levels
     
     def __repr__(self):
         out  = 'campaign   : %s\n'%(self._campaign)
@@ -115,10 +108,11 @@ class JetCorrectionUncertainty(object):
     
     def getUncertainty(self,**kwargs):
         """
-            Returns the set of uncertainties for all input jets at the highest available level
+            Returns the set of uncertainties for all input jets for all the levels (== sources)
             use like:
             juncs = uncertainty.getUncertainty(JetProperty1=jet.property1,...)
-            'juncs' will be formatted like [[[up_val down_val]_jet1 ... ] ...]
+            'juncs' will be formatted like [('SourceName', [[up_val down_val]_jet1 ... ]), ...]
+            in a zip iterator
         """
         uncs = []
         for i,func in enumerate(self._funcs):
@@ -127,4 +121,4 @@ class JetCorrectionUncertainty(object):
             for input in sig:
                 args.append(kwargs[input])
             uncs.append(func(*tuple(args)))
-        return uncs[-1]
+        return zip(self._levels, uncs)

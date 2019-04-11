@@ -44,3 +44,11 @@ class evaluator(object):
     def __getitem__(self, key):
         """ return a function named 'key' """
         return self._functions[key]
+
+    def keys(self):
+        """ returns the available functions """
+        return self._functions.keys()
+
+    def __contains__(self, item):
+        """ item in X """
+        return item in self._functions
