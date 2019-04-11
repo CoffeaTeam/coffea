@@ -3,7 +3,7 @@ from ..util import awkward
 
 try:
     from collections.abc import MutableMapping
-except:
+except ImportError:
     from collections import MutableMapping
 
 
