@@ -1,9 +1,13 @@
-import collections
 import warnings
 from ..util import awkward
 
+try:
+    from collections.abc import MutableMapping
+except:
+    from collections import MutableMapping
 
-class DataFrame(collections.abc.MutableMapping):
+
+class DataFrame(MutableMapping):
     """
     Simple delayed uproot reader (a la lazyarrays)
     Keeps track of values accessed, for later parsing.
