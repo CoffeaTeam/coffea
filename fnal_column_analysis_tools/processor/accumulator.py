@@ -1,8 +1,14 @@
+from future.utils import with_metaclass
 from abc import ABCMeta, abstractmethod
 import collections
 
+try:
+    from collections.abc import Set
+except:
+    from collections import Set
 
-class AccumulatorABC(metaclass=ABCMeta):
+
+class AccumulatorABC(with_metaclass(ABCMeta)):
     '''
     ABC for an accumulator.  Derived must implement:
         identity: returns a new object of same type as self,
@@ -42,7 +48,7 @@ class accumulator(AccumulatorABC):
         return accumulator(self._identity)
 
     def add(self, other):
-        if isinstance(other, accumulator):
+        if isinstance(other, AccumulatorABC):
             self.value += other.value
         else:
             self.value += other
@@ -56,7 +62,7 @@ class set_accumulator(set, AccumulatorABC):
         return set_accumulator()
 
     def add(self, other):
-        if isinstance(other, collections.abc.Set):
+        if isinstance(other, Set):
             set.update(self, other)
         else:
             set.add(self, other)

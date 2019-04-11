@@ -1,7 +1,8 @@
+from future.utils import with_metaclass
 from abc import ABCMeta, abstractmethod
 
 
-class ProcessorABC(metaclass=ABCMeta):
+class ProcessorABC(with_metaclass(ABCMeta)):
     '''
     ABC for a generalized processor
     The various data delivery mechanisms (spark, striped, uproot, uproot+futures, condor, ...)
