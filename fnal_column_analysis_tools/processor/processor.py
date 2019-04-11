@@ -1,4 +1,4 @@
-from future.utils import with_metaclass
+from six import with_metaclass
 from abc import ABCMeta, abstractmethod
 
 

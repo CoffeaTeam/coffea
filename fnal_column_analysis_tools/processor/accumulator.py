@@ -1,10 +1,10 @@
-from future.utils import with_metaclass
+from six import with_metaclass
 from abc import ABCMeta, abstractmethod
 import collections
 
 try:
     from collections.abc import Set
-except:
+except ImportError:
     from collections import Set
 
 
