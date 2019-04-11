@@ -1,5 +1,8 @@
 from .processor import ProcessorABC
-from .dataframe import DataFrame
+from .dataframe import (
+    LazyDataFrame,
+    PreloadedDataFrame,
+)
 from .helpers import Weights, PackedSelection
 from .executor import (
     iterative_executor,
