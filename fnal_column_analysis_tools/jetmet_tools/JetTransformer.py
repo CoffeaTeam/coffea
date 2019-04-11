@@ -8,6 +8,7 @@ from ..analysis_objects.JaggedCandidateArray import JaggedCandidateArray
 import numpy as np
 from uproot_methods import TLorentzVectorArray
 from copy import deepcopy
+from pdb import set_trace
 
 _signature_map = {'JetPt':'pt',
                   'JetEta':'eta',
@@ -73,7 +74,11 @@ class JetTransformer(object):
                             ' got {}'.format(type(jersf)))
         self._jersf = jersf
 
-    def transform(self,jet):
+    @property
+    def uncertainties(self):
+        return self._junc.levels if self._junc is not None else []
+
+    def transform(self,jet, met=None):
         """
             precondition - jet is a JaggedCandidateArray with additional attributes:
                              - 'ptRaw'
@@ -88,6 +93,13 @@ class JetTransformer(object):
         if ( 'ptRaw' not in jet.columns or 'massRaw' not in jet.columns ):
             raise Exception('Input JaggedCandidateArray must have "ptRaw" & "massRaw"!')
         
+        if met is not None:
+            if 'p4' not in met.columns:
+                raise Exception('Input met must have a p4 column!')
+            if not isinstance(met['p4'], TLorentzVectorArray):
+                raise Exception('Met p4 must be a TLorentzVectorArray!')
+        
+        initial_p4 = jet['p4'].copy() #keep a copy for fixing met
         #initialize the jet momenta to raw values
         _update_jet_ptm(1.0,jet,fromRaw=True)
         
@@ -97,13 +109,10 @@ class JetTransformer(object):
 
         _update_jet_ptm(jec,jet,fromRaw=True)
         
-        junc_up = np.ones_like(jec)
-        junc_down = np.ones_like(jec)
+        juncs = None
         if self._junc is not None:
             args = {key:getattr(jet,_signature_map[key]).content for key in self._junc.signature}
-            junc = self._junc.getUncertainty(**args)
-            junc_up   = junc[:,0]
-            junc_down = junc[:,1]
+            juncs = self._junc.getUncertainty(**args)
         
         #if there's a jer and sf to apply we have to update the momentum too
         #right now only use stochastic smearing
@@ -129,10 +138,13 @@ class JetTransformer(object):
         
         # have to apply central jersf before calculating junc
         if self._junc is not None:
-            jet.add_attributes( pt_jes_up     = junc_up * jet.pt.content,
-                                mass_jes_up   = junc_up * jet.mass.content,
-                                pt_jes_down   = junc_down * jet.pt.content,
-                                mass_jes_down = junc_down * jet.mass.content )
+            for name, values in juncs:
+                jet.add_attributes(**{ 
+                    'pt_{0}_up'.format(name)     : values[:,0] * jet.pt.content,
+                    'mass_{0}_up'.format(name)   : values[:,0] * jet.mass.content,
+                    'pt_{0}_down'.format(name)   : values[:,1] * jet.pt.content,
+                    'mass_{0}_down'.format(name) : values[:,1] * jet.mass.content 
+                })
 
         #hack to update the jet p4, we have the fully updated pt and mass here
         jet._content._contents['p4'] = TLorentzVectorArray.from_ptetaphim( jet.pt.content,
@@ -140,7 +152,35 @@ class JetTransformer(object):
                                                                            jet.phi.content,
                                                                            jet.mass.content )
 
+        if met is None: return
+        # set MET values
+        new_x = met['p4'].x - (initial_p4.x - jet['p4'].x).sum()
+        new_y = met['p4'].y - (initial_p4.y - jet['p4'].y).sum()
+        met.base['p4'] = TLorentzVectorArray.from_ptetaphim(
+            np.sqrt(new_x**2 + new_y**2), 0,
+            np.arctan2(new_y, new_x), 0 
+        )
+        if 'MetUnclustEnUpDeltaX' in met.columns:
+            px_up = met['p4'].x + met['MetUnclustEnUpDeltaX']
+            py_up = met['p4'].y + met['MetUnclustEnUpDeltaY']            
+            met.base['pt_UnclustEn_up']  = np.sqrt(px_up**2 + py_up**2)
+            met.base['phi_UnclustEn_up'] = np.arctan2(py_up, px_up)
 
+            px_down = met['p4'].x - met['MetUnclustEnUpDeltaX']
+            py_down = met['p4'].y - met['MetUnclustEnUpDeltaY']            
+            met.base['pt_UnclustEn_down']  = np.sqrt(px_down**2 + py_down**2)
+            met.base['phi_UnclustEn_down'] = np.arctan2(py_down, px_down)
+
+        if self._junc is not None:
+            jets_sin = np.sin(jet['p4'].phi)
+            jets_cos = np.cos(jet['p4'].phi)
+            for name, _ in juncs:
+                for shift in ['up', 'down']:
+                    px = met['p4'].x - (initial_p4.x - jet['pt_{0}_{1}'.format(name, shift)]*jets_cos).sum()
+                    py = met['p4'].y - (initial_p4.y - jet['pt_{0}_{1}'.format(name, shift)]*jets_sin).sum()
+                    met.base[f'pt_{0}_{1}'.format(name, shift)] = np.sqrt(px**2 + py**2) 
+                    met.base[f'phi_{0}_{1}'.format(name, shift)] = np.arctan2(py, px)
+                    
 
 
 
