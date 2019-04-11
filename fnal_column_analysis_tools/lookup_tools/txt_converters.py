@@ -193,7 +193,7 @@ def convert_junc_txt_file(juncFilePath):
             elif line.startswith('['):
                 if tmpfile is not None: tmpfile.close()
                 component_name = line.strip()[1:-1] # remove leading and trailing []
-                cname = f'{basename}_{component_name}'
+                cname = '{0}_{1}'.format(basename, component_name)
                 cfile = os.path.join(tmpdir,cname)+'.junc.txt'
                 tmpfile = open(cfile, 'w')
                 components.append(cfile)

@@ -178,8 +178,8 @@ class JetTransformer(object):
                 for shift in ['up', 'down']:
                     px = met['p4'].x - (initial_p4.x - jet['pt_{0}_{1}'.format(name, shift)]*jets_cos).sum()
                     py = met['p4'].y - (initial_p4.y - jet['pt_{0}_{1}'.format(name, shift)]*jets_sin).sum()
-                    met.base[f'pt_{0}_{1}'.format(name, shift)] = np.sqrt(px**2 + py**2) 
-                    met.base[f'phi_{0}_{1}'.format(name, shift)] = np.arctan2(py, px)
+                    met.base['pt_{0}_{1}'.format(name, shift)] = np.sqrt(px**2 + py**2) 
+                    met.base['phi_{0}_{1}'.format(name, shift)] = np.arctan2(py, px)
                     
 
 
