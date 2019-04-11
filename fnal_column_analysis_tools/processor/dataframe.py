@@ -7,7 +7,7 @@ except:
     from collections import MutableMapping
 
 
-class DataFrame(MutableMapping):
+class LazyDataFrame(MutableMapping):
     """
     Simple delayed uproot reader (a la lazyarrays)
     Keeps track of values accessed, for later parsing.
@@ -68,3 +68,45 @@ class DataFrame(MutableMapping):
         for name in columns:
             if name in self._tree:
                 _ = self[name]
+
+
+class PreloadedDataFrame(MutableMapping):
+    """
+    For instances like spark where the columns are preloaded
+    Require input number of rows (don't want to implicitly rely on picking a random item)
+    Still keep track of what was accessed in case it is of use
+    """
+    def __init__(self, size, items):
+        self._size = size
+        self._dict = items
+        self._accessed = set()
+
+    def __delitem__(self, key):
+        del self._dict[key]
+
+    def __getitem__(self, key):
+        self._accessed.add(key)
+        return self._dict[key]
+
+    def __iter__(self):
+        for key in self._dict:
+            self._accessed.add(key)
+            yield key
+
+    def __len__(self):
+        return len(self._dict)
+
+    def __setitem__(self, key, value):
+        self._dict[key] = value
+
+    @property
+    def available(self):
+        return self._tree.keys()
+
+    @property
+    def materialized(self):
+        return self._accessed
+
+    @property
+    def size(self):
+        return self._size
