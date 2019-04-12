@@ -2,14 +2,13 @@ from .hist_tools import SparseAxis, DenseAxis
 from uproot_methods.classes.TH1 import Methods as TH1Methods
 
 
-def export1d(hist, axis):
+def export1d(hist):
     if hist.dense_dim() != 1:
         raise ValueError("export1d() can only support one dense dimension")
+    if hist.sparse_dim() != 0:
+        raise ValueError("export1d() expects zero sparse dimensions")
 
-    axis = hist.axis(axis)
-    if not isinstance(axis, DenseAxis):
-        raise ValueError("export1d() only exports dense axes")
-
+    axis = hist.axes()[0]
     sumw, sumw2 = hist.values(sumw2=True, overflow='all')[()]
     edges = axis.edges(overflow='none')
 

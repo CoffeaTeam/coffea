@@ -58,9 +58,13 @@ def clopper_pearson_interval(num, denom, coverage=_coverage1sd):
 
         c.f. http://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval
     """
-    lo = scipy.stats.beta.ppf((1-coverage)/2, k, n-k+1)
-    hi = scipy.stats.beta.ppf((1+coverage)/2, k+1, n-k)
+    if np.any(num > denom):
+        raise ValueError("Found numerator larger than denominator while calculating binomial uncertainty")
+    lo = scipy.stats.beta.ppf((1-coverage)/2, num, denom-num+1)
+    hi = scipy.stats.beta.ppf((1+coverage)/2, num+1, denom-num)
     interval = np.array([lo, hi])
+    interval[:, num==0.] = 0.
+    interval[:, num==denom] = 1.
     return interval
 
 
@@ -154,6 +158,8 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             sumw = np.r_[sumw, sumw[-1]]
             sumw2 = np.r_[sumw2, sumw2[-1]]
             label = str(identifier)
+            if label == '':
+                label = '<blank>'
             primitives[label] = []
             first_color = None
             if stack:
