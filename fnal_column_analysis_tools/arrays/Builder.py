@@ -1,5 +1,5 @@
-import awkward
-import uproot, uproot_methods
+from ..util import awkward
+import uproot_methods
 
 class Dangerousness(object):
     def __getattr__(self,what):
@@ -123,8 +123,3 @@ def Initialize(items):
                                             out.__class__,
                                             uproot_methods.classes.TLorentzVector.ArrayMethods), {})
     return out
-
-
-
-
-
