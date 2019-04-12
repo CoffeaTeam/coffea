@@ -7,7 +7,7 @@ python:
 env:
   matrix:
   - AWKWARD="awkward>=0.8.1"
-  - AWKWARD="awkward-numba"
+#  - AWKWARD="awkward-numba"
 matrix:
 addons:
   apt:
