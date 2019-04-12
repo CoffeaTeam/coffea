@@ -119,6 +119,8 @@ class LumiList(object):
         # TODO: re-apply unique? Or wait until end
         if isinstance(other, LumiList):
             self.array = np.r_[self.array, other.array]
+        else:
+            raise ValueError("Expected LumiList object, got %r" % other)
         return self
     
     def clear(self):
