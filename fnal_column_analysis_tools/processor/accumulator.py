@@ -1,11 +1,11 @@
 from six import with_metaclass
 from abc import ABCMeta, abstractmethod
-import collections
+from collections import defaultdict
 
 try:
-    from collections.abc import Set
+    from collections.abc import Set, Mapping
 except ImportError:
-    from collections import Set
+    from collections import Set, Mapping
 
 
 class AccumulatorABC(with_metaclass(ABCMeta)):
@@ -15,7 +15,7 @@ class AccumulatorABC(with_metaclass(ABCMeta)):
             such that self + self.identity() == self
         add(other): adds an object of same type as self to self
 
-    Concrete implementations are provided for __add__, __iadd__
+    Concrete implementations are provided for __add__, __radd__, __iadd__
     '''
     @abstractmethod
     def identity(self):
@@ -29,6 +29,12 @@ class AccumulatorABC(with_metaclass(ABCMeta)):
         ret = self.identity()
         ret.add(self)
         ret.add(other)
+        return ret
+
+    def __radd__(self, other):
+        ret = self.identity()
+        ret.add(other)
+        ret.add(self)
         return ret
 
     def __iadd__(self, other):
@@ -48,7 +54,7 @@ class accumulator(AccumulatorABC):
         return accumulator(self._identity)
 
     def add(self, other):
-        if isinstance(other, AccumulatorABC):
+        if isinstance(other, accumulator):
             self.value += other.value
         else:
             self.value += other
@@ -80,16 +86,19 @@ class dict_accumulator(dict, AccumulatorABC):
         return ret
 
     def add(self, other):
-        if isinstance(other, dict_accumulator):
+        if isinstance(other, Mapping):
             for key, value in other.items():
                 if key not in self:
-                    self[key] = value.identity()
+                    if isinstance(value, AccumulatorABC):
+                        self[key] = value.identity()
+                    else:
+                        raise ValueError
                 self[key] += value
         else:
             raise ValueError
 
 
-class defaultdict_accumulator(collections.defaultdict, AccumulatorABC):
+class defaultdict_accumulator(defaultdict, AccumulatorABC):
     '''
     Like a defaultdict but also has accumulator semantics
     It is assumed that the contents of the dict have accumulator semantics
