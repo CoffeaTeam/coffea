@@ -55,9 +55,9 @@ class accumulator(AccumulatorABC):
 
     def add(self, other):
         if isinstance(other, accumulator):
-            self.value += other.value
+            self.value = self.value + other.value
         else:
-            self.value += other
+            self.value = self.value + other
 
 
 class set_accumulator(set, AccumulatorABC):
