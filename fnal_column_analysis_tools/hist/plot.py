@@ -5,7 +5,7 @@ import scipy.stats
 import copy
 import warnings
 import numbers
-from .hist_tools import SparseAxis, DenseAxis, overflow_behavior, Interval
+from .hist_tools import SparseAxis, DenseAxis, overflow_behavior, Interval, StringBin
 
 import matplotlib.pyplot as plt
 
@@ -154,9 +154,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
                 sumw = sumw * binnorms
                 sumw2 = sumw2 * binnorms**2
             label = str(identifier)
-            if label == '':
-                label = '<blank>'
-            primitives[label] = []
+            primitives[identifier] = []
             first_color = None
             if stack:
                 if stack_sumw is None:
@@ -170,7 +168,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
                     opts.update(line_opts)
                     l, = ax.step(x=edges, y=np.r_[stack_sumw, stack_sumw[-1]], **opts)
                     first_color = l.get_color()
-                    primitives[label].append(l)
+                    primitives[identifier].append(l)
                 if fill_opts is not None:
                     opts = {'step': 'post', 'label': label}
                     if first_color is not None:
@@ -179,7 +177,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
                     f = ax.fill_between(x=edges, y1=np.r_[stack_sumw-sumw, stack_sumw[-1]-sumw[-1]], y2=np.r_[stack_sumw, stack_sumw[-1]], **opts)
                     if first_color is None:
                         first_color = f.get_facecolor()[0]
-                    primitives[label].append(f)
+                    primitives[identifier].append(f)
                 # error_opts for stack is interpreted later
             else:
                 if line_opts is not None:
@@ -187,7 +185,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
                     opts.update(line_opts)
                     l, = ax.step(x=edges, y=np.r_[sumw, sumw[-1]], **opts)
                     first_color = l.get_color()
-                    primitives[label].append(l)
+                    primitives[identifier].append(l)
                 if fill_opts is not None:
                     opts = {'step': 'post', 'label': label}
                     if first_color is not None:
@@ -196,7 +194,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
                     f = ax.fill_between(x=edges, y1=np.r_[sumw, sumw[-1]], **opts)
                     if first_color is None:
                         first_color = f.get_facecolor()[0]
-                    primitives[label].append(f)
+                    primitives[identifier].append(f)
                 if error_opts is not None:
                     opts = {'linestyle': 'none', 'label': label}
                     if first_color is not None:
@@ -206,25 +204,20 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
                     err = np.abs(poisson_interval(sumw, sumw2) - sumw)
                     errbar = ax.errorbar(x=centers, y=sumw, yerr=err, **opts)
                     plt.setp(errbar[1], 'marker', emarker)
-                    primitives[label].append(errbar)
+                    primitives[identifier].append(errbar)
         if stack_sumw is not None and error_opts is not None:
             err = poisson_interval(stack_sumw, stack_sumw2)
-            opts = {'step': 'post', 'label': label}
+            opts = {'step': 'post', 'label': 'Sum unc.'}
             opts.update(error_opts)
             errbar = ax.fill_between(x=edges, y1=np.r_[err[0,:], err[0,-1]], y2=np.r_[err[1,:], err[1,-1]], **opts)
-            primitives['stack_uncertainty'] = [errbar]
+            primitives[StringBin('stack_unc', opts['label'])] = [errbar]
 
     if clear:
         if overlay is not None:
             handles, labels = list(), list()
-            for hl in primitives.values():
-                for h in hl:
-                    label = h.get_label()
-                    if len(label) > 0 and label[0] == '_':
-                        continue
-                    handles.append(tuple(hl))
-                    labels.append(label)
-                    break
+            for identifier, handlelist in primitives.items():
+                handles.append(tuple(h for h in handlelist if h.get_label()[0] != '_'))
+                labels.append(str(identifier))
             primitives['legend'] = ax.legend(title=overlay.label, handles=handles, labels=labels)
         ax.autoscale(axis='x', tight=True)
         ax.set_ylim(0, None)
