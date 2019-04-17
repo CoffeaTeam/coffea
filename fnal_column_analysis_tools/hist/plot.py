@@ -115,7 +115,11 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         if not isinstance(binwnorm, numbers.Number):
             raise ValueError("Bin width normalization not a number, but a %r" % binwnorm.__class__)
     if line_opts is None and fill_opts is None and error_opts is None:
-        raise ValueError("No plot options specified, will not draw anything.")
+        if stack:
+            fill_opts = {}
+        else:
+            line_opts = {}
+            error_opts = {}
 
     axis = hist.axes()[0]
     if overlay is not None:
@@ -207,8 +211,8 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             err = poisson_interval(stack_sumw, stack_sumw2)
             opts = {'step': 'post', 'label': label}
             opts.update(error_opts)
-            eh = ax.fill_between(x=edges, y1=[err[0,:], err[0,-1]], y2=[err[1,:], err[1,-1]], **opts)
-            primitives['stack_uncertainty'] = [eh]
+            errbar = ax.fill_between(x=edges, y1=np.r_[err[0,:], err[0,-1]], y2=np.r_[err[1,:], err[1,-1]], **opts)
+            primitives['stack_uncertainty'] = [errbar]
 
     if clear:
         if overlay is not None:
@@ -273,7 +277,8 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
     if num.dim() > 1:
         raise ValueError("plotratio() can only support one-dimensional histograms")
     if error_opts is None and denom_fill_opts is None and guide_opts is None:
-        raise ValueError("No plot options specified, will not draw anything.")
+        error_opts = {}
+        denom_fill_opts = {}
 
     axis = num.axes()[0]
     if isinstance(axis, SparseAxis):
@@ -325,7 +330,7 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
     return fig, ax, primitives
 
 
-def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none', patch_opts=None, density=False, binwnorm=None):
+def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none', patch_opts=None, text_opts=None, density=False, binwnorm=None):
     """
         hist: Hist object with two dimensions
         xaxis: which of the two dimensions to use as x axis
@@ -342,7 +347,10 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
                 Special options interpreted by this function and not passed to matplotlib:
                     (none)
 
-            text_opts: TODO options to draw text values at bin centers
+            text_opts: options to draw text values at bin centers
+                See https://matplotlib.org/api/text_api.html#matplotlib.text.Text for details
+                Special options interpreted by this function and not passed to matplotlib:
+                    'format': printf-style float format, default '%.2g'
 
         density: Convert sum weights to probability density (i.e. integrates to 1 over domain of axes) (NB: conflicts with binwnorm)
         binwnorm: Convert sum weights to bin-area-normalized, with units equal to supplied value (usually you want to specify 1.)
@@ -362,8 +370,8 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
     if binwnorm is not None:
         if not isinstance(binwnorm, numbers.Number):
             raise ValueError("Bin width normalization not a number, but a %r" % binwnorm.__class__)
-    if patch_opts is None:
-        raise ValueError("No plot options specified, will not draw anything.")
+    if patch_opts is None and text_opts is None:
+        patch_opts = {}
 
     xaxis = hist.axis(xaxis)
     yaxis = hist.axes()[1]
@@ -400,12 +408,25 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
             if clear:
                 fig.colorbar(pc, ax=ax, label=hist.label)
         if text_opts is not None:
-            pass
+            primitives['texts'] = []
+            for ix, xcenter in enumerate(xaxis.centers()):
+                for iy, ycenter in enumerate(yaxis.centers()):
+                    opts = {
+                        'horizontalalignment': 'center',
+                        'verticalalignment': 'center',
+                    }
+                    if patch_opts is not None:
+                        opts['color'] = 'black' if pc.norm(sumw[ix, iy]) > 0.5 else 'lightgrey'
+                    opts.update(text_opts)
+                    txtformat = opts.pop('format', r'%.2g')
+                    text = ax.text(xcenter, ycenter, txtformat % sumw[ix, iy], **opts)
+                    primitives['texts'].append(text)
 
     if clear:
         ax.set_xlabel(xaxis.label)
         ax.set_ylabel(yaxis.label)
-        ax.autoscale(tight=True)
+        ax.set_xlim(xedges[0], xedges[-1])
+        ax.set_ylim(yedges[0], yedges[-1])
 
     return fig, ax, primitives
 
