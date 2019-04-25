@@ -1,15 +1,19 @@
 import concurrent.futures
 import time
 from tqdm import tqdm
-from functools import lru_cache
 import uproot
 from . import ProcessorABC, LazyDataFrame
 from .accumulator import accumulator
 
 try:
     from collections.abc import Mapping
+    from functools import lru_cache
 except ImportError:
     from collections import Mapping
+    def lru_cache(maxsize):
+        def null_wrapper(f):
+            return f
+        return null_wrapper
 
 
 # instrument xrootd source
