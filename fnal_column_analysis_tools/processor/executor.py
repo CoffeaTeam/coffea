@@ -3,11 +3,22 @@ import time
 from tqdm import tqdm
 import uproot
 from . import ProcessorABC, LazyDataFrame
+from .accumulator import accumulator
 
 try:
     from collections.abc import Mapping
 except ImportError:
     from collections import Mapping
+
+
+# instrument xrootd source
+if not hasattr(uproot.source.xrootd.XRootDSource, '_read_real'):
+    def _read(self, chunkindex):
+        self.bytesread = getattr(self, 'bytesread', 0) + self._chunkbytes
+        return self._read_real(chunkindex)
+
+    uproot.source.xrootd.XRootDSource._read_real = uproot.source.xrootd.XRootDSource._read
+    uproot.source.xrootd.XRootDSource._read = _read
 
 
 def iterative_executor(items, function, accumulator, status=True):
@@ -49,10 +60,22 @@ def condor_executor(items, function, accumulator, workers, status=True):
 
 def _work_function(item):
     dataset, fn, treename, chunksize, index, processor_instance = item
-    tree = uproot.open(fn)[treename]
+    file = uproot.open(fn)
+    tree = file[treename]
     df = LazyDataFrame(tree, chunksize, index)
     df['dataset'] = dataset
-    return processor_instance.process(df)
+    out = processor_instance.process(df)
+    out['_bytesread'] = accumulator(file.source.bytesread if isinstance(file.source, uproot.source.xrootd.XRootDSource) else 0)
+    return out
+
+
+def _get_chunking(filelist, treename, chunksize):
+    items = []
+    for fn in filelist:
+        nentries = uproot.numentries(fn, treename)
+        for index in range(nentries//chunksize + 1):
+            items.append((fn, chunksize, index))
+    return items
 
 
 def run_uproot_job(fileset, treename, processor_instance, executor, executor_args={}, chunksize=500000):
@@ -78,14 +101,16 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
 
     items = []
-    for dataset, filelist in fileset.items():
-        for fn in filelist:
-            file = uproot.open(fn)
-            tree = file[treename]
-            for index in range(tree.numentries//chunksize + 1):
-                items.append((dataset, fn, treename, chunksize, index, processor_instance))
+    # this insanity is to make sure we don't create xrootd connections in this
+    # pid, because if we later want to fork, this completely breaks pyxrootd apparently
+    # For non-xrootd it should be harmless
+    with concurrent.futures.ProcessPoolExecutor(max_workers=1) as forkpyxrootd:
+        for dataset, filelist in tqdm(fileset.items(), desc='Building chunk lists'):
+            fut = forkpyxrootd.submit(_get_chunking, tuple(filelist), treename, chunksize)
+            for chunk in fut.result():
+                items.append((dataset, chunk[0], treename, chunk[1], chunk[2], processor_instance))
 
-    accumulator = processor_instance.accumulator.identity()
-    executor(items, _work_function, accumulator, **executor_args)
-    processor_instance.postprocess(accumulator)
-    return accumulator
+    output = processor_instance.accumulator.identity()
+    executor(items, _work_function, output, **executor_args)
+    processor_instance.postprocess(output)
+    return output
