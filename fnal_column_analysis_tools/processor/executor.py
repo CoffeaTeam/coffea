@@ -3,15 +3,31 @@ import time
 from tqdm import tqdm
 import uproot
 from . import ProcessorABC, LazyDataFrame
+from .accumulator import accumulator
 
 try:
     from collections.abc import Mapping
+    from functools import lru_cache
 except ImportError:
     from collections import Mapping
+    def lru_cache(maxsize):
+        def null_wrapper(f):
+            return f
+        return null_wrapper
+
+
+# instrument xrootd source
+if not hasattr(uproot.source.xrootd.XRootDSource, '_read_real'):
+    def _read(self, chunkindex):
+        self.bytesread = getattr(self, 'bytesread', 0) + self._chunkbytes
+        return self._read_real(chunkindex)
+
+    uproot.source.xrootd.XRootDSource._read_real = uproot.source.xrootd.XRootDSource._read
+    uproot.source.xrootd.XRootDSource._read = _read
 
 
 def iterative_executor(items, function, accumulator, status=True):
-    for i, item in tqdm(enumerate(items), disable=not status, unit='items', total=len(items)):
+    for i, item in tqdm(enumerate(items), disable=not status, unit='items', total=len(items), desc='Processing'):
         accumulator += function(item)
     return accumulator
 
@@ -21,7 +37,7 @@ def futures_executor(items, function, accumulator, workers=2, status=True):
         futures = set()
         try:
             futures.update(executor.submit(function, item) for item in items)
-            with tqdm(disable=not status, unit='items', total=len(futures)) as pbar:
+            with tqdm(disable=not status, unit='items', total=len(futures), desc='Processing') as pbar:
                 while len(futures) > 0:
                     finished = set(job for job in futures if job.done())
                     for job in finished:
@@ -49,10 +65,23 @@ def condor_executor(items, function, accumulator, workers, status=True):
 
 def _work_function(item):
     dataset, fn, treename, chunksize, index, processor_instance = item
-    tree = uproot.open(fn)[treename]
+    file = uproot.open(fn)
+    tree = file[treename]
     df = LazyDataFrame(tree, chunksize, index)
     df['dataset'] = dataset
-    return processor_instance.process(df)
+    out = processor_instance.process(df)
+    out['_bytesread'] = accumulator(file.source.bytesread if isinstance(file.source, uproot.source.xrootd.XRootDSource) else 0)
+    return out
+
+
+@lru_cache(maxsize=128)
+def _get_chunking(filelist, treename, chunksize):
+    items = []
+    for fn in filelist:
+        nentries = uproot.numentries(fn, treename)
+        for index in range(nentries//chunksize + 1):
+            items.append((fn, chunksize, index))
+    return items
 
 
 def run_uproot_job(fileset, treename, processor_instance, executor, executor_args={}, chunksize=500000):
@@ -78,14 +107,11 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
 
     items = []
-    for dataset, filelist in fileset.items():
-        for fn in filelist:
-            file = uproot.open(fn)
-            tree = file[treename]
-            for index in range(tree.numentries//chunksize + 1):
-                items.append((dataset, fn, treename, chunksize, index, processor_instance))
+    for dataset, filelist in tqdm(fileset.items(), desc='Preprocessing'):
+        for chunk in _get_chunking(tuple(filelist), treename, chunksize):
+            items.append((dataset, chunk[0], treename, chunk[1], chunk[2], processor_instance))
 
-    accumulator = processor_instance.accumulator.identity()
-    executor(items, _work_function, accumulator, **executor_args)
-    processor_instance.postprocess(accumulator)
-    return accumulator
+    output = processor_instance.accumulator.identity()
+    executor(items, _work_function, output, **executor_args)
+    processor_instance.postprocess(output)
+    return output
