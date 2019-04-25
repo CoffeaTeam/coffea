@@ -134,6 +134,53 @@ class Interval(object):
         self._label = lbl
 
 
+@functools.total_ordering
+class StringBin(object):
+    """
+        A string used to fill a sparse axis
+        Totally ordered, lexicographically by name
+        The string representation can be overriden by custom label
+    """
+    def __init__(self, name, label=None):
+        if not isinstance(name, basestring):
+            raise TypeError("StringBin only supports string categories, received a %r" % name)
+        elif '*' in name:
+            raise ValueError("StringBin does not support character '*' as it conflicts with wildcard mapping.")
+        self._name = name
+        self._label = label
+
+    def __repr__(self):
+        return "<%s (%s) instance at 0x%0x>" % (self.__class__.__name__, self.name, id(self))
+
+    def __str__(self):
+        if self._label is not None:
+            return self._label
+        return self._name
+
+    def __hash__(self):
+        return hash(self._name)
+
+    def __lt__(self, other):
+        return self._name < other._name
+
+    def __eq__(self, other):
+        if isinstance(other, StringBin):
+            return self._name == other._name
+        return False
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def label(self):
+        return self._label
+
+    @label.setter
+    def label(self, lbl):
+        self._label = lbl
+
+
 class Axis(object):
     """
         Axis: Base class for any type of axis
@@ -203,67 +250,72 @@ class Cat(SparseAxis):
     """
     def __init__(self, name, label, sorting='identifier'):
         super(Cat, self).__init__(name, label)
-        # TODO: SortedList from sortedcontainers ?
-        # If moving to dense packing, better to maintain a separate argsort list
-        self._categories = []
+        # In all cases key == value.name
+        self._bins = {}
         self._sorting = sorting
+        self._sorted = []
 
     def index(self, identifier):
-        if '*' in identifier:
-            raise ValueError("Cat axis does not support character '*' in category names, "
-                             "as it conflicts with wildcard mapping.\nAxis: %r, identifier: %r" % (self, identifier))
-        if not isinstance(identifier, basestring):
-            raise TypeError("Cat axis supports only string categories, received a %r in index request" % identifier)
-        if identifier not in self._categories:
-            self._categories.append(identifier)
-        return identifier
+        if isinstance(identifier, StringBin):
+            index = identifier
+        else:
+            index = StringBin(identifier)
+        if index.name not in self._bins:
+            self._bins[index.name] = index
+            self._sorted.append(index.name)
+            if self._sorting == 'identifier':
+                self._sorted.sort()
+        return self._bins[index.name]
 
     def __eq__(self, other):
         # Sparse, so as long as name is the same
         return super(Cat, self).__eq__(other)
 
     def __getitem__(self, index):
-        identifier = index
-        if identifier not in self._categories:
+        if not isinstance(index, StringBin):
+            raise TypeError("Expected a StringBin object, got: %r" % index)
+        identifier = index.name
+        if identifier not in self._bins:
             raise KeyError("No identifier %r in this Category axis")
         return identifier
 
     def _ireduce(self, the_slice):
-        if self._sorting == 'identifier':
-            self._categories.sort()
         out = None
-        if isinstance(the_slice, _regex_pattern):
-            out = [v for v in self._categories if the_slice.match(v)]
+        if isinstance(the_slice, StringBin):
+            out = [the_slice.name]
+        elif isinstance(the_slice, _regex_pattern):
+            out = [k for k in self._sorted if the_slice.match(k)]
         elif isinstance(the_slice, basestring):
             pattern = "^" + re.escape(the_slice).replace(r'\*', '.*') + "$"
             m = re.compile(pattern)
-            out = [v for v in self._categories if m.match(v)]
+            out = [k for k in self._sorted if m.match(k)]
         elif isinstance(the_slice, list):
-            if not all(v in self._categories for v in the_slice):
+            if not all(k in self._sorted for k in the_slice):
                 warnings.warn("Not all requested indices present in %r" % self, RuntimeWarning)
-            out = [v for v in the_slice if v in self._categories]
+            out = [k for k in self._sorted if k in the_slice]
         elif isinstance(the_slice, slice):
             if the_slice.step is not None:
                 raise IndexError("Not sure how to use slice step for categories...")
-            start, stop = 0, len(self._categories)
+            start, stop = 0, len(self._sorted)
             if isinstance(the_slice.start, basestring):
-                start = self._categories.index(the_slice.start)
+                start = self._sorted.index(the_slice.start)
+            else:
+                start = the_slice.start
             if isinstance(the_slice.stop, basestring):
-                stop = self._categories.index(the_slice.stop)
-            out = self._categories[start:stop]
-
-        if out is None:
+                stop = self._sorted.index(the_slice.stop)
+            else:
+                stop = the_slice.stop
+            out = self._sorted[start:stop]
+        else:
             raise IndexError("Cannot understand slice %r on axis %r" % (the_slice, self))
-        return [self.index(v) for v in out]
+        return [self._bins[k] for k in out]
 
     @property
     def size(self):
-        return len(self._categories)
+        return len(self._bins)
 
     def identifiers(self):
-        if self._sorting == 'identifier':
-            self._categories.sort()
-        return self._categories
+        return [self._bins[k] for k in self._sorted]
 
 
 class DenseAxis(Axis):
