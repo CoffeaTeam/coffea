@@ -1,4 +1,3 @@
-import warnings
 from ..util import awkward
 
 try:
@@ -39,9 +38,7 @@ class LazyDataFrame(MutableMapping):
             raise KeyError(key)
 
     def __iter__(self):
-        warnings.warning("An iterator has requested to read all branches from the tree", RuntimeWarning)
         for item in self._dict:
-            self._materialized.add(item[0])
             yield item
 
     def __len__(self):
