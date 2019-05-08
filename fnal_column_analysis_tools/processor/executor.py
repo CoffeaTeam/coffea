@@ -26,18 +26,18 @@ if not hasattr(uproot.source.xrootd.XRootDSource, '_read_real'):
     uproot.source.xrootd.XRootDSource._read = _read
 
 
-def iterative_executor(items, function, accumulator, status=True):
-    for i, item in tqdm(enumerate(items), disable=not status, unit='items', total=len(items), desc='Processing'):
+def iterative_executor(items, function, accumulator, status=True, unit='items', desc='Processing'):
+    for i, item in tqdm(enumerate(items), disable=not status, unit=unit, total=len(items), desc=desc):
         accumulator += function(item)
     return accumulator
 
 
-def futures_executor(items, function, accumulator, workers=2, status=True):
+def futures_executor(items, function, accumulator, workers=2, status=True, unit='items', desc='Processing'):    
     with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
         futures = set()
         try:
             futures.update(executor.submit(function, item) for item in items)
-            with tqdm(disable=not status, unit='items', total=len(futures), desc='Processing') as pbar:
+            with tqdm(disable=not status, unit=unit, total=len(futures), desc=desc) as pbar:
                 while len(futures) > 0:
                     finished = set(job for job in futures if job.done())
                     for job in finished:
@@ -59,9 +59,11 @@ def futures_executor(items, function, accumulator, workers=2, status=True):
     return accumulator
 
 
-def condor_executor(items, function, accumulator, workers, status=True):
+def condor_executor(items, function, accumulator, workers, status=True, unit='items', desc='Processing'):
     raise NotImplementedError
 
+def spark_executor(items, function, accumulator, config, status=True, unit='datasets', desc='Processing'):
+    raise NotImplementedError
 
 def _work_function(item):
     dataset, fn, treename, chunksize, index, processor_instance = item
@@ -115,3 +117,105 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
     executor(items, _work_function, output, **executor_args)
     processor_instance.postprocess(output)
     return output
+
+def run_parsl_job(fileset, treename, processor_instance, executor, executor_args={'config':None}, chunksize=500000):
+    '''
+    A convenience wrapper to submit jobs for a file set, which is a
+    dictionary of dataset: [file list] entries.  Supports only uproot
+    reading, via the LazyDataFrame class.  For more customized processing,
+    e.g. to read other objects from the files and pass them into data frames,
+    one can write a similar function in their user code.
+    fileset: dictionary {dataset: [file, file], }
+    treename: name of tree inside each root file
+    processor_instance: an instance of a class deriving from ProcessorABC
+    executor: any of iterative_executor, futures_executor, etc.
+                In general, a function that takes 3 arguments: items, function accumulator
+                and performs some action equivalent to:
+                for item in items: accumulator += function(item)
+    executor_args: extra arguments to pass to executor
+    chunksize: number of entries to process at a time in the data frame
+    '''
+
+    from .parsl.secrets import _parsl_work_function, _parsl_get_chunking
+
+    if executor_args['config'] is None:
+        executor_args.pop('config')
+
+    if not isinstance(fileset, Mapping):
+        raise ValueError("Expected fileset to be a mapping dataset: list(files)")
+    if not isinstance(processor_instance, ProcessorABC):
+        raise ValueError("Expected processor_instance to derive from ProcessorABC")
+    if not isinstance(executor, ParslExecutor):
+        raise ValueError("Expected executor to derive from ParslExecutor") 
+
+    items = []
+    for dataset, filelist in tqdm(fileset.items(), desc='Preprocessing'):
+        for chunk in _parsl_get_chunking(tuple(filelist), treename, chunksize):
+            items.append((dataset, chunk[0], treename, chunk[1], chunk[2], processor_instance))
+    
+    output = processor_instance.accumulator.identity()
+    executor(items, _parsl_work_function, output, **executor_args)
+    processor_instance.postprocess(output)
+    return output
+
+def run_spark_job(fileset, treename, processor_instance, executor, executor_args={'config':None}, 
+                  spark=None, partitionsize=200000, bydataset=True, thread_workers=16):
+    '''
+    A convenience wrapper to submit jobs for a file set, which is a
+    dictionary of dataset: [file list] entries.  Supports only uproot
+    reading, via the LazyDataFrame class.  For more customized processing,
+    e.g. to read other objects from the files and pass them into data frames,
+    one can write a similar function in their user code.
+    fileset: dictionary {dataset: [file, file], }
+    treename: name of tree inside each root file
+    processor_instance: an instance of a class deriving from ProcessorABC
+    executor: any of iterative_executor, futures_executor, etc.
+                In general, a function that takes 3 arguments: items, function accumulator
+                and performs some action equivalent to:
+                for item in items: accumulator += function(item)
+    executor_args: extra arguments to pass to executor
+    chunksize: number of entries to process at a time in the data frame
+    '''
+    
+    import pyspark.sql
+    from .spark.SparkExecutor import SparkExecutor
+    from .spark.secrets import _spark_initialize, _spark_stop, _spark_work_function, _spark_make_dfs
+
+    if executor_args['config'] is None:
+        executor_args.pop('config')
+        
+    if not isinstance(fileset, Mapping):
+        raise ValueError("Expected fileset to be a mapping dataset: list(files)")
+    if not isinstance(processor_instance, ProcessorABC):
+        raise ValueError("Expected processor_instance to derive from ProcessorABC")
+    if not isinstance(executor, SparkExecutor):
+        raise ValueError("Expected executor to derive from SparkExecutor")
+
+    #initialize spark if we need to
+    #if we initialize, then we deconstruct
+    #when we're done
+    killSpark = False
+    if spark is None:
+        spark = _spark_initialize(**executor_args)
+        killSpark = True
+    else:
+        if not isinstance(spark, pyspark.sql.session.SparkSession):
+            raise ValueError("Expected spark to be a pyspark.sql.session.SparkSession")
+
+    dfslist = {}
+    if bydataset:
+        datasets = list(filelist.keys())
+        dfslist = _spark_make_dfs(spark, datasets, thread_workers)
+    else:
+        dfslist = _spark_make_dfs(spark, filelist, thread_workers, file_list=True)
+    
+    output = processor_instance.accumulator.identity()
+    executor(spark, dfslist, _spark_work_function, output, thread_workers)
+    processor_instance.postprocess(output)
+
+    if killSpark:
+        _spark_stop(spark)
+        del spark
+
+    return output
+    
