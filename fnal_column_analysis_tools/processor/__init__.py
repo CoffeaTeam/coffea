@@ -9,6 +9,8 @@ from .executor import (
     futures_executor,
     condor_executor,
     run_uproot_job,
+    run_parsl_job,
+    run_spark_job
 )
 from .accumulator import (
     accumulator,
