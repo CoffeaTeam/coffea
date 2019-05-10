@@ -120,9 +120,10 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
 
 def run_parsl_job(fileset, treename, processor_instance, executor, executor_args={'config':None}, chunksize=500000):
     '''
-    A convenience wrapper to submit jobs for a file set, which is a
-    dictionary of dataset: [file list] entries.  Supports only uproot
-    reading, via the LazyDataFrame class.  For more customized processing,
+    A convenience wrapper to submit jobs for a file, which is a
+    dictionary of dataset: [file list] entries. In this case using parsl.
+    Supports only uproot reading, via the LazyDataFrame class.
+    For more customized processing,
     e.g. to read other objects from the files and pass them into data frames,
     one can write a similar function in their user code.
     fileset: dictionary {dataset: [file, file], }
@@ -135,8 +136,14 @@ def run_parsl_job(fileset, treename, processor_instance, executor, executor_args
     executor_args: extra arguments to pass to executor
     chunksize: number of entries to process at a time in the data frame
     '''
-
-    from .parsl.secrets import _parsl_work_function, _parsl_get_chunking
+    
+    try:
+        import parsl
+    except ImportError as e:
+        print('you must have parsl installed to call run_parsl_job()!')
+        raise e
+    
+    from .parsl.detail import _parsl_work_function, _parsl_get_chunking
 
     if executor_args['config'] is None:
         executor_args.pop('config')
@@ -158,28 +165,39 @@ def run_parsl_job(fileset, treename, processor_instance, executor, executor_args
     processor_instance.postprocess(output)
     return output
 
-def run_spark_job(fileset, treename, processor_instance, executor, executor_args={'config':None}, 
+def run_spark_job(fileset, processor_instance, executor, executor_args={'config':None},
                   spark=None, partitionsize=200000, bydataset=True, thread_workers=16):
     '''
-    A convenience wrapper to submit jobs for a file set, which is a
-    dictionary of dataset: [file list] entries.  Supports only uproot
-    reading, via the LazyDataFrame class.  For more customized processing,
+    A convenience wrapper to submit jobs for spark datasets, which is a
+    dictionary of dataset: [file list] entries.  Presently supports reading of
+    parquet files converted from root.  For more customized processing,
     e.g. to read other objects from the files and pass them into data frames,
     one can write a similar function in their user code.
     fileset: dictionary {dataset: [file, file], }
-    treename: name of tree inside each root file
     processor_instance: an instance of a class deriving from ProcessorABC
+                        NOTE -> it must define all the columns in data and MC that
+                                it reads as .columns
     executor: any of iterative_executor, futures_executor, etc.
                 In general, a function that takes 3 arguments: items, function accumulator
                 and performs some action equivalent to:
                 for item in items: accumulator += function(item)
-    executor_args: extra arguments to pass to executor
-    chunksize: number of entries to process at a time in the data frame
+    executor_args: arguments to send to the creation of a spark session
+    spark: an optional already created spark instance
+           if "None" then we create an ephemeral spark instance using a config
+    bydataset: are we just going to read things in by dataset location?
+    partitionsize: partition size to try to aim for (coalescese only, repartition too expensive)
+    thread_workers: how many spark jobs to let fly in parallel during processing steps
     '''
+    
+    try:
+        import pyspark
+    except ImportError as e:
+        print('you must have pyspark installed to call run_spark_job()!')
+        raise e
     
     import pyspark.sql
     from .spark.SparkExecutor import SparkExecutor
-    from .spark.secrets import _spark_initialize, _spark_stop, _spark_work_function, _spark_make_dfs
+    from .spark.detail import _spark_initialize, _spark_stop, _spark_make_dfs
 
     if executor_args['config'] is None:
         executor_args.pop('config')
@@ -204,18 +222,18 @@ def run_spark_job(fileset, treename, processor_instance, executor, executor_args
 
     dfslist = {}
     if bydataset:
-        datasets = list(filelist.keys())
-        dfslist = _spark_make_dfs(spark, datasets, thread_workers)
+        dfslist = _spark_make_dfs(spark, filelist, thread_workers)
     else:
         dfslist = _spark_make_dfs(spark, filelist, thread_workers, file_list=True)
     
     output = processor_instance.accumulator.identity()
-    executor(spark, dfslist, _spark_work_function, output, thread_workers)
+    executor(spark, dfslist, processor_instance, output, thread_workers)
     processor_instance.postprocess(output)
 
     if killSpark:
         _spark_stop(spark)
         del spark
+        spark = None
 
     return output
     
