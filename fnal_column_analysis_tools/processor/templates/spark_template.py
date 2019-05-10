@@ -1,3 +1,5 @@
+global coffea_udf
+
 @fn.pandas_udf(BinaryType(), fn.PandasUDFType.SCALAR)
 def coffea_udf({% for col in cols %}{{col}}{{ "," if not loop.last }}{% endfor %}):
     global processor_instance, lz4_clevel
