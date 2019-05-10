@@ -52,7 +52,27 @@ Reference documentation
 """
 
     return description[start:stop].strip() # before + + after
-    
+
+INSTALL_REQUIRES = ['awkward>=0.8.4',
+                    'matplotlib<3' if six.PY2 else 'matplotlib>=3',
+                    'numba>=0.43.1',
+                    'numpy>=1.16.0',
+                    'scipy>=1.1.0',
+                    'uproot-methods>=0.4.3',
+                    'uproot>=3.4.5',
+                    'futures; python_version == "2.7"',
+                    'tqdm'
+                    ]
+EXTRAS_REQUIRES = {}
+if six.PY3:
+    blobbing = ['cloudpickle','lz4']
+    pandas = ['pandas']
+    templates = ['jinja2']
+    EXTRAS_REQUIRES['spark'] = ['pyspark'] + blobbing + templates + pandas
+    EXTRAS_REQUIRES['parsl'] = ['parsl'] + blobbing + templates
+if six.PY2:
+    EXTRAS_REQUIRES['striped'] = []
+
 setup(name = "fnal-column-analysis-tools",
       version = get_version(),
       packages = find_packages(exclude = ["tests"]),
@@ -68,17 +88,8 @@ setup(name = "fnal-column-analysis-tools",
       download_url = "https://github.com/CoffeaTeam/fnal-column-analysis-tools/releases",
       license = "BSD 3-clause",
       test_suite = "tests",
-      install_requires = [
-          "awkward>=0.8.4",
-          "matplotlib<3" if six.PY2 else "matplotlib>=3",
-          "numba>=0.43.1",
-          "numpy>=1.16.0",
-          "scipy>=1.1.0",
-          "uproot-methods>=0.4.3",
-          "uproot>=3.4.5",
-          'futures; python_version == "2.7"',
-          "tqdm",
-      ],
+      install_requires = INSTALL_REQUIRES,
+      extras_requires = EXTRAS_REQUIRES,
       setup_requires = ["pytest-runner"],
       tests_require = ["pytest"],
       classifiers = [
