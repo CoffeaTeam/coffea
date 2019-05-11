@@ -68,7 +68,7 @@ if six.PY3:
     blobbing = ['cloudpickle','lz4']
     pandas = ['pandas']
     templates = ['jinja2']
-    EXTRAS_REQUIRES['spark'] = ['pyspark'] + blobbing + templates + pandas
+    EXTRAS_REQUIRES['spark'] = ['pyspark','pyarrow'] + blobbing + templates + pandas
     EXTRAS_REQUIRES['parsl'] = ['parsl'] + blobbing + templates
 if six.PY2:
     EXTRAS_REQUIRES['striped'] = []
