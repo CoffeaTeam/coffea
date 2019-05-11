@@ -67,4 +67,36 @@ def test_spark_executor():
         warnings.warn('other error when trying to import pyspark!')
         raise e
 
+    from fnal_column_analysis_tools.processor.spark.detail import (_spark_initialize,
+                                                                   _spark_make_dfs,
+                                                                   _spark_stop)
     from fnal_column_analysis_tools.processor import run_spark_job
+
+    import pyspark.sql
+    spark_config = pyspark.sql.SparkSession.builder \
+        .appName('spark-executor-test') \
+        .master('local[*]') \
+        .config('spark.sql.execution.arrow.enabled','true') \
+        .config('spark.sql.execution.arrow.maxRecordsPerBatch', 200000)
+
+    spark = _spark_initialize(config=spark_config,log_level='ERROR',spark_progress=False)
+
+    filelist = {'ZJets':['tests/samples/nano_dy.parquet'],
+                'Data'  :['tests/samples/nano_dimuon.parquet']
+                }
+
+    from fnal_column_analysis_tools.processor.spark.tests import NanoTestProcessor
+    from fnal_column_analysis_tools.processor.spark.spark_executor import spark_executor
+
+    columns = ['nMuon','Muon_pt','Muon_eta','Muon_phi','Muon_mass']
+    proc = NanoTestProcessor(columns=columns)
+
+    hists = run_spark_job(filelist,processor_instance=proc,executor=spark_executor,spark=spark,thread_workers=1)
+
+    _spark_stop(spark)
+
+    assert hists['cutflow']['ZJets_pt'] == 4
+    assert hists['cutflow']['ZJets_mass'] == 1
+    assert hists['cutflow']['Data_pt'] == 15
+    assert hists['cutflow']['Data_mass'] == 5
+
