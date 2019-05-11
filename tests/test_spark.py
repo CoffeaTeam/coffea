@@ -7,7 +7,7 @@ import numpy as np
 def test_spark_imports():
     try:
         import pyspark
-    except ModuleNotFoundError:
+    except ImportError:
         warnings.warn('pyspark not installed, skipping tests')
         return
     except Exception as e:
@@ -25,7 +25,7 @@ def test_spark_imports():
 def test_spark_functionality():
     try:
         import pyspark
-    except ModuleNotFoundError:
+    except ImportError:
         warnings.warn('pyspark not installed, skipping tests')
         return
     except Exception as e:
@@ -60,7 +60,7 @@ def test_spark_functionality():
 def test_spark_executor():
     try:
         import pyspark
-    except ModuleNotFoundError:
+    except ImportError:
         warnings.warn('pyspark not installed, skipping tests')
         return
     except Exception as e:

@@ -8,7 +8,7 @@ import numpy as np
 def test_parsl_executor():
     try:
         import parsl
-    except ModuleNotFoundError:
+    except ImportError:
         warnings.warn('parsl not installed, skipping tests')
         return
     except Exception as e:
