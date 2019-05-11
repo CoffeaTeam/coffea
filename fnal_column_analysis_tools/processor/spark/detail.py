@@ -12,11 +12,13 @@ _default_config = pyspark.sql.SparkSession.builder \
     .config('spark.sql.execution.arrow.maxRecordsPerBatch', 200000)
 
 def _spark_initialize(config=_default_config,**kwargs):
-    session = config.getOrCreate()
+    session = config.config('spark.ui.showConsoleProgress','false').getOrCreate()
     sc = session.sparkContext
 
     if 'log_level' in kwargs.keys():
-        sc.getLogLevel(kwargs['log_level'])
+        sc.setLogLevel(kwargs['log_level'])
+    else:
+        sc.setLogLevel('ERROR')
     
     return session
 
