@@ -67,4 +67,7 @@ def check_spark_functionality():
                       
     _spark_stop(spark)
                       
-    return pd_one['dataset'].count(),pd_two['dataset'].count()
+    return pd_one['dataset'].count(),pd_two['dataset'].count(),pd_two['histos']
+
+def run_spark_executor():
+    pass

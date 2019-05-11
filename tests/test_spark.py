@@ -32,11 +32,30 @@ def test_spark_functionality():
         warnings.warn('other error when trying to import pyspark!')
         raise e
     
+    import lz4.frame as lz4f
+    import cloudpickle as cpkl
+    
+    from fnal_column_analysis_tools import hist
     from fnal_column_analysis_tools.processor.spark.tests import check_spark_functionality
-    one,two = check_spark_functionality()
+    one,two,hists = check_spark_functionality()
 
-    assert(one == two)
+    #check that spark produced the correct output dataset
+    assert( (one == two) and (one == 3) )
 
+    #make sure that the returned histograms are all the same (as they should be in this case)
+    assert( (len(hists[0]) == len(hists[1])) and (len(hists[1]) == len(hists[2])) )
+
+    inflated = []
+    for i in range(3):
+        inflated.append(cpkl.loads(lz4f.decompress(hists[i])))
+
+    final = inflated.pop()
+    for ihist in inflated:
+        for k,v in ihist.items():
+            final[k] += v
+
+    #make sure the accumulator is working right after being blobbed through spark
+    assert( final['cutflow']['dummy'] == 3 )
 
 def test_spark_executor():
     try:
