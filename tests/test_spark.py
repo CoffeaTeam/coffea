@@ -51,8 +51,7 @@ def test_spark_functionality():
 
     final = inflated.pop()
     for ihist in inflated:
-        for k,v in ihist.items():
-            final[k] += v
+        final.add(ihist)
 
     #make sure the accumulator is working right after being blobbed through spark
     assert( final['cutflow']['dummy'] == 3 )
