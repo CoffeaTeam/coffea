@@ -166,7 +166,7 @@ def run_parsl_job(fileset, treename, processor_instance, executor, executor_args
     return output
 
 def run_spark_job(fileset, processor_instance, executor, executor_args={'config':None},
-                  spark=None, partitionsize=200000, bydataset=True, thread_workers=16):
+                  spark=None, partitionsize=200000, thread_workers=16):
     '''
     A convenience wrapper to submit jobs for spark datasets, which is a
     dictionary of dataset: [file list] entries.  Presently supports reading of
@@ -196,7 +196,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={'config'
         raise e
     
     import pyspark.sql
-    from .spark.SparkExecutor import SparkExecutor
+    from .spark.spark_executor import SparkExecutor
     from .spark.detail import _spark_initialize, _spark_stop, _spark_make_dfs
 
     if executor_args['config'] is None:
@@ -218,14 +218,10 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={'config'
         killSpark = True
     else:
         if not isinstance(spark, pyspark.sql.session.SparkSession):
-            raise ValueError("Expected spark to be a pyspark.sql.session.SparkSession")
+            raise ValueError("Expected 'spark' to be a pyspark.sql.session.SparkSession")
 
-    dfslist = {}
-    if bydataset:
-        dfslist = _spark_make_dfs(spark, filelist, thread_workers)
-    else:
-        dfslist = _spark_make_dfs(spark, filelist, thread_workers, file_list=True)
-    
+    dfslist = _spark_make_dfs(spark, fileset, partitionsize, thread_workers)
+
     output = processor_instance.accumulator.identity()
     executor(spark, dfslist, processor_instance, output, thread_workers)
     processor_instance.postprocess(output)
