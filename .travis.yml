@@ -19,7 +19,7 @@ install:
   - PY_MAJ=`python -c 'import sys; print(sys.version_info[0])'`
   - PY_MIN=`python -c 'import sys; print(sys.version_info[1])'`
   - if [ $PY_MAJ -eq 3 ]; then pip install pandas pyarrow cloudpickle lz4 jinja2 parsl; fi
-  - if [ $PY_MAJ -eq 3 ] && [ $PY_MIN -eq 6]; then  pip install pyspark; fi
+  - if [ $PY_MAJ -eq 3 ] && [ $PY_MIN -eq 6 ]; then  pip install pyspark; fi
   - pip install ${AWKWARD}
   - pip install scipy
   - pip install numpy --upgrade
