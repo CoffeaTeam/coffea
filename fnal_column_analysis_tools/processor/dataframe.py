@@ -17,8 +17,8 @@ class LazyDataFrame(MutableMapping):
         self._stride = None
         if (stride is not None) and (index is not None):
             self._stride = stride
-            self._branchargs['entrystart'] = index*stride
-            self._branchargs['entrystop'] = min(self._tree.numentries, (index+1)*stride)
+            self._branchargs['entrystart'] = index * stride
+            self._branchargs['entrystop'] = min(self._tree.numentries, (index + 1) * stride)
         self._dict = {}
         self._materialized = set()
         if preload_items:
