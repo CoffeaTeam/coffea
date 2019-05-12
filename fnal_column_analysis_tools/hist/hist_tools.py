@@ -358,7 +358,7 @@ class Bin(DenseAxis):
             # to make searchsorted differentiate inf from nan
             self._bins = np.append(self._bins, np.inf)
             interval_bins = np.r_[-np.inf, self._bins, np.nan]
-            self._intervals = [Interval(lo, hi) for lo, hi in zip(interval_bins[:-1], interval_bins[1:])]
+            self._intervals = [Interval(low, high) for low, high in zip(interval_bins[:-1], interval_bins[1:])]
         elif isinstance(n_or_arr, numbers.Integral):
             if lo is None or hi is None:
                 raise TypeError("Interpreting n_or_arr as uniform binning, please specify lo and hi values")
@@ -367,7 +367,7 @@ class Bin(DenseAxis):
             self._hi = hi
             self._bins = n_or_arr
             interval_bins = np.r_[-np.inf, np.linspace(self._lo, self._hi, self._bins + 1), np.inf, np.nan]
-            self._intervals = [Interval(lo, hi) for lo, hi in zip(interval_bins[:-1], interval_bins[1:])]
+            self._intervals = [Interval(low, high) for low, high in zip(interval_bins[:-1], interval_bins[1:])]
         else:
             raise TypeError("Cannot understand n_or_arr (nbins or binning array) type %r" % n_or_arr)
 
