@@ -1,28 +1,16 @@
-import parsl
-from parsl.app.app import python_app, bash_app
+class ParslBaseExecutor(object):
 
-def parsl_base_executor(config, items, function, accumulator, workers, status, unit, desc):
-    #create dfk
+    def __init__(self, config, items, function, accumulator, workers, status, unit, desc):
+        # create dfk
 
-    #prepare the processor
+        # prepare the processor
 
-    #submit jobs
+        # submit jobs
 
-    #collect them
+        # collect them
 
-    #reset?
+        # reset?
 
-    #kill the dfk?
+        # kill the dfk?
 
-    raise NotImplementedError
-    return accumulator
-
-default_condor_cfg = None
-
-def condor_executor(items, function, accumulator, workers, status=True, unit='items', desc='Processing', cfg=default_condor_cfg):
-    
-    return parsl_executor(cfg, items, function, accumulator, workers, status, unit, desc)
-
-def slurm_executor(items, function, accumulator, workers, status=True, unit='items', desc='Processing', cfg=default_slurm_cfg):
-    config = None
-    return 
+        raise NotImplementedError

@@ -1,9 +1,10 @@
 from fnal_column_analysis_tools.util import numpy as np
 import json
 
-import numba
+from fnal_column_analysis_tools.util import numba
 from numba import types
 from numba.typed import Dict
+
 
 class LumiData(object):
     """
@@ -14,16 +15,16 @@ class LumiData(object):
                 -u /pb --byls --output-style csv -i Cert_294927-306462_13TeV_PromptReco_Collisions17_JSON.txt > lumi2017.csv
     """
     def __init__(self, lumi_csv):
-        self._lumidata = np.loadtxt(lumi_csv, delimiter=',', usecols=(0,1,6,7), converters={
+        self._lumidata = np.loadtxt(lumi_csv, delimiter=',', usecols=(0, 1, 6, 7), converters={
             0: lambda s: s.split(b':')[0],
-            1: lambda s: s.split(b':')[0], # not sure what lumi:0 means, appears to be always zero (DAQ off before beam dump?)
+            1: lambda s: s.split(b':')[0],  # not sure what lumi:0 means, appears to be always zero (DAQ off before beam dump?)
         })
         self.index = Dict.empty(
-            key_type = types.Tuple([types.uint32, types.uint32]),
-            value_type = types.float64
+            key_type=types.Tuple([types.uint32, types.uint32]),
+            value_type=types.float64
         )
         self.build_lumi_table()
-    
+
     def build_lumi_table(self):
         runs = self._lumidata[:, 0].astype('u4')
         lumis = self._lumidata[:, 1].astype('u4')
@@ -36,7 +37,7 @@ class LumiData(object):
             run = runs[i]
             lumi = lumis[i]
             index[(run, lumi)] = float(lumidata[i, 2])
-            
+
     def get_lumi(self, runlumis):
         """
             Return integrated lumi
@@ -47,7 +48,7 @@ class LumiData(object):
         tot_lumi = np.zeros((1, ), dtype=np.float64)
         LumiData.get_lumi_kernel(runlumis[:, 0], runlumis[:, 1], self.index, tot_lumi)
         return tot_lumi[0]
-    
+
     @staticmethod
     @numba.njit(parallel=False, fastmath=False)
     def get_lumi_kernel(runs, lumis, index, tot_lumi):
@@ -56,7 +57,7 @@ class LumiData(object):
             run = np.uint32(runs[iev])
             lumi = np.uint32(lumis[iev])
             k = (run, lumi)
-            if not k in ks_done:
+            if k not in ks_done:
                 ks_done.add(k)
                 tot_lumi[0] += index.get(k, 0)
 
@@ -70,7 +71,7 @@ class LumiMask(object):
     def __init__(self, jsonfile):
         with open(jsonfile) as fin:
             goldenjson = json.load(fin)
-            
+
         self._masks = Dict.empty(
             key_type=types.uint32,
             value_type=types.uint32[:]
@@ -89,8 +90,8 @@ class LumiMask(object):
     @staticmethod
     def apply_run_lumi_mask(masks, runs, lumis, mask_out):
         LumiMask.apply_run_lumi_mask_kernel(masks, runs, lumis, mask_out)
-   
-    #This could be run in parallel, but windows does not support it
+
+    # This could be run in parallel, but windows does not support it
     @staticmethod
     @numba.njit(parallel=False, fastmath=True)
     def apply_run_lumi_mask_kernel(masks, runs, lumis, mask_out):
@@ -111,10 +112,10 @@ class LumiList(object):
         The member array can be passed to LumiData.get_lumi()
     """
     def __init__(self, runs=None, lumis=None):
-        self.array = np.zeros(shape=(0,2))
+        self.array = np.zeros(shape=(0, 2))
         if runs is not None:
             self.array = np.unique(np.c_[runs, lumis], axis=0)
-    
+
     def __iadd__(self, other):
         # TODO: re-apply unique? Or wait until end
         if isinstance(other, LumiList):
@@ -122,7 +123,6 @@ class LumiList(object):
         else:
             raise ValueError("Expected LumiList object, got %r" % other)
         return self
-    
-    def clear(self):
-        self.array = np.zeros(shape=(0,2))
 
+    def clear(self):
+        self.array = np.zeros(shape=(0, 2))

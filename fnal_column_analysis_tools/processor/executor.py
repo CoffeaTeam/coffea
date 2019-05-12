@@ -10,6 +10,7 @@ try:
     from functools import lru_cache
 except ImportError:
     from collections import Mapping
+
     def lru_cache(maxsize):
         def null_wrapper(f):
             return f
@@ -32,7 +33,7 @@ def iterative_executor(items, function, accumulator, status=True, unit='items', 
     return accumulator
 
 
-def futures_executor(items, function, accumulator, workers=2, status=True, unit='items', desc='Processing'):    
+def futures_executor(items, function, accumulator, workers=2, status=True, unit='items', desc='Processing'):
     with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
         futures = set()
         try:
@@ -62,8 +63,10 @@ def futures_executor(items, function, accumulator, workers=2, status=True, unit=
 def condor_executor(items, function, accumulator, workers, status=True, unit='items', desc='Processing'):
     raise NotImplementedError
 
+
 def spark_executor(items, function, accumulator, config, status=True, unit='datasets', desc='Processing'):
     raise NotImplementedError
+
 
 def _work_function(item):
     dataset, fn, treename, chunksize, index, processor_instance = item
@@ -81,7 +84,7 @@ def _get_chunking(filelist, treename, chunksize):
     items = []
     for fn in filelist:
         nentries = uproot.numentries(fn, treename)
-        for index in range(nentries//chunksize + 1):
+        for index in range(nentries // chunksize + 1):
             items.append((fn, chunksize, index))
     return items
 
@@ -118,7 +121,8 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
     processor_instance.postprocess(output)
     return output
 
-def run_parsl_job(fileset, treename, processor_instance, executor, executor_args={'config':None}, chunksize=500000):
+
+def run_parsl_job(fileset, treename, processor_instance, executor, executor_args={'config': None}, chunksize=500000):
     '''
     A convenience wrapper to submit jobs for a file, which is a
     dictionary of dataset: [file list] entries. In this case using parsl.
@@ -136,14 +140,17 @@ def run_parsl_job(fileset, treename, processor_instance, executor, executor_args
     executor_args: extra arguments to pass to executor
     chunksize: number of entries to process at a time in the data frame
     '''
-    
+
     try:
         import parsl
     except ImportError as e:
         print('you must have parsl installed to call run_parsl_job()!')
         raise e
-    
+
+    print('parsl version:', parsl.__version__)
+
     from .parsl.detail import _parsl_work_function, _parsl_get_chunking
+    from .parsl.parsl_base_executor import ParslBaseExecutor
 
     if executor_args['config'] is None:
         executor_args.pop('config')
@@ -152,20 +159,21 @@ def run_parsl_job(fileset, treename, processor_instance, executor, executor_args
         raise ValueError("Expected fileset to be a mapping dataset: list(files)")
     if not isinstance(processor_instance, ProcessorABC):
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
-    if not isinstance(executor, ParslExecutor):
-        raise ValueError("Expected executor to derive from ParslExecutor") 
+    if not isinstance(executor, ParslBaseExecutor):
+        raise ValueError("Expected executor to derive from ParslBaseExecutor")
 
     items = []
     for dataset, filelist in tqdm(fileset.items(), desc='Preprocessing'):
         for chunk in _parsl_get_chunking(tuple(filelist), treename, chunksize):
             items.append((dataset, chunk[0], treename, chunk[1], chunk[2], processor_instance))
-    
+
     output = processor_instance.accumulator.identity()
     executor(items, _parsl_work_function, output, **executor_args)
     processor_instance.postprocess(output)
     return output
 
-def run_spark_job(fileset, processor_instance, executor, executor_args={'config':None},
+
+def run_spark_job(fileset, processor_instance, executor, executor_args={'config': None},
                   spark=None, partitionsize=200000, thread_workers=16):
     '''
     A convenience wrapper to submit jobs for spark datasets, which is a
@@ -188,20 +196,22 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={'config'
     partitionsize: partition size to try to aim for (coalescese only, repartition too expensive)
     thread_workers: how many spark jobs to let fly in parallel during processing steps
     '''
-    
+
     try:
         import pyspark
     except ImportError as e:
         print('you must have pyspark installed to call run_spark_job()!')
         raise e
-    
+
+    print('pyspark version:', pyspark.__version__)
+
     import pyspark.sql
     from .spark.spark_executor import SparkExecutor
     from .spark.detail import _spark_initialize, _spark_stop, _spark_make_dfs
 
     if executor_args['config'] is None:
         executor_args.pop('config')
-        
+
     if not isinstance(fileset, Mapping):
         raise ValueError("Expected fileset to be a mapping dataset: list(files)")
     if not isinstance(processor_instance, ProcessorABC):
@@ -209,9 +219,9 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={'config'
     if not isinstance(executor, SparkExecutor):
         raise ValueError("Expected executor to derive from SparkExecutor")
 
-    #initialize spark if we need to
-    #if we initialize, then we deconstruct
-    #when we're done
+    # initialize spark if we need to
+    # if we initialize, then we deconstruct
+    # when we're done
     killSpark = False
     if spark is None:
         spark = _spark_initialize(**executor_args)
@@ -232,4 +242,3 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={'config'
         spark = None
 
     return output
-    

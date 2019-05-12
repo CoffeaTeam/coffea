@@ -1,6 +1,7 @@
 from __future__ import print_function
 import threading
 
+
 class HistCollectorCallback(object):
     def __init__(self, hists, redraw_fcn, update=2e5):
         """
@@ -33,12 +34,12 @@ class HistCollectorCallback(object):
         if self._seen > self._update:
             self._seen = 0
             self.update_histograms()
-    
+
     def update_histograms(self):
         figs = self._redraw()
         for fig in figs:
             fig.canvas.draw()
-    
+
     def on_exception(self, wid, info):
         print("Worker exception:")
         print(info)
