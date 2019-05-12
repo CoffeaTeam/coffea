@@ -204,7 +204,7 @@ def convert_junc_txt_file(juncFilePath):
             knot = np.unique(knotv.flatten())
             if knot.size != 1:
                 raise Exception('Multiple bin low edges found')
-        knots = np.array([np.unique(knot.flatten())[0] for knot in knots])
+        knots = np.array([np.unique(k.flatten())[0] for k in knots])
         vallist[2] = ({'knots': knots, 'ups': ups.T, 'downs': downs.T}, vallist[2][-1])
         vallist = vallist[:-1]
         wrapped_up[newkey] = tuple(vallist)
