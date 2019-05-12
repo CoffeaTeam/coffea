@@ -3,21 +3,21 @@
 
 # Copyright (c) 2018, Fermilab
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-# 
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-# 
+#
 # * Neither the name of the copyright holder nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -35,53 +35,67 @@ import six
 from setuptools import find_packages
 from setuptools import setup
 
+
 def get_version():
     g = {}
     exec(open(os.path.join("fnal_column_analysis_tools", "version.py")).read(), g)
     return g["__version__"]
+
 
 def get_description():
     description = open("README.rst", "rb").read().decode("utf8", "ignore")
     start = description.index(".. inclusion-marker-1-5-do-not-remove")
     stop = description.index(".. inclusion-marker-3-do-not-remove")
 
-    before = ""
-    after = """
-Reference documentation
-=======================
-"""
+    #    before = ""
+    #    after = """
+    # Reference documentation
+    # =======================
+    # """
 
-    return description[start:stop].strip() # before + + after
-    
-setup(name = "fnal-column-analysis-tools",
-      version = get_version(),
-      packages = find_packages(exclude = ["tests"]),
-      scripts = [],
-      data_files = ["README.rst"],
-      description = "Tools for doing Collider HEP style analysis with columnar operations at Fermilab",
-      long_description = get_description(),
-      author = "Lindsey Gray (Fermilab)",
-      author_email = "lagray@fnal.gov",
-      maintainer = "Lindsey Gray (Fermilab)",
-      maintainer_email = "lagray@fnal.gov",
-      url = "https://github.com/CoffeaTeam/fnal-column-analysis-tools",
-      download_url = "https://github.com/CoffeaTeam/fnal-column-analysis-tools/releases",
-      license = "BSD 3-clause",
-      test_suite = "tests",
-      install_requires = [
-          "awkward>=0.8.4",
-          "matplotlib<3" if six.PY2 else "matplotlib>=3",
-          "numba>=0.43.1",
-          "numpy>=1.16.0",
-          "scipy>=1.1.0",
-          "uproot-methods>=0.4.3",
-          "uproot>=3.4.5",
-          'futures; python_version == "2.7"',
-          "tqdm",
-      ],
-      setup_requires = ["pytest-runner"],
-      tests_require = ["pytest"],
-      classifiers = [
+    return description[start:stop].strip()  # before + + after
+
+
+INSTALL_REQUIRES = ['awkward>=0.8.4',
+                    'matplotlib<3' if six.PY2 else 'matplotlib>=3',
+                    'numba>=0.43.1',
+                    'numpy>=1.16.0',
+                    'scipy>=1.1.0',
+                    'uproot-methods>=0.4.3',
+                    'uproot>=3.4.5',
+                    'futures; python_version == "2.7"',
+                    'tqdm'
+                    ]
+EXTRAS_REQUIRE = {}
+if six.PY3:
+    blobbing = ['cloudpickle', 'lz4']
+    pandas = ['pandas']
+    templates = ['jinja2']
+    EXTRAS_REQUIRE['spark'] = ['pyspark>=2.4.0', 'pyarrow'] + blobbing + templates + pandas
+    EXTRAS_REQUIRE['parsl'] = ['parsl>=0.7.2'] + blobbing + templates
+if six.PY2:
+    EXTRAS_REQUIRE['striped'] = []
+
+setup(name="fnal-column-analysis-tools",
+      version=get_version(),
+      packages=find_packages(exclude=["tests"]),
+      scripts=[],
+      data_files=["README.rst"],
+      description="Tools for doing Collider HEP style analysis with columnar operations at Fermilab",
+      long_description=get_description(),
+      author="Lindsey Gray (Fermilab)",
+      author_email="lagray@fnal.gov",
+      maintainer="Lindsey Gray (Fermilab)",
+      maintainer_email="lagray@fnal.gov",
+      url="https://github.com/CoffeaTeam/fnal-column-analysis-tools",
+      download_url="https://github.com/CoffeaTeam/fnal-column-analysis-tools/releases",
+      license="BSD 3-clause",
+      test_suite="tests",
+      install_requires=INSTALL_REQUIRES,
+      extras_require=EXTRAS_REQUIRE,
+      setup_requires=["pytest-runner", "flake8"],
+      tests_require=["pytest"],
+      classifiers=[
           "Development Status :: 4 - Beta",
           "Intended Audience :: Developers",
           "Intended Audience :: Information Technology",
@@ -101,5 +115,5 @@ setup(name = "fnal-column-analysis-tools",
           "Topic :: Software Development",
           "Topic :: Utilities",
       ],
-      platforms = "Any",
+      platforms="Any",
       )

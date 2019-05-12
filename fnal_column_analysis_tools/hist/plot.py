@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 
 _coverage1sd = scipy.stats.norm.cdf(1) - scipy.stats.norm.cdf(-1)
 
+
 def poisson_interval(sumw, sumw2, coverage=_coverage1sd):
     """
         sumw: sum of weights
@@ -31,21 +32,21 @@ def poisson_interval(sumw, sumw2, coverage=_coverage1sd):
         If all bins zero, raise warning and set interval to sumw
     """
     scale = np.empty_like(sumw)
-    scale[sumw!=0] = sumw2[sumw!=0] / sumw[sumw!=0]
-    if np.sum(sumw==0) > 0:
-        missing = np.where(sumw==0)
+    scale[sumw != 0] = sumw2[sumw != 0] / sumw[sumw != 0]
+    if np.sum(sumw == 0) > 0:
+        missing = np.where(sumw == 0)
         available = np.nonzero(sumw)
         if len(available[0]) == 0:
             warnings.warn("All sumw are zero!  Cannot compute meaningful error bars", RuntimeWarning)
             return np.vstack([sumw, sumw])
-        nearest = sum([np.subtract.outer(d,d0)**2 for d,d0 in zip(available, missing)]).argmin(axis=0)
+        nearest = sum([np.subtract.outer(d, d0)**2 for d, d0 in zip(available, missing)]).argmin(axis=0)
         argnearest = tuple(dim[nearest] for dim in available)
         scale[missing] = scale[argnearest]
     counts = sumw / scale
-    lo = scale * scipy.stats.chi2.ppf((1-coverage)/2, 2*counts) / 2.
-    hi = scale * scipy.stats.chi2.ppf((1+coverage)/2, 2*(counts+1)) / 2.
+    lo = scale * scipy.stats.chi2.ppf((1 - coverage) / 2, 2 * counts) / 2.
+    hi = scale * scipy.stats.chi2.ppf((1 + coverage) / 2, 2 * (counts + 1)) / 2.
     interval = np.array([lo, hi])
-    interval[interval==np.nan] = 0.  # chi2.ppf produces nan for counts=0
+    interval[interval == np.nan] = 0.  # chi2.ppf produces nan for counts=0
     return interval
 
 
@@ -60,15 +61,16 @@ def clopper_pearson_interval(num, denom, coverage=_coverage1sd):
     """
     if np.any(num > denom):
         raise ValueError("Found numerator larger than denominator while calculating binomial uncertainty")
-    lo = scipy.stats.beta.ppf((1-coverage)/2, num, denom-num+1)
-    hi = scipy.stats.beta.ppf((1+coverage)/2, num+1, denom-num)
+    lo = scipy.stats.beta.ppf((1 - coverage) / 2, num, denom - num + 1)
+    hi = scipy.stats.beta.ppf((1 + coverage) / 2, num + 1, denom - num)
     interval = np.array([lo, hi])
-    interval[:, num==0.] = 0.
-    interval[:, num==denom] = 1.
+    interval[:, num == 0.] = 0.
+    interval[:, num == denom] = 1.
     return interval
 
 
-def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none', line_opts=None, fill_opts=None, error_opts=None, overlay_overflow='none', density=False, binwnorm=None):
+def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none', line_opts=None,
+           fill_opts=None, error_opts=None, overlay_overflow='none', density=False, binwnorm=None):
     """
         hist: Hist object with maximum of two dimensions
         ax: matplotlib Axes object (if None, one is created)
@@ -143,14 +145,14 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
                 sumw, sumw2 = hist.project(overlay, identifier).values(sumw2=True, overflow=overflow)[()]
             else:
                 sumw, sumw2 = hist.values(sumw2=True, overflow='allnan')[()]
-                the_slice = (i if overflow_behavior(overlay_overflow).start is None else i+1, overflow_behavior(overflow))
+                the_slice = (i if overflow_behavior(overlay_overflow).start is None else i + 1, overflow_behavior(overflow))
                 if hist._idense(overlay) == 1:
                     the_slice = (the_slice[1], the_slice[0])
                 sumw = sumw[the_slice]
                 sumw2 = sumw2[the_slice]
-            if (density or binwnorm is not None) and np.sum(sumw)>0:
-                overallnorm = np.sum(sumw)*binwnorm if binwnorm is not None else 1.
-                binnorms = overallnorm / (np.diff(edges)*np.sum(sumw))
+            if (density or binwnorm is not None) and np.sum(sumw) > 0:
+                overallnorm = np.sum(sumw) * binwnorm if binwnorm is not None else 1.
+                binnorms = overallnorm / (np.diff(edges) * np.sum(sumw))
                 sumw = sumw * binnorms
                 sumw2 = sumw2 * binnorms**2
             label = str(identifier)
@@ -174,7 +176,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
                     if first_color is not None:
                         opts['color'] = first_color
                     opts.update(fill_opts)
-                    f = ax.fill_between(x=edges, y1=np.r_[stack_sumw-sumw, stack_sumw[-1]-sumw[-1]], y2=np.r_[stack_sumw, stack_sumw[-1]], **opts)
+                    f = ax.fill_between(x=edges, y1=np.r_[stack_sumw - sumw, stack_sumw[-1] - sumw[-1]], y2=np.r_[stack_sumw, stack_sumw[-1]], **opts)
                     if first_color is None:
                         first_color = f.get_facecolor()[0]
                     primitives[identifier].append(f)
@@ -209,7 +211,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             err = poisson_interval(stack_sumw, stack_sumw2)
             opts = {'step': 'post', 'label': 'Sum unc.'}
             opts.update(error_opts)
-            errbar = ax.fill_between(x=edges, y1=np.r_[err[0,:], err[0,-1]], y2=np.r_[err[1,:], err[1,-1]], **opts)
+            errbar = ax.fill_between(x=edges, y1=np.r_[err[0, :], err[0, -1]], y2=np.r_[err[1, :], err[1, -1]], **opts)
             primitives[StringBin('stack_unc', opts['label'])] = [errbar]
 
     if clear:
@@ -290,9 +292,9 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
             rsumw_err = np.abs(clopper_pearson_interval(sumw_num, sumw_denom) - rsumw)
         elif unc == 'poisson-ratio':
             # poisson ratio n/m is equivalent to binomial n/(n+m)
-            rsumw_err = np.abs(clopper_pearson_interval(sumw_num, sumw_num+sumw_denom) - rsumw)
+            rsumw_err = np.abs(clopper_pearson_interval(sumw_num, sumw_num + sumw_denom) - rsumw)
         elif unc == 'num':
-            rsumw_err = np.abs(poisson_interval(rsumw, sumw2_num/sumw_denom**2) - rsumw)
+            rsumw_err = np.abs(poisson_interval(rsumw, sumw2_num / sumw_denom**2) - rsumw)
         else:
             raise ValueError("Unrecognized uncertainty option: %r" % unc)
 
@@ -306,13 +308,13 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
             primitives['error'] = errbar
         if denom_fill_opts is not None:
             unity = np.ones_like(sumw_denom)
-            denom_unc = poisson_interval(unity, sumw2_denom/sumw_denom**2)
-            opts = {'step': 'post', 'facecolor': (0,0,0,0.3), 'linewidth': 0}
+            denom_unc = poisson_interval(unity, sumw2_denom / sumw_denom**2)
+            opts = {'step': 'post', 'facecolor': (0, 0, 0, 0.3), 'linewidth': 0}
             opts.update(denom_fill_opts)
-            fill = ax.fill_between(edges, np.r_[denom_unc[0], denom_unc[0,-1]], np.r_[denom_unc[1], denom_unc[1,-1]], **opts)
+            fill = ax.fill_between(edges, np.r_[denom_unc[0], denom_unc[0, -1]], np.r_[denom_unc[1], denom_unc[1, -1]], **opts)
             primitives['denom_fill'] = fill
         if guide_opts is not None:
-            opts = {'linestyle': '--', 'color': (0,0,0,0.5), 'linewidth': 1}
+            opts = {'linestyle': '--', 'color': (0, 0, 0, 0.5), 'linewidth': 1}
             opts.update(guide_opts)
             primitives['guide'] = ax.axhline(1., **opts)
 
@@ -379,15 +381,15 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
         yedges = yaxis.edges(overflow=yoverflow)
         sumw, sumw2 = hist.values(sumw2=True, overflow='allnan')[()]
         if transpose:
-           sumw = sumw.T
-           sumw2 = sumw2.T
+            sumw = sumw.T
+            sumw2 = sumw2.T
         # no support for different overflow behavior per axis, do it ourselves
-        sumw = sumw[overflow_behavior(xoverflow),overflow_behavior(yoverflow)]
-        sumw2 = sumw2[overflow_behavior(xoverflow),overflow_behavior(yoverflow)]
-        if (density or binwnorm is not None) and np.sum(sumw)>0:
-            overallnorm = np.sum(sumw)*binwnorm if binwnorm is not None else 1.
+        sumw = sumw[overflow_behavior(xoverflow), overflow_behavior(yoverflow)]
+        sumw2 = sumw2[overflow_behavior(xoverflow), overflow_behavior(yoverflow)]
+        if (density or binwnorm is not None) and np.sum(sumw) > 0:
+            overallnorm = np.sum(sumw) * binwnorm if binwnorm is not None else 1.
             areas = np.multiply.outer(np.diff(xedges), np.diff(yedges))
-            binnorms = overallnorm / (areas*np.sum(sumw))
+            binnorms = overallnorm / (areas * np.sum(sumw))
             sumw = sumw * binnorms
             sumw2 = sumw2 * binnorms**2
 
@@ -435,7 +437,7 @@ def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='non
         Pass a figure object to redraw on existing figure
     """
     haxes = set(ax.name for ax in h.axes())
-    nrow,ncol = 1,1
+    nrow, ncol = 1, 1
     if row:
         row_identifiers = h.identifiers(row, overflow=row_overflow)
         nrow = len(row_identifiers)
@@ -452,20 +454,20 @@ def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='non
         raise ValueError("Not enough dimensions available in %r" % h)
 
     figsize = plt.rcParams['figure.figsize']
-    figsize = figsize[0]*max(ncol, 1), figsize[1]*max(nrow, 1)
+    figsize = figsize[0] * max(ncol, 1), figsize[1] * max(nrow, 1)
     if figure is None:
         fig, axes = plt.subplots(nrow, ncol, figsize=figsize, squeeze=False, sharex=True, sharey=True)
     else:
         fig = figure
-        shape = (0,0)
+        shape = (0, 0)
         lastax = fig.get_children()[-1]
         if isinstance(lastax, plt.Axes):
-            shape = lastax.rowNum+1, lastax.colNum+1
+            shape = lastax.rowNum + 1, lastax.colNum + 1
         if shape[0] == nrow and shape[1] == ncol:
             axes = np.array(fig.axes).reshape(shape)
         else:
             fig.clear()
-            #fig.set_size_inches(figsize)
+            # fig.set_size_inches(figsize)
             axes = fig.subplots(nrow, ncol, squeeze=False, sharex=True, sharey=True)
 
     for icol in range(ncol):
@@ -478,7 +480,7 @@ def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='non
             if isinstance(vcol, Interval) and vcol.label is None:
                 coltitle = "%s ∈ %s" % (h.axis(col).label, coltitle)
         for irow in range(nrow):
-            ax = axes[irow,icol]
+            ax = axes[irow, icol]
             hplot = hcol
             rowtitle = None
             if row:
