@@ -1,16 +1,17 @@
 from fnal_column_analysis_tools.util import awkward
 from fnal_column_analysis_tools.util import numpy as np
-import tempfile
-import shutil
 import os
+try:
+    import cStringIO as io
+except ModuleNotFoundError:
+    import io
 
 #for later
 #func = numbaize(formula,['p%i'%i for i in range(nParms)]+[varnames[i] for i in range(nEvalVars)])
 
-def _parse_jme_formatted_file(jmeFilePath,interpolatedFunc=False,parmsFromColumns=False):
-    jme_f = open(jmeFilePath,'r')
+def _parse_jme_formatted_file(jmeFilePath, interpolatedFunc=False, parmsFromColumns=False, jme_f=None):
+    if jme_f is None: jme_f = open(jmeFilePath,'r')
     layoutstr = jme_f.readline().strip().strip('{}')
-    jme_f.close()
     
     name = jmeFilePath.split('/')[-1].split('.')[0]
     
@@ -65,28 +66,26 @@ def _parse_jme_formatted_file(jmeFilePath,interpolatedFunc=False,parmsFromColumn
         columns.append('p%i'%i)
         dtypes.append('<f8')
     
-    pars = np.genfromtxt(jmeFilePath,
-                         dtype=tuple(dtypes),
-                         names=tuple(columns),
-                         skip_header=1,
-                         unpack=True,
-                         encoding='ascii'
-                         )
+
     if parmsFromColumns:
-        nParms = pars[columns[nBinnedVars+1]][0]
+        pars = np.genfromtxt(jme_f, encoding='ascii')
+        nParms = pars.shape[1] - len(columns)
         for i in range(nParms):
             columns.append('p%i'%i)
             dtypes.append('<f8')
-        pars = np.genfromtxt(jmeFilePath,
+        pars = np.core.records.fromarrays(
+            pars.transpose(), names=columns, formats=dtypes)
+    else:
+        pars = np.genfromtxt(jme_f,
                              dtype=tuple(dtypes),
                              names=tuple(columns),
-                             skip_header=1,
                              unpack=True,
                              encoding='ascii'
-                             )
+                         )
 
     outs = [name,layout,pars,nBinnedVars,nBinColumns,
             nEvalVars,formula,nParms,columns,dtypes]
+    jme_f.close()
     return tuple(outs)
 
 def _build_standard_jme_lookup(name,layout,pars,nBinnedVars,nBinColumns,
@@ -183,7 +182,6 @@ def convert_jersf_txt_file(jersfFilePath):
 
 def convert_junc_txt_file(juncFilePath):
     components = []
-    tmpdir = tempfile.mkdtemp()
     tmpfile = None
     basename = os.path.basename(juncFilePath).split('.')[0]
     with open(juncFilePath) as uncfile:
@@ -191,33 +189,32 @@ def convert_junc_txt_file(juncFilePath):
             if line.startswith('#'):
                 continue
             elif line.startswith('['):
-                if tmpfile is not None: tmpfile.close()
                 component_name = line.strip()[1:-1] # remove leading and trailing []
-                cname = '{0}_{1}'.format(basename, component_name)
-                cfile = os.path.join(tmpdir,cname)+'.junc.txt'
-                tmpfile = open(cfile, 'w')
-                components.append(cfile)
-            elif tmpfile is not None:
-                tmpfile.write(line)
+                cname = 'just/sum/dummy/dir/{0}_{1}.junc.txt'.format(basename, component_name)
+                components.append((cname, []))
+            elif components:
+                components[-1][1].append(line)
             else:
                 continue
                     
     if not components: #there are no components in the file
-        components.append(juncFilePath)
+        components.append((juncFilePath, None))
+    else:
+        components = [(i, io.StringIO(''.join(j))) for i, j in components]
         
     retval = {}
-    for component in components:
+    for name, ifile in components:
         retval.update(
-            convert_junc_txt_component(component)
+            convert_junc_txt_component(name, ifile)
         )
-    shutil.rmtree(tmpdir)
     return retval
 
-def convert_junc_txt_component(juncFilePath):
+def convert_junc_txt_component(juncFilePath, uncFile):
     name,layout,pars,nBinnedVars,nBinColumns, \
     nEvalVars,formula,nParms,columns,dtypes = _parse_jme_formatted_file(juncFilePath,
                                                                         interpolatedFunc=True,
-                                                                        parmsFromColumns=True)
+                                                                        parmsFromColumns=True,
+                                                                        jme_f=uncFile)
     temp = _build_standard_jme_lookup(name,layout,pars,nBinnedVars,nBinColumns,
                                       nEvalVars,formula,nParms,columns,dtypes,
                                       interpolatedFunc=True)
