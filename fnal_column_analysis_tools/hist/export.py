@@ -41,4 +41,3 @@ def export1d(hist):
     out._fSumw2 = sumw2.astype(">f8")
 
     return out
-
