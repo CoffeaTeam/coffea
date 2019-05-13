@@ -80,7 +80,11 @@ def test_histo_json_scalefactors():
 
 def test_jec_txt_scalefactors():
     extractor = lookup_tools.extractor()
-    extractor.add_weight_sets(["testJEC * tests/samples/Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi.jec.txt"])
+    extractor.add_weight_sets([
+        "testJEC * tests/samples/Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi.jec.txt",
+        "* * tests/samples/Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi.junc.txt",
+        "* * tests/samples/Autumn18_V8_MC_UncertaintySources_AK4PFchs.junc.txt",
+    ])
     extractor.finalize()
 
     evaluator = extractor.make_evaluator()
@@ -90,4 +94,12 @@ def test_jec_txt_scalefactors():
     jec_out = evaluator['testJECFall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi'](test_eta,test_pt)
 
     print(jec_out)
+
+    junc_out = evaluator['Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi'](test_eta,test_pt)
+
+    print(junc_out)
     
+    assert('Autumn18_V8_MC_UncertaintySources_AK4PFchs_AbsoluteScale' in evaluator.keys())
+    junc_out = evaluator['Autumn18_V8_MC_UncertaintySources_AK4PFchs_AbsoluteScale'](test_eta,test_pt)
+    print(junc_out)
+
