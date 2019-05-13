@@ -134,7 +134,6 @@ def Initialize(items):
 
     if isinstance(out, awkward.JaggedArray):
         out = JaggedSaiyanArrayMethods.fromjagged(out)
-
     else:  # p4 is not None and not isinstance(out, awkward.JaggedArray):
         try:
             p4
