@@ -9,10 +9,12 @@ except ModuleNotFoundError:
 # for later
 # func = numbaize(formula,['p%i'%i for i in range(nParms)]+[varnames[i] for i in range(nEvalVars)])
 
+
 def _parse_jme_formatted_file(jmeFilePath, interpolatedFunc=False, parmsFromColumns=False, jme_f=None):
-    if jme_f is None: jme_f = open(jmeFilePath,'r')
+    if jme_f is None:
+        jme_f = open(jmeFilePath, 'r')
     layoutstr = jme_f.readline().strip().strip('{}')
-    
+
     name = jmeFilePath.split('/')[-1].split('.')[0]
 
     layout = layoutstr.split()
@@ -182,32 +184,32 @@ def convert_jersf_txt_file(jersfFilePath):
 
 def convert_junc_txt_file(juncFilePath):
     components = []
-    tmpfile = None
     basename = os.path.basename(juncFilePath).split('.')[0]
     with open(juncFilePath) as uncfile:
         for line in uncfile:
             if line.startswith('#'):
                 continue
             elif line.startswith('['):
-                component_name = line.strip()[1:-1] # remove leading and trailing []
+                component_name = line.strip()[1:-1]  # remove leading and trailing []
                 cname = 'just/sum/dummy/dir/{0}_{1}.junc.txt'.format(basename, component_name)
                 components.append((cname, []))
             elif components:
                 components[-1][1].append(line)
             else:
                 continue
-                    
-    if not components: #there are no components in the file
+
+    if not components:  # there are no components in the file
         components.append((juncFilePath, None))
     else:
         components = [(i, io.StringIO(''.join(j))) for i, j in components]
-        
+
     retval = {}
     for name, ifile in components:
         retval.update(
             convert_junc_txt_component(name, ifile)
         )
     return retval
+
 
 def convert_junc_txt_component(juncFilePath, uncFile):
     name, layout, pars, nBinnedVars, \

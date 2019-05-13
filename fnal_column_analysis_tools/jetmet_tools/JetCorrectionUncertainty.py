@@ -15,6 +15,7 @@ def _checkConsistency(against, tocheck):
                             'with correctors for {}!'.format(tocheck, against))
     return tocheck
 
+
 class JetCorrectionUncertainty(object):
     """
         This class is a columnar implementation of the JetCorrectionUncertainty tool in
@@ -40,17 +41,17 @@ class JetCorrectionUncertainty(object):
                 raise Exception('{} is a {} and not a jec_uncertainty_lookup!'.format(name,
                                                                                       type(func)))
             info = name.split('_')
-            if len(info) == 6: #this is when we are using split sources
+            if len(info) == 6:  # this is when we are using split sources
                 lvl = info.pop()
                 info[3] = lvl
-            
+
             if len(info) != 5:
                 raise Exception('Corrector name is not properly formatted!')
-            
-            campaign = _checkConsistency(campaign,info[0])
-            dataera  = _checkConsistency(dataera,info[1])
-            datatype = _checkConsistency(datatype,info[2])
-            levels.append(info[3].replace('Uncertainty', 'jes')) #use a generic 'jes' for normal uncertainty
+
+            campaign = _checkConsistency(campaign, info[0])
+            dataera = _checkConsistency(dataera, info[1])
+            datatype = _checkConsistency(datatype, info[2])
+            levels.append(info[3].replace('Uncertainty', 'jes'))  # use a generic 'jes' for normal uncertainty
             funcs.append(func)
             jettype = _checkConsistency(jettype, info[4])
 
@@ -96,7 +97,7 @@ class JetCorrectionUncertainty(object):
     def levels(self):
         """ list the different sources of uncertainty """
         return self._levels
-    
+
     def __repr__(self):
         out = 'campaign   : %s\n' % (self._campaign)
         out += 'data era   : %s\n' % (self._dataera)
