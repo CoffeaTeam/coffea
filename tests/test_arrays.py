@@ -97,19 +97,14 @@ def test_object_arrays():
 
     diele = e_loose.distincts().i0.sum()+e_loose.distincts().i1.sum()
     dimu = m_loose.distincts().i0+m_loose.distincts().i1
-    leading_mu = None
-    leading_dimu = None
+
+    uwm = met
     if m_loose.content.size > 0:
-        leading_mu = m_loose.pt.argmax()
-    if dimu.content.size > 0:
-        leading_dimu = dimu.pt.argmax()
-    temp = dimu[leading_dimu].sum()
-    print(temp.content.columns)
-    print(type(temp))
-    print(temp)
-    uwm = met+m_loose[leading_mu].sum()
+        uwm = met + m_loose[m_loose.pt.argmax()].sum()
     uwe = met+e_loose
-    uzmm = met+dimu[leading_dimu].sum()
+    uzmm = met
+    if dimu.content.size > 0:
+        uzmm = met + dimu[dimu.pt.argmax()].sum()
     uzee = met+diele
     upho = met+pho_loose
 
@@ -131,4 +126,7 @@ def test_object_arrays():
     #print(met[zeroL.sum()&skinny.sum()])
     #print(j_clean[j_clean.pt.argmax()].pt)
     #print(met.sum()+mu[mu.pt.argmax()].sum())
-    print(dimu[leading_dimu].sum())
+    if dimu.content.size > 0:
+        print(dimu[dimu.pt.arxmax()].sum())
+    else:
+        print(dimu.sum())
