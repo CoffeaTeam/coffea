@@ -29,12 +29,12 @@ def test_object_arrays():
     e_ntight = e[e.istight].counts
 
     mu = Initialize({'pt':tree.array("Muon_pt"),
-                    'eta':tree.array("Muon_eta"),
-                    'phi':tree.array("Muon_phi"),
-                    'mass':tree.array("Muon_mass"),
-                    'iso':tree.array('Muon_pfRelIso04_all'),
-                    'dxy':tree.array('Muon_dxy'),
-                    'dz':tree.array('Muon_dz')})
+                     'eta':tree.array("Muon_eta"),
+                     'phi':tree.array("Muon_phi"),
+                     'mass':tree.array("Muon_mass"),
+                     'iso':tree.array('Muon_pfRelIso04_all'),
+                     'dxy':tree.array('Muon_dxy'),
+                     'dz':tree.array('Muon_dz')})
     mu['isloose']=(mu.counts>0)&(mu.pt>5)&(abs(mu.eta)<2.4)&(abs(mu.dxy)<0.5)&(abs(mu.dz)<1.0)&(mu.iso<0.4)
     m_loose=mu[mu.isloose]
     mu_ntot = mu.counts
@@ -97,9 +97,19 @@ def test_object_arrays():
 
     diele = e_loose.distincts().i0.sum()+e_loose.distincts().i1.sum()
     dimu = m_loose.distincts().i0+m_loose.distincts().i1
-    uwm = met+m_loose[m_loose.pt.argmax()].sum()
+    leading_mu = None
+    leading_dimu = None
+    if m_loose.content.size > 0:
+        leading_mu = m_loose.pt.argmax()
+    if dimu.content.size > 0:
+        leading_dimu = dimu.pt.argmax()
+    temp = dimu[leading_dimu].sum()
+    print(temp.content.columns)
+    print(type(temp))
+    print(temp)
+    uwm = met+m_loose[leading_mu].sum()
     uwe = met+e_loose
-    uzmm = met+dimu[dimu.pt.argmax()].sum()
+    uzmm = met+dimu[leading_dimu].sum()
     uzee = met+diele
     upho = met+pho_loose
 
@@ -121,4 +131,4 @@ def test_object_arrays():
     #print(met[zeroL.sum()&skinny.sum()])
     #print(j_clean[j_clean.pt.argmax()].pt)
     #print(met.sum()+mu[mu.pt.argmax()].sum())
-    print(dimu[dimu.pt.argmax()].sum())
+    print(dimu[leading_dimu].sum())
