@@ -1,5 +1,6 @@
 from __future__ import print_function, division
 from fnal_column_analysis_tools import processor
+import numpy as np
 
 
 def test_accumulators():
@@ -7,6 +8,13 @@ def test_accumulators():
     a += 3.
     a += processor.accumulator(2)
     assert a.value == 5.
+    assert a.identity().value == 0.
+
+    a = processor.accumulator(np.array([0.]))
+    a += 3.
+    a += processor.accumulator(2)
+    assert a.value == np.array([5.])
+    assert a.identity().value == np.array([0.])
 
     b = processor.set_accumulator({'apples', 'oranges'})
     b += {'pears'}
@@ -24,7 +32,8 @@ def test_accumulators():
     assert c['fruit'] == {'apples', 'oranges', 'pears', 'grapes', 'cherries'}
 
     d = processor.defaultdict_accumulator(lambda: processor.accumulator(0.))
-    d['x'] = processor.accumulator(0.) + 4
+    d['x'] = processor.accumulator(0.)
+    d['x'] += 4.
     d['y'] += 5.
     d['z'] += d['x']
     d['x'] += d['y']

@@ -28,12 +28,12 @@ class Weights(object):
             if shift:
                 weightUp += weight
             weightUp[weight != 0.] /= weight[weight != 0.]
-            self._modifiers[name+'Up'] = weightUp
+            self._modifiers[name + 'Up'] = weightUp
         if weightDown is not None:
             if shift:
                 weightDown = weight - weightDown
             weightDown[weight != 0.] /= weight[weight != 0.]
-            self._modifiers[name+'Down'] = weightDown
+            self._modifiers[name + 'Down'] = weightDown
         self._weightStats[name] = {
             'sumw': weight.sum(),
             'sumw2': (weight**2).sum(),

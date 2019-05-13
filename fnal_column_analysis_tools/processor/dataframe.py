@@ -1,4 +1,3 @@
-import warnings
 from ..util import awkward
 
 try:
@@ -18,8 +17,8 @@ class LazyDataFrame(MutableMapping):
         self._stride = None
         if (stride is not None) and (index is not None):
             self._stride = stride
-            self._branchargs['entrystart'] = index*stride
-            self._branchargs['entrystop'] = min(self._tree.numentries, (index+1)*stride)
+            self._branchargs['entrystart'] = index * stride
+            self._branchargs['entrystop'] = min(self._tree.numentries, (index + 1) * stride)
         self._dict = {}
         self._materialized = set()
         if preload_items:
@@ -39,9 +38,7 @@ class LazyDataFrame(MutableMapping):
             raise KeyError(key)
 
     def __iter__(self):
-        warnings.warning("An iterator has requested to read all branches from the tree", RuntimeWarning)
         for item in self._dict:
-            self._materialized.add(item[0])
             yield item
 
     def __len__(self):

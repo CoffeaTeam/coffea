@@ -2,8 +2,9 @@ from fnal_column_analysis_tools.analysis_objects.JaggedCandidateArray import Jag
 from fnal_column_analysis_tools.striped.StripedColumnTransformer import PhysicalColumnGroup
 from fnal_column_analysis_tools.util import awkward
 
+
 def jaggedFromColumnGroup(cgroup):
-    if isinstance(cgroup,PhysicalColumnGroup):
+    if isinstance(cgroup, PhysicalColumnGroup):
         theargs = {}
         theargs.update(cgroup.p4Columns())
         theargs.update(cgroup.otherColumns())
@@ -12,4 +13,3 @@ def jaggedFromColumnGroup(cgroup):
     else:
         return awkward.JaggedArray.fromcounts(cgroup.counts(),
                                               awkward.Table(cgroup.columns()))
-                                                    
