@@ -129,9 +129,6 @@ def Initialize(items):
     for name, value in items.items():
         out[name] = value
 
-    print('out content type:', out.content.__class__)
-    print('out         type:', out.__class__)
-
     if isinstance(out, awkward.JaggedArray):
         out = JaggedSaiyanArrayMethods.fromjagged(out)
     else:  # p4 is not None and not isinstance(out, awkward.JaggedArray):
@@ -143,8 +140,5 @@ def Initialize(items):
         else:
             out.__class__ = type("Object", (out.__class__,
                                             SaiyanCommonMethods), {})
-
-    print('new out content type:', out.content.__class__)
-    print('new out         type:', out.__class__)
 
     return out
