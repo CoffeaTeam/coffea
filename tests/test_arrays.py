@@ -127,6 +127,6 @@ def test_object_arrays():
     #print(j_clean[j_clean.pt.argmax()].pt)
     #print(met.sum()+mu[mu.pt.argmax()].sum())
     if dimu.content.size > 0:
-        print(dimu[dimu.pt.arxmax()].sum())
+        print(dimu[dimu.pt.argmax()].sum())
     else:
         print(dimu.sum())
