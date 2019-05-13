@@ -71,6 +71,9 @@ def test_spark_executor():
                                                                    _spark_stop)
     from fnal_column_analysis_tools.processor import run_spark_job
 
+    import os
+    import os.path as osp
+
     import pyspark.sql
     spark_config = pyspark.sql.SparkSession.builder \
         .appName('spark-executor-test') \
@@ -80,8 +83,8 @@ def test_spark_executor():
 
     spark = _spark_initialize(config=spark_config,log_level='ERROR',spark_progress=False)
 
-    filelist = {'ZJets':['tests/samples/nano_dy.parquet'],
-                'Data'  :['tests/samples/nano_dimuon.parquet']
+    filelist = {'ZJets': ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dy.parquet')],
+                'Data'  : ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dimuon.parquet')]
                 }
 
     from fnal_column_analysis_tools.processor.spark.tests import NanoTestProcessor
