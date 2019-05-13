@@ -3,7 +3,7 @@ from fnal_column_analysis_tools.util import numpy as np
 import os
 try:
     import cStringIO as io
-except ModuleNotFoundError:
+except ImportError:
     import io
 
 # for later
