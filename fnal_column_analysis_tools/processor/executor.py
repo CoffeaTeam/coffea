@@ -168,7 +168,7 @@ def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=Non
     items = []
     for dataset, filelist in tqdm(fileset.items(), desc='Preprocessing'):
         for chunk in _parsl_get_chunking(tuple(filelist), treename, chunksize):
-            items.append((dataset, chunk[0], treename, chunk[1], chunk[2], processor_instance))
+            items.append((dataset, chunk[0], treename, chunk[1], chunk[2]))
 
     output = processor_instance.accumulator.identity()
     executor(data_flow, items, processor_instance, output, **executor_args)

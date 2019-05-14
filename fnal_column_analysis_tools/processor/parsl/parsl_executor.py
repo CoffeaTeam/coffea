@@ -30,8 +30,8 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr):
             self.bytesread = getattr(self, 'bytesread', 0) + self._chunkbytes
             return self._read_real(chunkindex)
 
-    uproot.source.xrootd.XRootDSource._read_real = uproot.source.xrootd.XRootDSource._read
-    uproot.source.xrootd.XRootDSource._read = _read
+        uproot.source.xrootd.XRootDSource._read_real = uproot.source.xrootd.XRootDSource._read
+        uproot.source.xrootd.XRootDSource._read = _read
 
     processor_instance = cpkl.loads(lz4f.decompress(procstr))
 

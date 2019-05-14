@@ -24,7 +24,7 @@ def test_parsl_start_stop():
     
     _parsl_stop(dfk)
 
-def nope_test_parsl_executor():
+def test_parsl_executor():
     try:
         import parsl
     except ImportError:
@@ -44,7 +44,7 @@ def nope_test_parsl_executor():
     from parsl.executors import HighThroughputExecutor
     from parsl.addresses import address_by_hostname
     from parsl.config import Config
-    parsl_config = default_cfg = Config(
+    parsl_config = Config(
         executors=[
                    HighThroughputExecutor(
                     label="coffea_parsl_default",
@@ -62,19 +62,19 @@ def nope_test_parsl_executor():
         strategy=None,
         )
 
-    dfk = _parsl_initialize(parsl_config)
-
     import os
     import os.path as osp
     from fnal_column_analysis_tools.processor.parsl.tests import NanoTestProcessor
 
-    filelist = {'ZJets': [osp.join(os.getcwd(),'tests/samples/nano_dy.parquet')],
-                'Data'  : [osp.join(os.getcwd(),'tests/samples/nano_dimuon.parquet')]
+    filelist = {'ZJets': [osp.join(os.getcwd(),'tests/samples/nano_dy.root')],
+                'Data'  : [osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')]
         }
     treename='Events'
 
     from fnal_column_analysis_tools.processor.parsl.tests import NanoTestProcessor
     from fnal_column_analysis_tools.processor.parsl.parsl_executor import parsl_executor
+
+    dfk = _parsl_initialize(parsl_config)
 
     proc = NanoTestProcessor()
 
