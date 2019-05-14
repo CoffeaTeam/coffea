@@ -13,7 +13,7 @@ class LazyDataFrame(MutableMapping):
     """
     def __init__(self, tree, stride=None, index=None, preload_items=None):
         self._tree = tree
-        self._branchargs = {'awkwardlib': awkward}
+        self._branchargs = {'awkwardlib': awkward, 'flatten': True}
         self._stride = None
         if (stride is not None) and (index is not None):
             self._stride = stride
@@ -32,7 +32,7 @@ class LazyDataFrame(MutableMapping):
             return self._dict[key]
         elif key in self._tree:
             self._materialized.add(key)
-            self._dict[key] = self._tree[key].array(**self._branchargs, flatten=True)
+            self._dict[key] = self._tree[key].array(**self._branchargs)
             return self._dict[key]
         else:
             raise KeyError(key)
