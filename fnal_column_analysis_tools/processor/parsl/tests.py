@@ -42,6 +42,7 @@ class NanoTestProcessor(processor.ProcessorABC):
                                               eta=df['Muon_eta'],
                                               phi=df['Muon_phi'],
                                               mass=df['Muon_mass'])
+
         dimuon = muon.distincts()
 
         output['pt'].fill(dataset=dataset, pt=muon.pt.flatten())

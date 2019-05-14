@@ -32,7 +32,7 @@ class LazyDataFrame(MutableMapping):
             return self._dict[key]
         elif key in self._tree:
             self._materialized.add(key)
-            self._dict[key] = self._tree[key].array(**self._branchargs)
+            self._dict[key] = self._tree[key].array(**self._branchargs, flatten=True)
             return self._dict[key]
         else:
             raise KeyError(key)
