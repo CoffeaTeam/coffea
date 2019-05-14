@@ -77,7 +77,7 @@ def run_spark_executor():
 
 
 class NanoTestProcessor(processor.ProcessorABC):
-    def __init__(self, columns):
+    def __init__(self, columns=[]):
         self._columns = ['dataset'] + columns
         dataset_axis = hist.Cat("dataset", "Primary dataset")
         mass_axis = hist.Bin("mass", r"$m_{\mu\mu}$ [GeV]", 30000, 0.25, 300)

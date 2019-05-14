@@ -19,6 +19,8 @@ def _spark_initialize(config=_default_config, **kwargs):
         spark_progress = kwargs['spark_progress']
 
     cfg_actual = config
+    # get spark to not complain about missing log configs
+    cfg_actual = cfg_actual.config('spark.driver.extraJavaOptions', '-Dlog4jspark.root.logger=ERROR,console')
     if not spark_progress:
         cfg_actual = cfg_actual.config('spark.ui.showConsoleProgress', 'false')
 

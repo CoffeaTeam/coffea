@@ -93,7 +93,7 @@ def test_spark_executor():
     columns = ['nMuon','Muon_pt','Muon_eta','Muon_phi','Muon_mass']
     proc = NanoTestProcessor(columns=columns)
 
-    hists = run_spark_job(filelist,processor_instance=proc,executor=spark_executor,spark=spark,thread_workers=1)
+    hists = run_spark_job(filelist, processor_instance=proc, executor=spark_executor, spark=spark, thread_workers=1)
 
     _spark_stop(spark)
 
