@@ -6,17 +6,16 @@ def coffea_udf(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last }}{%
     
     columns = [{% for col in cols %}{{col}}{{ "," if not loop.last }}{% endfor %}]
     names = [{% for col in cols %}{{"'"|safe+col+"'"|safe}}{{ "," if not loop.last }}{% endfor %}]
-    
+
+    size = dataset.size
+    items = {}
     for i, col in enumerate(columns):
         #numpy array
         if columns[i].array[0].base is None:
-            columns[i] = columns[i].values
+            items[names[i]] = columns[i].values
         else:
-            columns[i] = columns[i].array[0].base
+            items[names[i]] = columns[i].array[0].base
 
-    size = dataset.size
-    items = {name: col for name,col in zip(names, columns)}
-    
     df = processor.PreloadedDataFrame(size=size, items=items)
     df['dataset'] = dataset[0]
     
