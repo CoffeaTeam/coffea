@@ -58,7 +58,7 @@ def _spark_make_dfs(spark, fileset, partitionsize, columns, thread_workers):
             npartitions = max(count // partitionsize, 1)
             if df.rdd.getNumPartitions() > npartitions:
                 df = df.coalesce(npartitions)
-            dfs[dataset] = df
+            dfs[dataset] = (df,count)
     return dfs
 
 
