@@ -10,7 +10,7 @@ import pandas as pd
 
 import pyspark
 import pyspark.sql.functions as fn
-from pyspark.sql.types import DoubleType, BinaryType, StructType, StructField
+from pyspark.sql.types import BinaryType, StructType, StructField
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
