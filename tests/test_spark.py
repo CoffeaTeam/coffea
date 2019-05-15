@@ -87,7 +87,7 @@ def test_spark_executor():
                 'Data'  : ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dimuon.parquet')]
                 }
 
-    from fnal_column_analysis_tools.processor.spark.tests import NanoTestProcessor
+    from fnal_column_analysis_tools.processor.test_items import NanoTestProcessor
     from fnal_column_analysis_tools.processor.spark.spark_executor import spark_executor
 
     columns = ['nMuon','Muon_pt','Muon_eta','Muon_phi','Muon_mass']
