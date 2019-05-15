@@ -41,10 +41,15 @@ class SparkExecutor(object):
     def __init__(self):
         self._cacheddfs = None
         self._rawresults = None
+        self._counts = None
         self._env = Environment(loader=PackageLoader('fnal_column_analysis_tools.processor',
                                                      'templates'),
                                 autoescape=select_autoescape(['py'])
                                 )
+    
+    @property
+    def counts(self):
+        return self._counts
 
     def __call__(self, spark, dfslist, theprocessor, output, thread_workers,
                  unit='datasets', desc='Processing'):
@@ -61,9 +66,11 @@ class SparkExecutor(object):
         # cache the input datasets if it's not already done
         if self._cacheddfs is None:
             self._cacheddfs = {}
+            self._counts = {}
             # go through each dataset and thin down to the columns we want
-            for ds, df in dfslist.items():
+            for ds, (df,counts) in dfslist.items():
                 self._cacheddfs[ds] = df.select(*tuple(columns)).cache()
+                self._counts[ds] = counts
 
         with ThreadPoolExecutor(max_workers=thread_workers) as executor:
             future_to_ds = {}

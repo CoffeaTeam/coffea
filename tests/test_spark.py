@@ -97,6 +97,7 @@ def test_spark_executor():
 
     _spark_stop(spark)
 
+    assert( sum(spark_executor.counts.values()) == 20 )
     assert( hists['cutflow']['ZJets_pt'] == 4 )
     assert( hists['cutflow']['ZJets_mass'] == 1 )
     assert( hists['cutflow']['Data_pt'] == 15 )
