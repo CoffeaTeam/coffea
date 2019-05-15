@@ -58,6 +58,7 @@ class SparkExecutor(object):
         processor_instance = theprocessor
         # get columns from processor
         columns = processor_instance.columns
+        cols_w_ds = ['dataset'] + columns
         # make our udf
         tmpl = self._env.get_template(self._template_name)
         render = tmpl.render(cols=columns)
@@ -69,13 +70,13 @@ class SparkExecutor(object):
             self._counts = {}
             # go through each dataset and thin down to the columns we want
             for ds, (df, counts) in dfslist.items():
-                self._cacheddfs[ds] = df.select(*tuple(columns)).cache()
+                self._cacheddfs[ds] = df.select(*cols_w_ds).cache()
                 self._counts[ds] = counts
 
         with ThreadPoolExecutor(max_workers=thread_workers) as executor:
             future_to_ds = {}
             for ds, df in self._cacheddfs.items():
-                future_to_ds[executor.submit(self._launch_analysis, df, coffea_udf, columns)] = ds
+                future_to_ds[executor.submit(self._launch_analysis, df, coffea_udf, cols_w_ds)] = ds
             # wait for the spark jobs to come in
             self._rawresults = {}
             for future in tqdm(as_completed(future_to_ds),
@@ -85,16 +86,16 @@ class SparkExecutor(object):
 
         for ds, bitstream in self._rawresults.items():
             if bitstream.empty:
-                raise Exception('The histogram list returned from spark is empty in dataset: %d, something went wrong!' % ds)
+                raise Exception('The histogram list returned from spark is empty in dataset: %s, something went wrong!' % ds)
             bits = bitstream[bitstream.columns[0]][0]
             output.add(cpkl.loads(lz4f.decompress(bits)))
 
     def _launch_analysis(self, df, udf, columns):
-        histos = df.withColumn('histos', udf(*columns)) \
-                   .select('histos') \
-                   .groupBy().apply(remove_zeros) \
-                   .agg(agg_histos('histos'))
-        return histos.toPandas()
+        return df.withColumn('histos', udf(*columns)) \
+                 .select('histos') \
+                 .groupBy().apply(remove_zeros) \
+                 .agg(agg_histos('histos')) \
+                 .toPandas()
 
 
 spark_executor = SparkExecutor()

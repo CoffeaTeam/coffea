@@ -211,6 +211,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={'config'
         raise e
 
     print('pyspark version:', pyspark.__version__)
+    time.sleep(0.1)  # sleep for a moment to make printouts look nice in jupyter
 
     import pyspark.sql
     from .spark.spark_executor import SparkExecutor

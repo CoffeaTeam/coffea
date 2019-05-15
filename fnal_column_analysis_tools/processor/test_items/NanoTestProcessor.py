@@ -10,7 +10,7 @@ import numpy as np
 
 class NanoTestProcessor(processor.ProcessorABC):
     def __init__(self, columns=[]):
-        self._columns = ['dataset'] + columns
+        self._columns = columns
         dataset_axis = hist.Cat("dataset", "Primary dataset")
         mass_axis = hist.Bin("mass", r"$m_{\mu\mu}$ [GeV]", 30000, 0.25, 300)
         pt_axis = hist.Bin("pt", r"$p_{T}$ [GeV]", 30000, 0.25, 300)
