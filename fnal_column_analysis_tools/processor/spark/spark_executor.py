@@ -83,18 +83,11 @@ class SparkExecutor(object):
                                desc=desc, unit=unit):
                 self._rawresults[future_to_ds[future]] = future.result()
 
-        results = deepcopy(list(self._rawresults.values()))
-        start = results.pop()
-        if not start.empty:
-            start = start[start.columns[0]][0]
-            output.add(cpkl.loads(lz4f.decompress(start)))
-            for bitstream in results:
-                if bitstream.empty:
-                    continue
-                bits = bitstream[bitstream.columns[0]][0]
-                output.add(cpkl.loads(lz4f.decompress(bits)))
-        else:
-            raise Exception('The histogram list returned from spark is empty, something went wrong!')
+        for ds, bitstream in self._rawresults.items():
+            if bitstream.empty:
+                raise Exception('The histogram list returned from spark is empty in dataset: %d, something went wrong!' % ds)
+            bits = bitstream[bitstream.columns[0]][0]
+            output.add(cpkl.loads(lz4f.decompress(bits)))
 
     def _launch_analysis(self, df, udf, columns):
         histos = df.withColumn('histos', udf(*columns)) \
