@@ -38,7 +38,9 @@ def _spark_initialize(config=_default_config, **kwargs):
 def _read_df(spark, files_or_dirs):
     if not isinstance(files_or_dirs, Sequence):
         raise ValueError("spark dataset file list must be a Sequence (like list())")
-    return spark.read.parquet(*files_or_dirs)
+    df = spark.read.parquet(*files_or_dirs)
+    count = df.count()
+    return df, count
 
 
 def _spark_make_dfs(spark, fileset, partitionsize, columns, thread_workers):
@@ -48,17 +50,16 @@ def _spark_make_dfs(spark, fileset, partitionsize, columns, thread_workers):
         future_to_ds = {executor.submit(_read_df, spark, fileset[dataset]): dataset for dataset in fileset.keys()}
         for ftr in tqdm(as_completed(future_to_ds), total=len(fileset), desc='loading', unit='datasets'):
             dataset = future_to_ds[ftr]
-            df = ftr.result()
+            df, count = ftr.result()
             df = df.withColumn('dataset', fn.lit(dataset))
             df_cols = set(df.columns)
             missing_cols = ana_cols - ana_cols.intersection(df_cols)
             for missing in missing_cols:
                 df = df.withColumn(missing, fn.lit(0.0))
-            count = df.count()
             npartitions = max(count // partitionsize, 1)
             if df.rdd.getNumPartitions() > npartitions:
                 df = df.coalesce(npartitions)
-            dfs[dataset] = (df,count)
+            dfs[dataset] = (df, count)
     return dfs
 
 

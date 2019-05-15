@@ -46,7 +46,7 @@ class SparkExecutor(object):
                                                      'templates'),
                                 autoescape=select_autoescape(['py'])
                                 )
-    
+
     @property
     def counts(self):
         return self._counts
@@ -68,7 +68,7 @@ class SparkExecutor(object):
             self._cacheddfs = {}
             self._counts = {}
             # go through each dataset and thin down to the columns we want
-            for ds, (df,counts) in dfslist.items():
+            for ds, (df, counts) in dfslist.items():
                 self._cacheddfs[ds] = df.select(*tuple(columns)).cache()
                 self._counts[ds] = counts
 
