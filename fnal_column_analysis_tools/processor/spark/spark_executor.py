@@ -94,7 +94,7 @@ class SparkExecutor(object):
         return df.withColumn('histos', udf(*columns)) \
                  .select('histos') \
                  .groupBy().apply(remove_zeros) \
-                 .agg(agg_histos('histos')) \
+                 .groupBy().agg(agg_histos('histos')) \
                  .toPandas()
 
 
