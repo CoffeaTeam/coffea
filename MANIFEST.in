@@ -1,0 +1,3 @@
+include README.rst
+include LICENSE
+include fnal_column_analysis_tools/processor/templates/*.tmpl
