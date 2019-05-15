@@ -237,7 +237,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={'config'
         if not isinstance(spark, pyspark.sql.session.SparkSession):
             raise ValueError("Expected 'spark' to be a pyspark.sql.session.SparkSession")
 
-    dfslist = _spark_make_dfs(spark, fileset, partitionsize, thread_workers)
+    dfslist = _spark_make_dfs(spark, fileset, partitionsize, processor_instance.columns, thread_workers)
 
     output = processor_instance.accumulator.identity()
     executor(spark, dfslist, processor_instance, output, thread_workers)
