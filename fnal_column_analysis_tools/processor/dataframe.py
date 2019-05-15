@@ -11,9 +11,9 @@ class LazyDataFrame(MutableMapping):
     Simple delayed uproot reader (a la lazyarrays)
     Keeps track of values accessed, for later parsing.
     """
-    def __init__(self, tree, stride=None, index=None, preload_items=None):
+    def __init__(self, tree, stride=None, index=None, preload_items=None, flatten=False):
         self._tree = tree
-        self._branchargs = {'awkwardlib': awkward, 'flatten': True}
+        self._branchargs = {'awkwardlib': awkward, 'flatten': flatten}
         self._stride = None
         if (stride is not None) and (index is not None):
             self._stride = stride

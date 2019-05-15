@@ -38,7 +38,7 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr):
     file = uproot.open(fn)
     tree = file[treename]
 
-    df = processor.LazyDataFrame(tree, chunksize, index)
+    df = processor.LazyDataFrame(tree, chunksize, index, flatten=True)
     df['dataset'] = dataset
 
     vals = processor_instance.process(df)
