@@ -36,7 +36,7 @@ def remove_zeros(df):
 
 
 class SparkExecutor(object):
-    _template_name = 'spark_template.py'
+    _template_name = 'spark.py.tmpl'
 
     def __init__(self):
         self._cacheddfs = None
