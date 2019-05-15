@@ -64,14 +64,13 @@ def test_parsl_executor():
 
     import os
     import os.path as osp
-    from fnal_column_analysis_tools.processor.parsl.tests import NanoTestProcessor
 
     filelist = {'ZJets': [osp.join(os.getcwd(),'tests/samples/nano_dy.root')],
                 'Data'  : [osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')]
         }
     treename='Events'
 
-    from fnal_column_analysis_tools.processor.parsl.tests import NanoTestProcessor
+    from fnal_column_analysis_tools.processor.test_items import NanoTestProcessor
     from fnal_column_analysis_tools.processor.parsl.parsl_executor import parsl_executor
 
     dfk = _parsl_initialize(parsl_config)
@@ -81,3 +80,8 @@ def test_parsl_executor():
     hists = run_parsl_job(filelist, treename, processor_instance = proc, executor=parsl_executor, data_flow=dfk)
 
     _parsl_stop(dfk)
+
+    assert( hists['cutflow']['ZJets_pt'] == 4 )
+    assert( hists['cutflow']['ZJets_mass'] == 1 )
+    assert( hists['cutflow']['Data_pt'] == 15 )
+    assert( hists['cutflow']['Data_mass'] == 5 )

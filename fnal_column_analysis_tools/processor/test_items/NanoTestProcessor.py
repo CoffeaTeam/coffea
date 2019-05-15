@@ -1,6 +1,3 @@
-from fnal_column_analysis_tools.processor.parsl.detail import (_parsl_initialize,
-                                                               _parsl_stop)
-
 import lz4.frame as lz4f
 import cloudpickle as cpkl
 import pandas as pd
