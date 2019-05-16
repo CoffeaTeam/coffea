@@ -34,6 +34,7 @@ import fnal_column_analysis_tools.lookup_tools as lookup_tools
 import fnal_column_analysis_tools.analysis_objects as analysis_objects
 import fnal_column_analysis_tools.striped as striped
 import fnal_column_analysis_tools.jetmet_tools as jetmet_tools
+import fnal_column_analysis_tools.arrays as arrays
 
 import fnal_column_analysis_tools.version as version
 __version__ = version.__version__
