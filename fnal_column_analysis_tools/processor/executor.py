@@ -6,10 +6,10 @@ from . import ProcessorABC, LazyDataFrame
 from .accumulator import accumulator
 
 try:
-    from collections.abc import Mapping
+    from collections.abc import Mapping, Sequence
     from functools import lru_cache
 except ImportError:
-    from collections import Mapping
+    from collections import Mapping, Sequence
 
     def lru_cache(maxsize):
         def null_wrapper(f):
@@ -58,14 +58,6 @@ def futures_executor(items, function, accumulator, workers=2, status=True, unit=
                 job.cancel()
             raise
     return accumulator
-
-
-def condor_executor(items, function, accumulator, workers, status=True, unit='items', desc='Processing'):
-    raise NotImplementedError
-
-
-def spark_executor(items, function, accumulator, config, status=True, unit='datasets', desc='Processing'):
-    raise NotImplementedError
 
 
 def _work_function(item):
@@ -122,7 +114,7 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
     return output
 
 
-def run_parsl_job(fileset, treename, processor_instance, executor, executor_args={'config': None}, chunksize=500000):
+def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=None, executor_args={'config': None}, chunksize=500000):
     '''
     A convenience wrapper to submit jobs for a file, which is a
     dictionary of dataset: [file list] entries. In this case using parsl.
@@ -149,8 +141,8 @@ def run_parsl_job(fileset, treename, processor_instance, executor, executor_args
 
     print('parsl version:', parsl.__version__)
 
-    from .parsl.detail import _parsl_work_function, _parsl_get_chunking
-    from .parsl.parsl_base_executor import ParslBaseExecutor
+    from .parsl.parsl_executor import ParslExecutor
+    from .parsl.detail import _parsl_initialize, _parsl_stop, _parsl_get_chunking
 
     if executor_args['config'] is None:
         executor_args.pop('config')
@@ -159,17 +151,32 @@ def run_parsl_job(fileset, treename, processor_instance, executor, executor_args
         raise ValueError("Expected fileset to be a mapping dataset: list(files)")
     if not isinstance(processor_instance, ProcessorABC):
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
-    if not isinstance(executor, ParslBaseExecutor):
+    if not isinstance(executor, ParslExecutor):
         raise ValueError("Expected executor to derive from ParslBaseExecutor")
+
+    # initialize spark if we need to
+    # if we initialize, then we deconstruct
+    # when we're done
+    killParsl = False
+    if data_flow is None:
+        data_flow = _parsl_initialize(**executor_args)
+        killParsl = True
+    else:
+        if not isinstance(data_flow, parsl.dataflow.dflow.DataFlowKernel):
+            raise ValueError("Expected 'data_flow' to be a parsl.dataflow.dflow.DataFlowKernel")
 
     items = []
     for dataset, filelist in tqdm(fileset.items(), desc='Preprocessing'):
         for chunk in _parsl_get_chunking(tuple(filelist), treename, chunksize):
-            items.append((dataset, chunk[0], treename, chunk[1], chunk[2], processor_instance))
+            items.append((dataset, chunk[0], treename, chunk[1], chunk[2]))
 
     output = processor_instance.accumulator.identity()
-    executor(items, _parsl_work_function, output, **executor_args)
+    executor(data_flow, items, processor_instance, output, **executor_args)
     processor_instance.postprocess(output)
+
+    if killParsl:
+        _parsl_stop(data_flow)
+
     return output
 
 
@@ -230,7 +237,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={'config'
         if not isinstance(spark, pyspark.sql.session.SparkSession):
             raise ValueError("Expected 'spark' to be a pyspark.sql.session.SparkSession")
 
-    dfslist = _spark_make_dfs(spark, fileset, partitionsize, thread_workers)
+    dfslist = _spark_make_dfs(spark, fileset, partitionsize, processor_instance.columns, thread_workers)
 
     output = processor_instance.accumulator.identity()
     executor(spark, dfslist, processor_instance, output, thread_workers)
