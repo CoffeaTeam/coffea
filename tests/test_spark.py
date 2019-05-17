@@ -87,16 +87,17 @@ def test_spark_executor():
                 'Data'  : ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dimuon.parquet')]
                 }
 
-    from fnal_column_analysis_tools.processor.spark.tests import NanoTestProcessor
+    from fnal_column_analysis_tools.processor.test_items import NanoTestProcessor
     from fnal_column_analysis_tools.processor.spark.spark_executor import spark_executor
 
     columns = ['nMuon','Muon_pt','Muon_eta','Muon_phi','Muon_mass']
     proc = NanoTestProcessor(columns=columns)
 
-    hists = run_spark_job(filelist,processor_instance=proc,executor=spark_executor,spark=spark,thread_workers=1)
+    hists = run_spark_job(filelist, processor_instance=proc, executor=spark_executor, spark=spark, thread_workers=1)
 
     _spark_stop(spark)
 
+    assert( sum(spark_executor.counts.values()) == 20 )
     assert( hists['cutflow']['ZJets_pt'] == 4 )
     assert( hists['cutflow']['ZJets_mass'] == 1 )
     assert( hists['cutflow']['Data_pt'] == 15 )
