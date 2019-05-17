@@ -31,8 +31,7 @@ def agg_histos(df):
 @fn.pandas_udf(StructType([StructField('histos', BinaryType(), True)]), fn.PandasUDFType.GROUPED_MAP)
 def remove_zeros(df):
     histos = df['histos']
-    histos = histos[histos.str.len() > 0]
-    return pd.DataFrame(data=histos, columns=['histos'])
+    return pd.DataFrame(data=histos[histos.str.len() > 0], columns=['histos'])
 
 
 class SparkExecutor(object):
@@ -85,14 +84,15 @@ class SparkExecutor(object):
                 self._rawresults[future_to_ds[future]] = future.result()
 
         for ds, bitstream in self._rawresults.items():
+            if bitstream is None:
+                raise Exception('No pandas dataframe returns from spark in dataset: %s, something went wrong!' % ds)
             if bitstream.empty:
                 raise Exception('The histogram list returned from spark is empty in dataset: %s, something went wrong!' % ds)
             bits = bitstream[bitstream.columns[0]][0]
             output.add(cpkl.loads(lz4f.decompress(bits)))
 
     def _launch_analysis(self, df, udf, columns):
-        return df.withColumn('histos', udf(*columns)) \
-                 .select('histos') \
+        return df.select(udf(*columns).alias('histos')) \
                  .groupBy().apply(remove_zeros) \
                  .groupBy().agg(agg_histos('histos')) \
                  .toPandas()
