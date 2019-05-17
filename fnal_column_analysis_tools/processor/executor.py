@@ -6,10 +6,10 @@ from . import ProcessorABC, LazyDataFrame
 from .accumulator import accumulator
 
 try:
-    from collections.abc import Mapping
+    from collections.abc import Mapping, Sequence
     from functools import lru_cache
 except ImportError:
-    from collections import Mapping
+    from collections import Mapping, Sequence
 
     def lru_cache(maxsize):
         def null_wrapper(f):
@@ -181,7 +181,7 @@ def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=Non
 
 
 def run_spark_job(fileset, processor_instance, executor, executor_args={'config': None},
-                  spark=None, partitionsize=200000, thread_workers=16):
+                  postprocessing_mods=[], spark=None, partitionsize=200000, thread_workers=16):
     '''
     A convenience wrapper to submit jobs for spark datasets, which is a
     dictionary of dataset: [file list] entries.  Presently supports reading of
@@ -211,7 +211,6 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={'config'
         raise e
 
     print('pyspark version:', pyspark.__version__)
-    time.sleep(0.1)  # sleep for a moment to make printouts look nice in jupyter
 
     import pyspark.sql
     from .spark.spark_executor import SparkExecutor
@@ -222,6 +221,8 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={'config'
 
     if not isinstance(fileset, Mapping):
         raise ValueError("Expected fileset to be a mapping dataset: list(files)")
+    if not isinstance(postprocessing_mods, Sequence):
+        raise ValueError("Expected postprocessing modifiers to be a list: list(functions)")
     if not isinstance(processor_instance, ProcessorABC):
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
     if not isinstance(executor, SparkExecutor):

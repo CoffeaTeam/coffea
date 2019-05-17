@@ -51,14 +51,16 @@ def _spark_make_dfs(spark, fileset, partitionsize, columns, thread_workers):
         for ftr in tqdm(as_completed(future_to_ds), total=len(fileset), desc='loading', unit='datasets'):
             dataset = future_to_ds[ftr]
             df, count = ftr.result()
-            df = df.withColumn('dataset', fn.lit(dataset))
             df_cols = set(df.columns)
-            missing_cols = ana_cols - ana_cols.intersection(df_cols)
+            cols_in_df = ana_cols.intersection(df_cols)
+            df = df.select(*cols_in_df)
+            missing_cols = ana_cols - cols_in_df
             for missing in missing_cols:
                 df = df.withColumn(missing, fn.lit(0.0))
+            df = df.withColumn('dataset', fn.lit(dataset))
             npartitions = max(count // partitionsize, 1)
             if df.rdd.getNumPartitions() > npartitions:
-                df = df.coalesce(npartitions)
+                df = df.repartition(npartitions)
             dfs[dataset] = (df, count)
     return dfs
 
