@@ -181,7 +181,7 @@ def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=Non
 
 
 def run_spark_job(fileset, processor_instance, executor, executor_args={'config': None},
-                  postprocessing_mods=[], spark=None, partitionsize=200000, thread_workers=16):
+                  spark=None, partitionsize=200000, thread_workers=16):
     '''
     A convenience wrapper to submit jobs for spark datasets, which is a
     dictionary of dataset: [file list] entries.  Presently supports reading of
@@ -221,8 +221,6 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={'config'
 
     if not isinstance(fileset, Mapping):
         raise ValueError("Expected fileset to be a mapping dataset: list(files)")
-    if not isinstance(postprocessing_mods, Sequence):
-        raise ValueError("Expected postprocessing modifiers to be a list: list(functions)")
     if not isinstance(processor_instance, ProcessorABC):
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
     if not isinstance(executor, SparkExecutor):
