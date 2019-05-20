@@ -72,7 +72,7 @@ if six.PY3:
     pandas = ['pandas']
     templates = ['jinja2']
     EXTRAS_REQUIRE['spark'] = ['pyspark>=2.4.1', 'pyarrow'] + blobbing + templates + pandas
-    EXTRAS_REQUIRE['parsl'] = ['parsl>=0.7.2'] + blobbing + templates
+    EXTRAS_REQUIRE['parsl'] = ['parsl>=0.7.2'] + blobbing
 if six.PY2:
     EXTRAS_REQUIRE['striped'] = []
 
