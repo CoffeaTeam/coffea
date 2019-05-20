@@ -1,6 +1,7 @@
 from fnal_column_analysis_tools import hist, processor
 from copy import deepcopy
 from concurrent.futures import as_completed
+from collections.abc import Sequence
 
 from tqdm import tqdm
 import cloudpickle as cpkl
@@ -36,7 +37,18 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr):
     processor_instance = cpkl.loads(lz4f.decompress(procstr))
 
     file = uproot.open(fn)
-    tree = file[treename]
+    tree = None
+    if isinstance(treename, str):
+        tree = file[treename]
+    elif isinstance(treename, Sequence):
+        for name in reversed(treename):
+            if name in file:
+                tree = file[name]
+    else:
+        raise Exception('treename must be a str or Sequence but is a %s!' % repr(type(treename)))
+
+    if tree is None:
+        raise Exception('No tree found, out of possible tree names: %s' % repr(treename))
 
     df = processor.LazyDataFrame(tree, chunksize, index, flatten=True)
     df['dataset'] = dataset
