@@ -11,8 +11,11 @@ from parsl.config import Config
 from parsl.executors import HighThroughputExecutor
 
 try:
+    from collections.abc import Sequence
     from functools import lru_cache
 except ImportError:
+    from collections import Sequence
+
     def lru_cache(maxsize):
         def null_wrapper(f):
             return f
@@ -48,7 +51,23 @@ def _parsl_stop(dfk):
 @python_app
 def derive_chunks(filename, treename, chunksize):
     import uproot
-    nentries = uproot.numentries(filename, treename)
+    from collections.abc import Sequence
+
+    afile = uproot.open(filename)
+    tree = None
+    if isinstance(treename, str):
+        tree = afile[treename]
+    elif isinstance(treename, Sequence):
+        for name in reversed(treename):
+            if name in afile:
+                tree = afile[name]
+    else:
+        raise Exception('treename must be a str or Sequence but is a %s!' % repr(type(treename)))
+
+    if tree is None:
+        raise Exception('No tree found, out of possible tree names: %s' % repr(treename))
+
+    nentries = tree.numentries
     return [(filename, chunksize, index) for index in range(nentries // chunksize + 1)]
 
 

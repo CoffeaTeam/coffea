@@ -166,8 +166,11 @@ def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=Non
             raise ValueError("Expected 'data_flow' to be a parsl.dataflow.dflow.DataFlowKernel")
 
     items = []
+    tn = treename
+    if not isinstance(tn, str):
+        tn = tuple(treename)
     for dataset, filelist in tqdm(fileset.items(), desc='Preprocessing'):
-        for chunk in _parsl_get_chunking(tuple(filelist), treename, chunksize):
+        for chunk in _parsl_get_chunking(tuple(filelist), tn, chunksize):
             items.append((dataset, chunk[0], treename, chunk[1], chunk[2]))
 
     output = processor_instance.accumulator.identity()

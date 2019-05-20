@@ -15,7 +15,8 @@ x509_proxy = 'x509up_u%s' % (os.getuid(), )
 
 def condor_config(cores_per_job=4, mem_per_core=2048,
                   pyenv_dir='%s/.local' % (os.environ['HOME'], ),
-                  grid_proxy_dir='/tmp/%s' % (x509_proxy, )):
+                  grid_proxy_dir='/tmp',
+                  htex_label='coffea_parsl_condor_htex'):
     pyenv_relpath = pyenv_dir.split('/')[-1]
 
     wrk_init = '''
@@ -24,18 +25,19 @@ def condor_config(cores_per_job=4, mem_per_core=2048,
     export PYTHONPATH=`pwd`/%s:$PYTHONPATH
 
     export X509_USER_PROXY=`pwd`/%s
-    mkdir -p ./htex_Local
+    mkdir -p ./%s
     ''' % ('%s/bin' % pyenv_relpath,
            '%s/lib/python3.6/site-packages' % pyenv_relpath,
-           x509_proxy)
+           x509_proxy,
+           htex_label)
 
     condor_cfg = '''
-    transfer_output_files = htex_Local
+    transfer_output_files = %s
     RequestMemory = %d
     RequestCpus = %d
-    ''' % (mem_per_core * cores_per_job, cores_per_job)
+    ''' % (htex_label, mem_per_core * cores_per_job, cores_per_job)
 
-    xfer_files = [pyenv_dir, '/tmp/%s' % (x509_proxy, )]
+    xfer_files = [pyenv_dir, '%s/%s' % (grid_proxy_dir, x509_proxy)]
 
     condor_htex = Config(
         executors=[
