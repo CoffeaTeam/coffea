@@ -36,14 +36,14 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr):
 
     processor_instance = cpkl.loads(lz4f.decompress(procstr))
 
-    file = uproot.open(fn)
+    afile = uproot.open(fn)
     tree = None
     if isinstance(treename, str):
-        tree = file[treename]
+        tree = afile[treename]
     elif isinstance(treename, Sequence):
         for name in reversed(treename):
-            if name in file:
-                tree = file[name]
+            if name in afile:
+                tree = afile[name]
     else:
         raise Exception('treename must be a str or Sequence but is a %s!' % repr(type(treename)))
 
@@ -54,7 +54,7 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr):
     df['dataset'] = dataset
 
     vals = processor_instance.process(df)
-    vals['_bytesread'] = accumulator(file.source.bytesread if isinstance(file.source, uproot.source.xrootd.XRootDSource) else 0)
+    vals['_bytesread'] = accumulator(afile.source.bytesread if isinstance(afile.source, uproot.source.xrootd.XRootDSource) else 0)
     valsblob = lz4f.compress(cpkl.dumps(vals), compression_level=lz4_clevel)
 
     return valsblob
