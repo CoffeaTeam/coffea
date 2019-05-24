@@ -1,6 +1,8 @@
 from concurrent.futures import as_completed
 import multiprocessing
 
+from tqdm import tqdm
+
 import parsl
 
 from parsl.app.app import python_app
@@ -69,7 +71,7 @@ def _parsl_get_chunking(filelist, treename, chunksize):
     nfiles = len(future_to_ds)
 
     items = []
-    for ftr in as_completed(future_to_ds, total=nfiles, unit='files', desc='Processing'):
+    for ftr in tqdm(as_completed(future_to_ds), total=nfiles, unit='files', desc='Processing'):
         ds = future_to_ds[ftr]
         chunks = ftr.result()
         for chunk in chunks:
