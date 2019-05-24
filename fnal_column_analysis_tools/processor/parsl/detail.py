@@ -12,15 +12,8 @@ from parsl.executors import HighThroughputExecutor
 
 try:
     from collections.abc import Sequence
-    from functools import lru_cache
 except ImportError:
     from collections import Sequence
-
-    def lru_cache(maxsize):
-        def null_wrapper(f):
-            return f
-
-        return null_wrapper
 
 _default_cfg = Config(
     executors=[
@@ -71,17 +64,14 @@ def derive_chunks(filename, treename, chunksize):
     return [(filename, chunksize, index) for index in range(nentries // chunksize + 1)]
 
 
-@lru_cache(maxsize=128)
 def _parsl_get_chunking(filelist, treename, chunksize):
-    fn_to_index = {fn: idx for idx, fn in enumerate(filelist)}
-    future_to_fn = {derive_chunks(fn, treename, chunksize): fn for fn in filelist}
-
-    temp = [0 for fn in filelist]
-    for ftr in as_completed(future_to_fn):
-        temp[fn_to_index[future_to_fn[ftr]]] = ftr.result()
+    future_to_ds = {derive_chunks(fn, treename, chunksize): ds for ds, fn in filelist}
 
     items = []
-    for idx in range(len(temp)):
-        items.extend(temp[idx])
+    for ftr in as_completed(future_to_ds):
+        ds = future_to_ds[ftr]
+        chunks = ftr.result()
+        for chunk in chunks:
+            items.append((ds, chunk[0], treename, chunk[1], chunk[2]))
 
     return items
