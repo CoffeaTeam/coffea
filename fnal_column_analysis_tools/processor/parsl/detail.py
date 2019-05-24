@@ -66,9 +66,10 @@ def derive_chunks(filename, treename, chunksize):
 
 def _parsl_get_chunking(filelist, treename, chunksize):
     future_to_ds = {derive_chunks(fn, treename, chunksize): ds for ds, fn in filelist}
+    nfiles = len(future_to_ds)
 
     items = []
-    for ftr in as_completed(future_to_ds):
+    for ftr in as_completed(future_to_ds, total=nfiles, unit='files', desc='Processing'):
         ds = future_to_ds[ftr]
         chunks = ftr.result()
         for chunk in chunks:
