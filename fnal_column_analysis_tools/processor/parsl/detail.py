@@ -71,7 +71,7 @@ def _parsl_get_chunking(filelist, treename, chunksize):
     nfiles = len(future_to_ds)
 
     items = []
-    for ftr in tqdm(as_completed(future_to_ds), total=nfiles, unit='files', desc='Processing'):
+    for ftr in tqdm(as_completed(future_to_ds), total=nfiles, unit='files', desc='Preprocessing'):
         ds = future_to_ds[ftr]
         chunks = ftr.result()
         for chunk in chunks:
