@@ -21,7 +21,7 @@ def coffea_udf(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last }}{%
     
     vals = processor_instance.process(df)
     
-    valsblob = lz4f.compress(cpkl.dumps(vals), compression_level=lz4_clevel)
+    valsblob = lz4f.compress(pkl.dumps(vals), compression_level=lz4_clevel)
     
     outs = np.full(shape=(size, ), fill_value=b'', dtype='O')
     outs[0] = valsblob
