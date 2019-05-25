@@ -58,7 +58,7 @@ def _spark_make_dfs(spark, fileset, partitionsize, columns, thread_workers):
             for missing in missing_cols:
                 df = df.withColumn(missing, fn.lit(0.0))
             df = df.withColumn('dataset', fn.lit(dataset))
-            npartitions = max(count // partitionsize, 1)
+            npartitions = (count // partitionsize) + 1
             if df.rdd.getNumPartitions() > npartitions:
                 df = df.repartition(npartitions)
             dfs[dataset] = (df, count)

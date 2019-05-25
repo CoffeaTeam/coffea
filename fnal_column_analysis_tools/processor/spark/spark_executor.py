@@ -10,7 +10,7 @@ import pandas as pd
 
 import pyspark
 import pyspark.sql.functions as fn
-from pyspark.sql.types import BinaryType, StructType, StructField
+from pyspark.sql.types import BinaryType, StringType, StructType, StructField
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
@@ -22,16 +22,23 @@ lz4_clevel = 1
 def agg_histos(df):
     global processor_instance, lz4_clevel
     goodlines = df[df.str.len() > 0]
+    if goodlines.size == 1:  # short-circuit trivial aggregations
+        return goodlines[0]
     outhist = processor_instance.accumulator.identity()
     for line in goodlines:
         outhist.add(cpkl.loads(lz4f.decompress(line)))
     return lz4f.compress(cpkl.dumps(outhist), compression_level=lz4_clevel)
 
 
-@fn.pandas_udf(StructType([StructField('histos', BinaryType(), True)]), fn.PandasUDFType.GROUPED_MAP)
-def remove_zeros(df):
+@fn.pandas_udf(StructType([StructField('histos', BinaryType(), True)]),
+               fn.PandasUDFType.GROUPED_MAP)
+def reduce_histos(df):
     histos = df['histos']
-    return pd.DataFrame(data=histos[histos.str.len() > 0], columns=['histos'])
+    mask = (histos.str.len() > 0)
+    outhist = processor_instance.accumulator.identity()
+    for line in histos[mask]:
+        outhist.add(cpkl.loads(lz4f.decompress(line)))
+    return pd.DataFrame(data={'histos': np.array([lz4f.compress(cpkl.dumps(outhist))], dtype='O')})
 
 
 class SparkExecutor(object):
@@ -92,8 +99,11 @@ class SparkExecutor(object):
             output.add(cpkl.loads(lz4f.decompress(bits)))
 
     def _launch_analysis(self, df, udf, columns):
+        histo_map_parts = (df.rdd.getNumPartitions() // 20) + 1
         return df.select(udf(*columns).alias('histos')) \
-                 .groupBy().apply(remove_zeros) \
+                 .withColumn('hpid', fn.spark_partition_id() % histo_map_parts) \
+                 .repartition(histo_map_parts, 'hpid') \
+                 .groupBy('hpid').apply(reduce_histos) \
                  .groupBy().agg(agg_histos('histos')) \
                  .toPandas()
 
