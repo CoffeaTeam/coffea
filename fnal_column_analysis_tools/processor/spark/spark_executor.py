@@ -3,7 +3,7 @@ from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from tqdm import tqdm
-import cloudpickle as cpkl
+import _pickle as pkl
 import lz4.frame as lz4f
 import numpy as np
 import pandas as pd
@@ -26,8 +26,8 @@ def agg_histos(df):
         return goodlines[0]
     outhist = processor_instance.accumulator.identity()
     for line in goodlines:
-        outhist.add(cpkl.loads(lz4f.decompress(line)))
-    return lz4f.compress(cpkl.dumps(outhist), compression_level=lz4_clevel)
+        outhist.add(pkl.loads(lz4f.decompress(line)))
+    return lz4f.compress(pkl.dumps(outhist), compression_level=lz4_clevel)
 
 
 @fn.pandas_udf(StructType([StructField('histos', BinaryType(), True)]),
@@ -37,8 +37,8 @@ def reduce_histos(df):
     mask = (histos.str.len() > 0)
     outhist = processor_instance.accumulator.identity()
     for line in histos[mask]:
-        outhist.add(cpkl.loads(lz4f.decompress(line)))
-    return pd.DataFrame(data={'histos': np.array([lz4f.compress(cpkl.dumps(outhist))], dtype='O')})
+        outhist.add(pkl.loads(lz4f.decompress(line)))
+    return pd.DataFrame(data={'histos': np.array([lz4f.compress(pkl.dumps(outhist))], dtype='O')})
 
 
 class SparkExecutor(object):
@@ -96,7 +96,7 @@ class SparkExecutor(object):
             if bitstream.empty:
                 raise Exception('The histogram list returned from spark is empty in dataset: %s, something went wrong!' % ds)
             bits = bitstream[bitstream.columns[0]][0]
-            output.add(cpkl.loads(lz4f.decompress(bits)))
+            output.add(pkl.loads(lz4f.decompress(bits)))
 
     def _launch_analysis(self, df, udf, columns):
         histo_map_parts = (df.rdd.getNumPartitions() // 20) + 1
