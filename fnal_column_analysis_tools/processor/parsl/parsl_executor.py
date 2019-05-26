@@ -8,10 +8,9 @@ import cloudpickle as cpkl
 import lz4.frame as lz4f
 import numpy as np
 import pandas as pd
+from collections import defaultdict
 
 from parsl.app.app import python_app
-
-lz4_clevel = 1
 
 
 @python_app
@@ -21,8 +20,6 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr):
     import lz4.frame as lz4f
     from fnal_column_analysis_tools import hist, processor
     from fnal_column_analysis_tools.processor.accumulator import accumulator
-
-    lz4_clevel = 1
 
     # instrument xrootd source
     if not hasattr(uproot.source.xrootd.XRootDSource, '_read_real'):
@@ -55,15 +52,18 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr):
 
     vals = processor_instance.process(df)
     vals['_bytesread'] = accumulator(afile.source.bytesread if isinstance(afile.source, uproot.source.xrootd.XRootDSource) else 0)
-    valsblob = lz4f.compress(cpkl.dumps(vals), compression_level=lz4_clevel)
 
-    return valsblob
+    return vals, tree.numentries, dataset
 
 
 class ParslExecutor(object):
 
     def __init__(self):
-        pass
+        self._counts = {}
+
+    @property
+    def counts(self):
+        return self._counts
 
     def __call__(self, dfk, items, processor_instance, output, unit='items', desc='Processing'):
         procstr = lz4f.compress(cpkl.dumps(processor_instance))
@@ -71,11 +71,13 @@ class ParslExecutor(object):
         nitems = len(items)
         ftr_to_item = set()
         for dataset, fn, treename, chunksize, index in items:
+            if dataset not in self._counts:
+                self._counts[dataset] = 0
             ftr_to_item.add(coffea_pyapp(dataset, fn, treename, chunksize, index, procstr))
 
         for ftr in tqdm(as_completed(ftr_to_item), total=nitems, unit='items', desc='Processing'):
-            blob = ftr.result()
-            ftrhist = cpkl.loads(lz4f.decompress(blob))
+            ftrhist, nentries, dataset = ftr.result()
+            self._counts[dataset] += nentries
             output.add(ftrhist)
 
 
