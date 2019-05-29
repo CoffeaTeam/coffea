@@ -60,10 +60,10 @@ class FactorizedJetCorrector(object):
 
             campaign = _checkConsistency(campaign, info[0])
             dataera = _checkConsistency(dataera, info[1])
-            datatype = _checkConsistency(datatype, info[2+offset])
-            levels.append(info[3+offset])
+            datatype = _checkConsistency(datatype, info[2 + offset])
+            levels.append(info[3 + offset])
             funcs.append(func)
-            jettype = _checkConsistency(jettype, info[4+offset])
+            jettype = _checkConsistency(jettype, info[4 + offset])
 
         if campaign is None:
             raise Exception('Unable to determine production campaign of JECs!')

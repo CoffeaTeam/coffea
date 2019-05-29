@@ -113,7 +113,7 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
     if not isinstance(processor_instance, ProcessorABC):
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
 
-    executor_args.setdefault('workers',1)
+    executor_args.setdefault('workers', 1)
 
     items = []
     for dataset, filelist in tqdm(fileset.items(), desc='Preprocessing'):
@@ -173,7 +173,7 @@ def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=Non
 
     if executor_args['config'] is None:
         executor_args.pop('config')
-    
+
     # initialize spark if we need to
     # if we initialize, then we deconstruct
     # when we're done
@@ -252,7 +252,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
 
     if executor_args['config'] is None:
         executor_args.pop('config')
-    
+
     # initialize spark if we need to
     # if we initialize, then we deconstruct
     # when we're done
