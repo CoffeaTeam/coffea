@@ -74,11 +74,12 @@ def _work_function(item):
 @lru_cache(maxsize=128)
 def _get_chunking(filelist, treename, chunksize):
     items = []
-    executor = None if len(filelist)<5 else concurrent.futures.ThreadPoolExecutor(10)
-    for fn,nentries in uproot.numentries(filelist, treename, total=False, executor=executor).items():
+    executor = None if len(filelist) < 5 else concurrent.futures.ThreadPoolExecutor(10)
+    for fn, nentries in uproot.numentries(filelist, treename, total=False, executor=executor).items():
         for index in range(nentries // chunksize + 1):
             items.append((fn, chunksize, index))
     return items
+
 
 def _get_chunking_lazy(filelist, treename, chunksize):
     for fn in filelist:
@@ -116,8 +117,9 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
             chunks = _get_chunking_lazy(tuple(filelist), treename, chunksize)
         else:
             chunks = _get_chunking(tuple(filelist), treename, chunksize)
-        for ichunk,chunk in enumerate(chunks):
-            if maxchunks is not None and (ichunk > maxchunks): break
+        for ichunk, chunk in enumerate(chunks):
+            if (maxchunks is not None) and (ichunk > maxchunks):
+                break
             items.append((dataset, chunk[0], treename, chunk[1], chunk[2], processor_instance))
 
     output = processor_instance.accumulator.identity()
