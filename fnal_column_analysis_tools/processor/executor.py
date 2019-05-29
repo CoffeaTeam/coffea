@@ -27,17 +27,19 @@ if not hasattr(uproot.source.xrootd.XRootDSource, '_read_real'):
     uproot.source.xrootd.XRootDSource._read = _read
 
 
-def iterative_executor(items, function, accumulator, status=True, unit='items', desc='Processing'):
+def iterative_executor(items, function, accumulator, status=True, unit='items', desc='Processing',
+                       function_args={}):
     for i, item in tqdm(enumerate(items), disable=not status, unit=unit, total=len(items), desc=desc):
-        accumulator += function(item)
+        accumulator += function(item, **function_args)
     return accumulator
 
 
-def futures_executor(items, function, accumulator, workers=2, status=True, unit='items', desc='Processing'):
+def futures_executor(items, function, accumulator, workers=2, status=True, unit='items', desc='Processing',
+                     function_args={}):
     with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
         futures = set()
         try:
-            futures.update(executor.submit(function, item) for item in items)
+            futures.update(executor.submit(function, item, **function_args) for item in items)
             with tqdm(disable=not status, unit=unit, total=len(futures), desc=desc) as pbar:
                 while len(futures) > 0:
                     finished = set(job for job in futures if job.done())
@@ -60,11 +62,11 @@ def futures_executor(items, function, accumulator, workers=2, status=True, unit=
     return accumulator
 
 
-def _work_function(item):
+def _work_function(item, flatten=False):
     dataset, fn, treename, chunksize, index, processor_instance = item
     file = uproot.open(fn)
     tree = file[treename]
-    df = LazyDataFrame(tree, chunksize, index)
+    df = LazyDataFrame(tree, chunksize, index, flatten=flatten)
     df['dataset'] = dataset
     out = processor_instance.process(df)
     out['_bytesread'] = accumulator(file.source.bytesread if isinstance(file.source, uproot.source.xrootd.XRootDSource) else 0)
@@ -72,9 +74,9 @@ def _work_function(item):
 
 
 @lru_cache(maxsize=128)
-def _get_chunking(filelist, treename, chunksize):
+def _get_chunking(filelist, treename, chunksize, workers=1):
     items = []
-    executor = None if len(filelist) < 5 else concurrent.futures.ThreadPoolExecutor(10)
+    executor = None if len(filelist) < 5 else concurrent.futures.ThreadPoolExecutor(workers)
     for fn, nentries in uproot.numentries(filelist, treename, total=False, executor=executor).items():
         for index in range(nentries // chunksize + 1):
             items.append((fn, chunksize, index))
@@ -111,12 +113,14 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
     if not isinstance(processor_instance, ProcessorABC):
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
 
+    executor_args.setdefault('workers', 1)
+
     items = []
     for dataset, filelist in tqdm(fileset.items(), desc='Preprocessing'):
         if maxchunks is not None:
             chunks = _get_chunking_lazy(tuple(filelist), treename, chunksize)
         else:
-            chunks = _get_chunking(tuple(filelist), treename, chunksize)
+            chunks = _get_chunking(tuple(filelist), treename, chunksize, executor_args['workers'])
         for ichunk, chunk in enumerate(chunks):
             if (maxchunks is not None) and (ichunk > maxchunks):
                 break
@@ -128,7 +132,7 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
     return output
 
 
-def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=None, executor_args={'config': None}, chunksize=500000):
+def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=None, executor_args={}, chunksize=500000):
     '''
     A convenience wrapper to submit jobs for a file, which is a
     dictionary of dataset: [file list] entries. In this case using parsl.
@@ -158,15 +162,17 @@ def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=Non
     from .parsl.parsl_executor import ParslExecutor
     from .parsl.detail import _parsl_initialize, _parsl_stop, _parsl_get_chunking
 
-    if executor_args['config'] is None:
-        executor_args.pop('config')
-
     if not isinstance(fileset, Mapping):
         raise ValueError("Expected fileset to be a mapping dataset: list(files)")
     if not isinstance(processor_instance, ProcessorABC):
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
     if not isinstance(executor, ParslExecutor):
         raise ValueError("Expected executor to derive from ParslBaseExecutor")
+
+    executor_args.setdefault('config', None)
+
+    if executor_args['config'] is None:
+        executor_args.pop('config')
 
     # initialize spark if we need to
     # if we initialize, then we deconstruct
@@ -199,7 +205,7 @@ def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=Non
     return output
 
 
-def run_spark_job(fileset, processor_instance, executor, executor_args={'config': None},
+def run_spark_job(fileset, processor_instance, executor, executor_args={},
                   spark=None, partitionsize=200000, thread_workers=16):
     '''
     A convenience wrapper to submit jobs for spark datasets, which is a
@@ -235,15 +241,17 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={'config'
     from .spark.spark_executor import SparkExecutor
     from .spark.detail import _spark_initialize, _spark_stop, _spark_make_dfs
 
-    if executor_args['config'] is None:
-        executor_args.pop('config')
-
     if not isinstance(fileset, Mapping):
         raise ValueError("Expected fileset to be a mapping dataset: list(files)")
     if not isinstance(processor_instance, ProcessorABC):
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
     if not isinstance(executor, SparkExecutor):
         raise ValueError("Expected executor to derive from SparkExecutor")
+
+    executor_args.setdefault('config', None)
+
+    if executor_args['config'] is None:
+        executor_args.pop('config')
 
     # initialize spark if we need to
     # if we initialize, then we deconstruct
