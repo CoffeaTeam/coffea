@@ -54,15 +54,16 @@ class FactorizedJetCorrector(object):
                 raise Exception('{} is a {} and not a jme_standard_function!'.format(name,
                                                                                      type(func)))
             info = name.split('_')
-            if len(info) != 5:
+            if len(info) > 6 or len(info) < 5:
                 raise Exception('Corrector name is not properly formatted!')
+            offset = len(info) - 5
 
             campaign = _checkConsistency(campaign, info[0])
             dataera = _checkConsistency(dataera, info[1])
-            datatype = _checkConsistency(datatype, info[2])
-            levels.append(info[3])
+            datatype = _checkConsistency(datatype, info[2+offset])
+            levels.append(info[3+offset])
             funcs.append(func)
-            jettype = _checkConsistency(jettype, info[4])
+            jettype = _checkConsistency(jettype, info[4+offset])
 
         if campaign is None:
             raise Exception('Unable to determine production campaign of JECs!')
@@ -90,10 +91,11 @@ class FactorizedJetCorrector(object):
         else:
             self._jettype = jettype
 
+        n_levels = len(self._levels)
         for i, level in enumerate(self._levels):
             this_level = _getLevel(level)
             ord_idx = _level_order.index(this_level)
-            if i != this_level:
+            if i != this_level and n_levels > 1:
                 self._levels[i], self._levels[ord_idx] = self._levels[ord_idx], self._levels[i]
                 self._funcs[i], self._funcs[ord_idx] = self._funcs[ord_idx], self._funcs[i]
 
