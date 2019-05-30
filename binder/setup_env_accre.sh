@@ -6,22 +6,16 @@ source py36/bin/activate
 pip install --upgrade pip
 pip install llvmlite numba numpy pandas ipykernel matplotlib lz4 pyarrow tqdm py4j
 
-ipython kernel install --user --name "py36" --display-name "py36"
-
 pip install uproot
 pip install --upgrade uproot-methods
 # 1.14 is kindof old but pinned by other packages it seems
 pip install --upgrade numpy scipy
 
 # get dependencies for it
-pip install fnal-column-analysis-tools
+pip install fnal-column-analysis-tools --upgrade
 # get latest and greatest
 pip install https://github.com/Parsl/parsl/zipball/master --user
-git clone -b processor git@github.com:CoffeaTeam/fnal-column-analysis-tools.git
-pushd fnal-column-analysis-tools
-pip uninstall fnal-column-analysis-tools
-python setup.py install
-popd
+git clone -b topic_hats_scaleout git@github.com:CoffeaTeam/fnal-column-analysis-tools.git
 
 # progressbar, sliders, etc.
 jupyter nbextension enable --py widgetsnbextension
