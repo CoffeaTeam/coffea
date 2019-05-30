@@ -20,6 +20,9 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr):
     import lz4.frame as lz4f
     from fnal_column_analysis_tools import hist, processor
     from fnal_column_analysis_tools.processor.accumulator import accumulator
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError
+
+    uproot.XRootDSource.defaults["parallel"] = False
 
     # instrument xrootd source
     if not hasattr(uproot.source.xrootd.XRootDSource, '_read_real'):
@@ -33,7 +36,19 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr):
 
     processor_instance = cpkl.loads(lz4f.decompress(procstr))
 
-    afile = uproot.open(fn)
+    afile = None
+    for i in range(5):
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(uproot.open,fn)
+            try:
+                afile = future.result(timeout=5)
+            except TimeoutError:
+                afile = None
+            else:
+                break
+
+    if afile is None:
+        raise Exception('unable to open: %s' % fn)
     tree = None
     if isinstance(treename, str):
         tree = afile[treename]

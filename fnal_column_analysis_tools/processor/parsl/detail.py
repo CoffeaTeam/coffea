@@ -47,7 +47,24 @@ def _parsl_stop(dfk):
 def derive_chunks(filename, treename, chunksize):
     import uproot
     from collections.abc import Sequence
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
+    uproot.XRootDSource.defaults["parallel"] = False
+
+    afile = None
+    for i in range(5):
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(uproot.open,filename)
+            try:
+                afile = future.result(timeout=5)
+            except TimeoutError:
+                afile = None
+            else:
+                break
+
+    if afile is None:
+        raise Exception('unable to open: %s' % filename)
+    
     afile = uproot.open(filename)
     tree = None
     if isinstance(treename, str):
