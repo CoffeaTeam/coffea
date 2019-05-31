@@ -6,8 +6,8 @@ python:
   - 3.6
 env:
   matrix:
-  - AWKWARD="awkward>=0.8.1"
-#  - AWKWARD="awkward-numba"
+  - AWKWARD="awkward>=0.8.4"
+  - AWKWARD="awkward-numba==0.8.15"
 matrix:
 addons:
   apt:
@@ -36,4 +36,4 @@ deploy:
   on:
     tags: true
     branch: master
-    condition: $TRAVIS_PYTHON_VERSION = "3.6" && $NUMPY = "numpy>=1.15.4"
+    condition: $TRAVIS_PYTHON_VERSION = "3.6" && $AWKWARD = "awkward>=0.8.4"
