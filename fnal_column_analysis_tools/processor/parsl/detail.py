@@ -35,7 +35,7 @@ _default_cfg = Config(
 )
 
 
-def _parsl_initialize(config=_default_cfg):
+def _parsl_initialize(config=None):
     dfk = parsl.load(config)
     return dfk
 
@@ -86,7 +86,7 @@ def derive_chunks(filename, treename, chunksize, timeout=None):
     return [(filename, chunksize, index) for index in range(nentries // chunksize + 1)]
 
 
-def _parsl_get_chunking(filelist, treename, chunksize, timeout=10):
+def _parsl_get_chunking(filelist, treename, chunksize, timeout=None):
     future_to_ds = {derive_chunks(fn, treename, chunksize, timeout=timeout): ds for ds, fn in filelist}
     nfiles = len(future_to_ds)
 
