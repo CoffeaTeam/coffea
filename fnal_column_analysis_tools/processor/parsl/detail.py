@@ -12,6 +12,8 @@ from parsl.channels import LocalChannel
 from parsl.config import Config
 from parsl.executors import HighThroughputExecutor
 
+from .timeout import timeout
+
 try:
     from collections.abc import Sequence
 except ImportError:
@@ -33,7 +35,7 @@ _default_cfg = Config(
 )
 
 
-def _parsl_initialize(config=_default_cfg):
+def _parsl_initialize(config=None):
     dfk = parsl.load(config)
     return dfk
 
@@ -44,9 +46,27 @@ def _parsl_stop(dfk):
 
 
 @python_app
-def derive_chunks(filename, treename, chunksize):
+@timeout
+def derive_chunks(filename, treename, chunksize, timeout=None):
     import uproot
     from collections.abc import Sequence
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError
+
+    uproot.XRootDSource.defaults["parallel"] = False
+
+    afile = None
+    for i in range(5):
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(uproot.open, filename)
+            try:
+                afile = future.result(timeout=5)
+            except TimeoutError:
+                afile = None
+            else:
+                break
+
+    if afile is None:
+        raise Exception('unable to open: %s' % filename)
 
     afile = uproot.open(filename)
     tree = None
@@ -66,8 +86,8 @@ def derive_chunks(filename, treename, chunksize):
     return [(filename, chunksize, index) for index in range(nentries // chunksize + 1)]
 
 
-def _parsl_get_chunking(filelist, treename, chunksize):
-    future_to_ds = {derive_chunks(fn, treename, chunksize): ds for ds, fn in filelist}
+def _parsl_get_chunking(filelist, treename, chunksize, timeout=None):
+    future_to_ds = {derive_chunks(fn, treename, chunksize, timeout=timeout): ds for ds, fn in filelist}
     nfiles = len(future_to_ds)
 
     items = []
