@@ -46,7 +46,7 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None)
     afile = None
     for i in range(5):
         with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(uproot.open,fn)
+            future = executor.submit(uproot.open, fn)
             try:
                 afile = future.result(timeout=5)
             except TimeoutError:
@@ -76,13 +76,17 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None)
     vals['_bytesread'] = accumulator(afile.source.bytesread if isinstance(afile.source, uproot.source.xrootd.XRootDSource) else 0)
     valsblob = lz4f.compress(pkl.dumps(vals), compression_level=lz4_clevel)
 
-    return valsblob
+    return valsblob, tree.numentries, dataset
 
 
 class ParslExecutor(object):
 
     def __init__(self):
-        pass
+        self._counts = {}
+
+    @property
+    def counts(self):
+        return self._counts
 
     def __call__(self, dfk, items, processor_instance, output, unit='items', desc='Processing'):
         procstr = lz4f.compress(cpkl.dumps(processor_instance))
@@ -90,12 +94,14 @@ class ParslExecutor(object):
         nitems = len(items)
         ftr_to_item = set()
         for dataset, fn, treename, chunksize, index in items:
+            if dataset not in self._counts:
+                self._counts[dataset] = 0
             ftr_to_item.add(coffea_pyapp(dataset, fn, treename, chunksize, index, procstr))
 
         for ftr in tqdm(as_completed(ftr_to_item), total=nitems, unit='items', desc='Processing'):
-            blob = ftr.result()
-            ftrhist = pkl.loads(lz4f.decompress(blob))
-            output.add(ftrhist)
+            blob, nentries, dataset = ftr.result()
+            self._counts[dataset] += nentries
+            output.add(pkl.loads(lz4f.decompress(blob)))
 
 
 parsl_executor = ParslExecutor()
