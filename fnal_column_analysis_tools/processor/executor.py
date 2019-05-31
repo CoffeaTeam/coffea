@@ -160,7 +160,7 @@ def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=Non
     print('parsl version:', parsl.__version__)
 
     from .parsl.parsl_executor import ParslExecutor
-    from .parsl.detail import _parsl_initialize, _parsl_stop, _parsl_get_chunking
+    from .parsl.detail import _parsl_initialize, _parsl_stop, _parsl_get_chunking, _default_cfg
 
     if not isinstance(fileset, Mapping):
         raise ValueError("Expected fileset to be a mapping dataset: list(files)")
@@ -169,10 +169,9 @@ def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=Non
     if not isinstance(executor, ParslExecutor):
         raise ValueError("Expected executor to derive from ParslBaseExecutor")
 
-    executor_args.setdefault('config', None)
-
-    if executor_args['config'] is None:
-        executor_args.pop('config')
+    executor_args.setdefault('config', _default_cfg)
+    executor_args.setdefault('timeout', 180)
+    executor_args.setdefault('chunking_timeout', 10)
 
     # initialize spark if we need to
     # if we initialize, then we deconstruct
@@ -193,7 +192,11 @@ def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=Non
         for afile in filelist:
             to_chunk.append((dataset, afile))
 
-    items = _parsl_get_chunking(to_chunk, tn, chunksize)
+    items = _parsl_get_chunking(to_chunk, tn, chunksize, timeout=executor_args['chunking_timeout'])
+
+    # loose items we don't need any more
+    executor_args.pop('chunking_timeout')
+    executor_args.pop('config')
 
     output = processor_instance.accumulator.identity()
     executor(data_flow, items, processor_instance, output, **executor_args)
