@@ -76,20 +76,21 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None)
     vals['_bytesread'] = accumulator(afile.source.bytesread if isinstance(afile.source, uproot.source.xrootd.XRootDSource) else 0)
     valsblob = lz4f.compress(pkl.dumps(vals), compression_level=lz4_clevel)
 
-    return valsblob, tree.numentries, dataset
+    istart = chunksize * index
+    istop  = min(tree.numentries, (index + 1) * chunksize)
+    return valsblob, (istop - istart), dataset
 
 
 class ParslExecutor(object):
 
-    def __init__(self, timeout=60):
+    def __init__(self):
         self._counts = {}
-        self._timeout = 60
 
     @property
     def counts(self):
         return self._counts
 
-    def __call__(self, dfk, items, processor_instance, output, unit='items', desc='Processing'):
+    def __call__(self, dfk, items, processor_instance, output, unit='items', desc='Processing', timeout=180):
         procstr = lz4f.compress(cpkl.dumps(processor_instance))
 
         nitems = len(items)
@@ -97,7 +98,7 @@ class ParslExecutor(object):
         for dataset, fn, treename, chunksize, index in items:
             if dataset not in self._counts:
                 self._counts[dataset] = 0
-            ftr_to_item.add(coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=self._timeout))
+            ftr_to_item.add(coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=timeout))
 
         for ftr in tqdm(as_completed(ftr_to_item), total=nitems, unit='items', desc='Processing'):
             blob, nentries, dataset = ftr.result()
