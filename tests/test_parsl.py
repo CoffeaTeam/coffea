@@ -18,9 +18,10 @@ def test_parsl_start_stop():
         raise e
 
     from fnal_column_analysis_tools.processor.parsl.detail import (_parsl_initialize,
-                                                                   _parsl_stop)
+                                                                   _parsl_stop,
+                                                                   _default_cfg)
 
-    dfk = _parsl_initialize()
+    dfk = _parsl_initialize(config=_default_cfg)
     
     _parsl_stop(dfk)
 

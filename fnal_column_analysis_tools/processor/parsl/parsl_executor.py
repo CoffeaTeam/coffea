@@ -77,7 +77,7 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None)
     valsblob = lz4f.compress(pkl.dumps(vals), compression_level=lz4_clevel)
 
     istart = chunksize * index
-    istop  = min(tree.numentries, (index + 1) * chunksize)
+    istop = min(tree.numentries, (index + 1) * chunksize)
     return valsblob, (istop - istart), dataset
 
 
@@ -90,7 +90,7 @@ class ParslExecutor(object):
     def counts(self):
         return self._counts
 
-    def __call__(self, dfk, items, processor_instance, output, unit='items', desc='Processing', timeout=180):
+    def __call__(self, dfk, items, processor_instance, output, unit='items', desc='Processing', timeout=None):
         procstr = lz4f.compress(cpkl.dumps(processor_instance))
 
         nitems = len(items)
