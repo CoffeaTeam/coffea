@@ -12,6 +12,10 @@ from parsl.channels import LocalChannel
 from parsl.config import Config
 from parsl.executors import HighThroughputExecutor
 
+import time
+import signal
+from functools import wraps
+
 try:
     from collections.abc import Sequence
 except ImportError:
@@ -32,6 +36,23 @@ _default_cfg = Config(
     strategy=None,
 )
 
+def timeout(func):
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+
+        import signal
+        def handler(signum, frame):
+            raise Exception("Timeout hit")
+
+        signal.signal(signal.SIGALRM, handler)
+        if kwargs.get('timeout', None):
+            signal.alarm(kwargs.get('timeout'))
+        retval = func(*args, **kwargs)
+        return retval
+
+    return wrapper
+
 
 def _parsl_initialize(config=_default_cfg):
     dfk = parsl.load(config)
@@ -44,7 +65,8 @@ def _parsl_stop(dfk):
 
 
 @python_app
-def derive_chunks(filename, treename, chunksize):
+@timeout
+def derive_chunks(filename, treename, chunksize, timeout=None):
     import uproot
     from collections.abc import Sequence
     from concurrent.futures import ThreadPoolExecutor, TimeoutError

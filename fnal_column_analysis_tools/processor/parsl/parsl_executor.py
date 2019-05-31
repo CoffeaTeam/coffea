@@ -5,19 +5,23 @@ from collections.abc import Sequence
 
 from tqdm import tqdm
 import cloudpickle as cpkl
+import pickle as pkl
 import lz4.frame as lz4f
 import numpy as np
 import pandas as pd
 
 from parsl.app.app import python_app
+from .detail import timeout
 
 lz4_clevel = 1
 
 
 @python_app
-def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr):
+@timeout
+def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None):
     import uproot
     import cloudpickle as cpkl
+    import pickle as pkl
     import lz4.frame as lz4f
     from fnal_column_analysis_tools import hist, processor
     from fnal_column_analysis_tools.processor.accumulator import accumulator
@@ -70,7 +74,7 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr):
 
     vals = processor_instance.process(df)
     vals['_bytesread'] = accumulator(afile.source.bytesread if isinstance(afile.source, uproot.source.xrootd.XRootDSource) else 0)
-    valsblob = lz4f.compress(cpkl.dumps(vals), compression_level=lz4_clevel)
+    valsblob = lz4f.compress(pkl.dumps(vals), compression_level=lz4_clevel)
 
     return valsblob
 
@@ -90,7 +94,7 @@ class ParslExecutor(object):
 
         for ftr in tqdm(as_completed(ftr_to_item), total=nitems, unit='items', desc='Processing'):
             blob = ftr.result()
-            ftrhist = cpkl.loads(lz4f.decompress(blob))
+            ftrhist = pkl.loads(lz4f.decompress(blob))
             output.add(ftrhist)
 
 
