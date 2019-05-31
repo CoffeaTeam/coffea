@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 from parsl.app.app import python_app
-from .detail import timeout
+from .timeout import timeout
 
 lz4_clevel = 1
 
@@ -81,8 +81,9 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None)
 
 class ParslExecutor(object):
 
-    def __init__(self):
+    def __init__(self, timeout=60):
         self._counts = {}
+        self._timeout = 60
 
     @property
     def counts(self):
@@ -96,7 +97,7 @@ class ParslExecutor(object):
         for dataset, fn, treename, chunksize, index in items:
             if dataset not in self._counts:
                 self._counts[dataset] = 0
-            ftr_to_item.add(coffea_pyapp(dataset, fn, treename, chunksize, index, procstr))
+            ftr_to_item.add(coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=self._timeout))
 
         for ftr in tqdm(as_completed(ftr_to_item), total=nitems, unit='items', desc='Processing'):
             blob, nentries, dataset = ftr.result()
