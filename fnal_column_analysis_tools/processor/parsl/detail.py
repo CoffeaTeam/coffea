@@ -36,12 +36,14 @@ _default_cfg = Config(
     strategy=None,
 )
 
+
 def timeout(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
 
         import signal
+
         def handler(signum, frame):
             raise Exception("Timeout hit")
 
@@ -76,7 +78,7 @@ def derive_chunks(filename, treename, chunksize, timeout=None):
     afile = None
     for i in range(5):
         with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(uproot.open,filename)
+            future = executor.submit(uproot.open, filename)
             try:
                 afile = future.result(timeout=5)
             except TimeoutError:
@@ -86,7 +88,7 @@ def derive_chunks(filename, treename, chunksize, timeout=None):
 
     if afile is None:
         raise Exception('unable to open: %s' % filename)
-    
+
     afile = uproot.open(filename)
     tree = None
     if isinstance(treename, str):
