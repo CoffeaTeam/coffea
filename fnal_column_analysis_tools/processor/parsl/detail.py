@@ -12,9 +12,7 @@ from parsl.channels import LocalChannel
 from parsl.config import Config
 from parsl.executors import HighThroughputExecutor
 
-import time
-import signal
-from functools import wraps
+from .timeout import timeout
 
 try:
     from collections.abc import Sequence
@@ -35,25 +33,6 @@ _default_cfg = Config(
     ],
     strategy=None,
 )
-
-
-def timeout(func):
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-
-        import signal
-
-        def handler(signum, frame):
-            raise Exception("Timeout hit")
-
-        signal.signal(signal.SIGALRM, handler)
-        if kwargs.get('timeout', None):
-            signal.alarm(kwargs.get('timeout'))
-        retval = func(*args, **kwargs)
-        return retval
-
-    return wrapper
 
 
 def _parsl_initialize(config=_default_cfg):
@@ -107,8 +86,8 @@ def derive_chunks(filename, treename, chunksize, timeout=None):
     return [(filename, chunksize, index) for index in range(nentries // chunksize + 1)]
 
 
-def _parsl_get_chunking(filelist, treename, chunksize):
-    future_to_ds = {derive_chunks(fn, treename, chunksize): ds for ds, fn in filelist}
+def _parsl_get_chunking(filelist, treename, chunksize, timeout=10):
+    future_to_ds = {derive_chunks(fn, treename, chunksize, timeout=timeout): ds for ds, fn in filelist}
     nfiles = len(future_to_ds)
 
     items = []
