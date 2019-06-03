@@ -2,6 +2,7 @@ import uproot
 import numpy as np
 from fnal_column_analysis_tools.arrays import Initialize
 
+
 def test_object_arrays():
     file = uproot.open("tests/samples/nano_tree.root")
     tree = file["Events"]
@@ -67,6 +68,16 @@ def test_object_arrays():
                     'mass':tree.array('AK15Puppi_mass'),
                     'jetId':tree.array('AK15Puppi_jetId')})
     fj['isgood'] = (fj.pt > 200)&(abs(fj.eta)<2.4)&(fj.jetId > 0)
+    
+    print(fj.counts)
+    print(pho.counts)
+    print(fj.cross(pho,nested=True).counts)
+    
+    print(~fj.match(pho,1.5).counts)
+    print(~fj.match(mu,1.5).counts)
+    print(~fj.match(e,1.5).counts)
+    print(fj.isgood.counts)
+    
     fj['isclean'] =~fj.match(pho,1.5)&~fj.match(mu,1.5)&~fj.match(e,1.5)&fj.isgood
     fj_good=fj[fj.isgood]
     fj_clean=fj[fj.isclean]
