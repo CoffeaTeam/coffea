@@ -1,8 +1,8 @@
 import uproot_methods
 
 import math
-from fnal_column_analysis_tools.util import awkward
-from fnal_column_analysis_tools.util import numpy as np
+from ..util import awkward
+from ..util import numpy as np
 
 JaggedTLorentzVectorArray = awkward.Methods.mixin(uproot_methods.classes.TLorentzVector.ArrayMethods, awkward.JaggedArray)
 

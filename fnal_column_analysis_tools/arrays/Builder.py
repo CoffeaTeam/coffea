@@ -1,6 +1,10 @@
-from ..util import awkward
+import awkward
+
+from ..util import awkward as util_awkward
 import uproot_methods
-from uproot_methods.classes.TLorentzVector import JaggedArrayMethods, ArrayMethods, TLorentzVectorArray, TLorentzVector
+from uproot_methods.classes.TLorentzVector import ArrayMethods, TLorentzVectorArray, TLorentzVector
+
+JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, util_awkward.JaggedArray)
 
 
 class Dangerousness(object):
@@ -14,8 +18,9 @@ class Dangerousness(object):
 
 class SaiyanCommonMethods(Dangerousness, ArrayMethods):
     def match(self, cands, value):
+        print('SaiyanCommonMethods::match')
         if isinstance(self, awkward.JaggedArray):
-            combinations = self.cross(cands, True)
+            combinations = self.cross(cands, nested=True)
             mask = (combinations.i0.delta_r(combinations.i1) < value)
         else:
             mask = self.delta_r(cands) < value
