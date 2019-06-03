@@ -27,6 +27,9 @@ install:
   - pip install numpy --upgrade
   - python -c 'import numpy; print(numpy.__version__)'
   - pip install pytest pytest-runner flake8
+branches:
+  only:
+  - master
 deploy:
   provider: pypi
   user: lgray
