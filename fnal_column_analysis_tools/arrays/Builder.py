@@ -6,6 +6,7 @@ from uproot_methods.classes.TLorentzVector import ArrayMethods, TLorentzVectorAr
 
 JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, util_awkward.JaggedArray)
 
+
 class Dangerousness(object):
     # NB: This is dangerous
     def __getattr__(self, what):
