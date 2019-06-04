@@ -13,13 +13,6 @@ addons:
   apt:
     packages:
     - python-setuptools
-before_script:
-  - composer self-update -q
-  - if [ -n "$GITHUB_OAUTH_TOKEN" ]; then composer config github-oauth.github.com ${GITHUB_OAUTH_TOKEN}; fi;
-  - if [ -z "$dependencies" ]; then composer install; fi;
-  - if [ "$dependencies" = "lowest" ]; then composer update --prefer-lowest -n; fi;
-  - if [ "$dependencies" = "highest" ]; then composer update -n; fi;
-  - composer show -i
 script:
 - python setup.py flake8
 - python setup.py pytest
