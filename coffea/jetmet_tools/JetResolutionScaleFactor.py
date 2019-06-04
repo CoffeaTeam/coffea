@@ -1,8 +1,8 @@
 from ..lookup_tools.jersf_lookup import jersf_lookup
 import warnings
 import re
-from fnal_column_analysis_tools.util import awkward
-from fnal_column_analysis_tools.util import numpy as np
+from ..util import awkward
+from ..util import numpy as np
 from copy import deepcopy
 
 

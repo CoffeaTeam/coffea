@@ -1,6 +1,6 @@
-from fnal_column_analysis_tools.analysis_objects.JaggedCandidateArray import JaggedCandidateArray
-from fnal_column_analysis_tools.striped.StripedColumnTransformer import PhysicalColumnGroup
-from fnal_column_analysis_tools.util import awkward
+from ..analysis_objects.JaggedCandidateArray import JaggedCandidateArray
+from .StripedColumnTransformer import PhysicalColumnGroup
+from ..util import awkward
 
 
 def jaggedFromColumnGroup(cgroup):

@@ -1,7 +1,7 @@
-from fnal_column_analysis_tools.lookup_tools.lookup_base import lookup_base
+from .lookup_base import lookup_base
 
-from fnal_column_analysis_tools.util import awkward
-from fnal_column_analysis_tools.util import numpy as np
+from ..util import awkward
+from ..util import numpy as np
 from copy import deepcopy
 
 from scipy.interpolate import interp1d

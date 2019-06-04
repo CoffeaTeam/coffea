@@ -1,7 +1,7 @@
 from __future__ import print_function
 import os
 
-from fnal_column_analysis_tools.util import numpy as np
+from ..util import numpy as np
 from .evaluator import evaluator
 
 from .root_converters import convert_histo_root_file

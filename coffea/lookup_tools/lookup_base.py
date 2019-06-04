@@ -1,5 +1,5 @@
-from fnal_column_analysis_tools.util import awkward
-from fnal_column_analysis_tools.util import numpy as np
+from ..util import awkward
+from ..util import numpy as np
 
 
 class lookup_base(object):

@@ -1,5 +1,5 @@
-from fnal_column_analysis_tools.processor.spark.detail import (_spark_initialize,
-                                                               _spark_stop)
+from coffea.processor.spark.detail import (_spark_initialize,
+                                           _spark_stop)
 
 import pyspark.sql.functions as fn
 from pyspark.sql.types import DoubleType, BinaryType
@@ -8,8 +8,8 @@ import cloudpickle as cpkl
 import pandas as pd
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from fnal_column_analysis_tools import hist, processor
-from fnal_column_analysis_tools.analysis_objects import JaggedCandidateArray as CandArray
+from coffea import hist, processor
+from coffea.analysis_objects import JaggedCandidateArray as CandArray
 import numpy as np
 
 
@@ -44,12 +44,12 @@ class DummyProcessor(processor.ProcessorABC):
 def check_spark_functionality():
     spark = _spark_initialize()
 
-    env = Environment(loader=PackageLoader('fnal_column_analysis_tools.processor',
+    env = Environment(loader=PackageLoader('coffea.processor',
                                            'templates'),
                       autoescape=select_autoescape(['py'])
                       )
 
-    template_name = 'spark_template.py'
+    template_name = 'spark.py.tmpl'
     tmpl = env.get_template(template_name)
 
     global processor_instance, lz4_clevel, coffea_udf

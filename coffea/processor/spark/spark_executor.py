@@ -1,4 +1,4 @@
-from fnal_column_analysis_tools import hist, processor
+from coffea import hist, processor
 from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -48,7 +48,7 @@ class SparkExecutor(object):
         self._cacheddfs = None
         self._rawresults = None
         self._counts = None
-        self._env = Environment(loader=PackageLoader('fnal_column_analysis_tools.processor',
+        self._env = Environment(loader=PackageLoader('coffea.processor',
                                                      'templates'),
                                 autoescape=select_autoescape(['py'])
                                 )
