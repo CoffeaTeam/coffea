@@ -15,7 +15,7 @@ addons:
     - python-setuptools
 script:
 - python setup.py flake8
-- coverage run --source=fnal_column_analysis_tools/ setup.py pytest
+- coverage run --source=coffea/ setup.py pytest
 install:
 - pip install --upgrade setuptools_scm
 - pip install codecov
