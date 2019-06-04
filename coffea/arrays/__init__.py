@@ -1,1 +1,1 @@
-from fnal_column_analysis_tools.arrays.Builder import Initialize
+from .Builder import Initialize

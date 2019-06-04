@@ -1,2 +1,1 @@
-from fnal_column_analysis_tools.analysis_objects.JaggedCandidateArray import JaggedCandidateArray
-from fnal_column_analysis_tools.analysis_objects.JaggedCandidateArray import JaggedTLorentzVectorArray
+from .JaggedCandidateArray import JaggedCandidateArray, JaggedTLorentzVectorArray

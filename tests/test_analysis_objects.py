@@ -1,11 +1,11 @@
 from __future__ import print_function, division
 
-import fnal_column_analysis_tools
-from fnal_column_analysis_tools.analysis_objects import JaggedCandidateArray, JaggedTLorentzVectorArray
+import coffea
+from coffea.analysis_objects import JaggedCandidateArray, JaggedTLorentzVectorArray
 import uproot
 import uproot_methods
-from fnal_column_analysis_tools.util import awkward
-from fnal_column_analysis_tools.util import numpy as np
+from coffea.util import awkward
+from coffea.util import numpy as np
 
 from dummy_distributions import dummy_four_momenta, gen_reco_TLV
 

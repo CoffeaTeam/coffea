@@ -1,5 +1,5 @@
-from fnal_column_analysis_tools.util import awkward
-from fnal_column_analysis_tools.util import numpy as np
+from ..util import awkward
+from ..util import numpy as np
 
 # pt except for reshaping, then discriminant
 btag_feval_dims = {0: [1], 1: [1], 2: [1], 3: [2]}

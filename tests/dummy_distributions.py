@@ -1,5 +1,5 @@
-from fnal_column_analysis_tools.util import awkward
-from fnal_column_analysis_tools.util import numpy as np
+from coffea.util import awkward
+from coffea.util import numpy as np
 import uproot_methods
 
 

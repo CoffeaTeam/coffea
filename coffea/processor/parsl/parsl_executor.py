@@ -1,4 +1,4 @@
-from fnal_column_analysis_tools import hist, processor
+from coffea import hist, processor
 from copy import deepcopy
 from concurrent.futures import as_completed
 from collections.abc import Sequence
@@ -23,8 +23,8 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None)
     import cloudpickle as cpkl
     import pickle as pkl
     import lz4.frame as lz4f
-    from fnal_column_analysis_tools import hist, processor
-    from fnal_column_analysis_tools.processor.accumulator import accumulator
+    from coffea import hist, processor
+    from coffea.processor.accumulator import accumulator
     from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
     uproot.XRootDSource.defaults["parallel"] = False

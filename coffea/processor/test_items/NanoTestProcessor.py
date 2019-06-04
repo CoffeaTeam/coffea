@@ -1,5 +1,5 @@
-from fnal_column_analysis_tools import hist, processor
-from fnal_column_analysis_tools.analysis_objects import JaggedCandidateArray as CandArray
+from coffea import hist, processor
+from coffea.analysis_objects import JaggedCandidateArray as CandArray
 import numpy as np
 
 

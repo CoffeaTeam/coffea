@@ -30,13 +30,13 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import fnal_column_analysis_tools.lookup_tools as lookup_tools
-import fnal_column_analysis_tools.analysis_objects as analysis_objects
-import fnal_column_analysis_tools.striped as striped
-import fnal_column_analysis_tools.jetmet_tools as jetmet_tools
-import fnal_column_analysis_tools.arrays as arrays
+from . import lookup_tools
+from . import analysis_objects
+from . import striped
+from . import jetmet_tools
+from . import arrays
 
-import fnal_column_analysis_tools.version as version
+from . import version
 __version__ = version.__version__
 
-import fnal_column_analysis_tools.util
+from . import util

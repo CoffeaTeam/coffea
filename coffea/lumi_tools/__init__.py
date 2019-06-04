@@ -1,7 +1,7 @@
-from fnal_column_analysis_tools.util import numpy as np
+from ..util import numpy as np
 import json
 
-from fnal_column_analysis_tools.util import numba
+from ..util import numba
 from numba import types
 from numba.typed import Dict
 

@@ -1,5 +1,5 @@
 from __future__ import print_function, division
-from fnal_column_analysis_tools import processor
+from coffea import processor
 import numpy as np
 
 
