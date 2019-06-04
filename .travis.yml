@@ -13,6 +13,13 @@ addons:
   apt:
     packages:
     - python-setuptools
+before_script:
+  - composer self-update -q
+  - if [ -n "$GITHUB_OAUTH_TOKEN" ]; then composer config github-oauth.github.com ${GITHUB_OAUTH_TOKEN}; fi;
+  - if [ -z "$dependencies" ]; then composer install; fi;
+  - if [ "$dependencies" = "lowest" ]; then composer update --prefer-lowest -n; fi;
+  - if [ "$dependencies" = "highest" ]; then composer update -n; fi;
+  - composer show -i
 script:
 - python setup.py flake8
 - python setup.py pytest
@@ -33,13 +40,19 @@ branches:
   - master
   - /v(\d+)?\.(\d+)\.(\d+)/
 deploy:
-  provider: pypi
-  user: lgray
-  password:
-    secure: "OUJji+q8Tn4apo+1j5j8wW8OwyeEcDmg+Lhm5tgeKQQXLdH164f5uh7E3dg/7cl9DdSnRjd6EzJG2RRFDvCpi+wfhhzJgnkBanQuYfXt5zQFjuA1nlJoBTgdM6IRJ1M/msUowd8opUGltCsEIRApoyIYnpvsJNJAMpMM3FfU+ewkoAkTgnknT6ov/vKkXwhb1bpZy5lq3k5j46o2C0JrO6MGtoc5Xm/UJ+hK2K+hZ4E+ikwsja2KpS+lU0H1Rm7lLEj0+ZujtaW8OWp4EPLeEdhQBmN4O7qWtWpRqx9AuQnssi5EZca+/GOJdLHAutx+iW4k97XNiI/iVMKY1X0MK5Nt3HA2XsxGRKLSgLKxPaG2o/HOrFfSRAQEFKOVU6vjPMh8mSZOaZLVUFMirzeFHHhdEYSgpYkmUGvvW4iyk1bFVmGrpoNCzazkBC/1XV5Da01scBsgUx9gR5QXqD9acEI5LRIqcWqlR4/xfF4vgmtKDusxEMTCB+bVpW+12sQxTgzhoWQQB4szvPeu7IWIXlJw9iqTJy2T40FTmjy0s848maQHNEoF8EY/KkgMw0fKmvtUJaskNAG/nIeG05Sz5v+5emXmtZtUJI0HlhI5CKmVyUKr1hzf+a4lRsl0tTONm5Py4fSjFrLRgzACAJJck23l6rWZ84tL0HVjwUKpxPs="
-  distributions: sdist bdist_wheel --universal
-  on:
-    tags: true
-    branch: master
-    condition: $TRAVIS_PYTHON_VERSION = "3.6" && $AWKWARD = "awkward>=0.8.4"
-  
+  - provider: releases
+    user: lgray
+    api_key: $GITHUB_OAUTH_TOKEN
+    on:
+      tags: true
+      branch: master
+      condition: $TRAVIS_PYTHON_VERSION = "3.6" && $AWKWARD = "awkward>=0.8.4"
+  - provider: pypi
+    user: lgray
+    password:
+      secure: "OUJji+q8Tn4apo+1j5j8wW8OwyeEcDmg+Lhm5tgeKQQXLdH164f5uh7E3dg/7cl9DdSnRjd6EzJG2RRFDvCpi+wfhhzJgnkBanQuYfXt5zQFjuA1nlJoBTgdM6IRJ1M/msUowd8opUGltCsEIRApoyIYnpvsJNJAMpMM3FfU+ewkoAkTgnknT6ov/vKkXwhb1bpZy5lq3k5j46o2C0JrO6MGtoc5Xm/UJ+hK2K+hZ4E+ikwsja2KpS+lU0H1Rm7lLEj0+ZujtaW8OWp4EPLeEdhQBmN4O7qWtWpRqx9AuQnssi5EZca+/GOJdLHAutx+iW4k97XNiI/iVMKY1X0MK5Nt3HA2XsxGRKLSgLKxPaG2o/HOrFfSRAQEFKOVU6vjPMh8mSZOaZLVUFMirzeFHHhdEYSgpYkmUGvvW4iyk1bFVmGrpoNCzazkBC/1XV5Da01scBsgUx9gR5QXqD9acEI5LRIqcWqlR4/xfF4vgmtKDusxEMTCB+bVpW+12sQxTgzhoWQQB4szvPeu7IWIXlJw9iqTJy2T40FTmjy0s848maQHNEoF8EY/KkgMw0fKmvtUJaskNAG/nIeG05Sz5v+5emXmtZtUJI0HlhI5CKmVyUKr1hzf+a4lRsl0tTONm5Py4fSjFrLRgzACAJJck23l6rWZ84tL0HVjwUKpxPs="
+    distributions: sdist bdist_wheel --universal
+    on:
+      tags: true
+      branch: master
+      condition: $TRAVIS_PYTHON_VERSION = "3.6" && $AWKWARD = "awkward>=0.8.4"
