@@ -31,7 +31,7 @@ install:
 branches:
   only:
   - master
-  - /(\d+\.)?(\d+\.)?(\*|\d+)$/
+  - /v(\d+)?\.(\d+)\.(\d+)/
 deploy:
   provider: pypi
   user: lgray
