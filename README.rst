@@ -7,6 +7,9 @@ fnal-column-analysis-tools
 .. image:: https://ci.appveyor.com/api/projects/status/93pk94vu1xlk83q5?svg=true
     :target: https://ci.appveyor.com/project/lgray/fnal-column-analysis-tools
 
+.. image:: https://codecov.io/gh/CoffeaTeam/fnal-column-analysis-tools/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/CoffeaTeam/fnal-column-analysis-tools
+
 .. image:: https://badge.fury.io/py/fnal-column-analysis-tools.svg
     :target: https://badge.fury.io/py/fnal-column-analysis-tools
 

@@ -15,9 +15,10 @@ addons:
     - python-setuptools
 script:
 - python setup.py flake8
-- python setup.py pytest
+- coverage run -m pytest
 install:
 - pip install --upgrade setuptools_scm
+- pip install codecov
 - PY_MAJ=`python -c 'import sys; print(sys.version_info[0])'`
 - PY_MIN=`python -c 'import sys; print(sys.version_info[1])'`
 - if [ $PY_MAJ -eq 3 ]; then pip install pandas pyarrow cloudpickle lz4 jinja2 parsl;
@@ -32,6 +33,8 @@ branches:
   only:
   - master
   - /v(\d+)?\.(\d+)\.(\d+)/
+after_success:
+  - if [ $TRAVIS_PYTHON_VERSION = "3.6" ] && [ $AWKWARD = "awkward>=0.8.4" ]; then codecov; fi
 deploy:
   - provider: releases
     user: lgray
