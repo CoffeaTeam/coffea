@@ -1,10 +1,10 @@
-fnal-column-analysis-tools
+coffea
 ==========================
 
 .. image:: https://travis-ci.com/CoffeaTeam/coffea.svg?branch=master
     :target: https://travis-ci.com/CoffeaTeam/coffea
 
-.. image:: https://ci.appveyor.com/api/projects/status/3u69hmjtnld2txio/branch/master?svg=truexs
+.. image:: https://ci.appveyor.com/api/projects/status/3u69hmjtnld2txio/branch/master?svg=true
     :target: https://ci.appveyor.com/project/lgray/coffea
 
 .. image:: https://codecov.io/gh/CoffeaTeam/coffea/branch/master/graph/badge.svg
