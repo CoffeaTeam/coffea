@@ -15,10 +15,10 @@ addons:
     - python-setuptools
 script:
 - python setup.py flake8
-- coverage run -m pytest
+- coverage run --source=fnal_column_analysis_tools/ setup.py pytest
 install:
 - pip install --upgrade setuptools_scm
-- pip install pytest codecov
+- pip install codecov
 - PY_MAJ=`python -c 'import sys; print(sys.version_info[0])'`
 - PY_MIN=`python -c 'import sys; print(sys.version_info[1])'`
 - if [ $PY_MAJ -eq 3 ]; then pip install pandas pyarrow cloudpickle lz4 jinja2 parsl;
