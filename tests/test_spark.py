@@ -4,16 +4,12 @@ import warnings
 
 import numpy as np
 
-def test_spark_imports():
-    try:
-        import pyspark
-    except ImportError:
-        warnings.warn('pyspark not installed, skipping tests')
-        return
-    except Exception as e:
-        warnings.warn('other error when trying to import pyspark!')
-        raise e
+import pytest
 
+
+def test_spark_imports():
+    pyspark = pytest.importorskip("pyspark", minversion="2.4.1")
+    
     from fnal_column_analysis_tools.processor.spark.spark_executor import spark_executor
     from fnal_column_analysis_tools.processor.spark.detail import (_spark_initialize,
                                                                    _spark_make_dfs,
@@ -22,15 +18,10 @@ def test_spark_imports():
     spark = _spark_initialize()
     _spark_stop(spark)
 
-def nope_test_spark_functionality():
-    try:
-        import pyspark
-    except ImportError:
-        warnings.warn('pyspark not installed, skipping tests')
-        return
-    except Exception as e:
-        warnings.warn('other error when trying to import pyspark!')
-        raise e
+
+@pytest.mark.skip(reason='test should work but does not.')
+def test_spark_functionality():
+    pyspark = pytest.importorskip("pyspark", minversion="2.4.1")
     
     import lz4.frame as lz4f
     import cloudpickle as cpkl
@@ -57,15 +48,8 @@ def nope_test_spark_functionality():
     assert( final['cutflow']['dummy'] == 3 )
 
 def test_spark_executor():
-    try:
-        import pyspark
-    except ImportError:
-        warnings.warn('pyspark not installed, skipping tests')
-        return
-    except Exception as e:
-        warnings.warn('other error when trying to import pyspark!')
-        raise e
-
+    pyspark = pytest.importorskip("pyspark", minversion="2.4.1")
+    
     from fnal_column_analysis_tools.processor.spark.detail import (_spark_initialize,
                                                                    _spark_make_dfs,
                                                                    _spark_stop)
