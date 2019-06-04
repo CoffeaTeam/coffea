@@ -7,16 +7,13 @@ import warnings
 
 import numpy as np
 
-def test_parsl_start_stop():
-    try:
-        import parsl
-    except ImportError:
-        warnings.warn('parsl not installed, skipping tests')
-        return
-    except Exception as e:
-        warnings.warn('other error when trying to import parsl!')
-        raise e
+import pytest
 
+
+
+def test_parsl_start_stop():
+    parsl = pytest.importorskip("parsl", minversion="0.7.2")
+    
     from fnal_column_analysis_tools.processor.parsl.detail import (_parsl_initialize,
                                                                    _parsl_stop,
                                                                    _default_cfg)
@@ -25,15 +22,9 @@ def test_parsl_start_stop():
     
     _parsl_stop(dfk)
 
+
 def test_parsl_executor():
-    try:
-        import parsl
-    except ImportError:
-        warnings.warn('parsl not installed, skipping tests')
-        return
-    except Exception as e:
-        warnings.warn('other error when trying to import parsl!')
-        raise e
+    parsl = pytest.importorskip("parsl", minversion="0.7.2")
     
     from fnal_column_analysis_tools.processor import run_parsl_job
 
