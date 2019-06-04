@@ -18,7 +18,7 @@ script:
 - coverage run -m pytest
 install:
 - pip install --upgrade setuptools_scm
-- pip install codecov
+- pip install pytest codecov
 - PY_MAJ=`python -c 'import sys; print(sys.version_info[0])'`
 - PY_MIN=`python -c 'import sys; print(sys.version_info[1])'`
 - if [ $PY_MAJ -eq 3 ]; then pip install pandas pyarrow cloudpickle lz4 jinja2 parsl;
