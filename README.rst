@@ -4,7 +4,7 @@ fnal-column-analysis-tools
 .. image:: https://travis-ci.com/CoffeaTeam/coffea.svg?branch=master
     :target: https://travis-ci.com/CoffeaTeam/coffea
 
-.. image:: https://ci.appveyor.com/api/projects/status/93pk94vu1xlk83q5?svg=true
+.. image:: https://ci.appveyor.com/api/projects/status/3u69hmjtnld2txio/branch/master?svg=truexs
     :target: https://ci.appveyor.com/project/lgray/coffea
 
 .. image:: https://codecov.io/gh/CoffeaTeam/coffea/branch/master/graph/badge.svg
