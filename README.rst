@@ -1,23 +1,23 @@
 fnal-column-analysis-tools
 ==========================
 
-.. image:: https://travis-ci.com/CoffeaTeam/fnal-column-analysis-tools.svg?branch=master
-    :target: https://travis-ci.com/CoffeaTeam/fnal-column-analysis-tools
+.. image:: https://travis-ci.com/CoffeaTeam/coffea.svg?branch=master
+    :target: https://travis-ci.com/CoffeaTeam/coffea
 
 .. image:: https://ci.appveyor.com/api/projects/status/93pk94vu1xlk83q5?svg=true
-    :target: https://ci.appveyor.com/project/lgray/fnal-column-analysis-tools
+    :target: https://ci.appveyor.com/project/lgray/coffea
 
-.. image:: https://codecov.io/gh/CoffeaTeam/fnal-column-analysis-tools/branch/master/graph/badge.svg
-    :target: https://codecov.io/gh/CoffeaTeam/fnal-column-analysis-tools
+.. image:: https://codecov.io/gh/CoffeaTeam/coffea/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/CoffeaTeam/coffea
 
-.. image:: https://badge.fury.io/py/fnal-column-analysis-tools.svg
-    :target: https://badge.fury.io/py/fnal-column-analysis-tools
+.. image:: https://badge.fury.io/py/coffea.svg
+    :target: https://badge.fury.io/py/coffea
 
-.. image:: https://img.shields.io/pypi/dm/fnal-column-analysis-tools.svg
-    :target: https://img.shields.io/pypi/dm/fnal-column-analysis-tools
+.. image:: https://img.shields.io/pypi/dm/coffea.svg
+    :target: https://img.shields.io/pypi/dm/coffea
 
 .. image:: https://mybinder.org/badge_logo.svg
-   :target: https://mybinder.org/v2/gh/CoffeaTeam/fnal-column-analysis-tools/master?filepath=binder/
+   :target: https://mybinder.org/v2/gh/CoffeaTeam/coffea/master?filepath=binder/
 
 .. inclusion-marker-1-do-not-remove
 
@@ -47,7 +47,7 @@ Install fnal-column-analysis-tools like any other Python package:
 
 .. code-block:: bash
 
-    pip install fnal-column-analysis-tools
+    pip install coffea
 
 or similar (use ``sudo``, ``--user``, ``virtualenv``, or pip-in-conda if you wish).
 
