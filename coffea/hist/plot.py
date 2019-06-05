@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
-from fnal_column_analysis_tools.util import numpy as np
+from coffea.util import numpy as np
 import scipy.stats
 import copy
 import warnings
