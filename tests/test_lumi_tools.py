@@ -1,7 +1,7 @@
 from __future__ import print_function, division
 
-from fnal_column_analysis_tools.lumi_tools import LumiData, LumiMask
-from fnal_column_analysis_tools.util import numpy as np
+from coffea.lumi_tools import LumiData, LumiMask
+from coffea.util import numpy as np
 
 def test_lumidata():
     lumidata = LumiData("tests/samples/lumi_small.csv")

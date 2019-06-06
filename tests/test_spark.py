@@ -1,4 +1,4 @@
-from fnal_column_analysis_tools import (hist,processor)
+from coffea import (hist,processor)
 
 import warnings
 
@@ -10,10 +10,10 @@ import pytest
 def test_spark_imports():
     pyspark = pytest.importorskip("pyspark", minversion="2.4.1")
     
-    from fnal_column_analysis_tools.processor.spark.spark_executor import spark_executor
-    from fnal_column_analysis_tools.processor.spark.detail import (_spark_initialize,
-                                                                   _spark_make_dfs,
-                                                                   _spark_stop)
+    from coffea.processor.spark.spark_executor import spark_executor
+    from coffea.processor.spark.detail import (_spark_initialize,
+                                               _spark_make_dfs,
+                                               _spark_stop)
 
     spark = _spark_initialize()
     _spark_stop(spark)
@@ -26,8 +26,8 @@ def test_spark_functionality():
     import lz4.frame as lz4f
     import cloudpickle as cpkl
     
-    from fnal_column_analysis_tools import hist
-    from fnal_column_analysis_tools.processor.spark.tests import check_spark_functionality
+    from coffea import hist
+    from coffea.processor.spark.tests import check_spark_functionality
     one,two,hists = check_spark_functionality()
 
     #check that spark produced the correct output dataset
@@ -50,10 +50,10 @@ def test_spark_functionality():
 def test_spark_executor():
     pyspark = pytest.importorskip("pyspark", minversion="2.4.1")
     
-    from fnal_column_analysis_tools.processor.spark.detail import (_spark_initialize,
-                                                                   _spark_make_dfs,
-                                                                   _spark_stop)
-    from fnal_column_analysis_tools.processor import run_spark_job
+    from coffea.processor.spark.detail import (_spark_initialize,
+                                               _spark_make_dfs,
+                                               _spark_stop)
+    from coffea.processor import run_spark_job
 
     import os
     import os.path as osp
@@ -71,8 +71,8 @@ def test_spark_executor():
                 'Data'  : ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dimuon.parquet')]
                 }
 
-    from fnal_column_analysis_tools.processor.test_items import NanoTestProcessor
-    from fnal_column_analysis_tools.processor.spark.spark_executor import spark_executor
+    from coffea.processor.test_items import NanoTestProcessor
+    from coffea.processor.spark.spark_executor import spark_executor
 
     columns = ['nMuon','Muon_pt','Muon_eta','Muon_phi','Muon_mass']
     proc = NanoTestProcessor(columns=columns)
