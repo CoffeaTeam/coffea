@@ -1,6 +1,6 @@
 import uproot
 import numpy as np
-from fnal_column_analysis_tools.arrays import Initialize
+from coffea.arrays import Initialize
 
 
 def test_object_arrays():

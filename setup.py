@@ -38,7 +38,7 @@ from setuptools import setup
 
 def get_version():
     g = {}
-    exec(open(os.path.join("fnal_column_analysis_tools", "version.py")).read(), g)
+    exec(open(os.path.join("coffea", "version.py")).read(), g)
     return g["__version__"]
 
 
@@ -76,19 +76,19 @@ if six.PY3:
 if six.PY2:
     EXTRAS_REQUIRE['striped'] = []
 
-setup(name="fnal-column-analysis-tools",
+setup(name="coffea",
       version=get_version(),
       packages=find_packages(exclude=["tests"]),
       scripts=[],
       include_package_data=True,
-      description="Tools for doing Collider HEP style analysis with columnar operations at Fermilab",
+      description="Tools for doing Collider HEP style analysis with columnar operations",
       long_description=get_description(),
       author="Lindsey Gray (Fermilab)",
       author_email="lagray@fnal.gov",
       maintainer="Lindsey Gray (Fermilab)",
       maintainer_email="lagray@fnal.gov",
-      url="https://github.com/CoffeaTeam/fnal-column-analysis-tools",
-      download_url="https://github.com/CoffeaTeam/fnal-column-analysis-tools/releases",
+      url="https://github.com/CoffeaTeam/coffea",
+      download_url="https://github.com/CoffeaTeam/coffea/releases",
       license="BSD 3-clause",
       test_suite="tests",
       install_requires=INSTALL_REQUIRES,

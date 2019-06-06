@@ -1,9 +1,9 @@
 from __future__ import print_function, division
 
-from fnal_column_analysis_tools import lookup_tools
+from coffea import lookup_tools
 import uproot
-from fnal_column_analysis_tools.util import awkward
-from fnal_column_analysis_tools.util import numpy as np
+from coffea.util import awkward
+from coffea.util import numpy as np
 
 from dummy_distributions import dummy_jagged_eta_pt
 

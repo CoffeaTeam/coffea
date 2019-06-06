@@ -1,10 +1,10 @@
 from __future__ import print_function, division
 
-from fnal_column_analysis_tools.striped import ColumnGroup, PhysicalColumnGroup, jaggedFromColumnGroup
+from coffea.striped import ColumnGroup, PhysicalColumnGroup, jaggedFromColumnGroup
 import uproot
 import uproot_methods
-from fnal_column_analysis_tools.util import awkward
-from fnal_column_analysis_tools.util import numpy as np
+from coffea.util import awkward
+from coffea.util import numpy as np
 
 from dummy_distributions import dummy_events
 

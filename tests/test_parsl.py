@@ -1,5 +1,5 @@
 from __future__ import print_function, division
-from fnal_column_analysis_tools import processor
+from coffea import processor
 
 import multiprocessing
 
@@ -14,9 +14,9 @@ import pytest
 def test_parsl_start_stop():
     parsl = pytest.importorskip("parsl", minversion="0.7.2")
     
-    from fnal_column_analysis_tools.processor.parsl.detail import (_parsl_initialize,
-                                                                   _parsl_stop,
-                                                                   _default_cfg)
+    from coffea.processor.parsl.detail import (_parsl_initialize,
+                                               _parsl_stop,
+                                               _default_cfg)
 
     dfk = _parsl_initialize(config=_default_cfg)
     
@@ -26,10 +26,10 @@ def test_parsl_start_stop():
 def test_parsl_executor():
     parsl = pytest.importorskip("parsl", minversion="0.7.2")
     
-    from fnal_column_analysis_tools.processor import run_parsl_job
+    from coffea.processor import run_parsl_job
 
-    from fnal_column_analysis_tools.processor.parsl.detail import (_parsl_initialize,
-                                                                   _parsl_stop)
+    from coffea.processor.parsl.detail import (_parsl_initialize,
+                                               _parsl_stop)
 
     from parsl.providers import LocalProvider
     from parsl.channels import LocalChannel
@@ -62,8 +62,8 @@ def test_parsl_executor():
         }
     treename='Events'
 
-    from fnal_column_analysis_tools.processor.test_items import NanoTestProcessor
-    from fnal_column_analysis_tools.processor.parsl.parsl_executor import parsl_executor
+    from coffea.processor.test_items import NanoTestProcessor
+    from coffea.processor.parsl.parsl_executor import parsl_executor
 
     dfk = _parsl_initialize(parsl_config)
 
