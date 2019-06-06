@@ -7,8 +7,6 @@ import warnings
 import numbers
 from .hist_tools import SparseAxis, DenseAxis, overflow_behavior, Interval, StringBin
 
-import matplotlib.pyplot as plt
-
 # Plotting is always terrible
 # Let's try our best to follow matplotlib idioms
 # https://matplotlib.org/tutorials/introductory/usage.html#coding-styles
@@ -99,6 +97,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         density: Convert sum weights to probability density (i.e. integrates to 1 over domain of axis) (NB: conflicts with binwnorm)
         binwnorm: Convert sum weights to bin-width-normalized, with units equal to supplied value (usually you want to specify 1.)
     """
+    import matplotlib.pyplot as plt
     if ax is None:
         fig, ax = plt.subplots(1, 1)
     else:
@@ -259,6 +258,7 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
                     (common for data/mc, for better or worse...)
         label: associate a label with this entry (note: y axis label set by num.label)
     """
+    import matplotlib.pyplot as plt
     if ax is None:
         fig, ax = plt.subplots(1, 1)
     else:
@@ -350,6 +350,7 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
         density: Convert sum weights to probability density (i.e. integrates to 1 over domain of axes) (NB: conflicts with binwnorm)
         binwnorm: Convert sum weights to bin-area-normalized, with units equal to supplied value (usually you want to specify 1.)
     """
+    import matplotlib.pyplot as plt
     if ax is None:
         fig, ax = plt.subplots(1, 1)
     else:
@@ -436,6 +437,7 @@ def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='non
 
         Pass a figure object to redraw on existing figure
     """
+    import matplotlib.pyplot as plt
     haxes = set(ax.name for ax in h.axes())
     nrow, ncol = 1, 1
     if row:
