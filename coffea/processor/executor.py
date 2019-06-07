@@ -40,15 +40,8 @@ def futures_executor(items, function, accumulator, workers=2, status=True, unit=
         futures = set()
         try:
             futures.update(executor.submit(function, item, **function_args) for item in items)
-            with tqdm(disable=not status, unit=unit, total=len(futures), desc=desc) as pbar:
-                while len(futures) > 0:
-                    finished = set(job for job in futures if job.done())
-                    for job in finished:
-                        accumulator += job.result()
-                        pbar.update(1)
-                    futures -= finished
-                    del finished
-                    time.sleep(1)
+            for job in tqdm(concurrent.futures.as_completed(futures),disable=not status, unit=unit, total=len(futures)):
+                accumulator += job.result()
         except KeyboardInterrupt:
             for job in futures:
                 job.cancel()
