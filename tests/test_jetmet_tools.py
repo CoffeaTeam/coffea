@@ -1,11 +1,17 @@
 from __future__ import print_function
+import sys
 
 from coffea import lookup_tools
 import uproot
 from coffea.util import awkward
 from coffea.util import numpy as np
 
+import pytest
+
 from dummy_distributions import dummy_jagged_eta_pt, dummy_four_momenta
+
+if sys.platform.startswith("win"):
+    pytest.skip("skipping tests that only function in linux", allow_module_level=True)
 
 
 def jetmet_evaluator():
@@ -26,6 +32,7 @@ def jetmet_evaluator():
     return extract.make_evaluator()
 
 evaluator = jetmet_evaluator()
+
 
 def test_factorized_jet_corrector():
     from coffea.jetmet_tools import FactorizedJetCorrector
