@@ -86,7 +86,8 @@ class extractor(object):
     def import_file(self, thefile):
         """ cache the whole contents of a file for later processing """
         if thefile not in self._filecache.keys():
-            file_dots = os.path.basename(thefile).split('.')
+            drop_gz = thefile.replace('.gz','')
+            file_dots = os.path.basename(drop_gz).split('.')
             theformat = file_dots[-1].strip()
             thetype = 'default'
             if len(file_dots) > 2:
