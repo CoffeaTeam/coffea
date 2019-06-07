@@ -10,7 +10,7 @@ if sys.platform.startswith("win"):
     pytest.skip("skipping tests that only function in linux", allow_module_level=True)
 
 
-def template_analysis(executor):
+def template_analysis(executor, flatten):
     from coffea.processor import run_uproot_job
     
     filelist = {
@@ -23,7 +23,7 @@ def template_analysis(executor):
 
     exe_args = {'workers': 1,
                 'pre_workers': 1,
-                'function_args': {'flatten': True}}
+                'function_args': {'flatten': flatten}}
 
     hists = run_uproot_job(filelist, treename, NanoTestProcessor(), executor,
                            executor_args = exe_args)
@@ -36,10 +36,12 @@ def template_analysis(executor):
 
 def test_iterative_executor():
     from coffea.processor import iterative_executor
-    template_analysis(iterative_executor)
+    template_analysis(iterative_executor, True)
+    template_analysis(iterative_executor, False)
 
 
 def test_futures_executor():
     from coffea.processor import futures_executor
-    template_analysis(futures_executor)
+    template_analysis(futures_executor, True)
+    template_analysis(futures_executor, False)
 
