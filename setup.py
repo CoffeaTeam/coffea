@@ -64,7 +64,9 @@ INSTALL_REQUIRES = ['awkward>=0.8.4',
                     'uproot-methods>=0.4.3',
                     'uproot>=3.4.5',
                     'futures; python_version == "2.7"',
-                    'tqdm'
+                    'tqdm',
+                    'lz4',
+                    'cloudpickle',
                     ]
 EXTRAS_REQUIRE = {}
 if six.PY3:
