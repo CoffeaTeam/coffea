@@ -4,8 +4,8 @@ coffea
 .. image:: https://travis-ci.com/CoffeaTeam/coffea.svg?branch=master
     :target: https://travis-ci.com/CoffeaTeam/coffea
 
-.. image:: https://ci.appveyor.com/api/projects/status/3u69hmjtnld2txio/branch/master?svg=true
-    :target: https://ci.appveyor.com/project/lgray/coffea
+.. image:: https://ci.appveyor.com/api/projects/status/93pk94vu1xlk83q5/branch/master?svg=true
+    :target: https://ci.appveyor.com/project/lgray/fnal-column-analysis-tools/branch/master
 
 .. image:: https://codecov.io/gh/CoffeaTeam/coffea/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/CoffeaTeam/coffea
