@@ -71,9 +71,16 @@ def test_parsl_executor():
 
     hists = run_parsl_job(filelist, treename, processor_instance = proc, executor=parsl_executor, data_flow=dfk)
 
+    hists2 = run_parsl_job(filelist, treename, processor_instance = proc, executor=parsl_executor, data_flow=dfk, executor_args={'flatten': False})
+
     _parsl_stop(dfk)
 
     assert( hists['cutflow']['ZJets_pt'] == 4 )
     assert( hists['cutflow']['ZJets_mass'] == 1 )
     assert( hists['cutflow']['Data_pt'] == 15 )
     assert( hists['cutflow']['Data_mass'] == 5 )
+
+    assert( hists2['cutflow']['ZJets_pt'] == 4 )
+    assert( hists2['cutflow']['ZJets_mass'] == 1 )
+    assert( hists2['cutflow']['Data_pt'] == 15 )
+    assert( hists2['cutflow']['Data_mass'] == 5 )
