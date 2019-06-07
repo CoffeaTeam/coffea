@@ -31,7 +31,7 @@ class NanoTestProcessor(processor.ProcessorABC):
         dataset = df['dataset']
 
         muon = None
-        if isinstance(df['Muon_pt'],akd.JaggedArray):
+        if isinstance(df['Muon_pt'], akd.JaggedArray):
             muon = CandArray.candidatesfromcounts(counts=df['Muon_pt'].counts,
                                                   pt=df['Muon_pt'].content,
                                                   eta=df['Muon_eta'].content,
