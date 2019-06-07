@@ -18,7 +18,7 @@ lz4_clevel = 1
 
 @python_app
 @timeout
-def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None):
+def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None, flatten=True):
     import uproot
     import cloudpickle as cpkl
     import pickle as pkl
@@ -69,7 +69,7 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None)
     if tree is None:
         raise Exception('No tree found, out of possible tree names: %s' % repr(treename))
 
-    df = processor.LazyDataFrame(tree, chunksize, index, flatten=True)
+    df = processor.LazyDataFrame(tree, chunksize, index, flatten=flatten)
     df['dataset'] = dataset
 
     vals = processor_instance.process(df)
@@ -90,7 +90,7 @@ class ParslExecutor(object):
     def counts(self):
         return self._counts
 
-    def __call__(self, dfk, items, processor_instance, output, unit='items', desc='Processing', timeout=None):
+    def __call__(self, dfk, items, processor_instance, output, unit='items', desc='Processing', timeout=None, flatten=True):
         procstr = lz4f.compress(cpkl.dumps(processor_instance))
 
         nitems = len(items)
@@ -98,7 +98,7 @@ class ParslExecutor(object):
         for dataset, fn, treename, chunksize, index in items:
             if dataset not in self._counts:
                 self._counts[dataset] = 0
-            ftr_to_item.add(coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=timeout))
+            ftr_to_item.add(coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=timeout, flatten=flatten))
 
         for ftr in tqdm(as_completed(ftr_to_item), total=nitems, unit='items', desc='Processing'):
             blob, nentries, dataset = ftr.result()
