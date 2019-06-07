@@ -10,8 +10,8 @@ def template_analysis(executor):
     from coffea.processor import run_uproot_job
     
     filelist = {
-        'ZJets': [osp.join(os.getcwd(),'tests/samples/nano_dy.root')],
-        'Data': [osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')]
+        'ZJets': [osp.abspath('tests/samples/nano_dy.root')],
+        'Data': [osp.abspath('tests/samples/nano_dimuon.root')]
     }
     treename='Events'
 
