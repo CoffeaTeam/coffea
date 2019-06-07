@@ -28,14 +28,14 @@ if not hasattr(uproot.source.xrootd.XRootDSource, '_read_real'):
 
 
 def iterative_executor(items, function, accumulator, status=True, unit='items', desc='Processing',
-                       function_args={}):
+                       function_args={}, **kwargs):
     for i, item in tqdm(enumerate(items), disable=not status, unit=unit, total=len(items), desc=desc):
         accumulator += function(item, **function_args)
     return accumulator
 
 
-def futures_executor(items, function, accumulator, workers=2, status=True, unit='items', desc='Processing',
-                     function_args={}):
+def futures_executor(items, function, accumulator, workers=1, status=True, unit='items', desc='Processing',
+                     function_args={}, **kwargs):
     with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
         futures = set()
         try:
@@ -114,13 +114,14 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
 
     executor_args.setdefault('workers', 1)
+    executor_args.setdefault('pre_workers', 4 * executor_args['workers'])
 
     items = []
     for dataset, filelist in tqdm(fileset.items(), desc='Preprocessing'):
         if maxchunks is not None:
             chunks = _get_chunking_lazy(tuple(filelist), treename, chunksize)
         else:
-            chunks = _get_chunking(tuple(filelist), treename, chunksize, executor_args['workers'])
+            chunks = _get_chunking(tuple(filelist), treename, chunksize, executor_args['pre_workers'])
         for ichunk, chunk in enumerate(chunks):
             if (maxchunks is not None) and (ichunk > maxchunks):
                 break
