@@ -13,6 +13,7 @@ nb = numba
 import lz4.frame
 import cloudpickle
 
+
 def load(filename):
     '''
     Load a coffea file from disk
