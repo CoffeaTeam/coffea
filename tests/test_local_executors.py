@@ -1,9 +1,13 @@
+import sys
 import os
 import os.path as osp
 
 import pytest
 
 from coffea import hist, processor
+
+if sys.platform.startswith("win"):
+    pytest.skip("skipping tests that only function in linux", allow_module_level=True)
 
 
 def template_analysis(executor):
