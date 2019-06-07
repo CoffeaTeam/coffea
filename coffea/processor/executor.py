@@ -173,6 +173,7 @@ def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=Non
     executor_args.setdefault('config', _default_cfg)
     executor_args.setdefault('timeout', 180)
     executor_args.setdefault('chunking_timeout', 10)
+    executor_args.setdefault('flatten', True)
 
     # initialize spark if we need to
     # if we initialize, then we deconstruct
