@@ -62,7 +62,7 @@ def _default_fastmatch(first, second, deltaRCut=10000):
     drCut2 = deltaRCut**2
     args = first.eta._argcross(second.eta)
     argsnested = awkward.JaggedArray.fromcounts(first.eta.counts,
-                                                awkward.JaggedArray.fromcounts(first.eta._broadcast(second.eta.counts).flatten(),
+                                                awkward.JaggedArray.fromcounts(first.eta.tojagged(second.eta.counts).flatten(),
                                                                                args._content))
     eta0s = first.eta.content[argsnested.content.content.i0]
     eta1s = second.eta.content[argsnested.content.content.i1]
