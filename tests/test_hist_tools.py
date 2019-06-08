@@ -104,3 +104,34 @@ def test_hist():
     assert h_tall.sum("mass", "vocalization").values()[('birds',)] == tall_bird_count
     tall_mammal_count = np.sum(adult_bison_h>=1.) + np.sum(baby_bison_h>=1) + 1
     assert h_tall.sum("mass", "vocalization").values()[('mammals',)] == tall_mammal_count
+
+def test_export1d():
+    import uproot
+    import os
+    from coffea.hist import export1d
+    
+
+    counts, test_eta, test_pt = dummy_jagged_eta_pt()
+    h_regular_bins = hist.Hist("regular_joe", hist.Bin("x", "x", 20, 0, 200))
+    h_regular_bins.fill(x=test_pt)
+
+    hout = export1d(h_regular_bins)
+
+    filename = 'test_export1d.root'
+    
+    with uproot.create(filename) as fout:
+        fout['regular_joe'] = hout
+        fout.close()
+
+    with uproot.open(filename) as fin:
+        hin = fin['regular_joe']
+
+
+    assert(np.all(hin.edges == hout.edges))
+    assert(np.all(hin.values == hout.values))
+
+    del hin
+    del fin
+
+    if os.path.exists(filename):
+        os.remove(filename)

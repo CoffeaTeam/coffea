@@ -11,10 +11,10 @@ def timeout(func):
         import signal
         import datetime
 
-        def handler(signum, frame):
+        def _timeout_handler(signum, frame):
             raise Exception("Timeout hit")
 
-        signal.signal(signal.SIGALRM, handler)
+        signal.signal(signal.SIGALRM, _timeout_handler)
         if kwargs.get('timeout', None):
             signal.alarm(kwargs.get('timeout'))
             print("[Timeout wrapper:{}] Timeout {}".format(datetime.datetime.now(),
