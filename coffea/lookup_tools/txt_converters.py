@@ -12,7 +12,11 @@ except ImportError:
 
 def _parse_jme_formatted_file(jmeFilePath, interpolatedFunc=False, parmsFromColumns=False, jme_f=None):
     if jme_f is None:
-        jme_f = open(jmeFilePath, 'r')
+        fopen = open
+        if '.gz' in jmeFilePath:
+            import gzip
+            fopen = gzip.open
+        jme_f = fopen(jmeFilePath, 'rt')
     layoutstr = jme_f.readline().strip().strip('{}')
 
     name = jmeFilePath.split('/')[-1].split('.')[0]
@@ -185,7 +189,11 @@ def convert_jersf_txt_file(jersfFilePath):
 def convert_junc_txt_file(juncFilePath):
     components = []
     basename = os.path.basename(juncFilePath).split('.')[0]
-    with open(juncFilePath) as uncfile:
+    fopen = open
+    if '.gz' in juncFilePath:
+        import gzip
+        fopen = gzip.open
+    with fopen(juncFilePath, 'rt') as uncfile:
         for line in uncfile:
             if line.startswith('#'):
                 continue
@@ -244,7 +252,11 @@ def convert_junc_txt_component(juncFilePath, uncFile):
 
 
 def convert_effective_area_file(eaFilePath):
-    ea_f = open(eaFilePath, 'r')
+    fopen = open
+    if '.gz' in eaFilePath:
+        import gzip
+        fopen = gzip.open
+    ea_f = fopen(eaFilePath, 'rt')
     layoutstr = ea_f.readline().strip().strip('{}')
     ea_f.close()
 
