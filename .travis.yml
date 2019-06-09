@@ -25,6 +25,7 @@ install:
 - if [ $PY_MAJ -eq 3 ]; then pip install https://github.com/Parsl/parsl/zipball/master; fi
 - if [ $PY_MAJ -eq 3 ] && [ $PY_MIN -eq 6 ]; then  pip install pyspark; fi
 - pip install ${AWKWARD}
+- pip install uproot
 - pip install scipy numba
 - pip install numpy --upgrade
 - python -c 'import numpy; print(numpy.__version__)'
@@ -35,7 +36,15 @@ branches:
   - /v(\d+)?\.(\d+)\.(\d+)/
 after_success:
   - if [ $TRAVIS_PYTHON_VERSION = "3.6" ] && [ $AWKWARD = "awkward>=0.8.4" ]; then codecov; fi
+  - if [ $TRAVIS_PYTHON_VERSION = "3.6" ] && [ $AWKWARD = "awkward>=0.8.4" ]; then source docs/build_docs.sh; fi
 deploy:
+  - provider: pages
+    skip_cleanup: true
+    github_token: $GITHUB_OAUTH_TOKEN
+    local_dir: docs/build/html
+    on:
+      branch: master
+      condition: $TRAVIS_PYTHON_VERSION = "3.6" && $AWKWARD = "awkward>=0.8.4"
   - provider: releases
     user: lgray
     api_key: $GITHUB_OAUTH_TOKEN
