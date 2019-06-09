@@ -76,7 +76,7 @@ def test_analysis_objects():
     assert 'p4' in adistinct.columns
     assert 'p4' in apair.columns
     assert 'p4' in across.columns
-    
+
     admsum = (adistinct.i0.p4 + adistinct.i1.p4).mass
     apmsum = (apair.i0.p4 + apair.i1.p4).mass
     acmsum = (across.i0.p4 + across.i1.p4).mass
@@ -113,16 +113,45 @@ def test_analysis_objects():
     jca_reco = JaggedCandidateArray.candidatesfromcounts(reco.counts,
                                                          px=reco_px,py=reco_py,
                                                          pz=reco_pz,energy=reco_e)
-    print('gen eta: ',jca_gen.p4.eta,'\n gen phi:',jca_gen.p4.phi)
-    print('reco eta: ',jca_reco.p4.eta,'\n reco phi:',jca_reco.p4.phi)
-    print('match mask: ',jca_reco.match(jca_gen,deltaRCut=0.3) )
+    print('gen eta: ', jca_gen.p4.eta,'\n gen phi:', jca_gen.p4.phi)
+    print('reco eta: ', jca_reco.p4.eta,'\n reco phi:', jca_reco.p4.phi)
+    match_mask = jca_reco.match(jca_gen, deltaRCut=0.3)
+    print('match mask: ',  match_mask)
+    fast_match_mask = jca_reco.fastmatch(jca_gen, deltaRCut=0.3)
+    print('fastmatch mask: ', fast_match_mask)
+    assert((match_mask == fast_match_mask).all().all())
     print('arg matches: ',jca_reco.argmatch(jca_gen,deltaRCut=0.3))
     argmatch_nocut = jca_gen.argmatch(jca_reco).flatten()
-    argmatch_dr03  = jca_gen.argmatch(jca_reco,deltaRCut=0.3).flatten()
-    argmatch_dr03_dpt01 = jca_gen.argmatch(jca_reco,deltaRCut=0.3,deltaPtCut=0.1).flatten()
+    argmatch_dr03  = jca_gen.argmatch(jca_reco, deltaRCut=0.3).flatten()
+    argmatch_dr03_dpt01 = jca_gen.argmatch(jca_reco, deltaRCut=0.3, deltaPtCut=0.1).flatten()
     assert (argmatch_nocut.size==5)
     assert (argmatch_dr03[argmatch_dr03 != -1].size==3)
     assert (argmatch_dr03_dpt01[argmatch_dr03_dpt01 != -1].size==2)
     assert (jca_gen.match(jca_reco,deltaRCut=0.3).flatten().flatten().sum()==3)
     assert (jca_gen.match(jca_reco,deltaRCut=0.3,deltaPtCut=0.1).flatten().flatten().sum()==2)
+
+    # test various four-momentum constructors
+    ptetaphiE_test = JaggedCandidateArray.candidatesfromcounts(jca_reco.counts,
+                                                               pt=jca_reco.pt,
+                                                               eta=jca_reco.eta,
+                                                               phi=jca_reco.phi,
+                                                               energy=jca_reco.p4.energy)
+
+    pxpypzM_test = JaggedCandidateArray.candidatesfromcounts(jca_reco.counts,
+                                                             px=jca_reco.p4.x,
+                                                             py=jca_reco.p4.y,
+                                                             pz=jca_reco.p4.z,
+                                                             mass=jca_reco.mass)
+
+    ptphipzE_test = JaggedCandidateArray.candidatesfromcounts(jca_reco.counts,
+                                                              pt=jca_reco.pt,
+                                                              phi=jca_reco.phi,
+                                                              pz=jca_reco.p4.z,
+                                                              energy=jca_reco.p4.energy)
+
+    pthetaphiE_test = JaggedCandidateArray.candidatesfromcounts(jca_reco.counts,
+                                                                p=jca_reco.p4.p,
+                                                                theta=jca_reco.p4.theta,
+                                                                phi=jca_reco.phi,
+                                                                energy=jca_reco.p4.energy)
 

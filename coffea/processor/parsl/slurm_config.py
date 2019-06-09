@@ -19,7 +19,7 @@ x509_proxy = 'x509up_u%s' % (os.getuid())
 def slurm_config(cores_per_job=16, mem_per_core=2048,
                  jobs_per_worker=1,
                  initial_workers=4, max_workers=8,
-                 work_dir=os.environ['WORK'],
+                 work_dir='./',
                  grid_proxy_dir='/tmp',
                  partition='',
                  walltime='02:00:00',
@@ -30,7 +30,7 @@ def slurm_config(cores_per_job=16, mem_per_core=2048,
     wrk_init = '''
     export XRD_RUNFORKHANDLER=1
     export X509_USER_PROXY=%s
-    ''' % (os.join(work_dir, x509_proxy))
+    ''' % (osp.join(work_dir, x509_proxy))
 
     sched_opts = '''
     #SBATCH --cpus-per-task=%d
