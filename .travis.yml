@@ -21,7 +21,8 @@ install:
 - pip install codecov
 - PY_MAJ=`python -c 'import sys; print(sys.version_info[0])'`
 - PY_MIN=`python -c 'import sys; print(sys.version_info[1])'`
-- if [ $PY_MAJ -eq 3 ]; then pip install pandas pyarrow cloudpickle lz4 jinja2 parsl; fi
+- if [ $PY_MAJ -eq 3 ]; then pip install pandas pyarrow cloudpickle lz4 jinja2; fi
+- if [ $PY_MAJ -eq 3 ]; then pip install https://github.com/Parsl/parsl/zipball/master; fi
 - if [ $PY_MAJ -eq 3 ] && [ $PY_MIN -eq 6 ]; then  pip install pyspark; fi
 - pip install ${AWKWARD}
 - pip install scipy numba

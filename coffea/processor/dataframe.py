@@ -98,7 +98,7 @@ class PreloadedDataFrame(MutableMapping):
 
     @property
     def available(self):
-        return self._tree.keys()
+        return self._dict.keys()
 
     @property
     def materialized(self):

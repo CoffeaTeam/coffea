@@ -8,11 +8,11 @@ from numba.typed import Dict
 
 class LumiData(object):
     """
-        Class to hold and parse per-lumiSection integrated lumi values
-        as returned by brilcalc, e.g. with a command such as:
-        $ brilcalc lumi -c /cvmfs/cms.cern.ch/SITECONF/local/JobConfig/site-local-config.xml \
-                -b "STABLE BEAMS" --normtag=/cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_PHYSICS.json \
-                -u /pb --byls --output-style csv -i Cert_294927-306462_13TeV_PromptReco_Collisions17_JSON.txt > lumi2017.csv
+    Class to hold and parse per-lumiSection integrated lumi values
+    as returned by brilcalc, e.g. with a command such as:
+    $ brilcalc lumi -c /cvmfs/cms.cern.ch/SITECONF/local/JobConfig/site-local-config.xml \
+                    -b "STABLE BEAMS" --normtag=/cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_PHYSICS.json \
+                    -u /pb --byls --output-style csv -i Cert_294927-306462_13TeV_PromptReco_Collisions17_JSON.txt > lumi2017.csv
     """
     def __init__(self, lumi_csv):
         self._lumidata = np.loadtxt(lumi_csv, delimiter=',', usecols=(0, 1, 6, 7), converters={
@@ -40,8 +40,8 @@ class LumiData(object):
 
     def get_lumi(self, runlumis):
         """
-            Return integrated lumi
-            runlumis: 2d numpy array of [[run,lumi], [run,lumi], ...] or LumiList object
+        Return integrated lumi
+        runlumis: 2d numpy array of [[run,lumi], [run,lumi], ...] or LumiList object
         """
         if isinstance(runlumis, LumiList):
             runlumis = runlumis.array
@@ -64,9 +64,9 @@ class LumiData(object):
 
 class LumiMask(object):
     """
-        Class that parses a 'golden json' into an efficient valid lumiSection lookup table
-        Instantiate with the json file, and call with an array of runs and lumiSections, to
-        return a boolean array, where valid lumiSections are marked True
+    Class that parses a 'golden json' into an efficient valid lumiSection lookup table
+    Instantiate with the json file, and call with an array of runs and lumiSections, to
+    return a boolean array, where valid lumiSections are marked True
     """
     def __init__(self, jsonfile):
         with open(jsonfile) as fin:
@@ -108,8 +108,8 @@ class LumiMask(object):
 
 class LumiList(object):
     """
-        Mergeable (using +=) list of unique (run,lumiSection) values
-        The member array can be passed to LumiData.get_lumi()
+    Mergeable (using +=) list of unique (run,lumiSection) values
+    The member array can be passed to LumiData.get_lumi()
     """
     def __init__(self, runs=None, lumis=None):
         self.array = np.zeros(shape=(0, 2))

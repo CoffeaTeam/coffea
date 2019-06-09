@@ -36,7 +36,7 @@ def condor_config(cores_per_job=4, mem_per_core=2048,
                x509_proxy,
                htex_label)
 
-    if condor_cfg in None:
+    if condor_cfg is None:
         condor_cfg = '''
         transfer_output_files = %s
         RequestMemory = %d

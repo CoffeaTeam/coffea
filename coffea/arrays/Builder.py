@@ -28,7 +28,8 @@ class SaiyanCommonMethods(Dangerousness, ArrayMethods):
 
     def closest(self, cands):
         if isinstance(self, awkward.JaggedArray):
-            combinations = self.cross(cands, nested=True)
+            combinations = self.cross(cands)
+            print('combos')
             if ((~(combinations.i0.eta == 0).flatten().flatten().all()) | (~(combinations.i1.eta == 0).flatten().flatten().all())):
                 criterium = combinations.i0.delta_phi(combinations.i1)
             else:

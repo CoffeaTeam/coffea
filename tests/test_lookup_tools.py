@@ -7,18 +7,71 @@ from coffea.util import numpy as np
 
 from dummy_distributions import dummy_jagged_eta_pt
 
+
+def test_extractor_exceptions():
+    extractor = lookup_tools.extractor()
+
+    # test comments
+    extractor.add_weight_sets(["#testSF2d asdfgh tests/samples/testSF2d.histo.root"])
+    
+    # test malformed statement
+    try:
+        extractor.add_weight_sets(["testSF2d testSF2d asdfgh tests/samples/testSF2d.histo.root"])
+    except Exception as e:
+        assert(e.args[0] == '"testSF2d testSF2d asdfgh tests/samples/testSF2d.histo.root" not formatted as "<local name> <name> <weights file>"')
+    
+    # test not existant file entry
+    try:
+         extractor.add_weight_sets(["testSF2d asdfgh tests/samples/testSF2d.histo.root"])
+    except Exception as e:
+        assert(e.args[0] == 'Weights named "asdfgh" not in tests/samples/testSF2d.histo.root!')
+
+    # test unfinalized evaluator
+    try:
+        extractor.add_weight_sets(["testSF2d scalefactors_Tight_Electron tests/samples/testSF2d.histo.root"])
+        extractor.make_evaluator()
+    except Exception as e:
+        assert(e.args[0] == 'Cannot make an evaluator from unfinalized extractor!')
+
+def test_evaluator_exceptions():
+    extractor = lookup_tools.extractor()
+    extractor.add_weight_sets(["testSF2d scalefactors_Tight_Electron tests/samples/testSF2d.histo.root"])
+
+    counts, test_eta, test_pt = dummy_jagged_eta_pt()
+    test_eta_jagged = awkward.JaggedArray.fromcounts(counts, test_eta)
+    test_pt_jagged = awkward.JaggedArray.fromcounts(counts, test_pt)
+
+    extractor.finalize()
+    evaluator = extractor.make_evaluator()
+    
+    try:
+        test_out = evaluator["testSF2d"](test_pt_jagged, test_eta)
+    except Exception as e:
+        assert(e.args[0] == 'do not mix JaggedArrays and numpy arrays when calling a derived class of lookup_base')
+
+def test_evaluator_exceptions():
+    from coffea.lookup_tools.lookup_base import lookup_base
+    try:
+        lookup_base()._evaluate()
+    except NotImplementedError:
+        pass
+
 def test_root_scalefactors():
     extractor = lookup_tools.extractor()
     extractor.add_weight_sets(["testSF2d scalefactors_Tight_Electron tests/samples/testSF2d.histo.root"])
-    extractor.finalize()
+    
+    extractor.finalize(reduce_list=['testSF2d'])
 
     evaluator = extractor.make_evaluator()
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
-
+    
     # test flat eval
     test_out = evaluator["testSF2d"](test_eta, test_pt)
 
+    # print it
+    print(evaluator["testSF2d"])
+    
     # test structured eval
     test_eta_jagged = awkward.JaggedArray.fromcounts(counts, test_eta)
     test_pt_jagged = awkward.JaggedArray.fromcounts(counts, test_pt)
@@ -61,8 +114,10 @@ def test_btag_csv_scalefactors():
     # discriminant used for reshaping, zero otherwise
     test_discr = np.zeros_like(test_eta)
 
+    print(evaluator['testBTagCSVv2_1_comb_up_0'])
+    
     sf_out = evaluator['testBTagCSVv2_1_comb_up_0'](test_eta, test_pt, test_discr)
-    print(sf_out)
+
 
 def test_histo_json_scalefactors():
     extractor = lookup_tools.extractor()
@@ -84,6 +139,7 @@ def test_jec_txt_scalefactors():
         "testJEC * tests/samples/Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi.jec.txt",
         "* * tests/samples/Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi.junc.txt",
         "* * tests/samples/Autumn18_V8_MC_UncertaintySources_AK4PFchs.junc.txt",
+        "* * tests/samples/Spring16_25nsV10_MC_SF_AK4PFPuppi.jersf.txt"
     ])
     extractor.finalize()
 
@@ -93,13 +149,16 @@ def test_jec_txt_scalefactors():
     
     jec_out = evaluator['testJECFall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi'](test_eta,test_pt)
 
-    print(jec_out)
+    print(evaluator['testJECFall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi'])
 
+    jersf = evaluator['Spring16_25nsV10_MC_SF_AK4PFPuppi']
+    
+    print(evaluator['Spring16_25nsV10_MC_SF_AK4PFPuppi'])
+    
     junc_out = evaluator['Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi'](test_eta,test_pt)
 
-    print(junc_out)
+    print(evaluator['Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi'])
     
     assert('Autumn18_V8_MC_UncertaintySources_AK4PFchs_AbsoluteScale' in evaluator.keys())
     junc_out = evaluator['Autumn18_V8_MC_UncertaintySources_AK4PFchs_AbsoluteScale'](test_eta,test_pt)
-    print(junc_out)
-
+    print(evaluator['Autumn18_V8_MC_UncertaintySources_AK4PFchs_AbsoluteScale'])

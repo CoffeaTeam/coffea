@@ -40,7 +40,9 @@ def test_object_arrays():
     m_loose=mu[mu.isloose]
     mu_ntot = mu.counts
     mu_nloose = m_loose.counts
-
+    
+    loose_pairs = m_loose.pairs()
+    
     tau = Initialize({'pt':tree.array('Tau_pt'),
                     'eta':tree.array('Tau_eta'),
                     'phi':tree.array('Tau_phi'),
@@ -77,6 +79,8 @@ def test_object_arrays():
     print(~fj.match(mu,1.5).counts)
     print(~fj.match(e,1.5).counts)
     print(fj.isgood.counts)
+    
+    closest_phi = fj.closest(pho)
     
     fj['isclean'] =~fj.match(pho,1.5)&~fj.match(mu,1.5)&~fj.match(e,1.5)&fj.isgood
     fj_good=fj[fj.isgood]
@@ -141,3 +145,33 @@ def test_object_arrays():
         print(dimu[dimu.pt.argmax()].sum())
     else:
         print(dimu.sum())
+
+    ptetaphienergy = Initialize({'pt': mu.pt,
+                                 'eta': mu.eta,
+                                 'phi': mu.phi,
+                                 'mass': mu.energy})
+
+    pxpypzmass = Initialize({'px': mu.x,
+                             'py': mu.y,
+                             'pz': mu.z,
+                             'mass': mu.mass})
+
+    ptphipzenergy = Initialize({'pt': mu.pt,
+                                'phi': mu.phi,
+                                'pz': mu.z,
+                                'energy': mu.energy})
+
+    pxpypzenergy = Initialize({'px': mu.x,
+                               'py': mu.y,
+                               'pz': mu.z,
+                               'energy': mu.energy})
+
+    pthetaphienergy = Initialize({'p': mu.p,
+                                  'theta': mu.theta,
+                                  'phi': mu.phi,
+                                  'energy': mu.energy})
+
+    p3energy = Initialize({'p3': mu.p3,
+                           'energy': mu.energy})
+
+
