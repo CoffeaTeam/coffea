@@ -4,6 +4,7 @@ from coffea import hist
 from coffea.util import numpy as np
 import requests
 import os
+import six
 
 url = 'http://scikit-hep.org/uproot/examples/HZZ.root'
 r = requests.get(url)
@@ -176,7 +177,7 @@ def test_plotratio():
     rax.set_ylabel('Ratio')
     rax.set_ylim(0,2)
 
-    coffee = plt.text(0., 1., u"☕",
+    coffee = plt.text(0., 1., u"☕" if six.PY3 else unicode("☕"),
                       fontsize=28,
                       horizontalalignment='left',
                       verticalalignment='bottom',
@@ -204,6 +205,6 @@ def test_plotgrid():
     # maybe we want to compare different eta regions
     # plotgrid accepts row and column axes, and creates a grid of 1d plots as appropriate
     fig, ax = hist.plotgrid(lepton_kinematics, row="eta", overlay="flavor", stack=True,
-                        fill_opts=stack_fill_opts,
-                        error_opts=stack_error_opts,
-                        )
+                            fill_opts=stack_fill_opts,
+                            error_opts=stack_error_opts,
+                            )
