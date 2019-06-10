@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-pip install -U sphinx nbsphinx sphinx-rtd-theme
+pip -q install -U sphinx nbsphinx sphinx-rtd-theme
 python setup.py -q install
 pushd docs
 pushd source
