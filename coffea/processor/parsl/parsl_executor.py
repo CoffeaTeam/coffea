@@ -9,9 +9,11 @@ import pickle as pkl
 import lz4.frame as lz4f
 import numpy as np
 import pandas as pd
+import time
 
 from parsl.app.app import python_app
 from .timeout import timeout
+from ..executor import futures_handler
 
 lz4_clevel = 1
 
@@ -90,20 +92,21 @@ class ParslExecutor(object):
     def counts(self):
         return self._counts
 
-    def __call__(self, dfk, items, processor_instance, output, unit='items', desc='Processing', timeout=None, flatten=True):
+    def __call__(self, dfk, items, processor_instance, output, status=True, unit='items', desc='Processing', timeout=None, flatten=True):
         procstr = lz4f.compress(cpkl.dumps(processor_instance))
 
-        nitems = len(items)
-        ftr_to_item = set()
+        futures = set()
         for dataset, fn, treename, chunksize, index in items:
             if dataset not in self._counts:
                 self._counts[dataset] = 0
-            ftr_to_item.add(coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=timeout, flatten=flatten))
+            futures.add(coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=timeout, flatten=flatten))
 
-        for ftr in tqdm(as_completed(ftr_to_item), total=nitems, unit='items', desc='Processing'):
-            blob, nentries, dataset = ftr.result()
-            self._counts[dataset] += nentries
-            output.add(pkl.loads(lz4f.decompress(blob)))
+        def pex_accumulator(total, result):
+            blob, nevents, dataset = result
+            total[1][dataset] += nevents
+            total[0].add(pkl.loads(lz4f.decompress(blob)))
+
+        futures_handler(futures, (output, self._counts), status, unit, desc, futures_accumulator=pex_accumulator)
 
 
 parsl_executor = ParslExecutor()
