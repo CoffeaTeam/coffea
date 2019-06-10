@@ -1,8 +1,8 @@
 ---
 name: Bug report
 about: Create a report to help us improve
-title: "[bug] A bug was found in coffea.XYZ"
-labels: ''
+title: "A bug was found in coffea.XYZ"
+labels: 'bug'
 assignees: ''
 
 ---
