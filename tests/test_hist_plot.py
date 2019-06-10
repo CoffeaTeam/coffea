@@ -5,7 +5,6 @@ from coffea import hist
 from coffea.util import numpy as np
 import requests
 import os
-import six
 
 url = 'http://scikit-hep.org/uproot/examples/HZZ.root'
 r = requests.get(url)
