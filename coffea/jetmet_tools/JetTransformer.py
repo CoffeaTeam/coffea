@@ -19,8 +19,8 @@ _signature_map = {'JetPt': 'pt',
 
 def _update_jet_ptm(corr, jet, fromRaw=False):
     """
-        This is a hack to update the jet pt and jet mass in place
-        as we apply corrections and smearings.
+    This is a hack to update the jet pt and jet mass in place
+    as we apply corrections and smearings.
     """
     if fromRaw:
         jet._content._contents['__fast_pt'] = corr * jet.ptRaw.content
@@ -34,20 +34,35 @@ def _update_jet_ptm(corr, jet, fromRaw=False):
 # no monkey patches though
 class JetTransformer(object):
     """
-        This class is a columnar implementation of the the standard recipes for apply JECs, and
-        the various scale factors and uncertainties therein.
-           - Only the stochastic smearing method is implemented at the moment.
-        It uses the FactorizedJetCorrector, JetResolution, JetResolutionScaleFactor, and
-        JetCorrectionUncertainty classes to calculate the ingredients for the final updated jet
-        object, which will be modified in place.
-        The jet object must be a "JaggedCandidateArray" and have the additional properties:
-           - ptRaw
-           - massRaw
-        These will be used to reset the jet pT and mass, and then calculate the updated pTs and
-        masses for various corrections and smearings.
-        You can use this class like:
-        xformer = JetTransformer(name1=corrL1,...)
-        xformer.transform(jet)
+    This class is a columnar implementation of the the standard recipes for apply JECs, and
+    the various scale factors and uncertainties therein.
+
+    .. note:: Only the stochastic smearing method is implemented at the moment.
+
+    Parameters
+    ----------
+        jec:
+            a `FactorizedJetCorrector` calculator object or ``None``
+        junc:
+            a `JetCorrectionUncertainty` calculator object or ``None``
+        jer:
+            a `JetResolution` calculator object or ``None``
+        jersf:
+            a `JetResolutionScaleFactor` calculator object or ``None``
+
+    It uses the `FactorizedJetCorrector`, `JetResolution`, `JetResolutionScaleFactor`, and
+    `JetCorrectionUncertainty` classes to calculate the ingredients for the final updated jet
+    object, which will be modified in place.
+
+    The jet object must be a "JaggedCandidateArray" and have the additional properties:
+        - ptRaw
+        - massRaw
+
+    These will be used to reset the jet pT and mass, and then calculate the updated pTs and
+    masses for various corrections and smearings.
+    You can use this class like:
+    xformer = JetTransformer(name1=corrL1,...)
+    xformer.transform(jet)
     """
     def __init__(self, jec=None, junc=None, jer=None, jersf=None):
         if jec is None:

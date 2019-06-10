@@ -97,16 +97,27 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
     reading, via the LazyDataFrame class.  For more customized processing,
     e.g. to read other objects from the files and pass them into data frames,
     one can write a similar function in their user code.
-    fileset: dictionary {dataset: [file, file], }
-    treename: name of tree inside each root file
-    processor_instance: an instance of a class deriving from ProcessorABC
-    executor: any of iterative_executor, futures_executor, etc.
-                In general, a function that takes 3 arguments: items, function accumulator
-                and performs some action equivalent to:
-                for item in items: accumulator += function(item)
-    executor_args: extra arguments to pass to executor
-    chunksize: number of entries to process at a time in the data frame
-    maxchunks: maximum number of chunks to process per dataset
+
+    Parameters
+    ----------
+        fileset:
+            dictionary {dataset: [file, file], }
+        treename:
+            name of tree inside each root file
+        processor_instance:
+            an instance of a class deriving from ProcessorABC
+        executor:
+            any of `iterative_executor`, `futures_executor`, etc.
+
+            In general, a function that takes 3 arguments: items, function accumulator
+            and performs some action equivalent to:
+            for item in items: accumulator += function(item)
+        executor_args:
+            extra arguments to pass to executor
+        chunksize:
+            number of entries to process at a time in the data frame
+        maxchunks:
+            maximum number of chunks to process per dataset
     '''
     if not isinstance(fileset, Mapping):
         raise ValueError("Expected fileset to be a mapping dataset: list(files)")
@@ -141,15 +152,25 @@ def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=Non
     For more customized processing,
     e.g. to read other objects from the files and pass them into data frames,
     one can write a similar function in their user code.
-    fileset: dictionary {dataset: [file, file], }
-    treename: name of tree inside each root file
-    processor_instance: an instance of a class deriving from ProcessorABC
-    executor: any of iterative_executor, futures_executor, etc.
-                In general, a function that takes 3 arguments: items, function accumulator
-                and performs some action equivalent to:
-                for item in items: accumulator += function(item)
-    executor_args: extra arguments to pass to executor
-    chunksize: number of entries to process at a time in the data frame
+
+    Parameters
+    ----------
+        fileset:
+            dictionary {dataset: [file, file], }
+        treename:
+            name of tree inside each root file
+        processor_instance:
+            an instance of a class deriving from ProcessorABC
+        executor:
+            anything that inherits from `ParslExecutor` like `parsl_executor`
+
+            In general, a function that takes 3 arguments: items, function accumulator
+            and performs some action equivalent to:
+            for item in items: accumulator += function(item)
+        executor_args:
+            extra arguments to pass to executor
+        chunksize:
+            number of entries to process at a time in the data frame
     '''
 
     try:
@@ -218,20 +239,31 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     parquet files converted from root.  For more customized processing,
     e.g. to read other objects from the files and pass them into data frames,
     one can write a similar function in their user code.
-    fileset: dictionary {dataset: [file, file], }
-    processor_instance: an instance of a class deriving from ProcessorABC
-                        NOTE -> it must define all the columns in data and MC that
-                                it reads as .columns
-    executor: any of iterative_executor, futures_executor, etc.
-                In general, a function that takes 3 arguments: items, function accumulator
-                and performs some action equivalent to:
-                for item in items: accumulator += function(item)
-    executor_args: arguments to send to the creation of a spark session
-    spark: an optional already created spark instance
-           if "None" then we create an ephemeral spark instance using a config
-    bydataset: are we just going to read things in by dataset location?
-    partitionsize: partition size to try to aim for (coalescese only, repartition too expensive)
-    thread_workers: how many spark jobs to let fly in parallel during processing steps
+
+    Parameters
+    ----------
+        fileset:
+            dictionary {dataset: [file, file], }
+        processor_instance:
+            an instance of a class deriving from ProcessorABC
+
+            .. note:: The processor instance must define all the columns in data and MC that it reads as ``.columns``
+        executor:
+            anything that inherits from `SparkExecutor` like `spark_executor`
+
+            In general, a function that takes 3 arguments: items, function accumulator
+            and performs some action equivalent to:
+            for item in items: accumulator += function(item)
+        executor_args:
+            arguments to send to the creation of a spark session
+        spark:
+            an optional already created spark instance
+
+            if ``None`` then we create an ephemeral spark instance using a config
+        partitionsize:
+            partition size to try to aim for (coalescese only, repartition too expensive)
+        thread_workers:
+            how many spark jobs to let fly in parallel during processing steps
     '''
 
     try:

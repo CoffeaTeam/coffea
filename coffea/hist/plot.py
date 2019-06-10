@@ -70,32 +70,42 @@ def clopper_pearson_interval(num, denom, coverage=_coverage1sd):
 def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none', line_opts=None,
            fill_opts=None, error_opts=None, overlay_overflow='none', density=False, binwnorm=None):
     """
-        hist: Hist object with maximum of two dimensions
-        ax: matplotlib Axes object (if None, one is created)
-        clear: clear Axes before drawing (if passed); if False, this function will skip drawing the legend
-        overlay: the axis of hist to overlay (remaining one will be x axis)
-        stack: whether to stack or overlay the other dimension (if one exists)
-        overflow: overflow behavior of plot axis (see Hist.sum() docs)
+    Parameters
+    ----------
+        hist:
+            Hist object with maximum of two dimensions
+        ax:
+            matplotlib Axes object (if None, one is created)
+        clear:
+            clear Axes before drawing (if passed); if False, this function will skip drawing the legend
+        overlay:
+            the axis of hist to overlay (remaining one will be x axis)
+        stack:
+            whether to stack or overlay the other dimension (if one exists)
+        overflow:
+            overflow behavior of plot axis (see Hist.sum() docs)
+        overlay_overflow:
+            overflow behavior of dense overlay axis, if one exists
+        density:
+            Convert sum weights to probability density (i.e. integrates to 1 over domain of axis) (NB: conflicts with binwnorm)
+        binwnorm:
+            Convert sum weights to bin-width-normalized, with units equal to supplied value (usually you want to specify 1.)
 
-        The draw options are passed as dicts to the relevant matplotlib function, with some exceptions in case
-        it is especially common or useful.  If none of *_opts is specified, nothing will be plotted!
-        Pass an empty dict (e.g. line_opts={}) for defaults
-            line_opts: options to plot a step
-                Special options interpreted by this function and not passed to matplotlib:
-                    (none)
+    The draw options are passed as dicts to the relevant matplotlib function, with some exceptions in case
+    it is especially common or useful.  If none of ``*_opts`` is specified, nothing will be plotted!
 
-            fill_opts: to plot a filled area
-                Special options interpreted by this function and not passed to matplotlib:
-                    (none)
+    Pass an empty dict (e.g. line_opts={}) for defaults
+        line_opts: options to plot a step
+            Special options interpreted by this function and not passed to matplotlib:
+                (none)
 
-            error_opts: to plot an errorbar
-                Special options interpreted by this function and not passed to matplotlib:
-                    'emarker' (default: '') marker to place at cap of errorbar
+        fill_opts: to plot a filled area
+            Special options interpreted by this function and not passed to matplotlib:
+                (none)
 
-
-        overlay_overflow: overflow behavior of dense overlay axis, if one exists
-        density: Convert sum weights to probability density (i.e. integrates to 1 over domain of axis) (NB: conflicts with binwnorm)
-        binwnorm: Convert sum weights to bin-width-normalized, with units equal to supplied value (usually you want to specify 1.)
+        error_opts: to plot an errorbar
+            Special options interpreted by this function and not passed to matplotlib:
+                'emarker' (default: '') marker to place at cap of errorbar
     """
     import matplotlib.pyplot as plt
     if ax is None:
@@ -228,35 +238,48 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
 
 def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None, denom_fill_opts=None, guide_opts=None, unc='clopper-pearson', label=None):
     """
-        Create a ratio plot, dividing two compatible histograms
-        num: Hist object with single axis
-        denom: Hist object with identical axis to num
-        ax: matplotlib Axes object (if None, one is created)
-        clear: clear Axes before drawing (if passed); if False, this function will skip drawing the legend
-        overflow: overflow behavior of plot axis (see Hist.sum() docs)
+    Create a ratio plot, dividing two compatible histograms
 
-        The draw options are passed as dicts to the relevant matplotlib function, with some exceptions in case
-        it is especially common or useful.  If none of *_opts is specified, nothing will be plotted!
-        Pass an empty dict (e.g. error_opts={}) for defaults.
-            error_opts: to plot an errorbar
-                Special options interpreted by this function and not passed to matplotlib:
-                    'emarker' (default: '') marker to place at cap of errorbar
+    Parameters
+    ----------
+        num:
+            Hist object with single axis
+        denom:
+            Hist object with identical axis to num
+        ax:
+            matplotlib Axes object (if None, one is created)
+        clear:
+            clear Axes before drawing (if passed); if False, this function will skip drawing the legend
+        overflow:
+            overflow behavior of plot axis (see Hist.sum() docs)
+        error_opts:
+            to plot an errorbar
+            Special options interpreted by this function and not passed to matplotlib:
+            'emarker' (default: '') marker to place at cap of errorbar
+        denom_fill_opts:
+            to plot a filled area centered at 1, representing denominator uncertainty
+            Special options interpreted by this function and not passed to matplotlib:
+            (none)
+        guide_opts:
+            to plot a horizontal guide line at ratio of 1.
+            Special options interpreted by this function and not passed to matplotlib:
+            (none)
+        unc:
+            Uncertainty calculation option:
+                'clopper-pearson':
+                    interval for efficiencies
+                'poisson-ratio':
+                    interval for ratio of poisson distributions
+                'num':
+                    poisson interval of numerator scaled by denominator value
 
-            denom_fill_opts: to plot a filled area centered at 1, representing denominator uncertainty
-                Special options interpreted by this function and not passed to matplotlib:
-                    (none)
+            (common for data/mc, for better or worse...)
+        label:
+            associate a label with this entry (note: y axis label set by num.label)
 
-            guide_opts: to plot a horizontal guide line at ratio of 1.
-                Special options interpreted by this function and not passed to matplotlib:
-                    (none)
-
-
-        unc: Uncertainty calculation option
-            'clopper-pearson': interval for efficiencies
-            'poisson-ratio': interval for ratio of poisson distributions
-            'num': poisson interval of numerator scaled by denominator value
-                    (common for data/mc, for better or worse...)
-        label: associate a label with this entry (note: y axis label set by num.label)
+    The draw options are passed as dicts to the relevant matplotlib function, with some exceptions in case
+    it is especially common or useful.  If none of ``*_opts`` is specified, nothing will be plotted!
+    Pass an empty dict (e.g. error_opts={}) for defaults.
     """
     import matplotlib.pyplot as plt
     if ax is None:
@@ -327,28 +350,38 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
 
 def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none', patch_opts=None, text_opts=None, density=False, binwnorm=None):
     """
-        hist: Hist object with two dimensions
-        xaxis: which of the two dimensions to use as x axis
-        ax: matplotlib Axes object (if None, one is created)
-        clear: clear Axes before drawing (if passed); if False, this function will skip drawing the colorbar
-        xoverflow: overflow behavior of x axis (see Hist.sum() docs)
-        yoverflow: overflow behavior of y axis (see Hist.sum() docs)
+    Parameters
+    ----------
+        hist:
+            Hist object with two dimensions
+        xaxis:
+            which of the two dimensions to use as x axis
+        ax:
+            matplotlib Axes object (if None, one is created)
+        clear:
+            clear Axes before drawing (if passed); if False, this function will skip drawing the colorbar
+        xoverflow:
+            overflow behavior of x axis (see Hist.sum() docs)
+        yoverflow:
+            overflow behavior of y axis (see Hist.sum() docs)
+        patch_opts:
+            options to plot a rectangular grid of patches colored according to the bin values
+            See https://matplotlib.org/api/_as_gen/matplotlib.pyplot.pcolormesh.html for details
+            Special options interpreted by this function and not passed to matplotlib:
+            (none)
+        text_opts: options to draw text values at bin centers
+            See https://matplotlib.org/api/text_api.html#matplotlib.text.Text for details
+            Special options interpreted by this function and not passed to matplotlib:
+            'format': printf-style float format, default '%.2g'
+        density:
+            Convert sum weights to probability density (i.e. integrates to 1 over domain of axes) (NB: conflicts with binwnorm)
+        binwnorm:
+            Convert sum weights to bin-area-normalized, with units equal to supplied value (usually you want to specify 1.)
 
-        The draw options are passed as dicts to the relevant matplotlib function, with some exceptions in case
-        it is especially common or useful.  If none of *_opts is specified, nothing will be plotted!
-        Pass an empty dict (e.g. patch_opts={}) for defaults
-            patch_opts: options to plot a rectangular grid of patches colored according to the bin values
-                See https://matplotlib.org/api/_as_gen/matplotlib.pyplot.pcolormesh.html for details
-                Special options interpreted by this function and not passed to matplotlib:
-                    (none)
+    The draw options are passed as dicts to the relevant matplotlib function, with some exceptions in case
+    it is especially common or useful.  If none of ``*_opts`` is specified, nothing will be plotted!
+    Pass an empty dict (e.g. patch_opts={}) for defaults
 
-            text_opts: options to draw text values at bin centers
-                See https://matplotlib.org/api/text_api.html#matplotlib.text.Text for details
-                Special options interpreted by this function and not passed to matplotlib:
-                    'format': printf-style float format, default '%.2g'
-
-        density: Convert sum weights to probability density (i.e. integrates to 1 over domain of axes) (NB: conflicts with binwnorm)
-        binwnorm: Convert sum weights to bin-area-normalized, with units equal to supplied value (usually you want to specify 1.)
     """
     import matplotlib.pyplot as plt
     if ax is None:
@@ -429,13 +462,20 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
 
 def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='none', col_overflow='none', **plot_opts):
     """
-        Create a grid of plots, enumerating identifiers on up to 3 axes:
-            row: name of row axis
-            col: name of column axis
-            overlay: name of overlay axis
-        The remaining axis will be the plot axis, with plot_opts passed to the plot1d() call
+    Create a grid of plots, enumerating identifiers on up to 3 axes.
 
-        Pass a figure object to redraw on existing figure
+    Parameters
+    ----------
+        row:
+            name of row axis
+        col:
+            name of column axis
+        overlay:
+            name of overlay axis
+
+    The remaining axis will be the plot axis, with plot_opts passed to the plot1d() call
+
+    Pass a figure object to redraw on existing figure
     """
     import matplotlib.pyplot as plt
     haxes = set(ax.name for ax in h.axes())

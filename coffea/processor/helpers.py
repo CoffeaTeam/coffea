@@ -68,12 +68,16 @@ class PackedSelection(object):
     """
     Stores several boolean masks (cuts, selections) in a compact manner
     and evaluates arbitrary requirements on each in an CPU-efficient way
+
+    Parameters
+    ----------
+        dtype:
+            internal bitwidth, numpy supports up to uint64
+            smaller values may be more efficient
     """
     def __init__(self, dtype='uint64'):
         """
-            dtype: internal bitwidth, numpy supports up to uint64
-                    smaller values may be more efficient
-            TODO: extend to multi-column for arbitrary bit depth
+        TODO: extend to multi-column for arbitrary bit depth
         """
         self._dtype = np.dtype(dtype)
         self._names = []
