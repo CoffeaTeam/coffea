@@ -33,32 +33,34 @@ def iterative_executor(items, function, accumulator, status=True, unit='items', 
         accumulator += function(item, **function_args)
     return accumulator
 
+def futures_handler(futures_set, output, futures_accumulator=lambda x, y: x += y)
+    try:
+        with tqdm(disable=not status, unit=unit, total=len(futures), desc=desc) as pbar:
+            while len(futures) > 0:
+                finished = set(job for job in futures if job.done())
+                for job in finished:
+                    futures_accumulator(output,job.result())
+                    pbar.update(1)
+                futures -= finished
+                del finished
+                time.sleep(1)
+    except KeyboardInterrupt:
+        for job in futures:
+            job.cancel()
+        if status:
+            print("Received SIGINT, killed pending jobs.  Running jobs will continue to completion.")
+            print("Running jobs:", sum(1 for j in futures if j.running()))
+    except Exception:
+        for job in futures:
+            job.cancel()
+            raise
 
 def futures_executor(items, function, accumulator, workers=1, status=True, unit='items', desc='Processing',
                      function_args={}, **kwargs):
     with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
         futures = set()
-        try:
-            futures.update(executor.submit(function, item, **function_args) for item in items)
-            with tqdm(disable=not status, unit=unit, total=len(futures), desc=desc) as pbar:
-                while len(futures) > 0:
-                    finished = set(job for job in futures if job.done())
-                    for job in finished:
-                        accumulator += job.result()
-                        pbar.update(1)
-                    futures -= finished
-                    del finished
-                    time.sleep(1)
-        except KeyboardInterrupt:
-            for job in futures:
-                job.cancel()
-            if status:
-                print("Received SIGINT, killed pending jobs.  Running jobs will continue to completion.")
-                print("Running jobs:", sum(1 for j in futures if j.running()))
-        except Exception:
-            for job in futures:
-                job.cancel()
-            raise
+        futures.update(executor.submit(function, item, **function_args) for item in items)
+        futures_handler(futures, accumulator)
     return accumulator
 
 
