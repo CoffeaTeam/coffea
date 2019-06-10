@@ -194,7 +194,7 @@ def test_plotratio():
     rax.set_ylabel('Ratio')
     rax.set_ylim(0,2)
 
-    coffee = plt.text(0., 1., u"☕" if six.PY3 else unicode("☕"),
+    coffee = plt.text(0., 1., u"☕",
                       fontsize=28,
                       horizontalalignment='left',
                       verticalalignment='bottom',
