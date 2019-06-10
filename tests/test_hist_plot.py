@@ -62,6 +62,8 @@ def test_plot1d():
     # histogram creation and manipulation
     from coffea import hist
     # matplotlib
+    import matplotlib as mpl
+    mpl.use('Agg')
     import matplotlib.pyplot as plt
     
     lepton_kinematics = fill_lepton_kinematics()
@@ -82,13 +84,27 @@ def test_plot1d():
 
 
 def test_plot2d():
-    pass
+    # histogram creation and manipulation
+    from coffea import hist
+    # matplotlib
+    import matplotlib as mpl
+    mpl.use('Agg')
+    import matplotlib.pyplot as plt
+    
+    lepton_kinematics = fill_lepton_kinematics()
+    
+    # looking at lepton pt for all eta
+    muon_kinematics = lepton_kinematics.project("flavor","muon")
+    
+    fig, ax, primitives = hist.plot2d(muon_kinematics, "eta")
 
 
 def test_plotratio():
     # histogram creation and manipulation
     from coffea import hist
     # matplotlib
+    import matplotlib as mpl
+    mpl.use('Agg')
     import matplotlib.pyplot as plt
     
     lepton_kinematics = fill_lepton_kinematics()
@@ -196,6 +212,8 @@ def test_plotgrid():
     # histogram creation and manipulation
     from coffea import hist
     # matplotlib
+    import matplotlib as mpl
+    mpl.use('Agg')
     import matplotlib.pyplot as plt
     
     lepton_kinematics = fill_lepton_kinematics()
