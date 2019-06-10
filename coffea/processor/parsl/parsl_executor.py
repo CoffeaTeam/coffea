@@ -102,11 +102,11 @@ class ParslExecutor(object):
             futures.add(coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=timeout, flatten=flatten))
 
         def pex_accumulator(total, result):
-            hists, nevents, dataset = job.result()
-            total[0] += hists
+            blob, nevents, dataset = result
             total[1][dataset] += nevents
-    
-        futures_handler(futures, (output, self._counts), futures_accumulator=pex_accumulator)
+            total[0].add(pkl.loads(lz4f.decompress(blob)))
+
+        futures_handler(futures, (output, self._counts), status, unit, desc, futures_accumulator=pex_accumulator)
 
 
 parsl_executor = ParslExecutor()
