@@ -16,6 +16,8 @@ addons:
 script:
 - python setup.py flake8
 - coverage run --source=coffea/ setup.py pytest
+before_install:
+  - if [ $TRAVIS_PYTHON_VERSION = "3.6" ] && [ $AWKWARD = "awkward>=0.8.4" ]; then sudo apt-get install -y pandoc; fi
 install:
 - pip install --upgrade setuptools_scm
 - pip install codecov

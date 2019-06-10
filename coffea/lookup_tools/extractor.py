@@ -26,16 +26,21 @@ file_converters = {'root': {'default': convert_histo_root_file,
 
 class extractor(object):
     """
-        This class defines a common entry point for defining functions that extract
-        the inputs to build lookup tables from various kinds of files.
-        The files that can be converted are presently defined in the "file_converters" dict.
-        The file names are used to determine the converter that is used, i.e.:
-           something.TYPE.FORMAT will apply the TYPE extractor to a file of given FORMAT
-        If there is no file type specifier the 'default' value is used.
-        You can add sets of lookup tables / weights by calling:
-           extractor.add_weight_set(<description>)
-        <description> is formatted like '<nickname> <name-in-file> <the file to extract>'
-        '*' can be used as a wildcard to import all available lookup tables in a file
+    This class defines a common entry point for defining functions that extract
+    the inputs to build lookup tables from various kinds of files.
+
+    The files that can be converted are presently defined in the "file_converters" dict.
+
+    The file names are used to determine the converter that is used, i.e.:
+        something.TYPE.FORMAT will apply the TYPE extractor to a file of given FORMAT
+
+    If there is no file type specifier the 'default' value is used.
+
+    You can add sets of lookup tables / weights by calling:
+        extractor.add_weight_set(<description>)
+
+    <description> is formatted like '<nickname> <name-in-file> <the file to extract>'
+        ``*`` can be used as a wildcard to import all available lookup tables in a file
     """
     def __init__(self):
         self._weights = []
