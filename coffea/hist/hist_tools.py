@@ -137,9 +137,11 @@ class Interval(object):
 @functools.total_ordering
 class StringBin(object):
     """
-        A string used to fill a sparse axis
-        Totally ordered, lexicographically by name
-        The string representation can be overriden by custom label
+    A string used to fill a sparse axis
+
+    Totally ordered, lexicographically by name
+
+    The string representation can be overriden by custom label
     """
     def __init__(self, name, label=None):
         if not isinstance(name, basestring):
@@ -183,8 +185,8 @@ class StringBin(object):
 
 class Axis(object):
     """
-        Axis: Base class for any type of axis
-        Derived classes should implement, at least, an equality override
+    Axis: Base class for any type of axis
+    Derived classes should implement, at least, an equality override
     """
     def __init__(self, name, label):
         if name == "weight":
@@ -223,30 +225,41 @@ class Axis(object):
 
 class SparseAxis(Axis):
     """
-        SparseAxis: ABC for a sparse axis
-        Derived should implement:
-            index(identifier): return a hashable object for indexing
-            __eq__(axis): axis has same definition (not necessarily same bins)
-            __getitem__(index): return an identifier
-            _ireduce(slice): return a list of hashes, slice is arbitrary
+    SparseAxis: ABC for a sparse axis
 
-        What we really want here is a hashlist with some slice sugar on top
-        It is usually the case that the identifier is already hashable,
-          in which case index and __getitem__ are trivial, but this mechanism
-          may be useful if the size of the tuple of identifiers in a
-          sparse-binned histogram becomes too large
+    Derived should implement:
+        **index(identifier)** - return a hashable object for indexing
+
+        **__eq__(axis)** - axis has same definition (not necessarily same bins)
+
+        **__getitem__(index)** - return an identifier
+
+        **_ireduce(slice)** - return a list of hashes, slice is arbitrary
+
+    What we really want here is a hashlist with some slice sugar on top
+    It is usually the case that the identifier is already hashable,
+    in which case index and __getitem__ are trivial, but this mechanism
+    may be useful if the size of the tuple of identifiers in a
+    sparse-binned histogram becomes too large
     """
     pass
 
 
 class Cat(SparseAxis):
     """
-        Specify a category axis with name and label
-            name: is used as a keyword in histogram filling, immutable
-            label: describes the meaning of the axis, can be changed
-            sorting: axis sorting, 'identifier' or 'placement' order
-        Number of categories is arbitrary, and filled sparsely
-        Identifiers are strings
+    Specify a category axis with name and label.
+
+    Parameters
+    ----------
+        name:
+            is used as a keyword in histogram filling, immutable
+        label:
+            describes the meaning of the axis, can be changed
+        sorting:
+            axis sorting, 'identifier' or 'placement' order
+
+    Number of categories is arbitrary, and filled sparsely
+    Identifiers are strings
     """
     def __init__(self, name, label, sorting='identifier'):
         super(Cat, self).__init__(name, label)
@@ -320,30 +333,46 @@ class Cat(SparseAxis):
 
 class DenseAxis(Axis):
     """
-        DenseAxis: ABC for a fixed-size densely-indexed axis
-        Derived should implement:
-            index(identifier): return an index
-            __eq__(axis): axis has same definition and binning
-            __getitem__(index): return an identifier
-            _ireduce(slice): return a slice or list of indices, input slice to be interpred as values
-            reduced(islice): return a new axis with binning corresponding to the index slice (from _ireduce)
-        TODO: hasoverflow(), not all dense axes might have an overflow concept, currently its implicitly assumed
-            they do (as the only dense type is a numeric axis)
+    DenseAxis: ABC for a fixed-size densely-indexed axis
+
+    Derived should implement:
+        **index(identifier)** - return an index
+
+        **__eq__(axis)** - axis has same definition and binning
+
+        **__getitem__(index)** - return an identifier
+
+        **_ireduce(slice)** - return a slice or list of indices, input slice to be interpred as values
+
+        **reduced(islice)** - return a new axis with binning corresponding to the index slice (from _ireduce)
+
+    TODO: hasoverflow(), not all dense axes might have an overflow concept,
+    currently it is implicitly assumed they do (as the only dense type is a numeric axis)
     """
     pass
 
 
 class Bin(DenseAxis):
     """
-        Specify a binned axis with name and label, and binning
-            name: is used as a keyword in histogram filling, immutable
-            label: describes the meaning of the axis, can be changed
-            n_or_arr: number of bins, if uniform binning, otherwise a list (or numpy 1D array) of bin boundaries
-            lo: if uniform binning, minimum value
-            hi: if uniform binning, maximum value
-        Axis will generate frequencies for n+3 bins, special bin indices:
-            0 = underflow, n+1 = overflow, n+2 = nanflow
-        Bin boundaries are [lo, hi)
+    Specify a binned axis with name and label, and binning.
+
+    Parameters
+    ----------
+        name:
+            is used as a keyword in histogram filling, immutable
+        label:
+            describes the meaning of the axis, can be changed
+        n_or_arr:
+            number of bins, if uniform binning, otherwise a list (or numpy 1D array) of bin boundaries
+        lo:
+            if uniform binning, minimum value
+        hi:
+            if uniform binning, maximum value
+
+    Axis will generate frequencies for n+3 bins, special bin indices:
+        0 = underflow, n+1 = overflow, n+2 = nanflow
+
+    Bin boundaries are [lo, hi)
     """
     def __init__(self, name, label, n_or_arr, lo=None, hi=None):
         super(Bin, self).__init__(name, label)
@@ -464,9 +493,9 @@ class Bin(DenseAxis):
 
     def reduced(self, islice):
         """
-            Return a new axis with binning corresponding to the slice made on this axis
-            overflow will be taken care of by Hist.__getitem__
-            islice should be as returned from _ireduce, start and stop should be None or within [1, size()-1]
+        Return a new axis with binning corresponding to the slice made on this axis
+        overflow will be taken care of by Hist.__getitem__
+        islice should be as returned from _ireduce, start and stop should be None or within [1, size()-1]
         """
         if islice.step is not None:
             raise NotImplementedError("Step slicing can be interpreted as a rebin factor")
@@ -505,9 +534,9 @@ class Bin(DenseAxis):
 
     def edges(self, overflow='none'):
         """
-            Bin boundaries
-                overflow: create overflow and/or underflow bins by adding a bin of same width to each end
-                    only 'none', 'under', 'over', 'all' types are supported
+        Bin boundaries
+            overflow: create overflow and/or underflow bins by adding a bin of same width to each end
+                only 'none', 'under', 'over', 'all' types are supported
         """
         if self._uniform:
             out = np.linspace(self._lo, self._hi, self._bins + 1)
@@ -526,10 +555,17 @@ class Bin(DenseAxis):
 
 class Hist(AccumulatorABC):
     """
-        Specify a multidimensional histogram
-            label: description of meaning of frequencies (axis descriptions specified in axis constructor)
-            dtype: underlying numpy dtype of frequencies
-            *axes: positional list of Cat or Bin objects
+    Specify a multidimensional histogram.
+
+    Parameters
+    ----------
+        label:
+            description of meaning of frequencies (axis descriptions specified in axis constructor)
+        dtype:
+            underlying numpy dtype of frequencies
+        axes:
+            positional list of Cat or Bin objects
+
     """
     DEFAULT_DTYPE = 'd'
 
@@ -588,7 +624,7 @@ class Hist(AccumulatorABC):
     @property
     def fields(self):
         """
-            Stub for histbook compatibility in striped
+        Stub for histbook compatibility in striped
         """
         return [ax.name for ax in self._axes]
 
@@ -623,7 +659,7 @@ class Hist(AccumulatorABC):
 
     def compatible(self, other):
         """
-            Checks if this histogram is compatible with another, i.e. they have identical binning
+        Checks if this histogram is compatible with another, i.e. they have identical binning
         """
         if self.dim() != other.dim():
             return False
@@ -738,9 +774,9 @@ class Hist(AccumulatorABC):
 
     def sum(self, *axes, **kwargs):
         """
-            Integrates out a set of axes, producing a new histogram
-                *axes: axes to integrate out (either name or Axis object)
-                overflow: 'none', 'under', 'over', 'all', 'allnan' (only applies to dense axes)
+        Integrates out a set of axes, producing a new histogram
+            *axes: axes to integrate out (either name or Axis object)
+            overflow: 'none', 'under', 'over', 'all', 'allnan' (only applies to dense axes)
         """
         overflow = kwargs.pop('overflow', 'none')
         axes = [self.axis(ax) for ax in axes]
@@ -782,11 +818,12 @@ class Hist(AccumulatorABC):
 
     def project(self, axis_name, the_slice=slice(None), overflow='none'):
         """
-            Projects current histogram down one dimension
-                axis_name: dimension to reduce on
-                the_slice: any slice, list, string, or other object that the axis will understand
-                overflow: see sum() description for allowed values
-            N.B. the more idiomatic way is to slice and sum, although this may be more readable
+        Projects current histogram down one dimension
+            axis_name: dimension to reduce on
+            the_slice: any slice, list, string, or other object that the axis will understand
+            overflow: see sum() description for allowed values
+
+        N.B. the more idiomatic way is to slice and sum, although this may be more readable
         """
         axis = self.axis(axis_name)
         full_slice = tuple(slice(None) if ax != axis else the_slice for ax in self._axes)

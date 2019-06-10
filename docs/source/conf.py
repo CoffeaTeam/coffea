@@ -12,6 +12,7 @@
 #
 import os
 import sys
+import requests
 sys.path.insert(0, os.path.abspath('../..'))
 import coffea
 print(sys.path)
@@ -43,6 +44,11 @@ extensions = [
     'sphinx.ext.linkcode',
     'sphinx.ext.napoleon'
 ]
+
+url = 'https://raw.githubusercontent.com/CoffeaTeam/coffea/master/binder/muonspectrum_v4.ipynb'
+r = requests.get(url)
+with open(os.path.join(os.path.dirname(__file__), 'coffea-introduction.ipynb'), 'wb') as f:
+    f.write(r.content)
 
 nbsphinx_execute = 'never'
 
