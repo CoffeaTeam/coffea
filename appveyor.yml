@@ -20,6 +20,7 @@ install:
   - "python --version"
 
 build_script:
+  - "python -m pip install requests"
   - "pip install awkward numba scipy"
   - "pip install pytest pytest-runner"
   - "python setup.py pytest"
