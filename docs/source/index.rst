@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-coffea - Columnar Object Framework For Efficienty Analysis
+coffea - Columnar Object Framework For Efficient Analysis
 ==========================================================
 
 .. toctree::
@@ -14,9 +14,9 @@ coffea - Columnar Object Framework For Efficienty Analysis
    quick_start
    coffea-introduction.ipynb
    reference
-.. 
+..
    userguide/index
-   faq   
+   faq
    devguide/index
 
 Indices and tables
