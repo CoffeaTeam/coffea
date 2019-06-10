@@ -87,3 +87,32 @@ def test_spark_executor():
     assert( hists['cutflow']['Data_pt'] == 15 )
     assert( hists['cutflow']['Data_mass'] == 5 )
 
+def test_spark_hist_adders():
+    pyspark = pytest.importorskip("pyspark", minversion="2.4.1")
+    
+    import pandas as pd
+    import _pickle as pkl
+    import lz4.frame as lz4f
+
+    from coffea.util import numpy as np
+    from coffea.processor.spark.spark_executor import agg_histos, reduce_histos
+    from coffea.processor.test_items import NanoTestProcessor
+
+    global processor_instance
+    processor_instance = NanoTestProcessor()
+
+    one = processor_instance.accumulator.identity()
+    two = processor_instance.accumulator.identity()
+    hlist1 = [lz4f.compress(pkl.dumps(one))]
+    hlist2 = [lz4f.compress(pkl.dumps(one)),lz4f.compress(pkl.dumps(two))]
+    harray1 = np.array(hlist1, dtype='O')
+    harray2 = np.array(hlist2, dtype='O')
+    
+    series1 = pd.Series(harray1)
+    series2 = pd.Series(harray2)
+    df = pd.DataFrame({'histos': harray2})
+
+    # correctness of these functions is checked in test_spark_executor
+    agg1 = agg_histos.func(series1)
+    agg2 = agg_histos.func(series2)
+    red = reduce_histos.func(df)
