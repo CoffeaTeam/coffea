@@ -43,6 +43,7 @@ deploy:
     skip_cleanup: true
     github_token: $GITHUB_OAUTH_TOKEN
     local_dir: docs/build/html
+    target_branch: gh-pages
     on:
       branch: master
       condition: $TRAVIS_PYTHON_VERSION = "3.6" && $AWKWARD = "awkward>=0.8.4"
