@@ -1,8 +1,8 @@
 ---
 name: Feature request
 about: Suggest an idea for this project
-title: "[enhancement] Adding cool new feature to coffea.XYZ"
-labels: ''
+title: " Adding cool new feature to coffea.XYZ"
+labels: 'enhancement'
 assignees: ''
 
 ---
