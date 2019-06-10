@@ -7,5 +7,6 @@ pushd source
 sphinx-autogen reference.rst
 popd
 make html
+touch build/html/.nojekyll
 popd
 pip uninstall --yes coffea 
