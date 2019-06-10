@@ -25,25 +25,33 @@ Basic tools and wrappers for enabling not-too-alien syntax when running columnar
 
 .. inclusion-marker-1-5-do-not-remove
 
-This package is currently organized into three subpackages:
+coffea is currently organized into several sub-modules with specific purposes.
 
-1) lookup_tools - This package manages importing corrections and scale factors, and provides a unified interface for evaluating those corrections on physics objects.
-    - lookup_tools.extractor: handles importing the lookups from root files
-    - lookup_tools.evaluator: handles organizing, providing an interface for, and evaluating the lookups
-2) analysis_objects - This package contains definitions of physics objects casted in the language of JaggedArrays
-    - JaggedCandidateArray - This object represents a list of candidates (things with four momenta and other attribute). Upon creation one can add extra columns of data that were not imported at construction, and all columns are accessible as though they were attributes of the class. This gives analysts a simple-to-read but rich, descriptive, and highly configurable object to represent muons, electrons, etc.
-    - JaggedTLorentzVectorArray - This is a jagged representation of a TLorentzVectorArray. 
-3) striped - This package defines transformations from the raw striped database into JaggedArrays and JaggedCandidateArrays
-    - ColumnGroup - This object takes the name of a column that has attributes in striped and creates a dictionary of all given attributes.
-    - PhysicalColumnGroup - Just like ColumnGroup except it requires a "p4" attribute to be defined, and is specialized to aide in creating JaggedCandidateArrays
-    - jaggedFromColumnGroup - This is a function that takes a column group and returns a JaggedArray if it is a normal column group, or a JaggedCandidateArray if given a PhysicalColumnGroup
+ 
+1) analysis_objects - This package contains definitions of physics objects casted in the language of JaggedArrays
+
+2) arrays - Another take on making analysis objects with directly decorated LorentzVector objects instead of wrapped LorentzVectors.
+
+3) hist - A well-featured histogramming and plotting sub-package.
+
+4) jetmet_tools - CMS-specific tools for correcting Jets and Missing Energy
+
+5) lookup_tools - This package manages importing corrections and scale factors, and provides a unified interface for evaluating those corrections on physics objects.
+
+6) lumi tools - A CMS-specific package for parsing luminosity database files to derive integrated luminosity and good run lists.
+
+7) processor - An interface for defining and running analyses in a portable way across a variety of scale-out mechanisms.
+
+8) striped - This package defines transformations from the raw striped database into JaggedArrays and JaggedCandidateArrays, but is somewhat deprecated.
+    
+For further information please see the complete package index in our `documentation <https://coffeateam.github.io/coffea/>`_.
 
 .. inclusion-marker-2-do-not-remove
 
 Installation
 ============
 
-Install fnal-column-analysis-tools like any other Python package:
+Install coffea like any other Python package:
 
 .. code-block:: bash
 
@@ -65,6 +73,7 @@ The following are installed automatically when you install uproot with pip:
 - ``scipy`` for statistical functions
 - ``matplitlib`` as a plotting backend
 - ``uproot`` for interacting with ROOT files
+- ``tqdm``
 
 .. inclusion-marker-3-do-not-remove
 
@@ -76,4 +85,4 @@ This library is installed by people doing collider HEP analysis in the FNAL CMS 
 Reference documentation
 =======================
 
-(...)
+Please read our documentation at: https://coffeateam.github.io/coffea/
