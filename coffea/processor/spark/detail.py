@@ -53,23 +53,23 @@ def _read_df(spark, dataset, files_or_dirs, ana_cols, partitionsize):
     npartitions = (count // partitionsize) + 1
     if df.rdd.getNumPartitions() > npartitions:
         df = df.repartition(npartitions)
-    
+
     return df, dataset, count
 
 
 def _spark_make_dfs(spark, fileset, partitionsize, columns, thread_workers, status=True):
     dfs = {}
     ana_cols = set(columns)
-    
+
     def dfs_accumulator(total, result):
         df, ds, count = result
         total[ds] = (df, count)
-    
+
     with ThreadPoolExecutor(max_workers=thread_workers) as executor:
         futures = set(executor.submit(_read_df, spark, ds, files, ana_cols, partitionsize) for ds, files in fileset.items())
-        
+
         futures_handler(futures, dfs, status, 'datasets', 'loading', futures_accumulator=dfs_accumulator)
-    
+
     return dfs
 
 
