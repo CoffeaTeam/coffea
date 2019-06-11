@@ -18,6 +18,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 
 lz4_clevel = 1
 
+
 # this is a UDF that takes care of summing histograms across
 # various spark results where the outputs are histogram blobs
 def agg_histos_raw(series, processor_instance, lz4_clevel):
@@ -30,7 +31,7 @@ def agg_histos_raw(series, processor_instance, lz4_clevel):
     return lz4f.compress(pkl.dumps(outhist), compression_level=lz4_clevel)
 
 
-@fn.pandas_udf(BinaryType(),fn.PandasUDFType.GROUPED_AGG)
+@fn.pandas_udf(BinaryType(), fn.PandasUDFType.GROUPED_AGG)
 def agg_histos(series):
     global processor_instance, lz4_clevel
     return agg_histos_raw(series, processor_instance, lz4_clevel)
@@ -45,7 +46,7 @@ def reduce_histos_raw(df, processor_instance, lz4_clevel):
     return pd.DataFrame(data={'histos': np.array([lz4f.compress(pkl.dumps(outhist), compression_level=lz4_clevel)], dtype='O')})
 
 
-@fn.pandas_udf(StructType([StructField('histos', BinaryType(), True)]),fn.PandasUDFType.GROUPED_MAP)
+@fn.pandas_udf(StructType([StructField('histos', BinaryType(), True)]), fn.PandasUDFType.GROUPED_MAP)
 def reduce_histos(df):
     global processor_instance, lz4_clevel
     return reduce_histos_raw(df, processor_instance, lz4_clevel)
@@ -92,14 +93,14 @@ class SparkExecutor(object):
         def spex_accumulator(total, result):
             ds, df = result
             total[ds] = df
-    
+
         with ThreadPoolExecutor(max_workers=thread_workers) as executor:
             futures = set()
             for ds, df in self._cacheddfs.items():
                 futures.add(executor.submit(self._launch_analysis, ds, df, coffea_udf, cols_w_ds))
             # wait for the spark jobs to come in
             self._rawresults = {}
-            futures_handler(futures, self._rawresults, status, unit, desc, futures_accumulator=spex_accumulator)            
+            futures_handler(futures, self._rawresults, status, unit, desc, futures_accumulator=spex_accumulator)
 
         for ds, bitstream in self._rawresults.items():
             if bitstream is None:

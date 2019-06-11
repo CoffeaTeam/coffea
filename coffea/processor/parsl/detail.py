@@ -88,16 +88,15 @@ def derive_chunks(filename, treename, chunksize, ds, timeout=None):
     return [(ds, treename, (filename, chunksize, index)) for index in range(nentries // chunksize + 1)]
 
 
-def _parsl_get_chunking(filelist, treename, chunksize, timeout=None):
+def _parsl_get_chunking(filelist, treename, chunksize, status=True, timeout=None):
     futures = set(derive_chunks(fn, treename, chunksize, ds, timeout=timeout) for ds, fn in filelist)
-    nfiles = len(future_to_ds)
 
     items = []
-    
+
     def chunk_accumulator(total, result):
         ds, treename, chunk = result
         total.append((ds, chunk[0], treename, chunk[1], chunk[2]))
-    
-    futures_handler(futures, items, status, unit, desc, futures_accumulator=chunk_accumulator)
-    
+
+    futures_handler(futures, items, status, 'files', 'Preprocessing', futures_accumulator=chunk_accumulator)
+
     return items
