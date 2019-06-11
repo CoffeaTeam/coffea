@@ -5,6 +5,8 @@ import pyspark.sql
 import pyspark.sql.functions as fn
 from collections.abc import Sequence
 
+from ..executor import futures_handler
+
 # this is a reasonable local spark configuration
 _default_config = pyspark.sql.SparkSession.builder \
     .appName('coffea-analysis') \
@@ -35,33 +37,39 @@ def _spark_initialize(config=_default_config, **kwargs):
     return session
 
 
-def _read_df(spark, files_or_dirs):
+def _read_df(spark, dataset, files_or_dirs, ana_cols, partitionsize):
     if not isinstance(files_or_dirs, Sequence):
         raise ValueError("spark dataset file list must be a Sequence (like list())")
     df = spark.read.parquet(*files_or_dirs)
     count = df.count()
-    return df, count
+
+    df_cols = set(df.columns)
+    cols_in_df = ana_cols.intersection(df_cols)
+    df = df.select(*cols_in_df)
+    missing_cols = ana_cols - cols_in_df
+    for missing in missing_cols:
+        df = df.withColumn(missing, fn.lit(0.0))
+    df = df.withColumn('dataset', fn.lit(dataset))
+    npartitions = (count // partitionsize) + 1
+    if df.rdd.getNumPartitions() > npartitions:
+        df = df.repartition(npartitions)
+    
+    return df, dataset, count
 
 
-def _spark_make_dfs(spark, fileset, partitionsize, columns, thread_workers):
+def _spark_make_dfs(spark, fileset, partitionsize, columns, thread_workers, status=True):
     dfs = {}
     ana_cols = set(columns)
+    
+    def dfs_accumulator(total, result):
+        df, ds, count = result
+        total[ds] = (df, count)
+    
     with ThreadPoolExecutor(max_workers=thread_workers) as executor:
-        future_to_ds = {executor.submit(_read_df, spark, fileset[dataset]): dataset for dataset in fileset.keys()}
-        for ftr in tqdm(as_completed(future_to_ds), total=len(fileset), desc='loading', unit='datasets'):
-            dataset = future_to_ds[ftr]
-            df, count = ftr.result()
-            df_cols = set(df.columns)
-            cols_in_df = ana_cols.intersection(df_cols)
-            df = df.select(*cols_in_df)
-            missing_cols = ana_cols - cols_in_df
-            for missing in missing_cols:
-                df = df.withColumn(missing, fn.lit(0.0))
-            df = df.withColumn('dataset', fn.lit(dataset))
-            npartitions = (count // partitionsize) + 1
-            if df.rdd.getNumPartitions() > npartitions:
-                df = df.repartition(npartitions)
-            dfs[dataset] = (df, count)
+        futures = set(executor.submit(_read_df, spark, ds, files, ana_cols, partitionsize) for ds, files in fileset.items())
+        
+        futures_handler(futures, dfs, status, 'datasets', 'loading', futures_accumulator=dfs_accumulator)
+    
     return dfs
 
 
