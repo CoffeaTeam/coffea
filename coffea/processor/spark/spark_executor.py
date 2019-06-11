@@ -8,6 +8,8 @@ import lz4.frame as lz4f
 import numpy as np
 import pandas as pd
 
+from ..executor import futures_handler
+
 import pyspark
 import pyspark.sql.functions as fn
 from pyspark.sql.types import BinaryType, StringType, StructType, StructField
@@ -18,10 +20,8 @@ lz4_clevel = 1
 
 # this is a UDF that takes care of summing histograms across
 # various spark results where the outputs are histogram blobs
-@fn.pandas_udf(BinaryType(), fn.PandasUDFType.GROUPED_AGG)
-def agg_histos(df):
-    global processor_instance, lz4_clevel
-    goodlines = df[df.str.len() > 0]
+def agg_histos_raw(series, processor_instance, lz4_clevel):
+    goodlines = series[series.str.len() > 0]
     if goodlines.size == 1:  # short-circuit trivial aggregations
         return goodlines[0]
     outhist = processor_instance.accumulator.identity()
@@ -30,15 +30,25 @@ def agg_histos(df):
     return lz4f.compress(pkl.dumps(outhist), compression_level=lz4_clevel)
 
 
-@fn.pandas_udf(StructType([StructField('histos', BinaryType(), True)]),
-               fn.PandasUDFType.GROUPED_MAP)
-def reduce_histos(df):
+@fn.pandas_udf(BinaryType(),fn.PandasUDFType.GROUPED_AGG)
+def agg_histos(series):
+    global processor_instance, lz4_clevel
+    return agg_histos_raw(series, processor_instance, lz4_clevel)
+
+
+def reduce_histos_raw(df, processor_instance, lz4_clevel):
     histos = df['histos']
     mask = (histos.str.len() > 0)
     outhist = processor_instance.accumulator.identity()
     for line in histos[mask]:
         outhist.add(pkl.loads(lz4f.decompress(line)))
-    return pd.DataFrame(data={'histos': np.array([lz4f.compress(pkl.dumps(outhist))], dtype='O')})
+    return pd.DataFrame(data={'histos': np.array([lz4f.compress(pkl.dumps(outhist), compression_level=lz4_clevel)], dtype='O')})
+
+
+@fn.pandas_udf(StructType([StructField('histos', BinaryType(), True)]),fn.PandasUDFType.GROUPED_MAP)
+def reduce_histos(df):
+    global processor_instance, lz4_clevel
+    return reduce_histos_raw(df, processor_instance, lz4_clevel)
 
 
 class SparkExecutor(object):
@@ -58,7 +68,7 @@ class SparkExecutor(object):
         return self._counts
 
     def __call__(self, spark, dfslist, theprocessor, output, thread_workers,
-                 unit='datasets', desc='Processing'):
+                 status=True, unit='datasets', desc='Processing'):
         # processor needs to be a global
         global processor_instance, coffea_udf
         processor_instance = theprocessor
@@ -79,16 +89,17 @@ class SparkExecutor(object):
                 self._cacheddfs[ds] = df.select(*cols_w_ds).cache()
                 self._counts[ds] = counts
 
+        def spex_accumulator(total, result):
+            ds, df = result
+            total[ds] = df
+    
         with ThreadPoolExecutor(max_workers=thread_workers) as executor:
-            future_to_ds = {}
+            futures = set()
             for ds, df in self._cacheddfs.items():
-                future_to_ds[executor.submit(self._launch_analysis, df, coffea_udf, cols_w_ds)] = ds
+                futures.add(executor.submit(self._launch_analysis, ds, df, coffea_udf, cols_w_ds))
             # wait for the spark jobs to come in
             self._rawresults = {}
-            for future in tqdm(as_completed(future_to_ds),
-                               total=len(future_to_ds),
-                               desc=desc, unit=unit):
-                self._rawresults[future_to_ds[future]] = future.result()
+            futures_handler(futures, self._rawresults, status, unit, desc, futures_accumulator=spex_accumulator)            
 
         for ds, bitstream in self._rawresults.items():
             if bitstream is None:
@@ -98,14 +109,14 @@ class SparkExecutor(object):
             bits = bitstream[bitstream.columns[0]][0]
             output.add(pkl.loads(lz4f.decompress(bits)))
 
-    def _launch_analysis(self, df, udf, columns):
+    def _launch_analysis(self, ds, df, udf, columns):
         histo_map_parts = (df.rdd.getNumPartitions() // 20) + 1
-        return df.select(udf(*columns).alias('histos')) \
-                 .withColumn('hpid', fn.spark_partition_id() % histo_map_parts) \
-                 .repartition(histo_map_parts, 'hpid') \
-                 .groupBy('hpid').apply(reduce_histos) \
-                 .groupBy().agg(agg_histos('histos')) \
-                 .toPandas()
+        return ds, df.select(udf(*columns).alias('histos')) \
+                     .withColumn('hpid', fn.spark_partition_id() % histo_map_parts) \
+                     .repartition(histo_map_parts, 'hpid') \
+                     .groupBy('hpid').apply(reduce_histos) \
+                     .groupBy().agg(agg_histos('histos')) \
+                     .toPandas()
 
 
 spark_executor = SparkExecutor()

@@ -19,34 +19,6 @@ def test_spark_imports():
     _spark_stop(spark)
 
 
-@pytest.mark.skip(reason='test should work but does not.')
-def test_spark_functionality():
-    pyspark = pytest.importorskip("pyspark", minversion="2.4.1")
-    
-    import lz4.frame as lz4f
-    import cloudpickle as cpkl
-    
-    from coffea import hist
-    from coffea.processor.spark.tests import check_spark_functionality
-    one,two,hists = check_spark_functionality()
-
-    #check that spark produced the correct output dataset
-    assert( (one == two) and (one == 3) )
-
-    #make sure that the returned histograms are all the same (as they should be in this case)
-    assert( (len(hists[0]) == len(hists[1])) and (len(hists[1]) == len(hists[2])) )
-
-    inflated = []
-    for i in range(3):
-        inflated.append(cpkl.loads(lz4f.decompress(hists[i])))
-
-    final = inflated.pop()
-    for ihist in inflated:
-        final.add(ihist)
-
-    #make sure the accumulator is working right after being blobbed through spark
-    assert( final['cutflow']['dummy'] == 3 )
-
 def test_spark_executor():
     pyspark = pytest.importorskip("pyspark", minversion="2.4.1")
     
@@ -87,6 +59,7 @@ def test_spark_executor():
     assert( hists['cutflow']['Data_pt'] == 15 )
     assert( hists['cutflow']['Data_mass'] == 5 )
 
+
 def test_spark_hist_adders():
     pyspark = pytest.importorskip("pyspark", minversion="2.4.1")
     
@@ -95,14 +68,13 @@ def test_spark_hist_adders():
     import lz4.frame as lz4f
 
     from coffea.util import numpy as np
-    from coffea.processor.spark.spark_executor import agg_histos, reduce_histos
+    from coffea.processor.spark.spark_executor import agg_histos_raw, reduce_histos_raw
     from coffea.processor.test_items import NanoTestProcessor
 
-    global processor_instance
-    processor_instance = NanoTestProcessor()
+    proc = NanoTestProcessor()
 
-    one = processor_instance.accumulator.identity()
-    two = processor_instance.accumulator.identity()
+    one = proc.accumulator.identity()
+    two = proc.accumulator.identity()
     hlist1 = [lz4f.compress(pkl.dumps(one))]
     hlist2 = [lz4f.compress(pkl.dumps(one)),lz4f.compress(pkl.dumps(two))]
     harray1 = np.array(hlist1, dtype='O')
@@ -113,6 +85,6 @@ def test_spark_hist_adders():
     df = pd.DataFrame({'histos': harray2})
 
     # correctness of these functions is checked in test_spark_executor
-    agg1 = agg_histos.func(series1)
-    agg2 = agg_histos.func(series2)
-    red = reduce_histos.func(df)
+    agg1 = agg_histos_raw(series1, proc, 1)
+    agg2 = agg_histos_raw(series2, proc, 1)
+    red = reduce_histos_raw(df, proc, 1)
