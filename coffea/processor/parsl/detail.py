@@ -94,8 +94,9 @@ def _parsl_get_chunking(filelist, treename, chunksize, status=True, timeout=None
     items = []
 
     def chunk_accumulator(total, result):
-        ds, treename, chunk = result
-        total.append((ds, chunk[0], treename, chunk[1], chunk[2]))
+        ds, treename, chunks = result
+        for chunk in chunks:
+            total.append((ds, chunk[0], treename, chunk[1], chunk[2]))
 
     futures_handler(futures, items, status, 'files', 'Preprocessing', futures_accumulator=chunk_accumulator)
 
