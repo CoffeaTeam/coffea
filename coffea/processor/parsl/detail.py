@@ -12,6 +12,8 @@ from parsl.channels import LocalChannel
 from parsl.config import Config
 from parsl.executors import HighThroughputExecutor
 
+from ..executor import futures_handler
+
 from .timeout import timeout
 
 try:
@@ -47,7 +49,7 @@ def _parsl_stop(dfk):
 
 @python_app
 @timeout
-def derive_chunks(filename, treename, chunksize, timeout=None):
+def derive_chunks(filename, treename, chunksize, ds, timeout=None):
     import uproot
     from collections.abc import Sequence
     from concurrent.futures import ThreadPoolExecutor, TimeoutError
@@ -83,18 +85,19 @@ def derive_chunks(filename, treename, chunksize, timeout=None):
         raise Exception('No tree found, out of possible tree names: %s' % repr(treename))
 
     nentries = tree.numentries
-    return [(filename, chunksize, index) for index in range(nentries // chunksize + 1)]
+    return ds, treename, [(filename, chunksize, index) for index in range(nentries // chunksize + 1)]
 
 
-def _parsl_get_chunking(filelist, treename, chunksize, timeout=None):
-    future_to_ds = {derive_chunks(fn, treename, chunksize, timeout=timeout): ds for ds, fn in filelist}
-    nfiles = len(future_to_ds)
+def _parsl_get_chunking(filelist, treename, chunksize, status=True, timeout=None):
+    futures = set(derive_chunks(fn, treename, chunksize, ds, timeout=timeout) for ds, fn in filelist)
 
     items = []
-    for ftr in tqdm(as_completed(future_to_ds), total=nfiles, unit='files', desc='Preprocessing'):
-        ds = future_to_ds[ftr]
-        chunks = ftr.result()
+
+    def chunk_accumulator(total, result):
+        ds, treename, chunks = result
         for chunk in chunks:
-            items.append((ds, chunk[0], treename, chunk[1], chunk[2]))
+            total.append((ds, chunk[0], treename, chunk[1], chunk[2]))
+
+    futures_handler(futures, items, status, 'files', 'Preprocessing', futures_accumulator=chunk_accumulator)
 
     return items
