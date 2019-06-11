@@ -85,7 +85,7 @@ def derive_chunks(filename, treename, chunksize, ds, timeout=None):
         raise Exception('No tree found, out of possible tree names: %s' % repr(treename))
 
     nentries = tree.numentries
-    return [(ds, treename, (filename, chunksize, index)) for index in range(nentries // chunksize + 1)]
+    return ds, treename, [(filename, chunksize, index) for index in range(nentries // chunksize + 1)]
 
 
 def _parsl_get_chunking(filelist, treename, chunksize, status=True, timeout=None):
