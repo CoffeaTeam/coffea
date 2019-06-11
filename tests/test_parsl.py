@@ -96,10 +96,13 @@ def test_parsl_funcs():
     from coffea.processor.parsl.detail import derive_chunks
 
     filename = osp.abspath('tests/samples/nano_dy.root')
+    dataset = 'Z+Jets'
     treename = 'Events'
     chunksize = 20
-    test = derive_chunks.func(filename, treename, chunksize)
+    ds, tn, test = derive_chunks.func(filename, treename, chunksize, dataset)
     
+    assert(dataset == ds)
+    assert(treename == tn)
     assert('nano_dy.root' in test[0][0])
     assert(test[0][1] == 20)
     assert(test[0][2] == 0)
