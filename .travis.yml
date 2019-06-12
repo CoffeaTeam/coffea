@@ -4,6 +4,7 @@ os:
 python:
 - 2.7
 - 3.6
+jdk: oraclejdk8
 env: 
   matrix:
   - AWKWARD="awkward>=0.8.4"
@@ -18,7 +19,6 @@ script:
 - python setup.py flake8
 - coverage run --source=coffea/ setup.py pytest
 install:
-- which java
 - pip -q install --upgrade setuptools_scm
 - pip -q install codecov
 - PY_MAJ=`python -c 'import sys; print(sys.version_info[0])'`
