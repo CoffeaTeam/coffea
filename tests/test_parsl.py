@@ -109,16 +109,19 @@ def test_parsl_funcs():
 
     from coffea.processor.parsl.parsl_executor import coffea_pyapp
     from coffea.processor.test_items import NanoTestProcessor
+    import pickle as pkl
     import cloudpickle as cpkl
     import lz4.frame as lz4f
     
     procpkl = lz4f.compress(cpkl.dumps(NanoTestProcessor()))
     
-    out = coffea_pyapp.func('test', filename, treename, chunksize, 0, procpkl)
+    out = coffea_pyapp.func('ZJets', filename, treename, chunksize, 0, procpkl)
 
-    assert(len(out[0]) == 1348641)
+    hists = pkl.loads(lz4f.decompress(out[0]))
+    assert( hists['cutflow']['ZJets_pt'] == 4 )
+    assert( hists['cutflow']['ZJets_mass'] == 1 )
     assert(out[1] == 10)
-    assert(out[2] == 'test')
+    assert(out[2] == 'ZJets')
 
 @pytest.mark.skipif(sys.platform.startswith('win'), reason='signals are different on windows')
 def test_timeout():

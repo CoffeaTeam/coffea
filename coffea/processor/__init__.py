@@ -12,7 +12,7 @@ from .executor import (
     run_spark_job
 )
 from .accumulator import (
-    accumulator,
+    value_accumulator,
     set_accumulator,
     dict_accumulator,
     defaultdict_accumulator,

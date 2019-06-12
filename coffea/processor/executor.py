@@ -3,7 +3,7 @@ import time
 from tqdm import tqdm
 import uproot
 from . import ProcessorABC, LazyDataFrame
-from .accumulator import accumulator
+from .accumulator import value_accumulator, set_accumulator
 
 try:
     from collections.abc import Mapping, Sequence
@@ -77,7 +77,9 @@ def _work_function(item, flatten=False):
     df = LazyDataFrame(tree, chunksize, index, flatten=flatten)
     df['dataset'] = dataset
     out = processor_instance.process(df)
-    out['_bytesread'] = accumulator(file.source.bytesread if isinstance(file.source, uproot.source.xrootd.XRootDSource) else 0)
+    if isinstance(file.source, uproot.source.xrootd.XRootDSource):
+        out['_bytesread'] = value_accumulator(int) + file.source.bytesread
+        out['_dataservers'] = set_accumulator({file.source._source.get_property('DataServer')})
     return out
 
 
