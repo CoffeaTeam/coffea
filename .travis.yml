@@ -4,7 +4,7 @@ os:
 python:
 - 2.7
 - 3.6
-env:
+env: 
   matrix:
   - AWKWARD="awkward>=0.8.4"
   - AWKWARD="awkward-numba==0.8.15 uproot-methods==0.4.7 uproot==3.4.19"
@@ -18,6 +18,7 @@ script:
 - python setup.py flake8
 - coverage run --source=coffea/ setup.py pytest
 install:
+- which java
 - pip -q install --upgrade setuptools_scm
 - pip -q install codecov
 - PY_MAJ=`python -c 'import sys; print(sys.version_info[0])'`
