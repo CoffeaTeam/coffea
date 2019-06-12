@@ -18,12 +18,11 @@ script:
 - python setup.py flake8
 - coverage run --source=coffea/ setup.py pytest
 before_install:
-  - sudo add-apt-repository ppa:webupd8team/java -y
+  - sudo add-apt-repository ppa:openjdk-r/ppa -y
   - sudo apt-get update -q
-  - sudo apt install oracle-java8-installer -y 
-  - sudo apt install oracle-java8-set-default -y 
-  - export JAVA_HOME=/usr/lib/jvm/java-8-oracle
-  - export JRE_HOME=/usr/lib/jvm/java-8-oracle/jre
+  - sudo apt-get install openjdk-8-jdk -y 
+  - sudo update-alternatives  --config java
+  - java -version
 install:
 - pip -q install --upgrade setuptools_scm
 - pip -q install codecov
