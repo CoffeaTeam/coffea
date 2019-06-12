@@ -24,7 +24,7 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None,
     import pickle as pkl
     import lz4.frame as lz4f
     from coffea import hist, processor
-    from coffea.processor.accumulator import accumulator
+    from coffea.processor.accumulator import value_accumulator
     from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
     uproot.XRootDSource.defaults["parallel"] = False
@@ -73,7 +73,8 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None,
     df['dataset'] = dataset
 
     vals = processor_instance.process(df)
-    vals['_bytesread'] = accumulator(afile.source.bytesread if isinstance(afile.source, uproot.source.xrootd.XRootDSource) else 0)
+    if isinstance(afile.source, uproot.source.xrootd.XRootDSource):
+        vals['_bytesread'] = value_accumulator(int) + afile.source.bytesread
     valsblob = lz4f.compress(pkl.dumps(vals), compression_level=lz4_clevel)
 
     istart = chunksize * index
