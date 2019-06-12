@@ -20,8 +20,8 @@ script:
 before_install:
   - sudo add-apt-repository ppa:webupd8team/java -y
   - sudo apt-get update -q
-  - sudo apt-get install oracle-java8-installer -y
-  - sudo apt-get install oracle-java8-set-default
+  - sudo apt install oracle-java8-installer -y 
+  - sudo apt install oracle-java8-set-default -y 
   - export JAVA_HOME=/usr/lib/jvm/java-8-oracle
   - export JRE_HOME=/usr/lib/jvm/java-8-oracle/jre
 install:
