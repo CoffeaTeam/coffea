@@ -22,6 +22,8 @@ before_install:
   - sudo apt-get update -q
   - sudo apt-get install openjdk-8-jdk -y 
   - sudo update-alternatives  --config java
+  - export JAVA_HOME=/usr/lib/jvm/openjdk-8
+  - export PATH=$JAVA_HOME/bin:$PATH
   - java -version
 install:
 - pip -q install --upgrade setuptools_scm
