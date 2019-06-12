@@ -1,7 +1,6 @@
 language: python
 os:
 - linux
-dist: trusty
 python:
 - 2.7
 - 3.6
@@ -18,6 +17,13 @@ addons:
 script:
 - python setup.py flake8
 - coverage run --source=coffea/ setup.py pytest
+before_install:
+  - sudo add-apt-repository ppa:webupd8team/java -y
+  - sudo apt-get update -q
+  - sudo apt-get install oracle-java8-installer -y
+  - sudo apt-get install oracle-java8-set-default
+  - export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+  - export JRE_HOME=/usr/lib/jvm/java-8-oracle/jre
 install:
 - pip -q install --upgrade setuptools_scm
 - pip -q install codecov
