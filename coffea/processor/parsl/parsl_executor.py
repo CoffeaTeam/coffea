@@ -8,7 +8,6 @@ import cloudpickle as cpkl
 import pickle as pkl
 import lz4.frame as lz4f
 import numpy as np
-import pandas as pd
 import time
 
 from parsl.app.app import python_app
