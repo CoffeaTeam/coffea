@@ -1,20 +1,19 @@
 from __future__ import print_function, division
 from coffea import processor
+from functools import partial
 import numpy as np
 
 
 def test_accumulators():
-    a = processor.accumulator(0.)
+    a = processor.value_accumulator(float)
     a += 3.
-    a += processor.accumulator(2)
-    assert a.value == 5.
+    assert a.value == 3.
     assert a.identity().value == 0.
 
-    a = processor.accumulator(np.array([0.]))
+    a = processor.value_accumulator(partial(np.array, [2.]))
     a += 3.
-    a += processor.accumulator(2)
-    assert a.value == np.array([5.])
-    assert a.identity().value == np.array([0.])
+    assert np.array_equal(a.value, np.array([5.]))
+    assert np.array_equal(a.identity().value, np.array([2.]))
 
     b = processor.set_accumulator({'apples', 'oranges'})
     b += {'pears'}
@@ -24,23 +23,23 @@ def test_accumulators():
     c = processor.dict_accumulator({'num': a, 'fruit': b})
     c['num'] += 2.
     c += processor.dict_accumulator({
-        'num2': processor.accumulator(0),
+        'num2': processor.value_accumulator(int),
         'fruit': processor.set_accumulator({'apples', 'cherries'}),
     })
     assert c['num2'].value == 0
-    assert c['num'].value == 7.
+    assert np.array_equal(c['num'].value, np.array([7.]))
     assert c['fruit'] == {'apples', 'oranges', 'pears', 'grapes', 'cherries'}
 
-    d = processor.defaultdict_accumulator(lambda: processor.accumulator(0.))
-    d['x'] = processor.accumulator(0.)
+    d = processor.defaultdict_accumulator(float)
+    d['x'] = 0.
     d['x'] += 4.
     d['y'] += 5.
     d['z'] += d['x']
     d['x'] += d['y']
-    assert d['x'].value == 9.
-    assert d['y'].value == 5.
-    assert d['z'].value == 4.
-    assert d['w'].value == 0.
+    assert d['x'] == 9.
+    assert d['y'] == 5.
+    assert d['z'] == 4.
+    assert d['w'] == 0.
 
     e = d + c
 
