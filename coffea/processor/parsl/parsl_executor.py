@@ -78,9 +78,7 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None,
         vals['_bytesread'] = value_accumulator(int) + afile.source.bytesread
     valsblob = lz4f.compress(pkl.dumps(vals), compression_level=lz4_clevel)
 
-    istart = chunksize * index
-    istop = min(tree.numentries, (index + 1) * chunksize)
-    return valsblob, (istop - istart), dataset
+    return valsblob, df.size, dataset
 
 
 class ParslExecutor(object):
