@@ -18,7 +18,6 @@ class Dangerousness(object):
 
 class SaiyanCommonMethods(Dangerousness, ArrayMethods):
     def match(self, cands, value):
-        print('SaiyanCommonMethods::match')
         if isinstance(self, awkward.JaggedArray):
             combinations = self.cross(cands, nested=True)
             mask = (combinations.i0.delta_r(combinations.i1) < value)
@@ -29,7 +28,6 @@ class SaiyanCommonMethods(Dangerousness, ArrayMethods):
     def closest(self, cands):
         if isinstance(self, awkward.JaggedArray):
             combinations = self.cross(cands)
-            print('combos')
             if ((~(combinations.i0.eta == 0).flatten().flatten().all()) | (~(combinations.i1.eta == 0).flatten().flatten().all())):
                 criterium = combinations.i0.delta_phi(combinations.i1)
             else:
