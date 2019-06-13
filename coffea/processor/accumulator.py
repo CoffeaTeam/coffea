@@ -47,9 +47,16 @@ class value_accumulator(AccumulatorABC):
     Holds a value of arbitrary type, with identity
     as constructed by default_factory
     '''
-    def __init__(self, default_factory):
-        self.value = default_factory()
+    def __init__(self, default_factory, initial=None):
+        self.value = default_factory() if initial is None else initial
         self.default_factory = default_factory
+
+    def __repr__(self):
+        if type(self.default_factory) is type:
+            defrepr = self.default_factory.__name__
+        else:
+            defrepr = repr(self.default_factory)
+        return "value_accumulator(%s, %r)" % (defrepr, self.value)
 
     def identity(self):
         return value_accumulator(self.default_factory)
