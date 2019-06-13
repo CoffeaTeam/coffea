@@ -3,7 +3,7 @@ import time
 from tqdm import tqdm
 import uproot
 from . import ProcessorABC, LazyDataFrame
-from .accumulator import value_accumulator, set_accumulator
+from .accumulator import value_accumulator, set_accumulator, dict_accumulator
 
 try:
     from collections.abc import Mapping, Sequence
@@ -28,9 +28,9 @@ if not hasattr(uproot.source.xrootd.XRootDSource, '_read_real'):
 
 
 def iterative_executor(items, function, accumulator, status=True, unit='items', desc='Processing',
-                       function_args={}, **kwargs):
+                       **kwargs):
     for i, item in tqdm(enumerate(items), disable=not status, unit=unit, total=len(items), desc=desc):
-        accumulator += function(item, **function_args)
+        accumulator += function(item, **kwargs)
     return accumulator
 
 
@@ -46,6 +46,7 @@ def futures_handler(futures_set, output, status, unit, desc, futures_accumulator
                 for job in finished:
                     futures_accumulator(output, job.result())
                     pbar.update(1)
+                job = None
                 futures_set -= finished
                 del finished
                 time.sleep(1)
@@ -62,25 +63,33 @@ def futures_handler(futures_set, output, status, unit, desc, futures_accumulator
 
 
 def futures_executor(items, function, accumulator, workers=1, status=True, unit='items', desc='Processing',
-                     function_args={}, **kwargs):
+                     **kwargs):
     with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
         futures = set()
-        futures.update(executor.submit(function, item, **function_args) for item in items)
+        futures.update(executor.submit(function, item, **kwargs) for item in items)
         futures_handler(futures, accumulator, status, unit, desc)
     return accumulator
 
 
-def _work_function(item, flatten=False):
+def _work_function(item, flatten=False, savemetrics=False, **_):
     dataset, fn, treename, chunksize, index, processor_instance = item
     file = uproot.open(fn)
     tree = file[treename]
     df = LazyDataFrame(tree, chunksize, index, flatten=flatten)
     df['dataset'] = dataset
+    tic = time.time()
     out = processor_instance.process(df)
-    if isinstance(file.source, uproot.source.xrootd.XRootDSource):
-        out['_bytesread'] = value_accumulator(int) + file.source.bytesread
-        out['_dataservers'] = set_accumulator({file.source._source.get_property('DataServer')})
-    return out
+    toc = time.time()
+    metrics = dict_accumulator()
+    if savemetrics:
+        if isinstance(file.source, uproot.source.xrootd.XRootDSource):
+            metrics['bytesread'] = value_accumulator(int, file.source.bytesread)
+            metrics['dataservers'] = set_accumulator({file.source._source.get_property('DataServer')})
+        metrics['columns'] = set_accumulator(df.materialized)
+        metrics['entries'] = value_accumulator(int, df.size)
+        metrics['processtime'] = value_accumulator(float, toc - tic)
+    wrapped_out = dict_accumulator({'out': out, 'metrics': metrics})
+    return wrapped_out
 
 
 @lru_cache(maxsize=128)
@@ -136,6 +145,7 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
 
     executor_args.setdefault('workers', 1)
     executor_args.setdefault('pre_workers', 4 * executor_args['workers'])
+    executor_args.setdefault('savemetrics', False)
 
     items = []
     for dataset, filelist in tqdm(fileset.items(), desc='Preprocessing'):
@@ -148,10 +158,13 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
                 break
             items.append((dataset, chunk[0], treename, chunk[1], chunk[2], processor_instance))
 
-    output = processor_instance.accumulator.identity()
-    executor(items, _work_function, output, **executor_args)
-    processor_instance.postprocess(output)
-    return output
+    out = processor_instance.accumulator.identity()
+    wrapped_out = dict_accumulator({'out': out, 'metrics': dict_accumulator()})
+    executor(items, _work_function, wrapped_out, **executor_args)
+    processor_instance.postprocess(out)
+    if executor_args['savemetrics']:
+        return out, wrapped_out['metrics']
+    return out
 
 
 def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=None, executor_args={}, chunksize=500000):
