@@ -12,10 +12,10 @@ def test_object_arrays():
     # Object Initialization
     ###
 
-    e = Initialize({'pt':tree.array("Electron_pt"),
-                    'eta':tree.array("Electron_eta"),
-                    'phi':tree.array("Electron_phi"),
-                    'mass':tree.array("Electron_mass"),
+    e = Initialize({'pt':tree.array('Electron_pt'),
+                    'eta':tree.array('Electron_eta'),
+                    'phi':tree.array('Electron_phi'),
+                    'mass':tree.array('Electron_mass'),
                     'iso':tree.array('Electron_pfRelIso03_all'),
                     'dxy':tree.array('Electron_dxy'),
                     'dz':tree.array('Electron_dz'),
@@ -23,16 +23,18 @@ def test_object_arrays():
                     'tight_id':tree.array('Electron_mvaSpring16GP_WP80')})
     e['isloose'] = (e.pt>7)&(abs(e.eta)<2.4)&(abs(e.dxy)<0.05)&(abs(e.dz)<0.2)&(e.iso<0.4)&(e.loose_id)
     e['istight'] = (e.pt>30)&(abs(e.eta)<2.4)&(abs(e.dxy)<0.05)&(abs(e.dz)<0.2)&(e.tight_id)&(e.iso<0.06)
+    print(e.isloose.starts, e.isloose.stops)
+    print(e.starts, e.stops)
     e_loose = e[e.isloose]
     e_tight = e[e.istight]
     e_ntot = e.counts
     e_nloose = e_loose.counts
     e_ntight = e[e.istight].counts
 
-    mu = Initialize({'pt':tree.array("Muon_pt"),
-                     'eta':tree.array("Muon_eta"),
-                     'phi':tree.array("Muon_phi"),
-                     'mass':tree.array("Muon_mass"),
+    mu = Initialize({'pt':tree.array('Muon_pt'),
+                     'eta':tree.array('Muon_eta'),
+                     'phi':tree.array('Muon_phi'),
+                     'mass':tree.array('Muon_mass'),
                      'iso':tree.array('Muon_pfRelIso04_all'),
                      'dxy':tree.array('Muon_dxy'),
                      'dz':tree.array('Muon_dz')})
