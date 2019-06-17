@@ -133,6 +133,11 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
             for item in items: accumulator += function(item)
         executor_args:
             extra arguments to pass to executor
+            currently supported:
+                workers: number of parallel processes for futures
+                pre_workers: number of parallel threads for calculating chunking
+                savemetrics: save some detailed metrics for xrootd processing
+                flatten: flatten all branches returned by the dataframe (no jagged structure)
         chunksize:
             number of entries to process at a time in the data frame
         maxchunks:
