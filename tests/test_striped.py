@@ -21,8 +21,8 @@ def test_striped():
     candjagged = jaggedFromColumnGroup(physcolgroup)
     candjagged2 = jaggedFromColumnGroup(physcolgroup2)
     candjagged3 = jaggedFromColumnGroup(physcolgroup3)
-    
-    assert not hasattr(jagged,'p4')
+        
+    assert not hasattr(jagged,'__fast_pt')
     assert hasattr(candjagged,'p4')
     assert hasattr(candjagged2,'p4')
     assert hasattr(candjagged3,'p4')
