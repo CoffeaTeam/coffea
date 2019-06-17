@@ -111,6 +111,7 @@ RUN pip install --no-cache-dir coffea
 COPY python/pyspark ${SPARK_HOME}/python/pyspark
 COPY python/lib ${SPARK_HOME}/python/lib
 
+ENV PYSPARK_MAJOR_PYTHON_VERSION="3"
 ENV PYTHONPATH=/opt/spark/python/lib/pyspark.zip:$PYTHONPATH
 
 WORKDIR /opt/spark/work-dir
