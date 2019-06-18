@@ -1,5 +1,7 @@
 from __future__ import print_function, division
 
+import sys
+import pytest
 import coffea
 from coffea.analysis_objects import JaggedCandidateArray, JaggedTLorentzVectorArray
 import uproot
@@ -8,6 +10,9 @@ from coffea.util import awkward
 from coffea.util import numpy as np
 
 from dummy_distributions import dummy_four_momenta, gen_reco_TLV
+
+if sys.platform.startswith("win"):
+    pytest.skip("skipping tests that only function in linux", allow_module_level=True)
 
 def test_analysis_objects():
     counts, px, py, pz, energy = dummy_four_momenta()
