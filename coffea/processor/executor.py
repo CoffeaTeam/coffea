@@ -97,6 +97,7 @@ def _work_function(item, flatten=False, savemetrics=False, mmap=False, **_):
         metrics['entries'] = value_accumulator(int, df.size)
         metrics['processtime'] = value_accumulator(float, toc - tic)
     wrapped_out = dict_accumulator({'out': out, 'metrics': metrics})
+    file.source.close()
     return wrapped_out
 
 
