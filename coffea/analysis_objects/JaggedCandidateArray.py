@@ -385,6 +385,25 @@ class JaggedCandidateMethods(awkward.Methods):
         outs['__fast_mass'] = awkward.JaggedArray.fromoffsets(outs.offsets, _fast_mass(thep4.content))
         return self.fromjagged(outs)
 
+    def choose(self, n):
+        """
+            This method calls the pairs method of JaggedArray to get all pairs
+            per-event contained in a JaggedCandidateArray.
+            The resulting JaggedArray of that call is dressed with the jagged candidate
+            array four-momentum and cached fast access pt/eta/phi/mass.
+        """
+        outs = super(JaggedCandidateMethods, self).choose(n)
+        p4 = outs.i0['p4']
+        for i in range(1, n):
+            p4 = p4 + outs['%d' % i]['p4']
+        outs['p4'] = p4
+        thep4 = outs['p4']
+        outs['__fast_pt'] = awkward.JaggedArray.fromoffsets(outs.offsets, _fast_pt(thep4.content))
+        outs['__fast_eta'] = awkward.JaggedArray.fromoffsets(outs.offsets, _fast_eta(thep4.content))
+        outs['__fast_phi'] = awkward.JaggedArray.fromoffsets(outs.offsets, _fast_phi(thep4.content))
+        outs['__fast_mass'] = awkward.JaggedArray.fromoffsets(outs.offsets, _fast_mass(thep4.content))
+        return self.fromjagged(outs)
+
     # Function returns a mask with true or false at each location for whether object 1 matched with any object 2s
     # Optional parameter to add a cut on the percent pt difference between the objects
     def _matchcombs(self, cands):

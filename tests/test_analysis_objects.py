@@ -1,5 +1,7 @@
 from __future__ import print_function, division
 
+import sys
+import pytest
 import coffea
 from coffea.analysis_objects import JaggedCandidateArray, JaggedTLorentzVectorArray
 import uproot
@@ -8,6 +10,9 @@ from coffea.util import awkward
 from coffea.util import numpy as np
 
 from dummy_distributions import dummy_four_momenta, gen_reco_TLV
+
+if sys.platform.startswith("win"):
+    pytest.skip("skipping tests that only function in linux", allow_module_level=True)
 
 def test_analysis_objects():
     counts, px, py, pz, energy = dummy_four_momenta()
@@ -72,22 +77,31 @@ def test_analysis_objects():
     adistinct = jca1.distincts()
     apair = jca1.pairs()
     across = jca1.cross(jca2)
+    achoose2 = jca1.choose(2)
+    achoose3 = jca1.choose(3)
     
     assert 'p4' in adistinct.columns
     assert 'p4' in apair.columns
     assert 'p4' in across.columns
-
+    assert 'p4' in achoose2.columns
+    assert 'p4' in achoose3.columns
+    
     admsum = (adistinct.i0.p4 + adistinct.i1.p4).mass
     apmsum = (apair.i0.p4 + apair.i1.p4).mass
     acmsum = (across.i0.p4 + across.i1.p4).mass
+    ach3msum = (achoose3.i0.p4 + achoose3.i1.p4 + achoose3.i2.p4).mass
     diffadm = np.abs(adistinct.p4.mass - admsum)
     diffapm = np.abs(apair.p4.mass - apmsum)
     diffacm = np.abs(across.p4.mass - acmsum)
+    diffachm = np.abs(achoose2.p4.mass - admsum)
+    diffach3m = np.abs(achoose3.p4.mass - ach3msum)
     
     assert (diffadm < 1e-8).flatten().all()
     assert (diffapm < 1e-8).flatten().all()
     assert (diffacm < 1e-8).flatten().all()
-    
+    assert (diffachm < 1e-8).flatten().all()
+    assert (diffach3m < 1e-8).flatten().all()
+
     selection11 = jca1[jca1.counts > 0]
     selection12 = selection11[selection11.p4.pt > 5]
     
