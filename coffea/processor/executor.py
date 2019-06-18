@@ -71,9 +71,17 @@ def futures_executor(items, function, accumulator, workers=1, status=True, unit=
     return accumulator
 
 
-def _work_function(item, flatten=False, savemetrics=False, **_):
+def _work_function(item, flatten=False, savemetrics=False, mmap=False, **_):
     dataset, fn, treename, chunksize, index, processor_instance = item
-    file = uproot.open(fn)
+    if mmap:
+        localsource = {}
+    else:
+        opts = dict(uproot.FileSource.defaults)
+        opts.update({'parallel': None})
+        def localsource(path):
+            return uproot.FileSource(path, **opts)
+
+    file = uproot.open(fn, localsource=localsource)
     tree = file[treename]
     df = LazyDataFrame(tree, chunksize, index, flatten=flatten)
     df['dataset'] = dataset
