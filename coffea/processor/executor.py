@@ -119,7 +119,7 @@ def _get_chunking_lazy(filelist, treename, chunksize):
             yield (fn, chunksize, index)
 
 
-def run_uproot_job(fileset, treename, processor_instance, executor, executor_args={}, chunksize=500000, maxchunks=None):
+def run_uproot_job(fileset, processor_instance, executor, executor_args={}, chunksize=500000, maxchunks=None):
     '''
     A convenience wrapper to submit jobs for a file set, which is a
     dictionary of dataset: [file list] entries.  Supports only uproot
@@ -164,6 +164,8 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
 
     items = []
     for dataset, filelist in tqdm(fileset.items(), desc='Preprocessing'):
+        treename = filelist['treename']
+        filelist = filelist['files']
         if maxchunks is not None:
             chunks = _get_chunking_lazy(tuple(filelist), treename, chunksize)
         else:
