@@ -127,6 +127,9 @@ class column_accumulator(AccumulatorABC):
         self._empty = numpy.zeros(dtype=value.dtype, shape=(0,) + value.shape[1:])
         self._value = value
 
+    def __repr__(self):
+        return "column_accumulator(%r)" % self.value
+
     def identity(self):
         return column_accumulator(self._empty)
 
