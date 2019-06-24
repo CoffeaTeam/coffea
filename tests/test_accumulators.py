@@ -50,3 +50,8 @@ def test_accumulators():
     f += f
     assert f['x'] == 12.
     assert f['y'] == 2.
+
+    a = processor.column_accumulator(np.arange(6).reshape(2,3))
+    b = processor.column_accumulator(np.arange(12).reshape(4,3))
+    a += b
+    assert a.value.sum() == 81
