@@ -16,4 +16,5 @@ from .accumulator import (
     set_accumulator,
     dict_accumulator,
     defaultdict_accumulator,
+    column_accumulator,
 )
