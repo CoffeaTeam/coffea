@@ -124,7 +124,7 @@ class column_accumulator(AccumulatorABC):
     def __init__(self, value):
         if not isinstance(value, numpy.ndarray):
             raise ValueError("column_accumulator only works with numpy arrays")
-        self._empty = numpy.zeros(dtype=value.dtype, shape=(0, *value.shape[1:]))
+        self._empty = numpy.zeros(dtype=value.dtype, shape=(0,) + value.shape[1:])
         self._value = value
 
     def identity(self):
