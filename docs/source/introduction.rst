@@ -3,4 +3,6 @@ Introduction to Coffea
 
 .. toctree::
 
-   coffea-introduction.ipynb
+   histograms.ipynb
+   plotting-demo.ipynb
+   muonspectrum_v4.ipynb
