@@ -83,7 +83,8 @@ Reference guide
     coffea.processor.executor.run_uproot_job
     coffea.processor.executor.run_parsl_job
     coffea.processor.executor.run_spark_job
-    coffea.processor.accumulator.accumulator
+    coffea.processor.accumulator.value_accumulator
+    coffea.processor.accumulator.column_accumulator
     coffea.processor.accumulator.set_accumulator
     coffea.processor.accumulator.dict_accumulator
     coffea.processor.accumulator.defaultdict_accumulator
