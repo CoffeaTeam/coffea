@@ -78,6 +78,7 @@ def _work_function(item, flatten=False, savemetrics=False, mmap=False, **_):
     else:
         opts = dict(uproot.FileSource.defaults)
         opts.update({'parallel': None})
+
         def localsource(path):
             return uproot.FileSource(path, **opts)
 
