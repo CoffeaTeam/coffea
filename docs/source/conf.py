@@ -45,10 +45,13 @@ extensions = [
     'sphinx.ext.napoleon'
 ]
 
-url = 'https://raw.githubusercontent.com/CoffeaTeam/coffea/master/binder/muonspectrum_v4.ipynb'
-r = requests.get(url)
-with open(os.path.join(os.path.dirname(__file__), 'coffea-introduction.ipynb'), 'wb') as f:
-    f.write(r.content)
+docnotebooks = ['histograms.ipynb','plotting-demo.ipynb','muonspectrum_v4.ipynb']
+
+for docnb in docnotebooks:
+    url = 'https://raw.githubusercontent.com/CoffeaTeam/coffea/master/binder/%s' % (docnb)
+    r = requests.get(url)
+    with open(os.path.join(os.path.dirname(__file__), docnb), 'wb') as f:
+        f.write(r.content)
 
 nbsphinx_execute = 'never'
 
