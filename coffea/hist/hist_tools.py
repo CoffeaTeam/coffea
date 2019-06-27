@@ -92,7 +92,7 @@ class Interval(object):
         return "%s%.12g, %.12g)" % ("(" if self._lo == -np.inf else "[", self._lo, self._hi)
 
     def __hash__(self):
-        return hash(self._lo, self._hi)
+        return hash((self._lo, self._hi))
 
     def __lt__(self, other):
         if other.nan() and not self.nan():
