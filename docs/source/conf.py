@@ -45,7 +45,8 @@ extensions = [
     'sphinx.ext.napoleon'
 ]
 
-docnotebooks = ['histograms.ipynb','plotting-demo.ipynb','muonspectrum_v4.ipynb']
+docnotebooks = ['histograms.ipynb','plotting-demo.ipynb',
+                'applying_corrections.ipynb','muonspectrum_v4.ipynb']
 
 for docnb in docnotebooks:
     url = 'https://raw.githubusercontent.com/CoffeaTeam/coffea/master/binder/%s' % (docnb)
