@@ -1,5 +1,5 @@
-Introduction to Coffea by Example
-=================================
+Coffea by Example
+=================
 
 .. toctree::
 
