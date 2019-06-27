@@ -33,11 +33,8 @@ install:
 - if [ $PY_MAJ -eq 3 ]; then pip -q install https://github.com/Parsl/parsl/zipball/master; fi
 - if [ $PY_MAJ -eq 3 ] && [ $PY_MIN -eq 6 ]; then  pip -q install pyspark; fi
 - pip -q install ${AWKWARD}
-- pip -q install uproot
-- pip -q install scipy numba
 - pip -q install numpy --upgrade
-- python -c 'import numpy; print(numpy.__version__)'
-- pip -q install pytest pytest-runner flake8
+- pip -q install uproot scipy numba tqdm matplotlib pytest pytest-runner flake8
 branches:
   only:
   - master
