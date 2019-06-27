@@ -4,6 +4,7 @@ os:
 python:
 - 2.7
 - 3.6
+- 3.7
 env: 
   global:
   - JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
