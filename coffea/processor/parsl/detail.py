@@ -48,7 +48,6 @@ def _parsl_stop(dfk):
 
 
 @python_app
-@timeout
 def derive_chunks(filename, treename, chunksize, ds, timeout=None):
     import uproot
     from collections.abc import Sequence
@@ -61,7 +60,7 @@ def derive_chunks(filename, treename, chunksize, ds, timeout=None):
         with ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(uproot.open, filename)
             try:
-                afile = future.result(timeout=5)
+                afile = future.result(timeout=timeout)
             except TimeoutError:
                 afile = None
             else:
