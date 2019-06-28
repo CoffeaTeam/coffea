@@ -24,7 +24,7 @@ multi\\-core server, computing clusters, and super-computers without the need to
 otherwise adapt the analysis code itself.
 
 coffea is a HEP community project collaborating with `iris\\-hep <http://iris-hep.org/>`_ 
-and a currently a prototype. We welcome input to improve its quality as we progress towards
+and is currently a prototype. We welcome input to improve its quality as we progress towards
 a sensible refactorization into the scientific python ecosystem and a first release. Please
 feel free to contribute at our `github repo <https://github.com/CoffeaTeam/coffea>`_!
 

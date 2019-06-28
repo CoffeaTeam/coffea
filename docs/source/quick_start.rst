@@ -7,7 +7,7 @@ To try coffea now (without installing any code) experiment with our `hosted tuto
 Installation
 ------------
 
-coffea is available on PyPI, Python 3.6+ is preferred since it supports all features of coffea, but coffea a subset of coffea features will run in Python 2.7+. All functional features in each python version are routinely tested.
+coffea is available on PyPI, Python 3.6+ is preferred since it supports all features of coffea, but a subset of coffea features will run in Python 2.7+. All functional features in each python version are routinely tested. You can see the python version you have installed by typing the following at the command prompt:
 
 >>> python3 --version
 
