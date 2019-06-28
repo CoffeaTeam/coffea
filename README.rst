@@ -64,7 +64,7 @@ Strict dependencies:
 
 - `Python <http://docs.python-guide.org/en/latest/starting/installation/>`__ (2.7+, 3.6+)
 
-The following are installed automatically when you install uproot with pip:
+The following are installed automatically when you install coffea with pip:
 
 - `numpy <https://scipy.org/install.html>`__ (1.15+)
 - `awkward-array <https://pypi.org/project/awkward>`__ to manipulate data from non-flat TTrees, such as jagged arrays (`part of Scikit-HEP <https://github.com/scikit-hep/awkward-array>`__)
