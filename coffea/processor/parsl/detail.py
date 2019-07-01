@@ -14,8 +14,6 @@ from parsl.executors import HighThroughputExecutor
 
 from ..executor import futures_handler
 
-from .timeout import timeout
-
 try:
     from collections.abc import Sequence
 except ImportError:
