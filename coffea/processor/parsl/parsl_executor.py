@@ -18,7 +18,6 @@ lz4_clevel = 1
 
 
 @python_app
-@timeout
 def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None, flatten=True):
     import uproot
     import cloudpickle as cpkl
@@ -49,7 +48,7 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None,
         with ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(uproot.open, fn)
             try:
-                afile = future.result(timeout=5)
+                afile = future.result(timeout=timeout)
             except TimeoutError:
                 afile = None
             else:
