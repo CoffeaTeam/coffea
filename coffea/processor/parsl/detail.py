@@ -14,8 +14,6 @@ from parsl.executors import HighThroughputExecutor
 
 from ..executor import futures_handler
 
-from .timeout import timeout
-
 try:
     from collections.abc import Sequence
 except ImportError:
@@ -48,8 +46,7 @@ def _parsl_stop(dfk):
 
 
 @python_app
-@timeout
-def derive_chunks(filename, treename, chunksize, ds, timeout=None):
+def derive_chunks(filename, treename, chunksize, ds, timeout=10):
     import uproot
     from collections.abc import Sequence
     from concurrent.futures import ThreadPoolExecutor, TimeoutError
@@ -61,7 +58,7 @@ def derive_chunks(filename, treename, chunksize, ds, timeout=None):
         with ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(uproot.open, filename)
             try:
-                afile = future.result(timeout=5)
+                afile = future.result(timeout=timeout)
             except TimeoutError:
                 afile = None
             else:
@@ -88,7 +85,7 @@ def derive_chunks(filename, treename, chunksize, ds, timeout=None):
     return ds, treename, [(filename, chunksize, index) for index in range(nentries // chunksize + 1)]
 
 
-def _parsl_get_chunking(filelist, treename, chunksize, status=True, timeout=None):
+def _parsl_get_chunking(filelist, treename, chunksize, status=True, timeout=10):
     futures = set(derive_chunks(fn, treename, chunksize, ds, timeout=timeout) for ds, fn in filelist)
 
     items = []
