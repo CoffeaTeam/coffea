@@ -23,7 +23,7 @@ def test_parsl_start_stop():
     _parsl_stop(dfk)
 
 
-def do_parsl_job(parsl_config):
+def do_parsl_job(parsl_config, filelist):
     from coffea.processor.parsl.detail import (_parsl_initialize,
                                                _parsl_stop)
     from coffea.processor import run_parsl_job
@@ -31,9 +31,6 @@ def do_parsl_job(parsl_config):
     import os
     import os.path as osp
     
-    filelist = {'ZJets': [osp.join(os.getcwd(),'tests/samples/nano_dy.root')],
-                'Data'  : [osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')]
-    }
     treename='Events'
 
     from coffea.processor.test_items import NanoTestProcessor
@@ -59,9 +56,12 @@ def do_parsl_job(parsl_config):
     assert( hists2['cutflow']['Data_pt'] == 15 )
     assert( hists2['cutflow']['Data_mass'] == 5 )
 
+
 @pytest.mark.skipif(sys.platform.startswith('darwin'), reason='issue with parsl htex on macos')
 def test_parsl_htex_executor():
     parsl = pytest.importorskip("parsl", minversion="0.7.2")
+    import os
+    import os.path as osp
 
     from parsl.providers import LocalProvider
     from parsl.channels import LocalChannel
@@ -70,23 +70,53 @@ def test_parsl_htex_executor():
     from parsl.config import Config
     parsl_config = Config(
         executors=[
-                   HighThroughputExecutor(
-                    label="coffea_parsl_default",
-                    address=address_by_hostname(),
-                    cores_per_worker=max(multiprocessing.cpu_count()//2,1),
-                    max_workers=1,
-                    provider=LocalProvider(
-                        channel=LocalChannel(),
-                        init_blocks=1,
-                        max_blocks=1,
-                        nodes_per_block=1
-                        ),
-                    )
-                   ],
+            HighThroughputExecutor(
+                label="coffea_parsl_default",
+                address=address_by_hostname(),
+                cores_per_worker=max(multiprocessing.cpu_count()//2, 1),
+                max_workers=1,
+                provider=LocalProvider(
+                    channel=LocalChannel(),
+                    init_blocks=1,
+                    max_blocks=1,
+                    nodes_per_block=1
+                ),
+            )
+        ],
         strategy=None,
-        )
+    )
 
-    do_parsl_job(parsl_config)
+    filelist = {
+        'ZJets': [osp.join(os.getcwd(),'tests/samples/nano_dy.root')],
+        'Data' : [osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')]
+    }
+
+    do_parsl_job(parsl_config, filelist)
+
+    parsl_config = Config(
+        executors=[
+            HighThroughputExecutor(
+                label="coffea_parsl_default",
+                address=address_by_hostname(),
+                cores_per_worker=max(multiprocessing.cpu_count()//2, 1),
+                max_workers=1,
+                provider=LocalProvider(
+                    channel=LocalChannel(),
+                    init_blocks=1,
+                    max_blocks=1,
+                    nodes_per_block=1
+                ),
+            )
+        ],
+        strategy=None,
+    )
+
+    filelist = {
+        'ZJets': {'treename': 'Events', 'files': [osp.join(os.getcwd(),'tests/samples/nano_dy.root')]},
+        'Data' : {'treename': 'Events', 'files': [osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')]}
+    }
+        
+    do_parsl_job(parsl_config, filelist)
 
 
 def test_parsl_funcs():
