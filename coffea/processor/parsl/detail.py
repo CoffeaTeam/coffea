@@ -85,8 +85,8 @@ def derive_chunks(filename, treename, chunksize, ds, timeout=10):
     return ds, treename, [(filename, chunksize, index) for index in range(nentries // chunksize + 1)]
 
 
-def _parsl_get_chunking(filelist, treename, chunksize, status=True, timeout=10):
-    futures = set(derive_chunks(fn, treename, chunksize, ds, timeout=timeout) for ds, fn in filelist)
+def _parsl_get_chunking(filelist, chunksize, status=True, timeout=10):
+    futures = set(derive_chunks(fn, tn, chunksize, ds, timeout=timeout) for ds, fn, tn in filelist)
 
     items = []
 

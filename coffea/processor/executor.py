@@ -132,7 +132,9 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
         fileset:
             dictionary {dataset: [file, file], }
         treename:
-            name of tree inside each root file
+            name of tree inside each root file, can be ``None``
+
+            .. note:: treename can also be defined in fileset, which will override the passed treename
         processor_instance:
             an instance of a class deriving from ProcessorABC
         executor:
@@ -162,16 +164,22 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
     executor_args.setdefault('pre_workers', 4 * executor_args['workers'])
     executor_args.setdefault('savemetrics', False)
 
+    tn = treename
     items = []
     for dataset, filelist in tqdm(fileset.items(), desc='Preprocessing'):
+        if isinstance(filelist, dict):
+            tn = filelist['treename'] if 'treename' in filelist else tn
+            filelist = filelist['files']
+        if not isinstance(filelist, list):
+            raise ValueError('list of filenames in fileset must be a list or a dict')
         if maxchunks is not None:
-            chunks = _get_chunking_lazy(tuple(filelist), treename, chunksize)
+            chunks = _get_chunking_lazy(tuple(filelist), tn, chunksize)
         else:
-            chunks = _get_chunking(tuple(filelist), treename, chunksize, executor_args['pre_workers'])
+            chunks = _get_chunking(tuple(filelist), tn, chunksize, executor_args['pre_workers'])
         for ichunk, chunk in enumerate(chunks):
             if (maxchunks is not None) and (ichunk > maxchunks):
                 break
-            items.append((dataset, chunk[0], treename, chunk[1], chunk[2], processor_instance))
+            items.append((dataset, chunk[0], tn, chunk[1], chunk[2], processor_instance))
 
     out = processor_instance.accumulator.identity()
     wrapped_out = dict_accumulator({'out': out, 'metrics': dict_accumulator()})
@@ -246,14 +254,19 @@ def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=Non
             raise ValueError("Expected 'data_flow' to be a parsl.dataflow.dflow.DataFlowKernel")
 
     tn = treename
-    if not isinstance(tn, str):
-        tn = tuple(treename)
     to_chunk = []
     for dataset, filelist in fileset.items():
+        if isinstance(filelist, dict):
+            tn = filelist['treename'] if 'treename' in filelist else tn
+            filelist = filelist['files']
+        if not isinstance(filelist, list):
+            raise ValueError('list of filenames in fileset must be a list or a dict')
+        if not isinstance(tn, str):
+            tn = tuple(treename)
         for afile in filelist:
-            to_chunk.append((dataset, afile))
+            to_chunk.append((dataset, afile, tn))
 
-    items = _parsl_get_chunking(to_chunk, tn, chunksize, timeout=executor_args['chunking_timeout'])
+    items = _parsl_get_chunking(to_chunk, chunksize, timeout=executor_args['chunking_timeout'])
 
     # loose items we don't need any more
     executor_args.pop('chunking_timeout')
