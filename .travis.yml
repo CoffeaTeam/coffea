@@ -27,16 +27,16 @@ before_install:
 - sudo apt-get install -qq -y openjdk-8-jdk icedtea-8-plugin --no-install-recommends
 - sudo update-java-alternatives -s java-1.8.0-openjdk-amd64
 install:
-- pip -q install --upgrade setuptools_scm --no-cache-dir
-- pip -q install codecov --no-cache-dir
+- pip -q install --upgrade setuptools_scm
+- pip -q install codecov
 - PY_MAJ=`python -c 'import sys; print(sys.version_info[0])'`
 - PY_MIN=`python -c 'import sys; print(sys.version_info[1])'`
-- if [ $PY_MAJ -eq 3 ]; then pip -q install pandas pyarrow cloudpickle lz4 jinja2 --no-cache-dir; fi
-- if [ $PY_MAJ -eq 3 ]; then pip -q install https://github.com/Parsl/parsl/zipball/master --no-cache-dir; fi
-- if [ $PY_MAJ -eq 3 ] && [ $PY_MIN -ge 6 ]; then  pip -q install pyspark --no-cache-dir; fi
-- pip -q install ${AWKWARD} --no-cache-dir
-- pip -q install numpy --upgrade --no-cache-dir
-- pip -q install uproot scipy numba tqdm matplotlib pytest pytest-runner flake8 --no-cache-dir
+- if [ $PY_MAJ -eq 3 ]; then pip -q install pandas pyarrow==0.13.0 cloudpickle lz4 jinja2; fi
+- if [ $PY_MAJ -eq 3 ]; then pip -q install https://github.com/Parsl/parsl/zipball/master; fi
+- if [ $PY_MAJ -eq 3 ] && [ $PY_MIN -ge 6 ]; then  pip -q install pyspark; fi
+- pip -q install ${AWKWARD}
+- pip -q install numpy --upgrade
+- pip -q install uproot scipy numba tqdm matplotlib pytest pytest-runner flake8
 branches:
   only:
   - master
