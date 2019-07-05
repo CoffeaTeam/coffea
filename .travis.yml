@@ -34,9 +34,9 @@ install:
 - if [ $PY_MAJ -eq 3 ]; then pip -q install pandas pyarrow==0.13.0 cloudpickle lz4 jinja2; fi
 - if [ $PY_MAJ -eq 3 ]; then pip -q install https://github.com/Parsl/parsl/zipball/master; fi
 - if [ $PY_MAJ -eq 3 ] && [ $PY_MIN -ge 6 ]; then  pip -q install pyspark; fi
+- pip -q install numpy scipy numba tqdm matplotlib pytest pytest-runner flake8 --upgrade
 - pip -q install ${AWKWARD}
-- pip -q install numpy --upgrade
-- pip -q install uproot scipy numba tqdm matplotlib pytest pytest-runner flake8
+- pip -q install uproot 
 branches:
   only:
   - master
