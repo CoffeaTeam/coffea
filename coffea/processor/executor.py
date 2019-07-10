@@ -71,7 +71,7 @@ def futures_executor(items, function, accumulator, workers=1, status=True, unit=
     return accumulator
 
 
-def _work_function(item, flatten=False, savemetrics=False, mmap=False, **_):
+def _work_function(item, flatten=False, savemetrics=False, mmap=False, skipbadfiles=False, **_):
     dataset, fn, treename, chunksize, index, processor_instance = item
     if mmap:
         localsource = {}
@@ -82,13 +82,21 @@ def _work_function(item, flatten=False, savemetrics=False, mmap=False, **_):
         def localsource(path):
             return uproot.FileSource(path, **opts)
 
-    file = uproot.open(fn, localsource=localsource)
-    tree = file[treename]
-    df = LazyDataFrame(tree, chunksize, index, flatten=flatten)
-    df['dataset'] = dataset
-    tic = time.time()
-    out = processor_instance.process(df)
-    toc = time.time()
+    out = processor_instance.accumulator.identity()
+    try:
+        file = uproot.open(fn, localsource=localsource)
+        tree = file[treename]
+        df = LazyDataFrame(tree, chunksize, index, flatten=flatten)
+        df['dataset'] = dataset
+        tic = time.time()
+        out = processor_instance.process(df)
+        toc = time.time()
+    except OSError as e:
+        if not skipbadfiles:
+            raise e
+        else:
+            print("File",fn,"corrupted, skipping!")
+
     metrics = dict_accumulator()
     if savemetrics:
         if isinstance(file.source, uproot.source.xrootd.XRootDSource):
@@ -150,6 +158,7 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
                 pre_workers: number of parallel threads for calculating chunking
                 savemetrics: save some detailed metrics for xrootd processing
                 flatten: flatten all branches returned by the dataframe (no jagged structure)
+                skipbadfiles: instead of failing on a bad file, just skip it
         chunksize:
             number of entries to process at a time in the data frame
         maxchunks:
@@ -163,6 +172,7 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
     executor_args.setdefault('workers', 1)
     executor_args.setdefault('pre_workers', 4 * executor_args['workers'])
     executor_args.setdefault('savemetrics', False)
+    executor_args.setdefault('skipbadfiles', False)
 
     tn = treename
     items = []
