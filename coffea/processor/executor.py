@@ -95,7 +95,7 @@ def _work_function(item, flatten=False, savemetrics=False, mmap=False, skipbadfi
         if not skipbadfiles:
             raise e
         else:
-            print("File",fn,"corrupted, skipping!")
+            print("Skipping corrupted file:", fn)
 
     metrics = dict_accumulator()
     if savemetrics:
