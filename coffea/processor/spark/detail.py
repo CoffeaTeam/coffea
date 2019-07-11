@@ -40,7 +40,9 @@ def _spark_initialize(config=_default_config, **kwargs):
 def _read_df(spark, dataset, files_or_dirs, ana_cols, partitionsize):
     if not isinstance(files_or_dirs, Sequence):
         raise ValueError("spark dataset file list must be a Sequence (like list())")
-    df = spark.read.parquet(*files_or_dirs)
+    df = spark.read.format('root') \
+                   .option("tree", "Events") \
+                   .load(*files_or_dirs)
     count = df.count()
 
     df_cols = set(df.columns)
