@@ -34,13 +34,14 @@ def test_spark_executor():
     spark_config = pyspark.sql.SparkSession.builder \
         .appName('spark-executor-test') \
         .master('local[*]') \
+        .config('spark.jars.packages', 'edu.vanderbilt.accre:laurelin:0.0.19') \
         .config('spark.sql.execution.arrow.enabled','true') \
         .config('spark.sql.execution.arrow.maxRecordsPerBatch', 200000)
 
     spark = _spark_initialize(config=spark_config,log_level='ERROR',spark_progress=False)
 
-    filelist = {'ZJets': ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dy.parquet')],
-                'Data'  : ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dimuon.parquet')]
+    filelist = {'ZJets': ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dy.root')],
+                'Data'  : ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')]
                 }
 
     from coffea.processor.test_items import NanoTestProcessor
