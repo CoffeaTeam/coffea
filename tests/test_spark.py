@@ -34,7 +34,7 @@ def test_spark_executor():
     spark_config = pyspark.sql.SparkSession.builder \
         .appName('spark-executor-test') \
         .master('local[*]') \
-        .config('spark.jars.packages', 'edu.vanderbilt.accre:laurelin:0.0.19') \
+        .config('spark.jars.packages', 'edu.vanderbilt.accre:laurelin:0.1.0') \
         .config('spark.sql.execution.arrow.enabled','true') \
         .config('spark.sql.execution.arrow.maxRecordsPerBatch', 200000)
 
