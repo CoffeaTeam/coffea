@@ -63,7 +63,7 @@ def clopper_pearson_interval(num, denom, coverage=_coverage1sd):
     hi = scipy.stats.beta.ppf((1 + coverage) / 2, num + 1, denom - num)
     interval = np.array([lo, hi])
     interval[:, num == 0.] = 0.
-    interval[:, num == denom] = 1.
+    interval[1, num == denom] = 1.
     return interval
 
 

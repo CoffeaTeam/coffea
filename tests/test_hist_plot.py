@@ -226,3 +226,18 @@ def test_plotgrid():
                             fill_opts=stack_fill_opts,
                             error_opts=stack_error_opts,
                             )
+
+def test_clopper_pearson_interval():
+    from coffea.hist.plot import clopper_pearson_interval
+
+    # Reference values for CL=0.6800 calculated with ROOT's TEfficiency
+    num = np.array([1., 5., 10., 10.])
+    denom = np.array([10., 10., 10., 437.])
+    ref_hi = np.array([0.293313782248242, 0.6944224231766912, 1.0, 0.032438865381336446])
+    ref_lo = np.array([0.01728422272382846, 0.3055775768233088, 0.8325532074018731, 0.015839046981153772])
+
+    interval = clopper_pearson_interval(num, denom, coverage=0.68)
+
+    threshold = 1e-6
+    assert(all((interval[1, :] / ref_hi) - 1 < threshold))
+    assert(all((interval[0, :] / ref_lo) - 1 < threshold))
