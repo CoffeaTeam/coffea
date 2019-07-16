@@ -21,6 +21,7 @@ def test_spark_imports():
 
 def test_spark_executor():
     pyspark = pytest.importorskip("pyspark", minversion="2.4.1")
+    from pyarrow.compat import guid
     
     from coffea.processor.spark.detail import (_spark_initialize,
                                                _spark_make_dfs,
@@ -32,9 +33,8 @@ def test_spark_executor():
 
     import pyspark.sql
     spark_config = pyspark.sql.SparkSession.builder \
-        .appName('spark-executor-test') \
+        .appName('spark-executor-test-%s' % guid()) \
         .master('local[*]') \
-        .config('spark.jars.packages', 'edu.vanderbilt.accre:laurelin:0.1.0') \
         .config('spark.sql.execution.arrow.enabled','true') \
         .config('spark.sql.execution.arrow.maxRecordsPerBatch', 200000)
 
@@ -50,7 +50,8 @@ def test_spark_executor():
     columns = ['nMuon','Muon_pt','Muon_eta','Muon_phi','Muon_mass']
     proc = NanoTestProcessor(columns=columns)
 
-    hists = run_spark_job(filelist, processor_instance=proc, executor=spark_executor, spark=spark, thread_workers=1)
+    hists = run_spark_job(filelist, processor_instance=proc, executor=spark_executor, spark=spark, thread_workers=1,
+                          executor_args={'file_type': 'root'})
 
     _spark_stop(spark)
 
