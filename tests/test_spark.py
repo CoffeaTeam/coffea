@@ -21,6 +21,7 @@ def test_spark_imports():
 
 def test_spark_executor():
     pyspark = pytest.importorskip("pyspark", minversion="2.4.1")
+    from pyarrow.compat import guid
     
     from coffea.processor.spark.detail import (_spark_initialize,
                                                _spark_make_dfs,
@@ -32,15 +33,15 @@ def test_spark_executor():
 
     import pyspark.sql
     spark_config = pyspark.sql.SparkSession.builder \
-        .appName('spark-executor-test') \
+        .appName('spark-executor-test-%s' % guid()) \
         .master('local[*]') \
         .config('spark.sql.execution.arrow.enabled','true') \
         .config('spark.sql.execution.arrow.maxRecordsPerBatch', 200000)
 
     spark = _spark_initialize(config=spark_config,log_level='ERROR',spark_progress=False)
 
-    filelist = {'ZJets': ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dy.parquet')],
-                'Data'  : ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dimuon.parquet')]
+    filelist = {'ZJets': ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dy.root')],
+                'Data'  : ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')]
                 }
 
     from coffea.processor.test_items import NanoTestProcessor
@@ -49,7 +50,8 @@ def test_spark_executor():
     columns = ['nMuon','Muon_pt','Muon_eta','Muon_phi','Muon_mass']
     proc = NanoTestProcessor(columns=columns)
 
-    hists = run_spark_job(filelist, processor_instance=proc, executor=spark_executor, spark=spark, thread_workers=1)
+    hists = run_spark_job(filelist, processor_instance=proc, executor=spark_executor, spark=spark, thread_workers=1,
+                          executor_args={'file_type': 'root'})
 
     _spark_stop(spark)
 
