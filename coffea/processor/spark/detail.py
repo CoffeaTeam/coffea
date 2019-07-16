@@ -3,13 +3,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 import pyspark.sql
 import pyspark.sql.functions as fn
+from pyarrow.compat import guid
 from collections.abc import Sequence
 
 from ..executor import futures_handler
 
 # this is a reasonable local spark configuration
 _default_config = pyspark.sql.SparkSession.builder \
-    .appName('coffea-analysis') \
+    .appName('coffea-analysis-%s' % guid()) \
     .master('local[*]') \
     .config('spark.sql.execution.arrow.enabled', 'true') \
     .config('spark.sql.execution.arrow.maxRecordsPerBatch', 200000)
@@ -26,6 +27,12 @@ def _spark_initialize(config=_default_config, **kwargs):
     if not spark_progress:
         cfg_actual = cfg_actual.config('spark.ui.showConsoleProgress', 'false')
 
+    # always load laurelin even if we may not use it
+    kwargs.setdefault('laurelin_version', '0.1.0')
+    laurelin = kwargs['laurelin_version']
+    cfg_actual = cfg_actual.config('spark.jars.packages',
+                                   'edu.vanderbilt.accre:laurelin:%s' % laurelin)
+
     session = cfg_actual.getOrCreate()
     sc = session.sparkContext
 
@@ -37,10 +44,16 @@ def _spark_initialize(config=_default_config, **kwargs):
     return session
 
 
-def _read_df(spark, dataset, files_or_dirs, ana_cols, partitionsize):
+def _read_df(spark, dataset, files_or_dirs, ana_cols, partitionsize, file_type, treeName='Events'):
     if not isinstance(files_or_dirs, Sequence):
-        raise ValueError("spark dataset file list must be a Sequence (like list())")
-    df = spark.read.parquet(*files_or_dirs)
+        raise ValueError('spark dataset file list must be a Sequence (like list())')
+    df = None
+    if file_type == 'parquet':
+        df = spark.read.parquet(*files_or_dirs)
+    else:
+        df = spark.read.format(file_type) \
+                       .option('tree', treeName) \
+                       .load(*files_or_dirs)
     count = df.count()
 
     df_cols = set(df.columns)
@@ -57,7 +70,7 @@ def _read_df(spark, dataset, files_or_dirs, ana_cols, partitionsize):
     return df, dataset, count
 
 
-def _spark_make_dfs(spark, fileset, partitionsize, columns, thread_workers, status=True):
+def _spark_make_dfs(spark, fileset, partitionsize, columns, thread_workers, file_type, status=True):
     dfs = {}
     ana_cols = set(columns)
 
@@ -66,7 +79,8 @@ def _spark_make_dfs(spark, fileset, partitionsize, columns, thread_workers, stat
         total[ds] = (df, count)
 
     with ThreadPoolExecutor(max_workers=thread_workers) as executor:
-        futures = set(executor.submit(_read_df, spark, ds, files, ana_cols, partitionsize) for ds, files in fileset.items())
+        futures = set(executor.submit(_read_df, spark, ds, files,
+                                      ana_cols, partitionsize, file_type) for ds, files in fileset.items())
 
         futures_handler(futures, dfs, status, 'datasets', 'loading', futures_accumulator=dfs_accumulator)
 
@@ -75,4 +89,5 @@ def _spark_make_dfs(spark, fileset, partitionsize, columns, thread_workers, stat
 
 def _spark_stop(spark):
     # this may do more later?
+    spark._jvm.SparkSession.clearActiveSession()
     spark.stop()
