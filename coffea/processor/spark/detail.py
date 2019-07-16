@@ -20,9 +20,6 @@ def _spark_initialize(config=_default_config, **kwargs):
     spark_progress = False
     if 'spark_progress' in kwargs.keys():
         spark_progress = kwargs['spark_progress']
-    file_type = 'parquet'
-    if 'file_type' in kwargs.keys():
-        file_type = kwargs['file_type']
 
     cfg_actual = config
     # get spark to not complain about missing log configs
@@ -34,7 +31,7 @@ def _spark_initialize(config=_default_config, **kwargs):
     kwargs.setdefault('laurelin_version', '0.1.0')
     laurelin = kwargs['laurelin_version']
     cfg_actual = cfg_actual.config('spark.jars.packages',
-                                    'edu.vanderbilt.accre:laurelin:%s' % laurelin)
+                                   'edu.vanderbilt.accre:laurelin:%s' % laurelin)
 
     session = cfg_actual.getOrCreate()
     sc = session.sparkContext
