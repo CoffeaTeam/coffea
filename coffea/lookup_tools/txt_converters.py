@@ -9,6 +9,7 @@ except ImportError:
 # for later
 # func = numbaize(formula,['p%i'%i for i in range(nParms)]+[varnames[i] for i in range(nEvalVars)])
 
+import warnings
 
 def _parse_jme_formatted_file(jmeFilePath, interpolatedFunc=False, parmsFromColumns=False, jme_f=None):
     if jme_f is None:
@@ -107,14 +108,23 @@ def _build_standard_jme_lookup(name, layout, pars, nBinnedVars, nBinColumns,
         if i == 0:
             binMins = np.unique(pars[columns[0]])
             binMaxs = np.unique(pars[columns[1]])
-            bins[layout[i + offset_name]] = np.union1d(binMins, binMaxs)
+            if np.all(binMins[1:] == binMaxs[:-1]):
+                bins[layout[i + offset_name]] = np.union1d(binMins, binMaxs)
+            else:
+                warnings.warn('binning for file for %s is malformed in variable %s' % (name, layout[i + offset_name]))
+                bins[layout[i + offset_name]] = np.union1d(binMins, binMaxs[-1:])
         else:
             counts = np.zeros(0, dtype=np.int)
             allBins = np.zeros(0, dtype=np.double)
             for binMin in bins[bin_order[0]][:-1]:
                 binMins = np.unique(pars[np.where(pars[columns[0]] == binMin)][columns[i + offset_col]])
                 binMaxs = np.unique(pars[np.where(pars[columns[0]] == binMin)][columns[i + offset_col + 1]])
-                theBins = np.union1d(binMins, binMaxs)
+                theBins = None
+                if np.all(binMins[1:] == binMaxs[:-1]):
+                    theBins = np.union1d(binMins, binMaxs)
+                else:
+                    warnings.warn('binning for file for %s is malformed in variable %s' % (name, layout[i + offset_name]))
+                    theBins = np.union1d(binMins, binMaxs[-1:])
                 allBins = np.append(allBins, theBins)
                 counts = np.append(counts, theBins.size)
             bins[layout[i + offset_name]] = awkward.JaggedArray.fromcounts(counts, allBins)
@@ -139,6 +149,8 @@ def _build_standard_jme_lookup(name, layout, pars, nBinnedVars, nBinColumns,
         if not interpolatedFunc:
             clamp_mins[layout[i + offset_name]] = awkward.JaggedArray.fromcounts(jagged_counts, np.atleast_1d(pars[columns[i + offset_col]]))
             clamp_maxs[layout[i + offset_name]] = awkward.JaggedArray.fromcounts(jagged_counts, np.atleast_1d(pars[columns[i + offset_col + 1]]))
+            assert(clamp_mins[layout[i + offset_name]].valid())
+            assert(clamp_maxs[layout[i + offset_name]].valid())
             offset_col += 1
 
     # now get the parameters, which we will look up with the clamped values
@@ -146,7 +158,9 @@ def _build_standard_jme_lookup(name, layout, pars, nBinnedVars, nBinColumns,
     parm_order = []
     offset_col = 2 * nBinnedVars + 1 + int(not interpolatedFunc) * 2 * nEvalVars
     for i in range(nParms):
-        parms.append(awkward.JaggedArray.fromcounts(jagged_counts, pars[columns[i + offset_col]]))
+        jag = awkward.JaggedArray.fromcounts(jagged_counts, pars[columns[i + offset_col]])
+        assert(jag.valid())
+        parms.append(jag)
         parm_order.append('p%i' % (i))
 
     wrapped_up = {}
