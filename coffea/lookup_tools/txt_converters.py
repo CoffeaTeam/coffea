@@ -1,6 +1,7 @@
 from ..util import awkward
 from ..util import numpy as np
 import os
+import sys
 import warnings
 try:
     import cStringIO as io
@@ -14,10 +15,12 @@ except ImportError:
 def _parse_jme_formatted_file(jmeFilePath, interpolatedFunc=False, parmsFromColumns=False, jme_f=None):
     if jme_f is None:
         fopen = open
+        fmode = 'rt'
         if '.gz' in jmeFilePath:
             import gzip
             fopen = gzip.open
-        jme_f = fopen(jmeFilePath, 'rt')
+            fmode = 'r' if sys.platform.startswith('win') else fmode
+        jme_f = fopen(jmeFilePath, fmode)
     layoutstr = jme_f.readline().strip().strip('{}')
 
     name = jmeFilePath.split('/')[-1].split('.')[0]
@@ -204,10 +207,12 @@ def convert_junc_txt_file(juncFilePath):
     components = []
     basename = os.path.basename(juncFilePath).split('.')[0]
     fopen = open
+    fmode = 'rt'
     if '.gz' in juncFilePath:
         import gzip
         fopen = gzip.open
-    with fopen(juncFilePath, 'rt') as uncfile:
+        fmode = 'r' if sys.platform.startswith('win') else fmode
+    with fopen(juncFilePath, fmode) as uncfile:
         for line in uncfile:
             if line.startswith('#'):
                 continue
@@ -267,10 +272,12 @@ def convert_junc_txt_component(juncFilePath, uncFile):
 
 def convert_effective_area_file(eaFilePath):
     fopen = open
+    fmode = 'rt'
     if '.gz' in eaFilePath:
         import gzip
         fopen = gzip.open
-    ea_f = fopen(eaFilePath, 'rt')
+        fmode = 'r' if sys.platform.startswith('win') else fmode
+    ea_f = fopen(eaFilePath, fmode)
     layoutstr = ea_f.readline().strip().strip('{}')
     ea_f.close()
 
