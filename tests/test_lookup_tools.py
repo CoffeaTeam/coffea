@@ -137,6 +137,7 @@ def test_jec_txt_scalefactors():
     extractor = lookup_tools.extractor()
     extractor.add_weight_sets([
         "testJEC * tests/samples/Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi.jec.txt",
+        "* * tests/samples/Summer16_07Aug2017_V11_L1fix_MC_L2Relative_AK4PFchs.jec.txt.gz",
         "* * tests/samples/Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi.junc.txt",
         "* * tests/samples/Autumn18_V8_MC_UncertaintySources_AK4PFchs.junc.txt",
         "* * tests/samples/Spring16_25nsV10_MC_SF_AK4PFPuppi.jersf.txt"
@@ -150,6 +151,10 @@ def test_jec_txt_scalefactors():
     jec_out = evaluator['testJECFall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi'](test_eta,test_pt)
 
     print(evaluator['testJECFall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi'])
+    
+    jec_out = evaluator['Summer16_07Aug2017_V11_L1fix_MC_L2Relative_AK4PFchs'](test_eta,test_pt)
+    
+    print(evaluator['Summer16_07Aug2017_V11_L1fix_MC_L2Relative_AK4PFchs'])
 
     jersf = evaluator['Spring16_25nsV10_MC_SF_AK4PFPuppi']
     
