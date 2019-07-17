@@ -10,9 +10,6 @@ import pytest
 
 from dummy_distributions import dummy_jagged_eta_pt, dummy_four_momenta
 
-if sys.platform.startswith("win"):
-    pytest.skip("skipping tests that only function in linux", allow_module_level=True)
-
 
 def jetmet_evaluator():
     from coffea.lookup_tools import extractor
