@@ -1,6 +1,7 @@
 from ..util import awkward
 from ..util import numpy as np
 import os
+import warnings
 try:
     import cStringIO as io
 except ImportError:
@@ -9,7 +10,6 @@ except ImportError:
 # for later
 # func = numbaize(formula,['p%i'%i for i in range(nParms)]+[varnames[i] for i in range(nEvalVars)])
 
-import warnings
 
 def _parse_jme_formatted_file(jmeFilePath, interpolatedFunc=False, parmsFromColumns=False, jme_f=None):
     if jme_f is None:
