@@ -5,8 +5,8 @@ from ..util import awkward
 from ..util import numpy as np
 from copy import deepcopy
 
-
 import re
+
 
 def _checkConsistency(against, tocheck):
     if against is None:
@@ -21,7 +21,7 @@ def _checkConsistency(against, tocheck):
 def split_jec_name(name):
     info = name.split('_')
 
-    #Check for the case when the dataera name contains a _ like "17Nov2017_V6" 
+    # Check for the case when the dataera name contains a _ like "17Nov2017_V6"
     if re.match(r"V[0-9]+", info[2]):
         dataera = info[1] + info[2]
         info.pop(2)
@@ -41,6 +41,7 @@ def split_jec_name(name):
     jettype = _checkConsistency(None, info[4])
 
     return campaign, dataera, datatype, level, jettype
+
 
 class JetCorrectionUncertainty(object):
     """
