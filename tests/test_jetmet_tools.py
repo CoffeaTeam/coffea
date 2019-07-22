@@ -47,7 +47,11 @@ def test_factorized_jet_corrector():
 
     print(corrector)
 
+    pt_copy = np.copy(test_pt)
+    
     corrs = corrector.getCorrection(JetEta=test_eta, Rho=test_Rho, JetPt=test_pt, JetA=test_A)
+
+    assert((np.abs(pt_copy - test_pt) < 1e-6).all())
 
 
 def test_jet_resolution():
