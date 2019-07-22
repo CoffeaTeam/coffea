@@ -1,12 +1,19 @@
 from ..util import awkward
 from ..util import numpy as np
+import sys
 
 # pt except for reshaping, then discriminant
 btag_feval_dims = {0: [1], 1: [1], 2: [1], 3: [2]}
 
 
 def convert_btag_csv_file(csvFilePath):
-    btag_f = open(csvFilePath)
+    fopen = open
+    fmode = 'rt'
+    if '.gz' in csvFilePath:
+        import gzip
+        fopen = gzip.open
+        fmode = 'r' if sys.platform.startswith('win') else fmode
+    btag_f = fopen(csvFilePath, fmode)
     nameandcols = btag_f.readline().split(';')
     btag_f.close()
     name = nameandcols[0].strip()
