@@ -137,7 +137,17 @@ class FactorizedJetCorrector(object):
             jecs = corrector.getSubCorrections(JetProperty1=jet.property1,...)
             'jecs' will be formatted like [[jec_jet1 jec_jet2 ...] ...]
         """
-        localargs = kwargs
+        localargs = {}
+        localargs.update(kwargs)
+        corrVars = []
+        if 'JetPt' in kwargs.keys():
+            corrVars.append('JetPt')
+            localargs['JetPt'] = np.copy(kwargs['JetPt'])
+        if 'JetE' in kwargs.keys():
+            corrVars.append('JetE')
+            localargs['JetE'] = np.copy(kwargs['JetE'])
+        if len(corrVars) == 0:
+            raise Exception('No variable to correct, need JetPt or JetE in inputs!')
         firstarg = localargs[self._signature[0]]
         cumulativeCorrection = 1.0
         offsets = None
@@ -148,13 +158,6 @@ class FactorizedJetCorrector(object):
                 localargs[key] = localargs[key].content
         else:
             cumulativeCorrection = np.ones_like(firstarg)
-        corrVars = []
-        if 'JetPt' in localargs.keys():
-            corrVars.append('JetPt')
-        if 'JetE' in localargs.keys():
-            corrVars.append('JetE')
-        if len(corrVars) == 0:
-            raise Exception('No variable to correct, need JetPt or JetE in inputs!')
         corrections = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
