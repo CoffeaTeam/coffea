@@ -21,6 +21,7 @@ def jetmet_evaluator():
                              '* * tests/samples/Summer16_23Sep2016V3_MC_L3Absolute_AK4PFPuppi.jec.txt.gz',
                              '* * tests/samples/Summer16_23Sep2016V3_MC_UncertaintySources_AK4PFPuppi.junc.txt.gz',
                              '* * tests/samples/Summer16_23Sep2016V3_MC_Uncertainty_AK4PFPuppi.junc.txt.gz',
+                             '* * tests/samples/Fall17_17Nov2017_V6_MC_UncertaintySources_AK4PFchs.junc.txt.gz',
                              '* * tests/samples/Spring16_25nsV10_MC_PtResolution_AK4PFPuppi.jr.txt.gz',
                              '* * tests/samples/Spring16_25nsV10_MC_SF_AK4PFPuppi.jersf.txt.gz'])
     
@@ -171,3 +172,28 @@ def test_jet_transformer():
         assert('pt_'+unc+'_down' in jets.columns)
         assert('mass_'+unc+'_up' in jets.columns)
         assert('mass_'+unc+'_down' in jets.columns)
+
+def test_jet_correction_uncertainty_sources():
+    from coffea.jetmet_tools import JetCorrectionUncertainty
+
+    counts, test_eta, test_pt = dummy_jagged_eta_pt()
+
+    junc_names = []
+    levels = []
+    for name in dir(evaluator):
+        if 'Summer16_23Sep2016V3_MC_UncertaintySources_AK4PFPuppi' in name:
+            junc_names.append(name)
+            levels.append(name.split('_')[-1])
+        #test for underscore in dataera
+        if 'Fall17_17Nov2017_V6_MC_UncertaintySources_AK4PFchs_AbsoluteFlavMap' in name:
+            junc_names.append(name)
+            levels.append(name.split('_')[-1])
+    junc = JetCorrectionUncertainty(**{name: evaluator[name] for name in junc_names})
+
+    print(junc)
+
+    juncs = junc.getUncertainty(JetEta=test_eta, JetPt=test_pt)
+
+    for level, corrs in juncs:
+        assert(level in levels)
+        assert(corrs.shape[0] == test_eta.shape[0])
