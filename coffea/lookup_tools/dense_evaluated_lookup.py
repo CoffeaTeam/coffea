@@ -21,8 +21,9 @@ def numbaize(fstr, varlist):
         Convert function string to numba function
         Supports only simple math for now
         """
+
     lstr = "lambda %s: %s" % (",".join(varlist), fstr)
-    func = eval(lstr)
+    func = eval(lstr, {'log': np.log, 'sqrt': np.sqrt})
     nfunc = numba.njit(func)
     return nfunc
 

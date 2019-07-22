@@ -105,7 +105,8 @@ def test_root_scalefactors():
 
 def test_btag_csv_scalefactors():
     extractor = lookup_tools.extractor()
-    extractor.add_weight_sets(["testBTag * tests/samples/testBTagSF.btag.csv"])
+    extractor.add_weight_sets(["testBTag * tests/samples/testBTagSF.btag.csv",
+                               "* * tests/samples/DeepCSV_102XSF_V1.btag.csv.gz"])
     extractor.finalize()
 
     evaluator = extractor.make_evaluator()
