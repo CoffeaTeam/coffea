@@ -184,6 +184,7 @@ def test_jet_correction_uncertainty_sources():
         if 'Summer16_23Sep2016V3_MC_UncertaintySources_AK4PFPuppi' in name:
             junc_names.append(name)
             levels.append(name.split('_')[-1])
+        #test for underscore in dataera
         if 'Fall17_17Nov2017_V6_MC_UncertaintySources_AK4PFchs_AbsoluteFlavMap' in name:
             junc_names.append(name)
             levels.append(name.split('_')[-1])
@@ -196,6 +197,3 @@ def test_jet_correction_uncertainty_sources():
     for level, corrs in juncs:
         assert(level in levels)
         assert(corrs.shape[0] == test_eta.shape[0])
-
-
-test_jet_correction_uncertainty_sources()
