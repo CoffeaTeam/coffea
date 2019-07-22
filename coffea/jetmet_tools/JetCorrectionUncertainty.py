@@ -39,7 +39,6 @@ def split_jec_name(name):
     datatype = _checkConsistency(None, info[2])
     level = info[3].replace('Uncertainty', 'jes')  # use a generic 'jes' for normal uncertainty
     jettype = _checkConsistency(None, info[4])
-    print(campaign, dataera, datatype, level, jettype)
 
     return campaign, dataera, datatype, level, jettype
 
