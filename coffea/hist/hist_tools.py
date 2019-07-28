@@ -847,6 +847,22 @@ class Hist(AccumulatorABC):
     def profile(self, axis_name):
         raise NotImplementedError("Profiling along an axis")
 
+    def remove(self, bins, axis):
+        """
+            Remove bins from a sparse axis
+                bins: iterable
+                axis: axis name or SparseAxis instance
+
+            Returns a *copy* with specified bins removed, not an in-place operation
+        """
+        axis = self.axis(axis)
+        if not isinstance(axis, SparseAxis):
+            raise NotImplementedError("Hist.remove() only supports removing items from a sparse axis.")
+        bins = [axis.index(binid) for binid in bins]
+        keep = [binid.name for binid in self.identifiers(axis) if binid not in bins]
+        full_slice = tuple(slice(None) if ax != axis else keep for ax in self._axes)
+        return self[full_slice]
+
     def group(self, old_axes, new_axis, mapping, overflow='none'):
         """
             Group a set of slices on old axes into a single new axis

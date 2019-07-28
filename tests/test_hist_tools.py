@@ -105,6 +105,9 @@ def test_hist():
     tall_mammal_count = np.sum(adult_bison_h>=1.) + np.sum(baby_bison_h>=1) + 1
     assert h_tall.sum("mass", "vocalization").values()[('mammals',)] == tall_mammal_count
 
+    h_less = h_mascots.remove(["fox", "bison"], axis="animal")
+    assert h_less.sum("vocalization", "height", "mass", "animal").values()[()] == 1004.
+
 def test_export1d():
     import uproot
     import os
