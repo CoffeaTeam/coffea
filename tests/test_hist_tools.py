@@ -74,7 +74,7 @@ def test_hist():
         'birds': ['goose', 'crane'],
         'mammals': ['bison', 'fox'],
     }
-    h_species = h_mascots.group(species_class, "animal", classes)
+    h_species = h_mascots.group("animal", species_class, classes)
 
     assert set(h_species.project("vocalization").values().keys()) == set([('birds',), ('mammals',)])
     nbirds_bin = np.sum((goose_h>=0.5)&(goose_h<1)&(goose_w>10)&(goose_w<100))
@@ -99,7 +99,7 @@ def test_hist():
         'birds': (['goose', 'crane'], slice(1., None)),
         'mammals': (['bison', 'fox'], slice(1., None)),
     }
-    h_tall = h_mascots.group(tall_class, (animal, height), mapping)
+    h_tall = h_mascots.group((animal, height), tall_class, mapping)
     tall_bird_count = np.sum(goose_h>=1.) + np.sum(crane_h>=1)
     assert h_tall.sum("mass", "vocalization").values()[('birds',)] == tall_bird_count
     tall_mammal_count = np.sum(adult_bison_h>=1.) + np.sum(baby_bison_h>=1) + 1

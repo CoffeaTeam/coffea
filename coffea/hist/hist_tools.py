@@ -840,17 +840,19 @@ class Hist(AccumulatorABC):
     def profile(self, axis_name):
         raise NotImplementedError("Profiling along an axis")
 
-    def group(self, new_axis, old_axes, mapping, overflow='none'):
+    def group(self, old_axes, new_axis, mapping, overflow='none'):
         """
             Group a set of slices on old axes into a single new axis
-                new_axis: A new sparse dimension
                 old_axes: axis or tuple of axes which are being grouped
+                new_axis: A new sparse dimension
                 mapping: dictionary of {'new_bin': (slice, ...), ...}
                     where each slice is on the axes being re-binned
                 overflow: see sum() description for allowed values
         """
         if not isinstance(new_axis, SparseAxis):
-            raise TypeError("New axis must be a sparse axis")
+            raise TypeError("New axis must be a sparse axis.  Note: Hist.group() signature has changed to group(old_axes, new_axis, ...)!")
+        if new_axis in self.axes() and self.axis(new_axis) is new_axis:
+            raise RuntimeError("new_axis is already in the list of axes.  Note: Hist.group() signature has changed to group(old_axes, new_axis, ...)!")
         if not isinstance(old_axes, tuple):
             old_axes = (old_axes,)
         old_axes = [self.axis(ax) for ax in old_axes]
