@@ -818,22 +818,29 @@ class Hist(AccumulatorABC):
 
     def project(self, axis_name, the_slice=slice(None), overflow='none'):
         """
-        Projects current histogram down one dimension
-            axis_name: dimension to reduce on
-            the_slice: any slice, list, string, or other object that the axis will understand
-            overflow: see sum() description for allowed values
+        This function has been renamed to Hist.integrate()
+        In the future, Hist.project() will integrate all axes other than the ones specified.
+        """
+        warnings.warn("Hist.project() has been renamed to Hist.integrate().  In the future, Hist.project() will provide different functionality", FutureWarning)
+        return self.integrate(axis_name, the_slice, overflow)
 
-        N.B. the more idiomatic way is to slice and sum, although this may be more readable
+    def integrate(self, axis_name, int_range=slice(None), overflow='none'):
+        """
+        Integrates current histogram along onde dimension
+            axis_name: dimension to reduce on
+            int_range: any slice, list, string, or other object that the axis will understand
+                        default: integrate over whole range
+            overflow: see sum() description for allowed values
         """
         axis = self.axis(axis_name)
-        full_slice = tuple(slice(None) if ax != axis else the_slice for ax in self._axes)
-        if isinstance(the_slice, Interval):
+        full_slice = tuple(slice(None) if ax != axis else int_range for ax in self._axes)
+        if isinstance(int_range, Interval):
             # Handle overflow intervals nicely
-            if the_slice.nan():
+            if int_range.nan():
                 overflow = 'justnan'
-            elif the_slice.lo == -np.inf:
+            elif int_range.lo == -np.inf:
                 overflow = 'under'
-            elif the_slice.hi == np.inf:
+            elif int_range.hi == np.inf:
                 overflow = 'over'
         return self[full_slice].sum(axis.name, overflow=overflow)  # slice may make new axis, use name
 
