@@ -18,6 +18,7 @@ addons:
     - python-setuptools
     - pandoc
 script:
+- pip list
 - python setup.py flake8
 - coverage run --source=coffea/ setup.py pytest
 before_install:
