@@ -818,39 +818,64 @@ class Hist(AccumulatorABC):
 
     def project(self, axis_name, the_slice=slice(None), overflow='none'):
         """
-        Projects current histogram down one dimension
-            axis_name: dimension to reduce on
-            the_slice: any slice, list, string, or other object that the axis will understand
-            overflow: see sum() description for allowed values
+        This function has been renamed to Hist.integrate()
+        In the future, Hist.project() will integrate all axes other than the ones specified.
+        """
+        warnings.warn("Hist.project() has been renamed to Hist.integrate().  In the future, Hist.project() will provide different functionality", FutureWarning)
+        return self.integrate(axis_name, the_slice, overflow)
 
-        N.B. the more idiomatic way is to slice and sum, although this may be more readable
+    def integrate(self, axis_name, int_range=slice(None), overflow='none'):
+        """
+        Integrates current histogram along onde dimension
+            axis_name: dimension to reduce on
+            int_range: any slice, list, string, or other object that the axis will understand
+                        default: integrate over whole range
+            overflow: see sum() description for allowed values
         """
         axis = self.axis(axis_name)
-        full_slice = tuple(slice(None) if ax != axis else the_slice for ax in self._axes)
-        if isinstance(the_slice, Interval):
+        full_slice = tuple(slice(None) if ax != axis else int_range for ax in self._axes)
+        if isinstance(int_range, Interval):
             # Handle overflow intervals nicely
-            if the_slice.nan():
+            if int_range.nan():
                 overflow = 'justnan'
-            elif the_slice.lo == -np.inf:
+            elif int_range.lo == -np.inf:
                 overflow = 'under'
-            elif the_slice.hi == np.inf:
+            elif int_range.hi == np.inf:
                 overflow = 'over'
         return self[full_slice].sum(axis.name, overflow=overflow)  # slice may make new axis, use name
 
     def profile(self, axis_name):
         raise NotImplementedError("Profiling along an axis")
 
-    def group(self, new_axis, old_axes, mapping, overflow='none'):
+    def remove(self, bins, axis):
+        """
+            Remove bins from a sparse axis
+                bins: iterable
+                axis: axis name or SparseAxis instance
+
+            Returns a *copy* with specified bins removed, not an in-place operation
+        """
+        axis = self.axis(axis)
+        if not isinstance(axis, SparseAxis):
+            raise NotImplementedError("Hist.remove() only supports removing items from a sparse axis.")
+        bins = [axis.index(binid) for binid in bins]
+        keep = [binid.name for binid in self.identifiers(axis) if binid not in bins]
+        full_slice = tuple(slice(None) if ax != axis else keep for ax in self._axes)
+        return self[full_slice]
+
+    def group(self, old_axes, new_axis, mapping, overflow='none'):
         """
             Group a set of slices on old axes into a single new axis
-                new_axis: A new sparse dimension
                 old_axes: axis or tuple of axes which are being grouped
+                new_axis: A new sparse dimension
                 mapping: dictionary of {'new_bin': (slice, ...), ...}
                     where each slice is on the axes being re-binned
                 overflow: see sum() description for allowed values
         """
         if not isinstance(new_axis, SparseAxis):
-            raise TypeError("New axis must be a sparse axis")
+            raise TypeError("New axis must be a sparse axis.  Note: Hist.group() signature has changed to group(old_axes, new_axis, ...)!")
+        if new_axis in self.axes() and self.axis(new_axis) is new_axis:
+            raise RuntimeError("new_axis is already in the list of axes.  Note: Hist.group() signature has changed to group(old_axes, new_axis, ...)!")
         if not isinstance(old_axes, tuple):
             old_axes = (old_axes,)
         old_axes = [self.axis(ax) for ax in old_axes]

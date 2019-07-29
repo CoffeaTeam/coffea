@@ -18,16 +18,16 @@ def test_hist():
     assert h_regular_bins.sum("x", "y", overflow='all').values(sumw2=True)[()] == (nentries, nentries)
     # bin x=2, y=10 (when overflow removed)
     count_some_bin = np.sum((test_pt>=20.)&(test_pt<30.)&(test_eta>=0.)&(test_eta<0.3))
-    assert h_regular_bins.project("x", slice(20, 30)).values()[()][10] == count_some_bin
-    assert h_regular_bins.project("y", slice(0, 0.3)).values()[()][2] == count_some_bin
+    assert h_regular_bins.integrate("x", slice(20, 30)).values()[()][10] == count_some_bin
+    assert h_regular_bins.integrate("y", slice(0, 0.3)).values()[()][2] == count_some_bin
 
     h_reduced = h_regular_bins[10:,-.6:]
     # bin x=1, y=2
-    assert h_reduced.project("x", slice(20, 30)).values()[()][2] == count_some_bin
-    assert h_reduced.project("y", slice(0, 0.3)).values()[()][1] == count_some_bin
+    assert h_reduced.integrate("x", slice(20, 30)).values()[()][2] == count_some_bin
+    assert h_reduced.integrate("y", slice(0, 0.3)).values()[()][1] == count_some_bin
     h_reduced.fill(x=23, y=0.1)
-    assert h_reduced.project("x", slice(20, 30)).values()[()][2] == count_some_bin + 1
-    assert h_reduced.project("y", slice(0, 0.3)).values()[()][1] == count_some_bin + 1
+    assert h_reduced.integrate("x", slice(20, 30)).values()[()][2] == count_some_bin + 1
+    assert h_reduced.integrate("y", slice(0, 0.3)).values()[()][1] == count_some_bin + 1
 
     animal = hist.Cat("animal", "type of animal")
     vocalization = hist.Cat("vocalization", "onomatopoiea is that how you spell it?")
@@ -38,7 +38,7 @@ def test_hist():
     h_cat_bins.fill(animal="dog", vocalization="ruff")
     assert h_cat_bins.values()[("cat", "meow")] == 2.
     assert h_cat_bins.values(sumw2=True)[("dog", "meow")] == (-7., 27.)
-    assert h_cat_bins.project("vocalization", ["woof", "ruff"]).values(sumw2=True)[("dog",)] == (101., 10001.)
+    assert h_cat_bins.integrate("vocalization", ["woof", "ruff"]).values(sumw2=True)[("dog",)] == (101., 10001.)
 
     height = hist.Bin("height", "height [m]", 10, 0, 5)
     h_mascots_1 = hist.Hist("fermi mascot showdown",
@@ -67,19 +67,19 @@ def test_hist():
     h_mascots_2.fill(animal="fox", vocalization="none", height=1., mass=30.)
 
     h_mascots = h_mascots_1 + h_mascots_2
-    assert h_mascots.project("vocalization", "h*").sum("height", "mass", "animal").values()[()] == 1040.
+    assert h_mascots.integrate("vocalization", "h*").sum("height", "mass", "animal").values()[()] == 1040.
 
     species_class = hist.Cat("species_class", "where the subphylum is vertibrates")
     classes = {
         'birds': ['goose', 'crane'],
         'mammals': ['bison', 'fox'],
     }
-    h_species = h_mascots.group(species_class, "animal", classes)
+    h_species = h_mascots.group("animal", species_class, classes)
 
-    assert set(h_species.project("vocalization").values().keys()) == set([('birds',), ('mammals',)])
+    assert set(h_species.integrate("vocalization").values().keys()) == set([('birds',), ('mammals',)])
     nbirds_bin = np.sum((goose_h>=0.5)&(goose_h<1)&(goose_w>10)&(goose_w<100))
     nbirds_bin += np.sum((crane_h>=0.5)&(crane_h<1)&(crane_w>10)&(crane_w<100))
-    assert h_species.project("vocalization").values()[('birds',)][1,2] == nbirds_bin
+    assert h_species.integrate("vocalization").values()[('birds',)][1,2] == nbirds_bin
     tally = h_species.sum("mass", "height", "vocalization").values()
     assert tally[('birds',)] == 1004.
     assert tally[('mammals',)] == 91.
@@ -92,18 +92,21 @@ def test_hist():
 
     assert h_species.axis("vocalization") is vocalization
     assert h_species.axis("height") is height
-    assert h_species.project("vocalization", "h*").axis("height") is height
+    assert h_species.integrate("vocalization", "h*").axis("height") is height
 
     tall_class = hist.Cat("tall_class", "species class (species above 1m)")
     mapping = {
         'birds': (['goose', 'crane'], slice(1., None)),
         'mammals': (['bison', 'fox'], slice(1., None)),
     }
-    h_tall = h_mascots.group(tall_class, (animal, height), mapping)
+    h_tall = h_mascots.group((animal, height), tall_class, mapping)
     tall_bird_count = np.sum(goose_h>=1.) + np.sum(crane_h>=1)
     assert h_tall.sum("mass", "vocalization").values()[('birds',)] == tall_bird_count
     tall_mammal_count = np.sum(adult_bison_h>=1.) + np.sum(baby_bison_h>=1) + 1
     assert h_tall.sum("mass", "vocalization").values()[('mammals',)] == tall_mammal_count
+
+    h_less = h_mascots.remove(["fox", "bison"], axis="animal")
+    assert h_less.sum("vocalization", "height", "mass", "animal").values()[()] == 1004.
 
 def test_export1d():
     import uproot
