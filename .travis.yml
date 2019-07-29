@@ -31,7 +31,7 @@ install:
 - pip -q install codecov
 - PY_MAJ=`python -c 'import sys; print(sys.version_info[0])'`
 - PY_MIN=`python -c 'import sys; print(sys.version_info[1])'`
-- if [ $PY_MAJ -eq 3 ]; then pip -q install pandas pyarrow==0.13.0 cloudpickle lz4 jinja2; fi
+- if [ $PY_MAJ -eq 3 ]; then pip -q install pandas pyarrow cloudpickle lz4 jinja2; fi
 - if [ $PY_MAJ -eq 3 ]; then pip -q install https://github.com/Parsl/parsl/zipball/master; fi
 - if [ $PY_MAJ -eq 3 ] && [ $PY_MIN -ge 6 ]; then  pip -q install pyspark; fi
 - pip -q install "numpy<1.17.0" scipy numba tqdm matplotlib pytest pytest-runner flake8 --upgrade
