@@ -4,7 +4,11 @@ from tqdm import tqdm
 import pyspark.sql
 import pyspark.sql.functions as fn
 from pyarrow.compat import guid
-from collections.abc import Sequence
+
+try:
+    from collections.abc import Sequence
+except ImportError:
+    from collections import Sequence
 
 from ..executor import futures_handler
 

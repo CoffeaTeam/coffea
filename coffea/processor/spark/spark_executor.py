@@ -3,7 +3,7 @@ from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from tqdm import tqdm
-import _pickle as pkl
+import pickle as pkl
 import lz4.frame as lz4f
 import numpy as np
 import pandas as pd
