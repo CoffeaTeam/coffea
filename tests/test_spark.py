@@ -66,7 +66,7 @@ def test_spark_hist_adders():
     pyspark = pytest.importorskip("pyspark", minversion="2.4.1")
     
     import pandas as pd
-    import _pickle as pkl
+    import pickle as pkl
     import lz4.frame as lz4f
 
     from coffea.util import numpy as np
