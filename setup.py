@@ -66,6 +66,7 @@ INSTALL_REQUIRES = ['awkward>=0.8.4',
                     'futures; python_version == "2.7"',
                     'tqdm',
                     'lz4',
+                    'six',
                     'cloudpickle',
                     ]
 EXTRAS_REQUIRE = {}
