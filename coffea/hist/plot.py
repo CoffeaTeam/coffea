@@ -151,7 +151,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             if identifier is None:
                 sumw, sumw2 = hist.values(sumw2=True, overflow=overflow)[()]
             elif isinstance(overlay, SparseAxis):
-                sumw, sumw2 = hist.project(overlay, identifier).values(sumw2=True, overflow=overflow)[()]
+                sumw, sumw2 = hist.integrate(overlay, identifier).values(sumw2=True, overflow=overflow)[()]
             else:
                 sumw, sumw2 = hist.values(sumw2=True, overflow='allnan')[()]
                 the_slice = (i if overflow_behavior(overlay_overflow).start is None else i + 1, overflow_behavior(overflow))
@@ -517,7 +517,7 @@ def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='non
         coltitle = None
         if col:
             vcol = col_identifiers[icol]
-            hcol = h.project(col, vcol)
+            hcol = h.integrate(col, vcol)
             coltitle = str(vcol)
             if isinstance(vcol, Interval) and vcol.label is None:
                 coltitle = "%s ∈ %s" % (h.axis(col).label, coltitle)
@@ -527,7 +527,7 @@ def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='non
             rowtitle = None
             if row:
                 vrow = row_identifiers[irow]
-                hplot = hcol.project(row, vrow)
+                hplot = hcol.integrate(row, vrow)
                 rowtitle = str(vrow)
                 if isinstance(vrow, Interval) and vrow.label is None:
                     rowtitle = "%s ∈ %s" % (h.axis(row).label, rowtitle)
