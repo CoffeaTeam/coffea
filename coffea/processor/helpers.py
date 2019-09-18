@@ -22,6 +22,7 @@ class Weights(object):
         self._modifiers = {}
         self._weightStats = {}
         self._storeIndividual = storeIndividual
+
     def add(self, name, weight, weightUp=None, weightDown=None, shift=False):
         """
         Add a correction to the overall event weight, and keep track of systematic uncertainties
