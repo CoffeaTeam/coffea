@@ -7,24 +7,18 @@ def timeout(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-
         import signal
-        import datetime
 
         def _timeout_handler(signum, frame):
             raise Exception("Timeout hit")
 
         signal.signal(signal.SIGALRM, _timeout_handler)
-        if kwargs.get('timeout', None):
-            signal.alarm(kwargs.get('timeout'))
-            print("[Timeout wrapper:{}] Timeout {}".format(datetime.datetime.now(),
-                                                           kwargs.get('timeout')))
+        if kwargs.get('timeout'):
+            signal.alarm(max(1, int(kwargs['timeout'])))
         try:
-            retval = func(*args, **kwargs)
-            return retval
-        except Exception as e:
-            print("[Timeout wrapper:{}] Caught an exception {}".format(datetime.datetime.now(),
-                                                                       e))
-            raise
+            result = func(*args, **kwargs)
+        finally:
+            signal.alarm(0)
+        return result
 
     return wrapper
