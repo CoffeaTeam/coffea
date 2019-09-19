@@ -50,6 +50,63 @@ def test_weights():
 
     assert(np.all(np.abs(test_shift_down - (exp_down)) < 1e-6))
 
+
+def test_weights_partial():
+    from coffea.processor import Weights
+    counts, _, _ = dummy_jagged_eta_pt()
+    w1 = np.random.normal(loc=1.0, scale=0.01, size=counts.size)
+    w2 = np.random.normal(loc=1.3, scale=0.05, size=counts.size)
+
+    weights = Weights(counts.size, storeIndividual=True)
+    weights.add('w1', w1)
+    weights.add('w2', w2)
+
+    test_exclude_none = weights.weight()
+    assert(np.all(np.abs(test_exclude_none - w1 * w2)<1e-6))
+
+    test_exclude1 = weights.partial_weight(exclude=['w1'])
+    assert(np.all(np.abs(test_exclude1 - w2)<1e-6))
+
+    test_include1 = weights.partial_weight(include=['w1'])
+    assert(np.all(np.abs(test_include1 - w1)<1e-6))
+
+    test_exclude2 = weights.partial_weight(exclude=['w2'])
+    assert(np.all(np.abs(test_exclude2 - w1)<1e-6))
+
+    test_include2 = weights.partial_weight(include=['w2'])
+    assert(np.all(np.abs(test_include2 - w2)<1e-6))
+
+    test_include_both = weights.partial_weight(include=['w1','w2'])
+    assert(np.all(np.abs(test_include_both - w1 * w2)<1e-6))
+
+    # Check that exception is thrown if arguments are incompatible
+    error_raised = False
+    try:
+        weights.partial_weight(exclude=['w1'], include=['w2'])
+    except ValueError:
+        error_raised = True
+    assert(error_raised)
+
+    error_raised = False
+    try:
+        weights.partial_weight()
+    except ValueError:
+        error_raised = True
+    assert(error_raised)
+
+    # Check that exception is thrown if individual weights
+    # are not saved from the start
+    weights = Weights(counts.size, storeIndividual=False)
+    weights.add('w1', w1)
+    weights.add('w2', w2)
+
+    error_raised = False
+    try:
+        weights.partial_weight(exclude=['test'], include=['test'])
+    except ValueError:
+        error_raised = True
+    assert(error_raised)
+
 def test_packed_selection():
     from coffea.processor import PackedSelection
 

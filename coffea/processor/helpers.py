@@ -6,10 +6,22 @@ class Weights(object):
     Keep track of event weight corrections, as well as any accompanying systematic
     shifts via multiplicative modifiers.
     """
-    def __init__(self, size):
+    def __init__(self, size, storeIndividual=False):
+        """
+        Initialization.
+
+        Parameters
+        ----------
+            size:
+                Size of the weight arrays to be handled (i.e. the number of events / instances).
+            storeIndividual:
+                Store not only the total weight + variations, but also each individual weight.
+        """
         self._weight = np.ones(size)
+        self._weights = {}
         self._modifiers = {}
         self._weightStats = {}
+        self._storeIndividual = storeIndividual
 
     def add(self, name, weight, weightUp=None, weightDown=None, shift=False):
         """
@@ -24,6 +36,8 @@ class Weights(object):
         if 'Up' in name or 'Down' in name:
             raise ValueError("Avoid using 'Up' and 'Down' in weight names, instead pass appropriate shifts to add() call")
         self._weight *= weight
+        if self._storeIndividual:
+            self._weights[name] = weight
         if weightUp is not None:
             if shift:
                 weightUp += weight
@@ -51,6 +65,39 @@ class Weights(object):
         elif 'Down' in modifier and modifier not in self._modifiers:
             return self._weight / self._modifiers[modifier.replace('Down', 'Up')]
         return self._weight * self._modifiers[modifier]
+
+    def partial_weight(self, include=[], exclude=[]):
+        """
+        Return a partial weight by multiplying a subset of all weights.
+
+        Can be operated either by specifying weights to include or
+        weights to exclude, but not both at the same time. The method
+        can only be used if the individual weights are stored (see
+        storeIndividual argument in the initializer).
+
+        Parameters
+        ----------
+            include:
+                Weight names to include, defaults to []
+            exclude:
+                Weight names to exclude, defaults to []
+        """
+        if not self._storeIndividual:
+            raise ValueError("To be able to request weight exclusion, use storeIndividual=True when creating Weights object.")
+        if (include and exclude) or not (include or exclude):
+            raise ValueError("Need to specify exactly one of the 'exclude' or 'include' arguments.")
+
+        names = set(self._weights.keys())
+        if include:
+            names = names & set(include)
+        if exclude:
+            names = names - set(exclude)
+
+        w = np.ones(self._weight.size)
+        for name in names:
+            w = w * self._weights[name]
+
+        return w
 
     @property
     def variations(self):
