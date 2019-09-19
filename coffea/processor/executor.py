@@ -247,7 +247,7 @@ def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=Non
     # when we're done
     killParsl = False
     if data_flow is None:
-        data_flow = _parsl_initialize(executor_args['config'])
+        data_flow = _parsl_initialize(executor_args.get('config'))
         killParsl = True
     else:
         if not isinstance(data_flow, parsl.dataflow.dflow.DataFlowKernel):
