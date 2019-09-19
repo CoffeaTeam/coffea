@@ -40,8 +40,8 @@ def test_spark_executor():
 
     spark = _spark_initialize(config=spark_config,log_level='ERROR',spark_progress=False)
 
-    filelist = {'ZJets': ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dy.root')],
-                'Data'  : ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')]
+    filelist = {'ZJets': {'files': ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dy.root')], 'treename': 'Events' },
+                'Data'  : {'files': ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')], 'treename': 'Events'}
                 }
 
     from coffea.processor.test_items import NanoTestProcessor
