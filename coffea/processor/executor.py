@@ -338,8 +338,10 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
 
     executor_args.setdefault('config', None)
     executor_args.setdefault('file_type', 'parquet')
-    executor_args.setdefault('laurelin_version', '0.1.0')
+    executor_args.setdefault('laurelin_version', '0.3.0')
+    executor_args.setdefault('treeName', 'Events')
     file_type = executor_args['file_type']
+    treeName = executor_args['treeName']
 
     if executor_args['config'] is None:
         executor_args.pop('config')
@@ -356,7 +358,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
             raise ValueError("Expected 'spark' to be a pyspark.sql.session.SparkSession")
 
     dfslist = _spark_make_dfs(spark, fileset, partitionsize, processor_instance.columns,
-                              thread_workers, file_type)
+                              thread_workers, file_type, treeName)
 
     output = processor_instance.accumulator.identity()
     executor(spark, dfslist, processor_instance, output, thread_workers)
