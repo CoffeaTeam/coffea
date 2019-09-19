@@ -17,6 +17,7 @@ from ..executor import futures_handler
 lz4_clevel = 1
 
 
+@timeout
 @python_app
 def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None, flatten=True):
     import uproot
@@ -25,7 +26,6 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None,
     import lz4.frame as lz4f
     from coffea import hist, processor
     from coffea.processor.accumulator import value_accumulator
-    from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
     uproot.XRootDSource.defaults["parallel"] = False
 
@@ -43,19 +43,8 @@ def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None,
 
     processor_instance = cpkl.loads(lz4f.decompress(procstr))
 
-    afile = None
-    for i in range(5):
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(uproot.open, fn)
-            try:
-                afile = future.result(timeout=timeout)
-            except TimeoutError:
-                afile = None
-            else:
-                break
+    afile = uproot.open(fn)
 
-    if afile is None:
-        raise Exception('unable to open: %s' % fn)
     tree = None
     if isinstance(treename, str):
         tree = afile[treename]

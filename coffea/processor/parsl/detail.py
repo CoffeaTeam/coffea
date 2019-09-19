@@ -13,6 +13,7 @@ from parsl.config import Config
 from parsl.executors import HighThroughputExecutor
 
 from ..executor import futures_handler
+from .timeout import timeout
 
 try:
     from collections.abc import Sequence
@@ -45,29 +46,16 @@ def _parsl_stop(dfk):
     parsl.clear()
 
 
+@timeout
 @python_app
 def derive_chunks(filename, treename, chunksize, ds, timeout=10):
     import uproot
     from collections.abc import Sequence
-    from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
     uproot.XRootDSource.defaults["parallel"] = False
 
-    afile = None
-    for i in range(5):
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(uproot.open, filename)
-            try:
-                afile = future.result(timeout=timeout)
-            except TimeoutError:
-                afile = None
-            else:
-                break
-
-    if afile is None:
-        raise Exception('unable to open: %s' % filename)
-
     afile = uproot.open(filename)
+
     tree = None
     if isinstance(treename, str):
         tree = afile[treename]
