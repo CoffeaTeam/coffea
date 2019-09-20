@@ -242,7 +242,7 @@ def run_parsl_job(fileset, treename, processor_instance, executor, executor_args
     executor_args.setdefault('chunking_timeout', 10)
     executor_args.setdefault('flatten', True)
 
-    # initialize spark if we need to
+    # initialize parsl if we need to
     # if we initialize, then we deconstruct
     # when we're done
     killParsl = False
