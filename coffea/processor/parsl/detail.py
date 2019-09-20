@@ -41,8 +41,8 @@ def _parsl_initialize(config=None):
     return dfk
 
 
-def _parsl_stop(dfk):
-    dfk.cleanup()
+def _parsl_stop():
+    parsl.dfk().cleanup()
     parsl.clear()
 
 
