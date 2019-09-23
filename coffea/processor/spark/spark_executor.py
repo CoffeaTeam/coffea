@@ -69,7 +69,7 @@ class SparkExecutor(object):
         return self._counts
 
     def __call__(self, spark, dfslist, theprocessor, output, thread_workers,
-                 status=True, unit='datasets', desc='Processing'):
+                 use_df_cache, status=True, unit='datasets', desc='Processing'):
         # processor needs to be a global
         global processor_instance, coffea_udf
         processor_instance = theprocessor
@@ -82,17 +82,27 @@ class SparkExecutor(object):
         exec(render)
 
         # cache the input datasets if it's not already done
-        if self._cacheddfs is None:
-            self._cacheddfs = {}
+        if self._counts is None:
             self._counts = {}
             # go through each dataset and thin down to the columns we want
             for ds, (df, counts) in dfslist.items():
-                self._cacheddfs[ds] = df.select(*cols_w_ds).cache()
                 self._counts[ds] = counts
 
         def spex_accumulator(total, result):
             ds, df = result
             total[ds] = df
+
+        if use_df_cache and self._cacheddfs is None:
+            self._cacheddfs = {}
+            with ThreadPoolExecutor(max_workers=thread_workers) as executor:
+                futures = set()
+                for ds, (df, counts) in dfslist.items():
+                    futures.add(executor.submit(self._cache_data, ds, df, cols_w_ds))
+                futures_handler(futures, self._cacheddfs, status, unit, 'caching', futures_accumulator=spex_accumulator)
+        elif not use_df_cache:
+            self._cacheddfs = {}
+            for ds, (df, counts) in dfslist.items():
+                self._cacheddfs[ds] = df.select(*columns)
 
         with ThreadPoolExecutor(max_workers=thread_workers) as executor:
             futures = set()
@@ -109,6 +119,9 @@ class SparkExecutor(object):
                 raise Exception('The histogram list returned from spark is empty in dataset: %s, something went wrong!' % ds)
             bits = bitstream[bitstream.columns[0]][0]
             output.add(pkl.loads(lz4f.decompress(bits)))
+
+    def _cache_data(self, ds, df, columns):
+        return ds, df.select(*columns).cache()
 
     def _launch_analysis(self, ds, df, udf, columns):
         histo_map_parts = (df.rdd.getNumPartitions() // 20) + 1

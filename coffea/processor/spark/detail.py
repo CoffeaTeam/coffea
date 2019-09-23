@@ -73,7 +73,9 @@ def _read_df(spark, dataset, files_or_dirs, ana_cols, partitionsize, file_type, 
         df = df.withColumn(missing, fn.lit(0.0))
     df = df.withColumn('dataset', fn.lit(dataset))
     npartitions = (count // partitionsize) + 1
-    if df.rdd.getNumPartitions() > npartitions:
+    actual_partitions = df.rdd.getNumPartitions()
+    avg_counts = count / actual_partitions
+    if actual_partitions > 1.50 * npartitions or avg_counts > partitionsize:
         df = df.repartition(npartitions)
 
     return df, dataset, count
