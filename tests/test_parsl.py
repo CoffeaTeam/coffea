@@ -18,9 +18,9 @@ def test_parsl_start_stop():
                                                _parsl_stop,
                                                _default_cfg)
 
-    dfk = _parsl_initialize(config=_default_cfg)
+    _parsl_initialize(config=_default_cfg)
     
-    _parsl_stop(dfk)
+    _parsl_stop()
 
 
 def do_parsl_job(parsl_config, filelist):
@@ -36,15 +36,15 @@ def do_parsl_job(parsl_config, filelist):
     from coffea.processor.test_items import NanoTestProcessor
     from coffea.processor.parsl.parsl_executor import parsl_executor
     
-    dfk = _parsl_initialize(parsl_config)
+    _parsl_initialize(parsl_config)
     
     proc = NanoTestProcessor()
     
-    hists = run_parsl_job(filelist, treename, processor_instance = proc, executor=parsl_executor, data_flow=dfk)
+    hists = run_parsl_job(filelist, treename, processor_instance = proc, executor=parsl_executor)
     
-    hists2 = run_parsl_job(filelist, treename, processor_instance = proc, executor=parsl_executor, data_flow=dfk, executor_args={'flatten': False})
+    hists2 = run_parsl_job(filelist, treename, processor_instance = proc, executor=parsl_executor, executor_args={'flatten': False})
     
-    _parsl_stop(dfk)
+    _parsl_stop()
     
     assert( hists['cutflow']['ZJets_pt'] == 4 )
     assert( hists['cutflow']['ZJets_mass'] == 1 )
