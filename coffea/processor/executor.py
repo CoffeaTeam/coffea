@@ -340,8 +340,10 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     executor_args.setdefault('file_type', 'parquet')
     executor_args.setdefault('laurelin_version', '0.3.0')
     executor_args.setdefault('treeName', 'Events')
+    executor_args.setdefault('cache', True)
     file_type = executor_args['file_type']
     treeName = executor_args['treeName']
+    use_cache = executor_args['cache']
 
     if executor_args['config'] is None:
         executor_args.pop('config')
@@ -361,7 +363,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
                               thread_workers, file_type, treeName)
 
     output = processor_instance.accumulator.identity()
-    executor(spark, dfslist, processor_instance, output, thread_workers)
+    executor(spark, dfslist, processor_instance, output, thread_workers, use_cache)
     processor_instance.postprocess(output)
 
     if killSpark:
