@@ -15,6 +15,7 @@ import sys
 import importlib
 from functools import reduce
 import inspect
+import subprocess
 sys.path.insert(0, os.path.abspath('../..'))
 import coffea
 print("sys.path:", sys.path)
@@ -28,6 +29,7 @@ author = 'M. Cremonesi, L. Gray, A. Hall, N. Smith, et al. (The Coffea Team)'
 
 version = coffea.__version__.rsplit('.', 1)[0]
 release = coffea.__version__
+githash = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('ascii')
 
 language = None
 
@@ -70,8 +72,7 @@ def linkcode_resolve(domain, info):
     except TypeError:
         # skip property or other type that inspect doesn't like
         return None
-    print(release, relpath, lineno)
-    return "http://github.com/CoffeaTeam/coffea/blob/v{}/{}#L{}".format(release, relpath, lineno)
+    return "http://github.com/CoffeaTeam/coffea/blob/{}/{}#L{}".format(githash, relpath, lineno)
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
