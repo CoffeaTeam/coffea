@@ -25,8 +25,8 @@ class Weights(object):
 
     def add(self, name, weight, weightUp=None, weightDown=None, shift=False):
         """
-        Add a correction to the overall event weight, and keep track of systematic uncertainties
-        if they exist.
+        Add a correction to the overall event weight, and keep track of systematic uncertainties if they exist.
+
             name: name of correction weight
             weight: nominal weight
             weightUp: weight with correction uncertainty shifted up (if available)

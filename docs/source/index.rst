@@ -30,7 +30,6 @@ feel free to contribute at our `github repo <https://github.com/CoffeaTeam/coffe
 
 
 .. toctree::
-
    quick_start
    introduction
    reference

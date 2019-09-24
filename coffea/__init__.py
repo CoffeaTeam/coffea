@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # BSD 3-Clause License
 #
 # Copyright (c) 2018, Fermilab
@@ -29,14 +27,23 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-from . import lookup_tools
-from . import analysis_objects
-from . import striped
-from . import jetmet_tools
-from . import arrays
-
 from . import version
 __version__ = version.__version__
 
-from . import util
+from . import (
+    hist,
+    lookup_tools,
+    analysis_objects,
+    jetmet_tools,
+    arrays,
+    util,
+)
+
+__all__ = [
+    'hist',
+    'lookup_tools',
+    'analysis_objects',
+    'jetmet_tools',
+    'arrays',
+    'util',
+]
