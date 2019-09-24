@@ -92,17 +92,14 @@ class SparkExecutor(object):
             ds, df = result
             total[ds] = df
 
-        if use_df_cache and self._cacheddfs is None:
+        if self._cacheddfs is None:
             self._cacheddfs = {}
+            cachedesc = 'caching' if use_df_cache else 'pruning'
             with ThreadPoolExecutor(max_workers=thread_workers) as executor:
                 futures = set()
                 for ds, (df, counts) in dfslist.items():
-                    futures.add(executor.submit(self._cache_data, ds, df, cols_w_ds))
-                futures_handler(futures, self._cacheddfs, status, unit, 'caching', futures_accumulator=spex_accumulator)
-        elif not use_df_cache:
-            self._cacheddfs = {}
-            for ds, (df, counts) in dfslist.items():
-                self._cacheddfs[ds] = df.select(*columns)
+                    futures.add(executor.submit(self._pruneandcache_data, ds, df, cols_w_ds, use_df_cache))
+                futures_handler(futures, self._cacheddfs, status, unit, cachedesc, futures_accumulator=spex_accumulator)
 
         with ThreadPoolExecutor(max_workers=thread_workers) as executor:
             futures = set()
@@ -120,8 +117,10 @@ class SparkExecutor(object):
             bits = bitstream[bitstream.columns[0]][0]
             output.add(pkl.loads(lz4f.decompress(bits)))
 
-    def _cache_data(self, ds, df, columns):
-        return ds, df.select(*columns).cache()
+    def _pruneandcache_data(self, ds, df, columns, cacheit):
+        if cacheit:
+            return ds, df.select(*columns).cache()
+        return ds, df.select(*columns)
 
     def _launch_analysis(self, ds, df, udf, columns):
         histo_map_parts = (df.rdd.getNumPartitions() // 20) + 1
