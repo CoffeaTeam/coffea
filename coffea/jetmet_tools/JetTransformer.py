@@ -96,13 +96,13 @@ class JetTransformer(object):
 
     def transform(self, jet, met=None):
         """
-            precondition - jet is a JaggedCandidateArray with additional attributes:
-                             - 'ptRaw'
-                             - 'massRaw'
-            xformer = JetTransformer(name1=corrL1,...)
-            xformer.transform(jet)
-            postcondition - jet.pt, jet.mass, jet.p4 are updated to represent the corrected jet
-                            based on the input correction set
+        precondition - jet is a JaggedCandidateArray with additional attributes:
+                            - 'ptRaw'
+                            - 'massRaw'
+        xformer = JetTransformer(name1=corrL1,...)
+        xformer.transform(jet)
+        postcondition - jet.pt, jet.mass, jet.p4 are updated to represent the corrected jet
+                        based on the input correction set
         """
         if not isinstance(jet, JaggedCandidateArray):
             raise Exception('Input data must be a JaggedCandidateArray!')
