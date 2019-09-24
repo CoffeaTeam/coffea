@@ -12,11 +12,13 @@
 #
 import os
 import sys
-import requests
+import importlib
+from functools import reduce
+import inspect
 sys.path.insert(0, os.path.abspath('../..'))
 import coffea
-print(sys.path)
-print(coffea.__version__)
+print("sys.path:", sys.path)
+print("coffea version:", coffea.__version__)
 
 # -- Project information -----------------------------------------------------
 
@@ -42,17 +44,11 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
     'sphinx.ext.linkcode',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'sphinx_automodapi.automodapi',
 ]
 
-docnotebooks = ['histograms.ipynb','plotting-demo.ipynb',
-                'applying_corrections.ipynb','muonspectrum_v4.ipynb']
-
-for docnb in docnotebooks:
-    url = 'https://raw.githubusercontent.com/CoffeaTeam/coffea/master/binder/%s' % (docnb)
-    r = requests.get(url)
-    with open(os.path.join(os.path.dirname(__file__), docnb), 'wb') as f:
-        f.write(r.content)
+numpydoc_show_class_members = False
 
 nbsphinx_execute = 'never'
 
@@ -61,8 +57,21 @@ def linkcode_resolve(domain, info):
         return None
     if not info['module']:
         return None
-    filename = info['module'].replace('.', '/')
-    return "http://github.com/CoffeaTeam/coffea/blob/master/{}.py".format(filename)
+    mod = importlib.import_module(info['module'])
+    modpath = [p for p in sys.path if mod.__file__.startswith(p)]
+    if len(modpath) < 1:
+        raise RuntimeException('Cannot deduce module path')
+    modpath = modpath[0]
+    obj = reduce(getattr, [mod] + info['fullname'].split('.'))
+    try:
+        path = inspect.getsourcefile(obj)
+        relpath = path[len(modpath) + 1:]
+        _, lineno = inspect.getsourcelines(obj)
+    except TypeError:
+        # skip property or other type that inspect doesn't like
+        return None
+    print(release, relpath, lineno)
+    return "http://github.com/CoffeaTeam/coffea/blob/v{}/{}#L{}".format(release, relpath, lineno)
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

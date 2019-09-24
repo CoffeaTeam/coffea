@@ -1,3 +1,7 @@
+"""Utility functions
+
+Details...
+"""
 try:
     import awkward.numba as awkward
 except ImportError:

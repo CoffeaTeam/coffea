@@ -3,7 +3,7 @@ Coffea by Example
 
 .. toctree::
 
-   histograms.ipynb
-   plotting-demo.ipynb
-   applying_corrections.ipynb
-   muonspectrum_v4.ipynb
+   notebooks/histograms.ipynb
+   notebooks/plotting-demo.ipynb
+   notebooks/applying_corrections.ipynb
+   notebooks/muonspectrum_v4.ipynb
