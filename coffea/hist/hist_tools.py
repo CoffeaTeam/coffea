@@ -947,7 +947,7 @@ class Hist(AccumulatorABC):
             new_axis
                 A new sparse dimension definition, e.g. a `Cat` instance
             mapping : dict
-                A mapping ``{'new_bin': (slice, ...), ...}`` where each 
+                A mapping ``{'new_bin': (slice, ...), ...}`` where each
                 slice is on the axes being re-binned.  In the case of
                 a single axis for `old_axes`, ``{'new_bin': slice, ...}``
                 is admissible.
