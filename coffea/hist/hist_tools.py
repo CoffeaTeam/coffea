@@ -68,11 +68,18 @@ def overflow_behavior(overflow):
 
 @functools.total_ordering
 class Interval(object):
-    """
-        Real number interval
-        Totally ordered, assuming no overlap in intervals
-        special nan interval is greater than [*, inf)
-        string representation can be overriden by custom label
+    """Real number interval
+
+    Totally ordered, assuming no overlap in intervals.
+    A special nan interval can be constructed, which is defined
+    as greater than ``[*, inf)``
+
+    Parameters
+    ----------
+        lo : float
+            Bin lower bound, inclusive
+        hi : float
+            Bin upper bound, exclusive
     """
     def __init__(self, lo, hi):
         self._lo = float(lo)
@@ -119,14 +126,17 @@ class Interval(object):
 
     @property
     def lo(self):
+        """Lower boundary of this bin, inclusive"""
         return self._lo
 
     @property
     def hi(self):
+        """Upper boundary of this bin, exclusive"""
         return self._hi
 
     @property
     def label(self):
+        """Label of this bin, mutable"""
         return self._label
 
     @label.setter
@@ -136,12 +146,18 @@ class Interval(object):
 
 @functools.total_ordering
 class StringBin(object):
-    """
-    A string used to fill a sparse axis
+    """A string used to fill a sparse axis
 
-    Totally ordered, lexicographically by name
+    Totally ordered, lexicographically by name.
 
-    The string representation can be overriden by custom label
+    Parameters
+    ----------
+        name : str
+            Name of the bin, as used in `Hist.fill` calls
+        label : str
+            The `str` representation of this bin can be overriden by
+            a custom label, which will be used preferentially in legends
+            produced by `hist.plot1d`, etc.
     """
     def __init__(self, name, label=None):
         if not isinstance(name, basestring):
@@ -172,10 +188,12 @@ class StringBin(object):
 
     @property
     def name(self):
+        """Name of this bin, *Immutable*"""
         return self._name
 
     @property
     def label(self):
+        """Label of this bin, mutable"""
         return self._label
 
     @label.setter
@@ -246,19 +264,20 @@ class SparseAxis(Axis):
 
 
 class Cat(SparseAxis):
-    """
-    Specify a category axis with name and label.
+    """A category axis with name and label
 
     Parameters
     ----------
-        name:
+        name : str
             is used as a keyword in histogram filling, immutable
-        label:
+        label : str
             describes the meaning of the axis, can be changed
-        sorting:
-            axis sorting, 'identifier' or 'placement' order
+        sorting : {'identifier', 'placement'}, optional
+            Axis sorting when listing identifiers.  Default 'placement'
+            Changing this setting can effect the order of stack plotting
+            in `hist.plot1d`.
 
-    Number of categories is arbitrary, and filled sparsely
+    The number of categories is arbitrary, and can be filled sparsely
     Identifiers are strings
     """
     def __init__(self, name, label, sorting='identifier'):
@@ -269,6 +288,17 @@ class Cat(SparseAxis):
         self._sorted = []
 
     def index(self, identifier):
+        """Index of a identifer or label
+
+        Parameters
+        ----------
+            identifier : str or StringBin
+                The identifier to lookup
+
+        Returns a `StringBin` corresponding to the given argument (trival in the case
+        where a `StringBin` was passed) and saves a reference internally in the case where
+        the identifier was not seen before by this axis.
+        """
         if isinstance(identifier, StringBin):
             index = identifier
         else:
@@ -325,9 +355,11 @@ class Cat(SparseAxis):
 
     @property
     def size(self):
+        """Number of bins"""
         return len(self._bins)
 
     def identifiers(self):
+        """List of `StringBin` identifiers"""
         return [self._bins[k] for k in self._sorted]
 
 
@@ -353,25 +385,24 @@ class DenseAxis(Axis):
 
 
 class Bin(DenseAxis):
-    """
-    Specify a binned axis with name and label, and binning.
+    """A binned axis with name, label, and binning.
 
     Parameters
     ----------
-        name:
+        name : str
             is used as a keyword in histogram filling, immutable
-        label:
+        label : str
             describes the meaning of the axis, can be changed
-        n_or_arr:
-            number of bins, if uniform binning, otherwise a list (or numpy 1D array) of bin boundaries
-        lo:
-            if uniform binning, minimum value
-        hi:
-            if uniform binning, maximum value
+        n_or_arr : int or list or np.ndarray
+            Integer number of bins, if uniform binning. Otherwise, a list or
+            numpy 1D array of bin boundaries.
+        lo : float, optional
+            lower boundary of bin range, if uniform binning
+        hi : float, optional
+            upper boundary of bin range, if uniform binning
 
-    Axis will generate frequencies for n+3 bins, special bin indices:
-        0 = underflow, n+1 = overflow, n+2 = nanflow
-
+    This axis will generate frequencies for n+3 bins, special bin indices:
+    ``0 = underflow, n+1 = overflow, n+2 = nanflow``
     Bin boundaries are [lo, hi)
     """
     def __init__(self, name, label, n_or_arr, lo=None, hi=None):
@@ -401,6 +432,17 @@ class Bin(DenseAxis):
             raise TypeError("Cannot understand n_or_arr (nbins or binning array) type %r" % n_or_arr)
 
     def index(self, identifier):
+        """Index of a identifer or label
+
+        Parameters
+        ----------
+            identifier : float or Interval or np.ndarray
+                The identifier(s) to lookup.  Supports vectorized
+                calls when a numpy 1D array of numbers is passed.
+
+        Returns a `Interval` corresponding to the given argument (trival in the case
+        where a `Interval` was passed)
+        """
         if (isinstance(identifier, np.ndarray) and len(identifier.shape) == 1) or isinstance(identifier, numbers.Number):
             if self._uniform:
                 idx = np.clip(np.floor((identifier - self._lo) * self._bins / (self._hi - self._lo)) + 1, 0, self._bins + 1)
@@ -492,10 +534,16 @@ class Bin(DenseAxis):
         raise IndexError("Cannot understand slice %r on axis %r" % (the_slice, self))
 
     def reduced(self, islice):
-        """
-        Return a new axis with binning corresponding to the slice made on this axis
-        overflow will be taken care of by Hist.__getitem__
-        islice should be as returned from _ireduce, start and stop should be None or within [1, size()-1]
+        """Return a new axis with reduced binning
+        
+        The new binning corresponds to the slice made on this axis.
+        Overflow will be taken care of by ``Hist.__getitem__``
+
+        Parameters
+        ----------
+            islice : slice
+                ``islice.start`` and ``islice.stop`` should be None or within ``[1, ax.size() - 1]``
+                This slice is usually as returned from ``Bin._ireduce``
         """
         if islice.step is not None:
             raise NotImplementedError("Step slicing can be interpreted as a rebin factor")
@@ -527,16 +575,20 @@ class Bin(DenseAxis):
 
     @property
     def size(self):
+        """Number of bins, including overflow (i.e. ``n + 3``)"""
         if self._uniform:
             return self._bins + 3
         # (inf added at constructor)
         return len(self._bins) + 1
 
     def edges(self, overflow='none'):
-        """
-        Bin boundaries
-            overflow: create overflow and/or underflow bins by adding a bin of same width to each end
-                only 'none', 'under', 'over', 'all' types are supported
+        """Bin boundaries
+
+        Parameters
+        ----------
+            overflow : str
+                Create overflow and/or underflow bins by adding a bin of same width to each end.
+                See `Hist.sum` description for the allowed values.
         """
         if self._uniform:
             out = np.linspace(self._lo, self._hi, self._bins + 1)
@@ -546,10 +598,19 @@ class Bin(DenseAxis):
         return out[overflow_behavior(overflow)]
 
     def centers(self, overflow='none'):
+        """Bin centers
+
+        Parameters
+        ----------
+            overflow : str
+                Create overflow and/or underflow bins by adding a bin of same width to each end.
+                See `Hist.sum` description for the allowed values.
+        """
         edges = self.edges(overflow)
         return (edges[:-1] + edges[1:]) / 2
 
     def identifiers(self, overflow='none'):
+        """List of `Interval` identifiers"""
         return self._intervals[overflow_behavior(overflow)]
 
 
@@ -640,7 +701,7 @@ class Hist(AccumulatorABC):
         self._sumw2 = None
 
     def axis(self, axis_name):
-        """Get an `Axis` object"""
+        """Get an ``Axis`` object"""
         if axis_name in self._axes:
             return self._axes[self._axes.index(axis_name)]
         raise KeyError("No axis %s found in %r" % (axis_name, self))
@@ -949,7 +1010,7 @@ class Hist(AccumulatorABC):
             mapping : dict
                 A mapping ``{'new_bin': (slice, ...), ...}`` where each
                 slice is on the axes being re-binned.  In the case of
-                a single axis for `old_axes`, ``{'new_bin': slice, ...}``
+                a single axis for ``old_axes``, ``{'new_bin': slice, ...}``
                 is admissible.
             overflow : str
                 See `sum` description for meaning of allowed values
@@ -1048,7 +1109,7 @@ class Hist(AccumulatorABC):
         Returns a mapping ``{(sparse identifier, ...): np.array(...), ...}``
         where each array has dimension `dense_dim` and shape matching
         the number of bins per axis, plus 0-3 overflow bins depending
-        on the `overflow` argument.
+        on the ``overflow`` argument.
         """
         def view_dim(arr):
             if self.dense_dim() == 0:
