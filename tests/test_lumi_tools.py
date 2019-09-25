@@ -24,13 +24,13 @@ def test_lumidata():
     )
     pyruns = lumidata._lumidata[:, 0].astype('u4')
     pylumis = lumidata._lumidata[:, 1].astype('u4')
-    LumiData.build_lumi_table_kernel.py_func(pyruns, pylumis, lumidata._lumidata, py_index)
+    LumiData._build_lumi_table_kernel.py_func(pyruns, pylumis, lumidata._lumidata, py_index)
 
     assert(len(py_index) == len(lumidata.index))
 
     # test get_lumi_kernel
     py_tot_lumi = np.zeros((1, ), dtype=np.float64)
-    LumiData.get_lumi_kernel.py_func(runslumis[:, 0], runslumis[:, 1], py_index, py_tot_lumi)
+    LumiData._get_lumi_kernel.py_func(runslumis[:, 0], runslumis[:, 1], py_index, py_tot_lumi)
 
     assert(abs(py_tot_lumi[0] - l) < 1e-4)
 
@@ -45,7 +45,7 @@ def test_lumimask():
 
     # test underlying py_func
     py_mask = np.zeros(dtype='bool', shape=runs.shape)
-    LumiMask.apply_run_lumi_mask_kernel.py_func(lumimask._masks,
+    LumiMask._apply_run_lumi_mask_kernel.py_func(lumimask._masks,
                                                 runs, lumis,
                                                 py_mask)
 

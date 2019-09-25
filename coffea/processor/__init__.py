@@ -1,6 +1,6 @@
 """A framework for analysis scale-out
 
-Details...
+
 """
 from .processor import ProcessorABC
 from .dataframe import (
