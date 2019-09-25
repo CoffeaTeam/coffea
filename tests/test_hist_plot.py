@@ -68,7 +68,7 @@ def test_plot1d():
     lepton_kinematics = fill_lepton_kinematics()
     
     # looking at lepton pt for all eta
-    lepton_pt = lepton_kinematics.project("eta", overflow='under')
+    lepton_pt = lepton_kinematics.integrate("eta", overflow='under')
 
     fig, ax, primitives = hist.plot1d(lepton_pt, overlay="flavor", stack=True,
                                       fill_opts={'alpha': .5, 'edgecolor': (0,0,0,0.3)})
@@ -93,7 +93,7 @@ def test_plot2d():
     lepton_kinematics = fill_lepton_kinematics()
     
     # looking at lepton pt for all eta
-    muon_kinematics = lepton_kinematics.project("flavor","muon")
+    muon_kinematics = lepton_kinematics.integrate("flavor","muon")
     
     fig, ax, primitives = hist.plot2d(muon_kinematics, "eta")
 

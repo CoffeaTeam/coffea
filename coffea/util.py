@@ -1,6 +1,5 @@
 """Utility functions
 
-Details...
 """
 try:
     import awkward.numba as awkward
@@ -19,8 +18,7 @@ import cloudpickle
 
 
 def load(filename):
-    '''
-    Load a coffea file from disk
+    '''Load a coffea file from disk
     '''
     with lz4.frame.open(filename) as fin:
         output = cloudpickle.load(fin)
@@ -28,9 +26,9 @@ def load(filename):
 
 
 def save(output, filename):
-    '''
-    Save a coffea object or collection thereof to disk
-    Suggested suffix: .coffea
+    '''Save a coffea object or collection thereof to disk
+
+    This function can accept any picklable object.  Suggested suffix: ``.coffea``
     '''
     with lz4.frame.open(filename, 'wb') as fout:
         cloudpickle.dump(output, fout)

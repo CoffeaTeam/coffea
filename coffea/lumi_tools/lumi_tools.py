@@ -7,12 +7,18 @@ from numba.typed import Dict
 
 
 class LumiData(object):
-    """
-    Class to hold and parse per-lumiSection integrated lumi values
-    as returned by brilcalc, e.g. with a command such as:
-    $ brilcalc lumi -c /cvmfs/cms.cern.ch/SITECONF/local/JobConfig/site-local-config.xml \
-                    -b "STABLE BEAMS" --normtag=/cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_PHYSICS.json \
-                    -u /pb --byls --output-style csv -i Cert_294927-306462_13TeV_PromptReco_Collisions17_JSON.txt > lumi2017.csv
+    r"""Holds per-lumiSection integrated lumi values
+
+    Parameters
+    ----------
+        lumi_csv : str
+            The path the the luminosity csv output file
+
+    The values are extracted from the csv output as returned by brilcalc, e.g. with a command such as::
+
+        brilcalc lumi -c /cvmfs/cms.cern.ch/SITECONF/local/JobConfig/site-local-config.xml \
+                 -b "STABLE BEAMS" --normtag=/cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_PHYSICS.json \
+                 -u /pb --byls --output-style csv -i Cert_294927-306462_13TeV_PromptReco_Collisions17_JSON.txt > lumi2017.csv
     """
     def __init__(self, lumi_csv):
         self._lumidata = np.loadtxt(lumi_csv, delimiter=',', usecols=(0, 1, 6, 7), converters={
@@ -26,32 +32,41 @@ class LumiData(object):
         self.build_lumi_table()
 
     def build_lumi_table(self):
+        """Build index for numba-compiled functions
+
+        This needs to be executed upon unpickling, it should be part of
+        a custom deserialize function.
+        """
         runs = self._lumidata[:, 0].astype('u4')
         lumis = self._lumidata[:, 1].astype('u4')
-        LumiData.build_lumi_table_kernel(runs, lumis, self._lumidata, self.index)
+        LumiData._build_lumi_table_kernel(runs, lumis, self._lumidata, self.index)
 
     @staticmethod
     @numba.njit(parallel=False, fastmath=False)
-    def build_lumi_table_kernel(runs, lumis, lumidata, index):
+    def _build_lumi_table_kernel(runs, lumis, lumidata, index):
         for i in range(len(runs)):
             run = runs[i]
             lumi = lumis[i]
             index[(run, lumi)] = float(lumidata[i, 2])
 
     def get_lumi(self, runlumis):
-        """
-        Return integrated lumi
-        runlumis: 2d numpy array of [[run,lumi], [run,lumi], ...] or LumiList object
+        """Calculate integrated lumi
+
+        Parameters
+        ----------
+            runlumis : numpy.ndarray or LumiList
+                A 2d numpy array of ``[[run,lumi], [run,lumi], ...]`` or `LumiList` object
+                of the lumiSections to integrate over.
         """
         if isinstance(runlumis, LumiList):
             runlumis = runlumis.array
         tot_lumi = np.zeros((1, ), dtype=np.float64)
-        LumiData.get_lumi_kernel(runlumis[:, 0], runlumis[:, 1], self.index, tot_lumi)
+        LumiData._get_lumi_kernel(runlumis[:, 0], runlumis[:, 1], self.index, tot_lumi)
         return tot_lumi[0]
 
     @staticmethod
     @numba.njit(parallel=False, fastmath=False)
-    def get_lumi_kernel(runs, lumis, index, tot_lumi):
+    def _get_lumi_kernel(runs, lumis, index, tot_lumi):
         ks_done = set()
         for iev in range(len(runs)):
             run = np.uint32(runs[iev])
@@ -63,10 +78,14 @@ class LumiData(object):
 
 
 class LumiMask(object):
-    """
-    Class that parses a 'golden json' into an efficient valid lumiSection lookup table
-    Instantiate with the json file, and call with an array of runs and lumiSections, to
-    return a boolean array, where valid lumiSections are marked True
+    """Holds a luminosity mask index, and provides vectorized lookup
+
+    Parameters
+    ----------
+        jsonfile : str
+            Path the the 'golden json' file or other valid lumiSection database in json format.
+
+    This class parses a CMS lumi json into an efficient valid lumiSection lookup table
     """
     def __init__(self, jsonfile):
         with open(jsonfile) as fin:
@@ -83,18 +102,33 @@ class LumiMask(object):
             self._masks[np.uint32(run)] = mask
 
     def __call__(self, runs, lumis):
+        """Check if run and lumi are valid
+
+        Parameters
+        ----------
+            runs : numpy.ndarray
+                Vectorized list of run numbers
+            lumis : numpy.ndarray
+                Vectorized list of lumiSection numbers
+
+        Returns
+        -------
+            mask_out : numpy.ndarray
+                An array of dtype `bool` where valid (run, lumi) tuples
+                will have their corresponding entry set ``True``.
+        """
         mask_out = np.zeros(dtype='bool', shape=runs.shape)
-        LumiMask.apply_run_lumi_mask(self._masks, runs, lumis, mask_out)
+        LumiMask._apply_run_lumi_mask(self._masks, runs, lumis, mask_out)
         return mask_out
 
     @staticmethod
-    def apply_run_lumi_mask(masks, runs, lumis, mask_out):
-        LumiMask.apply_run_lumi_mask_kernel(masks, runs, lumis, mask_out)
+    def _apply_run_lumi_mask(masks, runs, lumis, mask_out):
+        LumiMask._apply_run_lumi_mask_kernel(masks, runs, lumis, mask_out)
 
     # This could be run in parallel, but windows does not support it
     @staticmethod
     @numba.njit(parallel=False, fastmath=True)
-    def apply_run_lumi_mask_kernel(masks, runs, lumis, mask_out):
+    def _apply_run_lumi_mask_kernel(masks, runs, lumis, mask_out):
         for iev in numba.prange(len(runs)):
             run = np.uint32(runs[iev])
             lumi = np.uint32(lumis[iev])
@@ -107,9 +141,16 @@ class LumiMask(object):
 
 
 class LumiList(object):
-    """
-    Mergeable (using +=) list of unique (run,lumiSection) values
-    The member array can be passed to LumiData.get_lumi()
+    """Mergeable list of unique (run, lumiSection) values
+
+    This list can be merged with another via ``+=``.
+
+    Parameters
+    ----------
+        runs : numpy.ndarray
+            Vectorized list of run numbers
+        lumis : numpy.ndarray
+            Vectorized list of lumiSection values
     """
     def __init__(self, runs=None, lumis=None):
         self.array = np.zeros(shape=(0, 2))
@@ -125,4 +166,5 @@ class LumiList(object):
         return self
 
     def clear(self):
+        """Clear current lumi list"""
         self.array = np.zeros(shape=(0, 2))
