@@ -37,12 +37,12 @@ _default_cfg = Config(
 
 
 def _parsl_initialize(config=None):
-    dfk = parsl.load(config)
-    return dfk
+    parsl.clear()
+    parsl.load(config)
 
 
-def _parsl_stop(dfk):
-    dfk.cleanup()
+def _parsl_stop():
+    parsl.dfk().cleanup()
     parsl.clear()
 
 

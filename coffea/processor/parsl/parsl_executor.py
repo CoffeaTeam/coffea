@@ -78,7 +78,7 @@ class ParslExecutor(object):
     def counts(self):
         return self._counts
 
-    def __call__(self, dfk, items, processor_instance, output, status=True, unit='items', desc='Processing', timeout=None, flatten=True):
+    def __call__(self, items, processor_instance, output, status=True, unit='items', desc='Processing', timeout=None, flatten=True):
         procstr = lz4f.compress(cpkl.dumps(processor_instance))
 
         futures = set()

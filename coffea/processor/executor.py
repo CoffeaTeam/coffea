@@ -190,7 +190,7 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
     return out
 
 
-def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=None, executor_args={}, chunksize=500000):
+def run_parsl_job(fileset, treename, processor_instance, executor, executor_args={}, chunksize=500000):
     '''
     A convenience wrapper to submit jobs for a file, which is a
     dictionary of dataset: [file list] entries. In this case using parsl.
@@ -242,16 +242,16 @@ def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=Non
     executor_args.setdefault('chunking_timeout', 10)
     executor_args.setdefault('flatten', True)
 
-    # initialize spark if we need to
+    # initialize parsl if we need to
     # if we initialize, then we deconstruct
     # when we're done
     killParsl = False
-    if data_flow is None:
-        data_flow = _parsl_initialize(executor_args.get('config'))
+    if parsl.dfk() is None:
+        _parsl_initialize(executor_args.get('config'))
         killParsl = True
     else:
-        if not isinstance(data_flow, parsl.dataflow.dflow.DataFlowKernel):
-            raise ValueError("Expected 'data_flow' to be a parsl.dataflow.dflow.DataFlowKernel")
+        if not isinstance(parsl.dfk(), parsl.dataflow.dflow.DataFlowKernel):
+            raise ValueError("Expected parsl.dfk() to be a parsl.dataflow.dflow.DataFlowKernel")
 
     tn = treename
     to_chunk = []
@@ -273,11 +273,11 @@ def run_parsl_job(fileset, treename, processor_instance, executor, data_flow=Non
     executor_args.pop('config')
 
     output = processor_instance.accumulator.identity()
-    executor(data_flow, items, processor_instance, output, **executor_args)
+    executor(items, processor_instance, output, **executor_args)
     processor_instance.postprocess(output)
 
     if killParsl:
-        _parsl_stop(data_flow)
+        _parsl_stop()
 
     return output
 
