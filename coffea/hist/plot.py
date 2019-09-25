@@ -15,19 +15,25 @@ _coverage1sd = scipy.stats.norm.cdf(1) - scipy.stats.norm.cdf(-1)
 
 
 def poisson_interval(sumw, sumw2, coverage=_coverage1sd):
-    """
-        sumw: sum of weights
-        sumw2: sum weights**2
-        coverage: coverage, default to 68%
+    """Frequentist coverage interval for Poisson-distributed observations
 
-        The so-called 'Garwood' interval
-            c.f. https://www.ine.pt/revstat/pdf/rs120203.pdf
-            or http://ms.mcmaster.ca/peter/s743/poissonalpha.html
-        For weighted data, approximate the observed count by sumw**2/sumw2
-            This choice effectively scales the unweighted poisson interval by the average weight
-            Maybe not the best... see https://arxiv.org/pdf/1309.1287.pdf for a proper treatment
-        When a bin is zero, find the scale of the nearest nonzero bin
-        If all bins zero, raise warning and set interval to sumw
+    Parameters
+    ----------
+        sumw : numpy.ndarray
+            Sum of weights vector
+        sumw2 : numpy.ndarray
+            Sum weights squared vector
+        coverage : float, optional
+            Central coverage interval, defaults to 68%
+
+    Calculates the so-called 'Garwood' interval,
+    c.f. https://www.ine.pt/revstat/pdf/rs120203.pdf or
+    http://ms.mcmaster.ca/peter/s743/poissonalpha.html
+    For weighted data, this approximates the observed count by ``sumw**2/sumw2``, which
+    effectively scales the unweighted poisson interval by the average weight.
+    This may not be the optimal solution: see https://arxiv.org/pdf/1309.1287.pdf for a proper treatment.
+    When a bin is zero, the scale of the nearest nonzero bin is substituted to scale the nominal upper bound.
+    If all bins zero, a warning is generated and interval is set to ``sumw``.
     """
     scale = np.empty_like(sumw)
     scale[sumw != 0] = sumw2[sumw != 0] / sumw[sumw != 0]
@@ -49,13 +55,18 @@ def poisson_interval(sumw, sumw2, coverage=_coverage1sd):
 
 
 def clopper_pearson_interval(num, denom, coverage=_coverage1sd):
-    """
-        Compute Clopper-Pearson coverage interval for binomial distribution
-        num: successes
-        denom: trials
-        coverage: coverage, default to 68%
+    """Compute Clopper-Pearson coverage interval for a binomial distribution
 
-        c.f. http://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval
+    Parameters
+    ----------
+        num : numpy.ndarray
+            Numerator, or number of successes, vectorized
+        denom : numpy.ndarray
+            Denominator or number of trials, vectorized
+        coverage : float, optional
+            Central coverage interval, defaults to 68%
+
+    c.f. http://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval
     """
     if np.any(num > denom):
         raise ValueError("Found numerator larger than denominator while calculating binomial uncertainty")
@@ -69,43 +80,57 @@ def clopper_pearson_interval(num, denom, coverage=_coverage1sd):
 
 def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none', line_opts=None,
            fill_opts=None, error_opts=None, overlay_overflow='none', density=False, binwnorm=None):
-    """
+    """Create a 1D plot from a 1D or 2D `Hist` object
+
     Parameters
     ----------
-        hist:
-            Hist object with maximum of two dimensions
-        ax:
-            matplotlib Axes object (if None, one is created)
-        clear:
-            clear Axes before drawing (if passed); if False, this function will skip drawing the legend
-        overlay:
-            the axis of hist to overlay (remaining one will be x axis)
-        stack:
-            whether to stack or overlay the other dimension (if one exists)
-        overflow:
-            overflow behavior of plot axis (see Hist.sum() docs)
-        overlay_overflow:
-            overflow behavior of dense overlay axis, if one exists
-        density:
-            Convert sum weights to probability density (i.e. integrates to 1 over domain of axis) (NB: conflicts with binwnorm)
-        binwnorm:
-            Convert sum weights to bin-width-normalized, with units equal to supplied value (usually you want to specify 1.)
+        hist : Hist
+            Histogram with maximum of two dimensions
+        ax : matplotlib.axes.Axes, optional
+            Axes object (if None, one is created)
+        clear : bool, optional
+            Whether to clear Axes before drawing (if passed); if False, this function will skip drawing the legend
+        overlay : str, optional
+            In the case that ``hist`` is 2D, specify the axis of hist to overlay (remaining axis will be x axis)
+        stack : bool, optional
+            Whether to stack or overlay non-axis dimension (if it exists)
+        overflow : str, optional
+            If overflow behavior is not 'none', extra bins will be drawn on either end of the nominal
+            axis range, to represent the contents of the overflow bins.  See `Hist.sum` documentation
+            for a description of the options.
+        line_opts : dict, optional
+            A dictionary of options to pass to the matplotlib
+            `ax.step <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.pyplot.step.html>`_ call
+            internal to this function.  Leave blank for defaults.
+        fill_opts : dict, optional
+            A dictionary of options to pass to the matplotlib
+            `ax.fill_between <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.axes.Axes.fill_between.html>`_ call
+            internal to this function.  Leave blank for defaults.
+        error_opts : dict, optional
+            A dictionary of options to pass to the matplotlib
+            `ax.errorbar <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.pyplot.errorbar.html>`_ call
+            internal to this function.  Leave blank for defaults.  Some special options are interpreted by
+            this function and not passed to matplotlib: 'emarker' (default: '') specifies the marker type
+            to place at cap of the errorbar.
+        overlay_overflow : str, optional
+            If overflow behavior is not 'none', extra bins in the overlay axis will be overlayed or stacked,
+            to represent the contents of the overflow bins.  See `Hist.sum` documentation for a description of the options.
+        density : bool, optional
+            If true, convert sum weights to probability density (i.e. integrates to 1 over domain of axis)
+            (Note: this option conflicts with ``binwnorm``)
+        binwnorm : float, optional
+            If true, convert sum weights to bin-width-normalized, with unit equal to supplied value (usually you want to specify 1.)
 
-    The draw options are passed as dicts to the relevant matplotlib function, with some exceptions in case
-    it is especially common or useful.  If none of ``*_opts`` is specified, nothing will be plotted!
 
-    Pass an empty dict (e.g. line_opts={}) for defaults
-        line_opts: options to plot a step
-            Special options interpreted by this function and not passed to matplotlib:
-                (none)
-
-        fill_opts: to plot a filled area
-            Special options interpreted by this function and not passed to matplotlib:
-                (none)
-
-        error_opts: to plot an errorbar
-            Special options interpreted by this function and not passed to matplotlib:
-                'emarker' (default: '') marker to place at cap of errorbar
+    Returns
+    -------
+        fig : matplotlib.figure.Figure
+            A matplotlib `Figure <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.figure.Figure.html>`_ object
+        ax : matplotlib.axes.Axes
+            A matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ object
+        primitives : dict
+            A dictionary mapping the overlay identifier (or ``None`` if no overlay axis) to the
+            set of drawn primitives.  This can be used to modify the primitives if needed, or ignored.
     """
     import matplotlib.pyplot as plt
     if ax is None:
@@ -237,49 +262,51 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
 
 
 def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None, denom_fill_opts=None, guide_opts=None, unc='clopper-pearson', label=None):
-    """
-    Create a ratio plot, dividing two compatible histograms
+    """Create a ratio plot, dividing two compatible histograms
 
     Parameters
     ----------
-        num:
-            Hist object with single axis
-        denom:
-            Hist object with identical axis to num
-        ax:
-            matplotlib Axes object (if None, one is created)
-        clear:
-            clear Axes before drawing (if passed); if False, this function will skip drawing the legend
-        overflow:
-            overflow behavior of plot axis (see Hist.sum() docs)
-        error_opts:
-            to plot an errorbar
-            Special options interpreted by this function and not passed to matplotlib:
-            'emarker' (default: '') marker to place at cap of errorbar
-        denom_fill_opts:
-            to plot a filled area centered at 1, representing denominator uncertainty
-            Special options interpreted by this function and not passed to matplotlib:
-            (none)
-        guide_opts:
-            to plot a horizontal guide line at ratio of 1.
-            Special options interpreted by this function and not passed to matplotlib:
-            (none)
-        unc:
-            Uncertainty calculation option:
-                'clopper-pearson':
-                    interval for efficiencies
-                'poisson-ratio':
-                    interval for ratio of poisson distributions
-                'num':
-                    poisson interval of numerator scaled by denominator value
+        num : Hist
+            Numerator, a single-axis histogram
+        denom : Hist
+            Denominator, a single-axis histogram
+        ax : matplotlib.axes.Axes, optional
+            Axes object (if None, one is created)
+        clear : bool, optional
+            Whether to clear Axes before drawing (if passed); if False, this function will skip drawing the legend
+        overflow : str, optional
+            If overflow behavior is not 'none', extra bins will be drawn on either end of the nominal
+            axis range, to represent the contents of the overflow bins.  See `Hist.sum` documentation
+            for a description of the options.
+        error_opts : dict, optional
+            A dictionary of options to pass to the matplotlib
+            `ax.errorbar <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.pyplot.errorbar.html>`_ call
+            internal to this function.  Leave blank for defaults.  Some special options are interpreted by
+            this function and not passed to matplotlib: 'emarker' (default: '') specifies the marker type
+            to place at cap of the errorbar.
+        denom_fill_opts : dict, optional
+            A dictionary of options to pass to the matplotlib
+            `ax.fill_between <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.axes.Axes.fill_between.html>`_ call
+            internal to this function, filling the denominator uncertainty band.  Leave blank for defaults.
+        guide_opts : dict, optional
+            A dictionary of options to pass to the matplotlib
+            `ax.axhline <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.axes.Axes.axhline.html>`_ call
+            internal to this function, to plot a horizontal guide line at ratio of 1.  Leave blank for defaults.
+        unc : str, optional
+            Uncertainty calculation option: 'clopper-pearson' interval for efficiencies; 'poisson-ratio' interval
+            for ratio of poisson distributions; 'num' poisson interval of numerator scaled by denominator value
+            (common for data/mc, for better or worse).
+        label : str, optional
+            Associate a label to this entry (note: y axis label set by ``num.label``)
 
-            (common for data/mc, for better or worse...)
-        label:
-            associate a label with this entry (note: y axis label set by num.label)
-
-    The draw options are passed as dicts to the relevant matplotlib function, with some exceptions in case
-    it is especially common or useful.  If none of ``*_opts`` is specified, nothing will be plotted!
-    Pass an empty dict (e.g. error_opts={}) for defaults.
+    Returns
+    -------
+        fig : matplotlib.figure.Figure
+            A matplotlib `Figure <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.figure.Figure.html>`_ object
+        ax : matplotlib.axes.Axes
+            A matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ object
+        primitives : dict
+            A dictionary of drawn primitives.  This can be used to modify the primitives if needed, or ignored.
     """
     import matplotlib.pyplot as plt
     if ax is None:
@@ -349,39 +376,47 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
 
 
 def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none', patch_opts=None, text_opts=None, density=False, binwnorm=None):
-    """
+    """Create a 2D plot from a 2D `Hist` object
+
     Parameters
     ----------
-        hist:
-            Hist object with two dimensions
-        xaxis:
-            which of the two dimensions to use as x axis
-        ax:
-            matplotlib Axes object (if None, one is created)
-        clear:
-            clear Axes before drawing (if passed); if False, this function will skip drawing the colorbar
-        xoverflow:
-            overflow behavior of x axis (see Hist.sum() docs)
-        yoverflow:
-            overflow behavior of y axis (see Hist.sum() docs)
-        patch_opts:
-            options to plot a rectangular grid of patches colored according to the bin values
-            See https://matplotlib.org/api/_as_gen/matplotlib.pyplot.pcolormesh.html for details
-            Special options interpreted by this function and not passed to matplotlib:
-            (none)
-        text_opts: options to draw text values at bin centers
-            See https://matplotlib.org/api/text_api.html#matplotlib.text.Text for details
-            Special options interpreted by this function and not passed to matplotlib:
-            'format': printf-style float format, default '%.2g'
-        density:
-            Convert sum weights to probability density (i.e. integrates to 1 over domain of axes) (NB: conflicts with binwnorm)
-        binwnorm:
-            Convert sum weights to bin-area-normalized, with units equal to supplied value (usually you want to specify 1.)
+        hist : Hist
+            Histogram with two dimensions
+        xaxis : str or Axis
+            Which of the two dimensions to use as an x axis
+        ax : matplotlib.axes.Axes, optional
+            Axes object (if None, one is created)
+        clear : bool, optional
+            Whether to clear Axes before drawing (if passed); if False, this function will skip drawing the legend
+        xoverflow : str, optional
+            If overflow behavior is not 'none', extra bins will be drawn on either end of the nominal x
+            axis range, to represent the contents of the overflow bins.  See `Hist.sum` documentation
+            for a description of the options.
+        yoverflow : str, optional
+            Similar to ``xoverflow``
+        patch_opts : dict, optional
+            Options passed to the matplotlib `pcolormesh <https://matplotlib.org/api/_as_gen/matplotlib.pyplot.pcolormesh.html>`_
+            call internal to this function, to plot a rectangular grid of patches colored according to the bin values.
+            Leave empty for defaults.
+        text_opts : dict, optional
+            Options passed to the matplotlib `text <https://matplotlib.org/api/text_api.html#matplotlib.text.Text>`_
+            call internal to this function, to place a text label at each bin center with the bin value.  Special
+            options interpreted by this function and not passed to matplotlib: 'format': printf-style float format
+            , default '%.2g'.
+        density : bool, optional
+            If true, convert sum weights to probability density (i.e. integrates to 1 over domain of axis)
+            (Note: this option conflicts with ``binwnorm``)
+        binwnorm : float, optional
+            If true, convert sum weights to bin-width-normalized, with unit equal to supplied value (usually you want to specify 1.)
 
-    The draw options are passed as dicts to the relevant matplotlib function, with some exceptions in case
-    it is especially common or useful.  If none of ``*_opts`` is specified, nothing will be plotted!
-    Pass an empty dict (e.g. patch_opts={}) for defaults
-
+    Returns
+    -------
+        fig : matplotlib.figure.Figure
+            A matplotlib `Figure <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.figure.Figure.html>`_ object
+        ax : matplotlib.axes.Axes
+            A matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ object
+        primitives : dict
+            A dictionary of drawn primitives.  This can be used to modify the primitives if needed, or ignored.
     """
     import matplotlib.pyplot as plt
     if ax is None:
@@ -461,21 +496,36 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
 
 
 def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='none', col_overflow='none', **plot_opts):
-    """
-    Create a grid of plots, enumerating identifiers on up to 3 axes.
+    """Create a grid of plots, enumerating identifiers on up to 3 axes
 
     Parameters
     ----------
-        row:
-            name of row axis
-        col:
-            name of column axis
-        overlay:
+        h : Hist
+            A histogram with up to 3 axes
+        figure : matplotlib.figure.Figure, optional
+            If omitted, a new figure is created. Otherwise, the axes will be redrawn on this existing figure.
+        row : str
+            Name of row axis
+        col : str
+            Name of column axis
+        overlay : str
             name of overlay axis
+        row_overflow : str, optional
+            If overflow behavior is not 'none', extra bins will be drawn on either end of the nominal x
+            axis range, to represent the contents of the overflow bins.  See `Hist.sum` documentation
+            for a description of the options.
+        col_overflow : str, optional
+            Similar to ``row_overflow``
+        ``**plot_opts`` : kwargs
+            The remaining axis of the histogram, after removing any of ``row,col,overlay`` specified,
+            will be the plot axis, with ``plot_opts`` passed to the `plot1d` call.
 
-    The remaining axis will be the plot axis, with plot_opts passed to the plot1d() call
-
-    Pass a figure object to redraw on existing figure
+    Returns
+    -------
+        fig : matplotlib.figure.Figure
+            A matplotlib `Figure <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.figure.Figure.html>`_ object
+        axes : numpy.ndarray
+            An array of matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ objects
     """
     import matplotlib.pyplot as plt
     haxes = set(ax.name for ax in h.axes())

@@ -21,6 +21,8 @@ from .export import (
     export1d,
 )
 from .plot import (
+    poisson_interval,
+    clopper_pearson_interval,
     plot1d,
     plotratio,
     plot2d,
@@ -34,6 +36,8 @@ __all__ = [
     'Cat',
     'StringBin',
     'export1d',
+    'poisson_interval',
+    'clopper_pearson_interval',
     'plot1d',
     'plotratio',
     'plot2d',

@@ -3,6 +3,31 @@ from uproot_methods.classes.TH1 import Methods as TH1Methods
 
 
 def export1d(hist):
+    """Export a 1-dimensional `Hist` object to uproot
+
+    This allows one to write a coffea histogram into a ROOT file, via uproot.
+
+    Parameters
+    ----------
+        hist : Hist
+            A 1-dimensional histogram object
+
+    Returns
+    -------
+        out
+            A ``uproot_methods.classes.TH1`` object
+
+    Examples
+    --------
+    Creating a coffea histogram, filling, and writing to a file:
+
+    >>> import coffea, uproot, numpy
+    >>> h = coffea.hist.Hist("Events", coffea.hist.Bin("var", "some variable", 20, 0, 1))
+    >>> h.fill(var=numpy.random.normal(size=100))
+    >>> fout = uproot.create('output.root')
+    >>> fout['myhist'] = coffea.hist.export1d(h)
+    >>> fout.close()
+    """
     if hist.dense_dim() != 1:
         raise ValueError("export1d() can only support one dense dimension")
     if hist.sparse_dim() != 0:

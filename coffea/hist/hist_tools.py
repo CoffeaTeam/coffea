@@ -535,7 +535,7 @@ class Bin(DenseAxis):
 
     def reduced(self, islice):
         """Return a new axis with reduced binning
-        
+
         The new binning corresponds to the slice made on this axis.
         Overflow will be taken care of by ``Hist.__getitem__``
 
@@ -854,7 +854,7 @@ class Hist(AccumulatorABC):
 
         Filling the histogram from the `Hist` example:
 
-        >>> h.fill(sample='ducks', x=np.random.normal(10), y=np.random.normal(10), weight=np.ones(10) * 3)
+        >>> h.fill(sample='ducks', x=np.random.normal(size=10), y=np.random.normal(size=10), weight=np.ones(size=10) * 3)
 
         """
         if not all(d.name in values for d in self._axes):
