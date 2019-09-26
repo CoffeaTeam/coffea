@@ -3,7 +3,7 @@ from ..util import numpy as np
 
 class Weights(object):
     """Container for event weights and associated systematic shifts
-    
+
     This container keeps track of correction factors and systematic
     effects that can be encoded as multiplicative modifiers to the event weight.
     All weights are stored in vector form.
@@ -25,7 +25,7 @@ class Weights(object):
 
     def add(self, name, weight, weightUp=None, weightDown=None, shift=False):
         """Add a new weight
-        
+
         Adds a named correction to the event weight, and optionally also associated
         systematic uncertainties.
 
@@ -204,12 +204,12 @@ class PackedSelection(object):
 
         >>> selection.names
         ['cut1', 'cut2', 'cut3']
-            
+
         then
 
         >>> selection.require(cut1=True, cut2=False)
         array([True, False, True, ...])
-        
+
         returns a boolean array where each entry passes if the corresponding entry has
         ``cut1 == True``, ``cut2 == False``, and ``cut3`` arbitrary.
         """

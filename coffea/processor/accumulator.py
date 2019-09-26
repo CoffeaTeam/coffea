@@ -11,7 +11,7 @@ except ImportError:
 
 class AccumulatorABC(with_metaclass(ABCMeta)):
     '''ABC for an accumulator
-    
+
     Derived class must implement:
         - ``identity()``: returns a new object of same type as self,
           such that ``self + self.identity() == self``
@@ -52,7 +52,7 @@ class AccumulatorABC(with_metaclass(ABCMeta)):
 
 class value_accumulator(AccumulatorABC):
     '''Holds a value of arbitrary type
-    
+
     Parameters
     ----------
         default_factory : callable
@@ -83,7 +83,7 @@ class value_accumulator(AccumulatorABC):
 
 class set_accumulator(set, AccumulatorABC):
     '''A set with accumulator semantics
-    
+
     See `set` for further info
     '''
     def identity(self):
@@ -91,7 +91,7 @@ class set_accumulator(set, AccumulatorABC):
 
     def add(self, other):
         '''Add another accumulator to this one in-place
-        
+
         Note
         ----
         This replaces `set.add` behavior, unfortunately.
