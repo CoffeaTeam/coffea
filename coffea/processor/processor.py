@@ -11,6 +11,37 @@ class ProcessorABC(with_metaclass(ABCMeta)):
     No attempt should be made to track state inside an instance of ProcessorABC, it is to be
     treated simply as a bundle of methods.  The only exception is the read-only accumulator
     property.
+
+    Examples
+    --------
+
+    A skeleton processor::
+
+        from coffea import hist, processor
+
+        class MyProcessor(processor.ProcessorABC):
+            def __init__(self, flag=False):
+                self._flag = flag
+                self._accumulator = processor.dict_accumulator({
+                    "sumw": processor.defaultdict_accumulator(float),
+                })
+
+            @property
+            def accumulator(self):
+                return self._accumulators
+
+            def process(self, df):
+                output = self.accumulator.identity()
+
+                # ...
+
+                return output
+
+            def postprocess(self, accumulator):
+                return accumulator
+
+        p = MyProcessor()
+
     '''
     @property
     @abstractmethod

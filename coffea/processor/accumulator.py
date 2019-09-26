@@ -10,20 +10,27 @@ except ImportError:
 
 
 class AccumulatorABC(with_metaclass(ABCMeta)):
-    '''
-    ABC for an accumulator.  Derived must implement:
-        identity: returns a new object of same type as self,
-            such that self + self.identity() == self
-        add(other): adds an object of same type as self to self
+    '''ABC for an accumulator
+    
+    Derived class must implement:
+        - ``identity()``: returns a new object of same type as self,
+          such that ``self + self.identity() == self``
+        - ``add(other)``: adds an object of same type as self to self
 
-    Concrete implementations are provided for __add__, __radd__, __iadd__
+    Concrete implementations are then provided for ``__add__``, ``__radd__``, and ``__iadd__``
     '''
     @abstractmethod
     def identity(self):
+        '''Identity of the accumulator
+
+        A value such that any other value added to it will return
+        the other value
+        '''
         pass
 
     @abstractmethod
     def add(self, other):
+        '''Add another accumulator to this one in-place'''
         pass
 
     def __add__(self, other):
@@ -44,9 +51,14 @@ class AccumulatorABC(with_metaclass(ABCMeta)):
 
 
 class value_accumulator(AccumulatorABC):
-    '''
-    Holds a value of arbitrary type, with identity
-    as constructed by default_factory
+    '''Holds a value of arbitrary type
+    
+    Parameters
+    ----------
+        default_factory : callable
+            a function that returns an instance of the desired identity value
+        initial : bool, optional
+            an initial value, if the identity is not the desired initial value
     '''
     def __init__(self, default_factory, initial=None):
         self.value = default_factory() if initial is None else initial
@@ -70,13 +82,21 @@ class value_accumulator(AccumulatorABC):
 
 
 class set_accumulator(set, AccumulatorABC):
-    '''
-    A set with accumulator semantics
+    '''A set with accumulator semantics
+    
+    See `set` for further info
     '''
     def identity(self):
         return set_accumulator()
 
     def add(self, other):
+        '''Add another accumulator to this one in-place
+        
+        Note
+        ----
+        This replaces `set.add` behavior, unfortunately.
+        A workaround is to use `set.update`, e.g. ``a.update({'val'})``
+        '''
         if isinstance(other, Set):
             set.update(self, other)
         else:
@@ -84,9 +104,10 @@ class set_accumulator(set, AccumulatorABC):
 
 
 class dict_accumulator(dict, AccumulatorABC):
-    '''
-    Like a dict but also has accumulator semantics
-    It is assumed that the contents of the dict have accumulator semantics
+    '''A dictionary with accumulator semantics
+
+    See `dict` for further info.
+    It is assumed that the contents of the dict have accumulator semantics.
     '''
     def identity(self):
         ret = dict_accumulator()
@@ -108,8 +129,9 @@ class dict_accumulator(dict, AccumulatorABC):
 
 
 class defaultdict_accumulator(defaultdict, AccumulatorABC):
-    '''
-    Like a defaultdict but also has accumulator semantics
+    '''A defaultdict with accumulator semantics
+
+    See `collections.defaultdict` for further info.
     It is assumed that the contents of the dict have accumulator semantics
     '''
     def identity(self):
@@ -121,6 +143,30 @@ class defaultdict_accumulator(defaultdict, AccumulatorABC):
 
 
 class column_accumulator(AccumulatorABC):
+    '''An appendable numpy ndarray
+
+    Parameters
+    ----------
+        value : numpy.ndarray
+            The identity value array, which should be an empty ndarray
+            with the desired row shape. The column dimension will correspond to
+            the first index of `value` shape.
+
+    Examples
+    --------
+    If a set of accumulators is defined as::
+
+        a = column_accumulator(np.array([]))
+        b = column_accumulator(np.array([1., 2., 3.]))
+        c = column_accumulator(np.array([4., 5., 6.]))
+
+    then:
+
+    >>> a + b
+    column_accumulator(array([1., 2., 3.]))
+    >>> c + b + a
+    column_accumulator(array([4., 5., 6., 1., 2., 3.]))
+    '''
     def __init__(self, value):
         if not isinstance(value, numpy.ndarray):
             raise ValueError("column_accumulator only works with numpy arrays")
@@ -143,4 +189,8 @@ class column_accumulator(AccumulatorABC):
 
     @property
     def value(self):
+        '''The current value of the column
+
+        Returns a numpy array where the first dimension is the column dimension
+        '''
         return self._value

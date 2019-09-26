@@ -16,6 +16,7 @@ from .executor import (
     run_spark_job
 )
 from .accumulator import (
+    AccumulatorABC,
     value_accumulator,
     set_accumulator,
     dict_accumulator,
@@ -34,6 +35,7 @@ __all__ = [
     'run_uproot_job',
     'run_parsl_job',
     'run_spark_job',
+    'AccumulatorABC',
     'value_accumulator',
     'set_accumulator',
     'dict_accumulator',
