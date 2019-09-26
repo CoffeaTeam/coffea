@@ -630,14 +630,17 @@ class Hist(AccumulatorABC):
     Examples
     --------
 
-    Creating a histogram with a sparse axis, and two dense axes:
+    Creating a histogram with a sparse axis, and two dense axes::
 
-    >>> h = coffea.hist.Hist("Events",
-    ...                      coffea.hist.Cat("sample", "Sample name"),
-    ...                      coffea.hist.Bin("x", "x coordinate [cm]", 20, -5, 5),
-    ...                      coffea.hist.Bin("y", "y coordinate [cm]", 20, -5, 5),
-    ...                      )
-    ... h
+        h = coffea.hist.Hist("Events",
+                             coffea.hist.Cat("sample", "Sample name"),
+                             coffea.hist.Bin("x", "x coordinate [cm]", 20, -5, 5),
+                             coffea.hist.Bin("y", "y coordinate [cm]", 20, -5, 5),
+                             )
+
+    which produces:
+
+    >>> h
     <Hist (sample,x,y) instance at 0x10d84b550>
 
     """

@@ -19,14 +19,15 @@ def export1d(hist):
 
     Examples
     --------
-    Creating a coffea histogram, filling, and writing to a file:
+    Creating a coffea histogram, filling, and writing to a file::
 
-    >>> import coffea, uproot, numpy
-    >>> h = coffea.hist.Hist("Events", coffea.hist.Bin("var", "some variable", 20, 0, 1))
-    >>> h.fill(var=numpy.random.normal(size=100))
-    >>> fout = uproot.create('output.root')
-    >>> fout['myhist'] = coffea.hist.export1d(h)
-    >>> fout.close()
+        import coffea, uproot, numpy
+        h = coffea.hist.Hist("Events", coffea.hist.Bin("var", "some variable", 20, 0, 1))
+        h.fill(var=numpy.random.normal(size=100))
+        fout = uproot.create('output.root')
+        fout['myhist'] = coffea.hist.export1d(h)
+        fout.close()
+
     """
     if hist.dense_dim() != 1:
         raise ValueError("export1d() can only support one dense dimension")

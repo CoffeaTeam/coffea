@@ -29,6 +29,23 @@ if not hasattr(uproot.source.xrootd.XRootDSource, '_read_real'):
 
 def iterative_executor(items, function, accumulator, status=True, unit='items', desc='Processing',
                        **kwargs):
+    """Execute in one thread iteratively
+
+    Parameters
+    ----------
+        items : list
+            List of input arguments
+        function : function
+            A function to be called on each input, which returns an accumulator instance
+        accumulator : AccumulatorABC
+            An accumulator to collect the output of the function
+        status : bool
+            If true (default), enable progress bar
+        unit : str
+            Label of progress bar unit
+        desc : str
+            Label of progress bar description
+    """
     for i, item in tqdm(enumerate(items), disable=not status, unit=unit, total=len(items), desc=desc):
         accumulator += function(item, **kwargs)
     return accumulator
@@ -64,6 +81,25 @@ def futures_handler(futures_set, output, status, unit, desc, futures_accumulator
 
 def futures_executor(items, function, accumulator, workers=1, status=True, unit='items', desc='Processing',
                      **kwargs):
+    """Execute using multiple local cores using python futures
+
+    Parameters
+    ----------
+        items : list
+            List of input arguments
+        function : function
+            A function to be called on each input, which returns an accumulator instance
+        accumulator : AccumulatorABC
+            An accumulator to collect the output of the function
+        workers : int
+            Number of parallel processes for futures
+        status : bool
+            If true (default), enable progress bar
+        unit : str
+            Label of progress bar unit
+        desc : str
+            Label of progress bar description
+    """
     with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
         futures = set()
         futures.update(executor.submit(function, item, **kwargs) for item in items)
@@ -120,7 +156,8 @@ def _get_chunking_lazy(filelist, treename, chunksize):
 
 
 def run_uproot_job(fileset, treename, processor_instance, executor, executor_args={}, chunksize=500000, maxchunks=None):
-    '''
+    '''A tool to run jobs on a local machine
+
     A convenience wrapper to submit jobs for a file set, which is a
     dictionary of dataset: [file list] entries.  Supports only uproot
     reading, via the LazyDataFrame class.  For more customized processing,
@@ -129,31 +166,30 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
 
     Parameters
     ----------
-        fileset:
+        fileset : dict
             dictionary {dataset: [file, file], }
-        treename:
+        treename : str
             name of tree inside each root file, can be ``None``
 
             .. note:: treename can also be defined in fileset, which will override the passed treename
-        processor_instance:
-            an instance of a class deriving from ProcessorABC
-        executor:
-            any of `iterative_executor`, `futures_executor`, etc.
-
-            In general, a function that takes 3 arguments: items, function accumulator
+        processor_instance : ProcessorABC
+            An instance of a class deriving from ProcessorABC
+        executor : iterative_executor or futures_executor
+            A function that takes 3 arguments: items, function, accumulator
             and performs some action equivalent to:
-            for item in items: accumulator += function(item)
-        executor_args:
-            extra arguments to pass to executor
-            currently supported:
-                workers: number of parallel processes for futures
-                pre_workers: number of parallel threads for calculating chunking
-                savemetrics: save some detailed metrics for xrootd processing
-                flatten: flatten all branches returned by the dataframe (no jagged structure)
-        chunksize:
-            number of entries to process at a time in the data frame
-        maxchunks:
-            maximum number of chunks to process per dataset
+            ``for item in items: accumulator += function(item)``
+        executor_args : dict, optional
+            Extra arguments to pass to executor.  See `iterative_executor` or
+            `futures_executor` for available options.  Some options that
+            affect the behavior of this function: 'pre_workers' specifies the
+            number of parallel threads for calculating chunking (default: 4*workers);
+            'savemetrics' saves some detailed metrics for xrootd processing (default False);
+            'flatten' removes any jagged structure from the input files (default False).
+        chunksize : int, optional
+            Number of entries to process at a time in the data frame
+        maxchunks : int, optional
+            Maximum number of chunks to process per dataset
+            Defaults to processing the whole dataset
     '''
     if not isinstance(fileset, Mapping):
         raise ValueError("Expected fileset to be a mapping dataset: list(files)")
@@ -191,32 +227,32 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
 
 
 def run_parsl_job(fileset, treename, processor_instance, executor, executor_args={}, chunksize=500000):
-    '''
-    A convenience wrapper to submit jobs for a file, which is a
-    dictionary of dataset: [file list] entries. In this case using parsl.
-    Supports only uproot reading, via the LazyDataFrame class.
-    For more customized processing,
+    '''A wrapper to submit parsl jobs
+
+    Jobs are specified by a file set, which is a dictionary of
+    dataset: [file list] entries.  Supports only uproot reading,
+    via the LazyDataFrame class.  For more customized processing,
     e.g. to read other objects from the files and pass them into data frames,
     one can write a similar function in their user code.
 
     Parameters
     ----------
-        fileset:
+        fileset : dict
             dictionary {dataset: [file, file], }
-        treename:
+        treename : str
             name of tree inside each root file
-        processor_instance:
-            an instance of a class deriving from ProcessorABC
-        executor:
-            anything that inherits from `ParslExecutor` like `parsl_executor`
+        processor_instance : ProcessorABC
+            An instance of a class deriving from ProcessorABC
+        executor : coffea.processor.parsl.parsl_executor
+            Must be the parsl executor, or otherwise derive from
+            ``coffea.processor.parsl.ParslExecutor``
+        executor_args : dict
+            Extra arguments to pass to executor.  Special options
+            interpreted here: 'config' provides a parsl dataflow
+            configuration.
+        chunksize : int, optional
+            Number of entries to process at a time in the data frame
 
-            In general, a function that takes 3 arguments: items, function accumulator
-            and performs some action equivalent to:
-            for item in items: accumulator += function(item)
-        executor_args:
-            extra arguments to pass to executor
-        chunksize:
-            number of entries to process at a time in the data frame
     '''
 
     try:
@@ -284,7 +320,8 @@ def run_parsl_job(fileset, treename, processor_instance, executor, executor_args
 
 def run_spark_job(fileset, processor_instance, executor, executor_args={},
                   spark=None, partitionsize=200000, thread_workers=16):
-    '''
+    '''A wrapper to submit spark jobs
+
     A convenience wrapper to submit jobs for spark datasets, which is a
     dictionary of dataset: [file list] entries.  Presently supports reading of
     parquet files converted from root.  For more customized processing,
@@ -293,10 +330,10 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
 
     Parameters
     ----------
-        fileset:
+        fileset : dict
             dictionary {dataset: [file, file], }
-        processor_instance:
-            an instance of a class deriving from ProcessorABC
+        processor_instance : ProcessorABC
+            An instance of a class deriving from ProcessorABC
 
             .. note:: The processor instance must define all the columns in data and MC that it reads as ``.columns``
         executor:

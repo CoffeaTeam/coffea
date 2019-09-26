@@ -7,9 +7,23 @@ except ImportError:
 
 
 class LazyDataFrame(MutableMapping):
-    """
-    Simple delayed uproot reader (a la lazyarrays)
+    """Simple delayed uproot reader (a la lazyarrays)
+
     Keeps track of values accessed, for later parsing.
+
+    Parameters
+    ----------
+        tree : uproot.TTree
+            Tree to read
+        stride : int, optional
+            Size of chunk to read from the tree.
+            Default: whole tree
+        index : int, optional
+            Chunk index to read
+        preload_items : iterable
+            Force preloading of a set of columns from the tree
+        flatten : bool
+            Remove jagged structure from columns read
     """
     def __init__(self, tree, stride=None, index=None, preload_items=None, flatten=False):
         self._tree = tree
@@ -49,29 +63,45 @@ class LazyDataFrame(MutableMapping):
 
     @property
     def available(self):
+        """List of available columns"""
         return self._tree.keys()
 
     @property
     def materialized(self):
+        """List of columns read from tree"""
         return self._materialized
 
     @property
     def size(self):
+        """Length of column vector"""
         if self._stride is None:
             return self._tree.numentries
         return (self._branchargs['entrystop'] - self._branchargs['entrystart'])
 
     def preload(self, columns):
+        """Force loading of several columns
+
+        Parameters
+        ----------
+            columns : iterable
+                A list of columns to load
+        """
         for name in columns:
             if name in self._tree:
                 _ = self[name]
 
 
 class PreloadedDataFrame(MutableMapping):
-    """
-    For instances like spark where the columns are preloaded
-    Require input number of rows (don't want to implicitly rely on picking a random item)
-    Still keep track of what was accessed in case it is of use
+    """A dataframe for instances like spark where the columns are preloaded
+
+    Provides a unified interface, matching that of LazyDataFrame.
+
+    Parameters
+    ----------
+        size : int
+            Number of rows
+        items : dict
+            Mapping of column name to column array
     """
     def __init__(self, size, items):
         self._size = size
@@ -98,12 +128,15 @@ class PreloadedDataFrame(MutableMapping):
 
     @property
     def available(self):
+        """List of available columns"""
         return self._dict.keys()
 
     @property
     def materialized(self):
+        """List of accessed columns"""
         return self._accessed
 
     @property
     def size(self):
+        """Length of column vector"""
         return self._size
