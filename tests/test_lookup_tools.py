@@ -168,3 +168,21 @@ def test_jec_txt_scalefactors():
     assert('Autumn18_V8_MC_UncertaintySources_AK4PFchs_AbsoluteScale' in evaluator.keys())
     junc_out = evaluator['Autumn18_V8_MC_UncertaintySources_AK4PFchs_AbsoluteScale'](test_eta,test_pt)
     print(evaluator['Autumn18_V8_MC_UncertaintySources_AK4PFchs_AbsoluteScale'])
+
+def test_jec_txt_effareas():
+    extractor = lookup_tools.extractor()
+    extractor.add_weight_sets(['* * tests/samples/photon_id.ea.txt'])
+    extractor.finalize()
+
+    evaluator = extractor.make_evaluator()
+    
+    counts, test_eta, test_pt = dummy_jagged_eta_pt()
+
+    ch_out = evaluator['photon_id_EA_CHad'](test_eta)
+    print(evaluator['photon_id_EA_CHad'])
+
+    nh_out = evaluator['photon_id_EA_NHad'](test_eta)
+    print(evaluator['photon_id_EA_NHad'])
+
+    ph_out = evaluator['photon_id_EA_Pho'](test_eta)
+    print(evaluator['photon_id_EA_Pho'])
