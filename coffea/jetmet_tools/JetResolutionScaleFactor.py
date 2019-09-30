@@ -31,17 +31,24 @@ _level_order = ['SF']
 
 class JetResolutionScaleFactor(object):
     """
-        This class is a columnar implementation of the JetResolutionScaleFactor tool in
-        CMSSW and FWLite. It calculates the jet energy resolution scale factor for a
-        corrected jet in a given binning.
-        You can use this class as follows:
+    This class is a columnar implementation of the JetResolutionScaleFactor tool in
+    CMSSW and FWLite. It calculates the jet energy resolution scale factor for a
+    corrected jet in a given binning.
+
+    It implements the jet energy scale factor definition specified in the JER TWiki_.
+
+    .. _TWiki: https://twiki.cern.ch/twiki/bin/view/CMS/JetResolution
+
+    You can use this class as follows::
+
         jersf = JetResolutionScaleFactor(name1=corrL1,...)
         jetResSF = jersf(JetParameter1=jet.parameter1,...)
+
     """
     def __init__(self, **kwargs):
         """
-            You construct a JetResolutionScaleFactor by passing in a dict of names and functions.
-            Names must be formatted as '<campaign>_<dataera>_<datatype>_<level>_<jettype>'.
+        You construct a JetResolutionScaleFactor by passing in a dict of names and functions.
+        Names must be formatted as '<campaign>_<dataera>_<datatype>_<level>_<jettype>'.
         """
         jettype = None
         levels = []
@@ -120,10 +127,12 @@ class JetResolutionScaleFactor(object):
 
     def getScaleFactor(self, **kwargs):
         """
-            Returns the set of resolutions for all input jets at the highest available level
-            use like:
+        Returns the set of resolutions for all input jets at the highest available level
+
+        Use it like::
+
             jersfs = jersf.getScaleFactor(JetProperty1=jet.property1,...)
-            'jersfs' will be formatted like [[[up_val central_cal down_val]_jet1 ...] ...]
+
         """
         sfs = []
         for i, func in enumerate(self._funcs):

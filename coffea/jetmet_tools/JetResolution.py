@@ -31,17 +31,24 @@ _level_order = ['Resolution']
 
 class JetResolution(object):
     """
-        This class is a columnar implementation of the JetResolution tool in
-        CMSSW and FWLite. It calculates the jet energy resolution for a corrected jet
-        in a given binning.
-        You can use this class as follows:
+    This class is a columnar implementation of the JetResolution tool in
+    CMSSW and FWLite. It calculates the jet energy resolution for a corrected jet
+    in a given binning.
+
+    It implements the jet energy correction definition specified in the JER TWiki_.
+
+    .. _TWiki: https://twiki.cern.ch/twiki/bin/view/CMS/JetResolution
+
+    You can use this class as follows::
+
         jr = JetResolution(name1=corrL1,...)
         jetRes = jr(JetParameter1=jet.parameter1,...)
+
     """
     def __init__(self, **kwargs):
         """
-            You construct a JetResolution by passing in a dict of names and functions.
-            Names must be formatted as '<campaign>_<dataera>_<datatype>_<level>_<jettype>'.
+        You construct a JetResolution by passing in a dict of names and functions.
+        Names must be formatted as '<campaign>_<dataera>_<datatype>_<level>_<jettype>'.
         """
         jettype = None
         levels = []
@@ -120,10 +127,12 @@ class JetResolution(object):
 
     def getResolution(self, **kwargs):
         """
-            Returns the set of resolutions for all input jets at the highest available level
-            use like:
+        Returns the set of resolutions for all input jets at the highest available level
+
+        Use it like::
+
             jrs = reso.getResolution(JetProperty1=jet.property1,...)
-            'jrs' will be formatted like [[jr_jet1 jr_jet2 ...] ...]
+
         """
         resos = []
         for i, func in enumerate(self._funcs):

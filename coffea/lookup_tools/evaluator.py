@@ -18,10 +18,17 @@ class evaluator(object):
         looking up values of histograms and other functions read in
         with the extractor class. Stored look ups can be indexed by
         name and then called through an overloaded __call__ function.
-        Example:
-            evaluate = extractor.make_evaluator()
-            vals = evaluate[XYZ](arg1,arg2,...)
-        The returned 'vals' has the same shape as the input args.
+
+        Example::
+
+            #assuming 'eta' and 'pt' are array like objects
+            wgts = "testSF2d scalefactors_Tight_Electron tests/samples/testSF2d.histo.root"
+            extractor.add_weight_sets([wgts])
+            extractor.finalize(reduce_list=['testSF2d'])
+            evaluator = extractor.make_evaluator()
+            out = evaluator["testSF2d"](eta, pt)
+
+        The returned value has the same shape as the input arguments.
 
         lookup_types is a map of possible contructors for extracted data
     """

@@ -1,6 +1,6 @@
 """JetMET tools: CMS analysis-level jet corrections and uncertainties
 
-These classes allow computation of CMS jet energy scale and jet energy resolution
+These classes provide computation of CMS jet energy scale and jet energy resolution
 corrections and uncertainties on columnar data.
 """
 from .FactorizedJetCorrector import FactorizedJetCorrector

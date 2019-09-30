@@ -6,9 +6,9 @@ When executing
 
     >>> import coffea
 
-a subset of the full coffea pacakge is imported into the python environment.
+a subset of the full coffea package is imported into the python environment.
 Some packages must be imported explicitly, so as to avoid importing unnecessary
-and/or heavy dependencies.  Below lists the packages availabile in the ``coffea`` namespace.
+and/or heavy dependencies.  Below lists the packages available in the ``coffea`` namespace.
 
 .. autosummary::
     :toctree: modules
