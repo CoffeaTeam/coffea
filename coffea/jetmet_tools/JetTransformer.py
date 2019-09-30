@@ -41,6 +41,10 @@ class JetTransformer(object):
     This class is a columnar implementation of the the standard recipes for apply JECs, and
     the various scale factors and uncertainties therein.
 
+    It implements the recommendations from the CMS Jet/MET group JEC workbook_.
+
+    .. _workbook: https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookJetEnergyCorrections?redirectedfrom=CMS.WorkBookJetEnergyCorrections
+
     .. note:: Only the stochastic smearing method is implemented at the moment.
 
     Parameters
@@ -56,7 +60,7 @@ class JetTransformer(object):
 
     It uses the `FactorizedJetCorrector`, `JetResolution`, `JetResolutionScaleFactor`, and
     `JetCorrectionUncertainty` classes to calculate the ingredients for the final updated jet
-    object, which will be modified in place.
+    object, which will be modified **in place**.
 
     The jet object must be a "JaggedCandidateArray" and have the additional properties:
         - ptRaw
@@ -64,9 +68,11 @@ class JetTransformer(object):
 
     These will be used to reset the jet pT and mass, and then calculate the updated pTs and
     masses for various corrections and smearings.
-    You can use this class like:
-    xformer = JetTransformer(name1=corrL1,...)
-    xformer.transform(jet)
+
+    You can instantiate this class like::
+
+        xformer = JetTransformer(jec=my_jec, junc=uncertianies, jer=resolution, jersf=smear)
+
     """
     def __init__(self, jec=None, junc=None, jer=None, jersf=None):
         if jec is None:
@@ -100,13 +106,18 @@ class JetTransformer(object):
 
     def transform(self, jet, met=None):
         """
-        precondition - jet is a JaggedCandidateArray with additional attributes:
-                            - 'ptRaw'
-                            - 'massRaw'
-        xformer = JetTransformer(name1=corrL1,...)
-        xformer.transform(jet)
-        postcondition - jet.pt, jet.mass, jet.p4 are updated to represent the corrected jet
-                        based on the input correction set
+        This is the main entry point for JetTransformer and acts on arrays of jet data in-place.
+
+        **precondition** : jet is a JaggedCandidateArray with additional attributes
+
+            - 'ptRaw'
+            - 'massRaw'
+
+        You can call transform like this::
+
+            xformer.transform(jets)
+
+        **postcondition** : jet.pt, jet.mass, jet.p4 are updated to represent the corrected jet based on the input correction set.
         """
         if not isinstance(jet, JaggedCandidateArray):
             raise Exception('Input data must be a JaggedCandidateArray!')
@@ -197,7 +208,7 @@ class JetTransformer(object):
         if self._junc is not None:
             jets_sin = np.sin(jet['p4'].phi)
             jets_cos = np.cos(jet['p4'].phi)
-            for name, values in juncs:
+            for name, _ in juncs:
                 for shift in ['up', 'down']:
                     px = met['p4'].x - (initial_p4.x - jet['pt_{0}_{1}'.format(name, shift)] * jets_cos).sum()
                     py = met['p4'].y - (initial_p4.y - jet['pt_{0}_{1}'.format(name, shift)] * jets_sin).sum()

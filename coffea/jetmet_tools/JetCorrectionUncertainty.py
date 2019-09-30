@@ -45,17 +45,24 @@ def split_jec_name(name):
 
 class JetCorrectionUncertainty(object):
     """
-        This class is a columnar implementation of the JetCorrectionUncertainty tool in
-        CMSSW and FWLite. It calculates the jet energy scale uncertainty for a corrected jet
-        in a given binning.
-        You can use this class as follows:
+    This class is a columnar implementation of the JetCorrectionUncertainty tool in
+    CMSSW and FWLite. It calculates the jet energy scale uncertainty for a corrected jet
+    in a given binning.
+
+    It implements the jet energy correction definition specified in the JES Uncertainty TWiki_.
+
+    .. _TWiki: https://twiki.cern.ch/twiki/bin/view/CMS/JECUncertaintySources
+
+    You can use this class as follows::
+
         jcu = JetCorrectionUncertainty(name1=corrL1,...)
         jetUncs = jcu(JetParameter1=jet.parameter1,...)
+
     """
     def __init__(self, **kwargs):
         """
-            You construct a JetCorrectionUncertainty by passing in a dict of names and functions.
-            Names must be formatted as '<campaign>_<dataera>_<datatype>_<level>_<jettype>'.
+        You construct a JetCorrectionUncertainty by passing in a dict of names and functions.
+        Names must be formatted as '<campaign>_<dataera>_<datatype>_<level>_<jettype>'.
         """
         jettype = None
         levels = []
@@ -126,11 +133,14 @@ class JetCorrectionUncertainty(object):
 
     def getUncertainty(self, **kwargs):
         """
-            Returns the set of uncertainties for all input jets for all the levels (== sources)
-            use like:
+        Returns the set of uncertainties for all input jets for all the levels (== sources)
+
+        Use it like::
+
             juncs = uncertainty.getUncertainty(JetProperty1=jet.property1,...)
-            'juncs' will be formatted like [('SourceName', [[up_val down_val]_jet1 ... ]), ...]
-            in a zip iterator
+            #'juncs' will be formatted like [('SourceName', [[up_val down_val]_jet1 ... ]), ...]
+            #in a zip iterator
+
         """
         uncs = []
         for i, func in enumerate(self._funcs):
