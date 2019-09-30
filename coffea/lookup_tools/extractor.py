@@ -36,6 +36,15 @@ class extractor(object):
 
     If there is no file type specifier the 'default' value is used.
 
+    The extractor class supports a number of useful file formats by default:
+        - **.histo.root** : 1,2, and 3 dimensional histograms in root files.
+        - **.histo.json** : N-dimensional histograms stored in JSON format.
+        - **.btag.csv**   : CMS BTV b-tagging weights in csv files.
+        - **.ea.txt**     : CMS EGM effective area text files.
+        - **'.[jec, jersf, jr, junc].txt'** : CMS JME jet energy corrections and systematic error text files.
+
+    It is possible to extend the functionality of lookup_tools.extractor by editing coffea.lookup_tools.file_converters to add new types and formats.
+
     You can add sets of lookup tables / weights by calling:
         extractor.add_weight_set(<description>)
 
