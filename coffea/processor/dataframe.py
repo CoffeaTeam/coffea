@@ -51,6 +51,9 @@ class LazyDataFrame(MutableMapping):
         else:
             raise KeyError(key)
 
+    def __getattr__(self, key):
+        return self.__getitem__(key)
+
     def __iter__(self):
         for item in self._dict:
             yield item
