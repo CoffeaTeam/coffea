@@ -3,6 +3,7 @@ from coffea.analysis_objects import JaggedCandidateArray as CandArray
 from coffea.util import awkward as akd
 from coffea.util import numpy as np
 
+import os
 
 class NanoTestProcessor(processor.ProcessorABC):
     def __init__(self, columns=[]):
@@ -29,6 +30,8 @@ class NanoTestProcessor(processor.ProcessorABC):
         output = self.accumulator.identity()
 
         dataset = df['dataset']
+
+        print(os.environ)
 
         muon = None
         if isinstance(df['Muon_pt'], akd.JaggedArray):

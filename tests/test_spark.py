@@ -36,6 +36,7 @@ def test_spark_executor():
         .appName('spark-executor-test-%s' % guid()) \
         .master('local[*]') \
         .config('spark.sql.execution.arrow.enabled','true') \
+        .config('spark.executor.x509proxyname','x509_u12409') \
         .config('spark.sql.execution.arrow.maxRecordsPerBatch', 200000)
 
     spark = _spark_initialize(config=spark_config,log_level='ERROR',spark_progress=False)
