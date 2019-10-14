@@ -5,6 +5,7 @@ from coffea.util import numpy as np
 
 import os
 
+
 class NanoTestProcessor(processor.ProcessorABC):
     def __init__(self, columns=[]):
         self._columns = columns
