@@ -51,6 +51,12 @@ class LazyDataFrame(MutableMapping):
         else:
             raise KeyError(key)
 
+    def __getattr__(self, key):
+        try:
+            return self.__getitem__(key)
+        except KeyError:
+            raise AttributeError(key)
+
     def __iter__(self):
         for item in self._dict:
             yield item
@@ -114,6 +120,12 @@ class PreloadedDataFrame(MutableMapping):
     def __getitem__(self, key):
         self._accessed.add(key)
         return self._dict[key]
+
+    def __getattr__(self, key):
+        try:
+            return self.__getitem__(key)
+        except KeyError:
+            raise AttributeError(key)
 
     def __iter__(self):
         for key in self._dict:

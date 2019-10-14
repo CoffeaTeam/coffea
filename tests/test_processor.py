@@ -191,6 +191,7 @@ def test_lazy_dataframe():
     assert(len(df) == 1)
     
     pt = df['Muon_pt']
+    assert(len(df) == 2)
     df['Muon_pt_up'] = pt * 1.05
     assert(len(df) == 3)
     assert('Muon_pt' in df.materialized)
@@ -199,10 +200,33 @@ def test_lazy_dataframe():
     
     assert(df.size == tree.numentries)
 
-    try:
+    with pytest.raises(KeyError):
         x = df['notthere']
-    except KeyError:
-        pass
+
+
+@pytest.mark.skipif(sys.platform.startswith("win"), reason='problems with paths on windows')
+def test_lazy_dataframe_getattr():
+    import uproot
+    from coffea.processor import LazyDataFrame
+    
+    tree = uproot.open(osp.abspath('tests/samples/nano_dy.root'))['Events']
+    chunksize = 20
+    index = 0
+    
+    df = LazyDataFrame(tree, chunksize, index, preload_items = ['nMuon'])
+
+    assert(len(df) == 1)
+    
+    pt = df.Muon_pt
+    assert(len(df) == 2)
+    assert('Muon_pt' in df.materialized)
+    
+    assert(b'Muon_eta' in df.available)
+    
+    assert(df.size == tree.numentries)
+
+    with pytest.raises(AttributeError):
+        x = df.notthere
 
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason='problems with paths on windows')
@@ -227,4 +251,29 @@ def test_preloaded_dataframe():
 
     assert(b'Muon_eta' in df.available)
     assert(b'nMuon' in df.materialized)
+    assert(df.size == arrays[b'nMuon'].size)
+
+
+@pytest.mark.skipif(sys.platform.startswith("win"), reason='problems with paths on windows')
+def test_preloaded_dataframe_getattr():
+    import uproot
+    from coffea.processor import PreloadedDataFrame
+
+    tree = uproot.open(osp.abspath('tests/samples/nano_dy.root'))['Events']
+    chunksize = 20
+    index = 0
+    
+    arrays = tree.arrays()
+    
+    df = PreloadedDataFrame(arrays[b'nMuon'].size, arrays)
+
+    assert(len(arrays) == len(df))
+    
+    df['nMuon'] = arrays[b'nMuon']
+    assert('nMuon' in df.available)
+    
+    assert(np.all(df.nMuon == arrays[b'nMuon']))
+
+    assert(b'Muon_eta' in df.available)
+    assert('nMuon' in df.materialized)
     assert(df.size == arrays[b'nMuon'].size)
