@@ -121,6 +121,12 @@ class PreloadedDataFrame(MutableMapping):
         self._accessed.add(key)
         return self._dict[key]
 
+    def __getattr__(self, key):
+        try:
+            return self.__getitem__(key)
+        except KeyError:
+            raise AttributeError(key)
+
     def __iter__(self):
         for key in self._dict:
             self._accessed.add(key)
