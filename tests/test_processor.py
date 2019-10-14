@@ -191,6 +191,7 @@ def test_lazy_dataframe():
     assert(len(df) == 1)
     
     pt = df['Muon_pt']
+    assert(len(df) == 2)
     df['Muon_pt_up'] = pt * 1.05
     assert(len(df) == 3)
     assert('Muon_pt' in df.materialized)
@@ -199,10 +200,8 @@ def test_lazy_dataframe():
     
     assert(df.size == tree.numentries)
 
-    try:
+    with pytest.raises(KeyError):
         x = df['notthere']
-    except KeyError:
-        pass
 
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason='problems with paths on windows')
