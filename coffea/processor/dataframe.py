@@ -52,7 +52,10 @@ class LazyDataFrame(MutableMapping):
             raise KeyError(key)
 
     def __getattr__(self, key):
-        return self.__getitem__(key)
+        try:
+            return self.__getitem__(key)
+        except KeyError:
+            raise AttributeError(key)
 
     def __iter__(self):
         for item in self._dict:
