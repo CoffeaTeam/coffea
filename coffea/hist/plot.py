@@ -79,7 +79,7 @@ def clopper_pearson_interval(num, denom, coverage=_coverage1sd):
 
 
 def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none', line_opts=None,
-           fill_opts=None, error_opts=None, overlay_overflow='none', density=False, binwnorm=None):
+           fill_opts=None, error_opts=None, legend_opts={}, overlay_overflow='none', density=False, binwnorm=None):
     """Create a 1D plot from a 1D or 2D `Hist` object
 
     Parameters
@@ -112,6 +112,10 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             internal to this function.  Leave blank for defaults.  Some special options are interpreted by
             this function and not passed to matplotlib: 'emarker' (default: '') specifies the marker type
             to place at cap of the errorbar.
+        legend_opts : dict, optional
+            A dictionary of options  to pass to the matplotlib
+            `ax.legend <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.pyplot.legend.html>`_ call
+            internal to this fuction.  Leave blank for defaults.
         overlay_overflow : str, optional
             If overflow behavior is not 'none', extra bins in the overlay axis will be overlayed or stacked,
             to represent the contents of the overflow bins.  See `Hist.sum` documentation for a description of the options.
@@ -254,7 +258,10 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             for identifier, handlelist in primitives.items():
                 handles.append(tuple(h for h in handlelist if h.get_label()[0] != '_'))
                 labels.append(str(identifier))
-            primitives['legend'] = ax.legend(title=overlay.label, handles=handles, labels=labels)
+            opts = {'title': overlay.label}
+            if legend_opts is not None:
+                opts.update(legend_opts)
+            primitives['legend'] = ax.legend(handles=handles, labels=labels, **opts)
         ax.autoscale(axis='x', tight=True)
         ax.set_ylim(0, None)
 
