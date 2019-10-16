@@ -6,6 +6,7 @@ import copy
 import warnings
 import numbers
 from .hist_tools import SparseAxis, DenseAxis, overflow_behavior, Interval, StringBin
+import mplhep as hep
 
 # Plotting is always terrible
 # Let's try our best to follow matplotlib idioms
@@ -132,9 +133,6 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             A matplotlib `Figure <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.figure.Figure.html>`_ object
         ax : matplotlib.axes.Axes
             A matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ object
-        primitives : dict
-            A dictionary mapping the overlay identifier (or ``None`` if no overlay axis) to the
-            set of drawn primitives.  This can be used to modify the primitives if needed, or ignored.
     """
     import matplotlib.pyplot as plt
     if ax is None:
@@ -172,10 +170,13 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         ax.set_xlabel(axis.label)
         ax.set_ylabel(hist.label)
         edges = axis.edges(overflow=overflow)
-        centers = axis.centers(overflow=overflow)
-        stack_sumw, stack_sumw2 = None, None
-        primitives = {}
         identifiers = hist.identifiers(overlay, overflow=overlay_overflow) if overlay is not None else [None]
+        plot_info = {
+            'identifier' : identifiers,
+            'label' : list(map(str, identifiers)),
+            'sumw' : [],
+            'sumw2' : []
+        }
         for i, identifier in enumerate(identifiers):
             if identifier is None:
                 sumw, sumw2 = hist.values(sumw2=True, overflow=overflow)[()]
@@ -193,79 +194,49 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
                 binnorms = overallnorm / (np.diff(edges) * np.sum(sumw))
                 sumw = sumw * binnorms
                 sumw2 = sumw2 * binnorms**2
-            label = str(identifier)
-            primitives[identifier] = []
-            first_color = None
-            if stack:
-                if stack_sumw is None:
-                    stack_sumw, stack_sumw2 = sumw.copy(), sumw2.copy()
-                else:
-                    stack_sumw += sumw
-                    stack_sumw2 += sumw2
-
-                if line_opts is not None:
-                    opts = {'where': 'post', 'label': label}
-                    opts.update(line_opts)
-                    l, = ax.step(x=edges, y=np.r_[stack_sumw, stack_sumw[-1]], **opts)
-                    first_color = l.get_color()
-                    primitives[identifier].append(l)
-                if fill_opts is not None:
-                    opts = {'step': 'post', 'label': label}
-                    if first_color is not None:
-                        opts['color'] = first_color
-                    opts.update(fill_opts)
-                    f = ax.fill_between(x=edges, y1=np.r_[stack_sumw - sumw, stack_sumw[-1] - sumw[-1]], y2=np.r_[stack_sumw, stack_sumw[-1]], **opts)
-                    if first_color is None:
-                        first_color = f.get_facecolor()[0]
-                    primitives[identifier].append(f)
-                # error_opts for stack is interpreted later
-            else:
-                if line_opts is not None:
-                    opts = {'where': 'post', 'label': label}
-                    opts.update(line_opts)
-                    l, = ax.step(x=edges, y=np.r_[sumw, sumw[-1]], **opts)
-                    first_color = l.get_color()
-                    primitives[identifier].append(l)
-                if fill_opts is not None:
-                    opts = {'step': 'post', 'label': label}
-                    if first_color is not None:
-                        opts['color'] = first_color
-                    opts.update(fill_opts)
-                    f = ax.fill_between(x=edges, y1=np.r_[sumw, sumw[-1]], **opts)
-                    if first_color is None:
-                        first_color = f.get_facecolor()[0]
-                    primitives[identifier].append(f)
-                if error_opts is not None:
-                    opts = {'linestyle': 'none', 'label': label}
-                    if first_color is not None:
-                        opts['color'] = first_color
-                    opts.update(error_opts)
-                    emarker = opts.pop('emarker', '')
-                    err = np.abs(poisson_interval(sumw, sumw2) - sumw)
-                    errbar = ax.errorbar(x=centers, y=sumw, yerr=err, **opts)
-                    plt.setp(errbar[1], 'marker', emarker)
-                    primitives[identifier].append(errbar)
-        if stack_sumw is not None and error_opts is not None:
+            plot_info['sumw'].append(sumw)
+            plot_info['sumw2'].append(sumw2)
+            
+        def w2err(sumw, sumw2):
+            err = []
+            for a, b in zip(sumw, sumw2):
+                err.append(np.abs(poisson_interval(a, b) - a))
+            return err
+        
+        if line_opts is not None and error_opts is None:
+            _error = None
+        else:
+            _error = w2err(plot_info['sumw'], plot_info['sumw2'])
+        if fill_opts is not None:
+            histtype = 'fill'
+            kwargs = fill_opts
+        else:
+            histtype = 'step'
+            kwargs = line_opts
+        if kwargs is None: kwargs = {}
+          
+        hep.histplot(plot_info['sumw'], edges, label=plot_info['label'], 
+                     yerr = _error,  stack = stack, histtype = histtype, 
+                     **kwargs)
+        
+        if stack and error_opts is not None:
+            stack_sumw = np.sum(plot_info['sumw'], axis=0)
+            stack_sumw2 = np.sum(plot_info['sumw2'], axis=0)
             err = poisson_interval(stack_sumw, stack_sumw2)
-            opts = {'step': 'post', 'label': 'Sum unc.'}
+            opts = {'step': 'post', 'label': 'Sum unc.', 'hatch':'///', 
+                    'facecolor':'none', 'edgecolor':(0,0,0,.5), 'linewidth': 0}
             opts.update(error_opts)
-            errbar = ax.fill_between(x=edges, y1=np.r_[err[0, :], err[0, -1]], y2=np.r_[err[1, :], err[1, -1]], **opts)
-            primitives[StringBin('stack_unc', opts['label'])] = [errbar]
-
-    if clear:
-        if overlay is not None:
-            handles, labels = list(), list()
-            for identifier, handlelist in primitives.items():
-                handles.append(tuple(h for h in handlelist if h.get_label()[0] != '_'))
-                labels.append(str(identifier))
-            opts = {'title': overlay.label}
-            if legend_opts is not None:
-                opts.update(legend_opts)
-            primitives['legend'] = ax.legend(handles=handles, labels=labels, **opts)
+            errbar = ax.fill_between(x=edges, y1=np.r_[err[0, :], err[0, -1]], 
+                                    y2=np.r_[err[1, :], err[1, -1]], **opts)            
+            
+        if legend_opts is not None:
+            ax.legend(title=overlay.label, **legend_opts)
+        else:
+            ax.legend(title=overlay.label, )
         ax.autoscale(axis='x', tight=True)
         ax.set_ylim(0, None)
 
-    return fig, ax, primitives
+    return ax
 
 
 def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None, denom_fill_opts=None, guide_opts=None, unc='clopper-pearson', label=None):
@@ -312,8 +283,6 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
             A matplotlib `Figure <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.figure.Figure.html>`_ object
         ax : matplotlib.axes.Axes
             A matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ object
-        primitives : dict
-            A dictionary of drawn primitives.  This can be used to modify the primitives if needed, or ignored.
     """
     import matplotlib.pyplot as plt
     if ax is None:
@@ -355,31 +324,28 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
         else:
             raise ValueError("Unrecognized uncertainty option: %r" % unc)
 
-        primitives = {}
         if error_opts is not None:
             opts = {'label': label, 'linestyle': 'none'}
             opts.update(error_opts)
             emarker = opts.pop('emarker', '')
             errbar = ax.errorbar(x=centers, y=rsumw, yerr=rsumw_err, **opts)
             plt.setp(errbar[1], 'marker', emarker)
-            primitives['error'] = errbar
         if denom_fill_opts is not None:
             unity = np.ones_like(sumw_denom)
             denom_unc = poisson_interval(unity, sumw2_denom / sumw_denom**2)
             opts = {'step': 'post', 'facecolor': (0, 0, 0, 0.3), 'linewidth': 0}
             opts.update(denom_fill_opts)
             fill = ax.fill_between(edges, np.r_[denom_unc[0], denom_unc[0, -1]], np.r_[denom_unc[1], denom_unc[1, -1]], **opts)
-            primitives['denom_fill'] = fill
         if guide_opts is not None:
             opts = {'linestyle': '--', 'color': (0, 0, 0, 0.5), 'linewidth': 1}
             opts.update(guide_opts)
-            primitives['guide'] = ax.axhline(1., **opts)
+            ax.axhline(1., **opts)
 
     if clear:
         ax.autoscale(axis='x', tight=True)
         ax.set_ylim(0, None)
 
-    return fig, ax, primitives
+    return ax
 
 
 def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none', patch_opts=None, text_opts=None, density=False, binwnorm=None):
@@ -422,8 +388,6 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
             A matplotlib `Figure <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.figure.Figure.html>`_ object
         ax : matplotlib.axes.Axes
             A matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ object
-        primitives : dict
-            A dictionary of drawn primitives.  This can be used to modify the primitives if needed, or ignored.
     """
     import matplotlib.pyplot as plt
     if ax is None:
@@ -469,17 +433,14 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
             sumw = sumw * binnorms
             sumw2 = sumw2 * binnorms**2
 
-        primitives = {}
         if patch_opts is not None:
             opts = {'cmap': 'viridis'}
             opts.update(patch_opts)
             pc = ax.pcolormesh(xedges, yedges, sumw.T, **opts)
             ax.add_collection(pc)
-            primitives['patches'] = pc
             if clear:
                 fig.colorbar(pc, ax=ax, label=hist.label)
         if text_opts is not None:
-            primitives['texts'] = []
             for ix, xcenter in enumerate(xaxis.centers()):
                 for iy, ycenter in enumerate(yaxis.centers()):
                     opts = {
@@ -491,7 +452,6 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
                     opts.update(text_opts)
                     txtformat = opts.pop('format', r'%.2g')
                     text = ax.text(xcenter, ycenter, txtformat % sumw[ix, iy], **opts)
-                    primitives['texts'].append(text)
 
     if clear:
         ax.set_xlabel(xaxis.label)
@@ -499,7 +459,7 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
         ax.set_xlim(xedges[0], xedges[-1])
         ax.set_ylim(yedges[0], yedges[-1])
 
-    return fig, ax, primitives
+    return ax
 
 
 def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='none', col_overflow='none', **plot_opts):
