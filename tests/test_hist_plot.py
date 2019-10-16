@@ -11,8 +11,10 @@ r = requests.get(url)
 with open(os.path.join(os.getcwd(), 'HZZ.root'), 'wb') as f:
     f.write(r.content)
 
+
 def test_import():
     from coffea.hist import plot
+
 
 def fill_lepton_kinematics():
     import uproot
@@ -25,22 +27,21 @@ def fill_lepton_kinematics():
     fin = uproot.open("HZZ.root")
     tree = fin["events"]
 
-    arrays = {k.replace('Electron_', ''): v for k,v in tree.arrays("Electron_*", namedecode='ascii').items()}
-    p4 = uproot_methods.TLorentzVectorArray.from_cartesian(
-                                                       arrays.pop('Px'),
-                                                       arrays.pop('Py'),
-                                                       arrays.pop('Pz'),
-                                                       arrays.pop('E'),
-                                                       )
+    arrays = {k.replace('Electron_', ''): v for k, v in tree.arrays("Electron_*", namedecode='ascii').items()}
+    p4 = uproot_methods.TLorentzVectorArray.from_cartesian(arrays.pop('Px'),
+                                                           arrays.pop('Py'),
+                                                           arrays.pop('Pz'),
+                                                           arrays.pop('E'),
+                                                           )
     electrons = awkward.JaggedArray.zip(p4=p4, **arrays)
 
-    arrays = {k.replace('Muon_', ''): v for k,v in tree.arrays("Muon_*", namedecode='ascii').items()}
+    arrays = {k.replace('Muon_', ''): v for k, v in tree.arrays("Muon_*", namedecode='ascii').items()}
     p4 = uproot_methods.TLorentzVectorArray.from_cartesian(
-                                                       arrays.pop('Px'),
-                                                       arrays.pop('Py'),
-                                                       arrays.pop('Pz'),
-                                                       arrays.pop('E'),
-                                                       )
+        arrays.pop('Px'),
+        arrays.pop('Py'),
+        arrays.pop('Pz'),
+        arrays.pop('E'),
+    )
     muons = awkward.JaggedArray.zip(p4=p4, **arrays)
 
     # Two types of axes exist presently: bins and categories
@@ -57,6 +58,7 @@ def fill_lepton_kinematics():
 
     return lepton_kinematics
 
+
 def test_plot1d():
     # histogram creation and manipulation
     from coffea import hist
@@ -64,20 +66,25 @@ def test_plot1d():
     import matplotlib as mpl
     mpl.use('Agg')
     import matplotlib.pyplot as plt
-    
+
     lepton_kinematics = fill_lepton_kinematics()
-    
+
     # looking at lepton pt for all eta
     lepton_pt = lepton_kinematics.integrate("eta", overflow='under')
 
-    ax = hist.plot1d(lepton_pt, overlay="flavor", stack=True,
-                                      fill_opts={'alpha': .5, 'edgecolor': (0,0,0,0.3)})
+    hist.plot1d(lepton_pt,
+                overlay="flavor",
+                stack=True,
+                fill_opts={
+                    'alpha': .5,
+                    'edgecolor': (0, 0, 0, 0.3)
+                })
     # all matplotlib primitives are returned, in case one wants to tweak them
     # e.g. maybe you really miss '90s graphics...
 
     # Clearly the yields are much different, are the shapes similar?
     lepton_pt.label = "Density"
-    ax = hist.plot1d(lepton_pt, overlay="flavor", density=True)
+    hist.plot1d(lepton_pt, overlay="flavor", density=True)
     # ...somewhat, maybe electrons are a bit softer
 
 
@@ -88,13 +95,13 @@ def test_plot2d():
     import matplotlib as mpl
     mpl.use('Agg')
     import matplotlib.pyplot as plt
-    
+
     lepton_kinematics = fill_lepton_kinematics()
-    
+
     # looking at lepton pt for all eta
-    muon_kinematics = lepton_kinematics.integrate("flavor","muon")
-    
-    ax = hist.plot2d(muon_kinematics, "eta")
+    muon_kinematics = lepton_kinematics.integrate("flavor", "muon")
+
+    hist.plot2d(muon_kinematics, "eta")
 
 
 def test_plotratio():
@@ -104,7 +111,7 @@ def test_plotratio():
     import matplotlib as mpl
     mpl.use('Agg')
     import matplotlib.pyplot as plt
-    
+
     lepton_kinematics = fill_lepton_kinematics()
 
     # Add some pseudodata to a pt histogram so we can make a nice data/mc plot
@@ -123,7 +130,7 @@ def test_plotratio():
     # another method would be to fill a separate data histogram
     import re
     notdata = re.compile('(?!pseudodata)')
-    
+
     # make a nice ratio plot
     plt.rcParams.update({
                         'font.size': 14,
@@ -132,31 +139,30 @@ def test_plotratio():
                         'xtick.labelsize': 12,
                         'ytick.labelsize': 12
                         })
-    fig, (ax, rax) = plt.subplots(2, 1, figsize=(7,7), gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
+    fig, (ax, rax) = plt.subplots(2, 1, figsize=(7, 7), gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
     fig.subplots_adjust(hspace=.07)
 
     # Here is an example of setting up a color cycler to color the various fill patches
     # http://colorbrewer2.org/#type=qualitative&scheme=Paired&n=6
     from cycler import cycler
-    colors = ['#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c']
+    colors = ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c']
     ax.set_prop_cycle(cycler(color=colors))
 
-    fill_opts = {
-        'edgecolor': (0,0,0,0.3),
-        'alpha': 0.8
+    fill_opts = {'edgecolor': (0, 0, 0, 0.3),
+                 'alpha': 0.8
     }
     error_opts = {
-        'label':'Stat. Unc.',
-        'hatch':'///',
-        'facecolor':'none',
-        'edgecolor':(0,0,0,.5),
+        'label': 'Stat. Unc.',
+        'hatch': '///',
+        'facecolor': 'none',
+        'edgecolor': (0, 0, 0, .5),
         'linewidth': 0
     }
     data_err_opts = {
-        'linestyle':'none',
+        'linestyle': 'none',
         'marker': '.',
         'markersize': 10.,
-        'color':'k',
+        'color': 'k',
         'elinewidth': 1,
         'emarker': '_'
     }
@@ -180,7 +186,7 @@ def test_plotratio():
     ax.autoscale(axis='x', tight=True)
     ax.set_ylim(0, None)
     ax.set_xlabel(None)
-    leg = ax.legend()
+    ax.legend()
 
     hist.plotratio(pthist['pseudodata'].sum("flavor"), pthist[notdata].sum("flavor"),
                    ax=rax,
@@ -190,20 +196,18 @@ def test_plotratio():
                    unc='num'
                    )
     rax.set_ylabel('Ratio')
-    rax.set_ylim(0,2)
+    rax.set_ylim(0, 2)
 
-    coffee = plt.text(0., 1., u"☕",
-                      fontsize=28,
-                      horizontalalignment='left',
-                      verticalalignment='bottom',
-                      transform=ax.transAxes
-                      )
-    lumi = plt.text(1., 1., r"1 fb$^{-1}$ (?? TeV)",
-                    fontsize=16,
-                    horizontalalignment='right',
-                    verticalalignment='bottom',
-                    transform=ax.transAxes
-                    )
+    plt.text(0., 1., u"☕",
+             fontsize=28,
+             horizontalalignment='left',
+             verticalalignment='bottom',
+             transform=ax.transAxes)
+    plt.text(1., 1., r"1 fb$^{-1}$ (?? TeV)",
+             fontsize=16,
+             horizontalalignment='right',
+             verticalalignment='bottom',
+             transform=ax.transAxes)
 
 
 def test_plotgrid():
@@ -213,18 +217,25 @@ def test_plotgrid():
     import matplotlib as mpl
     mpl.use('Agg')
     import matplotlib.pyplot as plt
-    
+
     lepton_kinematics = fill_lepton_kinematics()
-    
+
     # Let's stack them, after defining some nice styling
-    stack_fill_opts = {'alpha': 0.8, 'edgecolor':(0,0,0,.5)}
-    stack_error_opts = {'label':'Stat. Unc.', 'hatch':'///', 'facecolor':'none', 'edgecolor':(0,0,0,.5), 'linewidth': 0}
+    stack_fill_opts = {'alpha': 0.8, 'edgecolor': (0, 0, 0, .5)}
+    stack_error_opts = {
+        'label': 'Stat. Unc.',
+        'hatch': '///',
+        'facecolor': 'none',
+        'edgecolor': (0, 0, 0, .5),
+        'linewidth': 0
+    }
     # maybe we want to compare different eta regions
     # plotgrid accepts row and column axes, and creates a grid of 1d plots as appropriate
     fig, ax = hist.plotgrid(lepton_kinematics, row="eta", overlay="flavor", stack=True,
                             fill_opts=stack_fill_opts,
                             error_opts=stack_error_opts,
                             )
+
 
 def test_clopper_pearson_interval():
     from coffea.hist.plot import clopper_pearson_interval

@@ -142,7 +142,6 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             raise ValueError("ax must be a matplotlib Axes object")
         if clear:
             ax.clear()
-        fig = ax.figure
     if hist.dim() > 2:
         raise ValueError("plot1d() can only support up to two dimensions (one for axis, one to stack or overlay)")
     if overlay is None and hist.dim() > 1:
@@ -172,10 +171,10 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         edges = axis.edges(overflow=overflow)
         identifiers = hist.identifiers(overlay, overflow=overlay_overflow) if overlay is not None else [None]
         plot_info = {
-            'identifier' : identifiers,
-            'label' : list(map(str, identifiers)),
-            'sumw' : [],
-            'sumw2' : []
+            'identifier': identifiers,
+            'label': list(map(str, identifiers)),
+            'sumw': [],
+            'sumw2': []
         }
         for i, identifier in enumerate(identifiers):
             if identifier is None:
@@ -196,13 +195,13 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
                 sumw2 = sumw2 * binnorms**2
             plot_info['sumw'].append(sumw)
             plot_info['sumw2'].append(sumw2)
-            
+
         def w2err(sumw, sumw2):
             err = []
             for a, b in zip(sumw, sumw2):
                 err.append(np.abs(poisson_interval(a, b) - a))
             return err
-        
+
         if line_opts is not None and error_opts is None:
             _error = None
         else:
@@ -213,22 +212,23 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         else:
             histtype = 'step'
             kwargs = line_opts
-        if kwargs is None: kwargs = {}
-          
-        hep.histplot(plot_info['sumw'], edges, label=plot_info['label'], 
-                     yerr = _error,  stack = stack, histtype = histtype, 
+        if kwargs is None:
+            kwargs = {}
+
+        hep.histplot(plot_info['sumw'], edges, label=plot_info['label'],
+                     yerr=_error, stack=stack, histtype=histtype,
                      **kwargs)
-        
+
         if stack and error_opts is not None:
             stack_sumw = np.sum(plot_info['sumw'], axis=0)
             stack_sumw2 = np.sum(plot_info['sumw2'], axis=0)
             err = poisson_interval(stack_sumw, stack_sumw2)
-            opts = {'step': 'post', 'label': 'Sum unc.', 'hatch':'///', 
-                    'facecolor':'none', 'edgecolor':(0,0,0,.5), 'linewidth': 0}
+            opts = {'step': 'post', 'label': 'Sum unc.', 'hatch': '///',
+                    'facecolor': 'none', 'edgecolor': (0, 0, 0, .5), 'linewidth': 0}
             opts.update(error_opts)
-            errbar = ax.fill_between(x=edges, y1=np.r_[err[0, :], err[0, -1]], 
-                                    y2=np.r_[err[1, :], err[1, -1]], **opts)            
-            
+            ax.fill_between(x=edges, y1=np.r_[err[0, :], err[0, -1]],
+                            y2=np.r_[err[1, :], err[1, -1]], **opts)
+
         if legend_opts is not None:
             ax.legend(title=overlay.label, **legend_opts)
         else:
@@ -292,7 +292,6 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
             raise ValueError("ax must be a matplotlib Axes object")
         if clear:
             ax.clear()
-        fig = ax.figure
     if not num.compatible(denom):
         raise ValueError("numerator and denominator histograms have incompatible axis definitions")
     if num.dim() > 1:
@@ -335,7 +334,7 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
             denom_unc = poisson_interval(unity, sumw2_denom / sumw_denom**2)
             opts = {'step': 'post', 'facecolor': (0, 0, 0, 0.3), 'linewidth': 0}
             opts.update(denom_fill_opts)
-            fill = ax.fill_between(edges, np.r_[denom_unc[0], denom_unc[0, -1]], np.r_[denom_unc[1], denom_unc[1, -1]], **opts)
+            ax.fill_between(edges, np.r_[denom_unc[0], denom_unc[0, -1]], np.r_[denom_unc[1], denom_unc[1, -1]], **opts)
         if guide_opts is not None:
             opts = {'linestyle': '--', 'color': (0, 0, 0, 0.5), 'linewidth': 1}
             opts.update(guide_opts)
@@ -451,7 +450,7 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
                         opts['color'] = 'black' if pc.norm(sumw[ix, iy]) > 0.5 else 'lightgrey'
                     opts.update(text_opts)
                     txtformat = opts.pop('format', r'%.2g')
-                    text = ax.text(xcenter, ycenter, txtformat % sumw[ix, iy], **opts)
+                    ax.text(xcenter, ycenter, txtformat % sumw[ix, iy], **opts)
 
     if clear:
         ax.set_xlabel(xaxis.label)

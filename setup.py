@@ -68,6 +68,7 @@ INSTALL_REQUIRES = ['awkward>=0.8.4',
                     'lz4',
                     'six',
                     'cloudpickle',
+                    'mplhep',
                     ]
 EXTRAS_REQUIRE = {}
 if six.PY3:
