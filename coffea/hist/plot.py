@@ -6,6 +6,7 @@ import copy
 import warnings
 import numbers
 from .hist_tools import SparseAxis, DenseAxis, overflow_behavior, Interval, StringBin
+import mplhep as hep
 
 # Plotting is always terrible
 # Let's try our best to follow matplotlib idioms
@@ -155,7 +156,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             fill_opts = {}
         else:
             line_opts = {}
-            error_opts = {}
+            #error_opts = {}
 
     axis = hist.axes()[0]
     if overlay is not None:
@@ -172,6 +173,12 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         stack_sumw, stack_sumw2 = None, None
         primitives = {}
         identifiers = hist.identifiers(overlay, overflow=overlay_overflow) if overlay is not None else [None]
+        plottery = {
+            'identifier' : [],
+            'label' : [],
+            'sumw' : [],
+            'sumw2' : []
+        }
         for i, identifier in enumerate(identifiers):
             if identifier is None:
                 sumw, sumw2 = hist.values(sumw2=True, overflow=overflow)[()]
@@ -189,72 +196,43 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
                 binnorms = overallnorm / (np.diff(edges) * np.sum(sumw))
                 sumw = sumw * binnorms
                 sumw2 = sumw2 * binnorms**2
-            label = str(identifier)
-            primitives[identifier] = []
-            first_color = None
-            if stack:
-                if stack_sumw is None:
-                    stack_sumw, stack_sumw2 = sumw.copy(), sumw2.copy()
-                else:
-                    stack_sumw += sumw
-                    stack_sumw2 += sumw2
-
-                if line_opts is not None:
-                    opts = {'where': 'post', 'label': label}
-                    opts.update(line_opts)
-                    l, = ax.step(x=edges, y=np.r_[stack_sumw, stack_sumw[-1]], **opts)
-                    first_color = l.get_color()
-                    primitives[identifier].append(l)
-                if fill_opts is not None:
-                    opts = {'step': 'post', 'label': label}
-                    if first_color is not None:
-                        opts['color'] = first_color
-                    opts.update(fill_opts)
-                    f = ax.fill_between(x=edges, y1=np.r_[stack_sumw - sumw, stack_sumw[-1] - sumw[-1]], y2=np.r_[stack_sumw, stack_sumw[-1]], **opts)
-                    if first_color is None:
-                        first_color = f.get_facecolor()[0]
-                    primitives[identifier].append(f)
-                # error_opts for stack is interpreted later
-            else:
-                if line_opts is not None:
-                    opts = {'where': 'post', 'label': label}
-                    opts.update(line_opts)
-                    l, = ax.step(x=edges, y=np.r_[sumw, sumw[-1]], **opts)
-                    first_color = l.get_color()
-                    primitives[identifier].append(l)
-                if fill_opts is not None:
-                    opts = {'step': 'post', 'label': label}
-                    if first_color is not None:
-                        opts['color'] = first_color
-                    opts.update(fill_opts)
-                    f = ax.fill_between(x=edges, y1=np.r_[sumw, sumw[-1]], **opts)
-                    if first_color is None:
-                        first_color = f.get_facecolor()[0]
-                    primitives[identifier].append(f)
-                if error_opts is not None:
-                    opts = {'linestyle': 'none', 'label': label}
-                    if first_color is not None:
-                        opts['color'] = first_color
-                    opts.update(error_opts)
-                    emarker = opts.pop('emarker', '')
-                    err = np.abs(poisson_interval(sumw, sumw2) - sumw)
-                    errbar = ax.errorbar(x=centers, y=sumw, yerr=err, **opts)
-                    plt.setp(errbar[1], 'marker', emarker)
-                    primitives[identifier].append(errbar)
-        if stack_sumw is not None and error_opts is not None:
+            plottery['identifier'].append(identifier)
+            plottery['label'].append(str(identifier))
+            plottery['sumw'].append(sumw)
+            plottery['sumw2'].append(sumw2)
+            
+        def w2err(sumw, sumw2):
+            err = []
+            for a, b in zip(sumw, sumw2):
+                err.append(np.abs(poisson_interval(a, b) - a))
+                
+            return err
+        
+        if line_opts is not None and error_opts is None:
+            _error = None
+        else:
+            _error = w2err(plottery['sumw'], plottery['sumw2'])
+        if fill_opts is not None:
+            histtype = 'fill'
+            kwargs = fill_opts
+        else:
+            histtype = 'step'
+            kwargs = line_opts
+        if kwargs is None: kwargs = {}
+          
+        hep.histplot(plottery['sumw'], edges, label=plottery['label'],
+                     yerr = _error, 
+                     stack = stack, histtype = histtype, **kwargs,
+                     )
+        
+        if stack and error_opts is not None:
+            stack_sumw = np.sum(plottery['sumw'], axis=0)
+            stack_sumw2 = np.sum(plottery['sumw2'], axis=0)
             err = poisson_interval(stack_sumw, stack_sumw2)
-            opts = {'step': 'post', 'label': 'Sum unc.'}
+            opts = {'step': 'post', 'label': 'Sum unc.', 'hatch':'///', 'facecolor':'none', 'edgecolor':(0,0,0,.5), 'linewidth': 0}
             opts.update(error_opts)
-            errbar = ax.fill_between(x=edges, y1=np.r_[err[0, :], err[0, -1]], y2=np.r_[err[1, :], err[1, -1]], **opts)
-            primitives[StringBin('stack_unc', opts['label'])] = [errbar]
-
-    if clear:
-        if overlay is not None:
-            handles, labels = list(), list()
-            for identifier, handlelist in primitives.items():
-                handles.append(tuple(h for h in handlelist if h.get_label()[0] != '_'))
-                labels.append(str(identifier))
-            primitives['legend'] = ax.legend(title=overlay.label, handles=handles, labels=labels)
+            errbar = ax.fill_between(x=edges, y1=np.r_[err[0, :], err[0, -1]], y2=np.r_[err[1, :], err[1, -1]], **opts)            
+            
         ax.autoscale(axis='x', tight=True)
         ax.set_ylim(0, None)
 
