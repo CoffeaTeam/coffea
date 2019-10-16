@@ -226,8 +226,8 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
             and performs some action equivalent to:
             ``for item in items: accumulator += function(item)``
         executor_args : dict, optional
-            Extra arguments to pass to executor.  See `iterative_executor` or
-            `futures_executor` for available options.  Some options that
+            Extra arguments to pass to executor.  See `iterative_executor`,
+            `futures_executor`, or `dask_executor` for available options.  Some options that
             affect the behavior of this function: 'pre_workers' specifies the
             number of parallel threads for calculating chunking (default: 4*workers);
             'savemetrics' saves some detailed metrics for xrootd processing (default False);
