@@ -272,7 +272,7 @@ class Cat(SparseAxis):
             is used as a keyword in histogram filling, immutable
         label : str
             describes the meaning of the axis, can be changed
-        sorting : {'identifier', 'placement'}, optional
+        sorting : {'identifier', 'placement', 'integral'}, optional
             Axis sorting when listing identifiers.  Default 'placement'
             Changing this setting can effect the order of stack plotting
             in `hist.plot1d`.
@@ -357,6 +357,28 @@ class Cat(SparseAxis):
     def size(self):
         """Number of bins"""
         return len(self._bins)
+
+    @property
+    def sorting(self):
+        """Sorting definition to adhere to
+
+        See `Cat` constructor for possible values
+        """
+        return self._sorting
+
+    @sorting.setter
+    def sorting(self, newsorting):
+        if newsorting == 'placement':
+            # not much we can do about already inserted values
+            pass
+        elif newsorting == 'identifier':
+            self._sorted.sort()
+        elif newsorting == 'integral':
+            # this will be checked in any Hist.identifiers() call accessing this axis
+            pass
+        else:
+            raise AttributeError("Invalid axis sorting type: %s" % newsorting)
+        self._sorting = newsorting
 
     def identifiers(self):
         """List of `StringBin` identifiers"""
@@ -942,13 +964,21 @@ class Hist(AccumulatorABC):
                     out._sumw2[new_key] = dense_op(self._sumw2[key]).copy()
         return out
 
-    def project(self, axis_name, the_slice=slice(None), overflow='none'):
-        """This function has been renamed to Hist.integrate()
+    def project(self, *axes, overflow='none'):
+        """Project histogram onto a subset of its axes
 
-        In the future, this will integrate all axes other than the ones specified.
+        Parameters
+        ----------
+            ``*axes`` : str or Axis
+                Positional list of axes to project on to
+            overflow : str
+                Controls behavior of integration over remaining axes.
+                See `sum` description for meaning of allowed values
+                Default is to *not include* overflow bins
         """
-        warnings.warn("Hist.project() has been renamed to Hist.integrate().  In the future, Hist.project() will provide different functionality", FutureWarning)
-        return self.integrate(axis_name, the_slice, overflow)
+        axes = [self.axis(ax) for ax in axes]
+        toremove = [ax for ax in self.axes() if ax not in axes]
+        return self.sum(*toremove, overflow=overflow)
 
     def integrate(self, axis_name, int_range=slice(None), overflow='none'):
         """Integrates current histogram along one dimension
@@ -1188,6 +1218,9 @@ class Hist(AccumulatorABC):
             for identifier in axis.identifiers():
                 if any(k[isparse] == axis.index(identifier) for k in self._sumw.keys()):
                     out.append(identifier)
+            if axis.sorting == 'integral':
+                hproj = {key[0]: integral for key, integral in self.project(axis).values().items()}
+                out.sort(key=lambda k: hproj[k.name], reverse=True)
             return out
         elif isinstance(axis, DenseAxis):
             return axis.identifiers(overflow=overflow)
