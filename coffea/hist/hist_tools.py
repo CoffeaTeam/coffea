@@ -969,7 +969,7 @@ class Hist(AccumulatorABC):
                     out._sumw2[new_key] = dense_op(self._sumw2[key]).copy()
         return out
 
-    def project(self, *axes, overflow='none'):
+    def project(self, *axes, **kwargs):
         """Project histogram onto a subset of its axes
 
         Parameters
@@ -981,6 +981,7 @@ class Hist(AccumulatorABC):
                 See `sum` description for meaning of allowed values
                 Default is to *not include* overflow bins
         """
+        overflow = kwargs.pop('overflow', 'none')
         axes = [self.axis(ax) for ax in axes]
         toremove = [ax for ax in self.axes() if ax not in axes]
         return self.sum(*toremove, overflow=overflow)
