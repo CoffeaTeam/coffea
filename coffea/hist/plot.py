@@ -225,7 +225,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             errbar = ax.fill_between(x=edges, y1=np.r_[err[0, :], err[0, -1]], 
                                     y2=np.r_[err[1, :], err[1, -1]], **opts)            
             
-        ax.legend()
+        ax.legend(title=overlay.label)
         ax.autoscale(axis='x', tight=True)
         ax.set_ylim(0, None)
 

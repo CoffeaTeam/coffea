@@ -70,15 +70,14 @@ def test_plot1d():
     # looking at lepton pt for all eta
     lepton_pt = lepton_kinematics.integrate("eta", overflow='under')
 
-    fig, ax, primitives = hist.plot1d(lepton_pt, overlay="flavor", stack=True,
+    ax = hist.plot1d(lepton_pt, overlay="flavor", stack=True,
                                       fill_opts={'alpha': .5, 'edgecolor': (0,0,0,0.3)})
     # all matplotlib primitives are returned, in case one wants to tweak them
     # e.g. maybe you really miss '90s graphics...
-    primitives['legend'].shadow = True
 
     # Clearly the yields are much different, are the shapes similar?
     lepton_pt.label = "Density"
-    fig, ax, primitives = hist.plot1d(lepton_pt, overlay="flavor", density=True)
+    ax = hist.plot1d(lepton_pt, overlay="flavor", density=True)
     # ...somewhat, maybe electrons are a bit softer
 
 
@@ -95,7 +94,7 @@ def test_plot2d():
     # looking at lepton pt for all eta
     muon_kinematics = lepton_kinematics.integrate("flavor","muon")
     
-    fig, ax, primitives = hist.plot2d(muon_kinematics, "eta")
+    ax = hist.plot2d(muon_kinematics, "eta")
 
 
 def test_plotratio():
