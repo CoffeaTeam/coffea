@@ -5,4 +5,4 @@ codecov:
     project: off
     patch: off
 
-comment: off
+comment: false
