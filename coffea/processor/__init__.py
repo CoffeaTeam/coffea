@@ -11,6 +11,7 @@ from .helpers import Weights, PackedSelection
 from .executor import (
     iterative_executor,
     futures_executor,
+    dask_executor,
     run_uproot_job,
     run_parsl_job,
     run_spark_job

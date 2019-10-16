@@ -107,6 +107,53 @@ def futures_executor(items, function, accumulator, workers=1, status=True, unit=
     return accumulator
 
 
+def _dask_reduce(items):
+    if len(items) == 0:
+        raise ValueError("Empty list to reduction?!  Should not happen")
+    elif len(items) == 1:
+        return items[0]
+    else:
+        out = items[0]
+        for item in items[1:]:
+            out += item
+        return out
+
+
+def dask_executor(items, function, accumulator, **kwargs):
+    """Execute using dask futures
+
+    Parameters
+    ----------
+        items : list
+            List of input arguments
+        function : function
+            A function to be called on each input, which returns an accumulator instance
+        accumulator : AccumulatorABC
+            An accumulator to collect the output of the function
+        client : distributed.client.Client
+            A dask distributed client instance
+        treereduction : int, optional
+            Tree reduction factor for output accumulators (default: 20)
+        status : bool, optional
+            If true (default), enable progress bar
+    """
+    client = kwargs.pop('client')
+    ntree = kwargs.pop('treereduction', 20)
+    status = kwargs.pop('status', True)
+    futures = client.map(function, items, **kwargs)
+    while len(futures) > 1:
+        futures = client.map(
+            _dask_reduce,
+            [futures[i * ntree:(i + 1) * ntree] for i in range(len(futures) // ntree + 1)],
+            priority=1,
+        )
+    if status:
+        from dask.distributed import progress
+        progress(futures, multi=False, notebook=False)
+    accumulator += futures[0].result()
+    return accumulator
+
+
 def _work_function(item, flatten=False, savemetrics=False, mmap=False, **_):
     dataset, fn, treename, chunksize, index, processor_instance = item
     if mmap:
@@ -174,7 +221,7 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
             .. note:: treename can also be defined in fileset, which will override the passed treename
         processor_instance : ProcessorABC
             An instance of a class deriving from ProcessorABC
-        executor : iterative_executor or futures_executor
+        executor : iterative_executor or futures_executor or dask_executor
             A function that takes 3 arguments: items, function, accumulator
             and performs some action equivalent to:
             ``for item in items: accumulator += function(item)``
