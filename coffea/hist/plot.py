@@ -77,6 +77,23 @@ def clopper_pearson_interval(num, denom, coverage=_coverage1sd):
     interval[1, num == denom] = 1.
     return interval
 
+def normal_interval(pw, tw, pw2, tw2, coverage=_coverage1sd):
+    # see https://root.cern.ch/doc/master/TEfficiency_8cxx_source.html#l02515
+
+    eff = pw/tw
+
+    variance = ( pw2 * (1 - 2*eff) + tw2 * eff**2 ) / (tw**2)
+    sigma = np.sqrt(variance)
+
+    prob = 0.5*(1-_coverage1sd)
+    delta = np.zeros_like(sigma)
+    delta[sigma != 0] = -scipy.stats.norm.ppf(prob, scale=sigma[sigma != 0])
+
+    lo = eff - np.minimum(eff + delta, np.ones_like(eff))
+    hi = np.maximum(eff - delta, np.zeros_like(eff)) - eff
+
+    return np.array([lo, hi])
+
 
 def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none', line_opts=None,
            fill_opts=None, error_opts=None, legend_opts={}, overlay_overflow='none', density=False, binwnorm=None):
@@ -352,6 +369,8 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
             rsumw_err = np.abs(clopper_pearson_interval(sumw_num, sumw_num + sumw_denom) - rsumw)
         elif unc == 'num':
             rsumw_err = np.abs(poisson_interval(rsumw, sumw2_num / sumw_denom**2) - rsumw)
+        elif unc == "normal":
+            rsumw_err = np.abs(normal_interval(sumw_num, sumw_denom, sumw2_num, sumw2_denom))
         else:
             raise ValueError("Unrecognized uncertainty option: %r" % unc)
 
