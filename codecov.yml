@@ -1,8 +1,10 @@
+comment: off
+
 codecov:
   notify:
     require_ci_to_pass: yes
+    
+coverage:
   status:
     project: off
     patch: off
-
-comment: false
