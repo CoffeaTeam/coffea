@@ -10,7 +10,7 @@ try:
 except ImportError:
     from collections import Sequence
 
-from ..executor import futures_handler
+from ..executor import _futures_handler
 
 # this is a reasonable local spark configuration
 _default_config = pyspark.sql.SparkSession.builder \
@@ -95,7 +95,7 @@ def _spark_make_dfs(spark, fileset, partitionsize, columns, thread_workers, file
                                       ana_cols, partitionsize, file_type,
                                       treeName) for ds, files in fileset.items())
 
-        futures_handler(futures, dfs, status, 'datasets', 'loading', futures_accumulator=dfs_accumulator)
+        _futures_handler(futures, dfs, status, 'datasets', 'loading', add_fn=dfs_accumulator)
 
     return dfs
 

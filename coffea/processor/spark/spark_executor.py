@@ -8,7 +8,7 @@ import lz4.frame as lz4f
 import numpy as np
 import pandas as pd
 
-from ..executor import futures_handler
+from ..executor import _futures_handler
 
 import pyspark
 import pyspark.sql.functions as fn
@@ -99,7 +99,7 @@ class SparkExecutor(object):
                 futures = set()
                 for ds, (df, counts) in dfslist.items():
                     futures.add(executor.submit(self._pruneandcache_data, ds, df, cols_w_ds, use_df_cache))
-                futures_handler(futures, self._cacheddfs, status, unit, cachedesc, futures_accumulator=spex_accumulator)
+                _futures_handler(futures, self._cacheddfs, status, unit, cachedesc, add_fn=spex_accumulator)
 
         with ThreadPoolExecutor(max_workers=thread_workers) as executor:
             futures = set()
@@ -107,7 +107,7 @@ class SparkExecutor(object):
                 futures.add(executor.submit(self._launch_analysis, ds, df, coffea_udf, cols_w_ds))
             # wait for the spark jobs to come in
             self._rawresults = {}
-            futures_handler(futures, self._rawresults, status, unit, desc, futures_accumulator=spex_accumulator)
+            _futures_handler(futures, self._rawresults, status, unit, desc, add_fn=spex_accumulator)
 
         for ds, bitstream in self._rawresults.items():
             if bitstream is None:

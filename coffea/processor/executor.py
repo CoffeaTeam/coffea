@@ -1,7 +1,10 @@
 import concurrent.futures
+from functools import partial
 import time
-from tqdm.autonotebook import tqdm
 import uproot
+import pickle
+from tqdm.auto import tqdm
+import lz4.frame as lz4f
 from . import ProcessorABC, LazyDataFrame
 from .accumulator import value_accumulator, set_accumulator, dict_accumulator
 
@@ -17,6 +20,8 @@ except ImportError:
         return null_wrapper
 
 
+OUTPUT_COMPRESSIONLVL = 1
+
 # instrument xrootd source
 if not hasattr(uproot.source.xrootd.XRootDSource, '_read_real'):
     def _read(self, chunkindex):
@@ -27,8 +32,51 @@ if not hasattr(uproot.source.xrootd.XRootDSource, '_read_real'):
     uproot.source.xrootd.XRootDSource._read = _read
 
 
-def iterative_executor(items, function, accumulator, status=True, unit='items', desc='Processing',
-                       **kwargs):
+def _iadd(output, result):
+    output += result
+
+
+def _compressed_iadd(output, result):
+    output += result
+
+
+def _dask_reduce(items, add_fn):
+    if len(items) == 0:
+        raise ValueError("Empty list to reduction?!  Should not happen")
+    elif len(items) == 1:
+        return items[0]
+    else:
+        out = items[0]
+        for item in items[1:]:
+            add_fn(out, item)
+        return out
+
+
+def _futures_handler(futures_set, output, status, unit, desc, add_fn):
+    try:
+        with tqdm(disable=not status, unit=unit, total=len(futures_set), desc=desc) as pbar:
+            while len(futures_set) > 0:
+                finished = set(job for job in futures_set if job.done())
+                for job in finished:
+                    add_fn(output, job.result())
+                    pbar.update(1)
+                job = None
+                futures_set -= finished
+                del finished
+                time.sleep(0.1)
+    except KeyboardInterrupt:
+        for job in futures_set:
+            job.cancel()
+        if status:
+            print("Received SIGINT, killed pending jobs.  Running jobs will continue to completion.")
+            print("Running jobs:", sum(1 for j in futures_set if j.running()))
+    except Exception:
+        for job in futures_set:
+            job.cancel()
+            raise
+
+
+def iterative_executor(items, function, accumulator, **kwargs):
     """Execute in one thread iteratively
 
     Parameters
@@ -45,42 +93,22 @@ def iterative_executor(items, function, accumulator, status=True, unit='items', 
             Label of progress bar unit
         desc : str
             Label of progress bar description
+        compressed : bool, optional
+            Expect function to return compressed accumulator output (default: false)
+            This option should match the configuration of _work_function and is thus
+            somewhat internal.
     """
+    status = kwargs.pop('status', True)
+    unit = kwargs.pop('unit', 'items')
+    desc = kwargs.pop('desc', 'Processing')
+    compressed = kwargs.pop('compressed', False)
+    add_fn = _compressed_iadd if compressed else _iadd
     for i, item in tqdm(enumerate(items), disable=not status, unit=unit, total=len(items), desc=desc):
-        accumulator += function(item, **kwargs)
+        add_fn(accumulator, function(item))
     return accumulator
 
 
-def default_future_add(output, result):
-    output += result
-
-
-def futures_handler(futures_set, output, status, unit, desc, futures_accumulator=default_future_add):
-    try:
-        with tqdm(disable=not status, unit=unit, total=len(futures_set), desc=desc) as pbar:
-            while len(futures_set) > 0:
-                finished = set(job for job in futures_set if job.done())
-                for job in finished:
-                    futures_accumulator(output, job.result())
-                    pbar.update(1)
-                job = None
-                futures_set -= finished
-                del finished
-                time.sleep(1)
-    except KeyboardInterrupt:
-        for job in futures_set:
-            job.cancel()
-        if status:
-            print("Received SIGINT, killed pending jobs.  Running jobs will continue to completion.")
-            print("Running jobs:", sum(1 for j in futures_set if j.running()))
-    except Exception:
-        for job in futures_set:
-            job.cancel()
-            raise
-
-
-def futures_executor(items, function, accumulator, workers=1, status=True, unit='items', desc='Processing',
-                     **kwargs):
+def futures_executor(items, function, accumulator, **kwargs):
     """Execute using multiple local cores using python futures
 
     Parameters
@@ -99,24 +127,22 @@ def futures_executor(items, function, accumulator, workers=1, status=True, unit=
             Label of progress bar unit
         desc : str
             Label of progress bar description
+        compressed : bool, optional
+            Expect function to return compressed accumulator output (default: false)
+            This option should match the configuration of _work_function and is thus
+            somewhat internal.
     """
+    workers = kwargs.pop('workers', 1)
+    status = kwargs.pop('status', True)
+    unit = kwargs.pop('unit', 'items')
+    desc = kwargs.pop('desc', 'Processing')
+    compressed = kwargs.pop('compressed', False)
+    add_fn = _compressed_iadd if compressed else _iadd
     with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
         futures = set()
-        futures.update(executor.submit(function, item, **kwargs) for item in items)
-        futures_handler(futures, accumulator, status, unit, desc)
+        futures.update(executor.submit(function, item) for item in items)
+        _futures_handler(futures, accumulator, status, unit, desc, add_fn)
     return accumulator
-
-
-def _dask_reduce(items):
-    if len(items) == 0:
-        raise ValueError("Empty list to reduction?!  Should not happen")
-    elif len(items) == 1:
-        return items[0]
-    else:
-        out = items[0]
-        for item in items[1:]:
-            out += item
-        return out
 
 
 def dask_executor(items, function, accumulator, **kwargs):
@@ -136,17 +162,22 @@ def dask_executor(items, function, accumulator, **kwargs):
             Tree reduction factor for output accumulators (default: 20)
         status : bool, optional
             If true (default), enable progress bar
+        compressed : bool, optional
+            Expect function to return compressed accumulator output (default: false)
+            This option should match the configuration of _work_function and is thus
+            somewhat internal.
     """
     client = kwargs.pop('client')
     ntree = kwargs.pop('treereduction', 20)
     status = kwargs.pop('status', True)
-    def closure(item):
-        return function(item, **kwargs)
+    compressed = kwargs.pop('compressed', False)
+    add_fn = _compressed_iadd if compressed else _iadd
+    reducer = partial(_dask_reduce, add_fn=add_fn)
 
-    futures = client.map(closure, items)
+    futures = client.map(function, items)
     while len(futures) > 1:
         futures = client.map(
-            _dask_reduce,
+            reducer,
             [futures[i * ntree:(i + 1) * ntree] for i in range(len(futures) // ntree + 1)],
             priority=1,
         )
@@ -157,8 +188,65 @@ def dask_executor(items, function, accumulator, **kwargs):
     return accumulator
 
 
-def _work_function(item, flatten=False, savemetrics=False, mmap=False, **_):
-    dataset, fn, treename, chunksize, index, processor_instance = item
+def parsl_executor(items, function, accumulator, **kwargs):
+    """Execute using parsl pyapp wrapper (TODO)
+
+    Parameters
+    ----------
+        items : list
+            List of input arguments
+        function : function
+            A function to be called on each input, which returns an accumulator instance
+        accumulator : AccumulatorABC
+            An accumulator to collect the output of the function
+        config : parsl.config.Config, optional
+            A parsl DataFlow configuration object. Necessary if there is no active kernel
+        status : bool
+            If true (default), enable progress bar
+        unit : str
+            Label of progress bar unit
+        desc : str
+            Label of progress bar description
+        compressed : bool, optional
+            Expect function to return compressed accumulator output (default: false)
+            This option should match the configuration of _work_function and is thus
+            somewhat internal.
+    """
+    import parsl
+    from parsl.app.app import python_app
+    from .parsl.timeout import timeout
+    status = kwargs.pop('status', True)
+    unit = kwargs.pop('unit', 'items')
+    desc = kwargs.pop('desc', 'Processing')
+    compressed = kwargs.pop('compressed', True)
+    add_fn = _compressed_iadd if compressed else _iadd
+
+    cleanup = False
+    if parsl.dfk() is None:
+        config = kwargs.pop('config', None)
+        if config is None:
+            raise RuntimeError("No active parsl DataFlowKernel, must specify a config to construct one")
+        parsl.clear()
+        parsl.load(config)
+        cleanup = True
+    elif not isinstance(parsl.dfk(), parsl.dataflow.dflow.DataFlowKernel):
+        raise RuntimeError("Expected parsl.dfk() to be a parsl.dataflow.dflow.DataFlowKernel")
+
+    app = timeout(python_app(function))
+
+    futures = set()
+    futures.update(app(item) for item in items)
+    _futures_handler(futures, accumulator, status, unit, desc, add_fn)
+
+    if cleanup:
+        parsl.dfk().cleanup()
+        parsl.clear()
+
+    return accumulator
+
+
+def _work_function(item, processor_instance, flatten=False, savemetrics=False, mmap=False, compress_output=False):
+    dataset, filename, treename, chunksize, index = item
     if mmap:
         localsource = {}
     else:
@@ -168,7 +256,7 @@ def _work_function(item, flatten=False, savemetrics=False, mmap=False, **_):
         def localsource(path):
             return uproot.FileSource(path, **opts)
 
-    file = uproot.open(fn, localsource=localsource)
+    file = uproot.open(filename, localsource=localsource)
     tree = file[treename]
     df = LazyDataFrame(tree, chunksize, index, flatten=flatten)
     df['dataset'] = dataset
@@ -185,6 +273,8 @@ def _work_function(item, flatten=False, savemetrics=False, mmap=False, **_):
         metrics['processtime'] = value_accumulator(float, toc - tic)
     wrapped_out = dict_accumulator({'out': out, 'metrics': metrics})
     file.source.close()
+    if compress_output:
+        return lz4f.compress(pickle.dumps(wrapped_out), compression_level=OUTPUT_COMPRESSIONLVL)
     return wrapped_out
 
 
@@ -192,17 +282,17 @@ def _work_function(item, flatten=False, savemetrics=False, mmap=False, **_):
 def _get_chunking(filelist, treename, chunksize, workers=1):
     items = []
     executor = None if len(filelist) < 5 else concurrent.futures.ThreadPoolExecutor(workers)
-    for fn, nentries in uproot.numentries(filelist, treename, total=False, executor=executor).items():
+    for filename, nentries in uproot.numentries(filelist, treename, total=False, executor=executor).items():
         for index in range(nentries // chunksize + 1):
-            items.append((fn, chunksize, index))
+            items.append((filename, chunksize, index))
     return items
 
 
 def _get_chunking_lazy(filelist, treename, chunksize):
-    for fn in filelist:
-        nentries = uproot.numentries(fn, treename)
+    for filename in filelist:
+        nentries = uproot.numentries(filename, treename)
         for index in range(nentries // chunksize + 1):
-            yield (fn, chunksize, index)
+            yield (filename, chunksize, index)
 
 
 def run_uproot_job(fileset, treename, processor_instance, executor, executor_args={}, chunksize=500000, maxchunks=None):
@@ -248,30 +338,43 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
 
     executor_args.setdefault('workers', 1)
     pre_workers = executor_args.pop('pre_workers', 4 * executor_args['workers'])
-    executor_args.setdefault('savemetrics', False)
 
-    tn = treename
+    local_treename = treename
     items = []
     for dataset, filelist in tqdm(fileset.items(), desc='Preprocessing'):
         if isinstance(filelist, dict):
-            tn = filelist['treename'] if 'treename' in filelist else tn
+            local_treename = filelist['treename'] if 'treename' in filelist else treename
             filelist = filelist['files']
-        if not isinstance(filelist, list):
+        elif not isinstance(filelist, list):
             raise ValueError('list of filenames in fileset must be a list or a dict')
+
         if maxchunks is not None:
-            chunks = _get_chunking_lazy(tuple(filelist), tn, chunksize)
+            chunks = _get_chunking_lazy(tuple(filelist), local_treename, chunksize)
         else:
-            chunks = _get_chunking(tuple(filelist), tn, chunksize, pre_workers)
+            chunks = _get_chunking(tuple(filelist), local_treename, chunksize, pre_workers)
         for ichunk, chunk in enumerate(chunks):
             if (maxchunks is not None) and (ichunk > maxchunks):
                 break
-            items.append((dataset, chunk[0], tn, chunk[1], chunk[2], processor_instance))
+            items.append((dataset, chunk[0], local_treename, chunk[1], chunk[2]))
+
+    # pop all _work_function args here
+    savemetrics = executor_args.pop('savemetrics', False)
+    flatten = executor_args.pop('flatten', False)
+    mmap = executor_args.pop('mmap', False)
+    compressed = executor_args.setdefault('compressed', False)
+    closure = partial(_work_function,
+                      processor_instance=processor_instance,
+                      flatten=flatten,
+                      savemetrics=savemetrics,
+                      mmap=mmap,
+                      compress_output=compressed,
+                      )
 
     out = processor_instance.accumulator.identity()
     wrapped_out = dict_accumulator({'out': out, 'metrics': dict_accumulator()})
-    executor(items, _work_function, wrapped_out, **executor_args)
+    executor(items, closure, wrapped_out, **executor_args)
     processor_instance.postprocess(out)
-    if executor_args['savemetrics']:
+    if savemetrics:
         return out, wrapped_out['metrics']
     return out
 
