@@ -140,7 +140,10 @@ def dask_executor(items, function, accumulator, **kwargs):
     client = kwargs.pop('client')
     ntree = kwargs.pop('treereduction', 20)
     status = kwargs.pop('status', True)
-    futures = client.map(function, items, **kwargs)
+    def closure(item):
+        return function(item, **kwargs)
+
+    futures = client.map(closure, items)
     while len(futures) > 1:
         futures = client.map(
             _dask_reduce,
@@ -244,7 +247,7 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
 
     executor_args.setdefault('workers', 1)
-    executor_args.setdefault('pre_workers', 4 * executor_args['workers'])
+    pre_workers = executor_args.pop('pre_workers', 4 * executor_args['workers'])
     executor_args.setdefault('savemetrics', False)
 
     tn = treename
@@ -258,7 +261,7 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
         if maxchunks is not None:
             chunks = _get_chunking_lazy(tuple(filelist), tn, chunksize)
         else:
-            chunks = _get_chunking(tuple(filelist), tn, chunksize, executor_args['pre_workers'])
+            chunks = _get_chunking(tuple(filelist), tn, chunksize, pre_workers)
         for ichunk, chunk in enumerate(chunks):
             if (maxchunks is not None) and (ichunk > maxchunks):
                 break

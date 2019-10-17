@@ -47,7 +47,7 @@ def fill_lepton_kinematics():
     lepton_kinematics = hist.Hist("Events",
                                   hist.Cat("flavor", "Lepton flavor"),
                                   hist.Bin("pt", "$p_{T}$", 19, 10, 100),
-                                  hist.Bin("eta", "$\eta$", [-2.5, -1.4, 0, 1.4, 2.5]),
+                                  hist.Bin("eta", r"$\eta$", [-2.5, -1.4, 0, 1.4, 2.5]),
                                   )
 
     # Pass keyword arguments to fill, all arrays must be flat numpy arrays

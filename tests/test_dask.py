@@ -28,7 +28,8 @@ def do_dask_job(client, filelist):
 
 def test_dask_local():
     distributed = pytest.importorskip("distributed", minversion="2.6.0")
-    client = distributed.Client()
+    # `python setup.py pytest` doesn't seem to play nicely with separate processses
+    client = distributed.Client(processes=False, dashboard_address=None)
     
     import os
     import os.path as osp
