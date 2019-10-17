@@ -6,7 +6,7 @@ import pickle
 from tqdm.auto import tqdm
 import lz4.frame as lz4f
 from . import ProcessorABC, LazyDataFrame
-from .accumulator import value_accumulator, set_accumulator, dict_accumulator
+from .accumulator import AccumulatorABC, value_accumulator, set_accumulator, dict_accumulator
 
 try:
     from collections.abc import Mapping, Sequence
@@ -20,8 +20,6 @@ except ImportError:
         return null_wrapper
 
 
-OUTPUT_COMPRESSIONLVL = 1
-
 # instrument xrootd source
 if not hasattr(uproot.source.xrootd.XRootDSource, '_read_real'):
     def _read(self, chunkindex):
@@ -32,24 +30,48 @@ if not hasattr(uproot.source.xrootd.XRootDSource, '_read_real'):
     uproot.source.xrootd.XRootDSource._read = _read
 
 
+class _compression_wrapper(object):
+    def __init__(self, level, function):
+        self.level = level
+        self.function = function
+
+    # no @wraps due to pickle
+    def __call__(self, *args, **kwargs):
+        out = self.function(*args, **kwargs)
+        return lz4f.compress(pickle.dumps(out), compression_level=self.level)
+
+
+def _maybe_decompress(item):
+    if isinstance(item, AccumulatorABC):
+        return item
+    try:
+        item = pickle.loads(lz4f.decompress(item))
+        if isinstance(item, AccumulatorABC):
+            return item
+        raise RuntimeError
+    except (RuntimeError, pickle.UnpicklingError):
+        raise ValueError("Executors can only reduce accumulators or LZ4-compressed pickled accumulators")
+
+
 def _iadd(output, result):
+    # TODO: _maybe_decompress
     output += result
 
 
 def _compressed_iadd(output, result):
-    output += result
+    # TODO: deprecate in favor of smart _iadd
+    print("decompress result %x" % id(result))
+    output += pickle.loads(lz4f.decompress(result))
+    print(output)
 
 
-def _dask_reduce(items, add_fn):
+def _reduce(items):
     if len(items) == 0:
-        raise ValueError("Empty list to reduction?!  Should not happen")
-    elif len(items) == 1:
-        return items[0]
-    else:
-        out = items[0]
-        for item in items[1:]:
-            add_fn(out, item)
-        return out
+        raise ValueError("Empty list provided to reduction")
+    out = _maybe_decompress(items.pop())
+    while items:
+        out += _maybe_decompress(items.pop())
+    return out
 
 
 def _futures_handler(futures_set, output, status, unit, desc, add_fn):
@@ -57,13 +79,12 @@ def _futures_handler(futures_set, output, status, unit, desc, add_fn):
         with tqdm(disable=not status, unit=unit, total=len(futures_set), desc=desc) as pbar:
             while len(futures_set) > 0:
                 finished = set(job for job in futures_set if job.done())
-                for job in finished:
-                    add_fn(output, job.result())
+                futures_set.difference_update(finished)
+                print("set", finished)
+                while finished:
+                    add_fn(output, finished.pop().result())
                     pbar.update(1)
-                job = None
-                futures_set -= finished
-                del finished
-                time.sleep(0.1)
+                time.sleep(0.5)
     except KeyboardInterrupt:
         for job in futures_set:
             job.cancel()
@@ -73,7 +94,7 @@ def _futures_handler(futures_set, output, status, unit, desc, add_fn):
     except Exception:
         for job in futures_set:
             job.cancel()
-            raise
+        raise
 
 
 def iterative_executor(items, function, accumulator, **kwargs):
@@ -93,16 +114,17 @@ def iterative_executor(items, function, accumulator, **kwargs):
             Label of progress bar unit
         desc : str
             Label of progress bar description
-        compressed : bool, optional
-            Expect function to return compressed accumulator output (default: false)
-            This option should match the configuration of _work_function and is thus
-            somewhat internal.
+        compression : int, optional
+            Compress accumulator outputs in flight with LZ4, at level specified.
+            Leave zero (default) for no compression.
     """
     status = kwargs.pop('status', True)
     unit = kwargs.pop('unit', 'items')
     desc = kwargs.pop('desc', 'Processing')
-    compressed = kwargs.pop('compressed', False)
-    add_fn = _compressed_iadd if compressed else _iadd
+    clevel = kwargs.pop('compression', 0)
+    if clevel > 0:
+        function = _compression_wrapper(clevel, function)
+    add_fn = _iadd if clevel == 0 else _compressed_iadd
     for i, item in tqdm(enumerate(items), disable=not status, unit=unit, total=len(items), desc=desc):
         add_fn(accumulator, function(item))
     return accumulator
@@ -127,17 +149,18 @@ def futures_executor(items, function, accumulator, **kwargs):
             Label of progress bar unit
         desc : str
             Label of progress bar description
-        compressed : bool, optional
-            Expect function to return compressed accumulator output (default: false)
-            This option should match the configuration of _work_function and is thus
-            somewhat internal.
+        compression : int, optional
+            Compress accumulator outputs in flight with LZ4, at level specified.
+            Leave zero (default) for no compression.
     """
     workers = kwargs.pop('workers', 1)
     status = kwargs.pop('status', True)
     unit = kwargs.pop('unit', 'items')
     desc = kwargs.pop('desc', 'Processing')
-    compressed = kwargs.pop('compressed', False)
-    add_fn = _compressed_iadd if compressed else _iadd
+    clevel = kwargs.pop('compression', 0)
+    if clevel > 0:
+        function = _compression_wrapper(clevel, function)
+    add_fn = _iadd if clevel == 0 else _compressed_iadd
     with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
         futures = set()
         futures.update(executor.submit(function, item) for item in items)
@@ -162,17 +185,18 @@ def dask_executor(items, function, accumulator, **kwargs):
             Tree reduction factor for output accumulators (default: 20)
         status : bool, optional
             If true (default), enable progress bar
-        compressed : bool, optional
-            Expect function to return compressed accumulator output (default: false)
-            This option should match the configuration of _work_function and is thus
-            somewhat internal.
+        compression : int, optional
+            Compress accumulator outputs in flight with LZ4, at level specified.
+            Leave zero (default) for no compression.
     """
     client = kwargs.pop('client')
     ntree = kwargs.pop('treereduction', 20)
     status = kwargs.pop('status', True)
-    compressed = kwargs.pop('compressed', False)
-    add_fn = _compressed_iadd if compressed else _iadd
-    reducer = partial(_dask_reduce, add_fn=add_fn)
+    clevel = kwargs.pop('compression', 0)
+    reducer = _reduce
+    if clevel > 0:
+        function = _compression_wrapper(clevel, function)
+        reducer = _compression_wrapper(clevel, reducer)
 
     futures = client.map(function, items)
     while len(futures) > 1:
@@ -184,7 +208,7 @@ def dask_executor(items, function, accumulator, **kwargs):
     if status:
         from dask.distributed import progress
         progress(futures, multi=False, notebook=False)
-    accumulator += futures[0].result()
+    accumulator += _maybe_decompress(futures.pop().result())
     return accumulator
 
 
@@ -207,10 +231,9 @@ def parsl_executor(items, function, accumulator, **kwargs):
             Label of progress bar unit
         desc : str
             Label of progress bar description
-        compressed : bool, optional
-            Expect function to return compressed accumulator output (default: false)
-            This option should match the configuration of _work_function and is thus
-            somewhat internal.
+        compression : int, optional
+            Compress accumulator outputs in flight with LZ4, at level specified.
+            Leave zero (default) for no compression.
     """
     import parsl
     from parsl.app.app import python_app
@@ -218,8 +241,10 @@ def parsl_executor(items, function, accumulator, **kwargs):
     status = kwargs.pop('status', True)
     unit = kwargs.pop('unit', 'items')
     desc = kwargs.pop('desc', 'Processing')
-    compressed = kwargs.pop('compressed', True)
-    add_fn = _compressed_iadd if compressed else _iadd
+    clevel = kwargs.pop('compression', 0)
+    if clevel > 0:
+        function = _compression_wrapper(clevel, function)
+    add_fn = _iadd if clevel == 0 else _compressed_iadd
 
     cleanup = False
     if parsl.dfk() is None:
@@ -245,7 +270,7 @@ def parsl_executor(items, function, accumulator, **kwargs):
     return accumulator
 
 
-def _work_function(item, processor_instance, flatten=False, savemetrics=False, mmap=False, compress_output=False):
+def _work_function(item, processor_instance, flatten=False, savemetrics=False, mmap=False):
     dataset, filename, treename, chunksize, index = item
     if mmap:
         localsource = {}
@@ -273,8 +298,6 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False, m
         metrics['processtime'] = value_accumulator(float, toc - tic)
     wrapped_out = dict_accumulator({'out': out, 'metrics': metrics})
     file.source.close()
-    if compress_output:
-        return lz4f.compress(pickle.dumps(wrapped_out), compression_level=OUTPUT_COMPRESSIONLVL)
     return wrapped_out
 
 
@@ -361,13 +384,11 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
     savemetrics = executor_args.pop('savemetrics', False)
     flatten = executor_args.pop('flatten', False)
     mmap = executor_args.pop('mmap', False)
-    compressed = executor_args.setdefault('compressed', False)
     closure = partial(_work_function,
                       processor_instance=processor_instance,
                       flatten=flatten,
                       savemetrics=savemetrics,
                       mmap=mmap,
-                      compress_output=compressed,
                       )
 
     out = processor_instance.accumulator.identity()

@@ -9,16 +9,20 @@ import sys
 import pytest
 
 
-def do_dask_job(client, filelist):
+def do_dask_job(client, filelist, compression=0):
     treename='Events'
     from coffea.processor.test_items import NanoTestProcessor
     proc = NanoTestProcessor()
     
+    exe_args = {
+        'client': client,
+        'compression': compression,
+    }
     hists = processor.run_uproot_job(filelist,
                                      treename,
                                      processor_instance=proc,
                                      executor=processor.dask_executor,
-                                     executor_args={'client': client})
+                                     executor_args=exe_args)
     
     assert( hists['cutflow']['ZJets_pt'] == 4 )
     assert( hists['cutflow']['ZJets_mass'] == 1 )
@@ -40,6 +44,7 @@ def test_dask_local():
     }
 
     do_dask_job(client, filelist)
+    do_dask_job(client, filelist, compression=2)
 
     filelist = {
         'ZJets': {'treename': 'Events', 'files': [osp.join(os.getcwd(),'tests/samples/nano_dy.root')]},
