@@ -15,6 +15,11 @@ def test_accumulators():
     assert np.array_equal(a.value, np.array([5.]))
     assert np.array_equal(a.identity().value, np.array([2.]))
 
+    l = processor.list_accumulator(range(4))
+    l += [3]
+    l += processor.list_accumulator([1, 2])
+    assert l == [0, 1, 2, 3, 3, 1, 2]
+
     b = processor.set_accumulator({'apples', 'oranges'})
     b += {'pears'}
     b += 'grapes'

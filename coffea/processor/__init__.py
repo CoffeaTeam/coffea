@@ -19,6 +19,7 @@ from .executor import (
 from .accumulator import (
     AccumulatorABC,
     value_accumulator,
+    list_accumulator,
     set_accumulator,
     dict_accumulator,
     defaultdict_accumulator,
@@ -39,6 +40,7 @@ __all__ = [
     'run_spark_job',
     'AccumulatorABC',
     'value_accumulator',
+    'list_accumulator',
     'set_accumulator',
     'dict_accumulator',
     'defaultdict_accumulator',
