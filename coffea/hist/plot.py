@@ -77,15 +77,16 @@ def clopper_pearson_interval(num, denom, coverage=_coverage1sd):
     interval[1, num == denom] = 1.
     return interval
 
+
 def normal_interval(pw, tw, pw2, tw2, coverage=_coverage1sd):
     # see https://root.cern.ch/doc/master/TEfficiency_8cxx_source.html#l02515
 
-    eff = pw/tw
+    eff = pw / tw
 
-    variance = ( pw2 * (1 - 2*eff) + tw2 * eff**2 ) / (tw**2)
+    variance = (pw2 * (1 - 2 * eff) + tw2 * eff**2) / (tw**2)
     sigma = np.sqrt(variance)
 
-    prob = 0.5*(1-_coverage1sd)
+    prob = 0.5 * (1 - _coverage1sd)
     delta = np.zeros_like(sigma)
     delta[sigma != 0] = -scipy.stats.norm.ppf(prob, scale=sigma[sigma != 0])
 
