@@ -1,3 +1,4 @@
+from __future__ import print_function
 import concurrent.futures
 from functools import partial
 import time
