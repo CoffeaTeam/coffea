@@ -3,6 +3,7 @@ from functools import partial
 import time
 import uproot
 import pickle
+import sys
 from tqdm.auto import tqdm
 import lz4.frame as lz4f
 from . import ProcessorABC, LazyDataFrame
@@ -54,15 +55,7 @@ def _maybe_decompress(item):
 
 
 def _iadd(output, result):
-    # TODO: _maybe_decompress
-    output += result
-
-
-def _compressed_iadd(output, result):
-    # TODO: deprecate in favor of smart _iadd
-    print("decompress result %x" % id(result))
-    output += pickle.loads(lz4f.decompress(result))
-    print(output)
+    output += _maybe_decompress(result)
 
 
 def _reduce(items):
@@ -80,7 +73,6 @@ def _futures_handler(futures_set, output, status, unit, desc, add_fn):
             while len(futures_set) > 0:
                 finished = set(job for job in futures_set if job.done())
                 futures_set.difference_update(finished)
-                print("set", finished)
                 while finished:
                     add_fn(output, finished.pop().result())
                     pbar.update(1)
@@ -89,8 +81,8 @@ def _futures_handler(futures_set, output, status, unit, desc, add_fn):
         for job in futures_set:
             job.cancel()
         if status:
-            print("Received SIGINT, killed pending jobs.  Running jobs will continue to completion.")
-            print("Running jobs:", sum(1 for j in futures_set if j.running()))
+            print("Received SIGINT, killed pending jobs.  Running jobs will continue to completion.", file=sys.stderr)
+            print("Running jobs:", sum(1 for j in futures_set if j.running()), file=sys.stderr)
     except Exception:
         for job in futures_set:
             job.cancel()
@@ -124,7 +116,7 @@ def iterative_executor(items, function, accumulator, **kwargs):
     clevel = kwargs.pop('compression', 0)
     if clevel > 0:
         function = _compression_wrapper(clevel, function)
-    add_fn = _iadd if clevel == 0 else _compressed_iadd
+    add_fn = _iadd
     for i, item in tqdm(enumerate(items), disable=not status, unit=unit, total=len(items), desc=desc):
         add_fn(accumulator, function(item))
     return accumulator
@@ -160,7 +152,7 @@ def futures_executor(items, function, accumulator, **kwargs):
     clevel = kwargs.pop('compression', 0)
     if clevel > 0:
         function = _compression_wrapper(clevel, function)
-    add_fn = _iadd if clevel == 0 else _compressed_iadd
+    add_fn = _iadd
     with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
         futures = set()
         futures.update(executor.submit(function, item) for item in items)
@@ -244,7 +236,7 @@ def parsl_executor(items, function, accumulator, **kwargs):
     clevel = kwargs.pop('compression', 0)
     if clevel > 0:
         function = _compression_wrapper(clevel, function)
-    add_fn = _iadd if clevel == 0 else _compressed_iadd
+    add_fn = _iadd
 
     cleanup = False
     if parsl.dfk() is None:
@@ -432,10 +424,8 @@ def run_parsl_job(fileset, treename, processor_instance, executor, executor_args
     try:
         import parsl
     except ImportError as e:
-        print('you must have parsl installed to call run_parsl_job()!')
+        print('you must have parsl installed to call run_parsl_job()!', file=sys.stderr)
         raise e
-
-    print('parsl version:', parsl.__version__)
 
     from .parsl.parsl_executor import ParslExecutor
     from .parsl.detail import _parsl_initialize, _parsl_stop, _parsl_get_chunking, _default_cfg
@@ -531,10 +521,8 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     try:
         import pyspark
     except ImportError as e:
-        print('you must have pyspark installed to call run_spark_job()!')
+        print('you must have pyspark installed to call run_spark_job()!', file=sys.stderr)
         raise e
-
-    print('pyspark version:', pyspark.__version__)
 
     import pyspark.sql
     from .spark.spark_executor import SparkExecutor
