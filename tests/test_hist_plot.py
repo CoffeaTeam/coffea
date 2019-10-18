@@ -241,3 +241,47 @@ def test_clopper_pearson_interval():
     threshold = 1e-6
     assert(all((interval[1, :] / ref_hi) - 1 < threshold))
     assert(all((interval[0, :] / ref_lo) - 1 < threshold))
+
+def test_normal_interval():
+    from coffea.hist.plot import normal_interval
+
+    # Reference weighted efficiency and error from ROOTs TEfficiency
+
+    denom = np.array([  89.01457591590004, 2177.066076428943  , 6122.5256890981855 ,
+              0.              ,  100.27757990710668])
+    num = np.array([  75.14287743709515, 2177.066076428943  , 5193.454723043864  ,
+              0.              ,   84.97723540536361])
+    denom_sumw2 = np.array([   94.37919737476827, 10000.              ,  6463.46795877633   ,
+               0.              ,   105.90898005417333])
+    num_sumw2 = np.array([   67.2202147680005 , 10000.              ,  4647.983931785646  ,
+               0.              ,    76.01275761253757])
+    ref_hi = np.array([0.0514643476600107, 0.                , 0.0061403263960343,
+                          np.nan, 0.0480731185500146])
+    ref_lo = np.array([0.0514643476600107, 0.                , 0.0061403263960343,
+                          np.nan, 0.0480731185500146])
+
+    interval = normal_interval(num, denom, num_sumw2, denom_sumw2)
+    threshold = 1e-6
+
+    lo, hi = interval
+
+    assert len(ref_hi) == len(hi)
+    assert len(ref_lo) == len(lo)
+
+    for i in range(len(ref_hi)):
+        if np.isnan(ref_hi[i]):
+            assert np.isnan(ref_hi[i])
+        elif ref_hi[i] == 0.0:
+            assert hi[i] == 0.0
+        else:
+            assert np.abs(hi[i] / ref_hi[i] - 1) < threshold
+
+        if np.isnan(ref_lo[i]):
+            assert np.isnan(ref_lo[i])
+        elif ref_lo[i] == 0.0:
+            assert lo[i] == 0.0
+        else:
+            assert np.abs(lo[i] / ref_lo[i] - 1) < threshold
+
+
+
