@@ -339,8 +339,7 @@ def parsl_executor(items, function, accumulator, **kwargs):
         parsl.clear()
         parsl.load(config)
 
-    # wrap with timeout() ?
-    app = python_app(function)
+    app = timeout(python_app(function))
 
     futures = set(app(item) for item in items)
     _futures_handler(futures, accumulator, status, unit, desc, add_fn)
