@@ -61,11 +61,12 @@ def fill_lepton_kinematics():
 
 def test_plot1d():
     # histogram creation and manipulation
-    from coffea import hist
     # matplotlib
     import matplotlib as mpl
     mpl.use('Agg')
     import matplotlib.pyplot as plt
+
+    from coffea import hist
 
     lepton_kinematics = fill_lepton_kinematics()
 
