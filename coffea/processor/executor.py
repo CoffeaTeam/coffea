@@ -1,11 +1,13 @@
 from __future__ import print_function, division
 import concurrent.futures
 from functools import partial
+from itertools import repeat
 import time
 import uproot
 import pickle
 import sys
 import math
+import copy
 from tqdm.auto import tqdm
 from collections import defaultdict
 from cachetools import LRUCache
@@ -115,7 +117,8 @@ def _iadd(output, result):
 def _reduce(items):
     if len(items) == 0:
         raise ValueError("Empty list provided to reduction")
-    out = _maybe_decompress(items.pop())
+    # if dask has a cached result, we cannot alter it
+    out = copy.deepcopy(_maybe_decompress(items.pop()))
     while items:
         out += _maybe_decompress(items.pop())
     return out
@@ -246,6 +249,11 @@ def dask_executor(items, function, accumulator, **kwargs):
         compression : int, optional
             Compress accumulator outputs in flight with LZ4, at level specified.
             Leave zero (default) for no compression.
+        priority : int, optional
+            Task priority, default 0
+        heavy_input : serializable, optional
+            Any value placed here will be broadcast to workers and joined to input
+            items in a tuple (item, heavy_input) that is passed to function.
     """
     if len(items) == 0:
         return accumulator
@@ -253,21 +261,27 @@ def dask_executor(items, function, accumulator, **kwargs):
     ntree = kwargs.pop('treereduction', 20)
     status = kwargs.pop('status', True)
     clevel = kwargs.pop('compression', 0)
+    priority = kwargs.pop('priority', 0)
+    heavy_input = kwargs.pop('heavy_input', None)
     reducer = _reduce
     if clevel > 0:
         function = _compression_wrapper(clevel, function)
         reducer = _compression_wrapper(clevel, reducer)
 
-    futures = client.map(function, items)
+    if heavy_input is not None:
+        heavy_token = client.scatter(heavy_input, broadcast=True, hash=False)
+        items = list(zip(items, repeat(heavy_token)))
+    futures = client.map(function, items, priority=priority)
     while len(futures) > 1:
         futures = client.map(
             reducer,
             [futures[i:i + ntree] for i in range(0, len(futures), ntree)],
-            priority=1,
+            priority=priority,
         )
     if status:
         from dask.distributed import progress
-        progress(futures, multi=False, notebook=False)
+        # FIXME: fancy widget doesn't appear, have to live with boring pbar
+        progress(futures, multi=True, notebook=False)
     accumulator += _maybe_decompress(futures.pop().result())
     return accumulator
 
@@ -339,6 +353,8 @@ def parsl_executor(items, function, accumulator, **kwargs):
 
 
 def _work_function(item, processor_instance, flatten=False, savemetrics=False, mmap=False):
+    if processor_instance == 'heavy':
+        item, processor_instance = item
     if mmap:
         localsource = {}
     else:
@@ -499,12 +515,22 @@ def run_uproot_job(fileset,
     savemetrics = executor_args.pop('savemetrics', False)
     flatten = executor_args.pop('flatten', False)
     mmap = executor_args.pop('mmap', False)
-    closure = partial(_work_function,
-                      processor_instance=processor_instance,
-                      flatten=flatten,
-                      savemetrics=savemetrics,
-                      mmap=mmap,
-                      )
+    # hack around dask/dask#5503 which is really a silly request but here we are
+    if executor is dask_executor:
+        executor_args['heavy_input'] = processor_instance
+        closure = partial(_work_function,
+                          processor_instance='heavy',
+                          flatten=flatten,
+                          savemetrics=savemetrics,
+                          mmap=mmap,
+                          )
+    else:
+        closure = partial(_work_function,
+                          processor_instance=processor_instance,
+                          flatten=flatten,
+                          savemetrics=savemetrics,
+                          mmap=mmap,
+                          )
 
     out = processor_instance.accumulator.identity()
     wrapped_out = dict_accumulator({'out': out, 'metrics': dict_accumulator()})
@@ -513,6 +539,7 @@ def run_uproot_job(fileset,
     }
     exe_args.update(executor_args)
     executor(chunks, closure, wrapped_out, **exe_args)
+    wrapped_out['metrics']['chunks'] = value_accumulator(int, len(chunks))
     processor_instance.postprocess(out)
     if savemetrics:
         return out, wrapped_out['metrics']
