@@ -1,4 +1,4 @@
-coffea - Columnar Object Framework For Efficient Analysis
+coffea - Columnar Object Framework For Effective Analysis
 =========================================================
 
 .. image:: https://zenodo.org/badge/159673139.svg
