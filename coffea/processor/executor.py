@@ -195,7 +195,7 @@ def dask_executor(items, function, accumulator, **kwargs):
     while len(futures) > 1:
         futures = client.map(
             reducer,
-            [futures[i * ntree:(i + 1) * ntree] for i in range(len(futures) // ntree + 1)],
+            [futures[i:i + ntree] for i in range(0, len(futures), ntree)],
             priority=1,
         )
     if status:
@@ -206,7 +206,7 @@ def dask_executor(items, function, accumulator, **kwargs):
 
 
 def parsl_executor(items, function, accumulator, **kwargs):
-    """Execute using parsl pyapp wrapper (TODO)
+    """Execute using parsl pyapp wrapper
 
     Parameters
     ----------
@@ -218,6 +218,8 @@ def parsl_executor(items, function, accumulator, **kwargs):
             An accumulator to collect the output of the function
         config : parsl.config.Config, optional
             A parsl DataFlow configuration object. Necessary if there is no active kernel
+
+            .. note:: In general, it is safer to construct the DFK with ``parsl.load(config)`` prior to calling this function
         status : bool
             If true (default), enable progress bar
         unit : str
