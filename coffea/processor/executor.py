@@ -7,6 +7,7 @@ import pickle
 import sys
 import math
 from tqdm.auto import tqdm
+from collections import defaultdict
 from cachetools import LRUCache
 import lz4.frame as lz4f
 from .processor import ProcessorABC
@@ -22,14 +23,8 @@ from .dataframe import (
 
 try:
     from collections.abc import Mapping, Sequence
-    from functools import lru_cache
 except ImportError:
     from collections import Mapping, Sequence
-
-    def lru_cache(maxsize):
-        def null_wrapper(f):
-            return f
-        return null_wrapper
 
 
 # instrument xrootd source
@@ -486,7 +481,7 @@ def run_uproot_job(fileset,
                 chunks.append(chunk)
     else:
         # get just enough file info to compute chunking
-        nchunks = {}
+        nchunks = defaultdict(int)
         while fileset:
             filemeta = fileset.pop()
             if nchunks[filemeta.dataset] >= maxchunks:
