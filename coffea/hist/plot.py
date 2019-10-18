@@ -80,7 +80,7 @@ def clopper_pearson_interval(num, denom, coverage=_coverage1sd):
 
 def normal_interval(pw, tw, pw2, tw2, coverage=_coverage1sd):
     """Compute errors based on the expansion of pass/(pass + fail), possibly weighted
-        
+
         Parameters
         ----------
         pw : numpy.ndarray
@@ -93,7 +93,7 @@ def normal_interval(pw, tw, pw2, tw2, coverage=_coverage1sd):
             Denominator sum of weights squared, vectorized
         coverage : float, optional
             Central coverage interval, defaults to 68%
-        
+
         c.f. https://root.cern.ch/doc/master/TEfficiency_8cxx_source.html#l02515
     """
 
