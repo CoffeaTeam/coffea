@@ -1,14 +1,24 @@
-from __future__ import print_function
+from __future__ import print_function, division
 import concurrent.futures
 from functools import partial
 import time
 import uproot
 import pickle
 import sys
+import math
 from tqdm.auto import tqdm
+from cachetools import LRUCache
 import lz4.frame as lz4f
-from . import ProcessorABC, LazyDataFrame
-from .accumulator import AccumulatorABC, value_accumulator, set_accumulator, dict_accumulator
+from .processor import ProcessorABC
+from .accumulator import (
+    AccumulatorABC,
+    value_accumulator,
+    set_accumulator,
+    dict_accumulator,
+)
+from .dataframe import (
+    LazyDataFrame,
+)
 
 try:
     from collections.abc import Mapping, Sequence
@@ -30,6 +40,54 @@ if not hasattr(uproot.source.xrootd.XRootDSource, '_read_real'):
 
     uproot.source.xrootd.XRootDSource._read_real = uproot.source.xrootd.XRootDSource._read
     uproot.source.xrootd.XRootDSource._read = _read
+
+
+class FileMeta(object):
+    __slots__ = ['dataset', 'filename', 'treename', 'numentries']
+
+    def __init__(self, dataset, filename, treename, numentries=None):
+        self.dataset = dataset
+        self.filename = filename
+        self.treename = treename
+        self.numentries = numentries
+
+    def __hash__(self):
+        # As used to lookup numentries, no need for dataset
+        return hash((self.filename, self.treename))
+
+    def __eq__(self, other):
+        # In case of hash collisions
+        return self.filename == other.filename and self.treename == other.treename
+
+    def maybe_populate(self, cache):
+        if cache and self in cache:
+            self.numentries = cache[self]
+
+    @property
+    def populated(self):
+        return self.numentries is not None
+
+    def nchunks(self, target_chunksize):
+        if not self.populated:
+            raise RuntimeError
+        return max(round(self.numentries / target_chunksize), 1)
+
+    def chunks(self, target_chunksize):
+        n = self.nchunks(target_chunksize)
+        actual_chunksize = math.ceil(self.numentries / n)
+        for index in range(n):
+            yield WorkItem(self.dataset, self.filename, self.treename, actual_chunksize, index)
+
+
+class WorkItem(object):
+    __slots__ = ['dataset', 'filename', 'treename', 'chunksize', 'index']
+
+    def __init__(self, dataset, filename, treename, chunksize, index):
+        self.dataset = dataset
+        self.filename = filename
+        self.treename = treename
+        self.chunksize = chunksize
+        self.index = index
 
 
 class _compression_wrapper(object):
@@ -97,7 +155,7 @@ def iterative_executor(items, function, accumulator, **kwargs):
     ----------
         items : list
             List of input arguments
-        function : function
+        function : callable
             A function to be called on each input, which returns an accumulator instance
         accumulator : AccumulatorABC
             An accumulator to collect the output of the function
@@ -111,6 +169,8 @@ def iterative_executor(items, function, accumulator, **kwargs):
             Compress accumulator outputs in flight with LZ4, at level specified.
             Leave zero (default) for no compression.
     """
+    if len(items) == 0:
+        return accumulator
     status = kwargs.pop('status', True)
     unit = kwargs.pop('unit', 'items')
     desc = kwargs.pop('desc', 'Processing')
@@ -130,22 +190,28 @@ def futures_executor(items, function, accumulator, **kwargs):
     ----------
         items : list
             List of input arguments
-        function : function
+        function : callable
             A function to be called on each input, which returns an accumulator instance
         accumulator : AccumulatorABC
             An accumulator to collect the output of the function
-        workers : int
-            Number of parallel processes for futures
-        status : bool
+        pool : concurrent.futures.Executor class or instance, optional
+            The type of futures executor to use, defaults to ProcessPoolExecutor.
+            You can pass an instance instead of a class to re-use an executor
+        workers : int, optional
+            Number of parallel processes for futures (default 1)
+        status : bool, optional
             If true (default), enable progress bar
-        unit : str
-            Label of progress bar unit
-        desc : str
-            Label of progress bar description
+        unit : str, optional
+            Label of progress bar unit (default: 'Processing')
+        desc : str, optional
+            Label of progress bar description (default: 'items')
         compression : int, optional
             Compress accumulator outputs in flight with LZ4, at level specified.
             Leave zero (default) for no compression.
     """
+    if len(items) == 0:
+        return accumulator
+    pool = kwargs.pop('pool', concurrent.futures.ProcessPoolExecutor)
     workers = kwargs.pop('workers', 1)
     status = kwargs.pop('status', True)
     unit = kwargs.pop('unit', 'items')
@@ -154,10 +220,14 @@ def futures_executor(items, function, accumulator, **kwargs):
     if clevel > 0:
         function = _compression_wrapper(clevel, function)
     add_fn = _iadd
-    with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
-        futures = set()
-        futures.update(executor.submit(function, item) for item in items)
+    if isinstance(pool, concurrent.futures.Executor):
+        futures = set(pool.submit(function, item) for item in items)
         _futures_handler(futures, accumulator, status, unit, desc, add_fn)
+    else:
+        # assume its a class then
+        with pool(max_workers=workers) as executor:
+            futures = set(executor.submit(function, item) for item in items)
+            _futures_handler(futures, accumulator, status, unit, desc, add_fn)
     return accumulator
 
 
@@ -168,7 +238,7 @@ def dask_executor(items, function, accumulator, **kwargs):
     ----------
         items : list
             List of input arguments
-        function : function
+        function : callable
             A function to be called on each input, which returns an accumulator instance
         accumulator : AccumulatorABC
             An accumulator to collect the output of the function
@@ -182,6 +252,8 @@ def dask_executor(items, function, accumulator, **kwargs):
             Compress accumulator outputs in flight with LZ4, at level specified.
             Leave zero (default) for no compression.
     """
+    if len(items) == 0:
+        return accumulator
     client = kwargs.pop('client')
     ntree = kwargs.pop('treereduction', 20)
     status = kwargs.pop('status', True)
@@ -212,7 +284,7 @@ def parsl_executor(items, function, accumulator, **kwargs):
     ----------
         items : list
             List of input arguments
-        function : function
+        function : callable
             A function to be called on each input, which returns an accumulator instance
         accumulator : AccumulatorABC
             An accumulator to collect the output of the function
@@ -230,6 +302,8 @@ def parsl_executor(items, function, accumulator, **kwargs):
             Compress accumulator outputs in flight with LZ4, at level specified.
             Leave zero (default) for no compression.
     """
+    if len(items) == 0:
+        return accumulator
     import parsl
     from parsl.app.app import python_app
     from .parsl.timeout import timeout
@@ -259,8 +333,7 @@ def parsl_executor(items, function, accumulator, **kwargs):
     # wrap with timeout() ?
     app = python_app(function)
 
-    futures = set()
-    futures.update(app(item) for item in items)
+    futures = set(app(item) for item in items)
     _futures_handler(futures, accumulator, status, unit, desc, add_fn)
 
     if cleanup:
@@ -271,7 +344,6 @@ def parsl_executor(items, function, accumulator, **kwargs):
 
 
 def _work_function(item, processor_instance, flatten=False, savemetrics=False, mmap=False):
-    dataset, filename, treename, chunksize, index = item
     if mmap:
         localsource = {}
     else:
@@ -281,10 +353,10 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False, m
         def localsource(path):
             return uproot.FileSource(path, **opts)
 
-    file = uproot.open(filename, localsource=localsource)
-    tree = file[treename]
-    df = LazyDataFrame(tree, chunksize, index, flatten=flatten)
-    df['dataset'] = dataset
+    file = uproot.open(item.filename, localsource=localsource)
+    tree = file[item.treename]
+    df = LazyDataFrame(tree, item.chunksize, item.index, flatten=flatten)
+    df['dataset'] = item.dataset
     tic = time.time()
     out = processor_instance.process(df)
     toc = time.time()
@@ -301,25 +373,38 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False, m
     return wrapped_out
 
 
-@lru_cache(maxsize=128)
-def _get_chunking(filelist, treename, chunksize, workers=1):
-    items = []
-    executor = None if len(filelist) < 5 else concurrent.futures.ThreadPoolExecutor(workers)
-    for filename, nentries in uproot.numentries(filelist, treename, total=False, executor=executor).items():
-        for index in range(nentries // chunksize + 1):
-            items.append((filename, chunksize, index))
-    return items
+def _normalize_fileset(fileset, treename):
+    for dataset, filelist in fileset.items():
+        if isinstance(filelist, dict):
+            local_treename = filelist['treename'] if 'treename' in filelist else treename
+            filelist = filelist['files']
+        elif isinstance(filelist, list):
+            if treename is None:
+                raise ValueError('treename must be specified if the fileset does not contain tree names')
+            local_treename = treename
+        else:
+            raise ValueError('list of filenames in fileset must be a list or a dict')
+        for filename in filelist:
+            yield FileMeta(dataset, filename, local_treename)
 
 
-def _get_chunking_lazy(filelist, treename, chunksize):
-    for filename in filelist:
-        nentries = uproot.numentries(filename, treename)
-        for index in range(nentries // chunksize + 1):
-            yield (filename, chunksize, index)
+def _get_metadata(item):
+    nentries = uproot.numentries(item.filename, item.treename)
+    return set_accumulator([FileMeta(item.dataset, item.filename, item.treename, nentries)])
 
 
-def run_uproot_job(fileset, treename, processor_instance, executor, executor_args={}, chunksize=500000, maxchunks=None):
-    '''A tool to run jobs on a local machine
+def run_uproot_job(fileset,
+                   treename,
+                   processor_instance,
+                   executor,
+                   executor_args={},
+                   pre_executor=None,
+                   pre_args=None,
+                   chunksize=200000,
+                   maxchunks=None,
+                   metadata_cache=LRUCache(100000)
+                   ):
+    '''A tool to run a processor using uproot for data delivery
 
     A convenience wrapper to submit jobs for a file set, which is a
     dictionary of dataset: [file list] entries.  Supports only uproot
@@ -330,55 +415,90 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
     Parameters
     ----------
         fileset : dict
-            dictionary {dataset: [file, file], }
+            A dictionary ``{dataset: [file, file], }``
+            Optionally, if some files' tree name differ, the dictionary can be specified:
+            ``{dataset: {'treename': 'name', 'files': [file, file]}, }``
         treename : str
-            name of tree inside each root file, can be ``None``
-
-            .. note:: treename can also be defined in fileset, which will override the passed treename
+            name of tree inside each root file, can be ``None``;
+            treename can also be defined in fileset, which will override the passed treename
         processor_instance : ProcessorABC
             An instance of a class deriving from ProcessorABC
-        executor : iterative_executor or futures_executor or dask_executor
+        executor : callable
             A function that takes 3 arguments: items, function, accumulator
             and performs some action equivalent to:
             ``for item in items: accumulator += function(item)``
         executor_args : dict, optional
-            Extra arguments to pass to executor.  See `iterative_executor`,
-            `futures_executor`, or `dask_executor` for available options.  Some options that
-            affect the behavior of this function: 'pre_workers' specifies the
-            number of parallel threads for calculating chunking (default: 4*workers);
+            Arguments to pass to executor.  See `iterative_executor`,
+            `futures_executor`, `dask_executor`, or `parsl_executor` for available options.
+            Some options that affect the behavior of this function:
             'savemetrics' saves some detailed metrics for xrootd processing (default False);
             'flatten' removes any jagged structure from the input files (default False).
+        pre_executor : callable
+            A function like executor, used to calculate fileset metadata
+            Defaults to executor
+        pre_args : dict, optional
+            Similar to executor_args, defaults to executor_args
         chunksize : int, optional
-            Number of entries to process at a time in the data frame
+            Maximum number of entries to process at a time in the data frame.
         maxchunks : int, optional
             Maximum number of chunks to process per dataset
             Defaults to processing the whole dataset
+        metadata_cache : mapping, optional
+            A dict-like object to use as a cache for (file, tree) metadata that is used to
+            determine chunking.  Defaults to a in-memory LRU cache that holds 100k entries
+            (about 1MB depending on the length of filenames, etc.)  If you edit an input file
+            (please don't) during a session, the session can be restarted to clear the cache.
     '''
     if not isinstance(fileset, Mapping):
         raise ValueError("Expected fileset to be a mapping dataset: list(files)")
     if not isinstance(processor_instance, ProcessorABC):
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
 
-    executor_args.setdefault('workers', 1)
-    pre_workers = executor_args.pop('pre_workers', 4 * executor_args['workers'])
+    if pre_executor is None:
+        pre_executor = executor
+    if pre_args is None:
+        pre_args = executor_args
 
-    local_treename = treename
-    items = []
-    for dataset, filelist in tqdm(fileset.items(), desc='Preprocessing'):
-        if isinstance(filelist, dict):
-            local_treename = filelist['treename'] if 'treename' in filelist else treename
-            filelist = filelist['files']
-        elif not isinstance(filelist, list):
-            raise ValueError('list of filenames in fileset must be a list or a dict')
+    fileset = list(_normalize_fileset(fileset, treename))
+    for filemeta in fileset:
+        filemeta.maybe_populate(metadata_cache)
 
-        if maxchunks is not None:
-            chunks = _get_chunking_lazy(tuple(filelist), local_treename, chunksize)
-        else:
-            chunks = _get_chunking(tuple(filelist), local_treename, chunksize, pre_workers)
-        for ichunk, chunk in enumerate(chunks):
-            if (maxchunks is not None) and (ichunk > maxchunks):
-                break
-            items.append((dataset, chunk[0], local_treename, chunk[1], chunk[2]))
+    chunks = []
+    if maxchunks is None:
+        # this is a bit of an abuse of map-reduce but ok
+        to_get = set(filemeta for filemeta in fileset if not filemeta.populated)
+        if len(to_get) > 0:
+            out = set_accumulator()
+            real_pre_args = {
+                'desc': 'Preprocessing',
+                'unit': 'file',
+            }
+            real_pre_args.update(pre_args)
+            executor(to_get, _get_metadata, out, **real_pre_args)
+            while out:
+                item = out.pop()
+                metadata_cache[item] = item.numentries
+            for filemeta in fileset:
+                filemeta.maybe_populate(metadata_cache)
+        while fileset:
+            filemeta = fileset.pop()
+            for chunk in filemeta.chunks(chunksize):
+                chunks.append(chunk)
+    else:
+        # get just enough file info to compute chunking
+        nchunks = {}
+        while fileset:
+            filemeta = fileset.pop()
+            if nchunks[filemeta.dataset] >= maxchunks:
+                continue
+            if not filemeta.populated:
+                filemeta.numentries = _get_metadata(filemeta).pop().numentries
+                metadata_cache[filemeta] = filemeta.numentries
+            for chunk in filemeta.chunks(chunksize):
+                chunks.append(chunk)
+                nchunks[filemeta.dataset] += 1
+                if nchunks[filemeta.dataset] >= maxchunks:
+                    break
 
     # pop all _work_function args here
     savemetrics = executor_args.pop('savemetrics', False)
@@ -393,7 +513,11 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
 
     out = processor_instance.accumulator.identity()
     wrapped_out = dict_accumulator({'out': out, 'metrics': dict_accumulator()})
-    executor(items, closure, wrapped_out, **executor_args)
+    exe_args = {
+        'unit': 'chunk',
+    }
+    exe_args.update(executor_args)
+    executor(chunks, closure, wrapped_out, **exe_args)
     processor_instance.postprocess(out)
     if savemetrics:
         return out, wrapped_out['metrics']
@@ -402,6 +526,8 @@ def run_uproot_job(fileset, treename, processor_instance, executor, executor_arg
 
 def run_parsl_job(fileset, treename, processor_instance, executor, executor_args={}, chunksize=500000):
     '''A wrapper to submit parsl jobs
+
+    .. note:: Deprecated in favor of `run_uproot_job` with the `parsl_executor`
 
     Jobs are specified by a file set, which is a dictionary of
     dataset: [file list] entries.  Supports only uproot reading,
