@@ -411,30 +411,7 @@ class JaggedCandidateMethods(awkward.Methods):
         array four-momentum and cached fast access pt/eta/phi/mass.
         """
         outs = super(JaggedCandidateMethods, self).cross(other, nested)
-        # currently JaggedArray.cross() has some funny behavior when it encounters the
-        # p4 column and makes some wierd new column... for now I just delete it and reorder
-        # everything looks ok after that
-        keys = outs.columns
-        reorder = False
-        for key in keys:
-            if not isinstance(outs[key].content, awkward.Table):
-                del outs[key]
-                reorder = True
-        if reorder:
-            keys = outs.columns
-            realkey = {}
-            for i in range(len(keys)):
-                realkey[keys[i]] = str(i)
-            for key in keys:
-                if realkey[key] != key:
-                    outs[realkey[key]] = outs[key]
-                    del outs[key]
-        keys = outs.columns
-        for key in keys:
-            if 'p4' not in outs.columns:
-                outs['p4'] = outs[key]['p4']
-            else:
-                outs['p4'] = outs['p4'] + outs[key]['p4']
+        outs['p4'] = outs.i0['p4'] + outs.i1['p4']
         thep4 = outs['p4']
         outs['__fast_pt'] = awkward.JaggedArray.fromoffsets(outs.offsets, _fast_pt(thep4.content))
         outs['__fast_eta'] = awkward.JaggedArray.fromoffsets(outs.offsets, _fast_eta(thep4.content))

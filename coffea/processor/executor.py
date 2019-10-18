@@ -1,6 +1,6 @@
 import concurrent.futures
 import time
-from tqdm.autonotebook import tqdm
+from tqdm.auto import tqdm
 import uproot
 from . import ProcessorABC, LazyDataFrame
 from .accumulator import value_accumulator, set_accumulator, dict_accumulator
