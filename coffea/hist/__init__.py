@@ -23,6 +23,7 @@ from .export import (
 from .plot import (
     poisson_interval,
     clopper_pearson_interval,
+    normal_interval,
     plot1d,
     plotratio,
     plot2d,
@@ -38,6 +39,7 @@ __all__ = [
     'export1d',
     'poisson_interval',
     'clopper_pearson_interval',
+    'normal_interval',
     'plot1d',
     'plotratio',
     'plot2d',
