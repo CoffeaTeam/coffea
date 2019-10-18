@@ -88,7 +88,7 @@ def normal_interval(pw, tw, pw2, tw2, coverage=_coverage1sd):
 
     prob = 0.5 * (1 - coverage)
     delta = np.zeros_like(sigma)
-    delta[sigma != 0] = -scipy.stats.norm.ppf(prob, scale=sigma[sigma != 0])
+    delta[sigma != 0] = scipy.stats.norm.ppf(prob, scale=sigma[sigma != 0])
 
     lo = eff - np.minimum(eff + delta, np.ones_like(eff))
     hi = np.maximum(eff - delta, np.zeros_like(eff)) - eff
