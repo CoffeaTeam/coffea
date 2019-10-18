@@ -240,17 +240,22 @@ def parsl_executor(items, function, accumulator, **kwargs):
     add_fn = _iadd
 
     cleanup = False
-    if parsl.dfk() is None:
-        config = kwargs.pop('config', None)
-        if config is None:
-            raise RuntimeError("No active parsl DataFlowKernel, must specify a config to construct one")
+    config = kwargs.pop('config', None)
+    try:
+        parsl.dfk()
+    except RuntimeError:
+        cleanup = True
+        pass
+    if cleanup and config is None:
+        raise RuntimeError("No active parsl DataFlowKernel, must specify a config to construct one")
+    elif not cleanup and config is not None:
+        raise RuntimeError("An active parsl DataFlowKernel already exists")
+    else:
         parsl.clear()
         parsl.load(config)
-        cleanup = True
-    elif not isinstance(parsl.dfk(), parsl.dataflow.dflow.DataFlowKernel):
-        raise RuntimeError("Expected parsl.dfk() to be a parsl.dataflow.dflow.DataFlowKernel")
 
-    app = timeout(python_app(function))
+    # wrap with timeout() ?
+    app = python_app(function)
 
     futures = set()
     futures.update(app(item) for item in items)
