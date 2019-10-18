@@ -77,12 +77,14 @@ def test_analysis_objects():
     adistinct = jca1.distincts()
     apair = jca1.pairs()
     across = jca1.cross(jca2)
+    acrossn = jca1.cross(jca2, nested=True)
     achoose2 = jca1.choose(2)
     achoose3 = jca1.choose(3)
     
     assert 'p4' in adistinct.columns
     assert 'p4' in apair.columns
     assert 'p4' in across.columns
+    assert 'p4' in acrossn.columns
     assert 'p4' in achoose2.columns
     assert 'p4' in achoose3.columns
     
