@@ -12,7 +12,7 @@ import time
 
 from parsl.app.app import python_app
 from .timeout import timeout
-from ..executor import futures_handler
+from ..executor import _futures_handler
 
 lz4_clevel = 1
 
@@ -92,7 +92,7 @@ class ParslExecutor(object):
             total[1][dataset] += nevents
             total[0].add(pkl.loads(lz4f.decompress(blob)))
 
-        futures_handler(futures, (output, self._counts), status, unit, desc, futures_accumulator=pex_accumulator)
+        _futures_handler(futures, (output, self._counts), status, unit, desc, add_fn=pex_accumulator)
 
 
 parsl_executor = ParslExecutor()
