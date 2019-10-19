@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, division
 
+import matplotlib as mpl
+mpl.use('Agg')
+
 from coffea import hist
 from coffea.util import numpy as np
 import requests

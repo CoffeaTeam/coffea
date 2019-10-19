@@ -136,7 +136,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
     """
     import matplotlib.pyplot as plt
     if ax is None:
-        fig, ax = plt.subplots(1, 1)
+        ax = plt.gca()
     else:
         if not isinstance(ax, plt.Axes):
             raise ValueError("ax must be a matplotlib Axes object")
@@ -216,7 +216,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             kwargs = {}
 
         hep.histplot(plot_info['sumw'], edges, label=plot_info['label'],
-                     yerr=_error, stack=stack, histtype=histtype,
+                     yerr=_error, stack=stack, histtype=histtype, ax=ax,
                      **kwargs)
 
         if stack and error_opts is not None:
