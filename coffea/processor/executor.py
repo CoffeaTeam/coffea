@@ -608,13 +608,13 @@ def run_parsl_job(fileset, treename, processor_instance, executor, executor_args
     if not isinstance(processor_instance, ProcessorABC):
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
     if isinstance(executor, ParslExecutor):
-        warnings.warn("ParslExecutor base class is deprecated replacing with processor.parsl_executor",
+        warnings.warn("ParslExecutor class is deprecated replacing with processor.parsl_executor",
                       DeprecationWarning)
         executor = parsl_executor
     elif executor == parsl_executor:
         pass
     else:
-        raise ValueError("Expected executor to derive from ParslBaseExecutor or be executor.parsl_executor")
+        raise ValueError("Expected executor to derive from ParslExecutor or be executor.parsl_executor")
 
     executor_args.setdefault('config', _default_cfg)
     executor_args.setdefault('timeout', 180)
