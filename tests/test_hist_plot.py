@@ -68,7 +68,7 @@ def test_plot1d():
     # matplotlib
     import matplotlib as mpl
     import matplotlib.pyplot as plt
-    plt.switch_backend('pdf')
+    plt.switch_backend('agg')
 
     from coffea import hist
 
@@ -99,7 +99,7 @@ def test_plot2d():
     # matplotlib
     import matplotlib as mpl
     import matplotlib.pyplot as plt
-    plt.switch_backend('pdf')
+    plt.switch_backend('agg')
 
     lepton_kinematics = fill_lepton_kinematics()
 
@@ -115,7 +115,7 @@ def test_plotratio():
     # matplotlib
     import matplotlib as mpl
     import matplotlib.pyplot as plt
-    plt.switch_backend('pdf')
+    plt.switch_backend('agg')
 
     lepton_kinematics = fill_lepton_kinematics()
 
@@ -221,7 +221,7 @@ def test_plotgrid():
     # matplotlib
     import matplotlib as mpl
     import matplotlib.pyplot as plt
-    plt.switch_backend('pdf')
+    plt.switch_backend('agg')
 
     lepton_kinematics = fill_lepton_kinematics()
 
