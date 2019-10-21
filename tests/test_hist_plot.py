@@ -2,7 +2,8 @@
 from __future__ import print_function, division
 
 import matplotlib as mpl
-mpl.use('pdf')
+import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 
 from coffea import hist
 from coffea.util import numpy as np
@@ -66,8 +67,8 @@ def test_plot1d():
     # histogram creation and manipulation
     # matplotlib
     import matplotlib as mpl
-    mpl.use('pdf')
     import matplotlib.pyplot as plt
+    plt.switch_backend('pdf')
 
     from coffea import hist
 
@@ -97,8 +98,8 @@ def test_plot2d():
     from coffea import hist
     # matplotlib
     import matplotlib as mpl
-    mpl.use('pdf')
     import matplotlib.pyplot as plt
+    plt.switch_backend('pdf')
 
     lepton_kinematics = fill_lepton_kinematics()
 
@@ -113,8 +114,8 @@ def test_plotratio():
     from coffea import hist
     # matplotlib
     import matplotlib as mpl
-    mpl.use('pdf')
     import matplotlib.pyplot as plt
+    plt.switch_backend('pdf')
 
     lepton_kinematics = fill_lepton_kinematics()
 
@@ -219,8 +220,8 @@ def test_plotgrid():
     from coffea import hist
     # matplotlib
     import matplotlib as mpl
-    mpl.use('pdf')
     import matplotlib.pyplot as plt
+    plt.switch_backend('pdf')
 
     lepton_kinematics = fill_lepton_kinematics()
 
