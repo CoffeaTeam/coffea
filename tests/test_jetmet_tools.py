@@ -230,7 +230,3 @@ def test_jet_correction_uncertainty_sources():
     for level, corrs in juncs:
         assert(level in levels)
         assert(corrs.shape[0] == test_eta.shape[0])
-
-if __name__ == "__main__":
-    test_jet_resolution_sf()
-    test_jet_resolution_sf_2d()
