@@ -8,6 +8,7 @@ import pickle
 import sys
 import math
 import copy
+import cloudpickle
 from tqdm.auto import tqdm
 from collections import defaultdict
 from cachetools import LRUCache
@@ -164,16 +165,16 @@ def iterative_executor(items, function, accumulator, **kwargs):
         desc : str
             Label of progress bar description
         compression : int, optional
-            Compress accumulator outputs in flight with LZ4, at level specified.
-            Leave zero (default) for no compression.
+            Compress accumulator outputs in flight with LZ4, at level specified (default 1)
+            Set to ``None`` for no compression.
     """
     if len(items) == 0:
         return accumulator
     status = kwargs.pop('status', True)
     unit = kwargs.pop('unit', 'items')
     desc = kwargs.pop('desc', 'Processing')
-    clevel = kwargs.pop('compression', 0)
-    if clevel > 0:
+    clevel = kwargs.pop('compression', 1)
+    if clevel is not None:
         function = _compression_wrapper(clevel, function)
     add_fn = _iadd
     for i, item in tqdm(enumerate(items), disable=not status, unit=unit, total=len(items), desc=desc):
@@ -204,8 +205,8 @@ def futures_executor(items, function, accumulator, **kwargs):
         desc : str, optional
             Label of progress bar description (default: 'items')
         compression : int, optional
-            Compress accumulator outputs in flight with LZ4, at level specified.
-            Leave zero (default) for no compression.
+            Compress accumulator outputs in flight with LZ4, at level specified (default 1)
+            Set to ``None`` for no compression.
     """
     if len(items) == 0:
         return accumulator
@@ -214,8 +215,8 @@ def futures_executor(items, function, accumulator, **kwargs):
     status = kwargs.pop('status', True)
     unit = kwargs.pop('unit', 'items')
     desc = kwargs.pop('desc', 'Processing')
-    clevel = kwargs.pop('compression', 0)
-    if clevel > 0:
+    clevel = kwargs.pop('compression', 1)
+    if clevel is not None:
         function = _compression_wrapper(clevel, function)
     add_fn = _iadd
     if isinstance(pool, concurrent.futures.Executor):
@@ -247,8 +248,8 @@ def dask_executor(items, function, accumulator, **kwargs):
         status : bool, optional
             If true (default), enable progress bar
         compression : int, optional
-            Compress accumulator outputs in flight with LZ4, at level specified.
-            Leave zero (default) for no compression.
+            Compress accumulator outputs in flight with LZ4, at level specified (default 1)
+            Set to ``None`` for no compression.
         priority : int, optional
             Task priority, default 0
         heavy_input : serializable, optional
@@ -260,11 +261,11 @@ def dask_executor(items, function, accumulator, **kwargs):
     client = kwargs.pop('client')
     ntree = kwargs.pop('treereduction', 20)
     status = kwargs.pop('status', True)
-    clevel = kwargs.pop('compression', 0)
+    clevel = kwargs.pop('compression', 1)
     priority = kwargs.pop('priority', 0)
     heavy_input = kwargs.pop('heavy_input', None)
     reducer = _reduce
-    if clevel > 0:
+    if clevel is not None:
         function = _compression_wrapper(clevel, function)
         reducer = _compression_wrapper(clevel, reducer)
 
@@ -308,8 +309,8 @@ def parsl_executor(items, function, accumulator, **kwargs):
         desc : str
             Label of progress bar description
         compression : int, optional
-            Compress accumulator outputs in flight with LZ4, at level specified.
-            Leave zero (default) for no compression.
+            Compress accumulator outputs in flight with LZ4, at level specified (default 1)
+            Set to ``None`` for no compression.
     """
     if len(items) == 0:
         return accumulator
@@ -319,8 +320,8 @@ def parsl_executor(items, function, accumulator, **kwargs):
     status = kwargs.pop('status', True)
     unit = kwargs.pop('unit', 'items')
     desc = kwargs.pop('desc', 'Processing')
-    clevel = kwargs.pop('compression', 0)
-    if clevel > 0:
+    clevel = kwargs.pop('compression', 1)
+    if clevel is not None:
         function = _compression_wrapper(clevel, function)
     add_fn = _iadd
 
@@ -354,6 +355,8 @@ def parsl_executor(items, function, accumulator, **kwargs):
 def _work_function(item, processor_instance, flatten=False, savemetrics=False, mmap=False):
     if processor_instance == 'heavy':
         item, processor_instance = item
+    if not isinstance(processor_instance, ProcessorABC):
+        processor_instance = cloudpickle.loads(lz4f.decompress(processor_instance))
     if mmap:
         localsource = {}
     else:
@@ -442,7 +445,9 @@ def run_uproot_job(fileset,
             `futures_executor`, `dask_executor`, or `parsl_executor` for available options.
             Some options that affect the behavior of this function:
             'savemetrics' saves some detailed metrics for xrootd processing (default False);
-            'flatten' removes any jagged structure from the input files (default False).
+            'flatten' removes any jagged structure from the input files (default False);
+            'processor_compression' sets the compression level used to send processor instance
+            to workers (default 1).
         pre_executor : callable
             A function like executor, used to calculate fileset metadata
             Defaults to executor
@@ -514,9 +519,14 @@ def run_uproot_job(fileset,
     savemetrics = executor_args.pop('savemetrics', False)
     flatten = executor_args.pop('flatten', False)
     mmap = executor_args.pop('mmap', False)
+    pi_compression = executor_args.pop('processor_compression', 1)
+    if pi_compression is None:
+        pi_to_send = processor_instance
+    else:
+        pi_to_send = lz4f.compress(cloudpickle.dumps(processor_instance), compression_level=pi_compression)
     # hack around dask/dask#5503 which is really a silly request but here we are
     if executor is dask_executor:
-        executor_args['heavy_input'] = processor_instance
+        executor_args['heavy_input'] = pi_to_send
         closure = partial(_work_function,
                           processor_instance='heavy',
                           flatten=flatten,
@@ -525,7 +535,7 @@ def run_uproot_job(fileset,
                           )
     else:
         closure = partial(_work_function,
-                          processor_instance=processor_instance,
+                          processor_instance=pi_to_send,
                           flatten=flatten,
                           savemetrics=savemetrics,
                           mmap=mmap,
