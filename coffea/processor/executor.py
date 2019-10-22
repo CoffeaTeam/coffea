@@ -30,6 +30,9 @@ except ImportError:
     from collections import Mapping, Sequence
 
 
+_PICKLE_PROTOCOL = pickle.HIGHEST_PROTOCOL
+
+
 # instrument xrootd source
 if not hasattr(uproot.source.xrootd.XRootDSource, '_read_real'):
     def _read(self, chunkindex):
@@ -96,7 +99,7 @@ class _compression_wrapper(object):
     # no @wraps due to pickle
     def __call__(self, *args, **kwargs):
         out = self.function(*args, **kwargs)
-        return lz4f.compress(pickle.dumps(out), compression_level=self.level)
+        return lz4f.compress(pickle.dumps(out, protocol=_PICKLE_PROTOCOL), compression_level=self.level)
 
 
 def _maybe_decompress(item):
