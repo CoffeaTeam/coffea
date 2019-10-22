@@ -23,7 +23,8 @@ def jetmet_evaluator():
                              '* * tests/samples/Summer16_23Sep2016V3_MC_Uncertainty_AK4PFPuppi.junc.txt.gz',
                              '* * tests/samples/Fall17_17Nov2017_V6_MC_UncertaintySources_AK4PFchs.junc.txt.gz',
                              '* * tests/samples/Spring16_25nsV10_MC_PtResolution_AK4PFPuppi.jr.txt.gz',
-                             '* * tests/samples/Spring16_25nsV10_MC_SF_AK4PFPuppi.jersf.txt.gz'])
+                             '* * tests/samples/Spring16_25nsV10_MC_SF_AK4PFPuppi.jersf.txt.gz',
+                             '* * tests/samples/Autumn18_V7_MC_SF_AK4PFchs.jersf.txt.gz'])
     
     extract.finalize()
 
@@ -120,6 +121,11 @@ def test_jet_resolution_sf():
     
     resosfs = resosf.getScaleFactor(JetEta=test_eta)
 
+def test_jet_resolution_sf_2d():
+    from coffea.jetmet_tools import JetResolutionScaleFactor
+    counts, test_eta, test_pt = dummy_jagged_eta_pt()
+    resosf = JetResolutionScaleFactor(**{name: evaluator[name] for name in ["Autumn18_V7_MC_SF_AK4PFchs"]})
+    resosfs = resosf.getScaleFactor(JetPt=test_pt, JetEta=test_eta)
 
 def test_jet_transformer():
     import numpy as np
@@ -224,3 +230,7 @@ def test_jet_correction_uncertainty_sources():
     for level, corrs in juncs:
         assert(level in levels)
         assert(corrs.shape[0] == test_eta.shape[0])
+
+if __name__ == "__main__":
+    test_jet_resolution_sf()
+    test_jet_resolution_sf_2d()
