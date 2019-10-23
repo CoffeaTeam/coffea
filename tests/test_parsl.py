@@ -86,7 +86,6 @@ def test_parsl_htex_executor():
 
     do_parsl_job(filelist)
 
-    parsl.dfk().cleanup()
     parsl.clear()
     do_parsl_job(filelist, flatten=True, config=parsl_config)
 
