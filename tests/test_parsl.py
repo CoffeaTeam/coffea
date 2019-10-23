@@ -85,7 +85,7 @@ def test_parsl_htex_executor():
     }
 
     do_parsl_job(filelist)
-    do_parsl_job(filelist, flatten=True, config=parsl_config)
+    do_parsl_job(filelist, flatten=True)
 
 
 def test_parsl_funcs():
