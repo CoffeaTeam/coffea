@@ -339,7 +339,7 @@ def parsl_executor(items, function, accumulator, **kwargs):
         raise RuntimeError("No active parsl DataFlowKernel, must specify a config to construct one")
     elif not cleanup and config is not None:
         raise RuntimeError("An active parsl DataFlowKernel already exists")
-    else:
+    elif config is not None:
         parsl.clear()
         parsl.load(config)
 
