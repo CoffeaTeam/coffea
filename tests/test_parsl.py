@@ -29,11 +29,11 @@ def do_parsl_job(filelist, flatten=False, compression=0, config=None):
         'compression': compression,
         'config': config,
     }
-    hists = processor.run_uproot_job(filelist,
-                                     treename,
-                                     processor_instance=proc,
-                                     executor=processor.executor.parsl_executor,
-                                     executor_args=exe_args)
+    hists = processor.run_parsl_job(filelist,
+                                    treename,
+                                    processor_instance=proc,
+                                    executor=processor.executor.parsl_executor,
+                                    executor_args=exe_args)
 
     assert( hists['cutflow']['ZJets_pt'] == 4 )
     assert( hists['cutflow']['ZJets_mass'] == 1 )
@@ -41,7 +41,6 @@ def do_parsl_job(filelist, flatten=False, compression=0, config=None):
     assert( hists['cutflow']['Data_mass'] == 5 )
 
 
-@pytest.mark.skipif(sys.platform.startswith('darwin'), reason='issue with parsl htex on macos')
 def test_parsl_htex_executor():
     parsl = pytest.importorskip("parsl", minversion="0.7.2")
     import os
@@ -88,39 +87,16 @@ def test_parsl_htex_executor():
     do_parsl_job(filelist, flatten=True)
 
 
-def test_parsl_funcs():
+def test_parsl_deprecated():
     parsl = pytest.importorskip("parsl", minversion="0.7.2")
+    
+    from coffea.processor.parsl.parsl_executor import coffea_pyapp_func, parsl_executor
 
-    import os.path as osp
-    from coffea.processor.parsl.detail import derive_chunks
+    with pytest.raises(RuntimeError):
+        coffea_pyapp_func(None, None, None, None, None, None)
 
-    filename = osp.abspath('tests/samples/nano_dy.root')
-    dataset = 'Z+Jets'
-    treename = 'Events'
-    chunksize = 20
-    ds, tn, test = derive_chunks.func(filename, treename, chunksize, dataset)
-
-    assert(dataset == ds)
-    assert(treename == tn)
-    assert('nano_dy.root' in test[0][0])
-    assert(test[0][1] == 20)
-    assert(test[0][2] == 0)
-
-    from coffea.processor.parsl.parsl_executor import coffea_pyapp
-    from coffea.processor.test_items import NanoTestProcessor
-    import pickle as pkl
-    import cloudpickle as cpkl
-    import lz4.frame as lz4f
-
-    procpkl = lz4f.compress(cpkl.dumps(NanoTestProcessor()))
-
-    out = coffea_pyapp.func('ZJets', filename, treename, chunksize, 0, procpkl)
-
-    hists = pkl.loads(lz4f.decompress(out[0]))
-    assert( hists['cutflow']['ZJets_pt'] == 4 )
-    assert( hists['cutflow']['ZJets_mass'] == 1 )
-    assert(out[1] == 10)
-    assert(out[2] == 'ZJets')
+    with pytest.raises(RuntimeError):
+        parsl_executor(None, None, None, None)
 
 
 @pytest.mark.skipif(sys.platform.startswith('win'), reason='signals are different on windows')
