@@ -558,7 +558,7 @@ def run_uproot_job(fileset,
     return out
 
 
-def run_parsl_job(fileset, treename, processor_instance, executor, executor_args={}, chunksize=500000):
+def run_parsl_job(fileset, treename, processor_instance, executor, executor_args={}, chunksize=200000):
     '''A wrapper to submit parsl jobs
 
     .. note:: Deprecated in favor of `run_uproot_job` with the `parsl_executor`
@@ -595,57 +595,44 @@ def run_parsl_job(fileset, treename, processor_instance, executor, executor_args
         print('you must have parsl installed to call run_parsl_job()!', file=sys.stderr)
         raise e
 
+    import warnings
+
+    warnings.warn("run_parsl_job is deprecated and will be removed in 0.7.0, replaced by run_uproot_job",
+                  DeprecationWarning)
+
     from .parsl.parsl_executor import ParslExecutor
-    from .parsl.detail import _parsl_initialize, _parsl_stop, _parsl_get_chunking, _default_cfg
+    from .parsl.detail import _default_cfg
 
     if not isinstance(fileset, Mapping):
         raise ValueError("Expected fileset to be a mapping dataset: list(files)")
     if not isinstance(processor_instance, ProcessorABC):
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
-    if not isinstance(executor, ParslExecutor):
-        raise ValueError("Expected executor to derive from ParslBaseExecutor")
+    if isinstance(executor, ParslExecutor):
+        warnings.warn("ParslExecutor class is deprecated replacing with processor.parsl_executor",
+                      DeprecationWarning)
+        executor = parsl_executor
+    elif executor == parsl_executor:
+        pass
+    else:
+        raise ValueError("Expected executor to derive from ParslExecutor or be executor.parsl_executor")
 
     executor_args.setdefault('config', _default_cfg)
     executor_args.setdefault('timeout', 180)
     executor_args.setdefault('chunking_timeout', 10)
     executor_args.setdefault('flatten', True)
+    executor_args.setdefault('compression', 0)
 
-    # initialize parsl if we need to
-    # if we initialize, then we deconstruct
-    # when we're done
-    killParsl = False
-    if parsl.dfk() is None:
-        _parsl_initialize(executor_args.get('config'))
-        killParsl = True
-    else:
-        if not isinstance(parsl.dfk(), parsl.dataflow.dflow.DataFlowKernel):
-            raise ValueError("Expected parsl.dfk() to be a parsl.dataflow.dflow.DataFlowKernel")
+    try:
+        parsl.dfk()
+        executor_args.pop('config')
+    except RuntimeError:
+        pass
 
-    tn = treename
-    to_chunk = []
-    for dataset, filelist in fileset.items():
-        if isinstance(filelist, dict):
-            tn = filelist['treename'] if 'treename' in filelist else tn
-            filelist = filelist['files']
-        if not isinstance(filelist, list):
-            raise ValueError('list of filenames in fileset must be a list or a dict')
-        if not isinstance(tn, str):
-            tn = tuple(treename)
-        for afile in filelist:
-            to_chunk.append((dataset, afile, tn))
-
-    items = _parsl_get_chunking(to_chunk, chunksize, timeout=executor_args['chunking_timeout'])
-
-    # loose items we don't need any more
-    executor_args.pop('chunking_timeout')
-    executor_args.pop('config')
-
-    output = processor_instance.accumulator.identity()
-    executor(items, processor_instance, output, **executor_args)
-    processor_instance.postprocess(output)
-
-    if killParsl:
-        _parsl_stop()
+    output = run_uproot_job(fileset,
+                            treename,
+                            processor_instance=processor_instance,
+                            executor=executor,
+                            executor_args=executor_args)
 
     return output
 
