@@ -18,7 +18,7 @@ def test_parsl_start_stop():
     _parsl_stop()
 
 
-def do_parsl_job(filelist, flatten=False, compression=0):
+def do_parsl_job(filelist, flatten=False, compression=0, config=None):
     treename='Events'
 
     from coffea.processor.test_items import NanoTestProcessor
@@ -27,6 +27,7 @@ def do_parsl_job(filelist, flatten=False, compression=0):
     exe_args = {
         'flatten': flatten,
         'compression': compression,
+        'config': config,
     }
     hists = processor.run_uproot_job(filelist,
                                      treename,
@@ -84,7 +85,10 @@ def test_parsl_htex_executor():
     }
 
     do_parsl_job(filelist)
-    do_parsl_job(filelist, flatten=True)
+
+    parsl.dfk().cleanup()
+    parsl.clear()
+    do_parsl_job(filelist, flatten=True, config=parsl_config)
 
 
 def test_parsl_funcs():
