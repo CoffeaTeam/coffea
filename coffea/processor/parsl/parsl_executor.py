@@ -17,12 +17,56 @@ from ..executor import _futures_handler
 lz4_clevel = 1
 
 
-def coffea_pyapp_func(dataset, fn, treename, chunksize, index, procstr, timeout=None, flatten=True):
-    raise RuntimeError('parsl_executor.coffea pyapp cannot be used any more,'
-                       'please use a wrapped _work_function from processor.executor')
+@timeout
+@python_app
+def coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=None, flatten=True):
+    import uproot
+    import cloudpickle as cpkl
+    import pickle as pkl
+    import lz4.frame as lz4f
+    from coffea import hist, processor
+    from coffea.processor.accumulator import value_accumulator
 
+    uproot.XRootDSource.defaults["parallel"] = False
 
-coffea_pyapp = timeout(python_app(coffea_pyapp_func))
+    lz4_clevel = 1
+
+    # instrument xrootd source
+    if not hasattr(uproot.source.xrootd.XRootDSource, '_read_real'):
+
+        def _read(self, chunkindex):
+            self.bytesread = getattr(self, 'bytesread', 0) + self._chunkbytes
+            return self._read_real(chunkindex)
+
+        uproot.source.xrootd.XRootDSource._read_real = uproot.source.xrootd.XRootDSource._read
+        uproot.source.xrootd.XRootDSource._read = _read
+
+    processor_instance = cpkl.loads(lz4f.decompress(procstr))
+
+    afile = uproot.open(fn)
+
+    tree = None
+    if isinstance(treename, str):
+        tree = afile[treename]
+    elif isinstance(treename, Sequence):
+        for name in reversed(treename):
+            if name in afile:
+                tree = afile[name]
+    else:
+        raise Exception('treename must be a str or Sequence but is a %s!' % repr(type(treename)))
+
+    if tree is None:
+        raise Exception('No tree found, out of possible tree names: %s' % repr(treename))
+
+    df = processor.LazyDataFrame(tree, chunksize, index, flatten=flatten)
+    df['dataset'] = dataset
+
+    vals = processor_instance.process(df)
+    if isinstance(afile.source, uproot.source.xrootd.XRootDSource):
+        vals['_bytesread'] = value_accumulator(int) + afile.source.bytesread
+    valsblob = lz4f.compress(pkl.dumps(vals), compression_level=lz4_clevel)
+
+    return valsblob, df.size, dataset
 
 
 class ParslExecutor(object):
@@ -35,9 +79,20 @@ class ParslExecutor(object):
         return self._counts
 
     def __call__(self, items, processor_instance, output, status=True, unit='items', desc='Processing', timeout=None, flatten=True):
+        procstr = lz4f.compress(cpkl.dumps(processor_instance))
 
-        raise RuntimeError('ParslExecutor.__call__ cannot be used any more,'
-                           'please use executor.parsl_executor')
+        futures = set()
+        for dataset, fn, treename, chunksize, index in items:
+            if dataset not in self._counts:
+                self._counts[dataset] = 0
+            futures.add(coffea_pyapp(dataset, fn, treename, chunksize, index, procstr, timeout=timeout, flatten=flatten))
+
+        def pex_accumulator(total, result):
+            blob, nevents, dataset = result
+            total[1][dataset] += nevents
+            total[0].add(pkl.loads(lz4f.decompress(blob)))
+
+        _futures_handler(futures, (output, self._counts), status, unit, desc, add_fn=pex_accumulator)
 
 
 parsl_executor = ParslExecutor()
