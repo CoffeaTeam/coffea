@@ -197,7 +197,7 @@ def convert_jersf_txt_file(jersfFilePath):
         vals, names = vallist[-1]
         names = ['central-up-down']
         central, down, up = vals
-        vallist[-1] = (np.vstack((central.flatten(), up.flatten(), down.flatten())).T, names)
+        vallist[-1] = ((central, up, down), names)
         wrapped_up[newkey] = tuple(vallist)
 
     return wrapped_up
