@@ -709,12 +709,15 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     if spark is None:
         spark = _spark_initialize(**executor_args)
         killSpark = True
+        use_cache = False  # if we always kill spark then we cannot use the cache
     else:
         if not isinstance(spark, pyspark.sql.session.SparkSession):
             raise ValueError("Expected 'spark' to be a pyspark.sql.session.SparkSession")
 
-    dfslist = _spark_make_dfs(spark, fileset, partitionsize, processor_instance.columns,
-                              thread_workers, file_type, treeName)
+    dfslist = {}
+    if executor._cacheddfs is None:
+        dfslist = _spark_make_dfs(spark, fileset, partitionsize, processor_instance.columns,
+                                  thread_workers, file_type, treeName)
 
     output = processor_instance.accumulator.identity()
     executor(spark, dfslist, processor_instance, output, thread_workers, use_cache)
