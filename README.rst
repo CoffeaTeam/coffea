@@ -19,6 +19,9 @@ coffea - Columnar Object Framework For Effective Analysis
 .. image:: https://img.shields.io/pypi/dm/coffea.svg
     :target: https://img.shields.io/pypi/dm/coffea
 
+.. image:: https://badges.gitter.im/CoffeaTeam/coffea.svg
+    :target: https://gitter.im/coffea-hep
+
 .. image:: https://mybinder.org/badge_logo.svg
    :target: https://mybinder.org/v2/gh/CoffeaTeam/coffea/master?filepath=binder/
 
