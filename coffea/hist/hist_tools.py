@@ -669,16 +669,16 @@ class Hist(AccumulatorABC):
                              coffea.hist.Bin("y", "y coordinate [m]", 20, -5, 5),
                              )
 
-        or
+        # or
 
         h = coffea.hist.Hist("Observed bird count",
                              axes=(coffea.hist.Cat("species", "Bird species"),
                                    coffea.hist.Bin("x", "x coordinate [m]", 20, -5, 5),
                                    coffea.hist.Bin("y", "y coordinate [m]", 20, -5, 5),
-                                   )
+                                  )
                              )
 
-        or
+        # or
 
         h = coffea.hist.Hist("Observed bird count",
                              axes=[coffea.hist.Cat("species", "Bird species"),
