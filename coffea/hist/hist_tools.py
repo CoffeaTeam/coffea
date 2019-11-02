@@ -16,6 +16,10 @@ try:
 except NameError:
     basestring = str
 
+try:
+    from collections.abc import Sequence
+except ImportError:
+    from collections import Sequence
 
 MaybeSumSlice = namedtuple('MaybeSumSlice', ['start', 'stop', 'sum'])
 
@@ -649,8 +653,8 @@ class Hist(AccumulatorABC):
     ----------
         label : str
             A description of the meaning of the sum of weights
-        ``*axes``
-            positional list of `Cat` or `Bin` objects
+        ``*axes`` or ``axes``
+            positional list or kwarg of `Cat` or `Bin` objects, denoting the axes of the histogram
         dtype : str
             Underlying numpy dtype to use for storing sum of weights
 
@@ -663,6 +667,24 @@ class Hist(AccumulatorABC):
                              coffea.hist.Cat("species", "Bird species"),
                              coffea.hist.Bin("x", "x coordinate [m]", 20, -5, 5),
                              coffea.hist.Bin("y", "y coordinate [m]", 20, -5, 5),
+                             )
+
+        or
+
+        h = coffea.hist.Hist("Observed bird count",
+                             axes=(coffea.hist.Cat("species", "Bird species"),
+                                   coffea.hist.Bin("x", "x coordinate [m]", 20, -5, 5),
+                                   coffea.hist.Bin("y", "y coordinate [m]", 20, -5, 5),
+                                   )
+                             )
+
+        or
+
+        h = coffea.hist.Hist("Observed bird count",
+                             axes=[coffea.hist.Cat("species", "Bird species"),
+                                   coffea.hist.Bin("x", "x coordinate [m]", 20, -5, 5),
+                                   coffea.hist.Bin("y", "y coordinate [m]", 20, -5, 5),
+                                  ]
                              )
 
     which produces:
@@ -680,11 +702,14 @@ class Hist(AccumulatorABC):
             raise TypeError("label must be a string")
         self._label = label
         self._dtype = kwargs.pop('dtype', Hist.DEFAULT_DTYPE)  # Much nicer in python3 :(
-        if not all(isinstance(ax, Axis) for ax in axes):
+        self._axes = axes
+        if len(axes) == 0 and 'axes' in kwargs:
+            self._axes = tuple(kwargs['axes'])
+        if not all(isinstance(ax, Axis) for ax in self._axes):
+            del self._axes
             raise TypeError("All axes must be derived from Axis class")
         # if we stably partition axes to sparse, then dense, some things simplify
         # ..but then the user would then see the order change under them
-        self._axes = axes
         self._dense_shape = tuple([ax.size for ax in self._axes if isinstance(ax, DenseAxis)])
         if np.prod(self._dense_shape) > 10000000:
             warnings.warn("Allocating a large (>10M bin) histogram!", RuntimeWarning)
