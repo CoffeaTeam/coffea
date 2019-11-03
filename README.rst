@@ -42,11 +42,11 @@ to data, and correct for discrepancies in Monte Carlo simulations compared to da
 
 coffea also supplies facilities for horizontally scaling an analysis in order to reduce
 time-to-insight in a way that is largely independent of the resource the analysis
-is being executed on. By making use of modern *big\\-data* technologies like
-`Apache Spark <https://spark.apache.org/>`_ and `parsl <https://github.com/Parsl/parsl>`_
-it is possible with coffea to scale a HEP analysis from a testing on a laptop to: a large
-multi-core server, computing clusters, and super-computers without the need to alter or
-otherwise adapt the analysis code itself.
+is being executed on. By making use of modern *big-data* technologies like
+`Apache Spark <https://spark.apache.org/>`_,  `parsl <https://github.com/Parsl/parsl>`_, and
+`Dask <https://dask.org>`_ it is possible with coffea to scale a HEP analysis from a testing
+on a laptop to: a large multi-core server, computing clusters, and super-computers without 
+the need to alter or otherwise adapt the analysis code itself.
 
 coffea is a HEP community project collaborating with `iris-hep <http://iris-hep.org/>`_
 and is currently a prototype. We welcome input to improve its quality as we progress towards
