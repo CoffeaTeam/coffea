@@ -653,8 +653,10 @@ class Hist(AccumulatorABC):
     ----------
         label : str
             A description of the meaning of the sum of weights
-        ``*axes`` or ``axes``
-            positional list or kwarg of `Cat` or `Bin` objects, denoting the axes of the histogram
+        ``*axes``
+            positional list of `Cat` or `Bin` objects, denoting the axes of the histogram
+        axes : collections.abc.Sequence
+            list of `Cat` or `Bin` objects, denoting the axes of the histogram (overridden by ``*axes``)
         dtype : str
             Underlying numpy dtype to use for storing sum of weights
 
@@ -671,7 +673,7 @@ class Hist(AccumulatorABC):
 
         # or
 
-        h = coffea.hist.Hist("Observed bird count",
+        h = coffea.hist.Hist(label="Observed bird count",
                              axes=(coffea.hist.Cat("species", "Bird species"),
                                    coffea.hist.Bin("x", "x coordinate [m]", 20, -5, 5),
                                    coffea.hist.Bin("y", "y coordinate [m]", 20, -5, 5),
@@ -680,11 +682,11 @@ class Hist(AccumulatorABC):
 
         # or
 
-        h = coffea.hist.Hist("Observed bird count",
-                             axes=[coffea.hist.Cat("species", "Bird species"),
+        h = coffea.hist.Hist(axes=[coffea.hist.Cat("species", "Bird species"),
                                    coffea.hist.Bin("x", "x coordinate [m]", 20, -5, 5),
                                    coffea.hist.Bin("y", "y coordinate [m]", 20, -5, 5),
-                                  ]
+                                  ],
+                             label="Observed bird count",
                              )
 
     which produces:
@@ -704,7 +706,12 @@ class Hist(AccumulatorABC):
         self._dtype = kwargs.pop('dtype', Hist.DEFAULT_DTYPE)  # Much nicer in python3 :(
         self._axes = axes
         if len(axes) == 0 and 'axes' in kwargs:
+            if not isinstance(kwargs['axes'], Sequence):
+                raise TypeError('axes must be a sequence type! (tuple, list, etc.)')
             self._axes = tuple(kwargs['axes'])
+        elif len(axes) != 0 and 'axes' in kwargs:
+            warnings.warn('axes defined by both positional arguments and keyword argument, using positional arguments')
+
         if not all(isinstance(ax, Axis) for ax in self._axes):
             del self._axes
             raise TypeError("All axes must be derived from Axis class")
