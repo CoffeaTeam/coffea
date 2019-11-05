@@ -907,7 +907,7 @@ class Hist(AccumulatorABC):
         Note
         ----
             The reserved keyword ``weight``, if specified, will increment sum of weights
-            by the given column values, which must have the same dimension as all other
+            by the given column values, which must be broadcastable to the same dimension as all other
             columns.  Upon first use, this will trigger the storage of the sum of squared weights.
 
 
@@ -922,6 +922,9 @@ class Hist(AccumulatorABC):
         if not all(d.name in values for d in self._axes):
             missing = ", ".join(d.name for d in self._axes if d.name not in values)
             raise ValueError("Not all axes specified for %r.  Missing: %s" % (self, missing))
+        if not all(name in self._axes or name == 'weight' for name in values):
+            extra = ", ".join(name for name in values if not (name in self._axes or name == 'weight'))
+            raise ValueError("Unrecognized axes specified for %r.  Extraneous: %s" % (self, extra))
 
         if "weight" in values and self._sumw2 is None:
             self._init_sumw2()

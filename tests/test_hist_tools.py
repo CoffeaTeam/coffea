@@ -4,6 +4,7 @@ from coffea import hist
 from coffea.util import numpy as np
 
 from dummy_distributions import dummy_jagged_eta_pt
+import pytest
 
 def test_hist():
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
@@ -99,6 +100,10 @@ def test_hist():
     crane_w = np.random.normal(loc=10, scale=1, size=4)
     h_mascots_1.fill(animal="crane", vocalization="none", height=crane_h, mass=crane_w)
 
+    with pytest.raises(ValueError):
+        h_mascots_1.fill(beast="crane", yelling="none", tallness=crane_h, heavitivity=crane_w)
+    
+    
     h_mascots_2 = h_mascots_1.copy()
     h_mascots_2.clear()
     baby_bison_h = np.random.normal(loc=.5, scale=0.1, size=20)
