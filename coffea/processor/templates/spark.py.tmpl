@@ -14,7 +14,9 @@ def coffea_udf(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last }}{%
         if columns[i].array[0].base is None:
             items[names[i]] = columns[i].values
         else:
-            items[names[i]] = columns[i].array[0].base
+            counts = columns[i].str.len().values
+            contents = columns[i].array[0].base
+            items[names[i]] = awkward.JaggedArray.fromcounts(counts, content)
 
     df = processor.PreloadedDataFrame(size=size, items=items)
     df['dataset'] = dataset[0]
