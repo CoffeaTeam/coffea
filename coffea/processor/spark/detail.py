@@ -71,6 +71,12 @@ def _read_df(spark, dataset, files_or_dirs, ana_cols, partitionsize, file_type, 
     missing_cols = ana_cols - cols_in_df
     for missing in missing_cols:
         df = df.withColumn(missing, fn.lit(0.0))
+    # compatibility with older pyarrow which doesn't understand array<boolean>
+    for col, dtype in df.dtypes:
+        if(dtype == 'array<boolean>'):
+            tempcol = col + 'tempbool'
+            df = df.withColumnRenamed(col, tempcol)
+            df = df.withColumn(col, df[tempcol].cast('array<tinyint>')).drop(tempcol)
     df = df.withColumn('dataset', fn.lit(dataset))
     npartitions = (count // partitionsize) + 1
     actual_partitions = df.rdd.getNumPartitions()
