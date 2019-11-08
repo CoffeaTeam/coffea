@@ -16,7 +16,7 @@ def coffea_udf(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last }}{%
         else:
             counts = columns[i].str.len().values
             contents = columns[i].array[0].base
-            items[names[i]] = awkward.JaggedArray.fromcounts(counts, content)
+            items[names[i]] = awkward.JaggedArray.fromcounts(counts, contents)
 
     df = processor.PreloadedDataFrame(size=size, items=items)
     df['dataset'] = dataset[0]
