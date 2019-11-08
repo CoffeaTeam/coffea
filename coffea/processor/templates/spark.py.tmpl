@@ -9,12 +9,18 @@ def coffea_udf(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last }}{%
 
     size = dataset.size
     items = {}
+
+    counts_store = {}
+
     for i, col in enumerate(columns):
         #numpy array
         if columns[i].array[0].base is None:
             items[names[i]] = columns[i].values
         else:
-            counts = columns[i].str.len().values
+            prefix = names[i].split('_')[0] # this is specific to nanoaod, sadness            
+            if prefix not in counts_store.keys():
+                counts_store[prefix] = columns[i].str.len().values
+            counts = counts_store[prefix]
             contents = columns[i].array[0].base
             items[names[i]] = awkward.JaggedArray.fromcounts(counts, contents)
 
