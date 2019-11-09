@@ -72,7 +72,7 @@ class SparkExecutor(object):
     def __call__(self, spark, dfslist, theprocessor, output, thread_workers,
                  use_df_cache, flatten, status=True, unit='datasets', desc='Processing'):
         # processor needs to be a global
-        global processor_instance, coffea_udf
+        global processor_instance, coffea_udf, coffea_udf_flat
         processor_instance = theprocessor
         # get columns from processor
         columns = processor_instance.columns
@@ -105,7 +105,7 @@ class SparkExecutor(object):
         with ThreadPoolExecutor(max_workers=thread_workers) as executor:
             futures = set()
             for ds, df in self._cacheddfs.items():
-                futures.add(executor.submit(self._launch_analysis, ds, df, coffea_udf_flat if flatten else coffea_udf, cols_w_ds, flatten))
+                futures.add(executor.submit(self._launch_analysis, ds, df, coffea_udf_flat if flatten else coffea_udf, cols_w_ds))
             # wait for the spark jobs to come in
             self._rawresults = {}
             _futures_handler(futures, self._rawresults, status, unit, desc, add_fn=spex_accumulator)
@@ -123,7 +123,7 @@ class SparkExecutor(object):
             return ds, df.select(*columns).cache()
         return ds, df.select(*columns)
 
-    def _launch_analysis(self, ds, df, udf, columns, flatten):
+    def _launch_analysis(self, ds, df, udf, columns):
         histo_map_parts = (df.rdd.getNumPartitions() // 20) + 1
         return ds, df.select(udf(*columns).alias('histos')) \
                      .withColumn('hpid', fn.spark_partition_id() % histo_map_parts) \
