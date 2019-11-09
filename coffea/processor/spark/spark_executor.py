@@ -15,7 +15,7 @@ import pyspark.sql.functions as fn
 from pyspark.sql.types import BinaryType, StringType, StructType, StructField
 
 from jinja2 import Environment, PackageLoader, select_autoescape
-import awkward
+from coffea.util import awkward
 
 lz4_clevel = 1
 
