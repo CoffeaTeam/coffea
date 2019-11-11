@@ -1,5 +1,6 @@
 global coffea_udf
 
+
 @fn.pandas_udf(BinaryType(), fn.PandasUDFType.SCALAR)
 def coffea_udf(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last }}{% endfor %}):
     global processor_instance, lz4_clevel
@@ -10,7 +11,7 @@ def coffea_udf(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last }}{%
     size = dataset.size
     items = {}
 
-    counts_store = {}
+    offsets_store = {}
 
     for i, col in enumerate(columns):
         #numpy array
@@ -18,11 +19,13 @@ def coffea_udf(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last }}{%
             items[names[i]] = columns[i].values
         else:
             prefix = names[i].split('_')[0] # this is specific to nanoaod, sadness            
-            if prefix not in counts_store.keys():
-                counts_store[prefix] = columns[i].str.len().values
-            counts = counts_store[prefix]
+            if prefix not in offsets_store.keys():
+                counts = columns[i].str.len().values
+                offsets_store[prefix] = np.zeros(shape=(counts.size + 1, ), dtype=np.int64)
+                offsets_store[prefix][1:] = np.cumsum(counts)
+            offsets = offsets_store[prefix]
             contents = columns[i].array[0].base
-            items[names[i]] = awkward.JaggedArray.fromcounts(counts, contents)
+            items[names[i]] = awkward.JaggedArray.fromoffsets(offsets, contents)
 
     df = processor.PreloadedDataFrame(size=size, items=items)
     df['dataset'] = dataset[0]
@@ -35,6 +38,7 @@ def coffea_udf(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last }}{%
     outs[0] = valsblob
     
     return pd.Series(outs)
+
 
 @fn.pandas_udf(BinaryType(), fn.PandasUDFType.SCALAR)
 def coffea_udf_flat(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last }}{% endfor %}):
