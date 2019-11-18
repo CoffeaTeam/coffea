@@ -110,6 +110,12 @@ An example batch job wrapper script is:
 
   echo "Running command:" $@
   time $@ || exit $?
+  
+Unless you install jupyter into this environment (which may bloat the tarball--LCG96 jupyter is reasonably recent), it is not visible inside the LCG jupyter server. From a shell with the virtual environment activated, you can execute::
+
+  python -m ipykernel install --user --name=coffeaenv
+
+to make a new kernel available that uses this environment.
 
 For Developers
 --------------
