@@ -36,7 +36,7 @@ of a high-energy collider physics (HEP) experiment analysis using the scientific
 python ecosystem. It makes use of `uproot <https://github.com/scikit-hep/uproot>`_
 and `awkward-array <https://github.com/scikit-hep/awkward-array>`_ to provide an
 array-based syntax for manipulating HEP event data in an efficient and numpythonic
-way. There are  sub-packages that implement histogramming, plotting, and look-up
+way. There are sub-packages that implement histogramming, plotting, and look-up
 table functionalities that are needed to convey scientific insight, apply transformations
 to data, and correct for discrepancies in Monte Carlo simulations compared to data.
 
@@ -65,6 +65,7 @@ Install coffea like any other Python package:
     pip install coffea
 
 or similar (use ``sudo``, ``--user``, ``virtualenv``, or pip-in-conda if you wish).
+For more details, see the `Installing coffea <https://coffeateam.github.io/coffea/installation.html>`_ section of the documentation.
 
 Strict dependencies
 ===================

@@ -6,8 +6,9 @@
 .. include:: ../../README.rst
 
 .. toctree::
-   quick_start
+   installation
    introduction
+   concepts
    reference
 ..
 

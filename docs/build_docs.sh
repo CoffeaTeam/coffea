@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 pip -q install -U sphinx nbsphinx sphinx-rtd-theme sphinx-automodapi
-python setup.py -q install
+pip -q install -e .
 pushd docs
 rm -rf build
 pushd source
@@ -12,4 +12,3 @@ popd
 make html
 touch build/html/.nojekyll
 popd
-pip uninstall --yes coffea 
