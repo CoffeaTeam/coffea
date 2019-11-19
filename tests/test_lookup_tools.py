@@ -106,7 +106,9 @@ def test_root_scalefactors():
 def test_btag_csv_scalefactors():
     extractor = lookup_tools.extractor()
     extractor.add_weight_sets(["testBTag * tests/samples/testBTagSF.btag.csv",
-                               "* * tests/samples/DeepCSV_102XSF_V1.btag.csv.gz"])
+                               "* * tests/samples/DeepCSV_102XSF_V1.btag.csv.gz",
+                               "* * tests/samples/DeepJet_102XSF_WP_V1.btag.csv.gz"
+                               ])
     extractor.finalize()
 
     evaluator = extractor.make_evaluator()
@@ -116,6 +118,10 @@ def test_btag_csv_scalefactors():
     test_discr = np.zeros_like(test_eta)
 
     print(evaluator['testBTagCSVv2_1_comb_up_0'])
+    
+    print(evaluator['DeepCSV_1_comb_up_0'])
+    
+    print(evaluator['btagsf_1_comb_up_0'])
     
     sf_out = evaluator['testBTagCSVv2_1_comb_up_0'](test_eta, test_pt, test_discr)
 
