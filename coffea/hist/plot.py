@@ -236,6 +236,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
                 err.append(np.abs(poisson_interval(a, b) - a))
             return err
 
+        kwargs = None
         if line_opts is not None and error_opts is None:
             _error = None
         else:
@@ -243,6 +244,9 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         if fill_opts is not None:
             histtype = 'fill'
             kwargs = fill_opts
+        elif error_opts is not None and line_opts is None:
+            histtype = 'errorbar'
+            kwargs = error_opts
         else:
             histtype = 'step'
             kwargs = line_opts
