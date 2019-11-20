@@ -230,9 +230,10 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
                             y2=np.r_[err[1, :], err[1, -1]], **opts)
 
         if legend_opts is not None:
-            ax.legend(title=overlay.label, **legend_opts)
+            _label = overlay.label if overlay is not None else ""
+            ax.legend(title=_label, **legend_opts)
         else:
-            ax.legend(title=overlay.label, )
+            ax.legend(title=_label)
         ax.autoscale(axis='x', tight=True)
         ax.set_ylim(0, None)
 
