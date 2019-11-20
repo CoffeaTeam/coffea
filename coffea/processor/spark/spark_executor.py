@@ -15,6 +15,7 @@ import pyspark.sql.functions as fn
 from pyspark.sql.types import BinaryType, StringType, StructType, StructField
 
 from jinja2 import Environment, PackageLoader, select_autoescape
+from coffea.util import awkward
 
 lz4_clevel = 1
 
@@ -69,9 +70,9 @@ class SparkExecutor(object):
         return self._counts
 
     def __call__(self, spark, dfslist, theprocessor, output, thread_workers,
-                 use_df_cache, status=True, unit='datasets', desc='Processing'):
+                 use_df_cache, flatten, status=True, unit='datasets', desc='Processing'):
         # processor needs to be a global
-        global processor_instance, coffea_udf
+        global processor_instance, coffea_udf, coffea_udf_flat
         processor_instance = theprocessor
         # get columns from processor
         columns = processor_instance.columns
@@ -104,7 +105,7 @@ class SparkExecutor(object):
         with ThreadPoolExecutor(max_workers=thread_workers) as executor:
             futures = set()
             for ds, df in self._cacheddfs.items():
-                futures.add(executor.submit(self._launch_analysis, ds, df, coffea_udf, cols_w_ds))
+                futures.add(executor.submit(self._launch_analysis, ds, df, coffea_udf_flat if flatten else coffea_udf, cols_w_ds))
             # wait for the spark jobs to come in
             self._rawresults = {}
             _futures_handler(futures, self._rawresults, status, unit, desc, add_fn=spex_accumulator)

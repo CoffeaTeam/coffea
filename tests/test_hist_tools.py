@@ -4,6 +4,7 @@ from coffea import hist
 from coffea.util import numpy as np
 
 from dummy_distributions import dummy_jagged_eta_pt
+import pytest
 
 def test_hist():
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
@@ -48,6 +49,47 @@ def test_hist():
                           # weight is a reserved keyword
                           hist.Bin("mass", "weight (g=9.81m/s**2) [kg]", np.power(10., np.arange(5)-1)),
                         )
+    
+    h_mascots_2 = hist.Hist("fermi mascot showdown",
+                          axes=(animal,
+                                vocalization,
+                                height,
+                                # weight is a reserved keyword
+                                hist.Bin("mass", "weight (g=9.81m/s**2) [kg]", np.power(10., np.arange(5)-1)),)
+                           )
+                           
+    h_mascots_3 = hist.Hist(
+                         axes=[animal,
+                               vocalization,
+                               height,
+                               # weight is a reserved keyword
+                               hist.Bin("mass", "weight (g=9.81m/s**2) [kg]", np.power(10., np.arange(5)-1)),],
+                            label="fermi mascot showdown"
+                          )
+                          
+    h_mascots_4 = hist.Hist(
+                            "fermi mascot showdown",
+                            animal,
+                            vocalization,
+                            height,
+                            # weight is a reserved keyword
+                            hist.Bin("mass", "weight (g=9.81m/s**2) [kg]", np.power(10., np.arange(5)-1)),
+                         axes=[animal,
+                               vocalization,
+                               height,
+                               # weight is a reserved keyword
+                               hist.Bin("mass", "weight (g=9.81m/s**2) [kg]", np.power(10., np.arange(5)-1)),],
+                         
+                       )
+                          
+    assert h_mascots_1._dense_shape == h_mascots_2._dense_shape
+    assert h_mascots_2._dense_shape == h_mascots_3._dense_shape
+    assert h_mascots_3._dense_shape == h_mascots_4._dense_shape
+    
+    assert h_mascots_1._axes == h_mascots_2._axes
+    assert h_mascots_2._axes == h_mascots_3._axes
+    assert h_mascots_3._axes == h_mascots_4._axes
+                        
     adult_bison_h = np.random.normal(loc=2.5, scale=0.2, size=40)
     adult_bison_w = np.random.normal(loc=700, scale=100, size=40)
     h_mascots_1.fill(animal="bison", vocalization="huff", height=adult_bison_h, mass=adult_bison_w)
@@ -58,6 +100,10 @@ def test_hist():
     crane_w = np.random.normal(loc=10, scale=1, size=4)
     h_mascots_1.fill(animal="crane", vocalization="none", height=crane_h, mass=crane_w)
 
+    with pytest.raises(ValueError):
+        h_mascots_1.fill(beast="crane", yelling="none", tallness=crane_h, heavitivity=crane_w)
+    
+    
     h_mascots_2 = h_mascots_1.copy()
     h_mascots_2.clear()
     baby_bison_h = np.random.normal(loc=.5, scale=0.1, size=20)

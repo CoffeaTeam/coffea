@@ -619,7 +619,7 @@ def run_parsl_job(fileset, treename, processor_instance, executor, executor_args
     executor_args.setdefault('config', _default_cfg)
     executor_args.setdefault('timeout', 180)
     executor_args.setdefault('chunking_timeout', 10)
-    executor_args.setdefault('flatten', True)
+    executor_args.setdefault('flatten', False)
     executor_args.setdefault('compression', 0)
 
     try:
@@ -694,9 +694,11 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     executor_args.setdefault('file_type', 'parquet')
     executor_args.setdefault('laurelin_version', '0.3.0')
     executor_args.setdefault('treeName', 'Events')
+    executor_args.setdefault('flatten', False)
     executor_args.setdefault('cache', True)
     file_type = executor_args['file_type']
     treeName = executor_args['treeName']
+    flatten = executor_args['flatten']
     use_cache = executor_args['cache']
 
     if executor_args['config'] is None:
@@ -720,7 +722,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
                                   thread_workers, file_type, treeName)
 
     output = processor_instance.accumulator.identity()
-    executor(spark, dfslist, processor_instance, output, thread_workers, use_cache)
+    executor(spark, dfslist, processor_instance, output, thread_workers, use_cache, flatten)
     processor_instance.postprocess(output)
 
     if killSpark:
