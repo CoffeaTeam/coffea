@@ -169,7 +169,6 @@ def test_plotratio():
         'markersize': 10.,
         'color': 'k',
         'elinewidth': 1,
-        'emarker': '_'
     }
 
     hist.plot1d(pthist[notdata],
