@@ -81,6 +81,22 @@ class value_accumulator(AccumulatorABC):
             self.value = self.value + other
 
 
+class list_accumulator(list, AccumulatorABC):
+    '''A list with accumulator semantics
+
+    See `list` for further info
+    '''
+    def identity(self):
+        return list()
+
+    def add(self, other):
+        '''Add another accumulator to this one in-place'''
+        if isinstance(other, list):
+            list.extend(self, other)
+        else:
+            raise ValueError
+
+
 class set_accumulator(set, AccumulatorABC):
     '''A set with accumulator semantics
 

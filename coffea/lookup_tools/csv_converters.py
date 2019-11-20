@@ -1,6 +1,7 @@
 from ..util import awkward
 from ..util import numpy as np
 import sys
+import warnings
 
 # pt except for reshaping, then discriminant
 btag_feval_dims = {0: [1], 1: [1], 2: [1], 3: [2]}
@@ -16,8 +17,15 @@ def convert_btag_csv_file(csvFilePath):
     btag_f = fopen(csvFilePath, fmode)
     nameandcols = btag_f.readline().split(';')
     btag_f.close()
-    name = nameandcols[0].strip()
-    columns = nameandcols[1].strip()
+    name = 'btagsf'
+    columns = None
+    if len(nameandcols) == 2:
+        name = nameandcols[0].strip()
+        columns = nameandcols[1].strip()
+    else:
+        warnings.warn('btagging SF file does not contain a name, using default!',
+                      RuntimeWarning)
+        columns = nameandcols[0].strip()
     columns = [column.strip() for column in columns.split(',')]
 
     corrections = np.genfromtxt(csvFilePath,
@@ -38,13 +46,13 @@ def convert_btag_csv_file(csvFilePath):
     for label in labels:
         etaMins = np.unique(corrections[np.where(all_names == label)][columns[4]])
         etaMaxs = np.unique(corrections[np.where(all_names == label)][columns[5]])
-        etaBins = np.union1d(etaMins, etaMaxs)
+        etaBins = np.union1d(etaMins, etaMaxs).astype(np.double)
         ptMins = np.unique(corrections[np.where(all_names == label)][columns[6]])
         ptMaxs = np.unique(corrections[np.where(all_names == label)][columns[7]])
-        ptBins = np.union1d(ptMins, ptMaxs)
+        ptBins = np.union1d(ptMins, ptMaxs).astype(np.double)
         discrMins = np.unique(corrections[np.where(all_names == label)][columns[8]])
         discrMaxs = np.unique(corrections[np.where(all_names == label)][columns[9]])
-        discrBins = np.union1d(discrMins, discrMaxs)
+        discrBins = np.union1d(discrMins, discrMaxs).astype(np.double)
         vals = np.zeros(shape=(len(discrBins) - 1, len(ptBins) - 1, len(etaBins) - 1),
                         dtype=corrections.dtype[10])
         for i, eta_bin in enumerate(etaBins[:-1]):

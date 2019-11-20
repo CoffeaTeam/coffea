@@ -10,7 +10,7 @@ try:
 except ImportError:
     from collections import Sequence
 
-from ..executor import futures_handler
+from ..executor import _futures_handler
 
 # this is a reasonable local spark configuration
 _default_config = pyspark.sql.SparkSession.builder \
@@ -71,6 +71,12 @@ def _read_df(spark, dataset, files_or_dirs, ana_cols, partitionsize, file_type, 
     missing_cols = ana_cols - cols_in_df
     for missing in missing_cols:
         df = df.withColumn(missing, fn.lit(0.0))
+    # compatibility with older pyarrow which doesn't understand array<boolean>
+    for col, dtype in df.dtypes:
+        if(dtype == 'array<boolean>'):
+            tempcol = col + 'tempbool'
+            df = df.withColumnRenamed(col, tempcol)
+            df = df.withColumn(col, df[tempcol].cast('array<tinyint>')).drop(tempcol)
     df = df.withColumn('dataset', fn.lit(dataset))
     npartitions = (count // partitionsize) + 1
     actual_partitions = df.rdd.getNumPartitions()
@@ -95,7 +101,7 @@ def _spark_make_dfs(spark, fileset, partitionsize, columns, thread_workers, file
                                       ana_cols, partitionsize, file_type,
                                       treeName) for ds, files in fileset.items())
 
-        futures_handler(futures, dfs, status, 'datasets', 'loading', futures_accumulator=dfs_accumulator)
+        _futures_handler(futures, dfs, status, 'datasets', 'loading', add_fn=dfs_accumulator)
 
     return dfs
 

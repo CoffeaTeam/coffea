@@ -16,6 +16,10 @@ try:
 except NameError:
     basestring = str
 
+try:
+    from collections.abc import Sequence
+except ImportError:
+    from collections import Sequence
 
 MaybeSumSlice = namedtuple('MaybeSumSlice', ['start', 'stop', 'sum'])
 
@@ -650,7 +654,9 @@ class Hist(AccumulatorABC):
         label : str
             A description of the meaning of the sum of weights
         ``*axes``
-            positional list of `Cat` or `Bin` objects
+            positional list of `Cat` or `Bin` objects, denoting the axes of the histogram
+        axes : collections.abc.Sequence
+            list of `Cat` or `Bin` objects, denoting the axes of the histogram (overridden by ``*axes``)
         dtype : str
             Underlying numpy dtype to use for storing sum of weights
 
@@ -663,6 +669,24 @@ class Hist(AccumulatorABC):
                              coffea.hist.Cat("species", "Bird species"),
                              coffea.hist.Bin("x", "x coordinate [m]", 20, -5, 5),
                              coffea.hist.Bin("y", "y coordinate [m]", 20, -5, 5),
+                             )
+
+        # or
+
+        h = coffea.hist.Hist(label="Observed bird count",
+                             axes=(coffea.hist.Cat("species", "Bird species"),
+                                   coffea.hist.Bin("x", "x coordinate [m]", 20, -5, 5),
+                                   coffea.hist.Bin("y", "y coordinate [m]", 20, -5, 5),
+                                  )
+                             )
+
+        # or
+
+        h = coffea.hist.Hist(axes=[coffea.hist.Cat("species", "Bird species"),
+                                   coffea.hist.Bin("x", "x coordinate [m]", 20, -5, 5),
+                                   coffea.hist.Bin("y", "y coordinate [m]", 20, -5, 5),
+                                  ],
+                             label="Observed bird count",
                              )
 
     which produces:
@@ -680,11 +704,19 @@ class Hist(AccumulatorABC):
             raise TypeError("label must be a string")
         self._label = label
         self._dtype = kwargs.pop('dtype', Hist.DEFAULT_DTYPE)  # Much nicer in python3 :(
-        if not all(isinstance(ax, Axis) for ax in axes):
+        self._axes = axes
+        if len(axes) == 0 and 'axes' in kwargs:
+            if not isinstance(kwargs['axes'], Sequence):
+                raise TypeError('axes must be a sequence type! (tuple, list, etc.)')
+            self._axes = tuple(kwargs['axes'])
+        elif len(axes) != 0 and 'axes' in kwargs:
+            warnings.warn('axes defined by both positional arguments and keyword argument, using positional arguments')
+
+        if not all(isinstance(ax, Axis) for ax in self._axes):
+            del self._axes
             raise TypeError("All axes must be derived from Axis class")
         # if we stably partition axes to sparse, then dense, some things simplify
         # ..but then the user would then see the order change under them
-        self._axes = axes
         self._dense_shape = tuple([ax.size for ax in self._axes if isinstance(ax, DenseAxis)])
         if np.prod(self._dense_shape) > 10000000:
             warnings.warn("Allocating a large (>10M bin) histogram!", RuntimeWarning)
@@ -875,7 +907,7 @@ class Hist(AccumulatorABC):
         Note
         ----
             The reserved keyword ``weight``, if specified, will increment sum of weights
-            by the given column values, which must have the same dimension as all other
+            by the given column values, which must be broadcastable to the same dimension as all other
             columns.  Upon first use, this will trigger the storage of the sum of squared weights.
 
 
@@ -890,6 +922,9 @@ class Hist(AccumulatorABC):
         if not all(d.name in values for d in self._axes):
             missing = ", ".join(d.name for d in self._axes if d.name not in values)
             raise ValueError("Not all axes specified for %r.  Missing: %s" % (self, missing))
+        if not all(name in self._axes or name == 'weight' for name in values):
+            extra = ", ".join(name for name in values if not (name in self._axes or name == 'weight'))
+            raise ValueError("Unrecognized axes specified for %r.  Extraneous: %s" % (self, extra))
 
         if "weight" in values and self._sumw2 is None:
             self._init_sumw2()

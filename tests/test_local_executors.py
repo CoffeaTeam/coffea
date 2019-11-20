@@ -10,20 +10,24 @@ if sys.platform.startswith("win"):
     pytest.skip("skipping tests that only function in linux", allow_module_level=True)
 
 
-def template_analysis(filelist, executor, flatten):
+def template_analysis(filelist, executor, flatten, compression):
     from coffea.processor import run_uproot_job
     
     treename='Events'
 
     from coffea.processor.test_items import NanoTestProcessor
 
-    exe_args = {'workers': 1,
-                'pre_workers': 1,
-                'function_args': {'flatten': flatten}}
+    exe_args = {
+        'workers': 1,
+        'pre_workers': 1,
+        'flatten': flatten,
+        'compression': compression,
+    }
 
     hists = run_uproot_job(filelist, treename, NanoTestProcessor(), executor,
                            executor_args = exe_args)
 
+    print(hists)
     assert( hists['cutflow']['ZJets_pt'] == 4 )
     assert( hists['cutflow']['ZJets_mass'] == 1 )
     assert( hists['cutflow']['Data_pt'] == 15 )
@@ -38,16 +42,16 @@ def test_iterative_executor():
         'Data': [osp.abspath('tests/samples/nano_dimuon.root')]
     }
     
-    template_analysis(filelist, iterative_executor, True)
-    template_analysis(filelist, iterative_executor, False)
+    template_analysis(filelist, iterative_executor, flatten=True, compression=0)
+    template_analysis(filelist, iterative_executor, flatten=True, compression=1)
+    template_analysis(filelist, iterative_executor, flatten=False, compression=2)
 
     filelist = {
         'ZJets': {'treename': 'Events', 'files': [osp.abspath('tests/samples/nano_dy.root')]},
         'Data': {'treename': 'Events', 'files': [osp.abspath('tests/samples/nano_dimuon.root')]}
         }
 
-    template_analysis(filelist, iterative_executor, True)
-    template_analysis(filelist, iterative_executor, False)
+    template_analysis(filelist, iterative_executor, flatten=True, compression=0)
 
 
 def test_futures_executor():
@@ -58,13 +62,14 @@ def test_futures_executor():
         'Data': [osp.abspath('tests/samples/nano_dimuon.root')]
     }
 
-    template_analysis(filelist, futures_executor, True)
-    template_analysis(filelist, futures_executor, False)
+    template_analysis(filelist, futures_executor, flatten=True, compression=0)
+    template_analysis(filelist, futures_executor, flatten=False, compression=0)
+    template_analysis(filelist, futures_executor, flatten=False, compression=1)
 
     filelist = {
         'ZJets': {'treename': 'Events', 'files': [osp.abspath('tests/samples/nano_dy.root')]},
         'Data': {'treename':'Events', 'files': [osp.abspath('tests/samples/nano_dimuon.root')]}
     }
     
-    template_analysis(filelist, futures_executor, True)
-    template_analysis(filelist, futures_executor, False)
+    template_analysis(filelist, futures_executor, flatten=True, compression=2)
+    template_analysis(filelist, futures_executor, flatten=False, compression=0)

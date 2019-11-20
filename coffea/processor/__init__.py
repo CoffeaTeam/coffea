@@ -11,6 +11,8 @@ from .helpers import Weights, PackedSelection
 from .executor import (
     iterative_executor,
     futures_executor,
+    dask_executor,
+    parsl_executor,
     run_uproot_job,
     run_parsl_job,
     run_spark_job
@@ -18,6 +20,7 @@ from .executor import (
 from .accumulator import (
     AccumulatorABC,
     value_accumulator,
+    list_accumulator,
     set_accumulator,
     dict_accumulator,
     defaultdict_accumulator,
@@ -32,11 +35,14 @@ __all__ = [
     'PackedSelection',
     'iterative_executor',
     'futures_executor',
+    'dask_executor',
+    'parsl_executor',
     'run_uproot_job',
     'run_parsl_job',
     'run_spark_job',
     'AccumulatorABC',
     'value_accumulator',
+    'list_accumulator',
     'set_accumulator',
     'dict_accumulator',
     'defaultdict_accumulator',
