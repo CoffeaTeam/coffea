@@ -1257,7 +1257,7 @@ class Hist(AccumulatorABC):
                     out.append(identifier)
             if axis.sorting == 'integral':
                 hproj = {key[0]: integral for key, integral in self.project(axis).values().items()}
-                out.sort(key=lambda k: hproj[k.name], reverse=True)
+                out.sort(key=lambda k: hproj[k.name])
             return out
         elif isinstance(axis, DenseAxis):
             return axis.identifiers(overflow=overflow)
