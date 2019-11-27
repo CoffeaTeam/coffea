@@ -56,13 +56,9 @@ def _read_df(spark, dataset, files_or_dirs, ana_cols, partitionsize, file_type, 
         flist = files_or_dirs['files']
     if not isinstance(flist, Sequence):
         raise ValueError('spark dataset file list must be a Sequence (like list())')
-    df = None
-    if file_type == 'parquet':
-        df = spark.read.parquet(*flist)
-    else:
-        df = spark.read.format(file_type) \
-                       .option('tree', tname) \
-                       .load(flist)
+    df = spark.read.format(file_type) \
+                   .option('tree', tname) \
+                   .load(flist)
     count = df.count()
 
     df_cols = set(df.columns)
