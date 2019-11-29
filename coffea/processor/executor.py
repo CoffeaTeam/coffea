@@ -679,6 +679,13 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
         print('you must have pyspark installed to call run_spark_job()!', file=sys.stderr)
         raise e
 
+    from packaging import version
+    import pyarrow as pa
+    import warnings
+    if (version.parse(pa.__version__) >= version.parse('0.15.0') and
+        version.parse(pyspark.__version__) < version.parse('3.0.0')):
+        warnings.warn('If you are using pyarrow >= 0.15.0, make sure to set ARROW_PRE_0_15_IPC_FORMAT=1 in your environment!')
+
     import pyspark.sql
     from .spark.spark_executor import SparkExecutor
     from .spark.detail import _spark_initialize, _spark_stop, _spark_make_dfs
