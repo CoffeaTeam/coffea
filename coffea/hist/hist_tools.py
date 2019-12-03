@@ -438,18 +438,17 @@ class Bin(DenseAxis):
     """
     def __init__(self, name, label, n_or_arr, lo=None, hi=None):
         super(Bin, self).__init__(name, label)
+        self._lazy_intervals = None
         if isinstance(n_or_arr, (list, np.ndarray)):
             self._uniform = False
             self._bins = np.array(n_or_arr, dtype='d')
             if not all(np.sort(self._bins) == self._bins):
                 raise ValueError("Binning not sorted!")
-
             self._lo = self._bins[0]
             self._hi = self._bins[-1]
             # to make searchsorted differentiate inf from nan
             self._bins = np.append(self._bins, np.inf)
-            interval_bins = np.r_[-np.inf, self._bins, np.nan]
-            self._intervals = [Interval(low, high) for low, high in zip(interval_bins[:-1], interval_bins[1:])]
+            self._interval_bins = np.r_[-np.inf, self._bins, np.nan]
         elif isinstance(n_or_arr, numbers.Integral):
             if lo is None or hi is None:
                 raise TypeError("Interpreting n_or_arr as uniform binning, please specify lo and hi values")
@@ -457,10 +456,22 @@ class Bin(DenseAxis):
             self._lo = lo
             self._hi = hi
             self._bins = n_or_arr
-            interval_bins = np.r_[-np.inf, np.linspace(self._lo, self._hi, self._bins + 1), np.inf, np.nan]
-            self._intervals = [Interval(low, high) for low, high in zip(interval_bins[:-1], interval_bins[1:])]
+            self._interval_bins = np.r_[-np.inf, np.linspace(self._lo, self._hi, self._bins + 1), np.inf, np.nan]
         else:
             raise TypeError("Cannot understand n_or_arr (nbins or binning array) type %r" % n_or_arr)
+
+    @property
+    def _intervals(self):
+        if self._lazy_intervals is None:
+            self._lazy_intervals = [Interval(low, high) for low, high in zip(self._interval_bins[:-1], self._interval_bins[1:])]
+        return self._lazy_intervals
+
+    def __getstate__(self):
+        self.__dict__.pop('_lazy_intervals', None)
+        return self.__dict__
+
+    def __setstate__(self, d):
+        self.__dict__ = d
 
     def index(self, identifier):
         """Index of a identifer or label
