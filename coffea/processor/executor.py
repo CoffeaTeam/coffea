@@ -682,9 +682,13 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     from packaging import version
     import pyarrow as pa
     import warnings
+    arrow_env = ('ARROW_PRE_0_15_IPC_FORMAT', '1')
     if (version.parse(pa.__version__) >= version.parse('0.15.0') and
         version.parse(pyspark.__version__) < version.parse('3.0.0')):
-        warnings.warn('If you are using pyarrow >= 0.15.0, make sure to set ARROW_PRE_0_15_IPC_FORMAT=1 in your environment!')
+        import os
+        if (arrow_env[0] not in os.environ or
+            os.environ[arrow_env[0]] != arrow_env[1]):
+            warnings.warn('If you are using pyarrow >= 0.15.0, make sure to set %s=%s in your environment!' % arrow_env)
 
     import pyspark.sql
     from .spark.spark_executor import SparkExecutor
