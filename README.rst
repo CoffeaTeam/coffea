@@ -2,7 +2,7 @@
 coffea - Columnar Object Framework For Effective Analysis 
 *********************************************************
 */kɔ.fi/*
-#########################################################
+---------------------------------------------------------
 
 .. image:: https://zenodo.org/badge/159673139.svg
    :target: https://zenodo.org/badge/latestdoi/159673139
