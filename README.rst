@@ -1,4 +1,5 @@
-coffea /ˈkɔ.fi/ - Columnar Object Framework For Effective Analysis
+coffea - Columnar Object Framework For Effective Analysis <br>*<span style="font-weight:normal">/kɔ.fi/</span>*
+
 =========================================================
 
 .. image:: https://zenodo.org/badge/159673139.svg
