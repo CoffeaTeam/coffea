@@ -1,4 +1,8 @@
-coffea - Columnar Object Framework For Effective Analysis <br>*<span style="font-weight:normal">/kɔ.fi/</span>*
+.. html ::
+
+  <embed>
+  coffea - Columnar Object Framework For Effective Analysis <br>*<span style="font-weight:normal">/kɔ.fi/</span>*
+  </embed>
 
 =========================================================
 
