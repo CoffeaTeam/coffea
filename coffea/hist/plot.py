@@ -162,8 +162,6 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
 
     Returns
     -------
-        fig : matplotlib.figure.Figure
-            A matplotlib `Figure <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.figure.Figure.html>`_ object
         ax : matplotlib.axes.Axes
             A matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ object
     """
@@ -318,8 +316,6 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
 
     Returns
     -------
-        fig : matplotlib.figure.Figure
-            A matplotlib `Figure <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.figure.Figure.html>`_ object
         ax : matplotlib.axes.Axes
             A matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ object
     """
@@ -425,8 +421,6 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
 
     Returns
     -------
-        fig : matplotlib.figure.Figure
-            A matplotlib `Figure <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.figure.Figure.html>`_ object
         ax : matplotlib.axes.Axes
             A matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ object
     """
@@ -531,8 +525,6 @@ def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='non
 
     Returns
     -------
-        fig : matplotlib.figure.Figure
-            A matplotlib `Figure <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.figure.Figure.html>`_ object
         axes : numpy.ndarray
             An array of matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ objects
     """
@@ -604,4 +596,4 @@ def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='non
         ax.autoscale(axis='y')
         ax.set_ylim(0, None)
 
-    return fig, axes
+    return axes
