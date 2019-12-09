@@ -104,7 +104,7 @@ class JetTransformer(object):
     def uncertainties(self):
         return self._junc.levels if self._junc is not None else []
 
-    def transform(self, jet, met=None):
+    def transform(self, jet, met=None, hybridJER=False):
         """
         This is the main entry point for JetTransformer and acts on arrays of jet data in-place.
 
@@ -112,6 +112,7 @@ class JetTransformer(object):
 
             - 'ptRaw'
             - 'massRaw'
+            - 'ptGenJet' if using hybrid JER
 
         You can call transform like this::
 
@@ -123,6 +124,8 @@ class JetTransformer(object):
             raise Exception('Input data must be a JaggedCandidateArray!')
         if ('ptRaw' not in jet.columns or 'massRaw' not in jet.columns):
             raise Exception('Input JaggedCandidateArray must have "ptRaw" & "massRaw"!')
+        if (hybridJER and 'ptGenJet' not in jet.columns):
+            raise Exception('Input JaggedCandidateArray must have "ptGenJet" in order to apply hybrid JER smearing method!')
 
         if met is not None:
             if 'p4' not in met.columns:
@@ -157,17 +160,45 @@ class JetTransformer(object):
             jersf = self._jersf.getScaleFactor(**args)
 
             jersmear = jer * np.random.normal(size=jer.size)
-            jsmear_cen = 1. + np.sqrt(jersf[:, 0]**2 - 1.0) * jersmear
-            jsmear_up = 1. + np.sqrt(jersf[:, 1]**2 - 1.0) * jersmear
-            jsmear_down = 1. + np.sqrt(jersf[:, -1]**2 - 1.0) * jersmear
 
-            # need to apply up and down jer-smear before applying central correction
-            jet.add_attributes(pt_jer_up=jsmear_up * jet.pt.content,
-                               mass_jer_up=jsmear_up * jet.mass.content,
-                               pt_jer_down=jsmear_down * jet.pt.content,
-                               mass_jer_down=jsmear_down * jet.mass.content)
-            # finally, update the central value
-            _update_jet_ptm(jsmear_cen, jet)
+            # use hybrid method of JER
+            if hybridJER:
+
+                jsmear_cen = np.where(jet.ptGenJet.content > 0,
+                                      1 + (jersf[:, 0] - 1) * (jet.pt.content - jet.ptGenJet.content) / jet.pt.content,
+                                      1. + np.sqrt(np.max(jersf[:, 0]**2 - 1.0, 0)) * jersmear)
+
+                jsmear_up = np.where(jet.ptGenJet.content > 0,
+                                     1 + (jersf[:, 1] - 1) * (jet.pt.content - jet.ptGenJet.content) / jet.pt.content,
+                                     1. + np.sqrt(np.max(jersf[:, 1]**2 - 1.0, 0)) * jersmear)
+
+                jsmear_down = np.where(jet.ptGenJet.content > 0,
+                                       1 + (jersf[:, -1] - 1) * (jet.pt.content - jet.ptGenJet.content) / jet.pt.content,
+                                       1. + np.sqrt(np.max(jersf[:, -1]**2 - 1.0, 0)) * jersmear)
+
+                # need to apply up and down jer-smear before applying central correction
+                jet.add_attributes(pt_jer_up=jsmear_up * jet.pt.content,
+                                   mass_jer_up=jsmear_up * jet.mass.content,
+                                   pt_jer_down=jsmear_down * jet.pt.content,
+                                   mass_jer_down=jsmear_down * jet.mass.content)
+
+                # finally, update the central value
+                _update_jet_ptm(jsmear_cen, jet)
+
+            # use stochastic smearing otherwise
+            else:
+                jsmear_cen = 1. + np.sqrt(np.max(jersf[:, 0]**2 - 1.0, 0)) * jersmear
+                jsmear_up = 1. + np.sqrt(np.max(jersf[:, 1]**2 - 1.0, 0)) * jersmear
+                jsmear_down = 1. + np.sqrt(np.max(jersf[:, -1]**2 - 1.0, 0)) * jersmear
+
+                # need to apply up and down jer-smear before applying central correction
+                jet.add_attributes(pt_jer_up=jsmear_up * jet.pt.content,
+                                   mass_jer_up=jsmear_up * jet.mass.content,
+                                   pt_jer_down=jsmear_down * jet.pt.content,
+                                   mass_jer_down=jsmear_down * jet.mass.content)
+
+                # finally, update the central value
+                _update_jet_ptm(jsmear_cen, jet)
 
         # have to apply central jersf before calculating junc
         if self._junc is not None:
