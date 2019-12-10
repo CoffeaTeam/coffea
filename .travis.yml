@@ -30,8 +30,8 @@ install:
 - pip -q install codecov
 - PY_MAJ=`python -c 'import sys; print(sys.version_info[0])'`
 - PY_MIN=`python -c 'import sys; print(sys.version_info[1])'`
-- pip -q install numpy scipy numba tqdm matplotlib pytest pytest-runner flake8 --upgrade
-- pip -q install pandas pyarrow\<0.15.0 cloudpickle lz4 jinja2 pyspark dask distributed --upgrade
+- pip -q install numpy packaging scipy numba tqdm matplotlib pytest pytest-runner flake8 mplhep --upgrade
+- pip -q install pandas pyarrow cloudpickle lz4 jinja2 pyspark dask distributed --upgrade
 - if [ $PY_MAJ -eq 3 ]; then pip -q install https://github.com/Parsl/parsl/zipball/master; fi
 - pip -q install ${AWKWARD}
 - pip -q install uproot 
