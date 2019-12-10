@@ -196,7 +196,7 @@ def test_lazy_dataframe():
     assert(len(df) == 3)
     assert('Muon_pt' in df.materialized)
     
-    assert(b'Muon_eta' in df.available)
+    assert('Muon_eta' in df.available)
     
     assert(df.size == tree.numentries)
 
@@ -221,7 +221,7 @@ def test_lazy_dataframe_getattr():
     assert(len(df) == 2)
     assert('Muon_pt' in df.materialized)
     
-    assert(b'Muon_eta' in df.available)
+    assert('Muon_eta' in df.available)
     
     assert(df.size == tree.numentries)
 
