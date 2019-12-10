@@ -6,7 +6,6 @@ import copy
 import warnings
 import numbers
 from .hist_tools import SparseAxis, DenseAxis, overflow_behavior, Interval, StringBin
-import mplhep as hep
 
 # Plotting is always terrible
 # Let's try our best to follow matplotlib idioms
@@ -163,11 +162,10 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
 
     Returns
     -------
-        fig : matplotlib.figure.Figure
-            A matplotlib `Figure <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.figure.Figure.html>`_ object
         ax : matplotlib.axes.Axes
             A matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ object
     """
+    import mplhep as hep
     import matplotlib.pyplot as plt
     if ax is None:
         ax = plt.gca()
@@ -318,11 +316,10 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
 
     Returns
     -------
-        fig : matplotlib.figure.Figure
-            A matplotlib `Figure <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.figure.Figure.html>`_ object
         ax : matplotlib.axes.Axes
             A matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ object
     """
+    import mplhep as hep
     import matplotlib.pyplot as plt
     if ax is None:
         fig, ax = plt.subplots(1, 1)
@@ -424,11 +421,10 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
 
     Returns
     -------
-        fig : matplotlib.figure.Figure
-            A matplotlib `Figure <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.figure.Figure.html>`_ object
         ax : matplotlib.axes.Axes
             A matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ object
     """
+    import mplhep as hep
     import matplotlib.pyplot as plt
     if ax is None:
         fig, ax = plt.subplots(1, 1)
@@ -529,11 +525,10 @@ def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='non
 
     Returns
     -------
-        fig : matplotlib.figure.Figure
-            A matplotlib `Figure <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.figure.Figure.html>`_ object
         axes : numpy.ndarray
             An array of matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ objects
     """
+    import mplhep as hep
     import matplotlib.pyplot as plt
     haxes = set(ax.name for ax in h.axes())
     nrow, ncol = 1, 1
@@ -601,4 +596,4 @@ def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='non
         ax.autoscale(axis='y')
         ax.set_ylim(0, None)
 
-    return fig, axes
+    return axes

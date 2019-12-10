@@ -235,10 +235,10 @@ def test_plotgrid():
     }
     # maybe we want to compare different eta regions
     # plotgrid accepts row and column axes, and creates a grid of 1d plots as appropriate
-    fig, ax = hist.plotgrid(lepton_kinematics, row="eta", overlay="flavor", stack=True,
-                            fill_opts=stack_fill_opts,
-                            error_opts=stack_error_opts,
-                            )
+    axs = hist.plotgrid(lepton_kinematics, row="eta", overlay="flavor", stack=True,
+                        fill_opts=stack_fill_opts,
+                        error_opts=stack_error_opts,
+                        )
 
 
 def test_clopper_pearson_interval():
