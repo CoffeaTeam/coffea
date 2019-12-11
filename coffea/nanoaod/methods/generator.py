@@ -22,6 +22,32 @@ def _find_distinctParent(pdg_self, pdg_all, parent_self, parent_all):
 
 
 class GenParticle(LorentzVector):
+    FLAGS = [
+        'isPrompt',
+        'isDecayedLeptonHadron',
+        'isTauDecayProduct',
+        'isPromptTauDecayProduct',
+        'isDirectTauDecayProduct',
+        'isDirectPromptTauDecayProduct',
+        'isDirectHadronDecayProduct',
+        'isHardProcess',
+        'fromHardProcess',
+        'isHardProcessTauDecayProduct',
+        'isDirectHardProcessTauDecayProduct',
+        'fromHardProcessBeforeFSR',
+        'isFirstCopy',
+        'isLastCopy',
+        'isLastCopyBeforeFSR'
+    ]
+
+    def hasFlags(self, flags):
+        dtype = self.statusFlags.type
+        while not isinstance(dtype, numpy.dtype):
+            dtype = dtype.to
+        bits = numpy.array([self.FLAGS.index(f) for f in flags])
+        mask = (1<<bits).sum().astype(dtype)
+        return (self.statusFlags & mask) == mask
+
     @property
     def distinctParent(self):
         array = self
