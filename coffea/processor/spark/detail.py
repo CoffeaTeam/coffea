@@ -58,6 +58,7 @@ def _read_df(spark, dataset, files_or_dirs, ana_cols, partitionsize, file_type, 
         raise ValueError('spark dataset file list must be a Sequence (like list())')
     df = spark.read.format(file_type) \
                    .option('tree', tname) \
+                   .option('threadCount', '-1') \
                    .load(flist)
     count = df.count()
 
