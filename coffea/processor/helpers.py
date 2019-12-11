@@ -44,18 +44,23 @@ class Weights(object):
             shift : bool, optional
                 if True, interpret weightUp and weightDown as a realtive difference (additive) to the
                 nominal value
+
+        .. note:: ``weightUp`` and ``weightDown`` are assumed to be rvalue-like and may be modified in-place by this function
         """
         if name.endswith('Up') or name.endswith('Down'):
             raise ValueError("Avoid using 'Up' and 'Down' in weight names, instead pass appropriate shifts to add() call")
-        self._weight *= weight
+        weight = np.array(weight)
+        self._weight = self._weight * weight
         if self._storeIndividual:
             self._weights[name] = weight
         if weightUp is not None:
+            weightUp = np.array(weightUp)
             if shift:
                 weightUp += weight
             weightUp[weight != 0.] /= weight[weight != 0.]
             self._modifiers[name + 'Up'] = weightUp
         if weightDown is not None:
+            weightDown = np.array(weightDown)
             if shift:
                 weightDown = weight - weightDown
             weightDown[weight != 0.] /= weight[weight != 0.]
