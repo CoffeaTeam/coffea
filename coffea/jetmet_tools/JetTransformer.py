@@ -163,23 +163,21 @@ class JetTransformer(object):
 
             jersmear = jer * np.random.normal(size=jer.size)
 
-            if not forceStochastic:
-                doHybrid = jet.ptGenJet.content > 0
-                jsmear_cen = np.where(doHybrid,
-                                      1 + (jersf[:, 0] - 1) * (jet.pt.content - jet.ptGenJet.content) / jet.pt.content,
-                                      1. + np.sqrt(np.max(jersf[:, 0]**2 - 1.0, 0)) * jersmear)
+            ptGenJet = np.zeros_like(jet.pt.content) if forceStochastic else jet.ptGenJet.content
 
-                jsmear_up = np.where(doHybrid,
-                                     1 + (jersf[:, 1] - 1) * (jet.pt.content - jet.ptGenJet.content) / jet.pt.content,
-                                     1. + np.sqrt(np.max(jersf[:, 1]**2 - 1.0, 0)) * jersmear)
+            doHybrid = ptGenJet > 0
 
-                jsmear_down = np.where(doHybrid,
-                                       1 + (jersf[:, -1] - 1) * (jet.pt.content - jet.ptGenJet.content) / jet.pt.content,
-                                       1. + np.sqrt(np.max(jersf[:, -1]**2 - 1.0, 0)) * jersmear)
-            else:
-                jsmear_cen = 1. + np.sqrt(np.max(jersf[:, 0]**2 - 1.0, 0)) * jersmear
-                jsmear_up = 1. + np.sqrt(np.max(jersf[:, 1]**2 - 1.0, 0)) * jersmear
-                jsmear_down = 1. + np.sqrt(np.max(jersf[:, -1]**2 - 1.0, 0)) * jersmear
+            jsmear_cen = np.where(doHybrid,
+                                  1 + (jersf[:, 0] - 1) * (jet.pt.content - ptGenJet) / jet.pt.content,
+                                  1. + np.sqrt(np.max(jersf[:, 0]**2 - 1.0, 0)) * jersmear)
+
+            jsmear_up = np.where(doHybrid,
+                                 1 + (jersf[:, 1] - 1) * (jet.pt.content - ptGenJet) / jet.pt.content,
+                                 1. + np.sqrt(np.max(jersf[:, 1]**2 - 1.0, 0)) * jersmear)
+
+            jsmear_down = np.where(doHybrid,
+                                   1 + (jersf[:, -1] - 1) * (jet.pt.content - ptGenJet) / jet.pt.content,
+                                   1. + np.sqrt(np.max(jersf[:, -1]**2 - 1.0, 0)) * jersmear)
 
             # need to apply up and down jer-smear before applying central correction
             jet.add_attributes(pt_jer_up=jsmear_up * jet.pt.content,
