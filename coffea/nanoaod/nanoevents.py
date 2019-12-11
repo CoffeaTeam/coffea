@@ -150,7 +150,9 @@ class NanoEvents(ak.Table):
         events = cls.named('event')
         collections = {k.split('_')[0] for k in arrays.columns}
         collections -= {k for k in collections if k.startswith('n') and k[1:] in collections}
-        allmethods = {**collection_methods, **collection_methods_overrides}
+        allmethods = {}
+        allmethods.update(collection_methods)
+        allmethods.update(collection_methods_overrides)
         for name in collections:
             methods = allmethods.get(name, None)
             events[name] = NanoCollection.from_arrays(arrays, name, methods)
