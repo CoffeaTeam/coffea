@@ -27,12 +27,14 @@ class LazyDataFrame(MutableMapping):
     """
     def __init__(self, tree, stride=None, index=None, preload_items=None, flatten=False):
         self._tree = tree
+        self._flatten = flatten
         self._branchargs = {'awkwardlib': awkward, 'flatten': flatten}
         self._stride = None
         if (stride is not None) and (index is not None):
             self._stride = stride
             self._branchargs['entrystart'] = index * stride
             self._branchargs['entrystop'] = min(self._tree.numentries, (index + 1) * stride)
+        self._available = {k.decode('ascii') for k in self._tree.keys()}
         self._dict = {}
         self._materialized = set()
         if preload_items:
@@ -58,7 +60,7 @@ class LazyDataFrame(MutableMapping):
             raise AttributeError(key)
 
     def __iter__(self):
-        for item in self._dict:
+        for item in self._available:
             yield item
 
     def __len__(self):
@@ -67,14 +69,23 @@ class LazyDataFrame(MutableMapping):
     def __setitem__(self, key, value):
         self._dict[key] = value
 
+    def __contains__(self, key):
+        # by default, MutableMapping uses __getitem__ to test, but we want to avoid materialization
+        return key in self._dict or key in self._tree
+
     @property
     def available(self):
-        """List of available columns"""
-        return self._tree.keys()
+        """Set of available columns"""
+        return self._available
+
+    @property
+    def columns(self):
+        """Set of available columns"""
+        return self._available
 
     @property
     def materialized(self):
-        """List of columns read from tree"""
+        """Set of columns read from tree"""
         return self._materialized
 
     @property
