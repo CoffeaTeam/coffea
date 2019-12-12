@@ -44,7 +44,7 @@ def _find_children(offsets_in, parentidx):
 
         for index in range(stop_src - start_src):
             for possible_child in range(index, stop_src - start_src):
-                if parentidx[possible_child] == index:
+                if parentidx[start_src + possible_child] == index:
                     content1_out[offset1] = start_src + possible_child
                     offset1 = offset1 + 1
                     if offset1 >= len(content1_out):
