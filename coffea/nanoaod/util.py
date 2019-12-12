@@ -2,7 +2,7 @@ import six
 
 
 def _mixin(methods, awkwardtype):
-    '''Like ak.Methods.mixin but also captures methods in dir() and propagate docstr'''
+    '''Like awkward.Methods.mixin but also captures methods in dir() and propagate docstr'''
     newtype = type(methods.__name__ + 'Array', (methods, awkwardtype), {})
     newtype.__dir__ = lambda self: dir(methods) + awkwardtype.__dir__(self)
     if six.PY3:
