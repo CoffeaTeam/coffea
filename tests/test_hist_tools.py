@@ -184,3 +184,22 @@ def test_export1d():
 
     if os.path.exists(filename):
         os.remove(filename)
+
+def test_hist_serdes():
+    import pickle
+    h_regular_bins = hist.Hist("regular joe",
+                               hist.Bin("x", "x", 20, 0, 200),
+                               hist.Bin("y", "why", 20, -3, 3))
+
+    h_regular_bins.fill(x=np.array([1.,2.,3.,4.,5.]),y=np.array([-2.,1.,0.,1.,2.]))
+
+    h_regular_bins.sum('x').identifiers('y')
+
+    spkl = pickle.dumps(h_regular_bins)
+    
+    hnew = pickle.loads(spkl)
+    
+    hnew.sum('x').identifiers('y')
+    
+    assert(h_regular_bins._dense_shape == hnew._dense_shape)
+    assert(h_regular_bins._axes == hnew._axes)
