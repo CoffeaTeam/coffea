@@ -32,28 +32,28 @@ def _resize(a, new_size):
 
 
 @numba.njit
-def _find_children(offsets_src, localindex_dst):
-    offsets1_out = numpy.empty(len(localindex_dst) + 1, dtype=localindex_dst.dtype)
-    content1_out = numpy.empty(len(localindex_dst), dtype=localindex_dst.dtype)
+def _find_children(offsets_in, parentidx):
+    offsets1_out = numpy.empty(len(parentidx) + 1, dtype=parentidx.dtype)
+    content1_out = numpy.empty(len(parentidx), dtype=parentidx.dtype)
     offsets1_out[0] = 0
 
     offset0 = 0
     offset1 = 0
-    for record_index in range(len(offsets_src) - 1):
-        start_src, stop_src = offsets_src[record_index], offsets_src[record_index + 1]
+    for record_index in range(len(offsets_in) - 1):
+        start_src, stop_src = offsets_in[record_index], offsets_in[record_index + 1]
 
-        for index1 in range(stop_src - start_src):
-            for index_out in range(index1, stop_src - start_src):
-                if localindex_dst[index_out] == index1:
-                    content1_out[offset1] = start_src + index_out
+        for index in range(stop_src - start_src):
+            for possible_child in range(index, stop_src - start_src):
+                if parentidx[possible_child] == index:
+                    content1_out[offset1] = start_src + possible_child
                     offset1 = offset1 + 1
+                    if offset1 >= len(content1_out):
+                        raise RuntimeError("offset1 went out of bounds!")
             offsets1_out[offset0 + 1] = offset1
             offset0 = offset0 + 1
+            if offset0 >= len(offsets1_out):
+                raise RuntimeError("offset0 went out of bounds!")
 
-    if offset0 + 1 > len(localindex_dst) + 1:
-        raise RuntimeError("offset0 went out of bounds!")
-    if offset1 >= len(localindex_dst):
-        raise RuntimeError("offset1 went out of bounds!")
     return offsets1_out, content1_out[:offset1]
 
 
