@@ -89,6 +89,8 @@ class NanoCollection(awkward.VirtualArray):
             globalindex,
             destination.array.content,
         )
+        # useful for algorithms
+        self.array.content['_xref_%s_index' % destination.rowname] = globalindex
         return out
 
     def _lazy_nested_crossref(self, indices, destination):

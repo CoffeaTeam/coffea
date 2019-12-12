@@ -15,6 +15,8 @@ def _find_distinctParent(pdg_self, pdg_all, parent_self, parent_all):
         parent = parent_self[i]
         parentpdg = pdg_all[parent]
         while parent >= 0 and parentpdg == thispdg:
+            if parent >= len(parent_all):
+                raise RuntimeError("parent index beyond length of array!")
             parent = parent_all[parent]
             parentpdg = pdg_all[parent]
         out[i] = parent
@@ -43,12 +45,16 @@ def _find_children(offsets_src, localindex_dst):
         for index1 in range(stop_src - start_src):
             for index_out in range(index1, stop_src - start_src):
                 if localindex_dst[index_out] == index1:
-                    content1_out[offset1] = index_out
+                    content1_out[offset1] = start_src + index_out
                     offset1 = offset1 + 1
             offsets1_out[offset0 + 1] = offset1
             offset0 = offset0 + 1
 
-    return offsets1_out[:offset0 + 1], content1_out[:offset1]
+    if offset0 + 1 > len(localindex_dst) + 1:
+        raise RuntimeError("offset0 went out of bounds!")
+    if offset1 >= len(localindex_dst):
+        raise RuntimeError("offset1 went out of bounds!")
+    return offsets1_out, content1_out[:offset1]
 
 
 class GenParticle(LorentzVector):
@@ -102,7 +108,7 @@ class GenParticle(LorentzVector):
         while isinstance(parent.content, awkward.IndexedMaskedArray):
             parent = parent.content
         pdg_all = numpy.array(parent.content.pdgId)
-        parent_all = parent.mask
+        parent_all = parent.content['_xref_%s_index' % self.rowname]
         globalindex = _find_distinctParent(pdg_self, pdg_all, parent_self, parent_all)
         out = type(parent)(
             globalindex,
