@@ -118,9 +118,7 @@ class GenParticle(LorentzVector):
             self.array.offsets,
             motherindices.flatten()
         )
-        return motherindices.copy(
-            content=awkward.JaggedArray.fromoffsets(
-                offsets1,
-                content=self.array.content[content1]
-            )
+        return awkward.JaggedArray.fromoffsets(
+            offsets1,
+            content=self.array.content[content1]
         )

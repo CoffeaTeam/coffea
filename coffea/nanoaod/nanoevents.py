@@ -151,25 +151,29 @@ class NanoEvents(awkward.Table):
         # finalize
         del events.Photon['mass']
 
-        parent_type = awkward.type.OptionType(events.GenPart.type.to.to)
+        parent_type = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(events.GenPart.type.to.to))
         parent_type.check = False  # break recursion
         gen_parent = type(events.GenPart)(
             events.GenPart._lazy_crossref,
             args=(events.GenPart._getcolumn('genPartIdxMother'), events.GenPart),
-            type=awkward.type.ArrayType(float('inf'), parent_type),
+            type=parent_type,
         )
         gen_parent._already_flat = True
         gen_parent.__doc__ = events.GenPart.__doc__
         events.GenPart['parent'] = gen_parent
+        child_type = awkward.type.ArrayType(float('inf'), float('inf'), events.GenPart.type.to.to)
+        child_type.check = False
         children = type(events.GenPart)(
             events.GenPart._lazy_findchildren,
             args=(events.GenPart._getcolumn('genPartIdxMother'),),
-            type=awkward.type.ArrayType(float('inf'), float('inf'), events.GenPart.type.to.to),
+            type=child_type,
         )
         children._already_flat = True
         children.__doc__ = events.GenPart.__doc__
         events.GenPart['children'] = children
         del events.GenPart['genPartIdxMother']
+        # now that we've created a monster, turn off the safety switch
+        events.GenPart.type.check = False
 
         embedded_subjets = type(events.SubJet)(
             events.FatJet._lazy_nested_crossref,
