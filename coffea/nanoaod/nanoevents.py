@@ -1,16 +1,7 @@
-import six
 import numpy as np
 import awkward as ak
 from .methods import collection_methods
-
-
-def _mixin(methods, awkwardtype):
-    '''Like ak.Methods.mixin but also captures methods in dir() and propagate docstr'''
-    newtype = type(methods.__name__ + 'Array', (methods, awkwardtype), {})
-    newtype.__dir__ = lambda self: dir(methods) + awkwardtype.__dir__(self)
-    if six.PY3:
-        newtype.__doc__ = methods.__doc__
-    return newtype
+from .util import _mixin
 
 
 class NanoCollection(ak.VirtualArray):
@@ -85,7 +76,7 @@ class NanoCollection(ak.VirtualArray):
         out.__doc__ = counts.__doc__
         return out
 
-    def _lazyindexed(self, index, destination):
+    def _lazy_crossref(self, index, destination):
         if not isinstance(destination.array, ak.JaggedArray):
             raise RuntimeError
         if not isinstance(self.array, ak.JaggedArray):
@@ -93,8 +84,6 @@ class NanoCollection(ak.VirtualArray):
         globalindex = (index + destination.array.starts).flatten()
         invalid = (index < 0).flatten()
         globalindex[invalid] = -1
-        # useful for recursive algorithms if destination is self
-        self.array.content['_%s_globalindex' % destination.rowname] = globalindex
         # note: parent virtual must derive from this type and have _already_flat = True
         out = ak.IndexedMaskedArray(
             globalindex,
@@ -102,7 +91,7 @@ class NanoCollection(ak.VirtualArray):
         )
         return out
 
-    def _lazyindexednested(self, indices, destination):
+    def _lazy_nested_crossref(self, indices, destination):
         if not isinstance(destination.array, ak.JaggedArray):
             raise RuntimeError
         if not isinstance(self.array, ak.JaggedArray):
@@ -165,17 +154,25 @@ class NanoEvents(ak.Table):
         parent_type = ak.type.OptionType(events.GenPart.type.to.to)
         parent_type.check = False  # break recursion
         gen_parent = type(events.GenPart)(
-            events.GenPart._lazyindexed,
+            events.GenPart._lazy_crossref,
             args=(events.GenPart._getcolumn('genPartIdxMother'), events.GenPart),
             type=ak.type.ArrayType(float('inf'), parent_type),
         )
         gen_parent._already_flat = True
         gen_parent.__doc__ = events.GenPart.__doc__
         events.GenPart['parent'] = gen_parent
+        children = type(events.GenPart)(
+            events.GenPart._lazy_findchildren,
+            args=(events.GenPart._getcolumn('genPartIdxMother'),),
+            type=ak.type.ArrayType(float('inf'), float('inf'), events.GenPart.type.to.to),
+        )
+        children._already_flat = True
+        children.__doc__ = events.GenPart.__doc__
+        events.GenPart['children'] = children
         del events.GenPart['genPartIdxMother']
 
         embedded_subjets = type(events.SubJet)(
-            events.FatJet._lazyindexednested,
+            events.FatJet._lazy_nested_crossref,
             args=([events.FatJet._getcolumn('subJetIdx1'), events.FatJet._getcolumn('subJetIdx2')], events.SubJet),
             type=ak.type.ArrayType(float('inf'), float('inf'), events.SubJet.type.to.to),
         )
