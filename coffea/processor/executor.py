@@ -92,9 +92,21 @@ class WorkItem(object):
 
 
 class _compression_wrapper(object):
-    def __init__(self, level, function):
+    def __init__(self, level, function, name=None):
         self.level = level
         self.function = function
+        self.name = name
+
+    def __str__(self):
+        if self.name is not None:
+            return self.name
+        try:
+            name = self.function.__name__
+            if name == "<lambda>":
+                return "lambda"
+            return name
+        except AttributeError:
+            return str(self.function)
 
     # no @wraps due to pickle
     def __call__(self, *args, **kwargs):
@@ -118,14 +130,21 @@ def _iadd(output, result):
     output += _maybe_decompress(result)
 
 
-def _reduce(items):
-    if len(items) == 0:
-        raise ValueError("Empty list provided to reduction")
-    # if dask has a cached result, we cannot alter it
-    out = copy.deepcopy(_maybe_decompress(items.pop()))
-    while items:
-        out += _maybe_decompress(items.pop())
-    return out
+class _reduce(object):
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        return "reduce"
+
+    def __call__(self, items):
+        if len(items) == 0:
+            raise ValueError("Empty list provided to reduction")
+        # if dask has a cached result, we cannot alter it
+        out = copy.deepcopy(_maybe_decompress(items.pop()))
+        while items:
+            out += _maybe_decompress(items.pop())
+        return out
 
 
 def _futures_handler(futures_set, output, status, unit, desc, add_fn):
@@ -258,6 +277,8 @@ def dask_executor(items, function, accumulator, **kwargs):
         heavy_input : serializable, optional
             Any value placed here will be broadcast to workers and joined to input
             items in a tuple (item, heavy_input) that is passed to function.
+        function_name : str, optional
+            Name of the function being passed
     """
     if len(items) == 0:
         return accumulator
@@ -267,9 +288,10 @@ def dask_executor(items, function, accumulator, **kwargs):
     clevel = kwargs.pop('compression', 1)
     priority = kwargs.pop('priority', 0)
     heavy_input = kwargs.pop('heavy_input', None)
-    reducer = _reduce
+    function_name = kwargs.pop('function_name', None)
+    reducer = _reduce()
     if clevel is not None:
-        function = _compression_wrapper(clevel, function)
+        function = _compression_wrapper(clevel, function, name=function_name)
         reducer = _compression_wrapper(clevel, reducer)
 
     if heavy_input is not None:
@@ -490,6 +512,7 @@ def run_uproot_job(fileset,
             real_pre_args = {
                 'desc': 'Preprocessing',
                 'unit': 'file',
+                'compression': None,
             }
             real_pre_args.update(pre_args)
             executor(to_get, _get_metadata, out, **real_pre_args)
@@ -548,6 +571,7 @@ def run_uproot_job(fileset,
     wrapped_out = dict_accumulator({'out': out, 'metrics': dict_accumulator()})
     exe_args = {
         'unit': 'chunk',
+        'function_name': type(processor_instance).__name__,
     }
     exe_args.update(executor_args)
     executor(chunks, closure, wrapped_out, **exe_args)
