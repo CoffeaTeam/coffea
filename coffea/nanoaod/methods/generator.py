@@ -75,7 +75,7 @@ class GenParticle(LorentzVector):
         'isLastCopy',
         'isLastCopyBeforeFSR'
     ]
-    enable_children = False
+    enable_children = True
 
     def _finalize(self, name, events):
         parent_type = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(self.type.to.to))

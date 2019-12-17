@@ -155,13 +155,14 @@ class NanoCollection(awkward.VirtualArray):
 
 class NanoEvents(awkward.Table):
     @classmethod
-    def from_arrays(cls, arrays, methods={}):
+    def from_arrays(cls, arrays, methods=None):
         events = cls.named('event')
         collections = {k.split('_')[0] for k in arrays.keys()}
         collections -= {k for k in collections if k.startswith('n') and k[1:] in collections}
         allmethods = {}
         allmethods.update(collection_methods)
-        allmethods.update(methods)
+        if methods is not None:
+            allmethods.update(methods)
         for name in collections:
             methods = allmethods.get(name, None)
             events.contents[name] = NanoCollection.from_arrays(arrays, name, methods)
@@ -174,7 +175,7 @@ class NanoEvents(awkward.Table):
         return events
 
     @classmethod
-    def from_file(cls, file, treename=b'Events', entrystart=None, entrystop=None, cache=None):
+    def from_file(cls, file, treename=b'Events', entrystart=None, entrystop=None, cache=None, methods=None):
         if not isinstance(file, uproot.rootio.ROOTDirectory):
             file = uproot.open(file)
         tree = file[treename]
@@ -196,4 +197,4 @@ class NanoEvents(awkward.Table):
             )
             array.__doc__ = tree[bname].title
             arrays[bname.decode('ascii')] = array
-        return cls.from_arrays(arrays)
+        return cls.from_arrays(arrays, methods=methods)

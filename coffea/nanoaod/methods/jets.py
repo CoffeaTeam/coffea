@@ -3,10 +3,10 @@ import awkward
 
 
 class FatJet(LorentzVector):
-    _subjetmap = {'FatJet': 'SubJet'}  # V6 has 'GenJetAK8': 'SubGenJetAK8', maybe better to put in generator.py
+    subjetmap = {'FatJet': 'SubJet'}  # V6 has 'GenJetAK8': 'SubGenJetAK8', maybe better to put in generator.py
 
     def _finalize(self, name, events):
-        subjets = self._subjetmap.get(name, None)
+        subjets = self.subjetmap.get(name, None)
         if subjets is not None and subjets in events.columns:
             subjets = events[subjets]
             embedded_subjets = type(subjets)(
