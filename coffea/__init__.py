@@ -30,6 +30,10 @@
 from . import version
 __version__ = version.__version__
 
+import sys
+if sys.version_info.major < 3:
+    raise RuntimeError('coffea only supports python3 as of 1 January 2020')
+
 from . import (
     hist,
     lookup_tools,
