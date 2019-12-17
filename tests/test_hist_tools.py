@@ -5,6 +5,7 @@ from coffea.util import numpy as np
 
 from dummy_distributions import dummy_jagged_eta_pt
 import pytest
+import sys
 
 def test_hist():
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
@@ -204,7 +205,7 @@ def test_hist_serdes():
     assert(h_regular_bins._dense_shape == hnew._dense_shape)
     assert(h_regular_bins._axes == hnew._axes)
 
-
+@pytest.mark.skipif(sys.version_info < (3, 4), reason="requires python3.4 or higher, test file is pickle proto 4")
 def test_hist_compat():
     from coffea.util import load
     
