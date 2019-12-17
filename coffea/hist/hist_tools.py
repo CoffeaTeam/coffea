@@ -462,7 +462,7 @@ class Bin(DenseAxis):
 
     @property
     def _intervals(self):
-        if self._lazy_intervals is None:
+        if not hasattr(self, '_lazy_intervals') or self._lazy_intervals is None:
             self._lazy_intervals = [Interval(low, high) for low, high in zip(self._interval_bins[:-1], self._interval_bins[1:])]
         return self._lazy_intervals
 
