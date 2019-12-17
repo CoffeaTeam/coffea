@@ -1,7 +1,7 @@
 import numpy
 import awkward
 import numba
-from .common import LorentzVector
+from .common import LorentzVector, Candidate
 from ..util import _mixin
 
 
@@ -75,6 +75,32 @@ class GenParticle(LorentzVector):
         'isLastCopy',
         'isLastCopyBeforeFSR'
     ]
+    enable_children = False
+
+    def _finalize(self, name, events):
+        parent_type = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(self.type.to.to))
+        parent_type.check = False  # break recursion
+        gen_parent = type(self)(
+            self._lazy_crossref,
+            args=(self._getcolumn('genPartIdxMother'), self),
+            type=parent_type,
+        )
+        gen_parent.__doc__ = self.__doc__
+        self['parent'] = gen_parent
+
+        if self.enable_children:
+            child_type = awkward.type.ArrayType(float('inf'), float('inf'), self.type.to.to)
+            child_type.check = False
+            children = type(self)(
+                self._lazy_findchildren,
+                args=(self._getcolumn('genPartIdxMother'),),
+                type=child_type,
+            )
+            children.__doc__ = self.__doc__
+            self['children'] = children
+
+        self.type.check = False
+        del self['genPartIdxMother']
 
     def hasFlags(self, flags):
         '''Check if one or more flags are set
@@ -128,3 +154,18 @@ class GenParticle(LorentzVector):
             offsets1,
             content=self.array.content[content1]
         )
+
+
+class GenVisTau(Candidate):
+    def _finalize(self, name, events):
+        parent_type = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(events.GenPart.type.to.to))
+        parent_type.check = False  # break recursion
+        gen_parent = type(events.GenPart)(
+            self._lazy_crossref,
+            args=(self._getcolumn('genPartIdxMother'), events.GenPart),
+            type=parent_type,
+        )
+        gen_parent.__doc__ = self.__doc__
+        self['parent'] = gen_parent
+        self.type.check = False
+        del self['genPartIdxMother']

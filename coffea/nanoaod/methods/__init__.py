@@ -1,6 +1,8 @@
 from .common import METVector, LorentzVector, Candidate
 from .leptons import Electron, Muon, Photon, Tau
-from .generator import GenParticle
+from .jets import Jet, FatJet
+from .generator import GenParticle, GenVisTau
+
 
 collection_methods = {
     'CaloMET': METVector,
@@ -16,11 +18,11 @@ collection_methods = {
     'SoftActivityJet': LorentzVector,
     'TrigObj': LorentzVector,
     # True lorentz: pt, eta, phi, mass
-    'FatJet': LorentzVector,
+    'FatJet': FatJet,
     'GenDressedLepton': LorentzVector,
     'GenJet': LorentzVector,
-    'GenJetAK8': LorentzVector,
-    'Jet': LorentzVector,
+    'GenJetAK8': FatJet,
+    'Jet': Jet,
     'LHEPart': LorentzVector,
     'SV': LorentzVector,
     'SubGenJetAK8': LorentzVector,
@@ -30,7 +32,7 @@ collection_methods = {
     'Muon': Muon,
     'Photon': Photon,
     'Tau': Tau,
-    'GenVisTau': Candidate,
+    'GenVisTau': GenVisTau,
     # special
     'GenPart': GenParticle,
 }
