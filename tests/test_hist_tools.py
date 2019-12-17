@@ -203,3 +203,20 @@ def test_hist_serdes():
     
     assert(h_regular_bins._dense_shape == hnew._dense_shape)
     assert(h_regular_bins._axes == hnew._axes)
+
+
+def test_hist_compat():
+    from coffea.util import load
+    
+    test = load('tests/samples/old_hist_format.coffea')
+    
+    expected_bins = np.array([ -np.inf, 0.,   20.,   40.,   60.,   80.,  100.,  120.,  140.,
+                               160.,  180.,  200.,  220.,  240.,  260.,  280.,  300.,  320.,
+                               340.,  360.,  380.,  400.,  420.,  440.,  460.,  480.,  500.,
+                               520.,  540.,  560.,  580.,  600.,  620.,  640.,  660.,  680.,
+                               700.,  720.,  740.,  760.,  780.,  800.,  820.,  840.,  860.,
+                               880.,  900.,  920.,  940.,  960.,  980., 1000., 1020., 1040.,
+                              1060., 1080., 1100., 1120., 1140., 1160., 1180., 1200.,   np.inf,
+                              np.nan])
+    assert np.all(test._axes[2]._interval_bins[:-1] == expected_bins[:-1])
+    assert np.isnan(test._axes[2]._interval_bins[-1])
