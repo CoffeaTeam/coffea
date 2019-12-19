@@ -6,6 +6,29 @@ from .util import _mixin
 
 
 class NanoCollection(awkward.VirtualArray):
+    _mixin_registry = {}
+
+    @classmethod
+    def _get_mixin(cls, methods, awkwardtype=None):
+        if awkwardtype is None:
+            awkwardtype = NanoCollection
+        if issubclass(awkwardtype, NanoCollection) and awkwardtype is not NanoCollection:
+            raise ValueError("Can only mixin with NanoCollection base or awkward type, not derived")
+        key = (methods, awkwardtype)
+        if key not in NanoCollection._mixin_registry:
+            if methods is None:
+                NanoCollection._mixin_registry[key] = awkwardtype
+            else:
+                NanoCollection._mixin_registry[key] = _mixin(methods, awkwardtype)
+        return NanoCollection._mixin_registry[key]
+
+    @classmethod
+    def _get_methods(cls):
+        for k, v in NanoCollection._mixin_registry.items():
+            if v is cls:
+                return k[0]
+        raise RuntimeError("Unregistered mixin detected")
+
     @classmethod
     def _lazyflatten(cls, array):
         return array.array.content
@@ -16,23 +39,20 @@ class NanoCollection(awkward.VirtualArray):
         arrays : dict
             A mapping from branch name to flat VirtualArray
         '''
+        outtype = cls._get_mixin(methods)
         jagged = 'n' + name in arrays.keys()
         columns = {k[len(name) + 1:]: arrays[k] for k in arrays.keys() if k.startswith(name + '_')}
         if len(columns) == 0:
             # single-item collection, just forward lazy array
             if name not in arrays.keys():
                 raise RuntimeError('Could not find collection %s in dataframe' % name)
-            array = arrays[name]
-            if methods:
-                ArrayType = _mixin(methods, awkward.VirtualArray)
-                out = ArrayType.__new__()
-                out.__dict__ = array.__dict__
-                out.__doc__ = array.__doc__
-                array = out
+            array = outtype.__new__(outtype)
+            array.__dict__ = arrays[name].__dict__
+            array.__doc__ = arrays[name].__doc__
             if jagged:
                 counts = arrays['n' + name]
-                out = cls(
-                    cls._lazyjagged,
+                out = outtype(
+                    outtype._lazyjagged,
                     (name, counts, array, methods),
                     type=awkward.type.ArrayType(len(counts), float('inf'), array.type.to),
                 )
@@ -40,24 +60,19 @@ class NanoCollection(awkward.VirtualArray):
                 array = out
             return array
         elif jagged:
-            if methods:
-                cls = _mixin(methods, cls)
             tabletype = awkward.type.TableType()
             for k, array in columns.items():
                 tabletype[k] = array.type.to
             counts = arrays['n' + name]
-            out = cls(
-                cls._lazyjagged,
+            out = outtype(
+                outtype._lazyjagged,
                 (name, counts, columns, methods),
                 type=awkward.type.ArrayType(len(counts), float('inf'), tabletype),
             )
             out.__doc__ = counts.__doc__
             return out
         else:
-            if methods is None:
-                Table = awkward.Table
-            else:
-                Table = _mixin(methods, awkward.Table)
+            Table = cls._get_mixin(methods, awkward.Table)
             table = Table.named(name)
             for k, v in columns.items():
                 table.contents[k] = v
@@ -66,12 +81,8 @@ class NanoCollection(awkward.VirtualArray):
     @classmethod
     def _lazyjagged(cls, name, counts, columns, methods=None):
         offsets = awkward.JaggedArray.counts2offsets(counts.array)
-        if methods is None:
-            JaggedArray = awkward.JaggedArray
-            Table = awkward.Table
-        else:
-            JaggedArray = _mixin(methods, awkward.JaggedArray)
-            Table = _mixin(methods, awkward.Table)
+        JaggedArray = cls._get_mixin(methods, awkward.JaggedArray)
+        Table = cls._get_mixin(methods, awkward.Table)
         if isinstance(columns, dict):
             content = Table.named(name)
             content.type.takes = offsets[-1]
@@ -90,18 +101,21 @@ class NanoCollection(awkward.VirtualArray):
         return out
 
     def _lazy_crossref(self, index, destination):
+        if not isinstance(destination, NanoCollection):
+            raise ValueError("Destination must be a NanoCollection")
         if not isinstance(destination.array, awkward.JaggedArray):
-            raise RuntimeError
+            raise ValueError("Cross-references imply jagged destination")
         if not isinstance(self.array, awkward.JaggedArray):
             raise NotImplementedError
-        # repair type now that we've materialized
+        IndexedMaskedArray = destination._get_mixin(destination._get_methods(), awkward.IndexedMaskedArray)
+        # repair awkward type now that we've materialized
         index.type.takes = self.array.offsets[-1]
         index = awkward.JaggedArray.fromoffsets(self.array.offsets, content=index)
         globalindex = (index + destination.array.starts).flatten()
         invalid = (index < 0).flatten()
         globalindex[invalid] = -1
         # note: parent virtual must derive from this type
-        out = awkward.IndexedMaskedArray(
+        out = IndexedMaskedArray(
             globalindex,
             destination.array.content,
         )
@@ -110,10 +124,13 @@ class NanoCollection(awkward.VirtualArray):
         return out
 
     def _lazy_nested_crossref(self, indices, destination):
+        if not isinstance(destination, NanoCollection):
+            raise ValueError("Destination must be a NanoCollection")
         if not isinstance(destination.array, awkward.JaggedArray):
-            raise RuntimeError
+            raise ValueError("Cross-references imply jagged destination")
         if not isinstance(self.array, awkward.JaggedArray):
             raise NotImplementedError
+        JaggedArray = destination._get_mixin(destination._get_methods(), awkward.JaggedArray)
         # repair type now that we've materialized
         for idx in indices:
             idx.type.takes = self.array.offsets[-1]
@@ -122,7 +139,7 @@ class NanoCollection(awkward.VirtualArray):
             content[i::len(indices)] = numpy.array(index)
         globalindices = awkward.JaggedArray.fromoffsets(
             self.array.offsets,
-            awkward.JaggedArray.fromoffsets(
+            JaggedArray.fromoffsets(
                 numpy.arange((len(self.array.content) + 1) * len(indices), step=len(indices)),
                 content,
             )
@@ -198,3 +215,6 @@ class NanoEvents(awkward.Table):
             array.__doc__ = tree[bname].title
             arrays[bname.decode('ascii')] = array
         return cls.from_arrays(arrays, methods=methods)
+
+    def tolist(self):
+        raise NotImplementedError("NanoEvents cannot be rendered as a list due to cyclic cross-references")

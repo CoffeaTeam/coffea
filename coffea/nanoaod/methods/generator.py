@@ -124,15 +124,23 @@ class GenParticle(LorentzVector):
         if isinstance(array, awkward.JaggedArray):
             jagged = array
             array = array.content
-        pdg_self = numpy.array(array.pdgId)
+        if isinstance(array, awkward.IndexedMaskedArray):
+            mask = array.mask
+            pdg_self = array.pdgId.fillna(0)
+        else:
+            mask = None
+            pdg_self = numpy.array(array.pdgId)
         parent = array.parent
         if isinstance(array.parent, awkward.VirtualArray):
             parent = parent.array
         if not isinstance(parent, awkward.IndexedMaskedArray):
             raise RuntimeError
         parent_self = parent.mask
-        while isinstance(parent.content, awkward.IndexedMaskedArray):
-            parent = parent.content
+        if mask is not None:
+            parent_self = numpy.where(mask >= 0, parent_self, -1)
+        if not isinstance(parent.content, awkward.VirtualArray):
+            raise RuntimeError
+        parent = parent.content.array
         pdg_all = numpy.array(parent.content.pdgId)
         parent_all = parent.content['_xref_%s_index' % self.rowname]
         globalindex = _find_distinctParent(pdg_self, pdg_all, parent_self, parent_all)
@@ -145,12 +153,13 @@ class GenParticle(LorentzVector):
         return out
 
     def _lazy_findchildren(self, motherindices):
+        JaggedArray = self._get_mixin(self._get_methods(), awkward.JaggedArray)
         motherindices = motherindices.array
         offsets1, content1 = _find_children(
             self.array.offsets,
             motherindices.flatten()
         )
-        return awkward.JaggedArray.fromoffsets(
+        return JaggedArray.fromoffsets(
             offsets1,
             content=self.array.content[content1]
         )
