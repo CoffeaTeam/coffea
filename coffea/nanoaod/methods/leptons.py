@@ -62,14 +62,12 @@ class Muon(LeptonCommon):
 class Photon(LeptonCommon):
     LOOSE, MEDIUM, TIGHT = range(3)
 
-    def _finalize(self, name, events):
-        del self['mass']
-
     @property
     def isLoose(self):
         return (self.cutBasedBitmap & (1 << self.LOOSE)).astype(bool)
 
     def _finalize(self, name, events):
+        del self['mass']
         super(Photon, self)._finalize(name, events)
         electrons = events['Electron']
         reftype = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(electrons.type.to.to))

@@ -138,9 +138,8 @@ class GenParticle(LorentzVector):
         parent_self = parent.mask
         if mask is not None:
             parent_self = numpy.where(mask >= 0, parent_self, -1)
-        if not isinstance(parent.content, awkward.VirtualArray):
-            raise RuntimeError
-        parent = parent.content.array
+        if isinstance(parent.content, awkward.VirtualArray):
+            parent = parent.content.array
         pdg_all = numpy.array(parent.content.pdgId)
         parent_all = parent.content['_xref_%s_index' % self.rowname]
         globalindex = _find_distinctParent(pdg_self, pdg_all, parent_self, parent_all)
