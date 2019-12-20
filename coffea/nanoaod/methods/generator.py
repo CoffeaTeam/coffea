@@ -58,6 +58,7 @@ def _find_children(offsets_in, parentidx):
 
 
 class GenParticle(LorentzVector):
+    '''NanoAOD generator-level particle object, including parent and child self-references'''
     FLAGS = [
         'isPrompt',
         'isDecayedLeptonHadron',
@@ -75,7 +76,9 @@ class GenParticle(LorentzVector):
         'isLastCopy',
         'isLastCopyBeforeFSR'
     ]
+    '''bit-packed statusFlags interpretations.  Use `GenParticle.hasFlags` to query'''
     enable_children = True
+    'Enable construction with children column (can be turned off if causing trouble)'
 
     def _finalize(self, name, events):
         parent_type = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(self.type.to.to))
@@ -103,9 +106,14 @@ class GenParticle(LorentzVector):
         del self['genPartIdxMother']
 
     def hasFlags(self, flags):
-        '''Check if one or more flags are set
+        '''Check if one or more status flags are set
 
-        Possible flags are enumerated in the FLAGS attribute
+        Parameters
+        ----------
+            flags : list of str
+                A list of flags that are required to be set true. Possible flags are enumerated in the `FLAGS` attribute
+
+        Returns a boolean array
         '''
         dtype = self.statusFlags.type
         while not isinstance(dtype, numpy.dtype):
@@ -165,6 +173,7 @@ class GenParticle(LorentzVector):
 
 
 class GenVisTau(Candidate):
+    '''NanoAOD visible tau object'''
     def _finalize(self, name, events):
         parent_type = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(events.GenPart.type.to.to))
         parent_type.check = False  # break recursion

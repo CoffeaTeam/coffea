@@ -12,6 +12,7 @@ def _memoize(obj, name, constructor):
 
 
 class METVector(XYArrayMethods):
+    '''Implements the usual TVector2 methods, storing minimal materialized arrays in polar coordinates'''
     def __getitem__(self, key):
         if awkward.AwkwardArray._util_isstringslice(key) and key == 'fX':
             return _memoize(self, 'fX', lambda self: self['pt'] * numpy.cos(self['phi']))
@@ -21,6 +22,7 @@ class METVector(XYArrayMethods):
 
 
 class LorentzVector(PtEtaPhiMassArrayMethods):
+    '''Implements the usual TLorentzVector methods, storing minimal materialized arrays in pt-eta-phi-mass coordinates'''
     _keymap = {'fPt': 'pt', 'fEta': 'eta', 'fPhi': 'phi', 'fMass': 'mass'}
 
     def __getitem__(self, key):
@@ -32,6 +34,7 @@ class LorentzVector(PtEtaPhiMassArrayMethods):
 
 
 class Candidate(LorentzVector):
+    '''Implements the usual TLorentzVector methods but also propogates sum of charges'''
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         out = super(Candidate, self).__array_ufunc__(ufunc, method, *inputs, **kwargs)
         if ufunc is numpy.add and all(isinstance(i, Candidate) for i in inputs):

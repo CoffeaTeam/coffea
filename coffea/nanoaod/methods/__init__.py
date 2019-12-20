@@ -45,5 +45,9 @@ __all__ = [
     'Muon',
     'Photon',
     'Tau',
+    'Jet',
+    'FatJet',
+    'GenParticle',
+    'GenVisTau',
     'collection_methods',
 ]

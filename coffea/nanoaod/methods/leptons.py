@@ -3,6 +3,7 @@ from .common import Candidate
 
 
 class LeptonCommon(Candidate):
+    '''Embeds all common gen particle and jet cross-references'''
     def _finalize(self, name, events):
         jets = events['Jet']
         reftype = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(jets.type.to.to))
@@ -33,10 +34,21 @@ class LeptonCommon(Candidate):
 
 
 class Electron(LeptonCommon):
-    FAIL, VETO, LOOSE, MEDIUM, TIGHT = range(5)
+    '''NanoAOD electron object'''
+    FAIL = 0
+    'cutBased selection minimum value'
+    VETO = 1
+    'cutBased selection minimum value'
+    LOOSE = 2
+    'cutBased selection minimum value'
+    MEDIUM = 3
+    'cutBased selection minimum value'
+    TIGHT = 4
+    'cutBased selection minimum value'
 
     @property
     def isLoose(self):
+        '''Returns a boolean array marking loose cut-based electrons'''
         return (self.cutBased >= self.LOOSE).astype(bool)
 
     def _finalize(self, name, events):
@@ -55,16 +67,34 @@ class Electron(LeptonCommon):
 
 
 class Muon(LeptonCommon):
+    '''NanoAOD muon object'''
     def _finalize(self, name, events):
         super(Muon, self)._finalize(name, events)
 
 
 class Photon(LeptonCommon):
-    LOOSE, MEDIUM, TIGHT = range(3)
+    '''NanoAOD photon object'''
+    LOOSE = 0
+    'cutBasedBitmap bit position'
+    MEDIUM = 1
+    'cutBasedBitmap bit position'
+    TIGHT = 2
+    'cutBasedBitmap bit position'
 
     @property
     def isLoose(self):
+        '''Returns a boolean array marking loose cut-based photons'''
         return (self.cutBasedBitmap & (1 << self.LOOSE)).astype(bool)
+
+    @property
+    def isMedium(self):
+        '''Returns a boolean array marking medium cut-based photons'''
+        return (self.cutBasedBitmap & (1 << self.MEDIUM)).astype(bool)
+
+    @property
+    def isTight(self):
+        '''Returns a boolean array marking tight cut-based photons'''
+        return (self.cutBasedBitmap & (1 << self.TIGHT)).astype(bool)
 
     def _finalize(self, name, events):
         del self['mass']
@@ -83,5 +113,6 @@ class Photon(LeptonCommon):
 
 
 class Tau(LeptonCommon):
+    '''NanoAOD tau object'''
     def _finalize(self, name, events):
         super(Tau, self)._finalize(name, events)

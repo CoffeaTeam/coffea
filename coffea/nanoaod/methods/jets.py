@@ -3,6 +3,7 @@ import awkward
 
 
 class FatJet(LorentzVector):
+    '''NanoAOD large radius jet object'''
     subjetmap = {'FatJet': 'SubJet'}  # V6 has 'GenJetAK8': 'SubGenJetAK8', maybe better to put in generator.py
 
     def _finalize(self, name, events):
@@ -21,6 +22,7 @@ class FatJet(LorentzVector):
 
 
 class Jet(LorentzVector):
+    '''NanoAOD narrow radius jet object'''
     _enable_genjet = False  # some issue with indexing in nano v5?
 
     def _finalize(self, name, events):

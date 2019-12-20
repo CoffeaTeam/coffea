@@ -6,6 +6,16 @@ from .util import _mixin
 
 
 class NanoCollection(awkward.VirtualArray):
+    r'''A NanoAOD collection
+
+    NanoAOD collections are collections of branches formed by name, where:
+
+    - one branch exists named ``name`` and no branches start with ``name_``, interpreted as a single flat array;
+    - one branch exists named ``name``, one named ``n{name}``, and no branches start with ``name_``, interpreted as a single jagged array;
+    - no branch exists named ``{name}`` and many branches start with ``name_*``, interpreted as a flat table; or
+    - one branch exists named ``n{name}`` and many branches start with ``name_*``, interpreted as a jagged table.
+
+    '''
     _mixin_registry = {}
 
     @classmethod
@@ -35,9 +45,18 @@ class NanoCollection(awkward.VirtualArray):
 
     @classmethod
     def from_arrays(cls, arrays, name, methods=None):
-        '''
-        arrays : dict
-            A mapping from branch name to flat VirtualArray
+        '''Build from dictionary of VirtualArrays
+
+        Parameters
+        ----------
+            arrays : dict
+                A mapping from branch name to flat VirtualArray
+            name : str
+                The name of the collection (see class documentation for interpretation)
+            methods : class, optional
+                A class deriving from `awkward.array.objects.Methods` that implements additional mixins
+
+        Returns a NanoCollection object, possibly mixed in with methods.
         '''
         outtype = cls._get_mixin(methods)
         jagged = 'n' + name in arrays.keys()
@@ -171,8 +190,25 @@ class NanoCollection(awkward.VirtualArray):
 
 
 class NanoEvents(awkward.Table):
+    '''Top-level awkward array representing NanoAOD events chunk
+
+    The default interpretation of the various collections is governed by `coffea.nanoaod.methods.collection_methods`,
+    but can optionally be overriden by passing a custom mapping in the various ``from_*`` constructors.
+    '''
     @classmethod
     def from_arrays(cls, arrays, methods=None):
+        '''Build NanoEvents from a dictionary of VirtualArrays
+
+        Parameters
+        ----------
+            arrays : dict
+                A mapping from branch name to flat VirtualArray
+            methods : dict, optional
+                A mapping from collection name to class deriving from `awkward.array.objects.Methods`
+                that implements additional mixins
+
+        Returns a NanoEvents object
+        '''
         events = cls.named('event')
         collections = {k.split('_')[0] for k in arrays.keys()}
         collections -= {k for k in collections if k.startswith('n') and k[1:] in collections}
@@ -193,6 +229,26 @@ class NanoEvents(awkward.Table):
 
     @classmethod
     def from_file(cls, file, treename=b'Events', entrystart=None, entrystop=None, cache=None, methods=None):
+        '''Build NanoEvents directly from ROOT file
+
+        Parameters
+        ----------
+            file : str or uproot.rootio.ROOTDirectory
+                The filename or already opened file using e.g. ``uproot.open()``
+            treename : str, optional
+                Name of the tree to read in the file, defaults to ``Events``
+            entrystart : int, optional
+                Start at this entry offset in the tree (default 0)
+            entrystop : int, optional
+                Stop at this entry offset in the tree (default end of tree)
+            cache : dict, optional
+                A dict-like interface to a cache object, in which any materialized virtual arrays will be kept
+            methods : dict, optional
+                A mapping from collection name to class deriving from `awkward.array.objects.Methods`
+                that implements custom additional mixins beyond the defaults provided.
+
+        Returns a NanoEvents object
+        '''
         if not isinstance(file, uproot.rootio.ROOTDirectory):
             file = uproot.open(file)
         tree = file[treename]
@@ -217,4 +273,5 @@ class NanoEvents(awkward.Table):
         return cls.from_arrays(arrays, methods=methods)
 
     def tolist(self):
+        '''Overriden to raise an exception.  Do not call'''
         raise NotImplementedError("NanoEvents cannot be rendered as a list due to cyclic cross-references")
