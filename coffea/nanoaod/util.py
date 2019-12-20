@@ -13,3 +13,11 @@ def _mixin(methods, awkwardtype):
     if six.PY3:
         newtype.__doc__ = methods.__doc__
     return newtype
+
+
+def _hex(string):
+    try:
+        return string.hex()
+    except AttributeError:
+        # python 2 :(
+        return "".join("{:02x}".format(ord(c)) for c in string)

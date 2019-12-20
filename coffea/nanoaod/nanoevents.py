@@ -2,7 +2,7 @@ import numpy
 import uproot
 import awkward
 from .methods import collection_methods
-from .util import _mixin
+from .util import _mixin, _hex
 
 
 class NanoCollection(awkward.VirtualArray):
@@ -266,7 +266,7 @@ class NanoEvents(awkward.Table):
                 (),
                 {'entrystart': entrystart, 'entrystop': entrystop, 'flatten': True},
                 type=virtualtype,
-                persistentkey=';'.join(str(x) for x in [file._context.uuid.hex(), treename.decode('ascii'), entrystart, entrystop, bname.decode('ascii')]),
+                persistentkey=';'.join(str(x) for x in [_hex(file._context.uuid), treename.decode('ascii'), entrystart, entrystop, bname.decode('ascii')]),
                 cache=cache,
             )
             array.__doc__ = tree[bname].title
