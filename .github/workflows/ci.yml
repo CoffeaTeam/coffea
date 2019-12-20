@@ -1,0 +1,49 @@
+name: CI/CD
+
+on:
+  push:
+  pull_request:
+  # Run daily at 0:01 UTC
+  schedule:
+  - cron:  '1 0 * * *'
+
+jobs:
+  test:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+        java-version: [8]
+        python-version: [3.6, 3.7]
+        awkward-version: ['awkward>=0.8.4']
+
+    steps:
+    - uses: actions/checkout@master
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Setup java ${{ matrix.java }} for spark tests
+      uses: actions/setup-java@v1
+      with:
+        java-version: ${{ matrix.java-version }}
+        java-package: jdk # (jre, jdk, or jdk+fx) - defaults to jdk
+        architecture: x64 # (x64 or x86) - defaults to x64
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools setuptools_scm wheel
+        python -m pip install codecov
+        python -m pip -q install numpy packaging scipy numba tqdm matplotlib pytest pytest-runner flake8 mplhep --upgrade
+        python -m pip -q install pandas pyarrow cloudpickle lz4 jinja2 pyspark dask distributed --upgrade
+        python -m pip -q install https://github.com/Parsl/parsl/zipball/master
+        python -m pip install ${{ matrix.awkward-version }}
+        python -m pip install uproot
+        python -m pip install -q --no-cache-dir -e .
+        python -m pip list
+    - name: Lint with flake8
+      run: |
+        python setup.py flake8
+    - name: Test with pytest
+      run: |
+        python setup.py pytest
