@@ -23,6 +23,7 @@ from .accumulator import (
 from .dataframe import (
     LazyDataFrame,
 )
+from coffea.nanoaod import NanoEvents
 
 try:
     from collections.abc import Mapping, Sequence
@@ -377,7 +378,7 @@ def parsl_executor(items, function, accumulator, **kwargs):
     return accumulator
 
 
-def _work_function(item, processor_instance, flatten=False, savemetrics=False, mmap=False):
+def _work_function(item, processor_instance, flatten=False, savemetrics=False, mmap=False, nano=False, cachestrategy=None):
     if processor_instance == 'heavy':
         item, processor_instance = item
     if not isinstance(processor_instance, ProcessorABC):
@@ -392,9 +393,23 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False, m
             return uproot.FileSource(path, **opts)
 
     file = uproot.open(item.filename, localsource=localsource)
-    tree = file[item.treename]
-    df = LazyDataFrame(tree, item.chunksize, item.index, flatten=flatten)
-    df['dataset'] = item.dataset
+    if nano:
+        cache = None
+        if cachestrategy == 'dask-worker':
+            from dask.distributed import get_worker
+            cache = get_worker().data
+        df = NanoEvents.from_file(
+            file=file,
+            treename=item.treename,
+            entrystart=item.index * item.chunksize,
+            entrystop=(item.index + 1) * item.chunksize,
+            metadata={'dataset': item.dataset},
+            cache=cache,
+        )
+    else:
+        tree = file[item.treename]
+        df = LazyDataFrame(tree, item.chunksize, item.index, flatten=flatten)
+        df['dataset'] = item.dataset
     tic = time.time()
     out = processor_instance.process(df)
     toc = time.time()
@@ -471,6 +486,7 @@ def run_uproot_job(fileset,
             Some options that affect the behavior of this function:
             'savemetrics' saves some detailed metrics for xrootd processing (default False);
             'flatten' removes any jagged structure from the input files (default False);
+            'nano' builds the dataframe as a `NanoEvents` object rather than `LazyDataFrame` (default False);
             'processor_compression' sets the compression level used to send processor instance
             to workers (default 1).
         pre_executor : callable
@@ -545,6 +561,8 @@ def run_uproot_job(fileset,
     savemetrics = executor_args.pop('savemetrics', False)
     flatten = executor_args.pop('flatten', False)
     mmap = executor_args.pop('mmap', False)
+    nano = executor_args.pop('nano', False)
+    cachestrategy = executor_args.pop('cachestrategy', None)
     pi_compression = executor_args.pop('processor_compression', 1)
     if pi_compression is None:
         pi_to_send = processor_instance
@@ -558,13 +576,17 @@ def run_uproot_job(fileset,
                           flatten=flatten,
                           savemetrics=savemetrics,
                           mmap=mmap,
+                          nano=nano,
+                          cachestrategy=cachestrategy,
                           )
     else:
         closure = partial(_work_function,
                           processor_instance=pi_to_send,
                           flatten=flatten,
+                          nano=nano,
                           savemetrics=savemetrics,
                           mmap=mmap,
+                          cachestrategy=cachestrategy,
                           )
 
     out = processor_instance.accumulator.identity()

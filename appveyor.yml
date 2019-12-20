@@ -21,6 +21,7 @@ install:
 
 build_script:
   - "python -m pip install requests"
+  - "python -m pip install --upgrade cachetools"
   - "pip install awkward numba scipy"
   - "pip install pytest pytest-runner"
   - "python setup.py pytest"
