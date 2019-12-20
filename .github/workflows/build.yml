@@ -1,0 +1,75 @@
+name: Build, Deploy, and Release
+
+on:
+  push:
+    branches:
+      - gha_switch
+    tags:
+      - v*.*.*
+  # Run daily at 0:01 UTC
+  schedule:
+    - cron:  '1 0 * * *'
+
+jobs:
+  build:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest] #
+        java-version: [1.8]
+        python-version: [3.6] #
+        awkward-version: ['awkward>=0.8.4']
+    name: build coffea (${{ matrix.os }}) - python ${{ matrix.python-version }}, JDK${{ matrix.java-version }}
+
+    steps:
+    - uses: actions/checkout@master
+    - run: |
+        git fetch --no-tags --prune --depth=1 origin +refs/heads/*:refs/remotes/origin/*
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Set up JDK ${{ matrix.java-version }}
+      uses: actions/setup-java@v1
+      with:
+        java-version: ${{ matrix.java-version }}
+    - name: Install dependencies
+      if: matrix.os != 'windows-latest'
+      run: |
+        python -m pip install -q --upgrade pip setuptools setuptools_scm wheel six pytest codecov
+        python -m pip install -q ${{ matrix.awkward-version }}
+        python -m pip install -q https://github.com/Parsl/parsl/zipball/master
+        python -m pip install -q -e .[parsl,dask,spark]
+        python -m pip list
+        java -version
+    - name: Test with pytest
+      env:
+        ARROW_PRE_0_15_IPC_FORMAT: 1
+      run: |
+        coverage run --source=coffea/ setup.py pytest
+    - name: Install pandoc
+      if: success()
+      uses: r-lib/actions/setup-pandoc@v1
+    - name: Build documentation
+      if: success()
+      run: |
+        source docs/build_docs.sh
+    - name: Deploy documentation
+      if: success() && github.event_name != 'pull_request'
+      uses: JamesIves/github-pages-deploy-action@releases/v3
+      with:
+        ACCESS_TOKEN: ${{ secrets.GITHUB_OAUTH }}
+        BASE_BRANCH: gha_switch # The branch the action should deploy from.
+        BRANCH: gh-pages # The branch the action should deploy to.
+        FOLDER: docs/build/html # The folder the action should deploy.
+    - name: Build package for PyPI
+      if: success() && github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+      run: |
+        python setup.py sdist bdist_wheel --universal
+    - name: Publish package to PyPI
+      if: success() && github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        user: ${{ secrets.PYPI_TOKEN }}
+        password: ${{ secrets.PYPI_PASSWORD }}

@@ -4,25 +4,24 @@ on:
   push:
     branches:
       - gha_switch
-    # tags:
-    #   - /v(\d+)?\.(\d+)\.(\d+)/
-  # pull_request:
-  #   branches:
-  #     - master
+    tags:
+      - v*.*.*
+  pull_request:
+    branches:
+      - master
   # Run daily at 0:01 UTC
-  # schedule:
-  #   - cron:  '1 0 * * *'
+  schedule:
+    - cron:  '1 0 * * *'
 
 jobs:
-  test:
-
+  linter:
+  
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest] # , windows-latest, macOS-latest
-        java-version: ['openjdk@1.8']
-        python-version: [3.6] # , 3.7
-        awkward-version: ['awkward>=0.8.4']
+        os: [ubuntu-latest]
+        python-version: [3.7]
+    name: linter - flake8 - python ${{ matrix.python-version }}
 
     steps:
     - uses: actions/checkout@master
@@ -30,21 +29,57 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Setup java ${{ matrix.java-version }} for spark tests
-      uses: olafurpg/setup-scala@v6
-      with:
-        java-version: ${{ matrix.java-version }}
-    - name: Check java
-      run: java -version
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip setuptools setuptools_scm wheel
-        python -m pip install ${{ matrix.awkward-version }}
-        python -m pip install -q -e .[parsl, dask, spark]
-        python -m pip list
     - name: Lint with flake8
       run: |
-        python setup.py flake8
-    - name: Test with pytest
+        python -m pip install -q flake8
+        flake8 coffea
+
+  test:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest] #
+        java-version: [1.8]
+        python-version: [3.6, 3.7] #
+        awkward-version: ['awkward>=0.8.4']
+    name: test coffea (${{ matrix.os }}) - python ${{ matrix.python-version }}, JDK${{ matrix.java-version }}
+
+    steps:
+    - uses: actions/checkout@master
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Set up JDK ${{ matrix.java-version }}
+      uses: actions/setup-java@v1
+      with:
+        java-version: ${{ matrix.java-version }}
+    - name: Install dependencies (Linux/MacOS, python3)
+      if: matrix.os != 'windows-latest'
       run: |
-        python setup.py pytest
+        python -m pip install -q --upgrade pip setuptools setuptools_scm wheel six pytest codecov
+        python -m pip install -q ${{ matrix.awkward-version }}
+        python -m pip install -q https://github.com/Parsl/parsl/zipball/master
+        python -m pip install -q -e .[parsl,dask,spark]
+        python -m pip list
+        java -version
+    - name: Install dependencies (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        python -m pip install -q --upgrade pip setuptools setuptools_scm wheel six pytest codecov
+        python -m pip install -q ${{ matrix.awkward-version }}
+        python -m pip install -q -e .
+        python -m pip list
+    - name: Test with pytest
+      env:
+        ARROW_PRE_0_15_IPC_FORMAT: 1
+      run: |
+        coverage run --source=coffea/ setup.py pytest
+    - name: Install pandoc
+      if: success() && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.6
+      uses: r-lib/actions/setup-pandoc@v1
+    - name: Build documentation
+      if: success() && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.6
+      run: |
+        source docs/build_docs.sh

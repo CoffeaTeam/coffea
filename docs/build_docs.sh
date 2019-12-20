@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-pip -q install -U sphinx nbsphinx sphinx-rtd-theme sphinx-automodapi
-pip -q install -e .
+python -m pip -q install -U sphinx==2.2.2 nbsphinx sphinx-rtd-theme sphinx-automodapi
+#pip -q install -e .
 pushd docs
 rm -rf build
 pushd source

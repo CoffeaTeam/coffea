@@ -13,7 +13,7 @@ def convert_btag_csv_file(csvFilePath):
     if '.gz' in csvFilePath:
         import gzip
         fopen = gzip.open
-        fmode = 'r' if sys.platform.startswith('win') else fmode
+        fmode = 'r' if sys.platform.startswith('win') and sys.version_info.major < 3 else fmode
     btag_f = fopen(csvFilePath, fmode)
     nameandcols = btag_f.readline().split(';')
     btag_f.close()
