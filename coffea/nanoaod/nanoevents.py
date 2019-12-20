@@ -2,7 +2,7 @@ import numpy
 import uproot
 import awkward
 from .methods import collection_methods
-from .util import _mixin, _hex
+from .util import _mixin, _hex, _ascii
 
 
 class NanoCollection(awkward.VirtualArray):
@@ -271,12 +271,14 @@ class NanoEvents(awkward.Table):
                 (),
                 {'entrystart': entrystart, 'entrystop': entrystop, 'flatten': True},
                 type=virtualtype,
-                persistentkey=';'.join(str(x) for x in [_hex(file._context.uuid), treename.decode('ascii'), entrystart, entrystop, bname.decode('ascii')]),
+                persistentkey=';'.join(str(x) for x in [_hex(file._context.uuid), _ascii(treename), entrystart, entrystop, _ascii(bname)]),
                 cache=cache,
             )
             array.__doc__ = tree[bname].title
             arrays[bname.decode('ascii')] = array
-        return cls.from_arrays(arrays, methods=methods, metadata=metadata)
+        out = cls.from_arrays(arrays, methods=methods, metadata=metadata)
+        out._cache = cache
+        return out
 
     def tolist(self):
         '''Overriden to raise an exception.  Do not call'''
@@ -291,4 +293,15 @@ class NanoEvents(awkward.Table):
         out = super(NanoEvents, self).__getitem__(where)
         if isinstance(out, NanoEvents):
             out.metadata = self.metadata
+            out._cache = self._cache
         return out
+
+    @property
+    def materialized(self):
+        '''Set of columns or branches that were materialized
+
+        This is only available when constructed from the file constructor
+        '''
+        if not hasattr(self, '_cache'):
+            raise RuntimeError("NanoEvents.materialized only available if constructed with from_file")
+        return set(k.split(';')[-1] for k in self._cache.keys())

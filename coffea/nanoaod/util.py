@@ -21,3 +21,9 @@ def _hex(string):
     except AttributeError:
         # python 2 :(
         return "".join("{:02x}".format(ord(c)) for c in string)
+
+
+def _ascii(maybebytes):
+    if hasattr(maybebytes, 'decode'):
+        return maybebytes.decode('ascii')
+    return maybebytes
