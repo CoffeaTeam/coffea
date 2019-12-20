@@ -5,17 +5,18 @@ from .common import Candidate
 class LeptonCommon(Candidate):
     '''Embeds all common gen particle and jet cross-references'''
     def _finalize(self, name, events):
-        jets = events['Jet']
-        reftype = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(jets.type.to.to))
-        reftype.check = False
-        embedded_jet = type(jets)(
-            self._lazy_crossref,
-            args=(self._getcolumn('jetIdx'), jets),
-            type=reftype,
-        )
-        embedded_jet.__doc__ = jets.__doc__
-        self['matched_jet'] = embedded_jet
-        del self['jetIdx']
+        if 'Jet' in events.columns:
+            jets = events['Jet']
+            reftype = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(jets.type.to.to))
+            reftype.check = False
+            embedded_jet = type(jets)(
+                self._lazy_crossref,
+                args=(self._getcolumn('jetIdx'), jets),
+                type=reftype,
+            )
+            embedded_jet.__doc__ = jets.__doc__
+            self['matched_jet'] = embedded_jet
+            del self['jetIdx']
 
         if 'GenPart' in events.columns:
             genpart = events['GenPart']
@@ -48,17 +49,18 @@ class Electron(LeptonCommon):
 
     def _finalize(self, name, events):
         super(Electron, self)._finalize(name, events)
-        photons = events['Photon']
-        reftype = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(photons.type.to.to))
-        reftype.check = False
-        embedded_photon = type(photons)(
-            self._lazy_crossref,
-            args=(self._getcolumn('photonIdx'), photons),
-            type=reftype,
-        )
-        embedded_photon.__doc__ = photons.__doc__
-        self['matched_photon'] = embedded_photon
-        del self['photonIdx']
+        if 'Photon' in events.columns:
+            photons = events['Photon']
+            reftype = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(photons.type.to.to))
+            reftype.check = False
+            embedded_photon = type(photons)(
+                self._lazy_crossref,
+                args=(self._getcolumn('photonIdx'), photons),
+                type=reftype,
+            )
+            embedded_photon.__doc__ = photons.__doc__
+            self['matched_photon'] = embedded_photon
+            del self['photonIdx']
 
 
 class Muon(LeptonCommon):
@@ -94,17 +96,18 @@ class Photon(LeptonCommon):
     def _finalize(self, name, events):
         del self['mass']
         super(Photon, self)._finalize(name, events)
-        electrons = events['Electron']
-        reftype = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(electrons.type.to.to))
-        reftype.check = False
-        embedded_electron = type(electrons)(
-            self._lazy_crossref,
-            args=(self._getcolumn('electronIdx'), electrons),
-            type=reftype,
-        )
-        embedded_electron.__doc__ = electrons.__doc__
-        self['matched_electron'] = embedded_electron
-        del self['electronIdx']
+        if 'Electron' in events.columns:
+            electrons = events['Electron']
+            reftype = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(electrons.type.to.to))
+            reftype.check = False
+            embedded_electron = type(electrons)(
+                self._lazy_crossref,
+                args=(self._getcolumn('electronIdx'), electrons),
+                type=reftype,
+            )
+            embedded_electron.__doc__ = electrons.__doc__
+            self['matched_electron'] = embedded_electron
+            del self['electronIdx']
 
 
 class Tau(LeptonCommon):

@@ -26,31 +26,33 @@ class Jet(LorentzVector):
     _enable_genjet = False  # some issue with indexing in nano v5?
 
     def _finalize(self, name, events):
-        electrons = events['Electron']
-        reftype = awkward.type.ArrayType(float('inf'), float('inf'), electrons.type.to.to)
-        reftype.check = False
-        embedded_electrons = type(electrons)(
-            self._lazy_nested_crossref,
-            args=([self._getcolumn('electronIdx1'), self._getcolumn('electronIdx2')], electrons),
-            type=reftype,
-        )
-        embedded_electrons.__doc__ = electrons.__doc__
-        self['matched_electrons'] = embedded_electrons
-        del self['electronIdx1']
-        del self['electronIdx2']
+        if 'Electron' in events.columns:
+            electrons = events['Electron']
+            reftype = awkward.type.ArrayType(float('inf'), float('inf'), electrons.type.to.to)
+            reftype.check = False
+            embedded_electrons = type(electrons)(
+                self._lazy_nested_crossref,
+                args=([self._getcolumn('electronIdx1'), self._getcolumn('electronIdx2')], electrons),
+                type=reftype,
+            )
+            embedded_electrons.__doc__ = electrons.__doc__
+            self['matched_electrons'] = embedded_electrons
+            del self['electronIdx1']
+            del self['electronIdx2']
 
-        muons = events['Muon']
-        reftype = awkward.type.ArrayType(float('inf'), float('inf'), muons.type.to.to)
-        reftype.check = False
-        embedded_muons = type(muons)(
-            self._lazy_nested_crossref,
-            args=([self._getcolumn('muonIdx1'), self._getcolumn('muonIdx2')], muons),
-            type=reftype,
-        )
-        embedded_muons.__doc__ = muons.__doc__
-        self['matched_muons'] = embedded_muons
-        del self['muonIdx1']
-        del self['muonIdx2']
+        if 'Muon' in events.columns:
+            muons = events['Muon']
+            reftype = awkward.type.ArrayType(float('inf'), float('inf'), muons.type.to.to)
+            reftype.check = False
+            embedded_muons = type(muons)(
+                self._lazy_nested_crossref,
+                args=([self._getcolumn('muonIdx1'), self._getcolumn('muonIdx2')], muons),
+                type=reftype,
+            )
+            embedded_muons.__doc__ = muons.__doc__
+            self['matched_muons'] = embedded_muons
+            del self['muonIdx1']
+            del self['muonIdx2']
 
         if self._enable_genjet and 'GenJet' in events.columns:
             genjet = events['GenJet']

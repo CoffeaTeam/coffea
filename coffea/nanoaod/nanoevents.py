@@ -40,10 +40,6 @@ class NanoCollection(awkward.VirtualArray):
         raise RuntimeError("Unregistered mixin detected")
 
     @classmethod
-    def _lazyflatten(cls, array):
-        return array.array.content
-
-    @classmethod
     def from_arrays(cls, arrays, name, methods=None):
         '''Build from dictionary of VirtualArrays
 
@@ -172,7 +168,14 @@ class NanoCollection(awkward.VirtualArray):
         return out
 
     def _getcolumn(self, key):
-        _, _, columns, _ = self._args
+        name, _, columns, _ = self._args
+        if key not in columns:
+            # This function is only meant for use in methods' _finalize() while
+            # all columns are still virtual. Missing arrays are a sign of an incompatible
+            # file or missing preloaded columns. This triggers only if the missing column is accessed.
+            def nonexistentarray():
+                raise RuntimeError("There was an attempt to read the nonexistent array: %s_%s" % (name, key))
+            return awkward.VirtualArray(nonexistentarray)
         return columns[key]
 
     def __setitem__(self, key, value):
@@ -186,8 +189,9 @@ class NanoCollection(awkward.VirtualArray):
         if self.ismaterialized:
             super(NanoCollection, self).__delitem__(key)
         _, _, columns, _ = self._args
-        del columns[key]
-        del self._type.to.to[key]
+        if key in columns:
+            del columns[key]
+            del self._type.to.to[key]
 
 
 class NanoEvents(awkward.Table):
@@ -198,12 +202,12 @@ class NanoEvents(awkward.Table):
     '''
     @classmethod
     def from_arrays(cls, arrays, methods=None, metadata=None):
-        '''Build NanoEvents from a dictionary of VirtualArrays
+        '''Build NanoEvents from a dictionary of arrays
 
         Parameters
         ----------
             arrays : dict
-                A mapping from branch name to flat VirtualArray
+                A mapping from branch name to flat numpy array or awkward VirtualArray
             methods : dict, optional
                 A mapping from collection name to class deriving from `awkward.array.objects.Methods`
                 that implements additional mixins
@@ -212,6 +216,16 @@ class NanoEvents(awkward.Table):
 
         Returns a NanoEvents object
         '''
+        arrays = dict(arrays)
+        for k in arrays:
+            if isinstance(arrays[k], awkward.VirtualArray):
+                pass
+            elif isinstance(arrays[k], numpy.ndarray):
+                value = arrays[k]
+                arrays[k] = awkward.VirtualArray(lambda: value, type=awkward.type.ArrayType(len(arrays[k]), arrays[k].dtype))
+                print(arrays[k])
+            else:
+                raise ValueError("The array %s : %r is not a valid type" % (k, arrays[k]))
         events = cls.named('event')
         collections = {k.split('_')[0] for k in arrays.keys()}
         collections -= {k for k in collections if k.startswith('n') and k[1:] in collections}
