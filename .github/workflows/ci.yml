@@ -35,7 +35,9 @@ jobs:
       with:
         java-version: ${{ matrix.java-version }}
     - name: Check java
-      run: java -version
+      run: |
+        java -version
+        echo $JAVA_HOME
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip setuptools setuptools_scm wheel six
