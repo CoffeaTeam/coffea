@@ -19,7 +19,7 @@ def _parse_jme_formatted_file(jmeFilePath, interpolatedFunc=False, parmsFromColu
         if '.gz' in jmeFilePath:
             import gzip
             fopen = gzip.open
-            fmode = 'r' if sys.platform.startswith('win') else fmode
+            fmode = 'r' if sys.platform.startswith('win') and sys.version_info.major < 3 else fmode
         jme_f = fopen(jmeFilePath, fmode)
     layoutstr = jme_f.readline().strip().strip('{}')
 
@@ -211,7 +211,7 @@ def convert_junc_txt_file(juncFilePath):
     if '.gz' in juncFilePath:
         import gzip
         fopen = gzip.open
-        fmode = 'r' if sys.platform.startswith('win') else fmode
+        fmode = 'r' if sys.platform.startswith('win') and sys.version_info.major < 3 else fmode
     with fopen(juncFilePath, fmode) as uncfile:
         for line in uncfile:
             if line.startswith('#'):
@@ -276,7 +276,7 @@ def convert_effective_area_file(eaFilePath):
     if '.gz' in eaFilePath:
         import gzip
         fopen = gzip.open
-        fmode = 'r' if sys.platform.startswith('win') else fmode
+        fmode = 'r' if sys.platform.startswith('win') and sys.version_info.major < 3 else fmode
     ea_f = fopen(eaFilePath, fmode)
     layoutstr = ea_f.readline().strip().strip('{}')
     ea_f.close()
