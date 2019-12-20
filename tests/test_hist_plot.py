@@ -3,6 +3,7 @@ from __future__ import print_function, division
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import pytest
 plt.switch_backend('agg')
 
 from coffea import hist
@@ -63,6 +64,7 @@ def fill_lepton_kinematics():
     return lepton_kinematics
 
 
+@pytest.mark.mpl_image_compare(style='default', remove_text=True)
 def test_plot1d():
     # histogram creation and manipulation
     # matplotlib
@@ -77,22 +79,23 @@ def test_plot1d():
     # looking at lepton pt for all eta
     lepton_pt = lepton_kinematics.integrate("eta", overflow='under')
 
-    hist.plot1d(lepton_pt,
-                overlay="flavor",
-                stack=True,
-                fill_opts={
-                    'alpha': .5,
-                    'edgecolor': (0, 0, 0, 0.3)
-                })
+    ax = hist.plot1d(lepton_pt,
+                     overlay="flavor",
+                     stack=True,
+                     fill_opts={
+                        'alpha': .5,
+                        'edgecolor': (0, 0, 0, 0.3)
+                     })
     # all matplotlib primitives are returned, in case one wants to tweak them
     # e.g. maybe you really miss '90s graphics...
 
     # Clearly the yields are much different, are the shapes similar?
     lepton_pt.label = "Density"
     hist.plot1d(lepton_pt, overlay="flavor", density=True)
-    # ...somewhat, maybe electrons are a bit softer
 
+    return ax.figure
 
+@pytest.mark.mpl_image_compare(style='default', remove_text=True)
 def test_plot2d():
     # histogram creation and manipulation
     from coffea import hist
@@ -106,7 +109,9 @@ def test_plot2d():
     # looking at lepton pt for all eta
     muon_kinematics = lepton_kinematics.integrate("flavor", "muon")
 
-    hist.plot2d(muon_kinematics, "eta")
+    ax = hist.plot2d(muon_kinematics, "eta")
+
+    return ax.figure
 
 
 def test_plotratio():
@@ -214,6 +219,7 @@ def test_plotratio():
              transform=ax.transAxes)
 
 
+@pytest.mark.mpl_image_compare(style='default', remove_text=True)
 def test_plotgrid():
     # histogram creation and manipulation
     from coffea import hist
@@ -239,6 +245,8 @@ def test_plotgrid():
                         fill_opts=stack_fill_opts,
                         error_opts=stack_error_opts,
                         )
+
+    return axs.flatten()[0].figure
 
 
 def test_clopper_pearson_interval():
