@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
-        java-version: [1.8]
+        java-version: ['openjdk@1.8']
         python-version: [3.6, 3.7]
         awkward-version: ['awkward>=0.8.4']
 
@@ -31,11 +31,10 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Setup java ${{ matrix.java-version }} for spark tests
-      uses: actions/setup-java@v1
+      uses: olafurpg/setup-scala@v6
       with:
         java-version: ${{ matrix.java-version }}
-        java-package: jdk # (jre, jdk, or jdk+fx) - defaults to jdk
-        architecture: x64 # (x64 or x86) - defaults to x64
+    - name: Check java
       run: java -version
     - name: Install dependencies
       run: |
