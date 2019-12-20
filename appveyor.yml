@@ -9,7 +9,7 @@ environment:
       PYTHON_ARCH: "64"
 
 install:
-  - "python --version"
+  - "%PYTHON%\\python.exe --version"
 
 build_script:
   - "python -m pip install requests"
