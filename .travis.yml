@@ -10,7 +10,6 @@ env:
   - JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
   matrix:
   - AWKWARD="awkward>=0.8.4"
-  - AWKWARD="awkward-numba==0.8.16 uproot-methods==0.4.7 uproot==3.4.21"
 matrix: 
 addons:
   apt:

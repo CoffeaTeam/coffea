@@ -1,10 +1,7 @@
 """Utility functions
 
 """
-try:
-    import awkward.numba as awkward
-except ImportError:
-    import awkward
+import awkward
 
 from awkward.util import numpy
 import numba
