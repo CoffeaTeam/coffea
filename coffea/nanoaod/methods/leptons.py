@@ -46,11 +46,6 @@ class Electron(LeptonCommon):
     TIGHT = 4
     'cutBased selection minimum value'
 
-    @property
-    def isLoose(self):
-        '''Returns a boolean array marking loose cut-based electrons'''
-        return (self.cutBased >= self.LOOSE).astype(bool)
-
     def _finalize(self, name, events):
         super(Electron, self)._finalize(name, events)
         photons = events['Photon']

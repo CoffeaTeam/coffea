@@ -158,14 +158,15 @@ class NanoCollection(awkward.VirtualArray):
             content[i::len(indices)] = numpy.array(index)
         globalindices = awkward.JaggedArray.fromoffsets(
             self.array.offsets,
-            JaggedArray.fromoffsets(
+            awkward.JaggedArray.fromoffsets(
                 numpy.arange((len(self.array.content) + 1) * len(indices), step=len(indices)),
                 content,
             )
         )
         globalindices = globalindices[globalindices >= 0] + destination.array.starts
         # note: parent virtual must derive from this type
-        out = globalindices.content.copy(
+        out = JaggedArray.fromoffsets(
+            globalindices.content.offsets,
             content=destination.array.content[globalindices.flatten().flatten()]
         )
         return out

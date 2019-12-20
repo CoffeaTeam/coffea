@@ -160,6 +160,8 @@ class GenParticle(LorentzVector):
         return out
 
     def _lazy_findchildren(self, motherindices):
+        # repair awkward type now that we've materialized
+        motherindices.type.takes = self.array.offsets[-1]
         JaggedArray = self._get_mixin(self._get_methods(), awkward.JaggedArray)
         motherindices = motherindices.array
         offsets1, content1 = _find_children(
