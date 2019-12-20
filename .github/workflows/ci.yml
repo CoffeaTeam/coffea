@@ -38,7 +38,7 @@ jobs:
       run: java -version
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip setuptools setuptools_scm wheel
+        python -m pip install --upgrade pip setuptools setuptools_scm wheel six
         python -m pip install ${{ matrix.awkward-version }}
         python -m pip install -q -e .[parsl,dask,spark]
         python -m pip list
