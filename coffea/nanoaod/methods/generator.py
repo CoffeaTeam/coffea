@@ -58,7 +58,11 @@ def _find_children(offsets_in, parentidx):
 
 
 class GenParticle(LorentzVector):
-    '''NanoAOD generator-level particle object, including parent and child self-references'''
+    '''NanoAOD generator-level particle object, including parent and child self-references
+
+    Parent and child self-references are constructed from the ``genPartIdxMother`` column, where
+    for each entry, the mother entry index is recorded, or -1 if no mother exists.
+    '''
     FLAGS = [
         'isPrompt',
         'isDecayedLeptonHadron',

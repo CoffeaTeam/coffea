@@ -37,8 +37,9 @@ def do_dask_cached(client, filelist, cachestrategy=None):
         'client': client,
         'nano': True,
         'cachestrategy': cachestrategy,
+        'savemetrics': True,
     }
-    hists = processor.run_uproot_job(
+    hists, metrics = processor.run_uproot_job(
         filelist,
         'Events',
         processor_instance=NanoEventsProcessor(),

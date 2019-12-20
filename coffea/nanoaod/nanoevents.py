@@ -255,6 +255,8 @@ class NanoEvents(awkward.Table):
 
         Returns a NanoEvents object
         '''
+        if cache is None:
+            cache = {}
         if not isinstance(file, uproot.rootio.ROOTDirectory):
             file = uproot.open(file)
         tree = file[treename]
@@ -293,7 +295,8 @@ class NanoEvents(awkward.Table):
         out = super(NanoEvents, self).__getitem__(where)
         if isinstance(out, NanoEvents):
             out.metadata = self.metadata
-            out._cache = self._cache
+            if hasattr(self, '_cache'):
+                out._cache = self._cache
         return out
 
     @property
