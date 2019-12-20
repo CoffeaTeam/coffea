@@ -12,8 +12,7 @@ install:
   - "%PYTHON%\\python.exe --version"
 
 build_script:
-  - "python -m pip install requests"
-  - "python -m pip install --upgrade cachetools"
-  - "pip install awkward numba scipy"
-  - "pip install pytest pytest-runner"
-  - "python setup.py pytest"
+  - "%PYTHON%\\python.exe -m pip install requests"
+  - "%PYTHON%\\python.exe -m pip install awkward numba scipy"
+  - "%PYTHON%\\python.exe -m pip install pytest pytest-runner"
+  - "%PYTHON%\\python.exe setup.py pytest"
