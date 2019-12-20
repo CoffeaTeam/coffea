@@ -6,12 +6,12 @@ on:
       - gha_master
     # tags:
     #   - /v(\d+)?\.(\d+)\.(\d+)/
-  pull_request:
-    branches:
-      - master
+  # pull_request:
+  #   branches:
+  #     - master
   # Run daily at 0:01 UTC
-  schedule:
-    - cron:  '1 0 * * *'
+  # schedule:
+  #   - cron:  '1 0 * * *'
 
 jobs:
   test:
