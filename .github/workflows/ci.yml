@@ -3,9 +3,9 @@ name: CI/CD
 on:
   push:
     branches:
-      - master
-    tags:
-      - /v(\d+)?\.(\d+)\.(\d+)/
+      - gha_master
+    # tags:
+    #   - /v(\d+)?\.(\d+)\.(\d+)/
   pull_request:
     branches:
       - master
