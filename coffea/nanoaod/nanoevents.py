@@ -197,7 +197,7 @@ class NanoEvents(awkward.Table):
     but can optionally be overriden by passing a custom mapping in the various ``from_*`` constructors.
     '''
     @classmethod
-    def from_arrays(cls, arrays, methods=None):
+    def from_arrays(cls, arrays, methods=None, metadata=None):
         '''Build NanoEvents from a dictionary of VirtualArrays
 
         Parameters
@@ -207,6 +207,8 @@ class NanoEvents(awkward.Table):
             methods : dict, optional
                 A mapping from collection name to class deriving from `awkward.array.objects.Methods`
                 that implements additional mixins
+            metadata : dict, optional
+                Arbitrary metadata to embed in this NanoEvents table
 
         Returns a NanoEvents object
         '''
@@ -226,10 +228,11 @@ class NanoEvents(awkward.Table):
             if hasattr(type(events[name]), '_finalize'):
                 events.contents[name]._finalize(name, events)
 
+        events.metadata = metadata if metadata is not None else {}
         return events
 
     @classmethod
-    def from_file(cls, file, treename=b'Events', entrystart=None, entrystop=None, cache=None, methods=None):
+    def from_file(cls, file, treename=b'Events', entrystart=None, entrystop=None, cache=None, methods=None, metadata=None):
         '''Build NanoEvents directly from ROOT file
 
         Parameters
@@ -247,6 +250,8 @@ class NanoEvents(awkward.Table):
             methods : dict, optional
                 A mapping from collection name to class deriving from `awkward.array.objects.Methods`
                 that implements custom additional mixins beyond the defaults provided.
+            metadata : dict, optional
+                Arbitrary metadata to embed in this NanoEvents table
 
         Returns a NanoEvents object
         '''
@@ -271,8 +276,19 @@ class NanoEvents(awkward.Table):
             )
             array.__doc__ = tree[bname].title
             arrays[bname.decode('ascii')] = array
-        return cls.from_arrays(arrays, methods=methods)
+        return cls.from_arrays(arrays, methods=methods, metadata=metadata)
 
     def tolist(self):
         '''Overriden to raise an exception.  Do not call'''
         raise NotImplementedError("NanoEvents cannot be rendered as a list due to cyclic cross-references")
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        '''Overriden to raise an exception.  Do not call'''
+        raise NotImplementedError("NanoEvents cannot be broadcast due to cyclic cross-references")
+
+    def __getitem__(self, where):
+        '''Overriden to keep metadata sticky'''
+        out = super(NanoEvents, self).__getitem__(where)
+        if isinstance(out, NanoEvents):
+            out.metadata = self.metadata
+        return out

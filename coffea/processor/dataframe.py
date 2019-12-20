@@ -140,7 +140,6 @@ class PreloadedDataFrame(MutableMapping):
 
     def __iter__(self):
         for key in self._dict:
-            self._accessed.add(key)
             yield key
 
     def __len__(self):
