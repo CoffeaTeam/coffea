@@ -471,6 +471,10 @@ class Bin(DenseAxis):
         return self.__dict__
 
     def __setstate__(self, d):
+        if '_intervals' in d:  # convert old hists to new serialization format
+            _old_intervals = d.pop('_intervals')
+            interval_bins = [i._lo for i in _old_intervals] + [_old_intervals[-1]._hi]
+            d['_interval_bins'] = np.array(interval_bins)
         self.__dict__ = d
 
     def index(self, identifier):
