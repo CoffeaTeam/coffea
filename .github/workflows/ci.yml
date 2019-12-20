@@ -13,13 +13,7 @@ on:
   # schedule:
   #   - cron:  '1 0 * * *'
 
-jobs:
-  linter:
-    - uses: actions/checkout@master
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
-      with:
-        python-version: ${{ matrix.python-version }}
+jobs:  
   test:
 
     runs-on: ${{ matrix.os }}
