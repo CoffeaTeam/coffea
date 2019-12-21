@@ -1,0 +1,50 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - gha_switch
+    # tags:
+    #   - /v(\d+)?\.(\d+)\.(\d+)/
+  # pull_request:
+  #   branches:
+  #     - master
+  # Run daily at 0:01 UTC
+  # schedule:
+  #   - cron:  '1 0 * * *'
+
+jobs:
+  test:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest] # , windows-latest, macOS-latest
+        java-version: ['openjdk@1.8']
+        python-version: [3.6] # , 3.7
+        awkward-version: ['awkward>=0.8.4']
+
+    steps:
+    - uses: actions/checkout@master
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Setup java ${{ matrix.java-version }} for spark tests
+      uses: olafurpg/setup-scala@v6
+      with:
+        java-version: ${{ matrix.java-version }}
+    - name: Check java
+      run: java -version
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools setuptools_scm wheel
+        python -m pip install ${{ matrix.awkward-version }}
+        python -m pip install -q -e .[parsl, dask, spark]
+        python -m pip list
+    - name: Lint with flake8
+      run: |
+        python setup.py flake8
+    - name: Test with pytest
+      run: |
+        python setup.py pytest
