@@ -3,7 +3,7 @@ name: Build, Deploy, and Release
 on:
   push:
     branches:
-      - gha_switch
+      - master
     tags:
       - v*.*.*
   # Run daily at 0:01 UTC
