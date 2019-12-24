@@ -378,7 +378,9 @@ def parsl_executor(items, function, accumulator, **kwargs):
     return accumulator
 
 
-def _work_function(item, processor_instance, flatten=False, savemetrics=False, mmap=False, nano=False, cachestrategy=None, skipbadfiles=False, retries=0, xrootdtimeout=None):
+def _work_function(item, processor_instance, flatten=False, savemetrics=False,
+                   mmap=False, nano=False, cachestrategy=None, skipbadfiles=False,
+                   retries=0, xrootdtimeout=None):
     if processor_instance == 'heavy':
         item, processor_instance = item
     if not isinstance(processor_instance, ProcessorABC):
@@ -394,7 +396,7 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False, m
 
     out = processor_instance.accumulator.identity()
     retry_count = 0
-    while retry_count<=retries:
+    while retry_count <= retries:
         try:
             from uproot.source.xrootd import XRootDSource
             xrootdsource = XRootDSource.defaults
@@ -440,8 +442,8 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False, m
                 import warnings
                 w_str = 'Bad file source %s.' % item.filename
                 if retries:
-                    w_str += ' Attempt %d of %d.' % (retry_count+1, retries+1)
-                    if retry_count+1<retries:
+                    w_str += ' Attempt %d of %d.' % (retry_count + 1, retries + 1)
+                    if retry_count + 1 < retries:
                         w_str += ' Will retry.'
                     else:
                         w_str += ' Skipping.'
@@ -457,7 +459,7 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False, m
                 metrics['processtime'] = value_accumulator(float, 0)
             wrapped_out = dict_accumulator({'out': out, 'metrics': metrics})
             retry_count += 1
-            
+
     return wrapped_out
 
 
@@ -479,10 +481,10 @@ def _normalize_fileset(fileset, treename):
 def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None):
     out = set_accumulator()
     retry_count = 0
-    while retry_count<=retries:
+    while retry_count <= retries:
         try:
             # add timeout option according to modified uproot numentries defaults
-            xrootdsource={"timeout": xrootdtimeout, "chunkbytes": 32*1024, "limitbytes": 1024**2, "parallel": False}
+            xrootdsource = {"timeout": xrootdtimeout, "chunkbytes": 32 * 1024, "limitbytes": 1024**2, "parallel": False}
             nentries = uproot.numentries(item.filename, item.treename, xrootdsource=xrootdsource)
             out = set_accumulator([FileMeta(item.dataset, item.filename, item.treename, nentries)])
             break
@@ -493,8 +495,8 @@ def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None):
                 import warnings
                 w_str = 'Bad file source %s.' % item.filename
                 if retries:
-                    w_str += ' Attempt %d of %d.' % (retry_count+1, retries+1)
-                    if retry_count+1<retries:
+                    w_str += ' Attempt %d of %d.' % (retry_count + 1, retries + 1)
+                    if retry_count + 1 < retries:
                         w_str += ' Will retry.'
                     else:
                         w_str += ' Skipping.'
@@ -584,8 +586,8 @@ def run_uproot_job(fileset,
 
     # pop _get_metdata args here (also sent to _work_function)
     skipbadfiles = executor_args.pop('skipbadfiles', False)
-    retries = executor_args.pop('retries',0)
-    xrootdtimeout = executor_args.pop('xrootdtimeout',None)
+    retries = executor_args.pop('retries', 0)
+    xrootdtimeout = executor_args.pop('xrootdtimeout', None)
 
     chunks = []
     if maxchunks is None:
@@ -612,7 +614,8 @@ def run_uproot_job(fileset,
                 filemeta.maybe_populate(metadata_cache)
         while fileset:
             filemeta = fileset.pop()
-            if skipbadfiles and not filemeta.populated: continue
+            if skipbadfiles and not filemeta.populated:
+                continue
             for chunk in filemeta.chunks(chunksize):
                 chunks.append(chunk)
     else:
@@ -629,7 +632,8 @@ def run_uproot_job(fileset,
                                                     xrootdtimeout=xrootdtimeout,
                                                     ).pop().numentries
                 metadata_cache[filemeta] = filemeta.numentries
-            if skipbadfiles and not filemeta.populated: continue
+            if skipbadfiles and not filemeta.populated:
+                continue
             for chunk in filemeta.chunks(chunksize):
                 chunks.append(chunk)
                 nchunks[filemeta.dataset] += 1
@@ -848,9 +852,6 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     treeName = executor_args['treeName']
     flatten = executor_args['flatten']
     use_cache = executor_args['cache']
-    skipbadfiles = executor_args['skipbadfiles']
-    retries = executor_args['retries']
-    xrootdtimeout = executor_args['xrootdtimeout']
 
     if executor_args['config'] is None:
         executor_args.pop('config')
