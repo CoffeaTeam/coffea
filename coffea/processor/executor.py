@@ -378,7 +378,7 @@ def parsl_executor(items, function, accumulator, **kwargs):
     return accumulator
 
 
-def _work_function(item, processor_instance, flatten=False, savemetrics=False, mmap=False, nano=False, cachestrategy=None, skipbadfiles=False, retries=0, timeout=None):
+def _work_function(item, processor_instance, flatten=False, savemetrics=False, mmap=False, nano=False, cachestrategy=None, skipbadfiles=False, retries=0, xrootdtimeout=None):
     if processor_instance == 'heavy':
         item, processor_instance = item
     if not isinstance(processor_instance, ProcessorABC):
@@ -398,7 +398,7 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False, m
         try:
             from uproot.source.xrootd import XRootDSource
             xrootdsource = XRootDSource.defaults
-            xrootdsource['timeout'] = timeout
+            xrootdsource['timeout'] = xrootdtimeout
             file = uproot.open(item.filename, localsource=localsource, xrootdsource=xrootdsource)
             if nano:
                 cache = None
@@ -476,13 +476,13 @@ def _normalize_fileset(fileset, treename):
             yield FileMeta(dataset, filename, local_treename)
 
 
-def _get_metadata(item, skipbadfiles=False, retries=0, timeout=None):
+def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None):
     out = set_accumulator()
     retry_count = 0
     while retry_count<=retries:
         try:
             # add timeout option according to modified uproot numentries defaults
-            xrootdsource={"timeout": timeout, "chunkbytes": 32*1024, "limitbytes": 1024**2, "parallel": False}
+            xrootdsource={"timeout": xrootdtimeout, "chunkbytes": 32*1024, "limitbytes": 1024**2, "parallel": False}
             nentries = uproot.numentries(item.filename, item.treename, xrootdsource=xrootdsource)
             out = set_accumulator([FileMeta(item.dataset, item.filename, item.treename, nentries)])
             break
@@ -551,7 +551,7 @@ def run_uproot_job(fileset,
             to workers (default 1).
             'skipbadfiles' instead of failing on a bad file, skip it (default False)
             'retries' optionally retry a bad file read n times (default 0)
-            'timeout' timeout for xrootd read
+            'xrootdtimeout' timeout for xrootd read
         pre_executor : callable
             A function like executor, used to calculate fileset metadata
             Defaults to executor
@@ -585,7 +585,7 @@ def run_uproot_job(fileset,
     # pop _get_metdata args here (also sent to _work_function)
     skipbadfiles = executor_args.pop('skipbadfiles', False)
     retries = executor_args.pop('retries',0)
-    timeout = executor_args.pop('timeout',None)
+    xrootdtimeout = executor_args.pop('xrootdtimeout',None)
 
     chunks = []
     if maxchunks is None:
@@ -602,7 +602,7 @@ def run_uproot_job(fileset,
             partial_meta = partial(_get_metadata,
                                    skipbadfiles=skipbadfiles,
                                    retries=retries,
-                                   timeout=timeout,
+                                   xrootdtimeout=xrootdtimeout,
                                    )
             executor(to_get, partial_meta, out, **real_pre_args)
             while out:
@@ -626,7 +626,7 @@ def run_uproot_job(fileset,
                 filemeta.numentries = _get_metadata(filemeta,
                                                     skipbadfiles=skipbadfiles,
                                                     retries=retries,
-                                                    timeout=timeout,
+                                                    xrootdtimeout=xrootdtimeout,
                                                     ).pop().numentries
                 metadata_cache[filemeta] = filemeta.numentries
             if skipbadfiles and not filemeta.populated: continue
@@ -659,7 +659,7 @@ def run_uproot_job(fileset,
                           cachestrategy=cachestrategy,
                           skipbadfiles=skipbadfiles,
                           retries=retries,
-                          timeout=timeout,
+                          xrootdtimeout=xrootdtimeout,
                           )
     else:
         closure = partial(_work_function,
@@ -671,7 +671,7 @@ def run_uproot_job(fileset,
                           cachestrategy=cachestrategy,
                           skipbadfiles=skipbadfiles,
                           retries=retries,
-                          timeout=timeout,
+                          xrootdtimeout=xrootdtimeout,
                           )
 
     out = processor_instance.accumulator.identity()
@@ -754,7 +754,7 @@ def run_parsl_job(fileset, treename, processor_instance, executor, executor_args
     executor_args.setdefault('compression', 0)
     executor_args.setdefault('skipbadfiles', False)
     executor_args.setdefault('retries', 0)
-    executor_args.setdefault('timeout', None)
+    executor_args.setdefault('xrootdtimeout', None)
 
     try:
         parsl.dfk()
@@ -843,14 +843,14 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     executor_args.setdefault('cache', True)
     executor_args.setdefault('skipbadfiles', False)
     executor_args.setdefault('retries', 0)
-    executor_args.setdefault('timeout', None)
+    executor_args.setdefault('xrootdtimeout', None)
     file_type = executor_args['file_type']
     treeName = executor_args['treeName']
     flatten = executor_args['flatten']
     use_cache = executor_args['cache']
     skipbadfiles = executor_args['skipbadfiles']
     retries = executor_args['retries']
-    timeout = executor_args['timeout']
+    xrootdtimeout = executor_args['xrootdtimeout']
 
     if executor_args['config'] is None:
         executor_args.pop('config')
