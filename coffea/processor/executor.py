@@ -394,6 +394,7 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
         def localsource(path):
             return uproot.FileSource(path, **opts)
 
+    import warnings
     out = processor_instance.accumulator.identity()
     retry_count = 0
     while retry_count <= retries:
@@ -439,7 +440,6 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
             if not skipbadfiles:
                 raise e
             else:
-                import warnings
                 w_str = 'Bad file source %s.' % item.filename
                 if retries:
                     w_str += ' Attempt %d of %d.' % (retry_count + 1, retries + 1)
@@ -458,7 +458,12 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                 metrics['entries'] = value_accumulator(int, 0)
                 metrics['processtime'] = value_accumulator(float, 0)
             wrapped_out = dict_accumulator({'out': out, 'metrics': metrics})
-            retry_count += 1
+        except Exception as e:
+            if retries == retry_count:
+                raise e
+            w_str = 'Attempt %d of %d. Will retry.' % (retry_count + 1, retries + 1)
+            warnings.warn(w_str)
+        retry_count += 1
 
     return wrapped_out
 
@@ -479,6 +484,7 @@ def _normalize_fileset(fileset, treename):
 
 
 def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None):
+    import warnings
     out = set_accumulator()
     retry_count = 0
     while retry_count <= retries:
@@ -492,7 +498,6 @@ def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None):
             if not skipbadfiles:
                 raise e
             else:
-                import warnings
                 w_str = 'Bad file source %s.' % item.filename
                 if retries:
                     w_str += ' Attempt %d of %d.' % (retry_count + 1, retries + 1)
@@ -503,8 +508,12 @@ def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None):
                 else:
                     w_str += ' Skipping.'
                 warnings.warn(w_str)
-
-            retry_count += 1
+        except Exception as e:
+            if retries == retry_count:
+                raise e
+            w_str = 'Attempt %d of %d. Will retry.' % (retry_count + 1, retries + 1)
+            warnings.warn(w_str)
+        retry_count += 1
     return out
 
 
@@ -552,7 +561,7 @@ def run_uproot_job(fileset,
             'processor_compression' sets the compression level used to send processor instance
             to workers (default 1).
             'skipbadfiles' instead of failing on a bad file, skip it (default False)
-            'retries' optionally retry a bad file read n times (default 0)
+            'retries' optionally retry n times (default 0)
             'xrootdtimeout' timeout for xrootd read
         pre_executor : callable
             A function like executor, used to calculate fileset metadata
