@@ -9,6 +9,9 @@ def genroundtrips(genpart):
     # distinctParent should be distinct and it should have a relevant child
     assert (genpart.distinctParent.pdgId != genpart.pdgId).fillna(True).all().all()
     assert (genpart.distinctParent.children.pdgId == genpart.pdgId).any().fillna(True).all().all()
+    # exercise hasFlags
+    genpart.hasFlags(['isHardProcess'])
+    genpart.hasFlags(['isHardProcess', 'isDecayedLeptonHadron'])
 
 
 def crossref(events):

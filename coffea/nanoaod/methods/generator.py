@@ -121,7 +121,10 @@ class GenParticle(LorentzVector):
         '''
         dtype = self.statusFlags.type
         while not isinstance(dtype, numpy.dtype):
-            dtype = dtype.to
+            try:
+                dtype = dtype.to
+            except AttributeError:
+                dtype = dtype.type
         bits = numpy.array([self.FLAGS.index(f) for f in flags])
         mask = (1 << bits).sum().astype(dtype)
         return (self.statusFlags & mask) == mask
