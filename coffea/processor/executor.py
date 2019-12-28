@@ -378,7 +378,9 @@ def parsl_executor(items, function, accumulator, **kwargs):
     return accumulator
 
 
-def _work_function(item, processor_instance, flatten=False, savemetrics=False, mmap=False, nano=False, cachestrategy=None):
+def _work_function(item, processor_instance, flatten=False, savemetrics=False,
+                   mmap=False, nano=False, cachestrategy=None, skipbadfiles=False,
+                   retries=0, xrootdtimeout=None):
     if processor_instance == 'heavy':
         item, processor_instance = item
     if not isinstance(processor_instance, ProcessorABC):
@@ -392,37 +394,77 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False, m
         def localsource(path):
             return uproot.FileSource(path, **opts)
 
-    file = uproot.open(item.filename, localsource=localsource)
-    if nano:
-        cache = None
-        if cachestrategy == 'dask-worker':
-            from dask.distributed import get_worker
-            cache = get_worker().data
-        df = NanoEvents.from_file(
-            file=file,
-            treename=item.treename,
-            entrystart=item.index * item.chunksize,
-            entrystop=(item.index + 1) * item.chunksize,
-            metadata={'dataset': item.dataset},
-            cache=cache,
-        )
-    else:
-        tree = file[item.treename]
-        df = LazyDataFrame(tree, item.chunksize, item.index, flatten=flatten)
-        df['dataset'] = item.dataset
-    tic = time.time()
-    out = processor_instance.process(df)
-    toc = time.time()
-    metrics = dict_accumulator()
-    if savemetrics:
-        if isinstance(file.source, uproot.source.xrootd.XRootDSource):
-            metrics['bytesread'] = value_accumulator(int, file.source.bytesread)
-            metrics['dataservers'] = set_accumulator({file.source._source.get_property('DataServer')})
-        metrics['columns'] = set_accumulator(df.materialized)
-        metrics['entries'] = value_accumulator(int, df.size)
-        metrics['processtime'] = value_accumulator(float, toc - tic)
-    wrapped_out = dict_accumulator({'out': out, 'metrics': metrics})
-    file.source.close()
+    import warnings
+    out = processor_instance.accumulator.identity()
+    retry_count = 0
+    while retry_count <= retries:
+        try:
+            from uproot.source.xrootd import XRootDSource
+            xrootdsource = XRootDSource.defaults
+            xrootdsource['timeout'] = xrootdtimeout
+            file = uproot.open(item.filename, localsource=localsource, xrootdsource=xrootdsource)
+            if nano:
+                cache = None
+                if cachestrategy == 'dask-worker':
+                    from dask.distributed import get_worker
+                    cache = get_worker().data
+                df = NanoEvents.from_file(
+                    file=file,
+                    treename=item.treename,
+                    entrystart=item.index * item.chunksize,
+                    entrystop=(item.index + 1) * item.chunksize,
+                    metadata={'dataset': item.dataset},
+                    cache=cache,
+                )
+            else:
+                tree = file[item.treename]
+                df = LazyDataFrame(tree, item.chunksize, item.index, flatten=flatten)
+                df['dataset'] = item.dataset
+            tic = time.time()
+            out = processor_instance.process(df)
+            toc = time.time()
+            metrics = dict_accumulator()
+            if savemetrics:
+                if isinstance(file.source, uproot.source.xrootd.XRootDSource):
+                    metrics['bytesread'] = value_accumulator(int, file.source.bytesread)
+                    metrics['dataservers'] = set_accumulator({file.source._source.get_property('DataServer')})
+                metrics['columns'] = set_accumulator(df.materialized)
+                metrics['entries'] = value_accumulator(int, df.size)
+                metrics['processtime'] = value_accumulator(float, toc - tic)
+            wrapped_out = dict_accumulator({'out': out, 'metrics': metrics})
+            file.source.close()
+            break
+        # catch xrootd errors and optionally skip
+        # or retry to read the file
+        except OSError as e:
+            if not skipbadfiles:
+                raise e
+            else:
+                w_str = 'Bad file source %s.' % item.filename
+                if retries:
+                    w_str += ' Attempt %d of %d.' % (retry_count + 1, retries + 1)
+                    if retry_count + 1 < retries:
+                        w_str += ' Will retry.'
+                    else:
+                        w_str += ' Skipping.'
+                else:
+                    w_str += ' Skipping.'
+                warnings.warn(w_str)
+            metrics = dict_accumulator()
+            if savemetrics:
+                metrics['bytesread'] = value_accumulator(int, 0)
+                metrics['dataservers'] = set_accumulator({})
+                metrics['columns'] = set_accumulator({})
+                metrics['entries'] = value_accumulator(int, 0)
+                metrics['processtime'] = value_accumulator(float, 0)
+            wrapped_out = dict_accumulator({'out': out, 'metrics': metrics})
+        except Exception as e:
+            if retries == retry_count:
+                raise e
+            w_str = 'Attempt %d of %d. Will retry.' % (retry_count + 1, retries + 1)
+            warnings.warn(w_str)
+        retry_count += 1
+
     return wrapped_out
 
 
@@ -441,9 +483,38 @@ def _normalize_fileset(fileset, treename):
             yield FileMeta(dataset, filename, local_treename)
 
 
-def _get_metadata(item):
-    nentries = uproot.numentries(item.filename, item.treename)
-    return set_accumulator([FileMeta(item.dataset, item.filename, item.treename, nentries)])
+def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None):
+    import warnings
+    out = set_accumulator()
+    retry_count = 0
+    while retry_count <= retries:
+        try:
+            # add timeout option according to modified uproot numentries defaults
+            xrootdsource = {"timeout": xrootdtimeout, "chunkbytes": 32 * 1024, "limitbytes": 1024**2, "parallel": False}
+            nentries = uproot.numentries(item.filename, item.treename, xrootdsource=xrootdsource)
+            out = set_accumulator([FileMeta(item.dataset, item.filename, item.treename, nentries)])
+            break
+        except OSError as e:
+            if not skipbadfiles:
+                raise e
+            else:
+                w_str = 'Bad file source %s.' % item.filename
+                if retries:
+                    w_str += ' Attempt %d of %d.' % (retry_count + 1, retries + 1)
+                    if retry_count + 1 < retries:
+                        w_str += ' Will retry.'
+                    else:
+                        w_str += ' Skipping.'
+                else:
+                    w_str += ' Skipping.'
+                warnings.warn(w_str)
+        except Exception as e:
+            if retries == retry_count:
+                raise e
+            w_str = 'Attempt %d of %d. Will retry.' % (retry_count + 1, retries + 1)
+            warnings.warn(w_str)
+        retry_count += 1
+    return out
 
 
 def run_uproot_job(fileset,
@@ -489,6 +560,9 @@ def run_uproot_job(fileset,
             'nano' builds the dataframe as a `NanoEvents` object rather than `LazyDataFrame` (default False);
             'processor_compression' sets the compression level used to send processor instance
             to workers (default 1).
+            'skipbadfiles' instead of failing on a bad file, skip it (default False)
+            'retries' optionally retry n times (default 0)
+            'xrootdtimeout' timeout for xrootd read
         pre_executor : callable
             A function like executor, used to calculate fileset metadata
             Defaults to executor
@@ -519,6 +593,11 @@ def run_uproot_job(fileset,
     for filemeta in fileset:
         filemeta.maybe_populate(metadata_cache)
 
+    # pop _get_metdata args here (also sent to _work_function)
+    skipbadfiles = executor_args.pop('skipbadfiles', False)
+    retries = executor_args.pop('retries', 0)
+    xrootdtimeout = executor_args.pop('xrootdtimeout', None)
+
     chunks = []
     if maxchunks is None:
         # this is a bit of an abuse of map-reduce but ok
@@ -531,7 +610,12 @@ def run_uproot_job(fileset,
                 'compression': None,
             }
             real_pre_args.update(pre_args)
-            executor(to_get, _get_metadata, out, **real_pre_args)
+            partial_meta = partial(_get_metadata,
+                                   skipbadfiles=skipbadfiles,
+                                   retries=retries,
+                                   xrootdtimeout=xrootdtimeout,
+                                   )
+            executor(to_get, partial_meta, out, **real_pre_args)
             while out:
                 item = out.pop()
                 metadata_cache[item] = item.numentries
@@ -539,6 +623,8 @@ def run_uproot_job(fileset,
                 filemeta.maybe_populate(metadata_cache)
         while fileset:
             filemeta = fileset.pop()
+            if skipbadfiles and not filemeta.populated:
+                continue
             for chunk in filemeta.chunks(chunksize):
                 chunks.append(chunk)
     else:
@@ -549,8 +635,14 @@ def run_uproot_job(fileset,
             if nchunks[filemeta.dataset] >= maxchunks:
                 continue
             if not filemeta.populated:
-                filemeta.numentries = _get_metadata(filemeta).pop().numentries
+                filemeta.numentries = _get_metadata(filemeta,
+                                                    skipbadfiles=skipbadfiles,
+                                                    retries=retries,
+                                                    xrootdtimeout=xrootdtimeout,
+                                                    ).pop().numentries
                 metadata_cache[filemeta] = filemeta.numentries
+            if skipbadfiles and not filemeta.populated:
+                continue
             for chunk in filemeta.chunks(chunksize):
                 chunks.append(chunk)
                 nchunks[filemeta.dataset] += 1
@@ -578,6 +670,9 @@ def run_uproot_job(fileset,
                           mmap=mmap,
                           nano=nano,
                           cachestrategy=cachestrategy,
+                          skipbadfiles=skipbadfiles,
+                          retries=retries,
+                          xrootdtimeout=xrootdtimeout,
                           )
     else:
         closure = partial(_work_function,
@@ -587,6 +682,9 @@ def run_uproot_job(fileset,
                           savemetrics=savemetrics,
                           mmap=mmap,
                           cachestrategy=cachestrategy,
+                          skipbadfiles=skipbadfiles,
+                          retries=retries,
+                          xrootdtimeout=xrootdtimeout,
                           )
 
     out = processor_instance.accumulator.identity()
@@ -667,6 +765,9 @@ def run_parsl_job(fileset, treename, processor_instance, executor, executor_args
     executor_args.setdefault('chunking_timeout', 10)
     executor_args.setdefault('flatten', False)
     executor_args.setdefault('compression', 0)
+    executor_args.setdefault('skipbadfiles', False)
+    executor_args.setdefault('retries', 0)
+    executor_args.setdefault('xrootdtimeout', None)
 
     try:
         parsl.dfk()
@@ -753,6 +854,9 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     executor_args.setdefault('treeName', 'Events')
     executor_args.setdefault('flatten', False)
     executor_args.setdefault('cache', True)
+    executor_args.setdefault('skipbadfiles', False)
+    executor_args.setdefault('retries', 0)
+    executor_args.setdefault('xrootdtimeout', None)
     file_type = executor_args['file_type']
     treeName = executor_args['treeName']
     flatten = executor_args['flatten']
