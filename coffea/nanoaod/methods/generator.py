@@ -136,6 +136,8 @@ class GenParticle(LorentzVector):
         if isinstance(array, awkward.JaggedArray):
             jagged = array
             array = array.content
+        if isinstance(array, awkward.VirtualArray):
+            array = array.array
         if isinstance(array, awkward.IndexedMaskedArray):
             mask = array.mask
             pdg_self = array.pdgId.fillna(0)
