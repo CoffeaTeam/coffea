@@ -121,7 +121,10 @@ class GenParticle(LorentzVector):
         '''
         dtype = self.statusFlags.type
         while not isinstance(dtype, numpy.dtype):
-            dtype = dtype.to
+            try:
+                dtype = dtype.to
+            except AttributeError:
+                dtype = dtype.type
         bits = numpy.array([self.FLAGS.index(f) for f in flags])
         mask = (1 << bits).sum().astype(dtype)
         return (self.statusFlags & mask) == mask
@@ -136,6 +139,8 @@ class GenParticle(LorentzVector):
         if isinstance(array, awkward.JaggedArray):
             jagged = array
             array = array.content
+        if isinstance(array, awkward.VirtualArray):
+            array = array.array
         if isinstance(array, awkward.IndexedMaskedArray):
             mask = array.mask
             pdg_self = array.pdgId.fillna(0)
