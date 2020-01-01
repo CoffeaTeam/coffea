@@ -46,7 +46,7 @@ jobs:
     - name: Upload codecov
       if: success()
       run: |
-        codecov -t ${{ secrets.CODECOV_TOKEN }}
+        codecov
     - name: Install pandoc
       if: success()
       uses: r-lib/actions/setup-pandoc@v1

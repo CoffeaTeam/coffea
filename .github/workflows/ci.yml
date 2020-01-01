@@ -75,9 +75,9 @@ jobs:
       run: |
         coverage run --source=coffea/ setup.py pytest
     - name: Upload codecov
-      if: success() && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.6
+      if: success() && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.6      
       run: |
-        codecov -t ${{ secrets.CODECOV_TOKEN }}
+        codecov
     - name: Install pandoc
       if: success() && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.6
       uses: r-lib/actions/setup-pandoc@v1
