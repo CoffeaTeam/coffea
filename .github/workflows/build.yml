@@ -2,13 +2,8 @@ name: Build, Deploy, and Release
 
 on:
   push:
-    branches:
-      - master
     tags:
       - v*.*.*
-  # Run daily at 0:01 UTC
-  schedule:
-    - cron:  '1 0 * * *'
 
 jobs:
   build:
@@ -60,15 +55,15 @@ jobs:
       run: |
         source docs/build_docs.sh
     - name: Deploy documentation
-      if: success() && github.event_name != 'pull_request'
+      if: success()
       uses: JamesIves/github-pages-deploy-action@releases/v3
       with:
         ACCESS_TOKEN: ${{ secrets.GITHUB_OAUTH }}
-        BASE_BRANCH: gha_switch # The branch the action should deploy from.
+        BASE_BRANCH: master # The branch the action should deploy from.
         BRANCH: gh-pages # The branch the action should deploy to.
         FOLDER: docs/build/html # The folder the action should deploy.
     - name: Create Release
-      if: success() && github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+      if: success()
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_OAUTH }}
@@ -76,11 +71,11 @@ jobs:
         tag_name: ${{ github.ref }}
         release_name: Release ${{ github.ref }}
     - name: Build package for PyPI
-      if: success() && github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+      if: success()
       run: |
         python setup.py sdist bdist_wheel --universal
     - name: Publish package to PyPI
-      if: success() && github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+      if: success()
       uses: pypa/gh-action-pypi-publish@master
       with:
         user: __token__
