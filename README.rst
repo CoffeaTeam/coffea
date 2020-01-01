@@ -8,7 +8,7 @@ coffea - Columnar Object Framework For Effective Analysis
     :target: https://travis-ci.com/CoffeaTeam/coffea
 
 .. image:: https://github.com/CoffeaTeam/coffea/workflows/CI%2FCD/badge.svg
-    :target: https://github.com/CoffeaTeam/coffea/actions?query=workflow%3ACI%2FCD+event%3Aschedule
+    :target: https://github.com/CoffeaTeam/coffea/actions?query=workflow%3ACI%2FCD+event%3Aschedule+branch%3Amaster
 
 .. image:: https://codecov.io/gh/CoffeaTeam/coffea/branch/master/graph/badge.svg?event=schedule
     :target: https://codecov.io/gh/CoffeaTeam/coffea
