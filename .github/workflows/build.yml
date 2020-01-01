@@ -50,8 +50,8 @@ jobs:
         coverage run --source=coffea/ setup.py pytest
     - name: Upload codecov
       if: success()
-        run: |
-            codecov -t ${{ secrets.CODECOV_TOKEN }}
+      run: |
+        codecov -t ${{ secrets.CODECOV_TOKEN }}
     - name: Install pandoc
       if: success()
       uses: r-lib/actions/setup-pandoc@v1
