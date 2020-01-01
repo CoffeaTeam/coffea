@@ -1,13 +1,5 @@
 environment:
   matrix:
-    - PYTHON: "C:\\Python27"
-      PYTHON_VERSION: "2.7.10"
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python27"
-      PYTHON_VERSION: "2.7.10"
-      PYTHON_ARCH: "64"
-
     - PYTHON: "C:\\Python36"
       PYTHON_VERSION: "3.6.x"
       PYTHON_ARCH: "32"
@@ -17,11 +9,10 @@ environment:
       PYTHON_ARCH: "64"
 
 install:
-  - "python --version"
+  - "%PYTHON%\\python.exe --version"
 
 build_script:
-  - "python -m pip install requests"
-  - "python -m pip install --upgrade cachetools"
-  - "pip install awkward numba scipy"
-  - "pip install pytest pytest-runner"
-  - "python setup.py pytest"
+  - "%PYTHON%\\python.exe -m pip install requests"
+  - "%PYTHON%\\python.exe -m pip install awkward numba scipy"
+  - "%PYTHON%\\python.exe -m pip install pytest pytest-runner"
+  - "%PYTHON%\\python.exe setup.py pytest"
