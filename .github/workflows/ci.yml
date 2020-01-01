@@ -45,6 +45,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@master
+    - run: |
+        git fetch --no-tags --prune --depth=1 origin +refs/heads/*:refs/remotes/origin/*
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
       with:
