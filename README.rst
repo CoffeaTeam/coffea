@@ -7,10 +7,10 @@ coffea - Columnar Object Framework For Effective Analysis
 .. image:: https://travis-ci.com/CoffeaTeam/coffea.svg?branch=master
     :target: https://travis-ci.com/CoffeaTeam/coffea
 
-.. image:: https://ci.appveyor.com/api/projects/status/co4wg4074jal3klq/branch/master?svg=true
-    :target: https://ci.appveyor.com/project/lgray/coffea/branch/master
+.. image:: https://github.com/CoffeaTeam/coffea/workflows/CI%2FCD/badge.svg
+    :target: https://github.com/CoffeaTeam/coffea/actions?query=workflow%3ACI%2FCD+event%3Aschedule
 
-.. image:: https://codecov.io/gh/CoffeaTeam/coffea/branch/master/graph/badge.svg
+.. image:: https://codecov.io/gh/CoffeaTeam/coffea/branch/master/graph/badge.svg?event=schedule
     :target: https://codecov.io/gh/CoffeaTeam/coffea
 
 .. image:: https://badge.fury.io/py/coffea.svg
@@ -45,7 +45,7 @@ time-to-insight in a way that is largely independent of the resource the analysi
 is being executed on. By making use of modern *big-data* technologies like
 `Apache Spark <https://spark.apache.org/>`_,  `parsl <https://github.com/Parsl/parsl>`_, and
 `Dask <https://dask.org>`_ it is possible with coffea to scale a HEP analysis from a testing
-on a laptop to: a large multi-core server, computing clusters, and super-computers without 
+on a laptop to: a large multi-core server, computing clusters, and super-computers without
 the need to alter or otherwise adapt the analysis code itself.
 
 coffea is a HEP community project collaborating with `iris-hep <http://iris-hep.org/>`_
