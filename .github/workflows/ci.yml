@@ -76,6 +76,9 @@ jobs:
         ARROW_PRE_0_15_IPC_FORMAT: 1
       run: |
         coverage run --source=coffea/ setup.py pytest
+    - name: Upload codecov
+      run: |
+        codecov -t ${{ secrets.CODECOV_TOKEN }}
     - name: Install pandoc
       if: success() && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.6
       uses: r-lib/actions/setup-pandoc@v1
