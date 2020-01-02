@@ -98,7 +98,7 @@ def _spark_make_dfs(spark, fileset, partitionsize, columns, thread_workers, file
                                       ana_cols, partitionsize, file_type,
                                       treeName) for ds, files in fileset.items())
 
-        _futures_handler(futures, dfs, status, 'datasets', 'loading', add_fn=dfs_accumulator)
+        _futures_handler(futures, dfs, status, 'datasets', 'loading', dfs_accumulator, None)
 
     return dfs
 
