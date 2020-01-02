@@ -83,6 +83,6 @@ def _parsl_get_chunking(filelist, chunksize, status=True, timeout=10):
         for chunk in chunks:
             total.append((ds, chunk[0], treename, chunk[1], chunk[2]))
 
-    _futures_handler(futures, items, status, 'files', 'Preprocessing', add_fn=chunk_accumulator)
+    _futures_handler(futures, items, status, 'files', 'Preprocessing', chunk_accumulator, None)
 
     return items
