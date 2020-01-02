@@ -169,7 +169,7 @@ def _futures_handler(futures_set, output, status, unit, desc, add_fn, tailtimeou
                     pbar.update(1)
                     last_job = time.time()
                 time.sleep(0.5)
-                if tailtimeout > 0 and (time.time() - last_job) > tailtimeout and (last_job - start) > 0:
+                if tailtimeout is not None and (time.time() - last_job) > tailtimeout and (last_job - start) > 0:
                     for job in futures_set:
                         _cancel(job)
                         pbar.update(1)
