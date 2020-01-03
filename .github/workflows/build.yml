@@ -50,6 +50,9 @@ jobs:
     - name: Install pandoc
       if: success()
       uses: r-lib/actions/setup-pandoc@v1
+    - name: Install graphviz
+      if: success()
+      uses: kamiazya/setup-graphviz@v1
     - name: Build documentation
       if: success()
       run: |
