@@ -56,12 +56,12 @@ jobs:
         source docs/build_docs.sh
     - name: Deploy documentation
       if: success()
-      uses: JamesIves/github-pages-deploy-action@releases/v3
+      uses: crazy-max/ghaction-github-pages@v1.0.1
       with:
-        ACCESS_TOKEN: ${{ secrets.GITHUB_OAUTH }}
-        BASE_BRANCH: master # The branch the action should deploy from.
-        BRANCH: gh-pages # The branch the action should deploy to.
-        FOLDER: docs/build/html # The folder the action should deploy.
+        target_branch: gh-pages
+        build_dir: docs/build/html
+      env:
+        GITHUB_PAT: ${{ secrets.GITHUB_OAUTH }}
     - name: Create Release
       if: success()
       uses: actions/create-release@v1
