@@ -290,7 +290,7 @@ class NanoEvents(awkward.Table):
                 persistentkey=';'.join(str(x) for x in [_hex(file._context.uuid), _ascii(treename), entrystart, entrystop, _ascii(bname)]),
                 cache=cache,
             )
-            array.__doc__ = tree[bname].title
+            array.__doc__ = tree[bname].title.decode('ascii')
             arrays[bname.decode('ascii')] = array
         out = cls.from_arrays(arrays, methods=methods, metadata=metadata)
         out._cache = cache
