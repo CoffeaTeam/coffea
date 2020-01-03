@@ -80,6 +80,9 @@ jobs:
       if: success() && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.6      
       run: |
         codecov
+    - name: Install graphviz
+      if: success()
+      uses: kamiazya/setup-graphviz@v1 
     - name: Install pandoc
       if: success() && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.6
       uses: r-lib/actions/setup-pandoc@v1
