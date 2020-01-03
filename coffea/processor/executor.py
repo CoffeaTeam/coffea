@@ -148,7 +148,17 @@ class _reduce(object):
         return out
 
 
-def _futures_handler(futures_set, output, status, unit, desc, add_fn):
+def _cancel(job):
+    try:
+        # this is not implemented with parsl AppFutures
+        job.cancel()
+    except NotImplementedError:
+        pass
+
+
+def _futures_handler(futures_set, output, status, unit, desc, add_fn, tailtimeout):
+    start = time.time()
+    last_job = start
     try:
         with tqdm(disable=not status, unit=unit, total=len(futures_set), desc=desc) as pbar:
             while len(futures_set) > 0:
@@ -157,16 +167,24 @@ def _futures_handler(futures_set, output, status, unit, desc, add_fn):
                 while finished:
                     add_fn(output, finished.pop().result())
                     pbar.update(1)
+                    last_job = time.time()
                 time.sleep(0.5)
+                if tailtimeout is not None and (time.time() - last_job) > tailtimeout and (last_job - start) > 0:
+                    for job in futures_set:
+                        _cancel(job)
+                        pbar.update(1)
+                    import warnings
+                    warnings.warn('Stopped job early')
+                    break
     except KeyboardInterrupt:
         for job in futures_set:
-            job.cancel()
+            _cancel(job)
         if status:
             print("Received SIGINT, killed pending jobs.  Running jobs will continue to completion.", file=sys.stderr)
             print("Running jobs:", sum(1 for j in futures_set if j.running()), file=sys.stderr)
     except Exception:
         for job in futures_set:
-            job.cancel()
+            _cancel(job)
         raise
 
 
@@ -230,6 +248,9 @@ def futures_executor(items, function, accumulator, **kwargs):
         compression : int, optional
             Compress accumulator outputs in flight with LZ4, at level specified (default 1)
             Set to ``None`` for no compression.
+        tailtimeout : int, optional
+            Timeout requirement on job tails. Cancel all remaining jobs if none have finished
+            in the timeout window.
     """
     if len(items) == 0:
         return accumulator
@@ -239,17 +260,18 @@ def futures_executor(items, function, accumulator, **kwargs):
     unit = kwargs.pop('unit', 'items')
     desc = kwargs.pop('desc', 'Processing')
     clevel = kwargs.pop('compression', 1)
+    tailtimeout = kwargs.pop('tailtimeout', None)
     if clevel is not None:
         function = _compression_wrapper(clevel, function)
     add_fn = _iadd
     if isinstance(pool, concurrent.futures.Executor):
         futures = set(pool.submit(function, item) for item in items)
-        _futures_handler(futures, accumulator, status, unit, desc, add_fn)
+        _futures_handler(futures, accumulator, status, unit, desc, add_fn, tailtimeout)
     else:
         # assume its a class then
         with pool(max_workers=workers) as executor:
             futures = set(executor.submit(function, item) for item in items)
-            _futures_handler(futures, accumulator, status, unit, desc, add_fn)
+            _futures_handler(futures, accumulator, status, unit, desc, add_fn, tailtimeout)
     return accumulator
 
 
@@ -337,6 +359,9 @@ def parsl_executor(items, function, accumulator, **kwargs):
         compression : int, optional
             Compress accumulator outputs in flight with LZ4, at level specified (default 1)
             Set to ``None`` for no compression.
+        tailtimeout : int, optional
+            Timeout requirement on job tails. Cancel all remaining jobs if none have finished
+            in the timeout window.
     """
     if len(items) == 0:
         return accumulator
@@ -347,6 +372,7 @@ def parsl_executor(items, function, accumulator, **kwargs):
     unit = kwargs.pop('unit', 'items')
     desc = kwargs.pop('desc', 'Processing')
     clevel = kwargs.pop('compression', 1)
+    tailtimeout = kwargs.pop('tailtimeout', None)
     if clevel is not None:
         function = _compression_wrapper(clevel, function)
     add_fn = _iadd
@@ -369,7 +395,7 @@ def parsl_executor(items, function, accumulator, **kwargs):
     app = timeout(python_app(function))
 
     futures = set(app(item) for item in items)
-    _futures_handler(futures, accumulator, status, unit, desc, add_fn)
+    _futures_handler(futures, accumulator, status, unit, desc, add_fn, tailtimeout)
 
     if cleanup:
         parsl.dfk().cleanup()
@@ -563,6 +589,7 @@ def run_uproot_job(fileset,
             'skipbadfiles' instead of failing on a bad file, skip it (default False)
             'retries' optionally retry n times (default 0)
             'xrootdtimeout' timeout for xrootd read
+            'tailtimeout' timeout requirement on job tails
         pre_executor : callable
             A function like executor, used to calculate fileset metadata
             Defaults to executor
@@ -608,6 +635,7 @@ def run_uproot_job(fileset,
                 'desc': 'Preprocessing',
                 'unit': 'file',
                 'compression': None,
+                'tailtimeout': 0,
             }
             real_pre_args.update(pre_args)
             partial_meta = partial(_get_metadata,

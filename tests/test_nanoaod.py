@@ -9,6 +9,9 @@ def genroundtrips(genpart):
     # distinctParent should be distinct and it should have a relevant child
     assert (genpart.distinctParent.pdgId != genpart.pdgId).fillna(True).all().all()
     assert (genpart.distinctParent.children.pdgId == genpart.pdgId).any().fillna(True).all().all()
+    # exercise hasFlags
+    genpart.hasFlags(['isHardProcess'])
+    genpart.hasFlags(['isHardProcess', 'isDecayedLeptonHadron'])
 
 
 def crossref(events):
@@ -25,9 +28,11 @@ def test_read_nanomc():
     genroundtrips(events[(events.Electron.eta > 0).any()].GenPart)
     genroundtrips(events.GenPart)
 
-    # sane gen matching
+    # sane gen matching (note for electrons gen match may be photon(22) but no examples in the test file)
     assert (abs(events.Electron.matched_gen.pdgId) == 11).all().all()
     assert (abs(events.Muon.matched_gen.pdgId) == 13).all().all()
+
+    genroundtrips(events.Electron.matched_gen)
 
     crossref(events[events.Jet.counts > 2])
     crossref(events)

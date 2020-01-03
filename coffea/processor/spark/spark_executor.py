@@ -100,7 +100,7 @@ class SparkExecutor(object):
                 futures = set()
                 for ds, (df, counts) in dfslist.items():
                     futures.add(executor.submit(self._pruneandcache_data, ds, df, cols_w_ds, use_df_cache))
-                _futures_handler(futures, self._cacheddfs, status, unit, cachedesc, add_fn=spex_accumulator)
+                _futures_handler(futures, self._cacheddfs, status, unit, cachedesc, spex_accumulator, None)
 
         with ThreadPoolExecutor(max_workers=thread_workers) as executor:
             futures = set()
@@ -108,7 +108,7 @@ class SparkExecutor(object):
                 futures.add(executor.submit(self._launch_analysis, ds, df, coffea_udf_flat if flatten else coffea_udf, cols_w_ds))
             # wait for the spark jobs to come in
             self._rawresults = {}
-            _futures_handler(futures, self._rawresults, status, unit, desc, add_fn=spex_accumulator)
+            _futures_handler(futures, self._rawresults, status, unit, desc, spex_accumulator, None)
 
         for ds, bitstream in self._rawresults.items():
             if bitstream is None:

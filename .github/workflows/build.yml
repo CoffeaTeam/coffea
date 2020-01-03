@@ -2,13 +2,8 @@ name: Build, Deploy, and Release
 
 on:
   push:
-    branches:
-      - master
     tags:
       - v*.*.*
-  # Run daily at 0:01 UTC
-  schedule:
-    - cron:  '1 0 * * *'
 
 jobs:
   build:
@@ -48,28 +43,43 @@ jobs:
         ARROW_PRE_0_15_IPC_FORMAT: 1
       run: |
         coverage run --source=coffea/ setup.py pytest
+    - name: Upload codecov
+      if: success()
+      run: |
+        codecov
     - name: Install pandoc
       if: success()
       uses: r-lib/actions/setup-pandoc@v1
+    - name: Install graphviz
+      if: success()
+      uses: kamiazya/setup-graphviz@v1
     - name: Build documentation
       if: success()
       run: |
         source docs/build_docs.sh
-#    - name: Deploy documentation
-#      if: success() && github.event_name != 'pull_request'
-#      uses: JamesIves/github-pages-deploy-action@releases/v3
-#      with:
-#        ACCESS_TOKEN: ${{ secrets.GITHUB_OAUTH }}
-#        BASE_BRANCH: gha_switch # The branch the action should deploy from.
-#        BRANCH: gh-pages # The branch the action should deploy to.
-#        FOLDER: docs/build/html # The folder the action should deploy.
-#    - name: Build package for PyPI
-#      if: success() && github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
-#      run: |
-#        python setup.py sdist bdist_wheel --universal
-#    - name: Publish package to PyPI
-#      if: success() && github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
-#      uses: pypa/gh-action-pypi-publish@master
-#      with:
-#        user: ${{ secrets.PYPI_TOKEN }}
-#        password: ${{ secrets.PYPI_PASSWORD }}
+    - name: Deploy documentation
+      if: success()
+      uses: crazy-max/ghaction-github-pages@v1.0.1
+      with:
+        target_branch: gh-pages
+        build_dir: docs/build/html
+      env:
+        GITHUB_PAT: ${{ secrets.GITHUB_OAUTH }}
+    - name: Create Release
+      if: success()
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_OAUTH }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+    - name: Build package for PyPI
+      if: success()
+      run: |
+        python setup.py sdist bdist_wheel --universal
+    - name: Publish package to PyPI
+      if: success()
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_TOKEN }}
