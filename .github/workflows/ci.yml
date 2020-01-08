@@ -39,7 +39,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest] #
         java-version: [1.8]
-        python-version: [3.6, 3.7] #
+        python-version: [3.6, 3.7, 3.8] #
         awkward-version: ['awkward>=0.8.4']
     name: test coffea (${{ matrix.os }}) - python ${{ matrix.python-version }}, JDK${{ matrix.java-version }}
 
