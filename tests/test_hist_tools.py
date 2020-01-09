@@ -205,6 +205,23 @@ def test_hist_serdes():
     assert(h_regular_bins._dense_shape == hnew._dense_shape)
     assert(h_regular_bins._axes == hnew._axes)
 
+def test_hist_serdes_labels():
+    import pickle
+    ax = hist.Bin('asdf', 'asdf', 3, 0, 3)
+    ax.identifiers()[0].label = 'type 1'
+    h = hist.Hist('a', ax)
+    h.identifiers('asdf')
+
+    spkl = pickle.dumps(h)
+    
+    hnew = pickle.loads(spkl)
+    
+    for old, new in zip(h.identifiers('asdf'), hnew.identifiers('asdf')):
+        assert(old.label == new.label)
+
+    assert(h._dense_shape == hnew._dense_shape)
+    assert(h._axes == hnew._axes)
+
 @pytest.mark.skipif(sys.version_info < (3, 4), reason="requires python3.4 or higher, test file is pickle proto 4")
 def test_hist_compat():
     from coffea.util import load

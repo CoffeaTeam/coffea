@@ -85,10 +85,10 @@ class Interval(object):
         hi : float
             Bin upper bound, exclusive
     """
-    def __init__(self, lo, hi):
+    def __init__(self, lo, hi, label=None):
         self._lo = float(lo)
         self._hi = float(hi)
-        self._label = None
+        self._label = label
 
     def __repr__(self):
         return "<%s (%s) instance at 0x%0x>" % (self.__class__.__name__, str(self), id(self))
@@ -449,6 +449,7 @@ class Bin(DenseAxis):
             # to make searchsorted differentiate inf from nan
             self._bins = np.append(self._bins, np.inf)
             self._interval_bins = np.r_[-np.inf, self._bins, np.nan]
+            self._bin_names = np.full(self._interval_bins[:-1].size, None)
         elif isinstance(n_or_arr, numbers.Integral):
             if lo is None or hi is None:
                 raise TypeError("Interpreting n_or_arr as uniform binning, please specify lo and hi values")
@@ -457,16 +458,22 @@ class Bin(DenseAxis):
             self._hi = hi
             self._bins = n_or_arr
             self._interval_bins = np.r_[-np.inf, np.linspace(self._lo, self._hi, self._bins + 1), np.inf, np.nan]
+            self._bin_names = np.full(self._interval_bins[:-1].size, None)
         else:
             raise TypeError("Cannot understand n_or_arr (nbins or binning array) type %r" % n_or_arr)
 
     @property
     def _intervals(self):
         if not hasattr(self, '_lazy_intervals') or self._lazy_intervals is None:
-            self._lazy_intervals = [Interval(low, high) for low, high in zip(self._interval_bins[:-1], self._interval_bins[1:])]
+            self._lazy_intervals = [Interval(low, high, bin) for low, high, bin in zip(self._interval_bins[:-1],
+                                                                                       self._interval_bins[1:],
+                                                                                       self._bin_names)]
+            print(self._lazy_intervals[0].label)
         return self._lazy_intervals
 
     def __getstate__(self):
+        if hasattr(self, '_lazy_intervals') and self._lazy_intervals is not None:
+            self._bin_names = np.array([interval.label for interval in self._lazy_intervals])
         self.__dict__.pop('_lazy_intervals', None)
         return self.__dict__
 
@@ -475,6 +482,9 @@ class Bin(DenseAxis):
             _old_intervals = d.pop('_intervals')
             interval_bins = [i._lo for i in _old_intervals] + [_old_intervals[-1]._hi]
             d['_interval_bins'] = np.array(interval_bins)
+            d['_bin_names'] = np.array([interval._label for interval in _old_intervals])
+        if '_interval_bins' in d and '_bin_names' not in d:
+            d['_bin_names'] = np.full(d['_interval_bins'][:-1].size, None)
         self.__dict__ = d
 
     def index(self, identifier):
