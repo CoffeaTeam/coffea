@@ -468,7 +468,6 @@ class Bin(DenseAxis):
             self._lazy_intervals = [Interval(low, high, bin) for low, high, bin in zip(self._interval_bins[:-1],
                                                                                        self._interval_bins[1:],
                                                                                        self._bin_names)]
-            print(self._lazy_intervals[0].label)
         return self._lazy_intervals
 
     def __getstate__(self):
