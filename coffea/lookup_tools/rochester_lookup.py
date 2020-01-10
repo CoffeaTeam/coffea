@@ -2,7 +2,7 @@ import os
 import numpy as np
 # crystalball is single sided, local reimplementation of double-sided here until
 # the PR can be merged
-#from scipy.stats import crystalball
+# from scipy.stats import crystalball
 from .doublecrystalball import doublecrystalball
 from awkward import JaggedArray
 from coffea.lookup_tools.dense_lookup import dense_lookup
