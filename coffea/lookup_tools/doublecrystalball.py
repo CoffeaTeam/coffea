@@ -34,15 +34,15 @@ class doublecrystalball_gen(rv_continuous):
         """
         Return PDF of the double-sided crystalball function.
         """
-        N = 1.0 / (mL / betaL / (mL - 1) * np.exp(-betaL**2 / 2.0) +
-                   mH / betaH / (mH - 1) * np.exp(-betaH**2 / 2.0) +
+        N = 1.0 / (mL / betaL / (mL - 1) * np.exp(-0.5 * betaL * betaL) +
+                   mH / betaH / (mH - 1) * np.exp(-0.5 * betaH * betaH) +
                    _norm_pdf_C * (_norm_cdf(betaH) - _norm_cdf(-betaL)))
 
         def core(x, beta, m):
-            return np.exp(-x**2 / 2)
+            return np.exp(-0.5 * x * x)
 
         def tail(x, beta, m):
-            return ((m / beta)**m * np.exp(-beta**2 / 2.0) *
+            return ((m / beta)**m * np.exp(-0.5 * beta * beta) *
                     (m / beta - beta - x)**(-m))
 
         def lhs(x, betaL, betaH, mL, mH):
@@ -57,15 +57,15 @@ class doublecrystalball_gen(rv_continuous):
         """
         Return the log of the PDF of the double-sided crystalball function.
         """
-        N = 1.0 / (mL / betaL / (mL - 1) * np.exp(-betaL**2 / 2.0) +
-                   mH / betaH / (mH - 1) * np.exp(-betaH**2 / 2.0) +
+        N = 1.0 / (mL / betaL / (mL - 1) * np.exp(-0.5 * betaL * betaL) +
+                   mH / betaH / (mH - 1) * np.exp(-0.5 * betaH * betaH) +
                    _norm_pdf_C * (_norm_cdf(betaH) - _norm_cdf(-betaL)))
 
         def core(x, beta, m):
-            return -x**2 / 2
+            return -0.5 * x * x
 
         def tail(x, beta, m):
-            return m * np.log(m / beta) - beta**2 / 2 - m * np.log(m / beta - beta - x)
+            return m * np.log(m / beta) - 0.5 * beta * beta - m * np.log(m / beta - beta - x)
 
         def lhs(x, betaL, betaH, mL, mH):
             return tail(x, betaL, mL)
@@ -79,19 +79,19 @@ class doublecrystalball_gen(rv_continuous):
         """
         Return CDF of the double-sided crystalball function
         """
-        N = 1.0 / (mL / betaL / (mL - 1) * np.exp(-betaL**2 / 2.0) +
-                   mH / betaH / (mH - 1) * np.exp(-betaH**2 / 2.0) +
+        N = 1.0 / (mL / betaL / (mL - 1) * np.exp(-0.5 * betaL * betaL) +
+                   mH / betaH / (mH - 1) * np.exp(-0.5 * betaH * betaH) +
                    _norm_pdf_C * (_norm_cdf(betaH) - _norm_cdf(-betaL)))
 
         def inttail(beta, m):
-            return m / beta / (m - 1) * np.exp(-beta**2 / 2.0)
+            return m / beta / (m - 1) * np.exp(-0.5 * beta * beta)
 
         def intcore(betaL, betaH):
             return _norm_pdf_C * (_norm_cdf(betaH) - _norm_cdf(-betaL))
 
         def tail(x, beta, m):
-            return ((m / beta)**m * np.exp(-beta**2 / 2.0) *
-                    (m / beta - beta - x)**(-m + 1) / (m - 1))
+            return ((m / beta)**m * np.exp(-0.5 * beta * beta) *
+                    (m / beta - beta - x)**(1 - m) / (m - 1))
 
         def hightail(x, betaL, betaH, mL, mH):
             return (inttail(betaL, mL) + intcore(betaL, betaH) +
@@ -113,7 +113,7 @@ class doublecrystalball_gen(rv_continuous):
         Return PPF of the double-sided crystalball function
         """
         def inttail(beta, m):
-            return m / beta / (m - 1) * np.exp(-beta**2 / 2.0)
+            return m / beta / (m - 1) * np.exp(-0.5 * beta * beta)
 
         def intcore(betaL, betaH):
             return _norm_pdf_C * (_norm_cdf(betaH) - _norm_cdf(-betaL))
@@ -123,7 +123,7 @@ class doublecrystalball_gen(rv_continuous):
             CH = inttail(betaH, mH)
             C = CL + CH
             N = 1 / (C + intcore(betaL, betaH))
-            eb2H = np.exp(-betaH**2 / 2)
+            eb2H = np.exp(-0.5 * betaH * betaH)
             return -(mH / betaH - betaH -
                      ((mH - 1) * (mH / betaH)**(-mH) / eb2H * (1 - p) / N)**(1 / (1 - mH)))
 
@@ -132,7 +132,7 @@ class doublecrystalball_gen(rv_continuous):
             CH = inttail(betaH, mH)
             C = CL + CH
             N = 1 / (C + intcore(betaL, betaH))
-            eb2L = np.exp(-betaL**2 / 2)
+            eb2L = np.exp(-0.5 * betaL * betaL)
             return (mL / betaL - betaL -
                     ((mL - 1) * (mL / betaL)**(-mL) / eb2L * p / N)**(1 / (1 - mL)))
 
@@ -145,11 +145,11 @@ class doublecrystalball_gen(rv_continuous):
 
         def ppf_greater(p, betaL, betaH, mL, mH):
             N = 1.0 / (inttail(betaL, mL) + intcore(betaL, betaH) + inttail(betaH, mH))
-            pbetaH = 1 - (N * (mH / betaH) * np.exp(-betaH**2 / 2) / (mH - 1))
+            pbetaH = 1 - (N * (mH / betaH) * np.exp(-0.5 * betaH * betaH) / (mH - 1))
             return _lazywhere(p > pbetaH, (p, betaL, betaH, mL, mH), f=hightail, f2=core)
 
         N = 1.0 / (inttail(betaL, mL) + intcore(betaL, betaH) + inttail(betaH, mH))
-        pbetaL = N * (mL / betaL) * np.exp(-betaL**2 / 2) / (mL - 1)
+        pbetaL = N * (mL / betaL) * np.exp(-0.5 * betaL * betaL) / (mL - 1)
         return _lazywhere(p < pbetaL, (p, betaL, betaH, mL, mH), f=lowtail, f2=ppf_greater)
 
     def _munp(self, n, betaL, betaH, mL, mH):

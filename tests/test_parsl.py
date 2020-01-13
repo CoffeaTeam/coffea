@@ -35,10 +35,10 @@ def do_parsl_job(filelist, flatten=False, compression=0, config=None):
                                     executor=processor.executor.parsl_executor,
                                     executor_args=exe_args)
 
-    assert( hists['cutflow']['ZJets_pt'] == 4 )
-    assert( hists['cutflow']['ZJets_mass'] == 1 )
-    assert( hists['cutflow']['Data_pt'] == 15 )
-    assert( hists['cutflow']['Data_mass'] == 5 )
+    assert( hists['cutflow']['ZJets_pt'] == 18 )
+    assert( hists['cutflow']['ZJets_mass'] == 6 )
+    assert( hists['cutflow']['Data_pt'] == 84 )
+    assert( hists['cutflow']['Data_mass'] == 66 )
 
 
 def test_parsl_htex_executor():

@@ -1,9 +1,12 @@
 from __future__ import print_function, division
 
+import os
 from coffea import lookup_tools
 import uproot
 from coffea.util import awkward
 from coffea.util import numpy as np
+from awkward import JaggedArray
+from coffea.nanoaod import NanoEvents
 
 from dummy_distributions import dummy_jagged_eta_pt
 
@@ -192,3 +195,36 @@ def test_jec_txt_effareas():
 
     ph_out = evaluator['photon_id_EA_Pho'](test_eta)
     print(evaluator['photon_id_EA_Pho'])
+
+def test_rochester():
+    tag = 'roccor.Run2.v3'
+    year = '2018'
+    rochester_data = lookup_tools.txt_converters.convert_rochester_file(f'tests/samples/rochester/{tag}/RoccoR{year}.txt',loaduncs=True)
+    rochester = lookup_tools.rochester_lookup.rochester_lookup(rochester_data)
+
+    # to test 1-to-1 agreement with official Rochester requires loading C++ files
+    # instead, preload the correct scales in the sample directory
+    # the script tests/samples/rochester/build_rochester.py produces these
+    official_data_k = np.load('tests/samples/nano_dimuon_rochester.npy')
+    official_mc_k = np.load('tests/samples/nano_dy_rochester.npy')
+    mc_rand = np.load('tests/samples/nano_dy_rochester_rand.npy')
+
+    # test against nanoaod
+    events = NanoEvents.from_file(os.path.abspath('tests/samples/nano_dimuon.root'))
+
+    data_k = rochester.kScaleDT(events.Muon.charge, events.Muon.pt, events.Muon.eta, events.Muon.phi)
+    assert(all(np.isclose(data_k.flatten(), official_data_k)))
+
+    events = NanoEvents.from_file(os.path.abspath('tests/samples/nano_dy.root'))
+    hasgen = ~np.isnan(events.Muon.matched_gen.pt.fillna(np.nan))
+    mc_kspread = rochester.kSpreadMC(events.Muon.charge[hasgen], events.Muon.pt[hasgen], events.Muon.eta[hasgen], events.Muon.phi[hasgen],
+                                     events.Muon.matched_gen.pt[hasgen])
+    mc_rand = JaggedArray.fromoffsets(hasgen.offsets, mc_rand)
+    mc_ksmear = rochester.kSmearMC(events.Muon.charge[~hasgen], events.Muon.pt[~hasgen], events.Muon.eta[~hasgen], events.Muon.phi[~hasgen],
+                                   events.Muon.nTrackerLayers[~hasgen], mc_rand[~hasgen])
+    mc_k = np.ones_like(events.Muon.pt.flatten())
+    mc_k[hasgen.flatten()] = mc_kspread.flatten()
+    mc_k[~hasgen.flatten()] = mc_ksmear.flatten()
+    assert(all(np.isclose(mc_k, official_mc_k)))
+
+
