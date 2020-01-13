@@ -57,9 +57,9 @@ class rochester_lookup():
             oneOver = 1.0 / self._members[s]
             for m in range(self._members[s]):
                 newargs = args + (s, m)
-                d = func(*newargs)
-                result += d * d * oneOver
-        return np.sqrt(result)
+                d = func(*newargs) - default
+                result = result + d * d * oneOver
+        return result**0.5
 
     def kScaleDT(self, charge, pt, eta, phi, s=0, m=0):
         '''Momentum scale correction for data

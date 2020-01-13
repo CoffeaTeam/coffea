@@ -206,7 +206,9 @@ def test_rochester():
     # instead, preload the correct scales in the sample directory
     # the script tests/samples/rochester/build_rochester.py produces these
     official_data_k = np.load('tests/samples/nano_dimuon_rochester.npy')
+    official_data_err = np.load('tests/samples/nano_dimuon_rochester_err.npy')
     official_mc_k = np.load('tests/samples/nano_dy_rochester.npy')
+    official_mc_err = np.load('tests/samples/nano_dy_rochester_err.npy')
     mc_rand = np.load('tests/samples/nano_dy_rochester_rand.npy')
 
     # test against nanoaod
@@ -214,12 +216,17 @@ def test_rochester():
 
     data_k = rochester.kScaleDT(events.Muon.charge, events.Muon.pt, events.Muon.eta, events.Muon.phi)
     assert(all(np.isclose(data_k.flatten(), official_data_k)))
+    data_err = rochester.kScaleDTerror(events.Muon.charge, events.Muon.pt, events.Muon.eta, events.Muon.phi)
+    data_err = np.array(data_err.flatten(), dtype=float)
+    assert(all(np.isclose(data_err, official_data_err, atol=1e-8)))
 
+    # test against mc
     events = NanoEvents.from_file(os.path.abspath('tests/samples/nano_dy.root'))
+
     hasgen = ~np.isnan(events.Muon.matched_gen.pt.fillna(np.nan))
+    mc_rand = JaggedArray.fromoffsets(hasgen.offsets, mc_rand)
     mc_kspread = rochester.kSpreadMC(events.Muon.charge[hasgen], events.Muon.pt[hasgen], events.Muon.eta[hasgen], events.Muon.phi[hasgen],
                                      events.Muon.matched_gen.pt[hasgen])
-    mc_rand = JaggedArray.fromoffsets(hasgen.offsets, mc_rand)
     mc_ksmear = rochester.kSmearMC(events.Muon.charge[~hasgen], events.Muon.pt[~hasgen], events.Muon.eta[~hasgen], events.Muon.phi[~hasgen],
                                    events.Muon.nTrackerLayers[~hasgen], mc_rand[~hasgen])
     mc_k = np.ones_like(events.Muon.pt.flatten())
@@ -227,4 +234,12 @@ def test_rochester():
     mc_k[~hasgen.flatten()] = mc_ksmear.flatten()
     assert(all(np.isclose(mc_k, official_mc_k)))
 
+    mc_errspread = rochester.kSpreadMCerror(events.Muon.charge[hasgen], events.Muon.pt[hasgen], events.Muon.eta[hasgen], events.Muon.phi[hasgen],
+                                            events.Muon.matched_gen.pt[hasgen])
+    mc_errsmear = rochester.kSmearMCerror(events.Muon.charge[~hasgen], events.Muon.pt[~hasgen], events.Muon.eta[~hasgen], events.Muon.phi[~hasgen],
+                                          events.Muon.nTrackerLayers[~hasgen], mc_rand[~hasgen])
+    mc_err = np.ones_like(events.Muon.pt.flatten())
+    mc_err[hasgen.flatten()] = mc_errspread.flatten()
+    mc_err[~hasgen.flatten()] = mc_errsmear.flatten()
+    assert(all(np.isclose(mc_err, official_mc_err, atol=1e-8)))
 

@@ -25,6 +25,7 @@ for isData, fname in [(True,datafname), (False,mcfname)]:
     branches = ['Muon_charge','Muon_pt','Muon_eta','Muon_phi']
     if not isData: branches += ['Muon_genPartIdx', 'GenPart_pt', 'Muon_nTrackerLayers']
     res = []
+    err = []
     fullu = []
     for i,arrays in enumerate(uproot.iterate(fname, treename, branches=branches, namedecode='utf-8', entrysteps=200000)):
         charge = arrays['Muon_charge']
@@ -42,18 +43,26 @@ for isData, fname in [(True,datafname), (False,mcfname)]:
             fullu += [u]
         for ie in range(len(pt)):
             subres = []
+            suberr = []
             for im in range(len(pt[ie])):
                 if isData:
                     subres += [roccor.kScaleDT(int(charge[ie][im]), float(pt[ie][im]), float(eta[ie][im]), float(phi[ie][im]))]
+                    suberr += [roccor.kScaleDTerror(int(charge[ie][im]), float(pt[ie][im]), float(eta[ie][im]), float(phi[ie][im]))]
                 else:
                     if gid[ie][im]>=0:
                         subres += [roccor.kSpreadMC(int(charge[ie][im]), float(pt[ie][im]), float(eta[ie][im]), float(phi[ie][im]), float(gpt[ie][gid[ie][im]]))]
+                        suberr += [roccor.kSpreadMCerror(int(charge[ie][im]), float(pt[ie][im]), float(eta[ie][im]), float(phi[ie][im]), float(gpt[ie][gid[ie][im]]))]
                     else:
                         subres += [roccor.kSmearMC(int(charge[ie][im]), float(pt[ie][im]), float(eta[ie][im]), float(phi[ie][im]), int(nl[ie][im]), float(u[ie][im]))]
+                        suberr += [roccor.kSmearMCerror(int(charge[ie][im]), float(pt[ie][im]), float(eta[ie][im]), float(phi[ie][im]), int(nl[ie][im]), float(u[ie][im]))]
             res += [subres]
+            err += [suberr]
     res = JaggedArray.fromiter(res)
+    err = JaggedArray.fromiter(err)
     outres = res.flatten()
+    outerr = err.flatten()
     np.save(fname.replace('.root','_rochester.npy'), outres)
+    np.save(fname.replace('.root','_rochester_err.npy'), outerr)
     if not isData:
         outrand = np.concatenate([ui.flatten() for ui in fullu])
         np.save(fname.replace('.root','_rochester_rand.npy'), outrand)
