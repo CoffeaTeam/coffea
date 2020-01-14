@@ -28,10 +28,10 @@ def template_analysis(filelist, executor, flatten, compression):
                            executor_args = exe_args)
 
     print(hists)
-    assert( hists['cutflow']['ZJets_pt'] == 4 )
-    assert( hists['cutflow']['ZJets_mass'] == 1 )
-    assert( hists['cutflow']['Data_pt'] == 15 )
-    assert( hists['cutflow']['Data_mass'] == 5 )
+    assert( hists['cutflow']['ZJets_pt'] == 18 )
+    assert( hists['cutflow']['ZJets_mass'] == 6 )
+    assert( hists['cutflow']['Data_pt'] == 84 )
+    assert( hists['cutflow']['Data_mass'] == 66 )
 
 
 def test_iterative_executor():

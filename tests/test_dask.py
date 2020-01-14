@@ -24,10 +24,10 @@ def do_dask_job(client, filelist, compression=0):
                                      executor=processor.dask_executor,
                                      executor_args=exe_args)
     
-    assert( hists['cutflow']['ZJets_pt'] == 4 )
-    assert( hists['cutflow']['ZJets_mass'] == 1 )
-    assert( hists['cutflow']['Data_pt'] == 15 )
-    assert( hists['cutflow']['Data_mass'] == 5 )
+    assert( hists['cutflow']['ZJets_pt'] == 18 )
+    assert( hists['cutflow']['ZJets_mass'] == 6 )
+    assert( hists['cutflow']['Data_pt'] == 84 )
+    assert( hists['cutflow']['Data_mass'] == 66 )
     
 
 def do_dask_cached(client, filelist, cachestrategy=None):
@@ -47,10 +47,10 @@ def do_dask_cached(client, filelist, cachestrategy=None):
         executor_args=exe_args
     )
 
-    assert( hists['cutflow']['ZJets_pt'] == 4 )
-    assert( hists['cutflow']['ZJets_mass'] == 1 )
-    assert( hists['cutflow']['Data_pt'] == 15 )
-    assert( hists['cutflow']['Data_mass'] == 5 )
+    assert( hists['cutflow']['ZJets_pt'] == 18 )
+    assert( hists['cutflow']['ZJets_mass'] == 6 )
+    assert( hists['cutflow']['Data_pt'] == 84 )
+    assert( hists['cutflow']['Data_mass'] == 66 )
 
 
 def test_dask_local():
