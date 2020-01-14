@@ -352,7 +352,14 @@ def convert_effective_area_file(eaFilePath):
 def convert_rochester_file(path, loaduncs=True):
     initialized = False
 
-    with open(path) as f:
+    fopen = open
+    fmode = 'rt'
+    if '.gz' in path:
+        import gzip
+        fopen = gzip.open
+        fmode = 'r' if sys.platform.startswith('win') and sys.version_info.major < 3 else fmode
+
+    with fopen(path, fmode) as f:
         for line in f:
             line = line.strip('\n')
             # the number of sets available

@@ -9,8 +9,8 @@ ROOT.PyConfig.IgnoreCommandLineOptions = True
 
 from coffea import lookup_tools
 
-tag = 'roccor.Run2.v3'
-year = '2018'
+cfname = 'rochester/roccor.Run2.v3/RoccoR.cc'
+txtname = 'rochester/roccor.Run2.v3/RoccoR2018.txt'
 treename = 'Events'
 datafname = 'tests/samples/nano_dimuon.root'
 mcfname = 'tests/samples/nano_dy.root'
@@ -18,8 +18,8 @@ mcfname = 'tests/samples/nano_dy.root'
 
 # official version of rochester
 PWD = os.getcwd()
-ROOT.gROOT.ProcessLine(f'.L {PWD}/tests/samples/rochester/{tag}/RoccoR.cc')
-roccor = ROOT.RoccoR(f'{PWD}/tests/samples/rochester/{tag}/RoccoR{year}.txt')
+ROOT.gROOT.ProcessLine(f'.L {PWD}/{cfname}')
+roccor = ROOT.RoccoR(f'{PWD}/{txtname}')
 
 for isData, fname in [(True,datafname), (False,mcfname)]:
     branches = ['Muon_charge','Muon_pt','Muon_eta','Muon_phi']

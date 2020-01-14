@@ -197,9 +197,7 @@ def test_jec_txt_effareas():
     print(evaluator['photon_id_EA_Pho'])
 
 def test_rochester():
-    tag = 'roccor.Run2.v3'
-    year = '2018'
-    rochester_data = lookup_tools.txt_converters.convert_rochester_file(f'tests/samples/rochester/{tag}/RoccoR{year}.txt',loaduncs=True)
+    rochester_data = lookup_tools.txt_converters.convert_rochester_file('tests/samples/RoccoR2018.txt.gz',loaduncs=True)
     rochester = lookup_tools.rochester_lookup.rochester_lookup(rochester_data)
 
     # to test 1-to-1 agreement with official Rochester requires loading C++ files
