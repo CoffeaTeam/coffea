@@ -170,11 +170,12 @@ def _futures_handler(futures_set, output, status, unit, desc, add_fn, tailtimeou
                     last_job = time.time()
                 time.sleep(0.5)
                 if tailtimeout is not None and (time.time() - last_job) > tailtimeout and (last_job - start) > 0:
+                    njobs = len(futures_set)
                     for job in futures_set:
                         _cancel(job)
                         pbar.update(1)
                     import warnings
-                    warnings.warn('Stopped job early')
+                    warnings.warn('Stopped {} jobs early due to tailtimeout = {}'.format(njobs, tailtimeout))
                     break
     except KeyboardInterrupt:
         for job in futures_set:
