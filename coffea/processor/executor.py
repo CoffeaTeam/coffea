@@ -635,7 +635,7 @@ def run_uproot_job(fileset,
                 'desc': 'Preprocessing',
                 'unit': 'file',
                 'compression': None,
-                'tailtimeout': 0,
+                'tailtimeout': None,
             }
             real_pre_args.update(pre_args)
             partial_meta = partial(_get_metadata,
