@@ -495,8 +495,8 @@ class Bin(DenseAxis):
                 The identifier(s) to lookup.  Supports vectorized
                 calls when a numpy 1D array of numbers is passed.
 
-        Returns a `Interval` corresponding to the given argument (trival in the case
-        where a `Interval` was passed)
+        Returns an integer corresponding to the index in the axis where the histogram would be filled.
+        The integer range includes flow bins: ``0 = underflow, n+1 = overflow, n+2 = nanflow``
         """
         if (isinstance(identifier, np.ndarray) and len(identifier.shape) == 1) or isinstance(identifier, numbers.Number):
             if self._uniform:
@@ -514,7 +514,10 @@ class Bin(DenseAxis):
         elif isinstance(identifier, Interval):
             if identifier.nan():
                 return self.size - 1
-            return self.index(identifier._lo)
+            for idx, interval in enumerate(self._intervals):
+                if interval._lo <= identifier._lo and interval._hi >= identifier._hi:
+                    return idx
+            raise ValueError("Axis %r has no interval that fully contains identifier %r" % (self, identifier))
         raise TypeError("Request bin indices with a identifier or 1-D array only")
 
     def __eq__(self, other):
@@ -1147,7 +1150,7 @@ class Hist(AccumulatorABC):
         """Rebin a dense axis
 
         This function will construct the mapping from old to new axis, and
-        rebin the sum of weigths along that dimension.
+        constructs a new histogram, rebinning the sum of weights along that dimension.
 
         Note
         ----
@@ -1157,13 +1160,18 @@ class Hist(AccumulatorABC):
 
         Parameters
         ----------
-            old_axis
+            old_axis : str or Axis
                 Axis to rebin
-            new_axis
-                A DenseAxis object defining new axis (e.g. a `Bin` instance)
+            new_axis : str or Axis or int
+                A DenseAxis object defining the new axis (e.g. a `Bin` instance).
+                If a number N is supplied, the old axis edges are downsampled by N,
+                resulting in a histogram with ``old_nbins // N`` bins.
 
+        Returns a new `Hist` object.
         """
         old_axis = self.axis(old_axis)
+        if isinstance(new_axis, numbers.Integral):
+            new_axis = Bin(old_axis.name, old_axis.label, old_axis.edges()[::new_axis])
         new_dims = [ax if ax != old_axis else new_axis for ax in self._axes]
         out = Hist(self._label, *new_dims, dtype=self._dtype)
         if self._sumw2 is not None:

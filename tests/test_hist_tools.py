@@ -238,3 +238,16 @@ def test_hist_compat():
                               np.nan])
     assert np.all(test._axes[2]._interval_bins[:-1] == expected_bins[:-1])
     assert np.isnan(test._axes[2]._interval_bins[-1])
+
+def test_issue_247():
+    from coffea import hist
+
+    h = hist.Hist('stuff', hist.Bin('old', 'old', 20, -1, 1))
+    h.fill(old=h.axis('old').centers())
+    h2 = h.rebin(h.axis('old'), hist.Bin('new', 'new', 10, -1, 1))
+    # check first if its even possible to have correct binning
+    assert np.all(h2.axis('new').edges() == h.axis('old').edges()[::2])
+    # make sure the lookup works properly
+    assert np.all(h2.values()[()] == 2.)
+    h3 = h.rebin(h.axis('old'), 2)
+    assert np.all(h3.values()[()] == 2.)
