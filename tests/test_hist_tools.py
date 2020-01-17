@@ -251,3 +251,7 @@ def test_issue_247():
     assert np.all(h2.values()[()] == 2.)
     h3 = h.rebin(h.axis('old'), 2)
     assert np.all(h3.values()[()] == 2.)
+
+    with pytest.raises(ValueError):
+        # invalid division
+        _ = h.rebin(h.axis('old'), hist.Bin('new', 'new', 8, -1, 1))
