@@ -56,11 +56,11 @@ def test_spark_executor():
 
     _spark_stop(spark)
 
-    assert( sum(spark_executor.counts.values()) == 20 )
-    assert( hists['cutflow']['ZJets_pt'] == 4 )
-    assert( hists['cutflow']['ZJets_mass'] == 1 )
-    assert( hists['cutflow']['Data_pt'] == 15 )
-    assert( hists['cutflow']['Data_mass'] == 5 )
+    assert( sum(spark_executor.counts.values()) == 80 )
+    assert( hists['cutflow']['ZJets_pt'] == 18 )
+    assert( hists['cutflow']['ZJets_mass'] == 6 )
+    assert( hists['cutflow']['Data_pt'] == 84 )
+    assert( hists['cutflow']['Data_mass'] == 66 )
 
 
 def test_spark_hist_adders():

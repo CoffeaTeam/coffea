@@ -28,8 +28,8 @@ def test_read_nanomc():
     genroundtrips(events[(events.Electron.eta > 0).any()].GenPart)
     genroundtrips(events.GenPart)
 
-    # sane gen matching (note for electrons gen match may be photon(22) but no examples in the test file)
-    assert (abs(events.Electron.matched_gen.pdgId) == 11).all().all()
+    # sane gen matching (note for electrons gen match may be photon(22))
+    assert ((abs(events.Electron.matched_gen.pdgId) == 11) | (events.Electron.matched_gen.pdgId == 22)).all().all()
     assert (abs(events.Muon.matched_gen.pdgId) == 13).all().all()
 
     genroundtrips(events.Electron.matched_gen)
@@ -37,7 +37,7 @@ def test_read_nanomc():
     crossref(events[events.Jet.counts > 2])
     crossref(events)
 
-    assert events.Photon.isTight.any().tolist() == [False, True, False, True, False, False, False, False, True, False]
+    assert events.Photon.isTight.any().tolist()[:9] == [False, True, True, True, False, False, False, False, False]
 
 
 def test_read_nanodata():

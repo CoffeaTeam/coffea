@@ -19,8 +19,8 @@ def test_preloaded_nanoevents():
     hists = p.process(events)
 
     print(hists)
-    assert( hists['cutflow']['ZJets_pt'] == 4 )
-    assert( hists['cutflow']['ZJets_mass'] == 1 )
+    assert( hists['cutflow']['ZJets_pt'] == 18 )
+    assert( hists['cutflow']['ZJets_mass'] == 6 )
 
     with pytest.raises(RuntimeError):
         print(events.Muon.matched_jet)
