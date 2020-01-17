@@ -255,3 +255,6 @@ def test_issue_247():
     with pytest.raises(ValueError):
         # invalid division
         _ = h.rebin(h.axis('old'), hist.Bin('new', 'new', 8, -1, 1))
+
+    newaxis = hist.Bin('new', 'new', h.axis('old').edges()[np.cumsum([0, 2, 3, 5])])
+    h4 = h.rebin('old', newaxis)
