@@ -298,12 +298,17 @@ def dask_executor(items, function, accumulator, **kwargs):
             Set to ``None`` for no compression.
         priority : int, optional
             Task priority, default 0
+        retries : int, optional
+            Number of retries for failed tasks (default: 3)
         heavy_input : serializable, optional
             Any value placed here will be broadcast to workers and joined to input
             items in a tuple (item, heavy_input) that is passed to function.
         function_name : str, optional
             Name of the function being passed
+
+            .. note:: If ``heavy_input`` is set, ``function`` is assumed to be pure.
     """
+    from dask.delayed import delayed
     if len(items) == 0:
         return accumulator
     client = kwargs.pop('client')
@@ -311,28 +316,33 @@ def dask_executor(items, function, accumulator, **kwargs):
     status = kwargs.pop('status', True)
     clevel = kwargs.pop('compression', 1)
     priority = kwargs.pop('priority', 0)
+    retries = kwargs.pop('retries', 3)
     heavy_input = kwargs.pop('heavy_input', None)
     function_name = kwargs.pop('function_name', None)
     reducer = _reduce()
+    # secret options
+    direct_heavy = kwargs.pop('direct_heavy', None)
+
     if clevel is not None:
         function = _compression_wrapper(clevel, function, name=function_name)
         reducer = _compression_wrapper(clevel, reducer)
 
     if heavy_input is not None:
-        heavy_token = client.scatter(heavy_input, broadcast=True, hash=False)
+        heavy_token = client.scatter(heavy_input, broadcast=True, hash=False, direct=direct_heavy)
         items = list(zip(items, repeat(heavy_token)))
-    futures = client.map(function, items, priority=priority)
-    while len(futures) > 1:
-        futures = client.map(
-            reducer,
-            [futures[i:i + ntree] for i in range(0, len(futures), ntree)],
-            priority=priority,
-        )
+
+    function = delayed(function, pure=(heavy_input is not None))
+    reducer = delayed(reducer, pure=True)
+    work = list(map(function, items))
+    while len(work) > 1:
+        work = list(map(reducer, (work[i:i + ntree] for i in range(0, len(work), ntree))))
+    work = work[0]
+    future = client.compute(work, retries=retries, priority=priority)
     if status:
         from dask.distributed import progress
         # FIXME: fancy widget doesn't appear, have to live with boring pbar
-        progress(futures, multi=True, notebook=False)
-    accumulator += _maybe_decompress(futures.pop().result())
+        progress(future, multi=True, notebook=False)
+    accumulator += _maybe_decompress(future.result())
     return accumulator
 
 
