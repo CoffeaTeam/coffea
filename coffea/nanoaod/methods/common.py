@@ -7,7 +7,12 @@ from uproot_methods.classes.TVector2 import ArrayMethods as XYArrayMethods
 def _memoize(obj, name, constructor):
     memoname = '_memo_' + name
     if memoname not in obj.columns:
-        obj[memoname] = constructor(obj)
+        out = constructor(obj)
+        try:
+            obj[memoname] = out
+        except ValueError:
+            # FIXME: add a column to view of the table
+            return out
     return obj[memoname]
 
 
@@ -19,6 +24,15 @@ class METVector(XYArrayMethods):
         elif awkward.AwkwardArray._util_isstringslice(key) and key == 'fY':
             return _memoize(self, 'fY', lambda self: self['pt'] * numpy.sin(self['phi']))
         return super(METVector, self).__getitem__(key)
+
+    # shortcut XYArrayMethods for pt and phi
+    @property
+    def pt(self):
+        return self['pt']
+
+    @property
+    def phi(self):
+        return self['phi']
 
 
 class LorentzVector(PtEtaPhiMassArrayMethods):
