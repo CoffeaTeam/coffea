@@ -8,6 +8,7 @@ import pickle
 import sys
 import math
 import copy
+import json
 import cloudpickle
 from tqdm.auto import tqdm
 from collections import defaultdict
@@ -32,6 +33,7 @@ except ImportError:
 
 
 _PICKLE_PROTOCOL = pickle.HIGHEST_PROTOCOL
+DEFAULT_METADATA_CACHE = LRUCache(100000)
 
 
 # instrument xrootd source
@@ -506,6 +508,9 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
 
 
 def _normalize_fileset(fileset, treename):
+    if isinstance(fileset, str):
+        with open(fileset) as fin:
+            fileset = json.load(fin)
     for dataset, filelist in fileset.items():
         if isinstance(filelist, dict):
             local_treename = filelist['treename'] if 'treename' in filelist else treename
@@ -563,7 +568,7 @@ def run_uproot_job(fileset,
                    pre_args=None,
                    chunksize=200000,
                    maxchunks=None,
-                   metadata_cache=LRUCache(100000)
+                   metadata_cache=None,
                    ):
     '''A tool to run a processor using uproot for data delivery
 
@@ -617,8 +622,8 @@ def run_uproot_job(fileset,
             (about 1MB depending on the length of filenames, etc.)  If you edit an input file
             (please don't) during a session, the session can be restarted to clear the cache.
     '''
-    if not isinstance(fileset, Mapping):
-        raise ValueError("Expected fileset to be a mapping dataset: list(files)")
+    if not isinstance(fileset, (Mapping, str)):
+        raise ValueError("Expected fileset to be a mapping dataset: list(files) or filename")
     if not isinstance(processor_instance, ProcessorABC):
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
 
@@ -626,6 +631,8 @@ def run_uproot_job(fileset,
         pre_executor = executor
     if pre_args is None:
         pre_args = executor_args
+    if metadata_cache is None:
+        metadata_cache = DEFAULT_METADATA_CACHE
 
     fileset = list(_normalize_fileset(fileset, treename))
     for filemeta in fileset:
