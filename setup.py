@@ -69,7 +69,8 @@ INSTALL_REQUIRES = ['awkward>=0.12.18',
                     'six',
                     'cloudpickle',
                     'mplhep>=0.0.16',
-                    'packaging'
+                    'packaging',
+                    'ipywidgets'
                     ]
 EXTRAS_REQUIRE = {}
 if six.PY3:
