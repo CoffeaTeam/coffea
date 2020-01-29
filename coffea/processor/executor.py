@@ -706,32 +706,23 @@ def run_uproot_job(fileset,
         pi_to_send = processor_instance
     else:
         pi_to_send = lz4f.compress(cloudpickle.dumps(processor_instance), compression_level=pi_compression)
+    closure = partial(
+        _work_function,
+        flatten=flatten,
+        savemetrics=savemetrics,
+        mmap=mmap,
+        nano=nano,
+        cachestrategy=cachestrategy,
+        skipbadfiles=skipbadfiles,
+        retries=retries,
+        xrootdtimeout=xrootdtimeout,
+    )
     # hack around dask/dask#5503 which is really a silly request but here we are
     if executor is dask_executor:
         executor_args['heavy_input'] = pi_to_send
-        closure = partial(_work_function,
-                          processor_instance='heavy',
-                          flatten=flatten,
-                          savemetrics=savemetrics,
-                          mmap=mmap,
-                          nano=nano,
-                          cachestrategy=cachestrategy,
-                          skipbadfiles=skipbadfiles,
-                          retries=retries,
-                          xrootdtimeout=xrootdtimeout,
-                          )
+        closure = partial(closure, processor_instance='heavy')
     else:
-        closure = partial(_work_function,
-                          processor_instance=pi_to_send,
-                          flatten=flatten,
-                          nano=nano,
-                          savemetrics=savemetrics,
-                          mmap=mmap,
-                          cachestrategy=cachestrategy,
-                          skipbadfiles=skipbadfiles,
-                          retries=retries,
-                          xrootdtimeout=xrootdtimeout,
-                          )
+        closure = partial(closure, processor_instance=pi_to_send)
 
     out = processor_instance.accumulator.identity()
     wrapped_out = dict_accumulator({'out': out, 'metrics': dict_accumulator()})
