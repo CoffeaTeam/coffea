@@ -80,18 +80,19 @@ class FileMeta(object):
         n = self.nchunks(target_chunksize)
         actual_chunksize = math.ceil(self.numentries / n)
         for index in range(n):
-            yield WorkItem(self.dataset, self.filename, self.treename, actual_chunksize, index)
+            start, stop = actual_chunksize * index, min(self.numentries, actual_chunksize * (index + 1))
+            yield WorkItem(self.dataset, self.filename, self.treename, start, stop)
 
 
 class WorkItem(object):
-    __slots__ = ['dataset', 'filename', 'treename', 'chunksize', 'index']
+    __slots__ = ['dataset', 'filename', 'treename', 'entrystart', 'entrystop']
 
-    def __init__(self, dataset, filename, treename, chunksize, index):
+    def __init__(self, dataset, filename, treename, entrystart, entrystop):
         self.dataset = dataset
         self.filename = filename
         self.treename = treename
-        self.chunksize = chunksize
-        self.index = index
+        self.entrystart = entrystart
+        self.entrystop = entrystop
 
 
 class _compression_wrapper(object):
@@ -450,14 +451,14 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                 df = NanoEvents.from_file(
                     file=file,
                     treename=item.treename,
-                    entrystart=item.index * item.chunksize,
-                    entrystop=(item.index + 1) * item.chunksize,
+                    entrystart=item.entrystart,
+                    entrystop=item.entrystop,
                     metadata={'dataset': item.dataset},
                     cache=cache,
                 )
             else:
                 tree = file[item.treename]
-                df = LazyDataFrame(tree, item.chunksize, item.index, flatten=flatten)
+                df = LazyDataFrame(tree, item.entrystart, item.entrystop, flatten=flatten)
                 df['dataset'] = item.dataset
             tic = time.time()
             out = processor_instance.process(df)
@@ -566,7 +567,7 @@ def run_uproot_job(fileset,
                    executor_args={},
                    pre_executor=None,
                    pre_args=None,
-                   chunksize=200000,
+                   chunksize=100000,
                    maxchunks=None,
                    metadata_cache=None,
                    ):
@@ -612,7 +613,7 @@ def run_uproot_job(fileset,
         pre_args : dict, optional
             Similar to executor_args, defaults to executor_args
         chunksize : int, optional
-            Maximum number of entries to process at a time in the data frame.
+            Maximum number of entries to process at a time in the data frame, default: 100k
         maxchunks : int, optional
             Maximum number of chunks to process per dataset
             Defaults to processing the whole dataset
