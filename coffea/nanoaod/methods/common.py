@@ -41,9 +41,10 @@ class LorentzVector(PtEtaPhiMassArrayMethods):
 
     def __getitem__(self, key):
         if awkward.AwkwardArray._util_isstringslice(key) and key in self._keymap:
-            if key == 'fMass' and 'mass' not in self.columns:
+            if key == 'fMass' and 'mass' not in self.columns and 'fMass' not in self.columns:
                 return _memoize(self, 'fMass', lambda self: self['pt'].zeros_like())
-            return self[self._keymap[key]]
+            elif 'fMass' not in self.columns:
+                return self[self._keymap[key]]
         return super(LorentzVector, self).__getitem__(key)
 
 
