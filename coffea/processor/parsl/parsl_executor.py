@@ -17,7 +17,7 @@ from ..executor import _futures_handler
 lz4_clevel = 1
 
 
-def coffea_pyapp_func(dataset, fn, treename, chunksize, index, procstr, timeout=None, flatten=True):
+def coffea_pyapp_func(dataset, fn, treename, chunksize, index, procstr, timeout=None, flatten=True, **kwargs):
     raise RuntimeError('parsl_executor.coffea pyapp cannot be used any more,'
                        'please use a wrapped _work_function from processor.executor')
 
@@ -34,10 +34,10 @@ class ParslExecutor(object):
     def counts(self):
         return self._counts
 
-    def __call__(self, items, processor_instance, output, status=True, unit='items', desc='Processing', timeout=None, flatten=True):
+    def __call__(self, items, processor_instance, output, status=True, unit='items', desc='Processing', timeout=None, flatten=True, **kwargs):
 
         raise RuntimeError('ParslExecutor.__call__ cannot be used any more,'
-                           'please use executor.parsl_executor')
+                           'please use processor.parsl_executor')
 
 
 parsl_executor = ParslExecutor()
