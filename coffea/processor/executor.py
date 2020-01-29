@@ -589,8 +589,8 @@ def run_uproot_job(fileset,
             to workers (default 1).
             'skipbadfiles' instead of failing on a bad file, skip it (default False)
             'retries' optionally retry n times (default 0)
-            'xrootdtimeout' timeout for xrootd read
-            'tailtimeout' timeout requirement on job tails
+            'xrootdtimeout' timeout for xrootd read (seconds)
+            'tailtimeout' timeout requirement on job tails (seconds)
         pre_executor : callable
             A function like executor, used to calculate fileset metadata
             Defaults to executor
