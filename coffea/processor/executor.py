@@ -47,16 +47,16 @@ if not hasattr(uproot.source.xrootd.XRootDSource, '_read_real'):
 
 
 class FileMeta(object):
-    __slots__ = ['dataset', 'filename', 'treename', 'numentries']
+    __slots__ = ['dataset', 'filename', 'treename', 'metadata']
 
-    def __init__(self, dataset, filename, treename, numentries=None):
+    def __init__(self, dataset, filename, treename, metadata=None):
         self.dataset = dataset
         self.filename = filename
         self.treename = treename
-        self.numentries = numentries
+        self.metadata = metadata
 
     def __hash__(self):
-        # As used to lookup numentries, no need for dataset
+        # As used to lookup metadata, no need for dataset
         return hash((self.filename, self.treename))
 
     def __eq__(self, other):
@@ -65,23 +65,38 @@ class FileMeta(object):
 
     def maybe_populate(self, cache):
         if cache and self in cache:
-            self.numentries = cache[self]
+            self.metadata = cache[self]
 
-    @property
-    def populated(self):
-        return self.numentries is not None
+    def populated(self, clusters=False):
+        '''Return true if metadata is populated
 
-    def nchunks(self, target_chunksize):
-        if not self.populated:
+        By default, only require bare minimum metadata (numentries, uuid)
+        If clusters is True, then require cluster metadata to be populated
+        '''
+        if self.metadata is None:
+            return False
+        elif clusters and 'clusters' not in self.metadata:
+            return False
+        return True
+
+    def chunks(self, target_chunksize, align_clusters):
+        if not self.populated(clusters=align_clusters):
             raise RuntimeError
-        return max(round(self.numentries / target_chunksize), 1)
-
-    def chunks(self, target_chunksize):
-        n = self.nchunks(target_chunksize)
-        actual_chunksize = math.ceil(self.numentries / n)
-        for index in range(n):
-            start, stop = actual_chunksize * index, min(self.numentries, actual_chunksize * (index + 1))
-            yield WorkItem(self.dataset, self.filename, self.treename, start, stop)
+        if align_clusters:
+            chunks = [0]
+            for c in self.metadata['clusters']:
+                if c >= chunks[-1] + target_chunksize:
+                    chunks.append(c)
+            if self.metadata['clusters'][-1] != chunks[-1]:
+                chunks.append(self.metadata['clusters'][-1])
+            for start, stop in zip(chunks[:-1], chunks[1:]):
+                yield WorkItem(self.dataset, self.filename, self.treename, start, stop)
+        else:
+            n = max(round(self.metadata['numentries'] / target_chunksize), 1)
+            actual_chunksize = math.ceil(self.metadata['numentries'] / n)
+            for index in range(n):
+                start, stop = actual_chunksize * index, min(self.metadata['numentries'], actual_chunksize * (index + 1))
+                yield WorkItem(self.dataset, self.filename, self.treename, start, stop)
 
 
 class WorkItem(object):
@@ -526,7 +541,7 @@ def _normalize_fileset(fileset, treename):
             yield FileMeta(dataset, filename, local_treename)
 
 
-def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None):
+def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None, align_clusters=False):
     import warnings
     out = set_accumulator()
     retry_count = 0
@@ -534,8 +549,12 @@ def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None):
         try:
             # add timeout option according to modified uproot numentries defaults
             xrootdsource = {"timeout": xrootdtimeout, "chunkbytes": 32 * 1024, "limitbytes": 1024**2, "parallel": False}
-            nentries = uproot.numentries(item.filename, item.treename, xrootdsource=xrootdsource)
-            out = set_accumulator([FileMeta(item.dataset, item.filename, item.treename, nentries)])
+            file = uproot.open(item.filename, xrootdsource=xrootdsource)
+            tree = file[item.treename]
+            metadata = {'numentries': tree.numentries, 'uuid': file._context.uuid}
+            if align_clusters:
+                metadata['clusters'] = [0] + list(c[1] for c in tree.clusters())
+            out = set_accumulator([FileMeta(item.dataset, item.filename, item.treename, metadata)])
             break
         except OSError as e:
             if not skipbadfiles:
@@ -601,12 +620,12 @@ def run_uproot_job(fileset,
             'savemetrics' saves some detailed metrics for xrootd processing (default False);
             'flatten' removes any jagged structure from the input files (default False);
             'nano' builds the dataframe as a `NanoEvents` object rather than `LazyDataFrame` (default False);
-            'processor_compression' sets the compression level used to send processor instance
-            to workers (default 1).
+            'processor_compression' sets the compression level used to send processor instance to workers (default 1).
             'skipbadfiles' instead of failing on a bad file, skip it (default False)
             'retries' optionally retry n times (default 0)
             'xrootdtimeout' timeout for xrootd read
             'tailtimeout' timeout requirement on job tails
+            'align_clusters' aligns the chunks to natural boundaries in the ROOT files
         pre_executor : callable
             A function like executor, used to calculate fileset metadata
             Defaults to executor
@@ -643,11 +662,18 @@ def run_uproot_job(fileset,
     skipbadfiles = executor_args.pop('skipbadfiles', False)
     retries = executor_args.pop('retries', 0)
     xrootdtimeout = executor_args.pop('xrootdtimeout', None)
+    align_clusters = executor_args.pop('align_clusters', False)
+    metadata_fetcher = partial(_get_metadata,
+                               skipbadfiles=skipbadfiles,
+                               retries=retries,
+                               xrootdtimeout=xrootdtimeout,
+                               align_clusters=align_clusters,
+                               )
 
     chunks = []
     if maxchunks is None:
         # this is a bit of an abuse of map-reduce but ok
-        to_get = set(filemeta for filemeta in fileset if not filemeta.populated)
+        to_get = set(filemeta for filemeta in fileset if not filemeta.populated(clusters=align_clusters))
         if len(to_get) > 0:
             out = set_accumulator()
             real_pre_args = {
@@ -657,22 +683,17 @@ def run_uproot_job(fileset,
                 'tailtimeout': None,
             }
             real_pre_args.update(pre_args)
-            partial_meta = partial(_get_metadata,
-                                   skipbadfiles=skipbadfiles,
-                                   retries=retries,
-                                   xrootdtimeout=xrootdtimeout,
-                                   )
-            executor(to_get, partial_meta, out, **real_pre_args)
+            executor(to_get, metadata_fetcher, out, **real_pre_args)
             while out:
                 item = out.pop()
-                metadata_cache[item] = item.numentries
+                metadata_cache[item] = item.metadata
             for filemeta in fileset:
                 filemeta.maybe_populate(metadata_cache)
         while fileset:
             filemeta = fileset.pop()
-            if skipbadfiles and not filemeta.populated:
+            if skipbadfiles and not filemeta.populated(clusters=align_clusters):
                 continue
-            for chunk in filemeta.chunks(chunksize):
+            for chunk in filemeta.chunks(chunksize, align_clusters):
                 chunks.append(chunk)
     else:
         # get just enough file info to compute chunking
@@ -681,16 +702,12 @@ def run_uproot_job(fileset,
             filemeta = fileset.pop()
             if nchunks[filemeta.dataset] >= maxchunks:
                 continue
-            if not filemeta.populated:
-                filemeta.numentries = _get_metadata(filemeta,
-                                                    skipbadfiles=skipbadfiles,
-                                                    retries=retries,
-                                                    xrootdtimeout=xrootdtimeout,
-                                                    ).pop().numentries
-                metadata_cache[filemeta] = filemeta.numentries
-            if skipbadfiles and not filemeta.populated:
+            if not filemeta.populated(clusters=align_clusters):
+                filemeta.metadata = metadata_fetcher(filemeta).pop().metadata
+                metadata_cache[filemeta] = filemeta.metadata
+            if skipbadfiles and not filemeta.populated(clusters=align_clusters):
                 continue
-            for chunk in filemeta.chunks(chunksize):
+            for chunk in filemeta.chunks(chunksize, align_clusters):
                 chunks.append(chunk)
                 nchunks[filemeta.dataset] += 1
                 if nchunks[filemeta.dataset] >= maxchunks:

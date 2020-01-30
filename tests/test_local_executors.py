@@ -10,7 +10,7 @@ if sys.platform.startswith("win"):
     pytest.skip("skipping tests that only function in linux", allow_module_level=True)
 
 
-def template_analysis(filelist, executor, flatten, compression):
+def template_analysis(filelist, executor, flatten, compression, align_clusters=False):
     from coffea.processor import run_uproot_job
     
     treename='Events'
@@ -22,6 +22,7 @@ def template_analysis(filelist, executor, flatten, compression):
         'pre_workers': 1,
         'flatten': flatten,
         'compression': compression,
+        'align_clusters': align_clusters,
     }
 
     hists = run_uproot_job(filelist, treename, NanoTestProcessor(), executor,
@@ -45,6 +46,7 @@ def test_iterative_executor():
     template_analysis(filelist, iterative_executor, flatten=True, compression=0)
     template_analysis(filelist, iterative_executor, flatten=True, compression=1)
     template_analysis(filelist, iterative_executor, flatten=False, compression=2)
+    template_analysis(filelist, iterative_executor, flatten=False, compression=1, align_clusters=True)
 
     filelist = {
         'ZJets': {'treename': 'Events', 'files': [osp.abspath('tests/samples/nano_dy.root')]},
@@ -63,6 +65,7 @@ def test_futures_executor():
     }
 
     template_analysis(filelist, futures_executor, flatten=True, compression=0)
+    template_analysis(filelist, futures_executor, flatten=True, compression=1, align_clusters=True)
     template_analysis(filelist, futures_executor, flatten=False, compression=0)
     template_analysis(filelist, futures_executor, flatten=False, compression=1)
 
