@@ -32,6 +32,8 @@ def do_dask_job(client, filelist, compression=0):
 
 def do_dask_cached(client, filelist, cachestrategy=None):
     from coffea.processor.test_items import NanoEventsProcessor
+    from coffea.processor.dask import register_columncache
+    register_columncache(client)
 
     exe_args = {
         'client': client,

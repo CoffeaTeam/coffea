@@ -494,16 +494,13 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                 cache = None
                 if cachestrategy == 'dask-worker':
                     from distributed import get_worker
+                    from .dask import ColumnCache
                     worker = get_worker()
                     try:
-                        cache = worker.plugins['cache'].cache
+                        cache = worker.plugins[ColumnCache.name]
                     except KeyError:
-                        # search for cache, workaround for dask/distributed#3426
-                        for name in worker.plugins:
-                            if 'ColumnCacheHolder' in name:
-                                cache = worker.plugins[name].cache
-                                break
                         # emit warning if not found?
+                        pass
                 df = NanoEvents.from_file(
                     file=file,
                     treename=item.treename,

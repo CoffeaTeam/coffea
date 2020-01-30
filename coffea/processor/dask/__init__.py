@@ -1,11 +1,13 @@
 import os
 import blosc
-from distributed import WorkerPlugin
+from threading import Lock
+from collections.abc import MutableMapping
+from distributed import WorkerPlugin, get_worker
 from zict import Buffer, Func, LRU, File
 
 
-class ColumnCacheHolder(WorkerPlugin):
-    name = 'cache'
+class ColumnCache(WorkerPlugin, MutableMapping):
+    name = 'columncache'
 
     def __init__(self, maxmem=5e8, maxcompressed=2e9, maxdisk=1e10):
         self._maxmem = maxmem
@@ -32,6 +34,43 @@ class ColumnCacheHolder(WorkerPlugin):
             n=self._maxmem,
             weight=lambda k, v: v.nbytes,
         )
+        self.lock = Lock()
+        self.hits = 0
+        self.misses = 0
 
     def teardown(self, worker):
         pass
+
+    def __getitem__(self, key):
+        with self.lock:
+            try:
+                out = self.cache[key]
+                self.hits += 1
+                return out
+            except KeyError:
+                self.misses += 1
+                raise
+
+    def __setitem__(self, key, value):
+        with self.lock:
+            self.cache[key] = value
+
+    def __delitem__(self, key):
+        with self.lock:
+            del self.cache[key]
+
+    def __iter__(self):
+        with self.lock:
+            return iter(self.cache)
+
+    def __len__(self):
+        with self.lock:
+            return len(self.cache)
+
+
+def register_columncache(client):
+    plugins = set()
+    for p in client.run(lambda: set(get_worker().plugins)).values():
+        plugins |= p
+    if ColumnCache.name not in plugins:
+        client.register_worker_plugin(ColumnCache())
