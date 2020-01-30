@@ -43,7 +43,7 @@ def do_dask_cached(client, filelist, cachestrategy=None):
     hists, metrics = processor.run_uproot_job(
         filelist,
         'Events',
-        processor_instance=NanoEventsProcessor(),
+        processor_instance=NanoEventsProcessor(canaries=['0001a210a3f8364811eaa29ff5b55c90beef;Events;0;40;Muon_pt']),
         executor=processor.dask_executor,
         executor_args=exe_args
     )
@@ -52,6 +52,7 @@ def do_dask_cached(client, filelist, cachestrategy=None):
     assert( hists['cutflow']['ZJets_mass'] == 6 )
     assert( hists['cutflow']['Data_pt'] == 84 )
     assert( hists['cutflow']['Data_mass'] == 66 )
+    return hists['worker']
 
 
 def test_dask_local():
@@ -70,7 +71,10 @@ def test_dask_local():
     do_dask_job(client, filelist)
     do_dask_job(client, filelist, compression=2)
     do_dask_cached(client, filelist)
-    do_dask_cached(client, filelist, 'dask-worker')
+    workers1 = do_dask_cached(client, filelist, 'dask-worker')
+    assert len(workers1) > 0
+    workers2 = do_dask_cached(client, filelist, 'dask-worker')
+    assert workers1 == workers2
 
     filelist = {
         'ZJets': {'treename': 'Events', 'files': [osp.join(os.getcwd(),'tests/samples/nano_dy.root')]},
@@ -80,3 +84,7 @@ def test_dask_local():
     do_dask_job(client, filelist)
 
     client.close()
+
+
+if __name__ == '__main__':
+    test_dask_local()

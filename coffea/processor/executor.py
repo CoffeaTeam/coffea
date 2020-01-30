@@ -373,7 +373,7 @@ def dask_executor(items, function, accumulator, **kwargs):
                 priority=priority,
                 retries=retries,
                 workers={worker},
-                allow_other_workers=True,
+                allow_other_workers=False,
             ))
     else:
         work = client.map(
