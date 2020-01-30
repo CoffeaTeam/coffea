@@ -691,7 +691,7 @@ def run_uproot_job(fileset,
     if pre_executor is None:
         pre_executor = executor
     if pre_args is None:
-        pre_args = executor_args
+        pre_args = dict(executor_args)
     if metadata_cache is None:
         metadata_cache = DEFAULT_METADATA_CACHE
 
@@ -717,14 +717,15 @@ def run_uproot_job(fileset,
         to_get = set(filemeta for filemeta in fileset if not filemeta.populated(clusters=align_clusters))
         if len(to_get) > 0:
             out = set_accumulator()
-            real_pre_args = {
+            pre_arg_override = {
                 'desc': 'Preprocessing',
                 'unit': 'file',
                 'compression': None,
                 'tailtimeout': None,
+                'worker_affinity': False,
             }
-            real_pre_args.update(pre_args)
-            executor(to_get, metadata_fetcher, out, **real_pre_args)
+            pre_args.update(pre_arg_override)
+            executor(to_get, metadata_fetcher, out, **pre_args)
             while out:
                 item = out.pop()
                 metadata_cache[item] = item.metadata
