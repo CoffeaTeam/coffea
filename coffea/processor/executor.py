@@ -359,16 +359,16 @@ def dask_executor(items, function, accumulator, **kwargs):
     if worker_affinity:
         workers = list(client.run(lambda: 0))
 
-        def belongsto(worker, item):
+        def belongsto(workerindex, item):
             if heavy_input is not None:
                 item = item[0]
             hashed = hash((item.fileuuid, item.treename, item.entrystart, item.entrystop))
-            return hashed % len(workers) == i
+            return hashed % len(workers) == workerindex
 
-        for i, worker in enumerate(workers):
+        for workerindex, worker in enumerate(workers):
             work.extend(client.map(
                 function,
-                [item for item in items if belongsto(worker, item)],
+                [item for item in items if belongsto(workerindex, item)],
                 pure=(heavy_input is not None),
                 priority=priority,
                 retries=retries,
