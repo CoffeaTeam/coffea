@@ -358,6 +358,7 @@ def dask_executor(items, function, accumulator, **kwargs):
     work = []
     if worker_affinity:
         workers = list(client.run(lambda: 0))
+
         def belongsto(worker, item):
             if heavy_input is not None:
                 item = item[0]
