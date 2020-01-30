@@ -7,7 +7,12 @@ from uproot_methods.classes.TVector2 import ArrayMethods as XYArrayMethods
 def _memoize(obj, name, constructor):
     memoname = '_memo_' + name
     if memoname not in obj.columns:
-        obj[memoname] = constructor(obj)
+        out = constructor(obj)
+        try:
+            obj[memoname] = out
+        except ValueError:
+            # FIXME: add a column to view of the table
+            return out
     return obj[memoname]
 
 
@@ -20,6 +25,15 @@ class METVector(XYArrayMethods):
             return _memoize(self, 'fY', lambda self: self['pt'] * numpy.sin(self['phi']))
         return super(METVector, self).__getitem__(key)
 
+    # shortcut XYArrayMethods for pt and phi
+    @property
+    def pt(self):
+        return self['pt']
+
+    @property
+    def phi(self):
+        return self['phi']
+
 
 class LorentzVector(PtEtaPhiMassArrayMethods):
     '''Implements the usual TLorentzVector methods, storing minimal materialized arrays in pt-eta-phi-mass coordinates'''
@@ -27,9 +41,10 @@ class LorentzVector(PtEtaPhiMassArrayMethods):
 
     def __getitem__(self, key):
         if awkward.AwkwardArray._util_isstringslice(key) and key in self._keymap:
-            if key == 'fMass' and 'mass' not in self.columns:
+            if key == 'fMass' and 'mass' not in self.columns and 'fMass' not in self.columns:
                 return _memoize(self, 'fMass', lambda self: self['pt'].zeros_like())
-            return self[self._keymap[key]]
+            elif 'fMass' not in self.columns:
+                return self[self._keymap[key]]
         return super(LorentzVector, self).__getitem__(key)
 
 
