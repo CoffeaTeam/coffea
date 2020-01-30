@@ -160,8 +160,12 @@ class _reduce(object):
     def __call__(self, items):
         if len(items) == 0:
             raise ValueError("Empty list provided to reduction")
-        # if dask has a cached result, we cannot alter it
-        out = copy.deepcopy(_maybe_decompress(items.pop()))
+        out = items.pop()
+        if isinstance(out, AccumulatorABC):
+            # if dask has a cached result, we cannot alter it, so make a copy
+            out = copy.deepcopy(out)
+        else:
+            out = _maybe_decompress(out)
         while items:
             out += _maybe_decompress(items.pop())
         return out
@@ -488,8 +492,17 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
             if nano:
                 cache = None
                 if cachestrategy == 'dask-worker':
-                    from dask.distributed import get_worker
-                    cache = get_worker().data
+                    from distributed import get_worker
+                    worker = get_worker()
+                    try:
+                        cache = worker.plugins['cache'].cache
+                    except KeyError:
+                        # search for cache, workaround for dask/distributed#3426
+                        for name in worker.plugins:
+                            if 'ColumnCacheHolder' in name:
+                                cache = worker.plugins[name].cache
+                                break
+                        # emit warning if not found?
                 df = NanoEvents.from_file(
                     file=file,
                     treename=item.treename,
