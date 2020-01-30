@@ -38,6 +38,7 @@ def do_dask_cached(client, filelist, cachestrategy=None):
         'nano': True,
         'cachestrategy': cachestrategy,
         'savemetrics': True,
+        'worker_affinity': True if cachestrategy is not None else False,
     }
     hists, metrics = processor.run_uproot_job(
         filelist,

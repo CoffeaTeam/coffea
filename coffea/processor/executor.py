@@ -90,24 +90,25 @@ class FileMeta(object):
             if self.metadata['clusters'][-1] != chunks[-1]:
                 chunks.append(self.metadata['clusters'][-1])
             for start, stop in zip(chunks[:-1], chunks[1:]):
-                yield WorkItem(self.dataset, self.filename, self.treename, start, stop)
+                yield WorkItem(self.dataset, self.filename, self.treename, start, stop, self.metadata['uuid'])
         else:
             n = max(round(self.metadata['numentries'] / target_chunksize), 1)
             actual_chunksize = math.ceil(self.metadata['numentries'] / n)
             for index in range(n):
                 start, stop = actual_chunksize * index, min(self.metadata['numentries'], actual_chunksize * (index + 1))
-                yield WorkItem(self.dataset, self.filename, self.treename, start, stop)
+                yield WorkItem(self.dataset, self.filename, self.treename, start, stop, self.metadata['uuid'])
 
 
 class WorkItem(object):
-    __slots__ = ['dataset', 'filename', 'treename', 'entrystart', 'entrystop']
+    __slots__ = ['dataset', 'filename', 'treename', 'entrystart', 'entrystop', 'fileuuid']
 
-    def __init__(self, dataset, filename, treename, entrystart, entrystop):
+    def __init__(self, dataset, filename, treename, entrystart, entrystop, fileuuid):
         self.dataset = dataset
         self.filename = filename
         self.treename = treename
         self.entrystart = entrystart
         self.entrystop = entrystop
+        self.fileuuid = fileuuid
 
 
 class _compression_wrapper(object):
@@ -340,6 +341,7 @@ def dask_executor(items, function, accumulator, **kwargs):
     reducer = _reduce()
     # secret options
     direct_heavy = kwargs.pop('direct_heavy', None)
+    worker_affinity = kwargs.pop('worker_affinity', False)
 
     if clevel is not None:
         function = _compression_wrapper(clevel, function, name=function_name)
@@ -349,15 +351,40 @@ def dask_executor(items, function, accumulator, **kwargs):
         heavy_token = client.scatter(heavy_input, broadcast=True, hash=False, direct=direct_heavy)
         items = list(zip(items, repeat(heavy_token)))
 
-    function = delayed(function, pure=(heavy_input is not None))
+    work = []
+    if worker_affinity:
+        workers = list(client.run(lambda: 0))
+        def belongsto(worker, item):
+            if heavy_input is not None:
+                item = item[0]
+            hashed = hash((item.fileuuid, item.treename, item.entrystart, item.entrystop))
+            return hashed % len(workers) == i
+
+        for i, worker in enumerate(workers):
+            work.extend(client.map(
+                function,
+                [item for item in items if belongsto(worker, item)],
+                pure=(heavy_input is not None),
+                priority=priority,
+                retries=retries,
+                workers={worker},
+                allow_other_workers=True,
+            ))
+    else:
+        work = client.map(
+            function,
+            items,
+            pure=(heavy_input is not None),
+            priority=priority,
+            retries=retries,
+        )
     reducer = delayed(reducer, pure=True)
-    work = list(map(function, items))
     while len(work) > 1:
         work = list(map(reducer, (work[i:i + ntree] for i in range(0, len(work), ntree))))
     work = work[0]
-    future = client.compute(work, retries=retries, priority=priority)
+    future = client.compute(work, pure=True, retries=retries, priority=priority)
     if status:
-        from dask.distributed import progress
+        from distributed import progress
         # FIXME: fancy widget doesn't appear, have to live with boring pbar
         progress(future, multi=True, notebook=False)
     accumulator += _maybe_decompress(future.result())
