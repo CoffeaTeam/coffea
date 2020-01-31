@@ -24,7 +24,8 @@ from .accumulator import (
 from .dataframe import (
     LazyDataFrame,
 )
-from coffea.nanoaod import NanoEvents
+from ..nanoaod import NanoEvents
+from ..util import _hash
 
 try:
     from collections.abc import Mapping, Sequence
@@ -57,7 +58,7 @@ class FileMeta(object):
 
     def __hash__(self):
         # As used to lookup metadata, no need for dataset
-        return hash((self.filename, self.treename))
+        return _hash((self.filename, self.treename))
 
     def __eq__(self, other):
         # In case of hash collisions
@@ -362,7 +363,7 @@ def dask_executor(items, function, accumulator, **kwargs):
         def belongsto(workerindex, item):
             if heavy_input is not None:
                 item = item[0]
-            hashed = hash((item.fileuuid, item.treename, item.entrystart, item.entrystop))
+            hashed = _hash((item.fileuuid, item.treename, item.entrystart, item.entrystop))
             return hashed % len(workers) == workerindex
 
         for workerindex, worker in enumerate(workers):
