@@ -56,12 +56,12 @@ def get_description():
     return description[start:stop].strip()  # before + + after
 
 
-INSTALL_REQUIRES = ['awkward>=0.12.18',
+INSTALL_REQUIRES = ['awkward>=0.12.20',
                     'matplotlib<3' if six.PY2 else 'matplotlib>=3',
                     'numba>=0.43.1',
                     'numpy>=1.16.0',
                     'scipy>=1.1.0',
-                    'uproot-methods>=0.7.2',
+                    'uproot-methods>=0.7.3',
                     'uproot>=3.11.0',
                     'futures; python_version == "2.7"',
                     'tqdm>=4.27.0',
