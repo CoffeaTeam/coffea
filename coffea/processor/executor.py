@@ -384,16 +384,20 @@ def dask_executor(items, function, accumulator, **kwargs):
             priority=priority,
             retries=retries,
         )
-    reducer = delayed(reducer, pure=True)
     while len(work) > 1:
-        work = list(map(reducer, (work[i:i + ntree] for i in range(0, len(work), ntree))))
+        work = client.map(
+            reducer,
+            [work[i:i + ntree] for i in range(0, len(work), ntree)],
+            pure=True,
+            priority=priority,
+            retries=retries,
+        )
     work = work[0]
-    future = client.compute(work, pure=True, retries=retries, priority=priority)
     if status:
         from distributed import progress
         # FIXME: fancy widget doesn't appear, have to live with boring pbar
-        progress(future, multi=True, notebook=False)
-    accumulator += _maybe_decompress(future.result())
+        progress(work, multi=True, notebook=False)
+    accumulator += _maybe_decompress(work.result())
     return accumulator
 
 
