@@ -183,10 +183,10 @@ def test_lazy_dataframe():
     from coffea.processor import LazyDataFrame
     
     tree = uproot.open(osp.abspath('tests/samples/nano_dy.root'))['Events']
-    chunksize = 100
-    index = 0
+    entrystart = 0
+    entrystop = 100
     
-    df = LazyDataFrame(tree, chunksize, index, preload_items = ['nMuon'])
+    df = LazyDataFrame(tree, entrystart, entrystop, preload_items = ['nMuon'])
 
     assert(len(df) == 1)
     
@@ -210,10 +210,10 @@ def test_lazy_dataframe_getattr():
     from coffea.processor import LazyDataFrame
     
     tree = uproot.open(osp.abspath('tests/samples/nano_dy.root'))['Events']
-    chunksize = 100
-    index = 0
+    entrystart = 0
+    entrystop = 100
     
-    df = LazyDataFrame(tree, chunksize, index, preload_items = ['nMuon'])
+    df = LazyDataFrame(tree, entrystart, entrystop, preload_items = ['nMuon'])
 
     assert(len(df) == 1)
     
