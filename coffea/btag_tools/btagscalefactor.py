@@ -180,7 +180,7 @@ class BTagScaleFactor:
         Returns
         -------
             out : numpy.ndarray or awkward.Array
-                An array with shape matching ``pt``, with the per-jet scale factor
+                An array with shape matching ``pt``, containing the per-jet scale factor
         '''
         if self.workingpoint == BTagScaleFactor.RESHAPE and discr is None:
             raise ValueError('RESHAPE scale factor requires a discriminant array')
@@ -210,7 +210,10 @@ class BTagScaleFactor:
             if ifunc < 0 and not ignore_missing:
                 raise ValueError('No correction was available for some items')
             func = functions[ifunc]
-            var = discr if self.workingpoint == BTagScaleFactor.RESHAPE else pt
+            if self.workingpoint == BTagScaleFactor.RESHAPE:
+                var = numpy.clip(discr, corr[2][0], corr[2][-1])
+            else:
+                var = numpy.clip(pt, corr[1][0], corr[1][-1])
             func(var, out=out, where=(mapidx == ifunc))
 
         if jin is not None:
