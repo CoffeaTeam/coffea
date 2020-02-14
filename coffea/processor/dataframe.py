@@ -15,25 +15,23 @@ class LazyDataFrame(MutableMapping):
     ----------
         tree : uproot.TTree
             Tree to read
-        stride : int, optional
-            Size of chunk to read from the tree.
-            Default: whole tree
-        index : int, optional
-            Chunk index to read
+        entrystart : int, optional
+            First entry to read, default: 0
+        entrystop : int, optional
+            Last entry to read, default None (read to end)
         preload_items : iterable
             Force preloading of a set of columns from the tree
         flatten : bool
             Remove jagged structure from columns read
     """
-    def __init__(self, tree, stride=None, index=None, preload_items=None, flatten=False):
+    def __init__(self, tree, entrystart=None, entrystop=None, preload_items=None, flatten=False):
+        import uproot
         self._tree = tree
         self._flatten = flatten
         self._branchargs = {'awkwardlib': awkward, 'flatten': flatten}
-        self._stride = None
-        if (stride is not None) and (index is not None):
-            self._stride = stride
-            self._branchargs['entrystart'] = index * stride
-            self._branchargs['entrystop'] = min(self._tree.numentries, (index + 1) * stride)
+        entrystart, entrystop = uproot.tree._normalize_entrystartstop(tree.numentries, entrystart, entrystop)
+        self._branchargs['entrystart'] = entrystart
+        self._branchargs['entrystop'] = entrystop
         self._available = {k.decode('ascii') for k in self._tree.keys()}
         self._dict = {}
         self._materialized = set()
@@ -91,8 +89,6 @@ class LazyDataFrame(MutableMapping):
     @property
     def size(self):
         """Length of column vector"""
-        if self._stride is None:
-            return self._tree.numentries
         return (self._branchargs['entrystop'] - self._branchargs['entrystart'])
 
     def preload(self, columns):
