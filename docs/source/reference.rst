@@ -20,6 +20,7 @@ and/or heavy dependencies.  Below lists the packages available in the ``coffea``
     coffea.nanoaod.methods
     coffea.lookup_tools
     coffea.jetmet_tools
+    coffea.btag_tools
     coffea.lumi_tools
     coffea.hist
     coffea.util
