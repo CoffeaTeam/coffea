@@ -14,16 +14,18 @@ class BTagScaleFactor:
             See pandas read_csv for all supported compressions.
         workingpoint : str or int
             The working point, one of LOOSE, MEDIUM, TIGHT, or RESHAPE (0-3, respectively)
-        lightmethod : str, optional
-            The light-jet scale factor derivation method to use
-            'comb': combined ttbar- and qcd-based method
-            'mujets': qcd-only, for precision analyses using ttbar phase space
+        methods : str, optional
+            The scale factor derivation method to use for each flavor, 'b,c,light' respectively.
+            Defaults to 'comb,comb,incl'
         keep_df : bool, optional
             If set true, keep the parsed dataframe as an attribute (.df) for later inspection
     '''
     LOOSE, MEDIUM, TIGHT, RESHAPE = range(4)
+    FLAV_B, FLAV_C, FLAV_UDSG = range(3)
     _formulaLock = Lock()
     _formulaCache = {}
+    _btvflavor = numpy.array([0, 1, 2, 3])
+    _flavor = numpy.array([0, 4, 5, 6])
     _wpString = {'loose': LOOSE, 'medium': MEDIUM, 'tight': TIGHT}
     _expectedColumns = [
         'OperatingPoint', 'measurementType', 'sysType', 'jetFlavor', 'etaMin',
@@ -64,18 +66,25 @@ class BTagScaleFactor:
             del df[var + 'Max']
         return df, discriminator
 
-    def __init__(self, filename, workingpoint, lightmethod='comb', keep_df=False):
+    def __init__(self, filename, workingpoint, methods='comb,comb,incl', keep_df=False):
         if workingpoint not in [0, 1, 2, 3]:
             try:
                 workingpoint = BTagScaleFactor._wpString[workingpoint.lower()]
             except (KeyError, AttributeError):
                 raise ValueError('Unrecognized working point')
-        if lightmethod not in ['comb', 'mujets']:
-            raise ValueError('Unrecognized light jet correction method')
+        methods = methods.split(',')
         self.workingpoint = workingpoint
         df, self.discriminator = BTagScaleFactor.readcsv(filename)
-        df = df[df['OperatingPoint'] == workingpoint]
-        df = df[(df['measurementType'] == lightmethod) | (df['jetFlavor'] == 2)]
+        cut = (df['jetFlavor'] == self.FLAV_B) & (df['measurementType'] == methods[0])
+        if len(methods) > 1:
+            cut |= (df['jetFlavor'] == self.FLAV_C) & (df['measurementType'] == methods[1])
+        if len(methods) > 2:
+            cut |= (df['jetFlavor'] == self.FLAV_UDSG) & (df['measurementType'] == methods[2])
+        cut &= df['OperatingPoint'] == workingpoint
+        df = df[cut]
+        mavailable = list(df['measurementType'].unique())
+        if not all(m in mavailable for m in methods):
+            raise ValueError('Unrecognized jet correction method, available: %r' % mavailable)
         df = df.set_index(['sysType', 'jetFlavor', 'etaBin', 'ptBin', 'discrBin']).sort_index()
         if keep_df:
             self.df = df
@@ -83,30 +92,28 @@ class BTagScaleFactor:
         for syst in list(df.index.levels[0]):
             corr = df.loc[syst]
             allbins = list(corr.index)
-            edges_flavor = numpy.array([0, 1, 2, 3])  # udsg, c, b
             edges_eta = numpy.array(sorted(set(x for tup in corr.index.levels[1] for x in tup)))
             edges_pt = numpy.array(sorted(set(x for tup in corr.index.levels[2] for x in tup)))
             edges_discr = numpy.array(sorted(set(x for tup in corr.index.levels[3] for x in tup)))
-            alledges = numpy.meshgrid(edges_flavor[:-1], edges_eta[:-1], edges_pt[:-1], edges_discr[:-1], indexing='ij')
+            alledges = numpy.meshgrid(self._btvflavor[:-1], edges_eta[:-1], edges_pt[:-1], edges_discr[:-1], indexing='ij')
             mapping = numpy.full(alledges[0].shape, -1)
 
-            def findbin(flavor, eta, pt, discr):
+            def findbin(btvflavor, eta, pt, discr):
                 for i, (fbin, ebin, pbin, dbin) in enumerate(allbins):
-                    if flavor == fbin and ebin[0] <= eta < ebin[1] and pbin[0] <= pt < pbin[1] and dbin[0] <= discr < dbin[1]:
+                    if btvflavor == fbin and ebin[0] <= eta < ebin[1] and pbin[0] <= pt < pbin[1] and dbin[0] <= discr < dbin[1]:
                         return i
                 return -1
 
             for idx, _ in numpy.ndenumerate(mapping):
-                flavor, eta, pt, discr = (x[idx] for x in alledges)
-                mapidx = findbin(flavor, eta, pt, discr)
-                if mapidx < 0 and flavor == 2:
-                    # it seems for b flavor it is abs(eta)
+                btvflavor, eta, pt, discr = (x[idx] for x in alledges)
+                mapidx = findbin(btvflavor, eta, pt, discr)
+                if mapidx < 0 and btvflavor == self.FLAV_UDSG:
+                    # it seems for light flavor it is abs(eta)
                     eta = eta + 1e-5  # add eps to avoid edge effects
-                    mapidx = findbin(flavor, abs(eta), pt, discr)
+                    mapidx = findbin(btvflavor, abs(eta), pt, discr)
                 mapping[idx] = mapidx
 
             self._corrections[syst] = (
-                edges_flavor,
                 edges_eta,
                 edges_pt,
                 edges_discr,
@@ -157,8 +164,8 @@ class BTagScaleFactor:
                 Which systematic to evaluate. Nominal correction is 'central', the options depend
                 on the scale factor and method
             flavor : numpy.ndarray or awkward.Array
-                The generated jet hadron flavor: 0: udsg, 1: c, 2: b. If you are using [0, 4, 5] as
-                the enumeration, a quick fix is to instead pass ``(flavor % 3)``
+                The generated jet hadron flavor, following the enumeration:
+                0: uds quark or gluon, 4: charm quark, 5: bottom quark
             eta : numpy.ndarray or awkward.Array
                 The jet pseudorapitiy
             pt : numpy.ndarray or awkward.Array
@@ -180,7 +187,7 @@ class BTagScaleFactor:
         try:
             functions = self._compiled[systematic]
         except KeyError:
-            functions = [BTagScaleFactor._compile(f) for f in self._corrections[systematic][5]]
+            functions = [BTagScaleFactor._compile(f) for f in self._corrections[systematic][-1]]
             self._compiled[systematic] = functions
         try:
             flavor.counts
@@ -192,12 +199,12 @@ class BTagScaleFactor:
             jin = None
         corr = self._corrections[systematic]
         idx = (
-            self._lookup(corr[0], flavor),
-            self._lookup(corr[1], eta),
-            self._lookup(corr[2], pt),
-            self._lookup(corr[3], discr) if discr is not None else 0,
+            2 - self._lookup(self._flavor, flavor),  # transform to btv definiton
+            self._lookup(corr[0], eta),
+            self._lookup(corr[1], pt),
+            self._lookup(corr[2], discr) if discr is not None else 0,
         )
-        mapidx = corr[4][idx]
+        mapidx = corr[3][idx]
         out = numpy.ones(mapidx.shape, dtype=pt.dtype)
         for ifunc in numpy.unique(mapidx):
             if ifunc < 0 and not ignore_missing:
@@ -209,3 +216,6 @@ class BTagScaleFactor:
         if jin is not None:
             out = jin.copy(content=out)
         return out
+
+    def __call__(self, systematic, flavor, eta, pt, discr=None, ignore_missing=False):
+        return self.eval(systematic, flavor, eta, pt, discr, ignore_missing)
