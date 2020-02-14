@@ -7,15 +7,13 @@ from functools import partial
 import numpy
 from coffea.btag_tools import BTagScaleFactor
 
-filename = 'DeepCSV_102XSF_V1.btag.csv'
-
-btagData = ROOT.BTagCalibration('DeepCSV', filename)
 
 def stdvec(l):
     out = ROOT.std.vector('string')()
     for item in l:
         out.push_back(item)
     return out
+
 
 def makesf(btagReader):
     def btv_sf(syst, flavor, eta, pt, discr=None):
@@ -36,34 +34,46 @@ def makesf(btagReader):
     return btv_sf
 
 
-npts = 10000
-flavor = numpy.full(npts, 5)
-eta = numpy.random.uniform(-2.5, 2.5, size=npts)
-pt = numpy.random.exponential(50, size=npts) + numpy.random.exponential(20, size=npts)
-pt = numpy.maximum(20.1, pt)
-discr = numpy.random.rand(npts)
+def validate_btag(filename, btagtype, etamax):
+    btagData = ROOT.BTagCalibration(btagtype, filename)
+    npts = 10000
+    flavor = numpy.full(npts, 5)
+    eta = numpy.random.uniform(-etamax, etamax, size=npts)
+    pt = numpy.random.exponential(50, size=npts) + numpy.random.exponential(20, size=npts)
+    pt = numpy.maximum(20.1, pt)
+    discr = numpy.random.rand(npts)
 
-coffea_sf = BTagScaleFactor(filename, BTagScaleFactor.RESHAPE, 'iterativefit', keep_df=True)
-btagData = ROOT.BTagCalibration('DeepCSV', filename)
-btagReader = ROOT.BTagCalibrationReader(ROOT.BTagEntry.OP_RESHAPING, 'central', stdvec(['up_jes', 'down_jes']))
-btagReader.load(btagData, ROOT.BTagEntry.FLAV_B, 'iterativefit')
-btv_sf = makesf(btagReader)
+    coffea_sf = BTagScaleFactor(filename, BTagScaleFactor.RESHAPE, 'iterativefit', keep_df=True)
+    btagReader = ROOT.BTagCalibrationReader(ROOT.BTagEntry.OP_RESHAPING, 'central', stdvec(['up_jes', 'down_jes']))
+    btagReader.load(btagData, ROOT.BTagEntry.FLAV_B, 'iterativefit')
+    btv_sf = makesf(btagReader)
 
-for syst in ['central', 'up_jes', 'down_jes']:
-    csf = coffea_sf.eval(syst, flavor, eta, pt, discr)
-    bsf = btv_sf(syst, flavor, abs(eta), pt, discr)
-    print(abs(csf - bsf).max())
+    for syst in ['central', 'up_jes', 'down_jes']:
+        csf = coffea_sf.eval(syst, flavor, eta, pt, discr)
+        bsf = btv_sf(syst, flavor, abs(eta), pt, discr)
+        print(abs(csf - bsf).max())
 
-flavor = numpy.random.choice([0, 4, 5], size=npts)
-coffea_sf = BTagScaleFactor(filename, BTagScaleFactor.TIGHT, 'comb,mujets,incl', keep_df=True)
-btagReader = ROOT.BTagCalibrationReader(ROOT.BTagEntry.OP_TIGHT, 'central', stdvec(['up', 'down']))
-btagReader.load(btagData, ROOT.BTagEntry.FLAV_B, 'comb')
-btagReader.load(btagData, ROOT.BTagEntry.FLAV_C, 'mujets')
-btagReader.load(btagData, ROOT.BTagEntry.FLAV_UDSG, 'incl')
-btv_sf = makesf(btagReader)
+    flavor = numpy.random.choice([0, 4, 5], size=npts)
+    coffea_sf = BTagScaleFactor(filename, BTagScaleFactor.TIGHT, 'comb,mujets,incl', keep_df=True)
+    btagReader = ROOT.BTagCalibrationReader(ROOT.BTagEntry.OP_TIGHT, 'central', stdvec(['up', 'down']))
+    btagReader.load(btagData, ROOT.BTagEntry.FLAV_B, 'comb')
+    btagReader.load(btagData, ROOT.BTagEntry.FLAV_C, 'mujets')
+    btagReader.load(btagData, ROOT.BTagEntry.FLAV_UDSG, 'incl')
+    btv_sf = makesf(btagReader)
 
-for syst in ['central', 'up', 'down']:
-    csf = coffea_sf.eval(syst, flavor, eta, pt, discr)
-    bsf = btv_sf(syst, flavor, eta, pt, discr)
-    print(abs(csf - bsf).max())
+    for syst in ['central', 'up', 'down']:
+        csf = coffea_sf.eval(syst, flavor, eta, pt, discr)
+        bsf = btv_sf(syst, flavor, eta, pt, discr)
+        print(abs(csf - bsf).max())
 
+
+validate_btag(
+    filename='DeepCSV_102XSF_V1.btag.csv',
+    btagtype='DeepCSV',
+    etamax=2.5,
+)
+validate_btag(
+    filename='testBTagSF.btag.csv',
+    btagtype='CSVv2',
+    etamax=2.4,
+)
