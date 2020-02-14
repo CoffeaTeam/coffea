@@ -6,7 +6,9 @@ import numpy
 def test_BTagScalefactor():
     sf1 = BTagScaleFactor('tests/samples/testBTagSF.btag.csv', 'medium')
     sf2 = BTagScaleFactor('tests/samples/DeepCSV_102XSF_V1.btag.csv.gz', BTagScaleFactor.RESHAPE)
-    sf3 = BTagScaleFactor('tests/samples/DeepJet_102XSF_WP_V1.btag.csv.gz', BTagScaleFactor.LOOSE)
+    sf3 = BTagScaleFactor('tests/samples/DeepCSV_102XSF_V1.btag.csv.gz', BTagScaleFactor.TIGHT)
+    sf4 = BTagScaleFactor('tests/samples/DeepCSV_2016LegacySF_V1_TuneCP5.btag.csv.gz', BTagScaleFactor.RESHAPE, keep_df=True)
+    # import pdb; pdb.set_trace()
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
     test_flavor = numpy.random.randint(3, size=len(test_eta))
@@ -20,3 +22,6 @@ def test_BTagScalefactor():
         sf2.eval('up', test_allb, test_eta, test_pt)
     sf3.eval('central', test_flavor, test_eta, test_pt, test_discr)
     sf3.eval('up', test_flavor, test_eta, test_pt)
+    with pytest.raises(ValueError):
+        sf4.eval('central', test_flavor, test_eta, test_pt, test_discr)
+    sf4.eval('central', test_allb, test_eta, test_pt, test_discr)

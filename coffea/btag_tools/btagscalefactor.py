@@ -1,7 +1,6 @@
 from threading import Lock
 import pandas
 import numpy
-import numexpr
 import numba
 
 
@@ -138,7 +137,7 @@ class BTagScaleFactor:
                         numba.float64(numba.float64),
                     ])(feval)
                 else:
-                    val = numexpr.evaluate(formula)
+                    val = eval(formula, {'log': numpy.log, 'sqrt': numpy.sqrt})
 
                     def duck(_, out, where):
                         out[where] = val
