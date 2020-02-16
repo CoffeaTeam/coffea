@@ -92,7 +92,8 @@ class BTagScaleFactor:
         for syst in list(df.index.levels[0]):
             corr = df.loc[syst]
             allbins = list(corr.index)
-            edges_eta = numpy.array(sorted(set(x for tup in corr.index.levels[1] for x in tup)))
+            # NOTE: here we force the class to assume abs(eta) based on lack of examples where signed eta is used
+            edges_eta = numpy.array(sorted(set(abs(x) for tup in corr.index.levels[1] for x in tup)))
             edges_pt = numpy.array(sorted(set(x for tup in corr.index.levels[2] for x in tup)))
             edges_discr = numpy.array(sorted(set(x for tup in corr.index.levels[3] for x in tup)))
             alledges = numpy.meshgrid(self._btvflavor[:-1], edges_eta[:-1], edges_pt[:-1], edges_discr[:-1], indexing='ij')
@@ -106,12 +107,7 @@ class BTagScaleFactor:
 
             for idx, _ in numpy.ndenumerate(mapping):
                 btvflavor, eta, pt, discr = (x[idx] for x in alledges)
-                mapidx = findbin(btvflavor, eta, pt, discr)
-                if mapidx < 0 and btvflavor == self.FLAV_UDSG:
-                    # it seems for light flavor it is abs(eta)
-                    eta = eta + 1e-5  # add eps to avoid edge effects
-                    mapidx = findbin(btvflavor, abs(eta), pt, discr)
-                mapping[idx] = mapidx
+                mapping[idx] = findbin(btvflavor, eta, pt, discr)
 
             self._corrections[syst] = (
                 edges_eta,
@@ -153,9 +149,11 @@ class BTagScaleFactor:
                 return out
 
     def _lookup(self, axis, values):
+        if len(axis) == 2:
+            return numpy.zeros(shape=values.shape, dtype=numpy.uint)
         return numpy.clip(numpy.searchsorted(axis, values, side='right') - 1, 0, len(axis) - 2)
 
-    def eval(self, systematic, flavor, eta, pt, discr=None, ignore_missing=False):
+    def eval(self, systematic, flavor, abseta, pt, discr=None, ignore_missing=False):
         '''Evaluate this scale factor as a function of jet properties
 
         Parameters
@@ -166,8 +164,8 @@ class BTagScaleFactor:
             flavor : numpy.ndarray or awkward.Array
                 The generated jet hadron flavor, following the enumeration:
                 0: uds quark or gluon, 4: charm quark, 5: bottom quark
-            eta : numpy.ndarray or awkward.Array
-                The jet pseudorapitiy
+            abseta : numpy.ndarray or awkward.Array
+                The absolute value of the jet pseudorapitiy
             pt : numpy.ndarray or awkward.Array
                 The jet transverse momentum
             discr : numpy.ndarray or awkward.Array, optional
@@ -192,7 +190,7 @@ class BTagScaleFactor:
         try:
             flavor.counts
             jin, flavor = flavor, flavor.flatten()
-            eta = eta.flatten()
+            abseta = abseta.flatten()
             pt = pt.flatten()
             discr = discr.flatten() if discr is not None else None
         except AttributeError:
@@ -200,7 +198,7 @@ class BTagScaleFactor:
         corr = self._corrections[systematic]
         idx = (
             2 - self._lookup(self._flavor, flavor),  # transform to btv definiton
-            self._lookup(corr[0], eta),
+            self._lookup(corr[0], abseta),
             self._lookup(corr[1], pt),
             self._lookup(corr[2], discr) if discr is not None else 0,
         )
@@ -220,5 +218,5 @@ class BTagScaleFactor:
             out = jin.copy(content=out)
         return out
 
-    def __call__(self, systematic, flavor, eta, pt, discr=None, ignore_missing=False):
-        return self.eval(systematic, flavor, eta, pt, discr, ignore_missing)
+    def __call__(self, systematic, flavor, abseta, pt, discr=None, ignore_missing=False):
+        return self.eval(systematic, flavor, abseta, pt, discr, ignore_missing)
