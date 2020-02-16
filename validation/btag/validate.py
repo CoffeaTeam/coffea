@@ -16,21 +16,20 @@ def stdvec(l):
 
 
 def makesf(btagReader):
-    def btv_sf(syst, flavor, eta, pt, discr=None):
-        def wrap(flavor, eta, pt, discr):
+    def btv_sf(syst, flavor, abseta, pt, discr=None):
+        def wrap(flavor, abseta, pt, discr):
             if flavor == 5:
                 btvflavor = ROOT.BTagEntry.FLAV_B
             elif flavor == 4:
                 btvflavor = ROOT.BTagEntry.FLAV_C
             elif flavor == 0:
                 btvflavor = ROOT.BTagEntry.FLAV_UDSG
-                eta = abs(eta)
             else:
                 raise ValueError
             if discr is None:
-                return btagReader.eval_auto_bounds(syst, btvflavor, eta, pt)
-            return btagReader.eval_auto_bounds(syst, btvflavor, eta, pt, discr)
-        return numpy.vectorize(wrap, otypes='d')(flavor, eta, pt, discr)
+                return btagReader.eval_auto_bounds(syst, btvflavor, abseta, pt)
+            return btagReader.eval_auto_bounds(syst, btvflavor, abseta, pt, discr)
+        return numpy.vectorize(wrap, otypes='d')(flavor, abseta, pt, discr)
     return btv_sf
 
 
@@ -38,7 +37,7 @@ def validate_btag(filename, btagtype, etamax):
     btagData = ROOT.BTagCalibration(btagtype, filename)
     npts = 10000
     flavor = numpy.full(npts, 5)
-    eta = numpy.random.uniform(-etamax, etamax, size=npts)
+    abseta = numpy.random.uniform(0, etamax, size=npts)
     pt = numpy.random.exponential(50, size=npts) + numpy.random.exponential(20, size=npts)
     pt = numpy.maximum(20.1, pt)
     discr = numpy.random.rand(npts)
@@ -49,8 +48,8 @@ def validate_btag(filename, btagtype, etamax):
     btv_sf = makesf(btagReader)
 
     for syst in ['central', 'up_jes', 'down_jes']:
-        csf = coffea_sf.eval(syst, flavor, eta, pt, discr)
-        bsf = btv_sf(syst, flavor, abs(eta), pt, discr)
+        csf = coffea_sf.eval(syst, flavor, abseta, pt, discr)
+        bsf = btv_sf(syst, flavor, abseta, pt, discr)
         print(abs(csf - bsf).max())
 
     flavor = numpy.random.choice([0, 4, 5], size=npts)
@@ -62,8 +61,8 @@ def validate_btag(filename, btagtype, etamax):
     btv_sf = makesf(btagReader)
 
     for syst in ['central', 'up', 'down']:
-        csf = coffea_sf.eval(syst, flavor, eta, pt, discr)
-        bsf = btv_sf(syst, flavor, eta, pt, discr)
+        csf = coffea_sf.eval(syst, flavor, abseta, pt, discr)
+        bsf = btv_sf(syst, flavor, abseta, pt, discr)
         print(abs(csf - bsf).max())
 
 
