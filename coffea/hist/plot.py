@@ -177,7 +177,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
     if hist.dim() > 2:
         raise ValueError("plot1d() can only support up to two dimensions (one for axis, one to stack or overlay)")
     if overlay is None and hist.sparse_dim() == 1 and hist.dense_dim() == 1:
-          overlay = hist.sparse_axes()[0].name
+        overlay = hist.sparse_axes()[0].name
     elif overlay is None and hist.dim() > 1:
         raise ValueError("plot1d() can only support one dimension without an overlay axis chosen")
     if density and binwnorm is not None:
