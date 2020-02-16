@@ -68,15 +68,16 @@ INSTALL_REQUIRES = ['awkward>=0.12.20',
                     'lz4',
                     'six',
                     'cloudpickle',
-                    'mplhep>=0.0.16',
+                    'mplhep>=0.0.16,!=0.0.37',
                     'packaging',
-                    'ipywidgets'
+                    'ipywidgets',
+                    'pandas',
                     ]
 EXTRAS_REQUIRE = {}
 if six.PY3:
-    pandas = ['pandas']
     templates = ['jinja2']
-    EXTRAS_REQUIRE['spark'] = ['pyspark>=2.4.1', 'pyarrow>=0.10.0,!=0.14.0,<0.16'] + templates + pandas
+    EXTRAS_REQUIRE['spark'] = ['pyspark>=2.4.1', 'pyarrow>=0.10.0,!=0.14.0'] + templates
+    EXTRAS_REQUIRE['spark'] = ['pyspark>=2.4.1', 'pyarrow>=0.10.0,!=0.14.0,<0.16'] + templates
     EXTRAS_REQUIRE['parsl'] = ['parsl>=0.7.2']
     EXTRAS_REQUIRE['dask'] = ['dask>=2.6.0', 'distributed>=2.6.0', 'bokeh>=1.3.4', 'blosc']
 if six.PY2:
