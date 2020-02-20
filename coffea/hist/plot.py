@@ -253,7 +253,9 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             kwargs = {}
 
         hep.histplot(plot_info['sumw'], edges, label=plot_info['label'],
-                     yerr=_error, stack=stack, histtype=histtype, ax=ax,
+                     yerr=_error, histtype=histtype, ax=ax,
+                     density=density, binwnorm=binwnorm, stack=stack,
+                     densitymode=densitymode,
                      **kwargs)
 
         if stack and error_opts is not None:
