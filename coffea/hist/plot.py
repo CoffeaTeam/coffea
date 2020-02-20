@@ -113,7 +113,8 @@ def normal_interval(pw, tw, pw2, tw2, coverage=_coverage1sd):
 
 
 def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none', line_opts=None,
-           fill_opts=None, error_opts=None, legend_opts={}, overlay_overflow='none', density=False, binwnorm=None):
+           fill_opts=None, error_opts=None, legend_opts={}, overlay_overflow='none',
+           density=False, binwnorm=None, densitymode='unit'):
     """Create a 1D plot from a 1D or 2D `Hist` object
 
     Parameters
