@@ -156,6 +156,9 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         density : bool, optional
             If true, convert sum weights to probability density (i.e. integrates to 1 over domain of axis)
             (Note: this option conflicts with ``binwnorm``)
+        densitymode: ["unit", "stack"], default: "unit"
+            If using both density/binwnorm and stack choose stacking behaviour. "unit" normalized
+            each histogram separately and stacks afterwards, while "stack" normalizes the total after summing.
         binwnorm : float, optional
             If true, convert sum weights to bin-width-normalized, with unit equal to supplied value (usually you want to specify 1.)
 
@@ -222,11 +225,6 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
                     the_slice = (the_slice[1], the_slice[0])
                 sumw = sumw[the_slice]
                 sumw2 = sumw2[the_slice]
-            if (density or binwnorm is not None) and np.sum(sumw) > 0:
-                overallnorm = np.sum(sumw) * binwnorm if binwnorm is not None else 1.
-                binnorms = overallnorm / (np.diff(edges) * np.sum(sumw))
-                sumw = sumw * binnorms
-                sumw2 = sumw2 * binnorms**2
             plot_info['sumw'].append(sumw)
             plot_info['sumw2'].append(sumw2)
 
