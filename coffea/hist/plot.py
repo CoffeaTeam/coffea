@@ -113,7 +113,8 @@ def normal_interval(pw, tw, pw2, tw2, coverage=_coverage1sd):
 
 
 def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none', line_opts=None,
-           fill_opts=None, error_opts=None, legend_opts={}, overlay_overflow='none', density=False, binwnorm=None):
+           fill_opts=None, error_opts=None, legend_opts={}, overlay_overflow='none',
+           density=False, binwnorm=None, densitymode='unit', order=None):
     """Create a 1D plot from a 1D or 2D `Hist` object
 
     Parameters
@@ -128,6 +129,8 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             In the case that ``hist`` is 2D, specify the axis of hist to overlay (remaining axis will be x axis)
         stack : bool, optional
             Whether to stack or overlay non-axis dimension (if it exists)
+        order : list, optional
+            How to order when stacking. Take a list of identifiers.
         overflow : str, optional
             If overflow behavior is not 'none', extra bins will be drawn on either end of the nominal
             axis range, to represent the contents of the overflow bins.  See `Hist.sum` documentation
@@ -156,6 +159,9 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         density : bool, optional
             If true, convert sum weights to probability density (i.e. integrates to 1 over domain of axis)
             (Note: this option conflicts with ``binwnorm``)
+        densitymode: ["unit", "stack"], default: "unit"
+            If using both density/binwnorm and stack choose stacking behaviour. "unit" normalized
+            each histogram separately and stacks afterwards, while "stack" normalizes the total after summing.
         binwnorm : float, optional
             If true, convert sum weights to bin-width-normalized, with unit equal to supplied value (usually you want to specify 1.)
 
@@ -203,7 +209,10 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         ax.set_xlabel(axis.label)
         ax.set_ylabel(hist.label)
         edges = axis.edges(overflow=overflow)
-        identifiers = hist.identifiers(overlay, overflow=overlay_overflow) if overlay is not None else [None]
+        if order is None:
+            identifiers = hist.identifiers(overlay, overflow=overlay_overflow) if overlay is not None else [None]
+        else:
+            identifiers = order
         plot_info = {
             'identifier': identifiers,
             'label': list(map(str, identifiers)),
@@ -222,11 +231,6 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
                     the_slice = (the_slice[1], the_slice[0])
                 sumw = sumw[the_slice]
                 sumw2 = sumw2[the_slice]
-            if (density or binwnorm is not None) and np.sum(sumw) > 0:
-                overallnorm = np.sum(sumw) * binwnorm if binwnorm is not None else 1.
-                binnorms = overallnorm / (np.diff(edges) * np.sum(sumw))
-                sumw = sumw * binnorms
-                sumw2 = sumw2 * binnorms**2
             plot_info['sumw'].append(sumw)
             plot_info['sumw2'].append(sumw2)
 
@@ -254,7 +258,9 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             kwargs = {}
 
         hep.histplot(plot_info['sumw'], edges, label=plot_info['label'],
-                     yerr=_error, stack=stack, histtype=histtype, ax=ax,
+                     yerr=_error, histtype=histtype, ax=ax,
+                     density=density, binwnorm=binwnorm, stack=stack,
+                     densitymode=densitymode,
                      **kwargs)
 
         if stack and error_opts is not None:
