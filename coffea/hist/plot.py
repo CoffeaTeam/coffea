@@ -114,7 +114,7 @@ def normal_interval(pw, tw, pw2, tw2, coverage=_coverage1sd):
 
 def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none', line_opts=None,
            fill_opts=None, error_opts=None, legend_opts={}, overlay_overflow='none',
-           density=False, binwnorm=None, densitymode='unit'):
+           density=False, binwnorm=None, densitymode='unit', order=None):
     """Create a 1D plot from a 1D or 2D `Hist` object
 
     Parameters
@@ -129,6 +129,8 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             In the case that ``hist`` is 2D, specify the axis of hist to overlay (remaining axis will be x axis)
         stack : bool, optional
             Whether to stack or overlay non-axis dimension (if it exists)
+        order : list, optional
+            How to order when stacking. Take a list of identifiers.
         overflow : str, optional
             If overflow behavior is not 'none', extra bins will be drawn on either end of the nominal
             axis range, to represent the contents of the overflow bins.  See `Hist.sum` documentation
@@ -207,7 +209,10 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         ax.set_xlabel(axis.label)
         ax.set_ylabel(hist.label)
         edges = axis.edges(overflow=overflow)
-        identifiers = hist.identifiers(overlay, overflow=overlay_overflow) if overlay is not None else [None]
+        if order is None:
+            identifiers = hist.identifiers(overlay, overflow=overlay_overflow) if overlay is not None else [None]
+        else:
+            identifiers = order
         plot_info = {
             'identifier': identifiers,
             'label': list(map(str, identifiers)),
