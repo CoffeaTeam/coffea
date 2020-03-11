@@ -58,12 +58,10 @@ def convert_btag_csv_file(csvFilePath):
         for i, eta_bin in enumerate(etaBins[:-1]):
             for j, pt_bin in enumerate(ptBins[:-1]):
                 for k, discr_bin in enumerate(discrBins[:-1]):
-                    this_bin = np.where(
-                        (all_names == label)
-                        & (corrections[columns[4]] == eta_bin)
-                        & (corrections[columns[6]] == pt_bin)
-                        & (corrections[columns[8]] == discr_bin)
-                    )[0]
+                    this_bin = np.where((all_names == label) &
+                                        (corrections[columns[4]] == eta_bin) &
+                                        (corrections[columns[6]] == pt_bin) &
+                                        (corrections[columns[8]] == discr_bin))[0]
                     if len(this_bin) == 1:
                         vals[k, j, i] = corrections[this_bin][columns[10]][0]
                     elif len(this_bin) > 1:
