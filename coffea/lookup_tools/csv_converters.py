@@ -61,8 +61,21 @@ def convert_btag_csv_file(csvFilePath):
                     this_bin = np.where((all_names == label) &
                                         (corrections[columns[4]] == eta_bin) &
                                         (corrections[columns[6]] == pt_bin) &
-                                        (corrections[columns[8]] == discr_bin))
-                    vals[k, j, i] = corrections[this_bin][columns[10]][0]
+                                        (corrections[columns[8]] == discr_bin))[0]
+                    if len(this_bin) == 1:
+                        vals[k, j, i] = corrections[this_bin][columns[10]][0]
+                    elif len(this_bin) > 1:
+                        raise Exception(
+                            'Multiple formulas for the same bin: label={label} eta_bin={eta_bin} pt_bin={pt_bin} discr_bin={discr_bin}'.format(
+                                label=label,
+                                eta_bin=eta_bin,
+                                pt_bin=pt_bin,
+                                discr_bin=discr_bin,
+                            )
+                        )
+                    else:
+                        warnings.warn('Bin without formula. Setting scale factor to 1', RuntimeWarning)
+                        vals[k, j, i] = '1.'
         label_decode = []
         for i in range(len(label)):
             label_decode.append(label[i])
