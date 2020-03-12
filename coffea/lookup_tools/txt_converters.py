@@ -187,7 +187,7 @@ def convert_jersf_txt_file(jersfFilePath):
         nBinColumns, nEvalVars, formula, \
         nParms, columns, dtypes = _parse_jme_formatted_file(jersfFilePath,
                                                             parmsFromColumns=True)
-    
+
     temp = _build_standard_jme_lookup(name, layout, pars, nBinnedVars, nBinColumns,
                                       nEvalVars, formula, nParms, columns, dtypes)
     wrapped_up = {}
