@@ -5,7 +5,8 @@ from ..util import numpy
 from ..util import numpy as np
 from copy import deepcopy
 
-from numpy import sqrt, log, exp, abs
+from scipy.special import erf
+from numpy import sqrt, log, log10, exp, abs
 from numpy import maximum as max
 from numpy import minimum as min
 from numpy import power as pow
@@ -101,8 +102,8 @@ class jme_standard_function(lookup_base):
 
         # compile the formula
         argsize = len(self._parm_order) + len(self._eval_vars)
-        some_ones = [50 * np.ones(argsize) for i in range(argsize)]
-        _ = self._formula(*tuple(some_ones))
+        some_ones = tuple([50 * np.ones(argsize) for i in range(argsize)])
+        _ = self._formula(*some_ones)
 
         self._signature = deepcopy(self._dim_order)
         for eval in self._eval_vars:

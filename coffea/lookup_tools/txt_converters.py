@@ -39,7 +39,7 @@ def _parse_jme_formatted_file(jmeFilePath, interpolatedFunc=False, parmsFromColu
         formula = formula.replace('[%i]' % nParms, 'p%i' % nParms)
         nParms += 1
     # get rid of TMath
-    tmath = {'TMath::Max': 'max', 'TMath::Log': 'log', 'TMath::Power': 'pow'}
+    tmath = {'TMath::Max': 'max', 'TMath::Log': 'log', 'TMath::Power': 'pow', 'TMath::Erf': 'erf'}
     for key, rpl in tmath.items():
         formula = formula.replace(key, rpl)
     # protect function names with vars in them
