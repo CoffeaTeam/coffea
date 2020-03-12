@@ -78,6 +78,8 @@ def _parse_jme_formatted_file(jmeFilePath, interpolatedFunc=False, parmsFromColu
 
     if parmsFromColumns:
         pars = np.genfromtxt(jme_f, encoding='ascii')
+        if len(pars.shape) == 1:
+            pars = pars[np.newaxis,:]
         nParms = pars.shape[1] - len(columns)
         for i in range(nParms):
             columns.append('p%i' % i)
@@ -91,6 +93,8 @@ def _parse_jme_formatted_file(jmeFilePath, interpolatedFunc=False, parmsFromColu
                              unpack=True,
                              encoding='ascii'
                          )
+        if len(pars.shape) == 0:
+            pars = pars[np.newaxis]
 
     outs = [name, layout, pars, nBinnedVars, nBinColumns,
             nEvalVars, formula, nParms, columns, dtypes]

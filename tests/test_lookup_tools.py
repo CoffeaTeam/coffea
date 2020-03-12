@@ -154,8 +154,11 @@ def test_jec_txt_scalefactors():
         "* * tests/samples/Autumn18_V7b_MC_SF_AK8PFchs.jersf.txt.gz",
         "* * tests/samples/Fall17_17Nov2017_V32_MC_L2Relative_AK4Calo.jec.txt.gz",
         "* * tests/samples/Fall17_17Nov2017_V32_MC_L1JPTOffset_AK4JPT.jec.txt.gz",
-        "* * tests/samples/Fall17_17Nov2017B_V32_DATA_L2Relative_AK4Calo.txt.gz"
-    ])    
+        "* * tests/samples/Fall17_17Nov2017B_V32_DATA_L2Relative_AK4Calo.txt.gz",
+        "* * tests/samples/Autumn18_V7b_DATA_SF_AK4PF.jersf.txt",
+        "* * tests/samples/Autumn18_RunC_V19_DATA_L2Relative_AK8PFchs.jec.txt.gz",
+        "* * tests/samples/Autumn18_RunA_V19_DATA_L2Relative_AK4Calo.jec.txt"
+    ])
     extractor.finalize()
 
     evaluator = extractor.make_evaluator()
