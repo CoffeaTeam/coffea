@@ -195,6 +195,9 @@ def convert_jersf_txt_file(jersfFilePath):
         newkey = (key[0], 'jersf_lookup')
         vallist = list(val)
         vals, names = vallist[-1]
+        if len(vals) > 3:
+            warnings.warn('JERSF file is in the new format with split-out systematic, only parsing totals!!!')
+            vals = vals[:3]
         names = ['central-up-down']
         central, down, up = vals
         vallist[-1] = ((central, up, down), names)

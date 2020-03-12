@@ -150,8 +150,9 @@ def test_jec_txt_scalefactors():
         "* * tests/samples/Summer16_07Aug2017_V11_L1fix_MC_L2Relative_AK4PFchs.jec.txt.gz",
         "* * tests/samples/Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi.junc.txt",
         "* * tests/samples/Autumn18_V8_MC_UncertaintySources_AK4PFchs.junc.txt",
-        "* * tests/samples/Spring16_25nsV10_MC_SF_AK4PFPuppi.jersf.txt"
-    ])
+        "* * tests/samples/Spring16_25nsV10_MC_SF_AK4PFPuppi.jersf.txt",
+        "* * tests/samples/Autumn18_V7b_MC_SF_AK8PFchs.jersf.txt.gz"
+    ])    
     extractor.finalize()
 
     evaluator = extractor.make_evaluator()
