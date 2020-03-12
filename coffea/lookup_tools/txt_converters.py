@@ -79,7 +79,7 @@ def _parse_jme_formatted_file(jmeFilePath, interpolatedFunc=False, parmsFromColu
     if parmsFromColumns:
         pars = np.genfromtxt(jme_f, encoding='ascii')
         if len(pars.shape) == 1:
-            pars = pars[np.newaxis,:]
+            pars = pars[np.newaxis, :]
         nParms = pars.shape[1] - len(columns)
         for i in range(nParms):
             columns.append('p%i' % i)
