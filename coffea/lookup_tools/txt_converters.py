@@ -187,7 +187,7 @@ def convert_jersf_txt_file(jersfFilePath):
         nBinColumns, nEvalVars, formula, \
         nParms, columns, dtypes = _parse_jme_formatted_file(jersfFilePath,
                                                             parmsFromColumns=True)
-
+    
     temp = _build_standard_jme_lookup(name, layout, pars, nBinnedVars, nBinColumns,
                                       nEvalVars, formula, nParms, columns, dtypes)
     wrapped_up = {}
@@ -195,6 +195,9 @@ def convert_jersf_txt_file(jersfFilePath):
         newkey = (key[0], 'jersf_lookup')
         vallist = list(val)
         vals, names = vallist[-1]
+        if len(vals) > 3:
+            warnings.warn('JERSF file is in the new format with split-out systematic, only parsing totals!!!')
+            vals = vals[:3]
         names = ['central-up-down']
         central, down, up = vals
         vallist[-1] = ((central, up, down), names)
