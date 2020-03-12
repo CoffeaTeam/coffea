@@ -18,12 +18,14 @@ def wrap_formula(fstr, varlist):
         Supports only simple math for now
     """
     val = fstr
+    print(val)
     try:
         val = float(fstr)
         fstr = 'np.full_like(%s,%f)' % (varlist[0], val)
     except ValueError:
         val = fstr
     lstr = "lambda %s: %s" % (",".join(varlist), fstr)
+    print(lstr)
     func = eval(lstr)
     return func
 
