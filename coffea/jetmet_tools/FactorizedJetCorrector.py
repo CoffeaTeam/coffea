@@ -155,10 +155,10 @@ class FactorizedJetCorrector(object):
         corrVars = []
         if 'JetPt' in kwargs.keys():
             corrVars.append('JetPt')
-            localargs['JetPt'] = np.copy(kwargs['JetPt'])
+            localargs['JetPt'] = kwargs['JetPt'].copy()
         if 'JetE' in kwargs.keys():
             corrVars.append('JetE')
-            localargs['JetE'] = np.copy(kwargs['JetE'])
+            localargs['JetE'] = kwargs['JetE'].copy()
         if len(corrVars) == 0:
             raise Exception('No variable to correct, need JetPt or JetE in inputs!')
         firstarg = localargs[self._signature[0]]
