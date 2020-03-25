@@ -5,6 +5,7 @@ import warnings
 import numpy as np
 
 import pytest
+import sys
 
 if sys.version.startswith("3.8"):
     pytest.skip("pyspark not yet functional in python 3.8", allow_module_level=True)
