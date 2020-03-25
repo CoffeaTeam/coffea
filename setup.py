@@ -76,7 +76,7 @@ INSTALL_REQUIRES = ['awkward>=0.12.20',
 EXTRAS_REQUIRE = {}
 if six.PY3:
     templates = ['jinja2']
-    EXTRAS_REQUIRE['spark'] = ['pyspark>=2.4.1', 'pyarrow>=0.10.0,!=0.14.0'] + templates
+    EXTRAS_REQUIRE['spark'] = ['pyspark>=2.4.1,!=2.4.5', 'pyarrow>=0.10.0,!=0.14.0'] + templates
     EXTRAS_REQUIRE['parsl'] = ['parsl>=0.7.2']
     EXTRAS_REQUIRE['dask'] = ['dask>=2.6.0', 'distributed>=2.6.0', 'bokeh>=1.3.4', 'blosc']
 if six.PY2:
