@@ -35,8 +35,7 @@ jobs:
         python -m pip install -q --upgrade pip setuptools setuptools_scm wheel six pytest codecov
         python -m pip install -q ${{ matrix.awkward-version }}
         python -m pip install -q https://github.com/Parsl/parsl/zipball/master
-        python -m pip install -q -e .[parsl,dask,spark]
-        python -m pip uninstall typing #only use native typing
+        python -m pip install -q -e .[parsl,dask,spark] --user
         python -m pip list
         java -version
     - name: Test with pytest
