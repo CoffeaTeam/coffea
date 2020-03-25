@@ -5,6 +5,8 @@ import multiprocessing
 import sys
 import pytest
 
+if sys.version.startswith("3.8") and sys.platform.startswith("darwin"):
+    pytest.skip("parsl not yet functional in python 3.8 on macs", allow_module_level=True)
 
 def test_parsl_start_stop():
     parsl = pytest.importorskip("parsl", minversion="0.7.2")

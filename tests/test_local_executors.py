@@ -57,6 +57,10 @@ def test_iterative_executor():
 
 
 def test_futures_executor():
+
+    if sys.version.startswith("3.8") and sys.platform.startswith("darwin"):
+        pytest.skip("futures not yet functional in python 3.8 on macs")
+
     from coffea.processor import futures_executor
     
     filelist = {
