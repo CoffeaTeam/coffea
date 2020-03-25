@@ -14,7 +14,7 @@ def coffea_udf(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last }}{%
     offsets_store = {}
 
     for i, col in enumerate(columns):
-        #numpy array
+        # numpy array
         if columns[i].array[0].base is None:
             items[names[i]] = columns[i].values
         else:
@@ -24,7 +24,7 @@ def coffea_udf(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last }}{%
                 offsets_store[prefix] = np.zeros(shape=(counts.size + 1, ), dtype=np.int64)
                 offsets_store[prefix][1:] = np.cumsum(counts)
             offsets = offsets_store[prefix]
-            contents = columns[i].array[0].base
+            contents = np.squeeze(columns[i].array[0].base)
             items[names[i]] = awkward.JaggedArray.fromoffsets(offsets, contents)
 
     df = processor.PreloadedDataFrame(size=size, items=items)
@@ -51,11 +51,11 @@ def coffea_udf_flat(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last
     items = {}
 
     for i, col in enumerate(columns):
-        #numpy array
+        # numpy array
         if columns[i].array[0].base is None:
             items[names[i]] = columns[i].values
         else:
-            items[names[i]] = columns[i].array[0].base
+            items[names[i]] = np.squeeze(columns[i].array[0].base)
 
     df = processor.PreloadedDataFrame(size=size, items=items)
     df['dataset'] = dataset[0]
