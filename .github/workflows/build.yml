@@ -36,6 +36,7 @@ jobs:
         python -m pip install -q ${{ matrix.awkward-version }}
         python -m pip install -q https://github.com/Parsl/parsl/zipball/master
         python -m pip install -q -e .[parsl,dask,spark]
+        sudo chmod +x `which spark-submit`
         python -m pip list
         java -version
     - name: Test with pytest
