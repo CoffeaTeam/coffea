@@ -31,10 +31,8 @@ jobs:
         java-version: ${{ matrix.java-version }}
     - name: Install dependencies
       if: matrix.os != 'windows-latest'
-      run: |        
+      run: |
         python -m pip install -q --upgrade pip setuptools setuptools_scm wheel six pytest codecov
-        python -m venv test
-        source ./test/bin/activate
         python -m pip install -q ${{ matrix.awkward-version }}
         python -m pip install -q https://github.com/Parsl/parsl/zipball/master
         python -m pip install -q -e .[parsl,dask,spark]
