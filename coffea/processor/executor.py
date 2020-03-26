@@ -32,7 +32,6 @@ try:
 except ImportError:
     from collections import Mapping, Sequence
 
-
 _PICKLE_PROTOCOL = pickle.HIGHEST_PROTOCOL
 DEFAULT_METADATA_CACHE = LRUCache(100000)
 
@@ -518,6 +517,7 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                 tree = file[item.treename]
                 df = LazyDataFrame(tree, item.entrystart, item.entrystop, flatten=flatten)
                 df['dataset'] = item.dataset
+                df['filename'] = item.filename
             tic = time.time()
             out = processor_instance.process(df)
             toc = time.time()
@@ -601,6 +601,9 @@ def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None, align
             break
         except OSError as e:
             if not skipbadfiles:
+                e_args = list(e.args)
+                e_args[0] += ' '.join(('Bad file source', item.filename, 'timeout', str(xrootdtimeout)))
+                e.args = tuple(e_args)
                 raise e
             else:
                 w_str = 'Bad file source %s.' % item.filename
