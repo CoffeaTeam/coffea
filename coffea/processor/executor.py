@@ -515,9 +515,16 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                 )
             else:
                 tree = file[item.treename]
-                df = LazyDataFrame(tree, item.entrystart, item.entrystop, flatten=flatten)
-                df['dataset'] = item.dataset
-                df['filename'] = item.filename
+                if isinstance(tree, uproot.tree.TTreeMethods):
+                    df = LazyDataFrame(tree, item.entrystart, item.entrystop, flatten=flatten)
+                    df['dataset'] = item.dataset
+                    df['filename'] = item.filename
+                else: # if tree is not a tree, return a dict
+                    df = {
+                        'obj' : tree,
+                        'dataset' : item.dataset,
+                        'filename' : item.filename,
+                    }
             tic = time.time()
             out = processor_instance.process(df)
             toc = time.time()
@@ -594,7 +601,11 @@ def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None, align
             xrootdsource = {"timeout": xrootdtimeout, "chunkbytes": 32 * 1024, "limitbytes": 1024**2, "parallel": False}
             file = uproot.open(item.filename, xrootdsource=xrootdsource)
             tree = file[item.treename]
-            metadata = {'numentries': tree.numentries, 'uuid': file._context.uuid}
+            is_tree = isinstance(tree, uproot.tree.TTreeMethods)
+            metadata = {
+                'numentries': tree.numentries if is_tree else 1, # assume that non-trees are constant in size 
+                'uuid': file._context.uuid
+            }
             if align_clusters:
                 metadata['clusters'] = [0] + list(c[1] for c in tree.clusters())
             out = set_accumulator([FileMeta(item.dataset, item.filename, item.treename, metadata)])
