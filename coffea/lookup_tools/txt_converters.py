@@ -39,21 +39,11 @@ def _parse_jme_formatted_file(jmeFilePath, interpolatedFunc=False, parmsFromColu
         formula = formula.replace('[%i]' % nParms, 'p%i' % nParms)
         nParms += 1
     # get rid of TMath
-    tmath = {'TMath::Max': 'max', 'TMath::Log': 'log', 'TMath::Power': 'pow'}
+    tmath = {'TMath::Max': 'max', 'TMath::Log': 'log', 'TMath::Power': 'pow', 'TMath::Erf': 'erf'}
     for key, rpl in tmath.items():
         formula = formula.replace(key, rpl)
     # protect function names with vars in them
     funcs_to_cap = ['max', 'exp', 'pow']
-    for f in funcs_to_cap:
-        formula = formula.replace(f, f.upper())
-
-    templatevars = ['x', 'y', 'z', 'w', 't', 's']
-    varnames = [layout[i + nBinnedVars + 2] for i in range(nEvalVars)]
-    for find, replace in zip(templatevars, varnames):
-        formula = formula.replace(find, replace)
-    # restore max
-    for f in funcs_to_cap:
-        formula = formula.replace(f.upper(), f)
 
     # parse the columns
     minMax = ['Min', 'Max']
@@ -74,8 +64,22 @@ def _parse_jme_formatted_file(jmeFilePath, interpolatedFunc=False, parmsFromColu
         columns.append('p%i' % i)
         dtypes.append('<f8')
 
+    for f in funcs_to_cap:
+        formula = formula.replace(f, f.upper())
+
+    templatevars = ['x', 'y', 'z', 't', 'w', 's']
+    varnames = [layout[i + nBinnedVars + 2] for i in range(nEvalVars)]
+    for find, replace in zip(templatevars, varnames):
+        formula = formula.replace(find, replace.upper())
+        funcs_to_cap.append(replace)
+    # restore max
+    for f in funcs_to_cap:
+        formula = formula.replace(f.upper(), f)
+
     if parmsFromColumns:
         pars = np.genfromtxt(jme_f, encoding='ascii')
+        if len(pars.shape) == 1:
+            pars = pars[np.newaxis, :]
         nParms = pars.shape[1] - len(columns)
         for i in range(nParms):
             columns.append('p%i' % i)
@@ -89,6 +93,8 @@ def _parse_jme_formatted_file(jmeFilePath, interpolatedFunc=False, parmsFromColu
                              unpack=True,
                              encoding='ascii'
                          )
+        if len(pars.shape) == 0:
+            pars = pars[np.newaxis]
 
     outs = [name, layout, pars, nBinnedVars, nBinColumns,
             nEvalVars, formula, nParms, columns, dtypes]
@@ -195,6 +201,9 @@ def convert_jersf_txt_file(jersfFilePath):
         newkey = (key[0], 'jersf_lookup')
         vallist = list(val)
         vals, names = vallist[-1]
+        if len(vals) > 3:
+            warnings.warn('JERSF file is in the new format with split-out systematic, only parsing totals!!!')
+            vals = vals[:3]
         names = ['central-up-down']
         central, down, up = vals
         vallist[-1] = ((central, up, down), names)

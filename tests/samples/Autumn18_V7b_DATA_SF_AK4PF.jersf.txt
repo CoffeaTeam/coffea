@@ -1,0 +1,2 @@
+{1 JetEta 0 None ScaleFactor}
+-50      50   3   1         1         1

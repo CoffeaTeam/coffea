@@ -29,7 +29,8 @@ def save(output, filename):
     This function can accept any picklable object.  Suggested suffix: ``.coffea``
     '''
     with lz4.frame.open(filename, 'wb') as fout:
-        cloudpickle.dump(output, fout)
+        thepickle = cloudpickle.dumps(output)
+        fout.write(thepickle)
 
 
 def _hex(string):

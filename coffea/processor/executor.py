@@ -741,7 +741,7 @@ def run_uproot_job(fileset,
                 'worker_affinity': False,
             }
             pre_args.update(pre_arg_override)
-            executor(to_get, metadata_fetcher, out, **pre_args)
+            pre_executor(to_get, metadata_fetcher, out, **pre_args)
             while out:
                 item = out.pop()
                 metadata_cache[item] = item.metadata
