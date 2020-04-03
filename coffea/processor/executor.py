@@ -511,13 +511,17 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                     treename=item.treename,
                     entrystart=item.entrystart,
                     entrystop=item.entrystop,
-                    metadata={'dataset': item.dataset},
+                    metadata={
+                        'dataset': item.dataset,
+                        'filename': item.filename
+                    },
                     cache=cache,
                 )
             else:
                 tree = file[item.treename]
                 df = LazyDataFrame(tree, item.entrystart, item.entrystop, flatten=flatten)
                 df['dataset'] = item.dataset
+                df['filename'] = item.filename
             tic = time.time()
             out = processor_instance.process(df)
             toc = time.time()
