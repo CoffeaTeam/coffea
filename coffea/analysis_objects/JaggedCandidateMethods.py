@@ -145,7 +145,7 @@ class JaggedCandidateMethods(awkward.Methods):
 
         Example::
 
-            cands = JaggedCandidateArray.candidatesfromoffsets(counts=counts,
+            cands = JaggedCandidateArray.candidatesfromoffsets(offsets=offsets,
                                                                pt=column1,
                                                                eta=column2,
                                                                phi=column3,
