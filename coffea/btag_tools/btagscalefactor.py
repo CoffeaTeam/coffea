@@ -210,8 +210,8 @@ class BTagScaleFactor:
             if isinstance(func, float):
                 out[where] = func
             else:
-                tmp = func(var)
-                out[where] = tmp[where]
+                tmp = func(var[where])
+                out[where] = tmp
 
         if jin is not None:
             out = jin.copy(content=out)
