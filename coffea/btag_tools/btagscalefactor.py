@@ -135,16 +135,9 @@ class BTagScaleFactor:
             except KeyError:
                 if 'x' in formula:
                     feval = eval('lambda x: ' + formula, {'log': numpy.log, 'sqrt': numpy.sqrt})
-                    out = numba.vectorize([
-                        numba.float32(numba.float32),
-                        numba.float64(numba.float64),
-                    ])(feval)
+                    out = numba.jit()(feval)
                 else:
-                    val = eval(formula, {'log': numpy.log, 'sqrt': numpy.sqrt})
-
-                    def duck(_, out, where):
-                        out[where] = val
-                    out = duck
+                    out = eval(formula)
                 BTagScaleFactor._formulaCache[formula] = out
                 return out
 
@@ -187,6 +180,7 @@ class BTagScaleFactor:
         except KeyError:
             functions = [BTagScaleFactor._compile(f) for f in self._corrections[systematic][-1]]
             self._compiled[systematic] = functions
+
         try:
             flavor.counts
             jin, flavor = flavor, flavor.flatten()
@@ -212,7 +206,13 @@ class BTagScaleFactor:
                 var = numpy.clip(discr, corr[2][0], corr[2][-1])
             else:
                 var = numpy.clip(pt, corr[1][0], corr[1][-1])
-            func(var, out=out, where=(mapidx == ifunc))
+            
+            where=(mapidx == ifunc)
+            if isinstance(func, float):
+                out[where] = func
+            else:
+                tmp = func(var)
+                out[where] = tmp[where]
 
         if jin is not None:
             out = jin.copy(content=out)
