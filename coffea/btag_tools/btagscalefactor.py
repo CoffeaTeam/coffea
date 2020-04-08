@@ -206,8 +206,7 @@ class BTagScaleFactor:
                 var = numpy.clip(discr, corr[2][0], corr[2][-1])
             else:
                 var = numpy.clip(pt, corr[1][0], corr[1][-1])
-            
-            where=(mapidx == ifunc)
+            where = (mapidx == ifunc)
             if isinstance(func, float):
                 out[where] = func
             else:
