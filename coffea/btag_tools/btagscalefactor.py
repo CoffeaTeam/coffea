@@ -26,7 +26,7 @@ class BTagScaleFactor:
     _formulaCache = {}
     _btvflavor = numpy.array([0, 1, 2, 3])
     _flavor = numpy.array([0, 4, 5, 6])
-    _wpString = {'loose': LOOSE, 'medium': MEDIUM, 'tight': TIGHT}
+    _wpString = {'loose': LOOSE, 'medium': MEDIUM, 'tight': TIGHT, 'reshape': RESHAPE}
     _expectedColumns = [
         'OperatingPoint', 'measurementType', 'sysType', 'jetFlavor', 'etaMin',
         'etaMax', 'ptMin', 'ptMax', 'discrMin', 'discrMax', 'formula'
