@@ -101,6 +101,9 @@ class JetTransformer(object):
                             ' got {}'.format(type(jersf)))
         self._jersf = jersf
 
+        # from PhysicsTools/PatUtils/interface/SmearedJetProducerT.h#L283
+        self.MIN_JET_ENERGY = 1e-2
+
     @property
     def uncertainties(self):
         return self._junc.levels if self._junc is not None else []
@@ -169,15 +172,27 @@ class JetTransformer(object):
 
             jsmear_cen = np.where(doHybrid,
                                   1 + (jersf[:, 0] - 1) * (jet.pt.content - ptGenJet) / jet.pt.content,
-                                  1. + np.sqrt(np.max(jersf[:, 0]**2 - 1.0, 0)) * jersmear)
+                                  1. + np.sqrt(np.maximum(jersf[:, 0]**2 - 1.0, 0)) * jersmear)
 
             jsmear_up = np.where(doHybrid,
                                  1 + (jersf[:, 1] - 1) * (jet.pt.content - ptGenJet) / jet.pt.content,
-                                 1. + np.sqrt(np.max(jersf[:, 1]**2 - 1.0, 0)) * jersmear)
+                                 1. + np.sqrt(np.maximum(jersf[:, 1]**2 - 1.0, 0)) * jersmear)
 
             jsmear_down = np.where(doHybrid,
                                    1 + (jersf[:, -1] - 1) * (jet.pt.content - ptGenJet) / jet.pt.content,
-                                   1. + np.sqrt(np.max(jersf[:, -1]**2 - 1.0, 0)) * jersmear)
+                                   1. + np.sqrt(np.maximum(jersf[:, -1]**2 - 1.0, 0)) * jersmear)
+
+            # from PhysicsTools/PatUtils/interface/SmearedJetProducerT.h#L255-L264
+            min_jet_pt = self.MIN_JET_ENERGY / np.cosh(jet.eta.content)
+            jsmear_up = np.where(jsmear_up * jet.pt.content < min_jet_pt,
+                                 min_jet_pt / jet.pt.content,
+                                 jsmear_up)
+            jsmear_down = np.where(jsmear_down * jet.pt.content < min_jet_pt,
+                                   min_jet_pt / jet.pt.content,
+                                   jsmear_down)
+            jsmear_cen = np.where(jsmear_cen * jet.pt.content < min_jet_pt,
+                                  min_jet_pt / jet.pt.content,
+                                  jsmear_cen)
 
             # need to apply up and down jer-smear before applying central correction
             jet.add_attributes(pt_jer_up=jsmear_up * jet.pt.content,
