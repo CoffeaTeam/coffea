@@ -184,14 +184,15 @@ class JetTransformer(object):
 
             # from PhysicsTools/PatUtils/interface/SmearedJetProducerT.h#L255-L264
             min_jet_pt = self.MIN_JET_ENERGY / np.cosh(jet.eta.content)
+            min_jet_pt_corr = min_jet_pt / jet.pt.content
             jsmear_up = np.where(jsmear_up * jet.pt.content < min_jet_pt,
-                                 min_jet_pt / jet.pt.content,
+                                 min_jet_pt_corr,
                                  jsmear_up)
             jsmear_down = np.where(jsmear_down * jet.pt.content < min_jet_pt,
-                                   min_jet_pt / jet.pt.content,
+                                   min_jet_pt_corr,
                                    jsmear_down)
             jsmear_cen = np.where(jsmear_cen * jet.pt.content < min_jet_pt,
-                                  min_jet_pt / jet.pt.content,
+                                  min_jet_pt_corr,
                                   jsmear_cen)
 
             # need to apply up and down jer-smear before applying central correction
