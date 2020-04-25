@@ -26,7 +26,7 @@ class BTagScaleFactor:
     _formulaCache = {}
     _btvflavor = numpy.array([0, 1, 2, 3])
     _flavor = numpy.array([0, 4, 5, 6])
-    _wpString = {'loose': LOOSE, 'medium': MEDIUM, 'tight': TIGHT}
+    _wpString = {'loose': LOOSE, 'medium': MEDIUM, 'tight': TIGHT, 'reshape': RESHAPE}
     _expectedColumns = [
         'OperatingPoint', 'measurementType', 'sysType', 'jetFlavor', 'etaMin',
         'etaMax', 'ptMin', 'ptMax', 'discrMin', 'discrMax', 'formula'
@@ -135,16 +135,9 @@ class BTagScaleFactor:
             except KeyError:
                 if 'x' in formula:
                     feval = eval('lambda x: ' + formula, {'log': numpy.log, 'sqrt': numpy.sqrt})
-                    out = numba.vectorize([
-                        numba.float32(numba.float32),
-                        numba.float64(numba.float64),
-                    ])(feval)
+                    out = numba.jit()(feval)
                 else:
-                    val = eval(formula, {'log': numpy.log, 'sqrt': numpy.sqrt})
-
-                    def duck(_, out, where):
-                        out[where] = val
-                    out = duck
+                    out = eval(formula)
                 BTagScaleFactor._formulaCache[formula] = out
                 return out
 
@@ -187,6 +180,7 @@ class BTagScaleFactor:
         except KeyError:
             functions = [BTagScaleFactor._compile(f) for f in self._corrections[systematic][-1]]
             self._compiled[systematic] = functions
+
         try:
             flavor.counts
             jin, flavor = flavor, flavor.flatten()
@@ -212,7 +206,12 @@ class BTagScaleFactor:
                 var = numpy.clip(discr, corr[2][0], corr[2][-1])
             else:
                 var = numpy.clip(pt, corr[1][0], corr[1][-1])
-            func(var, out=out, where=(mapidx == ifunc))
+            where = (mapidx == ifunc)
+            if isinstance(func, float):
+                out[where] = func
+            else:
+                tmp = func(var[where])
+                out[where] = tmp
 
         if jin is not None:
             out = jin.copy(content=out)
