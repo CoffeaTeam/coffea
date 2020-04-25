@@ -114,7 +114,7 @@ def normal_interval(pw, tw, pw2, tw2, coverage=_coverage1sd):
 
 def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none', line_opts=None,
            fill_opts=None, error_opts=None, legend_opts={}, overlay_overflow='none',
-           density=False, binwnorm=None, densitymode='unit', order=None):
+           density=False, binwnorm=None, order=None):
     """Create a 1D plot from a 1D or 2D `Hist` object
 
     Parameters
@@ -159,9 +159,6 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         density : bool, optional
             If true, convert sum weights to probability density (i.e. integrates to 1 over domain of axis)
             (Note: this option conflicts with ``binwnorm``)
-        densitymode: ["unit", "stack"], default: "unit"
-            If using both density/binwnorm and stack choose stacking behaviour. "unit" normalized
-            each histogram separately and stacks afterwards, while "stack" normalizes the total after summing.
         binwnorm : float, optional
             If true, convert sum weights to bin-width-normalized, with unit equal to supplied value (usually you want to specify 1.)
 
@@ -260,7 +257,6 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         hep.histplot(plot_info['sumw'], edges, label=plot_info['label'],
                      yerr=_error, histtype=histtype, ax=ax,
                      density=density, binwnorm=binwnorm, stack=stack,
-                     densitymode=densitymode,
                      **kwargs)
 
         if stack and error_opts is not None:
