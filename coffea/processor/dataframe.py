@@ -9,7 +9,9 @@ except ImportError:
 class LazyDataFrame(MutableMapping):
     """Simple delayed uproot reader (a la lazyarrays)
 
-    Keeps track of values accessed, for later parsing.
+    One can access branches either through ``df["bname"]`` or ``df.bname``, although
+    the latter is restricted to branches that do not start with a leading underscore.
+    Keeps track of values accessed, in the `materialized` attribute.
 
     Parameters
     ----------
@@ -52,6 +54,8 @@ class LazyDataFrame(MutableMapping):
             raise KeyError(key)
 
     def __getattr__(self, key):
+        if key.startswith("_"):
+            raise AttributeError(key)
         try:
             return self.__getitem__(key)
         except KeyError:
@@ -129,6 +133,8 @@ class PreloadedDataFrame(MutableMapping):
         return self._dict[key]
 
     def __getattr__(self, key):
+        if key.startswith("_"):
+            raise AttributeError(key)
         try:
             return self.__getitem__(key)
         except KeyError:
