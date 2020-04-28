@@ -228,6 +228,12 @@ def test_lazy_dataframe_getattr():
     with pytest.raises(AttributeError):
         x = df.notthere
 
+    import copy
+    df2 = copy.copy(df)
+    pt = df2.Muon_pt
+    with pytest.raises(AttributeError):
+        df2.notthere
+
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason='problems with paths on windows')
 def test_preloaded_dataframe():
