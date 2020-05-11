@@ -84,11 +84,11 @@ jobs:
       run: |
         coverage run --source=coffea/ setup.py pytest
     - name: Test work_queue
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.6
+      if: matrix.os == 'ubuntu-latest'
       shell: bash -l {0}
       run: |
-        conda create --name coffea-env python=3.6
-        conda activate coffea-env
+        conda create --name coffea-env-${{ matrix.python-version }} python=${{ matrix.python-version }}
+        conda activate coffea-env-${{ matrix.python-version }}
         conda install -c conda-forge ndcctools dill six
         python -m pip install -I .
         cd tests
