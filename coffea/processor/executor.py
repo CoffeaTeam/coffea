@@ -225,7 +225,7 @@ def _coffea_fn_as_file_wrapper(tmpdir):
     The file output is created (or overwritten), with the dilled result of the function call.
     The wrapper created is created/deleted according to the lifetime of the work_queue_executor."""
 
-    name=os.path.join(tmpdir, 'fn_as_file')
+    name = os.path.join(tmpdir, 'fn_as_file')
 
     with open(name, mode='w') as f:
         f.write("""
