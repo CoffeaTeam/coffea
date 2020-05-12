@@ -8,8 +8,13 @@ import pickle
 import sys
 import math
 import copy
+import shutil
 import json
 import cloudpickle
+import uproot
+import subprocess
+import re
+import os
 from tqdm.auto import tqdm
 from collections import defaultdict
 from cachetools import LRUCache
@@ -211,6 +216,286 @@ def _futures_handler(futures_set, output, status, unit, desc, add_fn, tailtimeou
         for job in futures_set:
             _cancel(job)
         raise
+
+
+def _coffea_fn_as_file_wrapper(tmpdir):
+    """ Writes a wrapper script to run dilled python functions and arguments.
+    The wrapper takes as arguments the name of three files: function, argument, and output.
+    The files function and argument have the dilled function and argument, respectively.
+    The file output is created (or overwritten), with the dilled result of the function call.
+    The wrapper created is created/deleted according to the lifetime of the work_queue_executor."""
+
+    name = os.path.join(tmpdir, 'fn_as_file')
+
+    with open(name, mode='w') as f:
+        f.write("""
+#!/usr/bin/env python3
+import os
+import sys
+import dill
+import coffea
+
+(fn, arg, out) = sys.argv[1], sys.argv[2], sys.argv[3]
+
+with open(fn, "rb") as f:
+    exec_function = dill.load(f)
+with open(arg, "rb") as f:
+    exec_item = dill.load(f)
+
+pickle_out = exec_function(exec_item)
+with open(out, "wb") as f:
+    dill.dump(pickle_out, f) """)
+
+    return name
+
+
+def work_queue_executor(items, function, accumulator, **kwargs):
+    """Execute using Work Queue
+
+    Work Queue is a production framework used to build large scale master-
+    worker applications, developed by the Cooperative Computing Laboratory
+    (CCL) at the University of Notre Dame. This executor functions as the
+    master program which submits chunks of data as tasks. A remote worker,
+    which can be run on cluster and cloud systems, will be able to execute
+    the task.
+
+    python_package_run is the necessary wrapper script. This script is
+    installed with work queue. The executor will try to find this wrapper in
+    PATH. Also, The location of this script can be specified with the 'wrapper'
+    argument.
+
+    Currently, this executor only works with Python 3.6 and 3.7 (not 3.8).
+
+    To set up Work Queue, the following procedure can be used:
+
+    $ conda create --name conda-coffea-wq-env python=3.6
+    $ conda activate conda-coffea-wq-env
+    $ pip install six coffea dill
+    $ conda install -y -c conda-forge xrootd
+    $ conda deactivate
+    $ conda activate base
+    $ pip install conda-pack
+    $ python -c 'import conda_pack; conda_pack.pack(name="conda-coffea-wq-env", output="conda-coffea-wq-env.tar.gz")'
+    $ conda activate conda-coffea-wq-env
+    $ ... run coffea + wq code!
+
+    For further information about Work Queue, please visit the documentation
+    at: https://cctools.readthedocs.io/en/latest/work_queue/
+
+    Parameters
+    ----------
+        items : list
+            List of input arguments
+        function : callable
+            A function to be called on each input, which returns an accumulator instance
+        accumulator : AccumulatorABC
+            An accumulator to collect the output of the function
+        status : bool
+            If true (default), enable progress bar
+        unit : str
+            Label of progress bar unit
+        desc : str
+            Label of progress bar description
+        compression : int, optional
+            Compress accumulator outputs in flight with LZ4, at level specified (default 1)
+            Set to ``None`` for no compression.
+        # work queue specific options:
+        environment-file : str
+            Python environment to use. Required.
+        cores : int
+            Number of cores for work queue task. If unset, use a whole worker.
+        memory : int
+            Amount of memory (in MB) for work queue task. If unset, use a whole worker.
+        disk : int
+            Amount of disk space (in MB) for work queue task. If unset, use a whole worker.
+        resources-mode : one of 'fixed', or 'auto'. Default is 'fixed'.
+            'fixed' - allocate cores, memory, and disk specified for each task.
+            'auto'  - use cores, memory, and disk as maximum values to allocate.
+                      Useful when the resources used by a task are not known, as
+                      it lets work queue find an efficient value for maximum
+                      throughput.
+        debug-log : str
+            Filename for debug output
+        stats-log : str
+            Filename for tasks statistics output
+        transactions-log : str
+            Filename for tasks lifetime reports output
+        master-name : str
+            Name to refer to this work queue master.
+            Sets port to 0 (any available port) if port not given.
+        port : int
+            Port number for work queue master program. Defaults to 9123 if
+            master-name not given.
+        wrapper : str
+            Wrapper script to run/open python environment tarball. Defaults to python_package_run found in PATH.
+        print-stdout : bool
+            If true (default), print the standard output of work queue task on completion.
+    """
+    try:
+        import work_queue as wq
+        import tempfile
+        import dill
+        import os
+        from os.path import basename
+    except ImportError as e:
+        print('You must have Work Queue and dill installed to use work_queue_executor!')
+        raise e
+
+    unit = kwargs.pop('unit', 'items')
+    status = kwargs.pop('status', True)
+    desc = kwargs.pop('desc', 'Processing')
+    clevel = kwargs.pop('compression', 1)
+    filepath = kwargs.pop('filepath', '.')
+    output = kwargs.pop('print-stdout', False)
+
+    if clevel is not None:
+        function = _compression_wrapper(clevel, function)
+
+    # work queue specific options:
+    env_file = kwargs.pop('environment-file', None)
+    wrapper = kwargs.pop('wrapper', shutil.which('python_package_run'))
+
+    if not env_file:
+        raise TypeError("environment-file argument missing. It should name a conda environment as a tar file.")
+    elif not os.path.exists(env_file):
+        raise ValueError("environment-file does not name an existing conda environment as a tar file.")
+
+    if not wrapper:
+        raise ValueError("Location of python_package_run could not be determined automatically.\nUse 'wrapper' argument to the work_queue_executor.")
+
+    # fixed, or auto
+    resources_mode = kwargs.pop('resources-mode', 'fixed')
+    cores = kwargs.pop('cores', None)
+    memory = kwargs.pop('memory', None)
+    disk = kwargs.pop('disk', None)
+
+    default_resources = {}
+    if cores:
+        default_resources['cores'] = cores
+    if memory:
+        default_resources['memory'] = memory
+    if disk:
+        default_resources['disk'] = disk
+
+    debug_log = kwargs.pop('debug-log', None)
+    stats_log = kwargs.pop('stats-log', None)
+    trans_log = kwargs.pop('transactions-log', None)
+
+    master_name = kwargs.pop('master-name', None)
+    port = kwargs.pop('port', None)
+    if port is None:
+        if master_name:
+            port = 0
+        else:
+            port = 9123
+
+    with tempfile.TemporaryDirectory(prefix="wq-executor-tmp-", dir=filepath) as tmpdir:
+        # Pickle function
+        with open(os.path.join(tmpdir, 'function.p'), 'wb') as wf:
+            dill.dump(function, wf)
+
+        # Set up Work Queue
+        command_path = _coffea_fn_as_file_wrapper(tmpdir)
+
+        try:
+            q = wq.WorkQueue(port, name=master_name, debug_log=debug_log, stats_log=stats_log, transactions_log=trans_log)
+        except Exception:
+            print('Instantiation of Work Queue failed')
+            sys.exit(1)
+
+        print('Listening for work queue workers on port {}...'.format(q.port))
+
+        q.enable_monitoring()
+        q.specify_category_max_resources('default', default_resources)
+        if resources_mode == 'auto':
+            q.tune('category-steady-n-tasks', 3)
+            q.specify_category_max_resources('default', {})
+            q.specify_category_mode('default', wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT)
+
+        # Define function input here
+        infile_function = os.path.join(tmpdir, 'function.p')
+
+        # Dictionary to keep track of output file corresponding to task id
+        id_output = {}
+
+        # Iterative Executor Specifications
+        if len(items) == 0:
+            return accumulator
+
+        add_fn = _iadd
+
+        for i, item in tqdm(enumerate(items), disable=not status, unit=unit, total=len(items), desc=desc):
+            with open(os.path.join(tmpdir, 'item_{}.p'.format(i)), 'wb') as wf:
+                dill.dump(item, wf)
+
+            infile_item = os.path.join(tmpdir, 'item_{}.p'.format(i))
+            outfile = os.path.join(tmpdir, 'output_{}.p'.format(i))
+
+            coffea_command = 'python {} {} {} {}'.format(basename(command_path), basename(infile_function), basename(infile_item), basename(outfile))
+            wrapped_command = './{}'.format(basename(wrapper))
+            wrapped_command += ' --environment {}'.format(basename(env_file))
+            wrapped_command += ' --unpack-to "$WORK_QUEUE_SANDBOX"/{}-env {}'.format(env_file, coffea_command)
+
+            t = wq.Task(wrapped_command)
+            t.specify_category('default')
+
+            t.specify_input_file(command_path, cache=True)
+            t.specify_input_file(infile_function, cache=False)
+            t.specify_input_file(infile_item, cache=False)
+
+            # conda environment files
+            t.specify_input_file(env_file, cache=True)
+            t.specify_input_file(wrapper, cache=True)
+
+            if re.search('://', item.filename):
+                # This looks like an URL. Not transfering file.
+                pass
+            else:
+                t.specify_input_file(item.filename, remote_name=item.filename, cache=True)
+
+            t.specify_output_file(outfile, cache=False)
+
+            task_id = q.submit(t)
+            # Add pair to dict
+            id_output['{}'.format(task_id)] = outfile
+
+            print('Submitted task (id #{}): {}'.format(task_id, wrapped_command))
+
+        print('Waiting for tasks to complete...')
+
+        while not q.empty():
+            t = q.wait(5)
+            if t:
+                print('Task (id #{}) complete: {} (return code {})'.format(t.id, t.command, t.return_status))
+
+                if output:
+                    print('Output:\n{}'.format(t.output))
+                    print('allocated cores: {}, memory: {} MB, disk: {} MB'.format(
+                        t.resources_allocated.cores,
+                        t.resources_allocated.memory,
+                        t.resources_allocated.disk))
+                    if t.resources_measured:
+                        print('measured cores: {}, memory: {} MB, disk {} MB, runtime {}'.format(
+                            t.resources_measured.cores,
+                            t.resources_measured.memory,
+                            t.resources_measured.disk,
+                            t.resources_measured.wall_time / 1000000))
+
+                if t.result != 0:
+                    print('Task id #{} failed with code: {}'.format(t.id, t.result))
+                    print('Stopping execution')
+                    break
+
+                # Unpickle output, add to accumulator
+                with open(id_output['{}'.format(t.id)], 'rb') as rf:
+                    unpickle_output = dill.load(rf)
+
+                add_fn(accumulator, unpickle_output)
+
+        if os.path.exists(command_path):
+            os.remove(command_path)
+
+        return accumulator
 
 
 def iterative_executor(items, function, accumulator, **kwargs):

@@ -55,6 +55,13 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: ${{ matrix.java-version }}
+    - name: Set up Conda (Linux/MacOS)
+      if: matrix.os != 'windows-latest'
+      uses: goanpeca/setup-miniconda@v1
+      with:
+        update-conda: true
+        python-version: ${{ matrix.python-version }}
+        miniconda-version: 'latest'
     - name: Install dependencies (Linux/MacOS)
       if: matrix.os != 'windows-latest'
       run: |
@@ -76,6 +83,16 @@ jobs:
         ARROW_PRE_0_15_IPC_FORMAT: 1
       run: |
         coverage run --source=coffea/ setup.py pytest
+    - name: Test work_queue
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash -l {0}
+      run: |
+        conda create --name coffea-env-${{ matrix.python-version }} python=${{ matrix.python-version }}
+        conda activate coffea-env-${{ matrix.python-version }}
+        conda install -c conda-forge ndcctools dill six
+        python -m pip install -I .
+        cd tests
+        python wq.py
     - name: Upload codecov
       if: success() && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.6      
       run: |

@@ -13,6 +13,7 @@ from .executor import (
     futures_executor,
     dask_executor,
     parsl_executor,
+    work_queue_executor,
     run_uproot_job,
     run_parsl_job,
     run_spark_job
@@ -37,6 +38,7 @@ __all__ = [
     'futures_executor',
     'dask_executor',
     'parsl_executor',
+    'work_queue_executor',
     'run_uproot_job',
     'run_parsl_job',
     'run_spark_job',
