@@ -856,13 +856,13 @@ class Hist(AccumulatorABC):
 
         raxes = other.sparse_axes()
 
-        def add_dict(l, r):
-            for rkey in r.keys():
+        def add_dict(left, right):
+            for rkey in right.keys():
                 lkey = tuple(self.axis(rax).index(rax[ridx]) for rax, ridx in zip(raxes, rkey))
-                if lkey in l:
-                    l[lkey] += r[rkey]
+                if lkey in left:
+                    left[lkey] += right[rkey]
                 else:
-                    l[lkey] = copy.deepcopy(r[rkey])
+                    left[lkey] = copy.deepcopy(right[rkey])
 
         if self._sumw2 is None and other._sumw2 is None:
             pass
