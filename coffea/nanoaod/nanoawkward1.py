@@ -6,36 +6,64 @@ import uproot
 def mixin_class(cls):
     name = cls.__name__
     cls._awkward_mixin = True
-    awkward1.behavior[name] = type(name + 'Record', (cls, awkward1.Record), {})
-    awkward1.behavior["*", name] = type(name + 'Array', (cls, awkward1.Array), {})
-    inheirited_behaviors = {}
-    for tup in awkward1.behavior:
-        if len(tup) < 2 or not callable(tup[0]):
-            continue
+    awkward1.behavior[name] = type(name + "Record", (cls, awkward1.Record), {})
+    awkward1.behavior["*", name] = type(name + "Array", (cls, awkward1.Array), {})
+    possible_inherited = [
+        tup for tup in awkward1.behavior if len(tup) >= 2 and callable(tup[0])
+    ]
+    for tup in possible_inherited:
         for basecls in cls.__mro__[1:]:
             if not hasattr(basecls, "_awkward_mixin"):
                 continue
             basename = basecls.__name__
             if len(tup) == 2 and tup[1] == basename:
-                inheirited_behaviors[tup[0], name] = awkward1.behavior[tup]
+                signature = (tup[0], name)
+                if signature not in awkward1.behavior:
+                    awkward1.behavior[signature] = awkward1.behavior[tup]
                 break
             elif len(tup) == 3 and basename in tup[1:]:
                 if tup[1] == basename:
-                    inheirited_behaviors[tup[0], name, tup[2]] = awkward1.behavior[tup]
+                    signature = (tup[0], name, tup[2])
+                    if signature not in awkward1.behavior:
+                        awkward1.behavior[signature] = awkward1.behavior[tup]
                 if tup[2] == basename:
-                    inheirited_behaviors[tup[0], tup[1], name] = awkward1.behavior[tup]
+                    signature = (tup[0], tup[1], name)
+                    if signature not in awkward1.behavior:
+                        awkward1.behavior[signature] = awkward1.behavior[tup]
                 if tup[1] == basename and tup[2] == basename:
-                    inheirited_behaviors[tup[0], name, name] = awkward1.behavior[tup]
-                break
-    awkward1.behavior.update(inheirited_behaviors)
+                    signature = (tup[0], name, name)
+                    if signature not in awkward1.behavior:
+                        awkward1.behavior[signature] = awkward1.behavior[tup]
+            # what's still missing: common subtype matching
     return cls
 
 
-def mixin_method(signatures):
+def mixin_method(signatures, transpose=False):
+    """Declare a mixin method
+
+    signatures : List[tuple]
+        List of (ufunc, type, ...) corresponding to the awkward1 behaviors
+    transpose : bool
+        Autmatically create a transpose signature (only makes sense for two-argument ufuncs)
+    """
+
     def register(method):
+        if transpose:
+            mtransposed = lambda left, right: method(right, left)
         for signature in signatures:
             awkward1.behavior[signature] = method
+            if transpose:
+                if len(signature) != 3:
+                    raise RuntimeError(
+                        "Not sure how to create transposed method for non-binary signature"
+                    )
+                if signature[1] == signature[2]:
+                    continue
+                awkward1.behavior[
+                    signature[0], signature[2], signature[1]
+                ] = mtransposed
         return method
+
     return register
 
 
@@ -48,6 +76,11 @@ class NanoCollecton:
 
 @mixin_class
 class LorentzVector:
+    """A cartesian Lorentz vector
+    
+    Fundamental attributes: x, y, z, t
+    """
+
     @property
     def pt(self):
         return numpy.hypot(self.x, self.y)
@@ -62,11 +95,11 @@ class LorentzVector:
 
     @property
     def mass(self):
-        return self.t**2 - self.p2
+        return self.t ** 2 - self.p2
 
     @property
     def p2(self):
-        return self.x**2 + self.y**2 + self.z**2
+        return self.x ** 2 + self.y ** 2 + self.z ** 2
 
     @property
     def p(self):
@@ -75,6 +108,10 @@ class LorentzVector:
     @property
     def energy(self):
         return self.t
+
+    @mixin_method(signatures=[(numpy.absolute, "LorentzVector")])
+    def abs(self):
+        return self.mass
 
     @mixin_method(signatures=[(numpy.add, "LorentzVector", "LorentzVector")])
     def add(self, other):
@@ -88,9 +125,26 @@ class LorentzVector:
             with_name="LorentzVector",
         )
 
+    @mixin_method(signatures=[(numpy.prod, "LorentzVector", "Number")], transpose=True)
+    def prod(self, other):
+        return awkward1.zip(
+            {
+                "x": self.x * other,
+                "y": self.y * other,
+                "z": self.z * other,
+                "t": self.t * other,
+            },
+            with_name="LorentzVector",
+        )
+
 
 @mixin_class
 class PtEtaPhiMLorentzVector(LorentzVector, NanoCollecton):
+    """A Lorentz vector using pseudorapidity and mass
+    
+    Fundamental attributes: pt, eta, phi, mass
+    """
+
     @property
     def x(self):
         return self.pt * numpy.cos(self.phi)
@@ -104,16 +158,12 @@ class PtEtaPhiMLorentzVector(LorentzVector, NanoCollecton):
         return self.pt * numpy.sinh(self.eta)
 
     @property
-    def p(self):
-        return self.pt * numpy.cosh(self.eta)
-
-    @property
-    def p2(self):
-        return self.p**2
-
-    @property
     def t(self):
         return numpy.hypot(self.p, self.mass)
+
+    @property
+    def p(self):
+        return self.pt * numpy.cosh(self.eta)
 
     @property
     def pt(self):
@@ -132,8 +182,80 @@ class PtEtaPhiMLorentzVector(LorentzVector, NanoCollecton):
         return self["mass"]
 
     @property
+    def p2(self):
+        return self.p ** 2
+
+    @property
     def energy(self):
         return self.t
+
+    @mixin_method(
+        signatures=[(numpy.prod, "PtEtaPhiMLorentzVector", "Number")], transpose=True
+    )
+    def prod(self, other):
+        return awkward1.zip(
+            {
+                "pt": self.pt * other,
+                "eta": self.eta,
+                "phi": self.phi,
+                "mass": self.mass * other,
+            },
+            with_name="PtEtaPhiMLorentzVector",
+        )
+
+
+@mixin_class
+class Candidate(LorentzVector):
+    """A Lorentz vector with charge
+
+    Fundamental properties: x, y, z, t, charge
+    """
+
+    @mixin_method(signatures=[(numpy.add, "Candidate", "Candidate")])
+    def add(self, other):
+        return awkward1.zip(
+            {
+                "x": self.x + other.x,
+                "y": self.y + other.y,
+                "z": self.z + other.z,
+                "t": self.t + other.t,
+                "charge": self.charge + other.charge,
+            },
+            with_name="Candidate",
+        )
+
+
+@mixin_class
+class PtEtaPhiMCandidate(PtEtaPhiMLorentzVector):
+    """A Lorentz vector in eta, mass coordinates with charge
+
+    Fundamental properties: pt, eta, phi, mass, charge
+    """
+
+    @mixin_method(
+        signatures=[
+            (numpy.add, "PtEtaPhiMCandidate", "PtEtaPhiMCandidate"),
+            (numpy.add, "PtEtaPhiMCandidate", "Candidate"),
+        ]
+    )
+    def add(self, other):
+        return awkward1.zip(
+            {
+                "x": self.x + other.x,
+                "y": self.y + other.y,
+                "z": self.z + other.z,
+                "t": self.t + other.t,
+                "charge": self.charge + other.charge,
+            },
+            with_name="Candidate",
+        )
+
+
+@mixin_class
+class Photon(PtEtaPhiMCandidate):
+    @property
+    def mass(self):
+        return 0.0
 
 
 def _with_length(array: awkward1.layout.VirtualArray, length: int):
@@ -148,10 +270,10 @@ def _with_length(array: awkward1.layout.VirtualArray, length: int):
 
 class NanoEventsFactory:
     default_mixins = {
-        "Electron": "PtEtaPhiMLorentzVector",
-        "Photon": "PtEtaPhiMLorentzVector",
-        "Muon": "PtEtaPhiMLorentzVector",
-        "Tau": "PtEtaPhiMLorentzVector",
+        "Electron": "PtEtaPhiMCandidate",
+        "Photon": "Photon",
+        "Muon": "PtEtaPhiMCandidate",
+        "Tau": "PtEtaPhiMCandidate",
         "Jet": "PtEtaPhiMLorentzVector",
         "FatJet": "PtEtaPhiMLorentzVector",
     }
@@ -266,10 +388,16 @@ class NanoEventsFactory:
                 }
                 form = awkward1.forms.ListOffsetForm(
                     "i32",
-                    awkward1.forms.RecordForm({k: v.form for k, v in content.items()}, parameters=recordparams),
+                    awkward1.forms.RecordForm(
+                        {k: v.form for k, v in content.items()}, parameters=recordparams
+                    ),
                 )
                 generator = awkward1.layout.ArrayGenerator(
-                    self._listarray, (counts, content, recordparams), {}, form=form, length=len(self),
+                    self._listarray,
+                    (counts, content, recordparams),
+                    {},
+                    form=form,
+                    length=len(self),
                 )
                 return awkward1.layout.VirtualArray(
                     generator,
@@ -288,9 +416,7 @@ class NanoEventsFactory:
                         for k in arrays
                         if k.startswith(name + "_")
                     },
-                    parameters={
-                        "__record__": mixin,
-                    },
+                    parameters={"__record__": mixin,},
                 )
 
         events = awkward1.layout.RecordArray(
