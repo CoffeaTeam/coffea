@@ -249,38 +249,8 @@ with open(out, "wb") as f:
     return name
 
 
-def work_queue_executor(items, function, accumulator, **kwargs):
+def work_queue_executor(items, function, accumulator, q, **kwargs):
     """Execute using Work Queue
-
-    Work Queue is a production framework used to build large scale master-
-    worker applications, developed by the Cooperative Computing Laboratory
-    (CCL) at the University of Notre Dame. This executor functions as the
-    master program which submits chunks of data as tasks. A remote worker,
-    which can be run on cluster and cloud systems, will be able to execute
-    the task.
-
-    python_package_run is the necessary wrapper script. This script is
-    installed with work queue. The executor will try to find this wrapper in
-    PATH. Also, The location of this script can be specified with the 'wrapper'
-    argument.
-
-    Currently, this executor only works with Python 3.6 and 3.7 (not 3.8).
-
-    To set up Work Queue, the following procedure can be used:
-
-    $ conda create --name conda-coffea-wq-env python=3.6
-    $ conda activate conda-coffea-wq-env
-    $ pip install six coffea dill
-    $ conda install -y -c conda-forge xrootd
-    $ conda deactivate
-    $ conda activate base
-    $ pip install conda-pack
-    $ python -c 'import conda_pack; conda_pack.pack(name="conda-coffea-wq-env", output="conda-coffea-wq-env.tar.gz")'
-    $ conda activate conda-coffea-wq-env
-    $ ... run coffea + wq code!
-
-    For further information about Work Queue, please visit the documentation
-    at: https://cctools.readthedocs.io/en/latest/work_queue/
 
     Parameters
     ----------
@@ -299,6 +269,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         compression : int, optional
             Compress accumulator outputs in flight with LZ4, at level specified (default 1)
             Set to ``None`` for no compression.
+
         # work queue specific options:
         environment-file : str
             Python environment to use. Required.
@@ -341,6 +312,16 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         print('You must have Work Queue and dill installed to use work_queue_executor!')
         raise e
 
+    master_name = kwargs.pop('master-name', None)
+    port = kwargs.pop('port', None)
+    if port is None:
+        if master_name:
+            port = 0
+        else:
+            port = 9123
+
+    print('Listening for work queue workers on port {}...'.format(q.port))
+
     unit = kwargs.pop('unit', 'items')
     status = kwargs.pop('status', True)
     desc = kwargs.pop('desc', 'Processing')
@@ -377,18 +358,6 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     if disk:
         default_resources['disk'] = disk
 
-    debug_log = kwargs.pop('debug-log', None)
-    stats_log = kwargs.pop('stats-log', None)
-    trans_log = kwargs.pop('transactions-log', None)
-
-    master_name = kwargs.pop('master-name', None)
-    port = kwargs.pop('port', None)
-    if port is None:
-        if master_name:
-            port = 0
-        else:
-            port = 9123
-
     with tempfile.TemporaryDirectory(prefix="wq-executor-tmp-", dir=filepath) as tmpdir:
         # Pickle function
         with open(os.path.join(tmpdir, 'function.p'), 'wb') as wf:
@@ -396,14 +365,6 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
         # Set up Work Queue
         command_path = _coffea_fn_as_file_wrapper(tmpdir)
-
-        try:
-            q = wq.WorkQueue(port, name=master_name, debug_log=debug_log, stats_log=stats_log, transactions_log=trans_log)
-        except Exception:
-            print('Instantiation of Work Queue failed')
-            sys.exit(1)
-
-        print('Listening for work queue workers on port {}...'.format(q.port))
 
         q.enable_monitoring()
         q.specify_category_max_resources('default', default_resources)
@@ -979,6 +940,27 @@ def run_uproot_job(fileset,
     if not isinstance(processor_instance, ProcessorABC):
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
 
+    if executor is work_queue_executor:
+        debug_log = executor_args.pop('debug-log', None)
+        stats_log = executor_args.pop('stats-log', None)
+        trans_log = executor_args.pop('transactions-log', None)
+
+        master_name = executor_args.pop('master-name', None)
+        port = executor_args.pop('port', None)
+
+        if port is None:
+            if master_name:
+                port = 0
+            else:
+                port = 9123
+        try:
+            import work_queue as wq
+        except ImportError as e:
+            print('You must have Work Queue and dill installed to use work_queue_executor!')
+            raise e
+
+        q = wq.WorkQueue(port, name=master_name, debug_log=debug_log, stats_log=stats_log, transactions_log=trans_log)
+
     if pre_executor is None:
         pre_executor = executor
     if pre_args is None:
@@ -1016,7 +998,7 @@ def run_uproot_job(fileset,
                 'worker_affinity': False,
             }
             pre_args.update(pre_arg_override)
-            pre_executor(to_get, metadata_fetcher, out, **pre_args)
+            pre_executor(to_get, metadata_fetcher, out, q, **pre_args)
             while out:
                 item = out.pop()
                 metadata_cache[item] = item.metadata
@@ -1082,7 +1064,12 @@ def run_uproot_job(fileset,
         'function_name': type(processor_instance).__name__,
     }
     exe_args.update(executor_args)
-    executor(chunks, closure, wrapped_out, **exe_args)
+    if executor is work_queue_executor:
+        executor(chunks, closure, wrapped_out, q, **exe_args)
+    else:
+        executor(chunks, closure, wrapped_out, **exe_args)
+
+
     wrapped_out['metrics']['chunks'] = value_accumulator(int, len(chunks))
     processor_instance.postprocess(out)
     if savemetrics:
