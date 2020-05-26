@@ -1072,7 +1072,6 @@ def run_uproot_job(fileset,
     else:
         executor(chunks, closure, wrapped_out, **exe_args)
 
-
     wrapped_out['metrics']['chunks'] = value_accumulator(int, len(chunks))
     processor_instance.postprocess(out)
     if savemetrics:
