@@ -17,16 +17,12 @@ argument.
 
 To set up Work Queue, the following procedure can be used:
 
-``$ conda create --name conda-coffea-wq-env python=3.8 six dill
+  .. code-block:: bash
 
-$ conda activate conda-coffea-wq-env
-
-$ conda install -c conda-forge xrootd ndcctools
-
-$ conda activate base
-
-$ pip install conda-pack
-
-$ python -c 'import conda_pack; conda_pack.pack(name="conda-coffea-wq-env", output="conda-coffea-wq-env.tar.gz")'
-
-$ conda activate conda-coffea-wq-env``
+    conda create --name conda-coffea-wq-env python=3.8 six dill
+    conda activate conda-coffea-wq-env
+    conda install -c conda-forge xrootd ndcctools
+    conda activate base
+    pip install conda-pack
+    python -c 'import conda_pack; conda_pack.pack(name="conda-coffea-wq-env", output="conda-coffea-wq-env.tar.gz")'
+    conda activate conda-coffea-wq-env
