@@ -248,7 +248,10 @@ with open(out, "wb") as f:
 
     return name
 
+
 _wq_queue = None
+
+
 def work_queue_executor(items, function, accumulator, **kwargs):
     """Execute using Work Queue
 
