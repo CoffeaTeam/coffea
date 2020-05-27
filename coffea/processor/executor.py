@@ -249,7 +249,8 @@ with open(out, "wb") as f:
     return name
 
 
-def work_queue_executor(items, function, accumulator, q, **kwargs):
+_wq_queue = None
+def work_queue_executor(items, function, accumulator, **kwargs):
     """Execute using Work Queue
 
     Parameters
@@ -301,6 +302,9 @@ def work_queue_executor(items, function, accumulator, q, **kwargs):
             Wrapper script to run/open python environment tarball. Defaults to python_package_run found in PATH.
         print-stdout : bool
             If true (default), print the standard output of work queue task on completion.
+        queue-mode : one of 'persistent' or 'one-per-stage'. Default is 'persistent'.
+            'persistent' - One queue is used for all stages of processing.
+            'one-per-stage' - A new queue is used for each of the stages of processing.
     """
     try:
         import work_queue as wq
@@ -312,6 +316,12 @@ def work_queue_executor(items, function, accumulator, q, **kwargs):
         print('You must have Work Queue and dill installed to use work_queue_executor!')
         raise e
 
+    global _wq_queue
+
+    debug_log = kwargs.pop('debug-log', None)
+    stats_log = kwargs.pop('stats-log', None)
+    trans_log = kwargs.pop('transactions-log', None)
+
     master_name = kwargs.pop('master-name', None)
     port = kwargs.pop('port', None)
     if port is None:
@@ -320,7 +330,12 @@ def work_queue_executor(items, function, accumulator, q, **kwargs):
         else:
             port = 9123
 
-    print('Listening for work queue workers on port {}...'.format(q.port))
+    queue_mode = kwargs.pop('queue-mode', 'persistent')
+
+    if _wq_queue is None or queue_mode == 'one-per-stage':
+        _wq_queue = wq.WorkQueue(port, name=master_name, debug_log=debug_log, stats_log=stats_log, transactions_log=trans_log)
+
+    print('Listening for work queue workers on port {}...'.format(_wq_queue.port))
 
     unit = kwargs.pop('unit', 'items')
     status = kwargs.pop('status', True)
@@ -366,12 +381,12 @@ def work_queue_executor(items, function, accumulator, q, **kwargs):
         # Set up Work Queue
         command_path = _coffea_fn_as_file_wrapper(tmpdir)
 
-        q.enable_monitoring()
-        q.specify_category_max_resources('default', default_resources)
+        _wq_queue.enable_monitoring()
+        _wq_queue.specify_category_max_resources('default', default_resources)
         if resources_mode == 'auto':
-            q.tune('category-steady-n-tasks', 3)
-            q.specify_category_max_resources('default', {})
-            q.specify_category_mode('default', wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT)
+            _wq_queue.tune('category-steady-n-tasks', 3)
+            _wq_queue.specify_category_max_resources('default', {})
+            _wq_queue.specify_category_mode('default', w_wq_queue.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT)
 
         # Define function input here
         infile_function = os.path.join(tmpdir, 'function.p')
@@ -416,7 +431,7 @@ def work_queue_executor(items, function, accumulator, q, **kwargs):
 
             t.specify_output_file(outfile, cache=False)
 
-            task_id = q.submit(t)
+            task_id = _wq_queue.submit(t)
             # Add pair to dict
             id_output['{}'.format(task_id)] = outfile
 
@@ -424,8 +439,8 @@ def work_queue_executor(items, function, accumulator, q, **kwargs):
 
         print('Waiting for tasks to complete...')
 
-        while not q.empty():
-            t = q.wait(5)
+        while not _wq_queue.empty():
+            t = _wq_queue.wait(5)
             if t:
                 print('Task (id #{}) complete: {} (return code {})'.format(t.id, t.command, t.return_status))
 
@@ -940,27 +955,6 @@ def run_uproot_job(fileset,
     if not isinstance(processor_instance, ProcessorABC):
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
 
-    if executor is work_queue_executor:
-        debug_log = executor_args.pop('debug-log', None)
-        stats_log = executor_args.pop('stats-log', None)
-        trans_log = executor_args.pop('transactions-log', None)
-
-        master_name = executor_args.pop('master-name', None)
-        port = executor_args.pop('port', None)
-
-        if port is None:
-            if master_name:
-                port = 0
-            else:
-                port = 9123
-        try:
-            import work_queue as wq
-        except ImportError as e:
-            print('You must have Work Queue and dill installed to use work_queue_executor!')
-            raise e
-
-        q = wq.WorkQueue(port, name=master_name, debug_log=debug_log, stats_log=stats_log, transactions_log=trans_log)
-
     if pre_executor is None:
         pre_executor = executor
     if pre_args is None:
@@ -998,10 +992,7 @@ def run_uproot_job(fileset,
                 'worker_affinity': False,
             }
             pre_args.update(pre_arg_override)
-            if pre_executor is work_queue_executor:
-                pre_executor(to_get, metadata_fetcher, out, q, **pre_args)
-            else:
-                pre_executor(to_get, metadata_fetcher, out, **pre_args)
+            pre_executor(to_get, metadata_fetcher, out, **pre_args)
             while out:
                 item = out.pop()
                 metadata_cache[item] = item.metadata
@@ -1067,10 +1058,7 @@ def run_uproot_job(fileset,
         'function_name': type(processor_instance).__name__,
     }
     exe_args.update(executor_args)
-    if executor is work_queue_executor:
-        executor(chunks, closure, wrapped_out, q, **exe_args)
-    else:
-        executor(chunks, closure, wrapped_out, **exe_args)
+    executor(chunks, closure, wrapped_out, **exe_args)
 
     wrapped_out['metrics']['chunks'] = value_accumulator(int, len(chunks))
     processor_instance.postprocess(out)
