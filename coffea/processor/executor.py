@@ -248,7 +248,6 @@ with open(out, "wb") as f:
 
     return name
 
-
 _wq_queue = None
 def work_queue_executor(items, function, accumulator, **kwargs):
     """Execute using Work Queue
@@ -386,7 +385,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         if resources_mode == 'auto':
             _wq_queue.tune('category-steady-n-tasks', 3)
             _wq_queue.specify_category_max_resources('default', {})
-            _wq_queue.specify_category_mode('default', w_wq_queue.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT)
+            _wq_queue.specify_category_mode('default', wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT)
 
         # Define function input here
         infile_function = os.path.join(tmpdir, 'function.p')
