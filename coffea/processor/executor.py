@@ -307,6 +307,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         queue-mode : one of 'persistent' or 'one-per-stage'. Default is 'persistent'.
             'persistent' - One queue is used for all stages of processing.
             'one-per-stage' - A new queue is used for each of the stages of processing.
+        resource-monitor : bool
+            If true, (false is the default) turns on resource monitoring for Work Queue.
     """
     try:
         import work_queue as wq
@@ -366,6 +368,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     cores = kwargs.pop('cores', None)
     memory = kwargs.pop('memory', None)
     disk = kwargs.pop('disk', None)
+    resource_monitor = kwargs.pop('resource-monitor', False)
 
     default_resources = {}
     if cores:
@@ -383,7 +386,9 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         # Set up Work Queue
         command_path = _coffea_fn_as_file_wrapper(tmpdir)
 
-        _wq_queue.enable_monitoring()
+        if resource_monitor:
+            _wq_queue.enable_monitoring()
+
         _wq_queue.specify_category_max_resources('default', default_resources)
         if resources_mode == 'auto':
             _wq_queue.tune('category-steady-n-tasks', 3)
@@ -452,7 +457,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                         t.resources_allocated.cores,
                         t.resources_allocated.memory,
                         t.resources_allocated.disk))
-                    if t.resources_measured:
+                    if resource_monitor:
                         print('measured cores: {}, memory: {} MB, disk {} MB, runtime {}'.format(
                             t.resources_measured.cores,
                             t.resources_measured.memory,
