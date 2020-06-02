@@ -211,7 +211,12 @@ class Candidate(LorentzVector):
     Fundamental properties: x, y, z, t, charge
     """
 
-    @mixin_method(signatures=[(numpy.add, "Candidate", "Candidate")])
+    @mixin_method(
+        signatures=[
+            (numpy.add, "Candidate", "Candidate"),
+            (numpy.add, "Candidate", "PtEtaPhiMCandidate"),
+        ]
+    )
     def add(self, other):
         return awkward1.zip(
             {
@@ -236,7 +241,7 @@ class PtEtaPhiMCandidate(PtEtaPhiMLorentzVector):
         signatures=[
             (numpy.add, "PtEtaPhiMCandidate", "PtEtaPhiMCandidate"),
             (numpy.add, "PtEtaPhiMCandidate", "Candidate"),
-        ]
+        ],
     )
     def add(self, other):
         return awkward1.zip(
