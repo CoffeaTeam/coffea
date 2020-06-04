@@ -26,6 +26,19 @@ class FatJet(LorentzVector):
             del self['subJetIdx1']
             del self['subJetIdx2']
 
+        if self._enable_genjet and 'GenJetAK8' in events.columns:
+            genjet = events['GenJetAK8']
+            reftype = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(genjet.type.to.to))
+            reftype.check = False
+            embedded_genjet = type(genjet)(
+                self._lazy_crossref,
+                args=(self._getcolumn('genJetAK8Idx'), genjet),
+                type=reftype,
+            )
+            embedded_genjet.__doc__ = genjet.__doc__
+            self['matched_gen'] = embedded_genjet
+            del self['genJetAK8Idx']
+
     @property
     def isLoose(self):
         '''Returns a boolean array marking loose jets according to jetId index'''
