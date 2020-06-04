@@ -28,7 +28,7 @@ class ProcessorABC(with_metaclass(ABCMeta)):
 
             @property
             def accumulator(self):
-                return self._accumulators
+                return self._accumulator
 
             def process(self, df):
                 output = self.accumulator.identity()
