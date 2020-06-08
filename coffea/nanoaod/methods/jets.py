@@ -27,7 +27,7 @@ class FatJet(LorentzVector):
             del self['subJetIdx1']
             del self['subJetIdx2']
 
-        if self._enable_genjet and ('GenJetAK8' in events.columns):
+        if self._enable_genjet and 'GenJetAK8' in events.columns:
             genjet = events['GenJetAK8']
             reftype = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(genjet.type.to.to))
             reftype.check = False
