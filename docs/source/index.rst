@@ -7,7 +7,7 @@
 
 .. toctree::
    installation
-   introduction
+   examples
    concepts
    reference
 ..
