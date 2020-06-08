@@ -4,6 +4,7 @@ import awkward
 
 class FatJet(LorentzVector):
     '''NanoAOD large radius jet object'''
+    _enable_genjet = False
     subjetmap = {'FatJet': 'SubJet'}  # V6 has 'GenJetAK8': 'SubGenJetAK8', maybe better to put in generator.py
     LOOSE = 0
     'jetId bit position'
@@ -26,7 +27,7 @@ class FatJet(LorentzVector):
             del self['subJetIdx1']
             del self['subJetIdx2']
 
-        if self._enable_genjet and 'GenJetAK8' in events.columns:
+        if self._enable_genjet and ('GenJetAK8' in events.columns):
             genjet = events['GenJetAK8']
             reftype = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(genjet.type.to.to))
             reftype.check = False
