@@ -27,7 +27,7 @@ collection_methods = {
     'FatJet': FatJet,
     'GenDressedLepton': LorentzVector,
     'GenJet': LorentzVector,
-    'GenJetAK8': FatJet,
+    'GenJetAK8': LorentzVector,
     'Jet': Jet,
     'LHEPart': LorentzVector,
     'SV': LorentzVector,
