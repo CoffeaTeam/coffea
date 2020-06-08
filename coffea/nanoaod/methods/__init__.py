@@ -1,3 +1,9 @@
+"""NanoAOD collection methods
+
+This package provides the object method mixins for the various
+types of NanoAOD collections, as well as a default mapping for collection
+names to methods.
+"""
 from .common import METVector, LorentzVector, Candidate
 from .leptons import Electron, Muon, Photon, Tau
 from .jets import Jet, FatJet
