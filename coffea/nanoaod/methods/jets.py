@@ -124,4 +124,4 @@ class Jet(LorentzVector):
     @property
     def isTightLeptonVeto(self):
         '''Returns a boolean array marking tight jets with explicit lepton veto according to jetId index'''
-        return (self.cutBasedBitmap & (1 << self.TIGHTLEPVETO)).astype(bool)
+        return (self.jetId & (1 << self.TIGHTLEPVETO)).astype(bool)
