@@ -7,8 +7,10 @@ import pickle as pkl
 import lz4.frame as lz4f
 import numpy as np
 import pandas as pd
+from functools import partial
 
 from ..executor import _futures_handler
+from coffea.nanoaod import NanoEvents
 
 import pyspark
 import pyspark.sql.functions as fn
@@ -70,9 +72,9 @@ class SparkExecutor(object):
         return self._counts
 
     def __call__(self, spark, dfslist, theprocessor, output, thread_workers,
-                 use_df_cache, flatten, status=True, unit='datasets', desc='Processing'):
+                 use_df_cache, flatten, nano, status=True, unit='datasets', desc='Processing'):
         # processor needs to be a global
-        global processor_instance, coffea_udf, coffea_udf_flat
+        global processor_instance, coffea_udf, coffea_udf_flat, coffea_udf_nano
         processor_instance = theprocessor
         # get columns from processor
         columns = processor_instance.columns
@@ -105,14 +107,19 @@ class SparkExecutor(object):
         with ThreadPoolExecutor(max_workers=thread_workers) as executor:
             futures = set()
             for ds, df in self._cacheddfs.items():
-                futures.add(executor.submit(self._launch_analysis, ds, df, coffea_udf_flat if flatten else coffea_udf, cols_w_ds))
+                co_udf = coffea_udf
+                if flatten:
+                    co_udf = coffea_udf_flat
+                if nano:
+                    co_udf = coffea_udf_nano
+                futures.add(executor.submit(self._launch_analysis, ds, df, co_udf, cols_w_ds))
             # wait for the spark jobs to come in
             self._rawresults = {}
             _futures_handler(futures, self._rawresults, status, unit, desc, spex_accumulator, None)
 
         for ds, bitstream in self._rawresults.items():
             if bitstream is None:
-                raise Exception('No pandas dataframe returns from spark in dataset: %s, something went wrong!' % ds)
+                raise Exception('No pandas dataframe returned from spark in dataset: %s, something went wrong!' % ds)
             if bitstream.empty:
                 raise Exception('The histogram list returned from spark is empty in dataset: %s, something went wrong!' % ds)
             bits = bitstream[bitstream.columns[0]][0]
