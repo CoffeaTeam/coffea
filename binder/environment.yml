@@ -1,0 +1,21 @@
+name: coffea
+channels:
+  - anaconda
+  - conda-forge
+dependencies:
+  - ipython
+  - uproot
+  - xxhash
+  - xrootd
+  - pandas
+  - tqdm
+  - cloudpickle
+  - lz4
+  - six
+  - matplotlib>=3
+  - numba>=0.43.1
+  - numpy>=1.16.0
+  - scipy>=1.1.0
+  - pip
+  - pip:
+      - coffea>=0.6.39
