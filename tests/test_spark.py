@@ -48,14 +48,33 @@ def test_spark_executor():
                 'Data'  : {'files': ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')], 'treename': 'Events'}
                 }
 
-    from coffea.processor.test_items import NanoTestProcessor
+    from coffea.processor.test_items import NanoTestProcessor, NanoEventsProcessor
     from coffea.processor.spark.spark_executor import spark_executor
 
-    columns = ['nMuon','Muon_pt','Muon_eta','Muon_phi','Muon_mass']
+    columns = ['nMuon','Muon_pt','Muon_eta','Muon_phi','Muon_mass', 'Muon_charge']
     proc = NanoTestProcessor(columns=columns)
 
     hists = run_spark_job(filelist, processor_instance=proc, executor=spark_executor, spark=spark, thread_workers=1,
                           executor_args={'file_type': 'root'})
+
+    assert( sum(spark_executor.counts.values()) == 80 )
+    assert( hists['cutflow']['ZJets_pt'] == 18 )
+    assert( hists['cutflow']['ZJets_mass'] == 6 )
+    assert( hists['cutflow']['Data_pt'] == 84 )
+    assert( hists['cutflow']['Data_mass'] == 66 )
+
+    hists = run_spark_job(filelist, processor_instance=proc, executor=spark_executor, spark=spark, thread_workers=1,
+                          executor_args={'file_type': 'root', 'flatten': True})
+    
+    assert( sum(spark_executor.counts.values()) == 80 )
+    assert( hists['cutflow']['ZJets_pt'] == 18 )
+    assert( hists['cutflow']['ZJets_mass'] == 6 )
+    assert( hists['cutflow']['Data_pt'] == 84 )
+    assert( hists['cutflow']['Data_mass'] == 66 )
+    
+    proc = NanoEventsProcessor(columns=columns)
+    hists = run_spark_job(filelist, processor_instance=proc, executor=spark_executor, spark=spark, thread_workers=1,
+                          executor_args={'file_type': 'root', 'nano': True})
 
     _spark_stop(spark)
 

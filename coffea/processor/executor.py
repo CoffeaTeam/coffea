@@ -1238,9 +1238,10 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
 
     executor_args.setdefault('config', None)
     executor_args.setdefault('file_type', 'parquet')
-    executor_args.setdefault('laurelin_version', '0.3.0')
+    executor_args.setdefault('laurelin_version', '1.1.1')
     executor_args.setdefault('treeName', 'Events')
     executor_args.setdefault('flatten', False)
+    executor_args.setdefault('nano', False)
     executor_args.setdefault('cache', True)
     executor_args.setdefault('skipbadfiles', False)
     executor_args.setdefault('retries', 0)
@@ -1248,6 +1249,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     file_type = executor_args['file_type']
     treeName = executor_args['treeName']
     flatten = executor_args['flatten']
+    nano = executor_args['nano']
     use_cache = executor_args['cache']
 
     if executor_args['config'] is None:
@@ -1271,7 +1273,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
                                   thread_workers, file_type, treeName)
 
     output = processor_instance.accumulator.identity()
-    executor(spark, dfslist, processor_instance, output, thread_workers, use_cache, flatten)
+    executor(spark, dfslist, processor_instance, output, thread_workers, use_cache, flatten, nano)
     processor_instance.postprocess(output)
 
     if killSpark:
