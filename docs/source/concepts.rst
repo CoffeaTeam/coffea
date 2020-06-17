@@ -60,10 +60,11 @@ performance limitations due to the CPython `global interpreter lock <https://wik
 
 Distributed executors
 ^^^^^^^^^^^^^^^^^^^^^
-Currently, coffea supports three types of distributed executors:
+Currently, coffea supports four types of distributed executors:
 
    - the `parsl <http://parsl-project.org/>`_ distributed executor, accessed via `parsl_executor`,
    - the `dask <https://distributed.dask.org/en/latest/>`_ distributed executor, accessed via `dask_executor`,
-   - and the Apache `Spark <https://spark.apache.org/>`_ distributed executor, accessed via `run_spark_job`.
+   - the Apache `Spark <https://spark.apache.org/>`_ distributed executor, accessed via `run_spark_job`, 
+   - and the `Work Queue <https://cctools.readthedocs.io/en/latest/work_queue/>`_ distributed executor, accessed via `work_queue_executor`.
 
 These executors use their respective underlying libraries to distribute processing tasks over multiple machines.
