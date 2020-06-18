@@ -117,6 +117,8 @@ class NanoCollection(awkward.VirtualArray):
         return out
 
     def _lazy_crossref(self, index, destination):
+        # to be used for simple NanoCollection -> NanoCollection index-based mapping
+        # e.g. Muon_jetIdx
         if not isinstance(destination, NanoCollection):
             raise ValueError("Destination must be a NanoCollection")
         if not isinstance(destination.array, awkward.JaggedArray):
@@ -124,22 +126,29 @@ class NanoCollection(awkward.VirtualArray):
         if not isinstance(self.array, awkward.JaggedArray):
             raise NotImplementedError
         IndexedMaskedArray = destination._get_mixin(destination._get_methods(), awkward.IndexedMaskedArray)
+        IndexedTable = destination._get_mixin(destination._get_methods(), awkward.Table)
         # repair awkward type now that we've materialized
         index.type.takes = self.array.offsets[-1]
         index = awkward.JaggedArray.fromoffsets(self.array.offsets, content=index)
         globalindex = (index + destination.array.starts).flatten()
         invalid = (index < 0).flatten()
-        globalindex[invalid] = -1
-        # note: parent virtual must derive from this type
-        out = IndexedMaskedArray(
-            globalindex,
-            destination.array.content,
-        )
+        if any(invalid):
+            globalindex[invalid] = -1
+            # note: parent virtual must derive from this type
+            out = IndexedMaskedArray(
+                globalindex,
+                destination.array.content,
+            )
+        else:
+            # don't use masked if we don't have to (it has bugs)
+            out = IndexedTable.__getitem__(destination.array.content, globalindex)
         # useful for algorithms
         self.array.content['_xref_%s_index' % destination.rowname] = globalindex
         return out
 
     def _lazy_nested_crossref(self, indices, destination):
+        # to be used for stitching a set of indices into a doubly-jagged mapping
+        # e.g. Jet_electronIdx1, Jet_electronIdx2
         if not isinstance(destination, NanoCollection):
             raise ValueError("Destination must be a NanoCollection")
         if not isinstance(destination.array, awkward.JaggedArray):
@@ -167,6 +176,21 @@ class NanoCollection(awkward.VirtualArray):
             content=destination.array.content[globalindices.flatten().flatten()]
         )
         return out
+
+    def _lazy_double_jagged(self, mapping, destination):
+        # to be used for nesting a jagged collection into another when a mapping is available
+        # e.g. NanoAODJMAR's FatJetPFCands, mapping FatJet -> PFCands
+        if not isinstance(destination, NanoCollection):
+            raise ValueError("Destination must be a NanoCollection")
+        JaggedArray = destination._get_mixin(destination._get_methods(), awkward.JaggedArray)
+        # repair awkward type now that we've materialized
+        mapping.type.takes = self.array.offsets[-1]
+        # technically we materialize the counts of the destination for no reason but OK
+        dest_content = destination.array
+        if isinstance(dest_content, awkward.JaggedArray):
+            dest_content = dest_content.content
+        # (otherwise assume it is already flat and ready to go)
+        return JaggedArray.fromcounts(mapping.array, dest_content)
 
     def _getcolumn(self, key):
         name, _, columns, _ = self._args

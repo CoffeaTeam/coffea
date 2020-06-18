@@ -33,6 +33,7 @@ collection_methods = {
     'SV': LorentzVector,
     'SubGenJetAK8': LorentzVector,
     'SubJet': LorentzVector,
+    'PFCands': LorentzVector,  # available in NanoAODJMAR
     # Candidate: LorentzVector + charge
     'Electron': Electron,
     'Muon': Muon,
