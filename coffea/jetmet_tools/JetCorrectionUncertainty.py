@@ -27,7 +27,7 @@ def split_jec_name(name):
         if "UncertaintySources" in info:
             subinfo = info[info.index("UncertaintySources"):]
             if len(subinfo) == 4:
-                info[-2:] = [subinfo[-2]+ subinfo[-1]]
+                info[-2:] = [subinfo[-2] + subinfo[-1]]
 
     # Check for the case when the dataera name contains a _ like "17Nov2017_V6"
     if re.match(r"V[0-9]+", info[2]):
