@@ -264,7 +264,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
             stack_sumw2 = np.sum(plot_info['sumw2'], axis=0)
             err = poisson_interval(stack_sumw, stack_sumw2)
             if binwnorm is not None:
-                err *= binwnorm / np.diff(edges)[None, :] 
+                err *= binwnorm / np.diff(edges)[None, :]
             opts = {'step': 'post', 'label': 'Sum unc.', 'hatch': '///',
                     'facecolor': 'none', 'edgecolor': (0, 0, 0, .5), 'linewidth': 0}
             opts.update(error_opts)
