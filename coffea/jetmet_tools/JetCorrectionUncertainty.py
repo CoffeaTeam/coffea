@@ -20,7 +20,7 @@ def _checkConsistency(against, tocheck):
 
 def split_jec_name(name):
     info = name.split('_')
-    
+
     # Check for the case of regrouped jes uncertainties
     if "Regrouped" in info:
         info.pop(0)
