@@ -129,7 +129,6 @@ def test_jet_correction_regrouped_uncertainty_sources():
     print(junc)
 
     for tpl in list(junc.getUncertainty(JetEta=test_eta, JetPt=test_pt)):
-        print(tpl[0], levels)
         assert(tpl[0] in levels)
         assert(tpl[1].shape[0] == test_eta.shape[0])
 
