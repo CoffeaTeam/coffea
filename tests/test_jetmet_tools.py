@@ -110,6 +110,29 @@ def test_jet_correction_uncertainty_sources():
         assert(corrs.shape[0] == test_eta.shape[0])
 
 
+def test_jet_correction_regrouped_uncertainty_sources():
+    from coffea.jetmet_tools import JetCorrectionUncertainty
+
+    counts, test_eta, test_pt = dummy_jagged_eta_pt()
+
+    junc_names = []
+    levels = []
+    for name in dir(evaluator):
+        if 'Regrouped_Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs' in name:
+            junc_names.append(name)
+            if len(name.split('_')) == 9:
+                levels.append("_".join(name.split('_')[-2:]))
+            else:
+                levels.append(name.split('_')[-1])
+    junc = JetCorrectionUncertainty(**{name: evaluator[name] for name in junc_names})
+
+    print(junc)
+
+    for tpl in list(junc.getUncertainty(JetEta=test_eta, JetPt=test_pt)):
+        print(tpl[0], levels)
+        assert(tpl[0] in levels)
+        assert(tpl[1].shape[0] == test_eta.shape[0])
+
 def test_jet_resolution_sf():
     from coffea.jetmet_tools import JetResolutionScaleFactor
 
