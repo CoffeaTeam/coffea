@@ -22,10 +22,11 @@ def jetmet_evaluator():
                              '* * tests/samples/Summer16_23Sep2016V3_MC_UncertaintySources_AK4PFPuppi.junc.txt.gz',
                              '* * tests/samples/Summer16_23Sep2016V3_MC_Uncertainty_AK4PFPuppi.junc.txt.gz',
                              '* * tests/samples/Fall17_17Nov2017_V6_MC_UncertaintySources_AK4PFchs.junc.txt.gz',
+                             '* * tests/samples/Regrouped_Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs.junc.txt',
                              '* * tests/samples/Spring16_25nsV10_MC_PtResolution_AK4PFPuppi.jr.txt.gz',
                              '* * tests/samples/Spring16_25nsV10_MC_SF_AK4PFPuppi.jersf.txt.gz',
                              '* * tests/samples/Autumn18_V7_MC_SF_AK4PFchs.jersf.txt.gz'])
-    
+
     extract.finalize()
 
     return extract.make_evaluator()
@@ -40,7 +41,7 @@ def test_factorized_jet_corrector():
 
     test_Rho = np.full_like(test_eta, 100.)
     test_A = np.full_like(test_eta, 5.)
-    
+
     jec_names = ['Summer16_23Sep2016V3_MC_L1FastJet_AK4PFPuppi',
                  'Summer16_23Sep2016V3_MC_L2Relative_AK4PFPuppi',
                  'Summer16_23Sep2016V3_MC_L2L3Residual_AK4PFPuppi',
@@ -50,7 +51,7 @@ def test_factorized_jet_corrector():
     print(corrector)
 
     pt_copy = np.copy(test_pt)
-    
+
     corrs = corrector.getCorrection(JetEta=test_eta, Rho=test_Rho, JetPt=test_pt, JetA=test_A)
 
     assert((np.abs(pt_copy - test_pt) < 1e-6).all())
@@ -60,14 +61,14 @@ def test_jet_resolution():
     from coffea.jetmet_tools import JetResolution
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
-    
+
     test_Rho = np.full_like(test_eta, 100.)
-    
+
     jer_names = ['Spring16_25nsV10_MC_PtResolution_AK4PFPuppi']
     reso = JetResolution(**{name: evaluator[name] for name in jer_names})
-                 
+
     print(reso)
-                 
+
     resos = reso.getResolution(JetEta=test_eta, Rho=test_Rho, JetPt=test_pt)
 
 
@@ -75,7 +76,7 @@ def test_jet_correction_uncertainty():
     from coffea.jetmet_tools import JetCorrectionUncertainty
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
-    
+
     junc_names = ['Summer16_23Sep2016V3_MC_Uncertainty_AK4PFPuppi']
     junc = JetCorrectionUncertainty(**{name: evaluator[name] for name in junc_names})
 
@@ -91,7 +92,7 @@ def test_jet_correction_uncertainty_sources():
     from coffea.jetmet_tools import JetCorrectionUncertainty
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
-    
+
     junc_names = []
     levels = []
     for name in dir(evaluator):
@@ -99,7 +100,7 @@ def test_jet_correction_uncertainty_sources():
             junc_names.append(name)
             levels.append(name.split('_')[-1])
     junc = JetCorrectionUncertainty(**{name: evaluator[name] for name in junc_names})
-    
+
     print(junc)
 
     juncs = junc.getUncertainty(JetEta=test_eta, JetPt=test_pt)
@@ -109,16 +110,38 @@ def test_jet_correction_uncertainty_sources():
         assert(corrs.shape[0] == test_eta.shape[0])
 
 
+def test_jet_correction_regrouped_uncertainty_sources():
+    from coffea.jetmet_tools import JetCorrectionUncertainty
+
+    counts, test_eta, test_pt = dummy_jagged_eta_pt()
+
+    junc_names = []
+    levels = []
+    for name in dir(evaluator):
+        if 'Regrouped_Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs' in name:
+            junc_names.append(name)
+            if len(name.split('_')) == 9:
+                levels.append("_".join(name.split('_')[-2:]))
+            else:
+                levels.append(name.split('_')[-1])
+    junc = JetCorrectionUncertainty(**{name: evaluator[name] for name in junc_names})
+
+    print(junc)
+
+    for tpl in list(junc.getUncertainty(JetEta=test_eta, JetPt=test_pt)):
+        assert(tpl[0] in levels)
+        assert(tpl[1].shape[0] == test_eta.shape[0])
+
 def test_jet_resolution_sf():
     from coffea.jetmet_tools import JetResolutionScaleFactor
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
-    
+
     jersf_names = ['Spring16_25nsV10_MC_SF_AK4PFPuppi']
     resosf = JetResolutionScaleFactor(**{name: evaluator[name] for name in jersf_names})
-    
+
     print(resosf)
-    
+
     resosfs = resosf.getScaleFactor(JetEta=test_eta)
 
 def test_jet_resolution_sf_2d():
@@ -137,9 +160,9 @@ def test_jet_transformer():
                                      JetResolutionScaleFactor,
                                      JetCorrectionUncertainty,
                                      JetTransformer)
-    
+
     counts, test_px, test_py, test_pz, test_e = dummy_four_momenta()
-    
+
     test_Rho = np.full(shape=(np.sum(counts),), fill_value=100.)
     test_A = np.full(shape=(np.sum(counts),), fill_value=5.)
 
@@ -148,7 +171,7 @@ def test_jet_transformer():
                         massRaw=jets.mass,
                         rho=test_Rho,
                         area=test_A)
-    
+
     fakemet = np.random.exponential(scale=1.0,size=counts.size)
     metphi = np.random.uniform(low=-math.pi, high=math.pi, size=counts.size)
     syst_up = 0.001*fakemet
@@ -160,13 +183,13 @@ def test_jet_transformer():
                                          mass=np.zeros_like(counts),
                                          MetUnclustEnUpDeltaX=syst_up*np.cos(metphi),
                                          MetUnclustEnUpDeltaY=syst_down*np.sin(metphi))
-    
+
     jec_names = ['Summer16_23Sep2016V3_MC_L1FastJet_AK4PFPuppi',
                  'Summer16_23Sep2016V3_MC_L2Relative_AK4PFPuppi',
                  'Summer16_23Sep2016V3_MC_L2L3Residual_AK4PFPuppi',
                  'Summer16_23Sep2016V3_MC_L3Absolute_AK4PFPuppi']
     corrector = FactorizedJetCorrector(**{name: evaluator[name] for name in jec_names})
-    
+
     junc_names = []
     for name in dir(evaluator):
         if 'Summer16_23Sep2016V3_MC_UncertaintySources_AK4PFPuppi' in name:
@@ -175,7 +198,7 @@ def test_jet_transformer():
 
     jer_names = ['Spring16_25nsV10_MC_PtResolution_AK4PFPuppi']
     reso = JetResolution(**{name: evaluator[name] for name in jer_names})
-    
+
     jersf_names = ['Spring16_25nsV10_MC_SF_AK4PFPuppi']
     resosf = JetResolutionScaleFactor(**{name: evaluator[name] for name in jersf_names})
 
