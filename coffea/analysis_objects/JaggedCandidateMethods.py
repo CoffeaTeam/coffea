@@ -162,7 +162,7 @@ class JaggedCandidateMethods(awkward.Methods):
         fast_mass = None
         if 'p4' in argkeys:
             p4 = items['p4']
-            if not isinstance(p4, uproot_methods.TLorentzVectorArray):
+            if not isinstance(p4, uproot_methods.classes.TLorentzVector.ArrayMethods):
                 p4 = uproot_methods.TLorentzVectorArray.from_cartesian(p4[:, 0], p4[:, 1],
                                                                        p4[:, 2], p4[:, 3])
             fast_pt = _fast_pt(p4)
