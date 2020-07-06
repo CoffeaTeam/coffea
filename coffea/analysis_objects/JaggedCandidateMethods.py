@@ -98,12 +98,12 @@ class JaggedCandidateMethods(awkward.Methods):
     @classmethod
     def candidatesfromcounts(cls, counts, **kwargs):
         """
-        Construct a JaggedCandidateArray from input per-event counts,
+        Construct a JaggedCandidateArray from input per-event counts, and
         a valid four-momentum definition and any number of additional physics-object quantities.
 
         Valid four momenta can be define by suppling the following argument combinations:
 
-            - p4 (from a cartesian TLorentzVectorArray)
+            - p4 (from an ArrayMethods-based or cartesian four-tuple array)
             - pt, eta, phi, mass
             - pt, eta, phi, energy
             - pt, theta, phi, energy
@@ -129,11 +129,11 @@ class JaggedCandidateMethods(awkward.Methods):
     @classmethod
     def candidatesfromoffsets(cls, offsets, **kwargs):
         """
-        Construct a JaggedCandidateArray from input per-event counts,
+        Construct a JaggedCandidateArray from input per-event offsets, and
         a valid four-momentum definition and any number of additional physics-object quantities.
 
         Valid four momenta can be define by suppling the following argument combinations:
-            - p4 (from a cartesian TLorentzVectorArray)
+            - p4 (from an ArrayMethods-based or cartesian four-tuple array)
             - pt, eta, phi, mass
             - pt, eta, phi, energy
             - pt, theta, phi, energy
