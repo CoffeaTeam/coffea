@@ -1,3 +1,4 @@
+from weakref import WeakValueDictionary
 import numpy
 import awkward1
 import uproot
@@ -72,6 +73,10 @@ class NanoCollecton:
     @property
     def doc(self):
         return self.layout.purelist_parameter("__doc__")
+
+    def _events(self):
+        key = self.layout.purelist_parameter("events_key")
+        return NanoEventsFactory.get_events(key)
 
 
 @mixin_class
@@ -262,6 +267,19 @@ class Photon(PtEtaPhiMCandidate):
     def mass(self):
         return 0.0
 
+    @property
+    def matched_gen(self):
+        idx = self.genPartIdx.mask[self.genPartIdx >= 0]
+        return self._events().GenPart[idx]
+
+
+@mixin_class
+class GenParticle(PtEtaPhiMLorentzVector):
+    @property
+    def parent(self):
+        idx = self.genPartIdxMother.mask[self.genPartIdxMother >= 0]
+        return self._events().GenPart[idx]
+
 
 def _with_length(array: awkward1.layout.VirtualArray, length: int):
     return awkward1.layout.VirtualArray(
@@ -275,6 +293,7 @@ def _with_length(array: awkward1.layout.VirtualArray, length: int):
 
 class NanoEventsFactory:
     default_mixins = {
+        "GenPart": "GenParticle",
         "Electron": "PtEtaPhiMCandidate",
         "Photon": "Photon",
         "Muon": "PtEtaPhiMCandidate",
@@ -282,6 +301,7 @@ class NanoEventsFactory:
         "Jet": "PtEtaPhiMLorentzVector",
         "FatJet": "PtEtaPhiMLorentzVector",
     }
+    _active = WeakValueDictionary()
 
     def __init__(
         self,
@@ -307,6 +327,7 @@ class NanoEventsFactory:
                 str(self._entrystop),
             ]
         )
+        NanoEventsFactory._active[self._keyprefix] = self
 
         if cache is None:
             cache = awkward1.layout.ArrayCache({})
@@ -321,6 +342,11 @@ class NanoEventsFactory:
 
         self._metadata = metadata  # TODO: JSON only?
         self._branches_read = set()
+        self._events = None
+
+    @classmethod
+    def get_events(cls, key):
+        return cls._active[key].events()
 
     def __len__(self):
         return self._entrystop - self._entrystart
@@ -366,6 +392,10 @@ class NanoEventsFactory:
         )
 
     def events(self):
+        if self._events is not None:
+            return self._events
+
+        print("building")
         arrays = {}
         for branch_name in self._tree.keys():
             arrays[branch_name.decode("ascii")] = self._array(branch_name)
@@ -377,7 +407,7 @@ class NanoEventsFactory:
         )
 
         def collectionfactory(name):
-            mixin = self._mixin_map.get(name, None)
+            mixin = self._mixin_map.get(name, "NanoCollecton")
             if "n" + name in arrays:
                 # list collection
                 cname = "n" + name
@@ -390,6 +420,7 @@ class NanoEventsFactory:
                 recordparams = {
                     "__doc__": counts.parameters["__doc__"],
                     "__record__": mixin,
+                    "events_key": self._keyprefix,
                 }
                 form = awkward1.forms.ListOffsetForm(
                     "i32",
@@ -421,7 +452,10 @@ class NanoEventsFactory:
                         for k in arrays
                         if k.startswith(name + "_")
                     },
-                    parameters={"__record__": mixin,},
+                    parameters={
+                        "__record__": mixin,
+                        "events_key": self._keyprefix,
+                    },
                 )
 
         events = awkward1.layout.RecordArray(
@@ -429,4 +463,5 @@ class NanoEventsFactory:
             parameters={"metadata": self._metadata},
         )
 
-        return awkward1.Array(events)
+        self._events = awkward1.Array(events)
+        return self._events
