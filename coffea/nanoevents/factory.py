@@ -17,12 +17,12 @@ def _with_length(array: awkward1.layout.VirtualArray, length: int):
 class NanoEventsFactory:
     default_mixins = {
         "GenPart": "GenParticle",
-        "Electron": "PtEtaPhiMCandidate",
+        "Electron": "Electron",
+        "Muon": "Muon",
+        "Tau": "Tau",
         "Photon": "Photon",
-        "Muon": "PtEtaPhiMCandidate",
-        "Tau": "PtEtaPhiMCandidate",
-        "Jet": "PtEtaPhiMLorentzVector",
-        "FatJet": "PtEtaPhiMLorentzVector",
+        "Jet": "Jet",
+        "FatJet": "FatJet",
     }
     _active = WeakValueDictionary()
 
@@ -74,12 +74,13 @@ class NanoEventsFactory:
     def __len__(self):
         return self._entrystop - self._entrystart
 
-    def reader(self, branch_name):
+    def reader(self, branch_name, parameters):
         self._branches_read.add(branch_name)
         return awkward1.layout.NumpyArray(
             self._tree[branch_name].array(
                 entrystart=self._entrystart, entrystop=self._entrystop, flatten=True
-            )
+            ),
+            parameters=parameters,
         )
 
     def _array(self, branch_name: bytes):
@@ -90,15 +91,20 @@ class NanoEventsFactory:
         else:
             dtype = interpretation.type
             length = len(self)
-        form = awkward1.forms.Form.fromjson('"%s"' % dtype)
+        parameters = {"__doc__": self._tree[branch_name].title.decode("ascii")}
+        # use hint to resolve platform-dependent format
+        formhint = awkward1.forms.Form.fromjson('"%s"' % dtype)
+        form = awkward1.forms.NumpyForm(
+            [], formhint.itemsize, formhint.format, parameters=parameters
+        )
         generator = awkward1.layout.ArrayGenerator(
-            self.reader, (branch_name,), {}, form=form, length=length,
+            self.reader, (branch_name, parameters), {}, form=form, length=length,
         )
         return awkward1.layout.VirtualArray(
             generator,
             self._cache,
             cache_key="/".join([self._keyprefix, "file", branch_name.decode("ascii")]),
-            parameters={"__doc__": self._tree[branch_name].title.decode("ascii")},
+            parameters=parameters,
         )
 
     def _listarray(self, counts, content, recordparams):
@@ -118,7 +124,6 @@ class NanoEventsFactory:
         if self._events is not None:
             return self._events
 
-        print("building")
         arrays = {}
         for branch_name in self._tree.keys():
             arrays[branch_name.decode("ascii")] = self._array(branch_name)

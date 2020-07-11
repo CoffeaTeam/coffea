@@ -11,6 +11,12 @@ from coffea.nanoevents.methods.vector import (
 from coffea.nanoevents.methods.candidate import (
     Candidate,
     PtEtaPhiMCandidate,
-    Photon,
-    GenParticle,
 )
+from coffea.nanoevents.methods.generator import GenParticle
+from coffea.nanoevents.methods.lepton import (
+    Electron,
+    Muon,
+    Tau,
+    Photon,
+)
+from coffea.nanoevents.methods.jet import Jet, FatJet

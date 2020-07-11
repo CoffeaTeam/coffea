@@ -1,7 +1,6 @@
 import numpy
 import awkward1
 from coffea.nanoevents.methods.mixin import mixin_class, mixin_method
-from coffea.nanoevents.methods.base import NanoCollection
 from coffea.nanoevents.methods.vector import LorentzVector, PtEtaPhiMLorentzVector
 
 
@@ -34,23 +33,3 @@ class PtEtaPhiMCandidate(Candidate, PtEtaPhiMLorentzVector):
     """
 
     pass
-
-
-@mixin_class
-class Photon(PtEtaPhiMCandidate, NanoCollection):
-    @property
-    def mass(self):
-        return awkward1.broadcast_arrays(self.pt, 0.0)[1]
-
-    @property
-    def matched_gen(self):
-        idx = self.genPartIdx.mask[self.genPartIdx >= 0]
-        return self._events().GenPart[idx]
-
-
-@mixin_class
-class GenParticle(PtEtaPhiMLorentzVector, NanoCollection):
-    @property
-    def parent(self):
-        idx = self.genPartIdxMother.mask[self.genPartIdxMother >= 0]
-        return self._events().GenPart[idx]
