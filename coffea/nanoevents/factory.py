@@ -273,6 +273,7 @@ class NanoEventsFactory:
                 {k: _with_length(v, length) for k, v in content.items()},
                 parameters=params,
             )
+            return awkward1.layout.ListOffsetArray32(offsets, content)
         return awkward1.layout.ListOffsetArray32(offsets, content, parameters=params)
 
     def events(self):
@@ -384,7 +385,8 @@ class NanoEventsFactory:
                 offsets = arrays["o" + name]
                 content = arrays[name]
                 params = {
-                    "__doc__": offsets.parameters["__doc__"],
+                    # This makes more sense as offsets doc but it seems that is empty
+                    "__doc__": content.parameters["__doc__"],
                     "__array__": mixin,
                     "events_key": self._keyprefix,
                     "collection_name": name,
