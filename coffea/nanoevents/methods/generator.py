@@ -1,5 +1,5 @@
 import awkward1
-from coffea.nanoevents.methods.util import get_crossref, apply_global_index
+from coffea.nanoevents.methods.util import apply_global_index
 from coffea.nanoevents.methods.mixin import mixin_class, mixin_method
 from coffea.nanoevents.methods.base import NanoCollection
 from coffea.nanoevents.methods.vector import PtEtaPhiMLorentzVector
@@ -73,10 +73,10 @@ class GenParticle(PtEtaPhiMLorentzVector, NanoCollection):
 
 
 @mixin_class
-class GenVisTau(PtEtaPhiMCandidate):
+class GenVisTau(PtEtaPhiMCandidate, NanoCollection):
     """NanoAOD visible tau object"""
 
     @property
     def parent(self):
         """Accessor to the parent particle"""
-        return get_crossref(self.genPartIdxMother, self._events().GenPart)
+        return apply_global_index(self.genPartIdxMotherG, self._events().GenPart)
