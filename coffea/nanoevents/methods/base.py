@@ -7,7 +7,11 @@ from coffea.nanoevents.factory import NanoEventsFactory
 
 @mixin_class
 class NanoEvents:
-    pass
+    """NanoEvents mixin class"""
+
+    @property
+    def metadata(self):
+        return self.layout.parameter("metadata")
 
 
 @mixin_class
@@ -44,6 +48,7 @@ class NanoCollection:
 @mixin_class
 class NanoColumn:
     """A column from the original file"""
+
     pass
 
 

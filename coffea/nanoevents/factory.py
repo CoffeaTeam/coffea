@@ -16,6 +16,31 @@ def _with_length(array: awkward1.layout.VirtualArray, length: int):
 
 
 class NanoEventsFactory:
+    """A factory class to build NanoEvents objects
+
+    This factory must last for the lifetime of any events or sub-events objects
+    for indirections (such as cross-references) to remain valid. Data members and
+    mixins will work ok if the factory goes out of scope, however.
+
+    Parameters
+    ----------
+        file : str or uproot.rootio.ROOTDirectory
+            The filename or already opened file using e.g. ``uproot.open()``
+        treename : str, optional
+            Name of the tree to read in the file, defaults to ``Events``
+        entrystart : int, optional
+            Start at this entry offset in the tree (default 0)
+        entrystop : int, optional
+            Stop at this entry offset in the tree (default end of tree)
+        cache : dict, optional
+            A dict-like interface to a cache object, in which any materialized virtual arrays will be kept
+        mixin_map : dict, optional
+            A mapping from collection name to mixin class name that implements custom
+            additional mixins beyond the defaults provided.
+        metadata : dict, optional
+            Arbitrary metadata to embed in this NanoEvents, accessible via ``events.metadata``
+    """
+
     default_mixins = {
         "CaloMET": "MissingET",
         "ChsMET": "MissingET",
@@ -121,16 +146,22 @@ class NanoEventsFactory:
 
     @classmethod
     def get_events(cls, key):
+        """The events corresponding to the factory keyed by ``key``
+
+        This is used mainly for indirections
+        """
         return cls._instance(key).events()
 
     @classmethod
     def get_cache(cls, key):
+        """The cache corresponding to the factory keyed by ``key``"""
         return cls._instance(key)._cache
 
     def __len__(self):
         return self._entrystop - self._entrystart
 
     def reader(self, branch_name, parameters):
+        """Read a branch from the ROOT file as an awkward1 array"""
         self._branches_read.add(branch_name)
         return awkward1.layout.NumpyArray(
             self._tree[branch_name].array(
@@ -245,6 +276,25 @@ class NanoEventsFactory:
         return awkward1.layout.ListOffsetArray32(offsets, content, parameters=params)
 
     def events(self):
+        """Build events
+
+        The NanoEvents object is built from all branches found in the supplied file, based on
+        the naming pattern of the branches. The following additional arrays are constructed:
+
+        - Any branches named ``n{name}`` are assumed to be counts branches and converted to offsets ``o{name}``
+        - Any local index branches with names matching ``{source}_{target}Idx*`` are converted to global indexes for the event chunk
+        - Any `NanoEventsFactory.nested_items` are constructed, if the necessary branches are available
+        - Any `NanoEventsFactory.special_items` are constructed, if the necessary branches are available
+
+        From those arrays, NanoAOD collections are formed as collections of branches grouped by name, where:
+
+        - one branch exists named ``name`` and no branches start with ``name_``, interpreted as a single flat array;
+        - one branch exists named ``name``, one named ``n{name}``, and no branches start with ``name_``, interpreted as a single jagged array;
+        - no branch exists named ``{name}`` and many branches start with ``name_*``, interpreted as a flat table; or
+        - one branch exists named ``n{name}`` and many branches start with ``name_*``, interpreted as a jagged table.
+
+        All collections are then zipped into one `NanoEvents` record and returned.
+        """
         if self._events is not None:
             return self._events
 
@@ -339,7 +389,9 @@ class NanoEventsFactory:
                     "events_key": self._keyprefix,
                     "collection_name": name,
                 }
-                form = awkward1.forms.ListOffsetForm("i32", content.form, parameters=params)
+                form = awkward1.forms.ListOffsetForm(
+                    "i32", content.form, parameters=params
+                )
                 generator = awkward1.layout.ArrayGenerator(
                     self._listarray,
                     (offsets, content, params),

@@ -1,5 +1,5 @@
 """Mixin methods for NanoEvents"""
-from coffea.nanoevents.methods.base import NanoCollection
+from coffea.nanoevents.methods.base import NanoCollection, NanoEvents
 from coffea.nanoevents.methods.vector import (
     TwoVector,
     PolarTwoVector,
