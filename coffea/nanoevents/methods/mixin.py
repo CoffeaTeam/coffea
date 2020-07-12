@@ -16,12 +16,12 @@ def mixin_class(cls):
                 if rhs is None:
                     awkward1.behavior.setdefault((ufunc, name), method)
                     continue
-                if basecls.__name__ in rhs:
-                    rhs.add(name)
-                for rhs_name in rhs:
+                for rhs_name in list(rhs) + [name]:
                     awkward1.behavior.setdefault((ufunc, name, rhs_name), method)
                     if transpose is not None:
                         awkward1.behavior.setdefault((ufunc, rhs_name, name), transpose)
+                if basecls.__name__ in rhs:
+                    rhs.add(name)
     return cls
 
 

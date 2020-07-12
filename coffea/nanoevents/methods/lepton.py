@@ -52,10 +52,12 @@ class Electron(PtEtaPhiMCandidate, NanoCollection, CommonMatched):
         return (self.cutBased & (1 << self.TIGHT)) != 0
 
 
+@mixin_class
 class Muon(PtEtaPhiMCandidate, NanoCollection, CommonMatched):
     """NanoAOD muon object"""
 
 
+@mixin_class
 class Tau(PtEtaPhiMCandidate, NanoCollection, CommonMatched):
     """NanoAOD tau object"""
 
