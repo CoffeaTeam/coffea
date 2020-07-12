@@ -283,12 +283,13 @@ class NanoEventsFactory:
 
         # Create any special arrays
         for name, (fcn, args) in self.special_items.items():
-            generator = fcn(*(arrays[k] for k in args))
-            arrays[name] = awkward1.layout.VirtualArray(
-                generator,
-                self._cache,
-                cache_key="/".join([self._keyprefix, fcn.__name__, name]),
-            )
+            if all(k in arrays for k in args):
+                generator = fcn(*(arrays[k] for k in args))
+                arrays[name] = awkward1.layout.VirtualArray(
+                    generator,
+                    self._cache,
+                    cache_key="/".join([self._keyprefix, fcn.__name__, name]),
+                )
 
         def collectionfactory(name):
             mixin = self._mixin_map.get(name, "NanoCollecton")

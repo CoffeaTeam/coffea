@@ -41,6 +41,10 @@ class Jet(PtEtaPhiMLorentzVector, NanoCollection):
     def matched_muons(self):
         return apply_global_index(self.muonIdxG, self._events().Muon)
 
+    @property
+    def matched_gen(self):
+        return apply_global_index(self.genJetIdxG, self._events().GenJet)
+
 
 @mixin_class
 class FatJet(PtEtaPhiMLorentzVector, NanoCollection):

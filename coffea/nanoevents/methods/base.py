@@ -42,13 +42,7 @@ class NanoCollection:
         This can be called at any time from any collection, as long as
         the NanoEventsFactory instance exists."""
         key = self.layout.purelist_parameter("events_key")
-        out = NanoEventsFactory.get_events(key)
-        if len(out) != len(self):
-            raise RuntimeError(
-                "Parent events for %r does not match shape. Please only mask the first dimension"
-                % self
-            )
-        return out
+        return NanoEventsFactory.get_events(key)
 
 
 def runtime_cache(method):

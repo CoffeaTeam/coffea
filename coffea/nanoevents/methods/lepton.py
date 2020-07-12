@@ -1,5 +1,5 @@
 import awkward1
-from coffea.nanoevents.methods.util import get_crossref
+from coffea.nanoevents.methods.util import apply_global_index
 from coffea.nanoevents.methods.mixin import mixin_class, mixin_method
 from coffea.nanoevents.methods.base import NanoCollection
 from coffea.nanoevents.methods.candidate import PtEtaPhiMCandidate
@@ -8,11 +8,11 @@ from coffea.nanoevents.methods.candidate import PtEtaPhiMCandidate
 class CommonMatched:
     @property
     def matched_gen(self):
-        return get_crossref(self.genPartIdx, self._events().GenPart)
+        return apply_global_index(self.genPartIdxG, self._events().GenPart)
 
     @property
     def matched_jet(self):
-        return get_crossref(self.jetIdx, self._events().Jet)
+        return apply_global_index(self.jetIdxG, self._events().Jet)
 
 
 @mixin_class
@@ -50,6 +50,10 @@ class Electron(PtEtaPhiMCandidate, NanoCollection, CommonMatched):
     def isTight(self):
         """Returns a boolean array marking tight cut-based photons"""
         return (self.cutBased & (1 << self.TIGHT)) != 0
+
+    @property
+    def matched_photon(self):
+        return apply_global_index(self.photonIdxG, self._events().Photon)
 
 
 @mixin_class
@@ -94,5 +98,4 @@ class Photon(PtEtaPhiMCandidate, NanoCollection, CommonMatched):
 
     @property
     def matched_electron(self):
-        idx = self.electronIdx.mask[self.electronIdx >= 0]
-        return self._events().Electron[idx]
+        return apply_global_index(self.electronIdxG, self._events().Electron)
