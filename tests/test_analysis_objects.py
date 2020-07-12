@@ -129,6 +129,9 @@ def test_analysis_objects():
     jca_reco = JaggedCandidateArray.candidatesfromcounts(reco.counts,
                                                          px=reco_px,py=reco_py,
                                                          pz=reco_pz,energy=reco_e)
+    jca_reco_pt = JaggedCandidateArray.candidatesfromcounts(reco.counts,
+                                                            pt=jca_reco.pt.content,eta=jca_reco.eta.content,
+                                                            phi=jca_reco.phi.content,mass=jca_reco.mass.content)
     print('gen eta: ', jca_gen.p4.eta,'\n gen phi:', jca_gen.p4.phi)
     print('reco eta: ', jca_reco.p4.eta,'\n reco phi:', jca_reco.p4.phi)
     match_mask = jca_reco.match(jca_gen, deltaRCut=0.3)
@@ -171,3 +174,8 @@ def test_analysis_objects():
                                                                 phi=jca_reco.phi,
                                                                 energy=jca_reco.p4.energy)
 
+    p4cart_test = JaggedCandidateArray.candidatesfromcounts(jca_reco.counts,
+                                                            p4=jca_reco.p4)
+
+    p4ptetaphiM_test = JaggedCandidateArray.candidatesfromcounts(jca_reco.counts,
+                                                                 p4=jca_reco_pt.p4)

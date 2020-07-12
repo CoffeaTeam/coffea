@@ -98,12 +98,12 @@ class JaggedCandidateMethods(awkward.Methods):
     @classmethod
     def candidatesfromcounts(cls, counts, **kwargs):
         """
-        Construct a JaggedCandidateArray from input per-event counts,
+        Construct a JaggedCandidateArray from input per-event counts, and
         a valid four-momentum definition and any number of additional physics-object quantities.
 
         Valid four momenta can be define by suppling the following argument combinations:
 
-            - p4 (from a cartesian TLorentzVectorArray)
+            - p4 (from an ArrayMethods-based or cartesian four-tuple array)
             - pt, eta, phi, mass
             - pt, eta, phi, energy
             - pt, theta, phi, energy
@@ -129,11 +129,11 @@ class JaggedCandidateMethods(awkward.Methods):
     @classmethod
     def candidatesfromoffsets(cls, offsets, **kwargs):
         """
-        Construct a JaggedCandidateArray from input per-event counts,
+        Construct a JaggedCandidateArray from input per-event offsets, and
         a valid four-momentum definition and any number of additional physics-object quantities.
 
         Valid four momenta can be define by suppling the following argument combinations:
-            - p4 (from a cartesian TLorentzVectorArray)
+            - p4 (from an ArrayMethods-based or cartesian four-tuple array)
             - pt, eta, phi, mass
             - pt, eta, phi, energy
             - pt, theta, phi, energy
@@ -162,7 +162,7 @@ class JaggedCandidateMethods(awkward.Methods):
         fast_mass = None
         if 'p4' in argkeys:
             p4 = items['p4']
-            if not isinstance(p4, uproot_methods.TLorentzVectorArray):
+            if not isinstance(p4, uproot_methods.classes.TLorentzVector.ArrayMethods):
                 p4 = uproot_methods.TLorentzVectorArray.from_cartesian(p4[:, 0], p4[:, 1],
                                                                        p4[:, 2], p4[:, 3])
             fast_pt = _fast_pt(p4)

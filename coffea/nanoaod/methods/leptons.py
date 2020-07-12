@@ -31,6 +31,7 @@ class LeptonCommon(Candidate):
             self['matched_gen'] = embedded_genpart
             del self['genPartIdx']
 
+        # disable this type check due to cyclic reference through jets
         self.type.check = False
 
 
@@ -61,6 +62,26 @@ class Electron(LeptonCommon):
             embedded_photon.__doc__ = photons.__doc__
             self['matched_photon'] = embedded_photon
             del self['photonIdx']
+
+    @property
+    def isVeto(self):
+        '''Returns a boolean array marking veto-level cut-based photons'''
+        return (self.cutBased & (1 << self.VETO)).astype(bool)
+
+    @property
+    def isLoose(self):
+        '''Returns a boolean array marking loose cut-based photons'''
+        return (self.cutBased & (1 << self.LOOSE)).astype(bool)
+
+    @property
+    def isMedium(self):
+        '''Returns a boolean array marking medium cut-based photons'''
+        return (self.cutBased & (1 << self.MEDIUM)).astype(bool)
+
+    @property
+    def isTight(self):
+        '''Returns a boolean array marking tight cut-based photons'''
+        return (self.cutBased & (1 << self.TIGHT)).astype(bool)
 
 
 class Muon(LeptonCommon):

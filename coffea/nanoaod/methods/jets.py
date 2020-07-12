@@ -4,7 +4,10 @@ import awkward
 
 class FatJet(LorentzVector):
     '''NanoAOD large radius jet object'''
+    enable_genjet = False
+    'Set True if FatJet_genJetAK8Idx is available'
     subjetmap = {'FatJet': 'SubJet'}  # V6 has 'GenJetAK8': 'SubGenJetAK8', maybe better to put in generator.py
+    'If additional large-radius jet collections are available, add here their associated subjet collections'
     LOOSE = 0
     'jetId bit position'
     TIGHT = 1
@@ -26,6 +29,49 @@ class FatJet(LorentzVector):
             del self['subJetIdx1']
             del self['subJetIdx2']
 
+        if self.enable_genjet and 'GenJetAK8' in events.columns:
+            genjet = events['GenJetAK8']
+            reftype = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(genjet.type.to.to))
+            reftype.check = False
+            embedded_genjet = type(genjet)(
+                self._lazy_crossref,
+                args=(self._getcolumn('genJetAK8Idx'), genjet),
+                type=reftype,
+            )
+            embedded_genjet.__doc__ = genjet.__doc__
+            self['matched_gen'] = embedded_genjet
+            del self['genJetAK8Idx']
+
+        if 'FatJetPFCands' in events.columns:
+            pfcand_link = events['FatJetPFCands']
+            reftype = awkward.type.ArrayType(float('inf'), float('inf'), pfcand_link.type.to.to)
+            reftype.check = False
+            embedded_pfcand_extras = type(pfcand_link)(
+                self._lazy_double_jagged,
+                args=(self._getcolumn('nConstituents'), pfcand_link),
+                type=reftype,
+            )
+            embedded_pfcand_extras.__doc__ = pfcand_link.__doc__
+            self['constituentExtras'] = embedded_pfcand_extras
+
+            pfcands = events['PFCands']
+            indexedtype = awkward.type.ArrayType(float('inf'), pfcands.type.to.to)
+            indexedtype.check = False
+            jetpfcands = type(pfcands)(
+                pfcand_link._lazy_crossref,
+                args=(pfcand_link._getcolumn('candIdx'), pfcands),
+                type=indexedtype,
+            )
+            reftype = awkward.type.ArrayType(float('inf'), float('inf'), pfcands.type.to.to)
+            reftype.check = False
+            embedded_pfcands = type(pfcands)(
+                self._lazy_double_jagged,
+                args=(self._getcolumn('nConstituents'), jetpfcands),
+                type=reftype,
+            )
+            embedded_pfcands.__doc__ = pfcands.__doc__
+            self['constituents'] = embedded_pfcands
+
     @property
     def isLoose(self):
         '''Returns a boolean array marking loose jets according to jetId index'''
@@ -39,13 +85,13 @@ class FatJet(LorentzVector):
     @property
     def isTightLeptonVeto(self):
         '''Returns a boolean array marking tight jets with explicit lepton veto according to jetId index'''
-        return (self.cutBasedBitmap & (1 << self.TIGHTLEPVETO)).astype(bool)
+        return (self.jetId & (1 << self.TIGHTLEPVETO)).astype(bool)
 
 
 class Jet(LorentzVector):
     '''NanoAOD narrow radius jet object'''
-    _enable_genjet = False
-    'Set to true if using NanoAODv6 or newer (v5 had a bug in the mapping)'
+    enable_genjet = True
+    'Set False for NanoAODv5, which had a bug with the mapping betwen fatjets and genjets'
     LOOSE = 0
     'jetId bit position'
     TIGHT = 1
@@ -82,7 +128,7 @@ class Jet(LorentzVector):
             del self['muonIdx1']
             del self['muonIdx2']
 
-        if self._enable_genjet and 'GenJet' in events.columns:
+        if self.enable_genjet and 'GenJet' in events.columns:
             genjet = events['GenJet']
             reftype = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(genjet.type.to.to))
             reftype.check = False
@@ -95,6 +141,37 @@ class Jet(LorentzVector):
             self['matched_gen'] = embedded_genjet
             del self['genJetIdx']
 
+        if 'JetPFCands' in events.columns:
+            pfcand_link = events['JetPFCands']
+            reftype = awkward.type.ArrayType(float('inf'), float('inf'), pfcand_link.type.to.to)
+            reftype.check = False
+            embedded_pfcand_extras = type(pfcand_link)(
+                self._lazy_double_jagged,
+                args=(self._getcolumn('nConstituents'), pfcand_link),
+                type=reftype,
+            )
+            embedded_pfcand_extras.__doc__ = pfcand_link.__doc__
+            self['constituentExtras'] = embedded_pfcand_extras
+
+            pfcands = events['PFCands']
+            indexedtype = awkward.type.ArrayType(float('inf'), pfcands.type.to.to)
+            indexedtype.check = False
+            jetpfcands = type(pfcands)(
+                pfcand_link._lazy_crossref,
+                args=(pfcand_link._getcolumn('candIdx'), pfcands),
+                type=indexedtype,
+            )
+            reftype = awkward.type.ArrayType(float('inf'), float('inf'), pfcands.type.to.to)
+            reftype.check = False
+            embedded_pfcands = type(pfcands)(
+                self._lazy_double_jagged,
+                args=(self._getcolumn('nConstituents'), jetpfcands),
+                type=reftype,
+            )
+            embedded_pfcands.__doc__ = pfcands.__doc__
+            self['constituents'] = embedded_pfcands
+
+        # disable this type check due to cyclic reference through leptons
         self.type.check = False
 
     @property
@@ -110,4 +187,4 @@ class Jet(LorentzVector):
     @property
     def isTightLeptonVeto(self):
         '''Returns a boolean array marking tight jets with explicit lepton veto according to jetId index'''
-        return (self.cutBasedBitmap & (1 << self.TIGHTLEPVETO)).astype(bool)
+        return (self.jetId & (1 << self.TIGHTLEPVETO)).astype(bool)

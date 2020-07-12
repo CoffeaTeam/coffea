@@ -249,38 +249,11 @@ with open(out, "wb") as f:
     return name
 
 
+_wq_queue = None
+
+
 def work_queue_executor(items, function, accumulator, **kwargs):
     """Execute using Work Queue
-
-    Work Queue is a production framework used to build large scale master-
-    worker applications, developed by the Cooperative Computing Laboratory
-    (CCL) at the University of Notre Dame. This executor functions as the
-    master program which submits chunks of data as tasks. A remote worker,
-    which can be run on cluster and cloud systems, will be able to execute
-    the task.
-
-    python_package_run is the necessary wrapper script. This script is
-    installed with work queue. The executor will try to find this wrapper in
-    PATH. Also, The location of this script can be specified with the 'wrapper'
-    argument.
-
-    Currently, this executor only works with Python 3.6 and 3.7 (not 3.8).
-
-    To set up Work Queue, the following procedure can be used:
-
-    $ conda create --name conda-coffea-wq-env python=3.6
-    $ conda activate conda-coffea-wq-env
-    $ pip install six coffea dill
-    $ conda install -y -c conda-forge xrootd
-    $ conda deactivate
-    $ conda activate base
-    $ pip install conda-pack
-    $ python -c 'import conda_pack; conda_pack.pack(name="conda-coffea-wq-env", output="conda-coffea-wq-env.tar.gz")'
-    $ conda activate conda-coffea-wq-env
-    $ ... run coffea + wq code!
-
-    For further information about Work Queue, please visit the documentation
-    at: https://cctools.readthedocs.io/en/latest/work_queue/
 
     Parameters
     ----------
@@ -299,6 +272,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         compression : int, optional
             Compress accumulator outputs in flight with LZ4, at level specified (default 1)
             Set to ``None`` for no compression.
+
         # work queue specific options:
         environment-file : str
             Python environment to use. Required.
@@ -330,6 +304,11 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             Wrapper script to run/open python environment tarball. Defaults to python_package_run found in PATH.
         print-stdout : bool
             If true (default), print the standard output of work queue task on completion.
+        queue-mode : one of 'persistent' or 'one-per-stage'. Default is 'persistent'.
+            'persistent' - One queue is used for all stages of processing.
+            'one-per-stage' - A new queue is used for each of the stages of processing.
+        resource-monitor : bool
+            If true, (false is the default) turns on resource monitoring for Work Queue.
     """
     try:
         import work_queue as wq
@@ -340,6 +319,27 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     except ImportError as e:
         print('You must have Work Queue and dill installed to use work_queue_executor!')
         raise e
+
+    global _wq_queue
+
+    debug_log = kwargs.pop('debug-log', None)
+    stats_log = kwargs.pop('stats-log', None)
+    trans_log = kwargs.pop('transactions-log', None)
+
+    master_name = kwargs.pop('master-name', None)
+    port = kwargs.pop('port', None)
+    if port is None:
+        if master_name:
+            port = 0
+        else:
+            port = 9123
+
+    queue_mode = kwargs.pop('queue-mode', 'persistent')
+
+    if _wq_queue is None or queue_mode == 'one-per-stage':
+        _wq_queue = wq.WorkQueue(port, name=master_name, debug_log=debug_log, stats_log=stats_log, transactions_log=trans_log)
+
+    print('Listening for work queue workers on port {}...'.format(_wq_queue.port))
 
     unit = kwargs.pop('unit', 'items')
     status = kwargs.pop('status', True)
@@ -368,6 +368,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     cores = kwargs.pop('cores', None)
     memory = kwargs.pop('memory', None)
     disk = kwargs.pop('disk', None)
+    resource_monitor = kwargs.pop('resource-monitor', False)
 
     default_resources = {}
     if cores:
@@ -377,18 +378,6 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     if disk:
         default_resources['disk'] = disk
 
-    debug_log = kwargs.pop('debug-log', None)
-    stats_log = kwargs.pop('stats-log', None)
-    trans_log = kwargs.pop('transactions-log', None)
-
-    master_name = kwargs.pop('master-name', None)
-    port = kwargs.pop('port', None)
-    if port is None:
-        if master_name:
-            port = 0
-        else:
-            port = 9123
-
     with tempfile.TemporaryDirectory(prefix="wq-executor-tmp-", dir=filepath) as tmpdir:
         # Pickle function
         with open(os.path.join(tmpdir, 'function.p'), 'wb') as wf:
@@ -397,20 +386,14 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         # Set up Work Queue
         command_path = _coffea_fn_as_file_wrapper(tmpdir)
 
-        try:
-            q = wq.WorkQueue(port, name=master_name, debug_log=debug_log, stats_log=stats_log, transactions_log=trans_log)
-        except Exception:
-            print('Instantiation of Work Queue failed')
-            sys.exit(1)
+        if resource_monitor:
+            _wq_queue.enable_monitoring()
 
-        print('Listening for work queue workers on port {}...'.format(q.port))
-
-        q.enable_monitoring()
-        q.specify_category_max_resources('default', default_resources)
+        _wq_queue.specify_category_max_resources('default', default_resources)
         if resources_mode == 'auto':
-            q.tune('category-steady-n-tasks', 3)
-            q.specify_category_max_resources('default', {})
-            q.specify_category_mode('default', wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT)
+            _wq_queue.tune('category-steady-n-tasks', 3)
+            _wq_queue.specify_category_max_resources('default', {})
+            _wq_queue.specify_category_mode('default', wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT)
 
         # Define function input here
         infile_function = os.path.join(tmpdir, 'function.p')
@@ -455,7 +438,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
             t.specify_output_file(outfile, cache=False)
 
-            task_id = q.submit(t)
+            task_id = _wq_queue.submit(t)
             # Add pair to dict
             id_output['{}'.format(task_id)] = outfile
 
@@ -463,8 +446,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
         print('Waiting for tasks to complete...')
 
-        while not q.empty():
-            t = q.wait(5)
+        while not _wq_queue.empty():
+            t = _wq_queue.wait(5)
             if t:
                 print('Task (id #{}) complete: {} (return code {})'.format(t.id, t.command, t.return_status))
 
@@ -474,7 +457,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                         t.resources_allocated.cores,
                         t.resources_allocated.memory,
                         t.resources_allocated.disk))
-                    if t.resources_measured:
+                    if resource_monitor:
                         print('measured cores: {}, memory: {} MB, disk {} MB, runtime {}'.format(
                             t.resources_measured.cores,
                             t.resources_measured.memory,
@@ -1083,6 +1066,7 @@ def run_uproot_job(fileset,
     }
     exe_args.update(executor_args)
     executor(chunks, closure, wrapped_out, **exe_args)
+
     wrapped_out['metrics']['chunks'] = value_accumulator(int, len(chunks))
     processor_instance.postprocess(out)
     if savemetrics:
@@ -1238,9 +1222,10 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
 
     executor_args.setdefault('config', None)
     executor_args.setdefault('file_type', 'parquet')
-    executor_args.setdefault('laurelin_version', '0.3.0')
+    executor_args.setdefault('laurelin_version', '1.1.1')
     executor_args.setdefault('treeName', 'Events')
     executor_args.setdefault('flatten', False)
+    executor_args.setdefault('nano', False)
     executor_args.setdefault('cache', True)
     executor_args.setdefault('skipbadfiles', False)
     executor_args.setdefault('retries', 0)
@@ -1248,6 +1233,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     file_type = executor_args['file_type']
     treeName = executor_args['treeName']
     flatten = executor_args['flatten']
+    nano = executor_args['nano']
     use_cache = executor_args['cache']
 
     if executor_args['config'] is None:
@@ -1271,7 +1257,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
                                   thread_workers, file_type, treeName)
 
     output = processor_instance.accumulator.identity()
-    executor(spark, dfslist, processor_instance, output, thread_workers, use_cache, flatten)
+    executor(spark, dfslist, processor_instance, output, thread_workers, use_cache, flatten, nano)
     processor_instance.postprocess(output)
 
     if killSpark:
