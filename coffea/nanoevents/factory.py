@@ -234,13 +234,12 @@ class NanoEventsFactory:
     def _listarray(self, offsets, content, recordparams):
         offsets = awkward1.layout.Index32(offsets)
         length = offsets[-1]
-        return awkward1.layout.ListOffsetArray32(
-            offsets,
-            awkward1.layout.RecordArray(
+        if isinstance(content, dict):
+            content = awkward1.layout.RecordArray(
                 {k: _with_length(v, length) for k, v in content.items()},
                 parameters=recordparams,
-            ),
-        )
+            )
+        return awkward1.layout.ListOffsetArray32(offsets, content)
 
     def events(self):
         if self._events is not None:
@@ -293,7 +292,7 @@ class NanoEventsFactory:
 
         def collectionfactory(name):
             mixin = self._mixin_map.get(name, "NanoCollecton")
-            if "o" + name in arrays:
+            if "o" + name in arrays and name not in arrays:
                 # list collection
                 offsets = arrays["o" + name]
                 content = {
@@ -326,6 +325,31 @@ class NanoEventsFactory:
                     self._cache,
                     cache_key="/".join([self._keyprefix, source, name]),
                     parameters=recordparams,
+                )
+            elif "o" + name in arrays:
+                # list singleton
+                offsets = arrays["o" + name]
+                content = arrays[name]
+                form = awkward1.forms.ListOffsetForm("i32", content.form)
+                params = {
+                    "__doc__": offsets.parameters["__doc__"],
+                    "__array__": mixin,
+                    "events_key": self._keyprefix,
+                    "collection_name": name,
+                }
+                generator = awkward1.layout.ArrayGenerator(
+                    self._listarray,
+                    (offsets, content, params),
+                    {},
+                    form=form,
+                    length=len(self),
+                )
+                source = "runtime"
+                return awkward1.layout.VirtualArray(
+                    generator,
+                    self._cache,
+                    cache_key="/".join([self._keyprefix, source, name]),
+                    parameters=params,
                 )
             elif name in arrays:
                 # singleton
