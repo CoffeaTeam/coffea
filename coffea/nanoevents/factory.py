@@ -147,7 +147,10 @@ class NanoEventsFactory:
         else:
             dtype = interpretation.type
             length = len(self)
-        parameters = {"__doc__": self._tree[branch_name].title.decode("ascii")}
+        parameters = {
+            "__doc__": self._tree[branch_name].title.decode("ascii"),
+            "__record__": "NanoColumn",
+        }
         # use hint to resolve platform-dependent format
         formhint = awkward1.forms.Form.fromjson('"%s"' % dtype)
         form = awkward1.forms.NumpyForm(
@@ -231,15 +234,15 @@ class NanoEventsFactory:
             generator, self._cache, indexers[0].cache_key + "/nestedindex",
         )
 
-    def _listarray(self, offsets, content, recordparams):
+    def _listarray(self, offsets, content, params):
         offsets = awkward1.layout.Index32(offsets)
         length = offsets[-1]
         if isinstance(content, dict):
             content = awkward1.layout.RecordArray(
                 {k: _with_length(v, length) for k, v in content.items()},
-                parameters=recordparams,
+                parameters=params,
             )
-        return awkward1.layout.ListOffsetArray32(offsets, content)
+        return awkward1.layout.ListOffsetArray32(offsets, content, parameters=params)
 
     def events(self):
         if self._events is not None:
@@ -291,7 +294,7 @@ class NanoEventsFactory:
                 )
 
         def collectionfactory(name):
-            mixin = self._mixin_map.get(name, "NanoCollecton")
+            mixin = self._mixin_map.get(name, "NanoCollection")
             if "o" + name in arrays and name not in arrays:
                 # list collection
                 offsets = arrays["o" + name]
@@ -330,13 +333,13 @@ class NanoEventsFactory:
                 # list singleton
                 offsets = arrays["o" + name]
                 content = arrays[name]
-                form = awkward1.forms.ListOffsetForm("i32", content.form)
                 params = {
                     "__doc__": offsets.parameters["__doc__"],
                     "__array__": mixin,
                     "events_key": self._keyprefix,
                     "collection_name": name,
                 }
+                form = awkward1.forms.ListOffsetForm("i32", content.form, parameters=params)
                 generator = awkward1.layout.ArrayGenerator(
                     self._listarray,
                     (offsets, content, params),

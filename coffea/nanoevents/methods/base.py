@@ -20,8 +20,6 @@ class NanoCollection:
         layout = self.layout
         if isinstance(layout, awkward1.layout.VirtualArray):
             layout = layout.array
-        if not isinstance(layout, awkward1.layout.ListOffsetArray32):
-            raise RuntimeError("unexpected type in NanoCollection _starts call")
         return numpy.asarray(layout.starts).astype("i8")
 
     def _content(self):
@@ -32,8 +30,6 @@ class NanoCollection:
         layout = self.layout
         if isinstance(layout, awkward1.layout.VirtualArray):
             layout = layout.array
-        if not isinstance(layout, awkward1.layout.ListOffsetArray32):
-            raise RuntimeError("unexpected type in NanoCollection _content call")
         return layout.content
 
     def _events(self):
@@ -43,6 +39,12 @@ class NanoCollection:
         the NanoEventsFactory instance exists."""
         key = self.layout.purelist_parameter("events_key")
         return NanoEventsFactory.get_events(key)
+
+
+@mixin_class
+class NanoColumn:
+    """A column from the original file"""
+    pass
 
 
 def runtime_cache(method):
