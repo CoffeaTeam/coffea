@@ -18,8 +18,13 @@ class NanoEvents:
 class NanoCollection:
     def _getlistarray(self):
         """Do some digging to find the initial listarray"""
+
         def descend(layout, depth):
-            if isinstance(layout, (awkward1.layout.ListOffsetArray32, awkward1.layout.ListOffsetArray64)) and layout.content.parameter("collection_name") is not None:
+            islistarray = isinstance(
+                layout,
+                (awkward1.layout.ListOffsetArray32, awkward1.layout.ListOffsetArray64,),
+            )
+            if islistarray and layout.content.parameter("collection_name") is not None:
                 return lambda: layout
 
         return awkward1._util.recursively_apply(self.layout, descend)

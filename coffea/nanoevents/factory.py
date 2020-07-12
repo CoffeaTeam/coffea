@@ -194,7 +194,7 @@ class NanoEventsFactory:
         return awkward1.layout.VirtualArray(
             generator,
             self._cache,
-            cache_key="/".join([self._keyprefix, source, branch_name]),
+            "/".join([self._keyprefix, source, branch_name]),
             parameters=parameters,
         )
 
@@ -205,20 +205,20 @@ class NanoEventsFactory:
         numpy.cumsum(counts, out=offsets[1:])
         return awkward1.layout.NumpyArray(offsets, parameters=parameters,)
 
-    def _counts2offsets(self, virtual_counts):
+    def _counts2offsets(self, virtual_counts, name):
         generator = virtual_counts.generator
         generator = generator.with_callable(self._getoffsets).with_length(
             generator.length + 1
         )
         return awkward1.layout.VirtualArray(
             generator,
-            virtual_counts.cache,
-            virtual_counts.cache_key + "/counts2offsets",
+            self._cache,
+            "/".join([self._keyprefix, "counts2offsets", name]),
             virtual_counts.identities,
             virtual_counts.parameters,
         )
 
-    def _local2global(self, index, source_offsets, target_offsets):
+    def _local2global(self, index, source_offsets, target_offsets, name):
         def globalindex():
             gidx = awkward1.Array(
                 awkward1.layout.ListOffsetArray32(
@@ -238,12 +238,12 @@ class NanoEventsFactory:
         return awkward1.layout.VirtualArray(
             generator,
             index.cache,
-            index.cache_key + "/local2global",
+            "/".join([self._keyprefix, "local2global", name]),
             index.identities,
             index.parameters,
         )
 
-    def _nestedindex(self, indexers):
+    def _nestedindex(self, indexers, name):
         def nestedindex():
             # idx = awkward1.concatenate([idx[:, None] for idx in indexers], axis=1)
             n = len(indexers)
@@ -262,7 +262,9 @@ class NanoEventsFactory:
             nestedindex, (), {}, form=form, length=indexers[0].generator.length,
         )
         return awkward1.layout.VirtualArray(
-            generator, self._cache, indexers[0].cache_key + "/nestedindex",
+            generator,
+            self._cache,
+            cache_key="/".join([self._keyprefix, "nestedindex", name]),
         )
 
     def _listarray(self, offsets, content, params):
@@ -293,7 +295,9 @@ class NanoEventsFactory:
         # Create offsets virtual arrays
         for name in collections:
             if "n" + name in arrays:
-                arrays["o" + name] = self._counts2offsets(arrays["n" + name])
+                arrays["o" + name] = self._counts2offsets(
+                    arrays["n" + name], "o" + name
+                )
 
         # Create global index virtual arrays for indirection
         for name in collections:
@@ -307,13 +311,15 @@ class NanoEventsFactory:
                         % (k, target)
                     )
                 arrays[k + "G"] = self._local2global(
-                    arrays[k], arrays["o" + name], arrays["o" + target]
+                    arrays[k], arrays["o" + name], arrays["o" + target], k + "G"
                 )
 
         # Create nested indexer from Idx1, Idx2, ... arrays
         for name, indexers in self.nested_items.items():
             if all(idx in arrays for idx in indexers):
-                arrays[name] = self._nestedindex([arrays[idx] for idx in indexers])
+                arrays[name] = self._nestedindex(
+                    [arrays[idx] for idx in indexers], name
+                )
 
         # Create any special arrays
         for name, (fcn, args) in self.special_items.items():
