@@ -133,7 +133,7 @@ class NanoEventsFactory:
 
         self._metadata = metadata  # TODO: JSON only?
         self._branches_read = set()
-        self._events = None
+        self._collections = None
 
     @classmethod
     def _instance(cls, key):
@@ -276,28 +276,9 @@ class NanoEventsFactory:
             return awkward1.layout.ListOffsetArray32(offsets, content)
         return awkward1.layout.ListOffsetArray32(offsets, content, parameters=params)
 
-    def events(self):
-        """Build events
-
-        The NanoEvents object is built from all branches found in the supplied file, based on
-        the naming pattern of the branches. The following additional arrays are constructed:
-
-        - Any branches named ``n{name}`` are assumed to be counts branches and converted to offsets ``o{name}``
-        - Any local index branches with names matching ``{source}_{target}Idx*`` are converted to global indexes for the event chunk
-        - Any `NanoEventsFactory.nested_items` are constructed, if the necessary branches are available
-        - Any `NanoEventsFactory.special_items` are constructed, if the necessary branches are available
-
-        From those arrays, NanoAOD collections are formed as collections of branches grouped by name, where:
-
-        - one branch exists named ``name`` and no branches start with ``name_``, interpreted as a single flat array;
-        - one branch exists named ``name``, one named ``n{name}``, and no branches start with ``name_``, interpreted as a single jagged array;
-        - no branch exists named ``{name}`` and many branches start with ``name_*``, interpreted as a flat table; or
-        - one branch exists named ``n{name}`` and many branches start with ``name_*``, interpreted as a jagged table.
-
-        All collections are then zipped into one `NanoEvents` record and returned.
-        """
-        if self._events is not None:
-            return self._events
+    def _build_collections(self):
+        if self._collections is not None:
+            return self._collections
 
         arrays = {branch_name.decode("ascii") for branch_name in self._tree.keys()}
 
@@ -427,8 +408,31 @@ class NanoEventsFactory:
                     },
                 )
 
+        self._collections = {name: collectionfactory(name) for name in collections}
+
+    def events(self):
+        """Build events
+
+        The NanoEvents object is built from all branches found in the supplied file, based on
+        the naming pattern of the branches. The following additional arrays are constructed:
+
+        - Any branches named ``n{name}`` are assumed to be counts branches and converted to offsets ``o{name}``
+        - Any local index branches with names matching ``{source}_{target}Idx*`` are converted to global indexes for the event chunk
+        - Any `NanoEventsFactory.nested_items` are constructed, if the necessary branches are available
+        - Any `NanoEventsFactory.special_items` are constructed, if the necessary branches are available
+
+        From those arrays, NanoAOD collections are formed as collections of branches grouped by name, where:
+
+        - one branch exists named ``name`` and no branches start with ``name_``, interpreted as a single flat array;
+        - one branch exists named ``name``, one named ``n{name}``, and no branches start with ``name_``, interpreted as a single jagged array;
+        - no branch exists named ``{name}`` and many branches start with ``name_*``, interpreted as a flat table; or
+        - one branch exists named ``n{name}`` and many branches start with ``name_*``, interpreted as a jagged table.
+
+        All collections are then zipped into one `NanoEvents` record and returned.
+        """
+        self._build_collections()
         events = awkward1.layout.RecordArray(
-            {name: collectionfactory(name) for name in collections},
+            self._collections,
             parameters={
                 "__record__": "NanoEvents",
                 "__doc__": self._tree.title.decode("ascii"),
@@ -436,6 +440,4 @@ class NanoEventsFactory:
                 "metadata": self._metadata,
             },
         )
-
-        self._events = awkward1.Array(events)
-        return self._events
+        return awkward1.Array(events)

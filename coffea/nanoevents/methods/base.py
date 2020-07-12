@@ -16,25 +16,27 @@ class NanoEvents:
 
 @mixin_class
 class NanoCollection:
+    def _getlistarray(self):
+        """Do some digging to find the initial listarray"""
+        def descend(layout, depth):
+            if isinstance(layout, (awkward1.layout.ListOffsetArray32, awkward1.layout.ListOffsetArray64)) and layout.content.parameter("collection_name") is not None:
+                return lambda: layout
+
+        return awkward1._util.recursively_apply(self.layout, descend)
+
     def _starts(self):
         """Internal method to get jagged collection starts
 
         This should only be called on the original unsliced collection array.
         Used to convert local indexes to global indexes"""
-        layout = self.layout
-        if isinstance(layout, awkward1.layout.VirtualArray):
-            layout = layout.array
-        return numpy.asarray(layout.starts).astype("i8")
+        return numpy.asarray(self._getlistarray().starts).astype("i8")
 
     def _content(self):
         """Internal method to get jagged collection content
 
         This should only be called on the original unsliced collection array.
         Used with global indexes to resolve cross-references"""
-        layout = self.layout
-        if isinstance(layout, awkward1.layout.VirtualArray):
-            layout = layout.array
-        return layout.content
+        return self._getlistarray().content
 
     def _events(self):
         """Internal method to get the originally-constructed NanoEvents
