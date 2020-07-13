@@ -24,6 +24,18 @@ class Candidate(LorentzVector):
             with_name="Candidate",
         )
 
+    def sum(self, axis=-1):
+        return awkward1.zip(
+            {
+                "x": awkward1.sum(self.x, axis=axis),
+                "y": awkward1.sum(self.y, axis=axis),
+                "z": awkward1.sum(self.z, axis=axis),
+                "t": awkward1.sum(self.t, axis=axis),
+                "charge": awkward1.sum(self.charge, axis=axis),
+            },
+            with_name="Candidate",
+        )
+
 
 @mixin_class
 class PtEtaPhiMCandidate(Candidate, PtEtaPhiMLorentzVector):

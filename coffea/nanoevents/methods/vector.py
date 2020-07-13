@@ -49,6 +49,15 @@ class TwoVector:
             {"x": self.x + other.x, "y": self.y + other.y}, with_name="TwoVector",
         )
 
+    def sum(self, axis=-1):
+        return awkward1.zip(
+            {
+                "x": awkward1.sum(self.x, axis=axis),
+                "y": awkward1.sum(self.y, axis=axis),
+            },
+            with_name="TwoVector",
+        )
+
     @mixin_method(numpy.prod, {"float"})
     def prod(self, other):
         return awkward1.zip(
@@ -136,6 +145,16 @@ class ThreeVector(TwoVector):
             with_name="ThreeVector",
         )
 
+    def sum(self, axis=-1):
+        return awkward1.zip(
+            {
+                "x": awkward1.sum(self.x, axis=axis),
+                "y": awkward1.sum(self.y, axis=axis),
+                "z": awkward1.sum(self.z, axis=axis),
+            },
+            with_name="ThreeVector",
+        )
+
     @mixin_method(numpy.prod, {"float"})
     def prod(self, other):
         return awkward1.zip(
@@ -219,6 +238,17 @@ class LorentzVector(ThreeVector):
             with_name="LorentzVector",
         )
 
+    def sum(self, axis=-1):
+        return awkward1.zip(
+            {
+                "x": awkward1.sum(self.x, axis=axis),
+                "y": awkward1.sum(self.y, axis=axis),
+                "z": awkward1.sum(self.z, axis=axis),
+                "t": awkward1.sum(self.t, axis=axis),
+            },
+            with_name="LorentzVector",
+        )
+
     @mixin_method(numpy.prod, {"float"})
     def prod(self, other):
         return awkward1.zip(
@@ -236,6 +266,18 @@ class LorentzVector(ThreeVector):
 
     def delta_r(self, other):
         return numpy.sqrt(self.delta_r2(other))
+
+    def nearest(self, other, metric=lambda a, b: a.delta_r(b), return_metric=False):
+        """Return nearest object to this one
+
+        Only works for first axis (i.e. top-level ListArrays)
+        """
+        a, b = awkward1.unzip(awkward1.cartesian([self, other], nested=True))
+        mval = metric(a, b)
+        mmin = awkward1.argmin(mval, axis=-1)
+        if return_metric:
+            return b[mmin], mval[mmin]
+        return b[mmin]
 
 
 @mixin_class
