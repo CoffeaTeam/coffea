@@ -18,4 +18,4 @@ dependencies:
   - scipy>=1.1.0
   - pip
   - pip:
-      - coffea>=0.6.39
+      - https://github.com/CoffeaTeam/coffea/archive/344a2949eac5d603ab7223823d31ca7fe61111a1.zip
