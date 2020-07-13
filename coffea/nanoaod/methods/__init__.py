@@ -1,4 +1,4 @@
-"""NanoAOD collection methods
+"""Awkward 0.x NanoAOD collection methods
 
 This package provides the object method mixins for the various
 types of NanoAOD collections, as well as a default mapping for collection

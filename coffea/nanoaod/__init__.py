@@ -1,4 +1,6 @@
-"""NanoEvents
+"""Awkward 0.x NanoEvents and helpers
+
+See `coffea.nanoevents` for an awkward1-based implementation
 
 This package provides NanoEvents, a utility to wrap the CMS NanoAOD (or similar)
 flat nTuple structure into a single awkward array with appropriate object methods

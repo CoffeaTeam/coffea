@@ -57,6 +57,7 @@ def get_description():
 
 
 INSTALL_REQUIRES = ['awkward>=0.12.20',
+                    'awkward1>=0.2.25',
                     'matplotlib<3' if six.PY2 else 'matplotlib>=3',
                     'numba>=0.43.1',
                     'numpy>=1.16.0',

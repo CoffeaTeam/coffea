@@ -18,6 +18,8 @@ and/or heavy dependencies.  Below lists the packages available in the ``coffea``
     coffea.arrays
     coffea.nanoaod
     coffea.nanoaod.methods
+    coffea.nanoevents
+    coffea.nanoevents.methods
     coffea.lookup_tools
     coffea.jetmet_tools
     coffea.btag_tools
