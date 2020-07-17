@@ -27,7 +27,7 @@ def test_hist():
     # bin x=1, y=2
     assert h_reduced.integrate("x", slice(20, 30)).values()[()][2] == count_some_bin
     assert h_reduced.integrate("y", slice(0, 0.3)).values()[()][1] == count_some_bin
-    h_reduced.fill(x=np.array([23]), y=np.array([0.1]))
+    h_reduced.fill(x=23, y=0.1)
     assert h_reduced.integrate("x", slice(20, 30)).values()[()][2] == count_some_bin + 1
     assert h_reduced.integrate("y", slice(0, 0.3)).values()[()][1] == count_some_bin + 1
 
@@ -111,7 +111,7 @@ def test_hist():
     baby_bison_w = np.random.normal(loc=200, scale=10, size=20)
     baby_bison_cutefactor = 2.5*np.ones_like(baby_bison_w)
     h_mascots_2.fill(animal="bison", vocalization="baa", height=baby_bison_h, mass=baby_bison_w, weight=baby_bison_cutefactor)
-    h_mascots_2.fill(animal="fox", vocalization="none", height=np.array([1.]), mass=np.array([30.]))
+    h_mascots_2.fill(animal="fox", vocalization="none", height=1., mass=30.)
 
     h_mascots = h_mascots_1 + h_mascots_2
     assert h_mascots.integrate("vocalization", "h*").sum("height", "mass", "animal").values()[()] == 1040.
