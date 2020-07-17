@@ -963,13 +963,8 @@ class Hist(AccumulatorABC):
                 self._sumw2[sparse_key] = np.zeros(shape=self._dense_shape, dtype=self._dtype)
 
         if self.dense_dim() > 0:
-            dense_indices = ()
-            for d in self._axes:
-                if isinstance(d, DenseAxis):
-                    if not isinstance(values[d.name], np.ndarray):
-                        raise Exception("Values in DenseAxes need to be numpy arrays. Got '{}' (type: {})".format(values[d.name], type(values[d.name])))
-                    dense_indices += (d.index(values[d.name]),)
-            xy = np.ravel_multi_index(dense_indices, self._dense_shape)
+            dense_indices = tuple(d.index(values[d.name]) for d in self._axes if isinstance(d, DenseAxis))
+            xy = np.atleast_1d(np.ravel_multi_index(dense_indices, self._dense_shape))
             if "weight" in values:
                 self._sumw[sparse_key][:] += np.bincount(
                     xy, weights=values["weight"], minlength=np.array(self._dense_shape).prod()
