@@ -964,13 +964,22 @@ class Hist(AccumulatorABC):
 
         if self.dense_dim() > 0:
             dense_indices = tuple(d.index(values[d.name]) for d in self._axes if isinstance(d, DenseAxis))
+            xy = np.atleast_1d(np.ravel_multi_index(dense_indices, self._dense_shape))
             if "weight" in values:
-                np.add.at(self._sumw[sparse_key], dense_indices, values["weight"])
-                np.add.at(self._sumw2[sparse_key], dense_indices, values["weight"]**2)
+                self._sumw[sparse_key][:] += np.bincount(
+                    xy, weights=values["weight"], minlength=np.array(self._dense_shape).prod()
+                ).reshape(self._dense_shape)
+                self._sumw2[sparse_key][:] += np.bincount(
+                    xy, weights=values["weight"] ** 2, minlength=np.array(self._dense_shape).prod()
+                ).reshape(self._dense_shape)
             else:
-                np.add.at(self._sumw[sparse_key], dense_indices, 1.)
+                self._sumw[sparse_key][:] += np.bincount(
+                    xy, weights=None, minlength=np.array(self._dense_shape).prod()
+                ).reshape(self._dense_shape)
                 if self._sumw2 is not None:
-                    np.add.at(self._sumw2[sparse_key], dense_indices, 1.)
+                    self._sumw2[sparse_key][:] += np.bincount(
+                        xy, weights=None, minlength=np.array(self._dense_shape).prod()
+                    ).reshape(self._dense_shape)
         else:
             if "weight" in values:
                 self._sumw[sparse_key] += np.sum(values["weight"])

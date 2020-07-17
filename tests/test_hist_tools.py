@@ -50,7 +50,7 @@ def test_hist():
                           # weight is a reserved keyword
                           hist.Bin("mass", "weight (g=9.81m/s**2) [kg]", np.power(10., np.arange(5)-1)),
                         )
-    
+
     h_mascots_2 = hist.Hist("fermi mascot showdown",
                           axes=(animal,
                                 vocalization,
@@ -58,7 +58,7 @@ def test_hist():
                                 # weight is a reserved keyword
                                 hist.Bin("mass", "weight (g=9.81m/s**2) [kg]", np.power(10., np.arange(5)-1)),)
                            )
-                           
+
     h_mascots_3 = hist.Hist(
                          axes=[animal,
                                vocalization,
@@ -67,7 +67,7 @@ def test_hist():
                                hist.Bin("mass", "weight (g=9.81m/s**2) [kg]", np.power(10., np.arange(5)-1)),],
                             label="fermi mascot showdown"
                           )
-                          
+
     h_mascots_4 = hist.Hist(
                             "fermi mascot showdown",
                             animal,
@@ -80,17 +80,17 @@ def test_hist():
                                height,
                                # weight is a reserved keyword
                                hist.Bin("mass", "weight (g=9.81m/s**2) [kg]", np.power(10., np.arange(5)-1)),],
-                         
+
                        )
-                          
+
     assert h_mascots_1._dense_shape == h_mascots_2._dense_shape
     assert h_mascots_2._dense_shape == h_mascots_3._dense_shape
     assert h_mascots_3._dense_shape == h_mascots_4._dense_shape
-    
+
     assert h_mascots_1._axes == h_mascots_2._axes
     assert h_mascots_2._axes == h_mascots_3._axes
     assert h_mascots_3._axes == h_mascots_4._axes
-                        
+
     adult_bison_h = np.random.normal(loc=2.5, scale=0.2, size=40)
     adult_bison_w = np.random.normal(loc=700, scale=100, size=40)
     h_mascots_1.fill(animal="bison", vocalization="huff", height=adult_bison_h, mass=adult_bison_w)
@@ -103,8 +103,8 @@ def test_hist():
 
     with pytest.raises(ValueError):
         h_mascots_1.fill(beast="crane", yelling="none", tallness=crane_h, heavitivity=crane_w)
-    
-    
+
+
     h_mascots_2 = h_mascots_1.copy()
     h_mascots_2.clear()
     baby_bison_h = np.random.normal(loc=.5, scale=0.1, size=20)
@@ -159,7 +159,7 @@ def test_export1d():
     import uproot
     import os
     from coffea.hist import export1d
-    
+
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
     h_regular_bins = hist.Hist("regular_joe", hist.Bin("x", "x", 20, 0, 200))
@@ -168,7 +168,7 @@ def test_export1d():
     hout = export1d(h_regular_bins)
 
     filename = 'test_export1d.root'
-    
+
     with uproot.create(filename) as fout:
         fout['regular_joe'] = hout
         fout.close()
@@ -197,11 +197,11 @@ def test_hist_serdes():
     h_regular_bins.sum('x').identifiers('y')
 
     spkl = pickle.dumps(h_regular_bins)
-    
+
     hnew = pickle.loads(spkl)
-    
+
     hnew.sum('x').identifiers('y')
-    
+
     assert(h_regular_bins._dense_shape == hnew._dense_shape)
     assert(h_regular_bins._axes == hnew._axes)
 
@@ -213,9 +213,9 @@ def test_hist_serdes_labels():
     h.identifiers('asdf')
 
     spkl = pickle.dumps(h)
-    
+
     hnew = pickle.loads(spkl)
-    
+
     for old, new in zip(h.identifiers('asdf'), hnew.identifiers('asdf')):
         assert(old.label == new.label)
 
@@ -225,9 +225,9 @@ def test_hist_serdes_labels():
 @pytest.mark.skipif(sys.version_info < (3, 4), reason="requires python3.4 or higher, test file is pickle proto 4")
 def test_hist_compat():
     from coffea.util import load
-    
+
     test = load('tests/samples/old_hist_format.coffea')
-    
+
     expected_bins = np.array([ -np.inf, 0.,   20.,   40.,   60.,   80.,  100.,  120.,  140.,
                                160.,  180.,  200.,  220.,  240.,  260.,  280.,  300.,  320.,
                                340.,  360.,  380.,  400.,  420.,  440.,  460.,  480.,  500.,
