@@ -56,6 +56,29 @@ def test_factorized_jet_corrector():
 
     assert((np.abs(pt_copy - test_pt) < 1e-6).all())
 
+    # Test for bug #320
+    def make_starts_stops(counts, data, padding):
+        cumcounts = np.cumsum(counts)
+        first_nonempty_event = cumcounts[np.nonzero(counts > 1)[0][0]]
+        data_pad = np.empty(data.size + padding)
+        data_pad[:first_nonempty_event] = data[:first_nonempty_event]
+        data_pad[first_nonempty_event + padding:] = data[first_nonempty_event:]
+        starts = np.r_[0, cumcounts[:-1]]
+        starts[starts >= first_nonempty_event] += padding
+        return awkward.JaggedArray(starts, starts + counts, data_pad)
+
+    test_pt_jag = make_starts_stops(counts, test_pt, 5)
+    test_eta_jag = make_starts_stops(counts, test_eta, 3)
+
+    test_Rho_jag = awkward.JaggedArray.fromcounts(counts, test_Rho)
+    test_A_jag = awkward.JaggedArray.fromcounts(counts, test_A)
+
+    corrs_jag = corrector.getCorrection(JetEta=test_eta_jag, Rho=test_Rho_jag, JetPt=test_pt_jag, JetA=test_A_jag)
+
+    assert((np.abs(pt_copy - test_pt_jag.flatten()) < 1e-6).all())
+    assert((np.abs(corrs - corrs_jag.flatten()) < 1e-6).all())
+
+
 
 def test_jet_resolution():
     from coffea.jetmet_tools import JetResolution
