@@ -163,12 +163,12 @@ class FactorizedJetCorrector(object):
             raise Exception('No variable to correct, need JetPt or JetE in inputs!')
         firstarg = localargs[self._signature[0]]
         cumulativeCorrection = 1.0
-        offsets = None
+        counts = None
         if isinstance(firstarg, awkward.JaggedArray):
-            offsets = firstarg.offsets
-            cumulativeCorrection = firstarg.ones_like().content
+            counts = firstarg.counts
+            cumulativeCorrection = firstarg.ones_like().flatten()
             for key in localargs.keys():
-                localargs[key] = localargs[key].content
+                localargs[key] = localargs[key].flatten().copy()
         else:
             cumulativeCorrection = np.ones_like(firstarg)
         corrections = []
@@ -182,7 +182,7 @@ class FactorizedJetCorrector(object):
                 localargs[var] *= corr
             cumulativeCorrection *= corr
             corrections.append(cumulativeCorrection)
-        if offsets is not None:
+        if counts is not None:
             for i in range(len(corrections)):
-                corrections[i] = awkward.JaggedArray.fromoffsets(offsets, corrections[i])
+                corrections[i] = awkward.JaggedArray.fromcounts(counts, corrections[i])
         return corrections
