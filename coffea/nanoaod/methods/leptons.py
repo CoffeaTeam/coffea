@@ -88,6 +88,19 @@ class Muon(LeptonCommon):
     '''NanoAOD muon object'''
     def _finalize(self, name, events):
         super(Muon, self)._finalize(name, events)
+        if 'FsrPhoton' in events.columns:
+            photons = events['FsrPhoton']
+            reftype = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(photons.type.to.to))
+            reftype.check = False
+            embedded_photon = type(photons)(
+                self._lazy_crossref,
+                args=(self._getcolumn('fsrPhotonIdx'), photons),
+                type=reftype,
+            )
+            embedded_photon.__doc__ = photons.__doc__
+            self['matched_fsrPhoton'] = embedded_photon
+            del self['fsrPhotonIdx']
+
 
 
 class Photon(LeptonCommon):
