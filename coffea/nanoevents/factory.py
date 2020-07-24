@@ -68,6 +68,7 @@ class NanoEventsFactory:
         "Electron": "Electron",
         "Muon": "Muon",
         "Photon": "Photon",
+        "FsrPhoton": "FsrPhoton",
         "Tau": "Tau",
         "GenVisTau": "GenVisTau",
         # special

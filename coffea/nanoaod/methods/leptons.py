@@ -131,6 +131,28 @@ class Photon(LeptonCommon):
             del self['electronIdx']
 
 
+class FsrPhoton(Candidate):
+    '''NanoAOD fsr photon object'''
+
+    def _finalize(self, name, events):
+        del self['mass']
+        if 'Muon' in events.columns:
+            muons = events['Muon']
+            reftype = awkward.type.ArrayType(float('inf'), awkward.type.OptionType(muons.type.to.to))
+            reftype.check = False
+            embedded_muon = type(muons)(
+                self._lazy_crossref,
+                args=(self._getcolumn('muonIdx'), muons),
+                type=reftype,
+            )
+            embedded_muon.__doc__ = muons.__doc__
+            self['matched_muon'] = embedded_muon
+            del self['muonIdx']
+
+        # disable this type check due to cyclic reference through jets
+        self.type.check = False
+
+
 class Tau(LeptonCommon):
     '''NanoAOD tau object'''
     def _finalize(self, name, events):
