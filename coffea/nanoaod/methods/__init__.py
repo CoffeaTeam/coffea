@@ -5,7 +5,7 @@ types of NanoAOD collections, as well as a default mapping for collection
 names to methods.
 """
 from .common import METVector, LorentzVector, Candidate
-from .leptons import Electron, Muon, Photon, Tau
+from .leptons import Electron, Muon, Photon, FsrPhoton, Tau
 from .jets import Jet, FatJet
 from .generator import GenParticle, GenVisTau
 
@@ -40,6 +40,7 @@ collection_methods = {
     'Photon': Photon,
     'Tau': Tau,
     'GenVisTau': GenVisTau,
+    'FsrPhoton': FsrPhoton,
     # special
     'GenPart': GenParticle,
 }
@@ -51,6 +52,7 @@ __all__ = [
     'Electron',
     'Muon',
     'Photon',
+    'FsrPhoton',
     'Tau',
     'Jet',
     'FatJet',
