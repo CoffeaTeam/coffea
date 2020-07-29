@@ -102,7 +102,6 @@ class Muon(LeptonCommon):
             del self['fsrPhotonIdx']
 
 
-
 class Photon(LeptonCommon):
     '''NanoAOD photon object'''
     LOOSE = 0
