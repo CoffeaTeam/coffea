@@ -60,6 +60,10 @@ class Electron(PtEtaPhiMCandidate, NanoCollection, CommonMatched):
 class Muon(PtEtaPhiMCandidate, NanoCollection, CommonMatched):
     """NanoAOD muon object"""
 
+    @property
+    def matched_fsrPhoton(self):
+        return apply_global_index(self.fsrPhotonIdxG, self._events().FsrPhoton)
+
 
 @mixin_class
 class Tau(PtEtaPhiMCandidate, NanoCollection, CommonMatched):
@@ -99,3 +103,12 @@ class Photon(PtEtaPhiMCandidate, NanoCollection, CommonMatched):
     @property
     def matched_electron(self):
         return apply_global_index(self.electronIdxG, self._events().Electron)
+
+
+@mixin_class
+class FsrPhoton(PtEtaPhiMCandidate, NanoCollection):
+    """NanoAOD fsr photon object"""
+
+    @property
+    def matched_muon(self):
+        return apply_global_index(self.muonIdxG, self._events().Muon)

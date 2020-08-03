@@ -18,6 +18,7 @@ from coffea.nanoevents.methods.lepton import (
     Muon,
     Tau,
     Photon,
+    FsrPhoton,
 )
 from coffea.nanoevents.methods.jetmet import Jet, FatJet, MissingET
 from coffea.nanoevents.methods.generic import PtEtaPhiMCollection
