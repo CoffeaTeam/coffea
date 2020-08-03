@@ -658,7 +658,7 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
     # Cat widgets
     togglers = {}
     for ax in histo.sparse_axes():
-        togglers[ax.name] = CheckboxButtonGroup(labels=[i.name for i  in ax.identifiers()], active=[0],
+        togglers[ax.name] = CheckboxButtonGroup(labels=[i.name for i in ax.identifiers()], active=[0],
                                                 name=ax.name)
 
     # Toggles for all widgets
@@ -678,7 +678,7 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
     # Iterate over possible overlays
     _max_idents = 0  # Max number of simultaneou histograms
     for ax in histo.sparse_axes():
-        _max_idents = max(_max_idents, len([i.name for i  in ax.identifiers()]))
+        _max_idents = max(_max_idents, len([i.name for i in ax.identifiers()]))
 
     # Data source list
     sources = []
@@ -777,8 +777,8 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
         configer.on_change('active', update_data)
     # Button
     for w in [wi_dense_select, wi_sparse_select, wi_config]:
-        w.on_change('active', update_data)  
-        
+        w.on_change('active', update_data)
+
     from bokeh.models.widgets import Panel, Tabs
     from bokeh.io import output_file, show
     from bokeh.plotting import figure
@@ -793,15 +793,15 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
                              *[slider for name, slider in sliders.items()]))
 
     # Config prep
-    incl_lists = [[],[],[]]
+    incl_lists = [[], [], []]
     for i, key in enumerate(list(configers.keys())):
-        incl_lists[i//max(5, len(list(configers.keys()))/3)].append(
+        incl_lists[i // max(5, len(list(configers.keys())) / 3)].append(
             Div(text="<b>{}:</b>".format(key), style={'font-size': '70%', 'color': 'black'}))
-        incl_lists[i//max(5, len(list(configers.keys()))/3)].append(configers[key])
+        incl_lists[i // max(5, len(list(configers.keys())) / 3)].append(configers[key])
 
     layout_cfgs = column(row(column(Div(text="<b>Configs:</b>", style={'font-size': '100%', 'color': 'black'}),
-                         wi_config)),
-                        Div(text="<b>Axis togglers:</b>", style={'font-size': '100%', 'color': 'black'}), 
+                                    wi_config)),
+                         Div(text="<b>Axis togglers:</b>", style={'font-size': '100%', 'color': 'black'}),
                          row(
                             column(incl_lists[0]),
                             column(incl_lists[1]),
