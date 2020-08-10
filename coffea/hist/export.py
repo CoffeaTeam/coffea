@@ -2,6 +2,17 @@ from .hist_tools import SparseAxis, DenseAxis
 from uproot_methods.classes.TH1 import Methods as TH1Methods
 
 
+class TH1(TH1Methods, list):
+    pass
+
+
+class TAxis(object):
+    def __init__(self, fNbins, fXmin, fXmax):
+        self._fNbins = fNbins
+        self._fXmin = fXmin
+        self._fXmax = fXmax
+
+
 def export1d(hist):
     """Export a 1-dimensional `Hist` object to uproot
 
@@ -37,15 +48,6 @@ def export1d(hist):
     axis = hist.axes()[0]
     sumw, sumw2 = hist.values(sumw2=True, overflow='all')[()]
     edges = axis.edges(overflow='none')
-
-    class TH1(TH1Methods, list):
-        pass
-
-    class TAxis(object):
-        def __init__(self, fNbins, fXmin, fXmax):
-            self._fNbins = fNbins
-            self._fXmin = fXmin
-            self._fXmax = fXmax
 
     out = TH1.__new__(TH1)
     out._fXaxis = TAxis(len(edges) - 1, edges[0], edges[-1])
