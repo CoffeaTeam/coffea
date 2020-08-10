@@ -603,3 +603,237 @@ def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='non
         ax.set_ylim(0, None)
 
     return axes
+
+
+def isnotebook():
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == 'ZMQInteractiveShell':
+            return True   # Jupyter notebook or qtconsole
+        elif shell == 'TerminalInteractiveShell':
+            return False  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False
+
+
+def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
+    if not isnotebook():
+        raise NotImplementedError("Only usable in jupyter notebook")
+    import bokeh.plotting.figure as bk_figure
+    from bokeh.io import curdoc, show
+    from bokeh import palettes
+    from bokeh.layouts import row, widgetbox, column
+    from bokeh.models import ColumnDataSource
+    from bokeh.models.widgets import RadioButtonGroup, CheckboxButtonGroup
+    from bokeh.models.widgets import RangeSlider, Div
+    from bokeh.io import output_notebook  # enables plot interface in J notebook
+    import numpy as np
+    # init bokeh
+
+    from bokeh.application import Application
+    from bokeh.application.handlers import FunctionHandler
+
+    from bokeh.core.validation import silence
+    from bokeh.core.validation.warnings import EMPTY_LAYOUT
+    silence(EMPTY_LAYOUT, True)
+
+    output_notebook()
+
+    # Set up widgets
+    cfg_labels = ["Ghost"]
+    wi_config = CheckboxButtonGroup(labels=cfg_labels, active=[0])
+    wi_dense_select = RadioButtonGroup(labels=[ax.name for ax in histo.dense_axes()], active=0)
+    wi_sparse_select = RadioButtonGroup(labels=[ax.name for ax in histo.sparse_axes()], active=0)
+
+    # Dense widgets
+    sliders = {}
+    for ax in histo.dense_axes():
+        edge_vals = (histo.axis(ax.name).edges()[0], histo.axis(ax.name).edges()[-1])
+        _smallest_bin = np.min(np.diff(histo.axis(ax.name).edges()))
+        sliders[ax.name] = RangeSlider(title=ax.name, value=edge_vals, start=edge_vals[0], end=edge_vals[1],
+                                       step=_smallest_bin, name=ax.name)
+
+    # Cat widgets
+    togglers = {}
+    for ax in histo.sparse_axes():
+        togglers[ax.name] = CheckboxButtonGroup(labels=[i.name for i in ax.identifiers()], active=[0],
+                                                name=ax.name)
+
+    # Toggles for all widgets
+    configers = {}
+    for ax in histo.sparse_axes():
+        configers[ax.name] = CheckboxButtonGroup(labels=["Display", "Ghost"], active=[0, 1], name=ax.name)
+    for ax in histo.dense_axes():
+        configers[ax.name] = CheckboxButtonGroup(labels=["Display"], active=[0], name=ax.name)
+
+    # Figure
+    fig = bk_figure(
+        title="1D Projection", plot_width=500, plot_height=500,
+        min_border=20, toolbar_location=None)
+    fig.yaxis.axis_label = "N"
+    fig.xaxis.axis_label = "Quantity"
+
+    # Iterate over possible overlays
+    _max_idents = 0  # Max number of simultaneou histograms
+    for ax in histo.sparse_axes():
+        _max_idents = max(_max_idents, len([i.name for i in ax.identifiers()]))
+
+    # Data source list
+    sources = []
+    sources_ghost = []
+    for i in range(_max_idents):
+        sources.append(ColumnDataSource(dict(left=[], top=[], right=[], bottom=[])))
+        sources_ghost.append(ColumnDataSource(dict(left=[], top=[], right=[], bottom=[])))
+
+    # Hist list
+    hists = []
+    hists_ghost = []
+    for i in range(_max_idents):
+        if _max_idents < 10:
+            _color = palettes.Category10[min(max(3, _max_idents), 10)][i]
+        else:
+            _color = palettes.magma(_max_idents)[i]
+        hists.append(fig.quad(left="left", right="right", top="top", bottom="bottom",
+                              source=sources[i], alpha=0.9, color=_color))
+        hists_ghost.append(fig.quad(left="left", right="right", top="top", bottom="bottom",
+                                    source=sources_ghost[i], alpha=0.05, color=_color))
+
+    def update_data(attrname, old, new):
+        sparse_active = wi_sparse_select.active
+        sparse_name = [ax.name for ax in histo.sparse_axes()][sparse_active]
+        sparse_other = [ax.name for ax in histo.sparse_axes() if ax.name != sparse_name]
+
+        dense_active = wi_dense_select.active
+        dense_name = [ax.name for ax in histo.dense_axes()][dense_active]
+        dense_other = [ax.name for ax in histo.dense_axes() if ax.name != dense_name]
+
+        # Apply cuts in projections
+        _h = histo.copy()
+        for proj_ax in sparse_other:
+            _idents = histo.axis(proj_ax).identifiers()
+            _labels = [ident.name for ident in _idents]
+            if 0 in configers[proj_ax].active:
+                _h = _h.integrate(proj_ax, [_labels[i] for i in togglers[proj_ax].active])
+            else:
+                _h = _h.integrate(proj_ax)
+
+        for proj_ax in dense_other:
+            _h = _h.integrate(proj_ax, slice(sliders[proj_ax].value[0], sliders[proj_ax].value[1]))
+
+        for cat_ix in range(_max_idents):
+            # Update histo for each toggled overlay
+            if cat_ix in togglers[sparse_name].active:
+                cat_value = histo.axis(sparse_name).identifiers()[cat_ix]
+                h1d = _h.integrate(sparse_name, cat_value)
+
+                # Get shown histogram
+                values = h1d.project(dense_name).values()
+                if values != {}:
+                    h = values[()]
+                    bins = h1d.axis(dense_name).edges()
+
+                    # Apply cuts on shown axis
+                    bin_los = bins[:-1][bins[:-1] > sliders[dense_name].value[0]]
+                    bin_his = bins[1:][bins[1:] < sliders[dense_name].value[1]]
+                    new_bins = np.intersect1d(bin_los, bin_his)
+                    bin_ixs = np.searchsorted(bins, new_bins)[:-1]
+                    h = h[bin_ixs]
+
+                    sources[cat_ix].data = dict(left=new_bins[:-1], right=new_bins[1:], top=h, bottom=np.zeros_like(h))
+                else:
+                    sources[cat_ix].data = dict(left=[], right=[], top=[], bottom=[])
+
+                # Add ghosts
+                if 0 in wi_config.active:
+                    h1d = histo.integrate(sparse_name, cat_value)
+                    for proj_ax in sparse_other:
+                        _idents = histo.axis(proj_ax).identifiers()
+                        _labels = [ident.name for ident in _idents]
+                        if 1 not in configers[proj_ax].active:
+                            h1d = h1d.integrate(proj_ax, [_labels[i] for i in togglers[proj_ax].active])
+                        else:
+                            h1d = h1d.integrate(proj_ax)
+                    values = h1d.project(dense_name).values()
+                    if values != {}:
+                        h = h1d.project(dense_name).values()[()]
+                        bins = h1d.axis(dense_name).edges()
+                        sources_ghost[cat_ix].data = dict(left=bins[:-1], right=bins[1:], top=h, bottom=np.zeros_like(h))
+                    else:
+                        sources_ghost[cat_ix].data = dict(left=[], right=[], top=[], bottom=[])
+            else:
+                sources[cat_ix].data = dict(left=[], right=[], top=[], bottom=[])
+                sources_ghost[cat_ix].data = dict(left=[], right=[], top=[], bottom=[])
+
+        # Cosmetics
+        fig.xaxis.axis_label = dense_name
+
+    for name, slider in sliders.items():
+        slider.on_change('value', update_data)
+    for name, toggler in togglers.items():
+        toggler.on_change('active', update_data)
+    for name, configer in configers.items():
+        configer.on_change('active', update_data)
+    # Button
+    for w in [wi_dense_select, wi_sparse_select, wi_config]:
+        w.on_change('active', update_data)
+
+    from bokeh.models.widgets import Panel, Tabs
+    from bokeh.io import output_file, show
+    from bokeh.plotting import figure
+
+    layout = row(fig, column(Div(text="<b>Overlay Axis:</b>", style={'font-size': '100%', 'color': 'black'}),
+                             wi_sparse_select,
+                             Div(text="<b>Plot Axis:</b>", style={'font-size': '100%', 'color': 'black'}),
+                             wi_dense_select,
+                             Div(text="<b>Categorical Cuts:</b>", style={'font-size': '100%', 'color': 'black'}),
+                             *[toggler for name, toggler in togglers.items()],
+                             Div(text="<b>Dense Cuts:</b>", style={'font-size': '100%', 'color': 'black'}),
+                             *[slider for name, slider in sliders.items()]))
+
+    # Config prep
+    incl_lists = [[], [], []]
+    for i, key in enumerate(list(configers.keys())):
+        incl_lists[i // max(5, len(list(configers.keys())) / 3)].append(
+            Div(text="<b>{}:</b>".format(key), style={'font-size': '70%', 'color': 'black'}))
+        incl_lists[i // max(5, len(list(configers.keys())) / 3)].append(configers[key])
+
+    layout_cfgs = column(row(column(Div(text="<b>Configs:</b>", style={'font-size': '100%', 'color': 'black'}),
+                                    wi_config)),
+                         Div(text="<b>Axis togglers:</b>", style={'font-size': '100%', 'color': 'black'}),
+                         row(
+                            column(incl_lists[0]),
+                            column(incl_lists[1]),
+                            column(incl_lists[2]),
+                         )
+                        )
+
+    # Update active buttons
+    def update_layout(attrname, old, new):
+        active_axes = [None]
+        for name, wi in configers.items():
+            if 0 in wi.active:
+                active_axes.append(name)
+        for child in layout.children[1].children:
+            if child.name not in active_axes:
+                child.visible = False
+            else:
+                child.visible = True
+
+    for name, configer in configers.items():
+        configer.on_change('active', update_layout)
+
+    tab1 = Panel(child=layout, title="Projection")
+    tab2 = Panel(child=layout_cfgs, title="Configs")
+    tabs = Tabs(tabs=[tab1, tab2])
+
+    def modify_doc(doc):
+        doc.add_root(row(tabs, width=800))
+        doc.title = "Sliders"
+
+    handler = FunctionHandler(modify_doc)
+    app = Application(handler)
+
+    show(app, notebook_url=jup_url)
+    update_data("", "", "")
