@@ -57,24 +57,3 @@ class NanoColumn:
     """A column from the original file"""
 
     pass
-
-
-def runtime_cache(method):
-    """Cache a NanoCollection method in the runtime cache
-
-    This decorator can be placed on any method that is a member
-    of a class that subclasses NanoCollection. Such methods should
-    only be called on the original unsliced collection array."""
-
-    @wraps(method)
-    def cachedmethod(self, *args, **kwargs):
-        events_key = self.layout.purelist_parameter("events_key")
-        collection_name = self.layout.purelist_parameter("collection_name")
-        cache = NanoEventsFactory.get_cache(events_key)
-        key = "/".join([events_key, "runtime", collection_name, method.__name__])
-        try:
-            return cache[key]
-        except KeyError:
-            return method(*args, **kwargs)
-
-    return cachedmethod
