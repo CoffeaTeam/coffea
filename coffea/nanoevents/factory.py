@@ -4,8 +4,9 @@ from weakref import WeakValueDictionary
 import numpy
 import awkward1
 import uproot4
-import coffea.nanoevents.schemas as schemas
-from coffea.nanoevents.mapping import key_to_tuple, tuple_to_key, UprootSourceMapping
+from coffea.nanoevents import schemas
+from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
+from coffea.nanoevents.mapping import UprootSourceMapping
 
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ class NanoEventsFactory:
         self._base_form = base_form
         self._mapping = mapping
         self._partition_key = partition_key
+        self._form = self._schema(self._base_form, self._partition_key)
         self._events = None
         NanoEventsFactory._active[self._partition_key] = self
 
@@ -39,7 +41,7 @@ class NanoEventsFactory:
         entry_start=None,
         entry_stop=None,
         cache=None,
-        schema=schemas.BaseSchema(),
+        schema=schemas.NanoAODSchema(),
     ):
         """
         Parameters
@@ -104,20 +106,28 @@ class NanoEventsFactory:
     def _extract_base_form(cls, tree):
         branch_forms = {}
         for key, branch in tree.iteritems():
+            if "," in key or "!" in key:
+                logger.warning(f"Skipping {key} because it contains characters that NanoEvents cannot accept [,!]")
+                continue
             if len(branch):
                 continue
             form = branch.interpretation.awkward_form(None)
             form = uproot4._util.awkward_form_remove_uproot(awkward1, form)
             form = json.loads(form.tojson())
-            if form["class"].startswith("ListOffset"):
-                form["form_key"] = tuple_to_key((f"{key},!load,!offsets",))
-                form["content"]["form_key"] = tuple_to_key((f"{key},!load,!content",))
+            if (
+                form["class"].startswith("ListOffset")
+                and form["content"]["class"] == "NumpyArray"
+            ):
+                form["form_key"] = quote(f"{key},!load")
+                form["content"]["form_key"] = quote(f"{key},!load,!content")
                 form["content"]["parameters"] = {"__doc__": branch.title}
             elif form["class"] == "NumpyArray":
-                form["form_key"] = tuple_to_key((f"{key},!load",))
+                form["form_key"] = quote(f"{key},!load")
                 form["parameters"] = {"__doc__": branch.title}
             else:
-                logger.info(f"Skipping {key} as it is not interpretable by NanoEvents")
+                logger.warning(
+                    f"Skipping {key} as it is not interpretable by NanoEvents"
+                )
                 continue
             branch_forms[key] = form
 
@@ -125,6 +135,7 @@ class NanoEventsFactory:
             "class": "RecordArray",
             "contents": branch_forms,
             "__doc__": tree.title,
+            "form_key": quote("!invalid")
         }
 
     def events(self):
@@ -132,9 +143,8 @@ class NanoEventsFactory:
 
         """
         if self._events is None:
-            form = self._schema(self._base_form, self._partition_key)
             self._events = awkward1.from_arrayset(
-                form,
+                self._form,
                 self._mapping,
                 prefix=self._partition_key,
                 sep="/",

@@ -1,17 +1,9 @@
 from cachetools import LRUCache
-from urllib.parse import quote, unquote
 from collections.abc import Mapping
 import numpy
 import uproot4
 import coffea.nanoevents.transforms as transforms
-
-
-def tuple_to_key(tup):
-    return "/".join(quote(x, safe="") for x in tup)
-
-
-def key_to_tuple(key):
-    return tuple(unquote(x) for x in key.split("/"))
+from coffea.nanoevents.util import key_to_tuple, tuple_to_key
 
 
 class UprootSourceMapping(Mapping):
@@ -32,26 +24,39 @@ class UprootSourceMapping(Mapping):
         return rootdir[treepath]
 
     def __getitem__(self, key):
-        uuid, treepath, entryrange, form_key, *nodeattrs = key_to_tuple(key)
+        uuid, treepath, entryrange, form_key, *layoutattr = key_to_tuple(key)
         start, stop = (int(x) for x in entryrange.split("-"))
-        print("gettting:", uuid, treepath, start, stop, form_key, nodeattrs)
+        print("gettting:", uuid, treepath, start, stop, form_key, layoutattr)
+        nodes = form_key.split(",")
+        if len(layoutattr) == 1:
+            nodes.append("!" + layoutattr[0])
+        elif len(layoutattr) > 1:
+            raise RuntimeError
         stack = []
-        for node in form_key.split(","):
-            if node == "!load":
+        skip = False
+        for node in nodes:
+            if skip:
+                skip = False
+                continue
+            elif node == "!skip":
+                skip = True
+                continue
+            elif node == "!load":
                 branch = self._tree(uuid, treepath)[stack.pop()]
                 stack.append(branch.array(entry_start=start, entry_stop=stop))
             elif node.startswith("!"):
                 tname = node[1:]
                 if not hasattr(transforms, tname):
-                    raise RuntimeError(
-                        "Syntax error in form_key: no transform named", tname
-                    )
+                    raise RuntimeError(f"Syntax error in form_key: no transform named {tname}")
                 getattr(transforms, tname)(stack)
             else:
                 stack.append(node)
         if len(stack) != 1:
-            raise RuntimeError("Syntax error in form_key " + form_key)
-        return numpy.array(stack.pop())
+            raise RuntimeError(f"Syntax error in form_key {form_key}")
+        out = numpy.array(stack.pop())
+        if out.dtype == numpy.object:
+            raise RuntimeError(f"Left with non-bare array after evaluating {form_key}")
+        return out
 
     def __len__(self):
         raise NotImplementedError
