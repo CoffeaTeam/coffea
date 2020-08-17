@@ -7,7 +7,7 @@ behavior = {}
 @awkward1.mixin_class(behavior)
 class NanoEvents:
     """NanoEvents mixin class
-    
+
     This mixin class is used as the top-level type for NanoEvents objects.
     """
 
@@ -24,6 +24,7 @@ class NanoCollection:
     This mixin provides some helper methods useful for creating cross-references
     and other advanced mixin types.
     """
+
     def _getlistarray(self):
         """Do some digging to find the initial listarray"""
 

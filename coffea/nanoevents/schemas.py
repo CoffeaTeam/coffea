@@ -9,6 +9,7 @@ class BaseSchema:
     A top-level `base.NanoEvents` object is returned, where each original branch
     form is accessible as a direct descendant.
     """
+
     behavior = {}
 
     def __init__(self, base_form):
@@ -19,7 +20,7 @@ class BaseSchema:
             "class": "RecordArray",
             "contents": base_form["contents"],
             "parameters": params,
-            "form_key": quote("!invalid"),
+            "form_key": "",
         }
 
     @property
@@ -185,7 +186,7 @@ class NanoAODSchema(BaseSchema):
                             "__record__": mixin,
                             "collection_name": name,
                         },
-                        "form_key": quote("!invalid"),
+                        "form_key": quote("!invalid," + name),
                     },
                     "form_key": concat(offsets["form_key"], "!skip"),
                 }
@@ -219,7 +220,7 @@ class NanoAODSchema(BaseSchema):
                     "class": "RecordArray",
                     "contents": content,
                     "parameters": {"__record__": mixin, "collection_name": name},
-                    "form_key": quote("!invalid"),
+                    "form_key": quote("!invalid," + name),
                 }
 
         return output
