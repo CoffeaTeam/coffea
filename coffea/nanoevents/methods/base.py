@@ -1,21 +1,29 @@
-from functools import wraps
-import numpy
 import awkward1
-from coffea.nanoevents.methods.mixin import mixin_class, mixin_method
-from coffea.nanoevents.factory import NanoEventsFactory
 
 
-@mixin_class
+behavior = {}
+
+
+@awkward1.mixin_class(behavior)
 class NanoEvents:
-    """NanoEvents mixin class"""
+    """NanoEvents mixin class
+    
+    This mixin class is used as the top-level type for NanoEvents objects.
+    """
 
     @property
     def metadata(self):
-        return self.layout.parameter("metadata")
+        """Arbitrary metadata"""
+        return self.layout.purelist_parameter("metadata")
 
 
-@mixin_class
+@awkward1.mixin_class(behavior)
 class NanoCollection:
+    """A NanoEvents collection
+
+    This mixin provides some helper methods useful for creating cross-references
+    and other advanced mixin types.
+    """
     def _getlistarray(self):
         """Do some digging to find the initial listarray"""
 
@@ -28,13 +36,6 @@ class NanoCollection:
                 return lambda: layout
 
         return awkward1._util.recursively_apply(self.layout, descend)
-
-    def _starts(self):
-        """Internal method to get jagged collection starts
-
-        This should only be called on the original unsliced collection array.
-        Used to convert local indexes to global indexes"""
-        return numpy.asarray(self._getlistarray().starts).astype("i8")
 
     def _content(self):
         """Internal method to get jagged collection content
@@ -49,10 +50,3 @@ class NanoCollection:
         This can be called at any time from any collection, as long as
         the NanoEventsFactory instance exists."""
         return self.behavior["__events_factory__"].events()
-
-
-@mixin_class
-class NanoColumn:
-    """A column from the original file"""
-
-    pass

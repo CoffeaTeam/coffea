@@ -149,9 +149,7 @@ def distinctParent_form(parents, pdg):
         "form_key": parents["form_key"],
     }
     form["content"]["form_key"] = concat(
-            parents["content"]["form_key"],
-            pdg["content"]["form_key"],
-            "!distinctParent",
+        parents["content"]["form_key"], pdg["content"]["form_key"], "!distinctParent",
     )
     return form
 
@@ -207,8 +205,8 @@ def children_form(offsets, globalparents):
                 "itemsize": 8,
                 "format": "i",
                 "primitive": "int64",
-            }
-        }
+            },
+        },
     }
     form["form_key"] = offsets["form_key"]
     key = concat(offsets["form_key"], globalparents["content"]["form_key"], "!children")

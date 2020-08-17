@@ -10,7 +10,20 @@ class UprootSourceMapping(Mapping):
     def __init__(self, uuid_pfnmap, uproot_options, cachesize=1):
         self._uuid_pfnmap = uuid_pfnmap
         self._uproot_options = uproot_options
-        self._cache = LRUCache(cachesize)
+        self._cachesize = cachesize
+        self._cache = LRUCache(self._cachesize)
+
+    def __getstate__(self):
+        return {
+            "uuid_pfnmap": self._uuid_pfnmap,
+            "uproot_options": self._uproot_options,
+        }
+
+    def __setstate__(self, state):
+        self._uuid_pfnmap = state["uuid_pfnmap"]
+        self._uproot_options = state["uproot_options"]
+        self._cachesize = state["cachesize"]
+        self._cache = LRUCache(self._cachesize)
 
     def _tree(self, uuid, treepath):
         try:
@@ -47,7 +60,9 @@ class UprootSourceMapping(Mapping):
             elif node.startswith("!"):
                 tname = node[1:]
                 if not hasattr(transforms, tname):
-                    raise RuntimeError(f"Syntax error in form_key: no transform named {tname}")
+                    raise RuntimeError(
+                        f"Syntax error in form_key: no transform named {tname}"
+                    )
                 getattr(transforms, tname)(stack)
             else:
                 stack.append(node)

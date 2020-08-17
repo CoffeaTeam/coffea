@@ -1,14 +1,38 @@
-import copy
 from coffea.nanoevents import transforms
 from coffea.nanoevents.util import quote, concat
 
 
 class BaseSchema:
-    def __init__(self):
-        pass
+    """Base schema builder
 
-    def __call__(self, base_form):
-        return base_form
+    The basic schema is essentially unchanged from the original ROOT file.
+    A top-level `base.NanoEvents` object is returned, where each original branch
+    form is accessible as a direct descendant.
+    """
+    behavior = {}
+
+    def __init__(self, base_form):
+        params = dict(base_form.get("parameters", {}))
+        params["__record__"] = "NanoEvents"
+        params.setdefault("metadata", {})
+        self._form = {
+            "class": "RecordArray",
+            "contents": base_form["contents"],
+            "parameters": params,
+            "form_key": quote("!invalid"),
+        }
+
+    @property
+    def form(self):
+        """Awkward1 form of this schema"""
+        return self._form
+
+    @property
+    def behavior(self):
+        """Behaviors necessary to implement this schema"""
+        from coffea.nanoevents.methods.base import behavior
+
+        return behavior
 
 
 class NanoAODSchema(BaseSchema):
@@ -19,8 +43,8 @@ class NanoAODSchema(BaseSchema):
 
     - Any branches named ``n{name}`` are assumed to be counts branches and converted to offsets ``o{name}``
     - Any local index branches with names matching ``{source}_{target}Idx*`` are converted to global indexes for the event chunk (postfix ``G``)
-    - Any `NanoEventsFactory.nested_items` are constructed, if the necessary branches are available
-    - Any `NanoEventsFactory.special_items` are constructed, if the necessary branches are available
+    - Any `nested_items` are constructed, if the necessary branches are available
+    - Any `special_items` are constructed, if the necessary branches are available
 
     From those arrays, NanoAOD collections are formed as collections of branches grouped by name, where:
 
@@ -29,8 +53,10 @@ class NanoAODSchema(BaseSchema):
     - no branch exists named ``{name}`` and many branches start with ``name_*``, interpreted as a flat table; or
     - one branch exists named ``n{name}`` and many branches start with ``name_*``, interpreted as a jagged table.
 
-    All collections are then zipped into one `NanoEvents` record and returned.
+    Collections are assigned mixin types according to the `mixins` mapping.
+    All collections are then zipped into one `base.NanoEvents` record and returned.
     """
+
     mixins = {
         "CaloMET": "MissingET",
         "ChsMET": "MissingET",
@@ -64,7 +90,10 @@ class NanoAODSchema(BaseSchema):
         # special
         "GenPart": "GenParticle",
     }
-    """Default configuration for mixin types, based on the collection name."""
+    """Default configuration for mixin types, based on the collection name.
+
+    The types are implemented in the `coffea.nanoevents.methods.nanoaod` module.
+    """
     nested_items = {
         "FatJet_subJetIdxG": ["FatJet_subJetIdx1G", "FatJet_subJetIdx2G"],
         "Jet_muonIdxG": ["Jet_muonIdx1G", "Jet_muonIdx2G"],
@@ -87,24 +116,29 @@ class NanoAODSchema(BaseSchema):
     }
     """Default special arrays, where the callable and input arrays are specified in the value"""
 
-    def __init__(self, version="6"):
+    def __init__(self, base_form, version="6"):
         self._version = version
+        super().__init__(base_form)
+        self._form["contents"] = self._build_collections(self._form["contents"])
+        self._form["parameters"]["metadata"]["version"] = self._version
 
-    def _build_collections(self, forms):
+    def _build_collections(self, branch_forms):
         # parse into high-level records (collections, list collections, and singletons)
-        collections = set(k.split("_")[0] for k in forms)
+        collections = set(k.split("_")[0] for k in branch_forms)
         collections -= set(
             k for k in collections if k.startswith("n") and k[1:] in collections
         )
 
         # Create offsets virtual arrays
         for name in collections:
-            if "n" + name in forms:
-                forms["o" + name] = transforms.counts2offsets_form(forms["n" + name])
+            if "n" + name in branch_forms:
+                branch_forms["o" + name] = transforms.counts2offsets_form(
+                    branch_forms["n" + name]
+                )
 
         # Create global index virtual arrays for indirection
         for name in collections:
-            indexers = filter(lambda k: k.startswith(name) and "Idx" in k, forms)
+            indexers = filter(lambda k: k.startswith(name) and "Idx" in k, branch_forms)
             for k in list(indexers):
                 target = k[len(name) + 1 : k.find("Idx")]
                 target = target[0].upper() + target[1:]
@@ -113,31 +147,31 @@ class NanoAODSchema(BaseSchema):
                         "Parsing indexer %s, expected to find collection %s but did not"
                         % (k, target)
                     )
-                forms[k + "G"] = transforms.local2global_form(
-                    forms[k], forms["o" + target]
+                branch_forms[k + "G"] = transforms.local2global_form(
+                    branch_forms[k], branch_forms["o" + target]
                 )
 
         # Create nested indexer from Idx1, Idx2, ... arrays
         for name, indexers in self.nested_items.items():
-            if all(idx in forms for idx in indexers):
-                forms[name] = transforms.nestedindex_form(
-                    [forms[idx] for idx in indexers]
+            if all(idx in branch_forms for idx in indexers):
+                branch_forms[name] = transforms.nestedindex_form(
+                    [branch_forms[idx] for idx in indexers]
                 )
 
         # Create any special arrays
         for name, (fcn, args) in self.special_items.items():
-            if all(k in forms for k in args):
-                forms[name] = fcn(*(forms[k] for k in args))
+            if all(k in branch_forms for k in args):
+                branch_forms[name] = fcn(*(branch_forms[k] for k in args))
 
         output = {}
         for name in collections:
             mixin = self.mixins.get(name, "NanoCollection")
-            if "o" + name in forms and name not in forms:
+            if "o" + name in branch_forms and name not in branch_forms:
                 # list collection
-                offsets = forms["o" + name]
+                offsets = branch_forms["o" + name]
                 content = {
-                    k[len(name) + 1 :]: forms[k]["content"]
-                    for k in forms
+                    k[len(name) + 1 :]: branch_forms[k]["content"]
+                    for k in branch_forms
                     if k.startswith(name + "_")
                 }
                 output[name] = {
@@ -151,14 +185,14 @@ class NanoAODSchema(BaseSchema):
                             "__record__": mixin,
                             "collection_name": name,
                         },
-                        "form_key": quote("!invalid")
+                        "form_key": quote("!invalid"),
                     },
                     "form_key": concat(offsets["form_key"], "!skip"),
                 }
-            elif "o" + name in forms:
+            elif "o" + name in branch_forms:
                 # list singleton
-                offsets = forms["o" + name]
-                content = forms[name]["content"]
+                offsets = branch_forms["o" + name]
+                content = branch_forms[name]["content"]
                 output[name] = {
                     "class": "ListOffsetArray64",
                     "offsets": "i64",
@@ -171,36 +205,28 @@ class NanoAODSchema(BaseSchema):
                     },
                     "form_key": concat(offsets["form_key"], "!skip"),
                 }
-            elif name in forms:
+            elif name in branch_forms:
                 # singleton
-                output[name] = forms[name]
+                output[name] = branch_forms[name]
             else:
                 # simple collection
                 content = {
-                    k[len(name) + 1 :]: forms[k]
-                    for k in forms
+                    k[len(name) + 1 :]: branch_forms[k]
+                    for k in branch_forms
                     if k.startswith(name + "_")
                 }
                 output[name] = {
                     "class": "RecordArray",
                     "contents": content,
-                    "parameters": {
-                        "__record__": mixin,
-                        "collection_name": name,
-                    },
-                    "form_key": quote("!invalid")
+                    "parameters": {"__record__": mixin, "collection_name": name},
+                    "form_key": quote("!invalid"),
                 }
 
         return output
 
-    def __call__(self, base_form):
-        params = {
-            "__record__": "NanoEvents",
-        }
-        params.update(base_form.get("parameters", {}))
-        return {
-            "class": "RecordArray",
-            "contents": self._build_collections(base_form["contents"]),
-            "parameters": params,
-            "form_key": quote("!invalid")
-        }
+    @property
+    def behavior(self):
+        """Behaviors necessary to implement this schema"""
+        from coffea.nanoevents.methods.nanoaod import behavior
+
+        return behavior

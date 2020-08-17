@@ -1,9 +1,11 @@
 import numpy
 import awkward1
-from coffea.nanoevents.methods.mixin import mixin_class, mixin_method
 
 
-@mixin_class
+behavior = {}
+
+
+@awkward1.mixin_class(behavior)
 class TwoVector:
     """A cartesian 2-dimensional vector
 
@@ -39,11 +41,11 @@ class TwoVector:
     def pt(self):
         return self.r
 
-    @mixin_method(numpy.absolute)
+    @awkward1.mixin_class_method(numpy.absolute)
     def abs(self):
         return self.r
 
-    @mixin_method(numpy.add, {"TwoVector"})
+    @awkward1.mixin_class_method(numpy.add, {"TwoVector"})
     def add(self, other):
         return awkward1.zip(
             {"x": self.x + other.x, "y": self.y + other.y}, with_name="TwoVector",
@@ -58,7 +60,7 @@ class TwoVector:
             with_name="TwoVector",
         )
 
-    @mixin_method(numpy.prod, {"float"})
+    @awkward1.mixin_class_method(numpy.prod, {"float"})
     def prod(self, other):
         return awkward1.zip(
             {"x": self.x * other, "y": self.y * other}, with_name="TwoVector",
@@ -72,7 +74,7 @@ class TwoVector:
         return (self.phi - other.phi + numpy.pi) % (2 * numpy.pi) - numpy.pi
 
 
-@mixin_class
+@awkward1.mixin_class(behavior)
 class PolarTwoVector(TwoVector):
     """A polar coordinate 2-d vector
 
@@ -102,7 +104,7 @@ class PolarTwoVector(TwoVector):
         return self.r ** 2
 
 
-@mixin_class
+@awkward1.mixin_class(behavior)
 class ThreeVector(TwoVector):
     """A cartesian 3-dimensional vector
 
@@ -134,11 +136,11 @@ class ThreeVector(TwoVector):
     def p(self):
         return self.rho
 
-    @mixin_method(numpy.absolute)
+    @awkward1.mixin_class_method(numpy.absolute)
     def abs(self):
         return self.p
 
-    @mixin_method(numpy.add, {"ThreeVector"})
+    @awkward1.mixin_class_method(numpy.add, {"ThreeVector"})
     def add(self, other):
         return awkward1.zip(
             {"x": self.x + other.x, "y": self.y + other.y, "z": self.z + other.z},
@@ -155,7 +157,7 @@ class ThreeVector(TwoVector):
             with_name="ThreeVector",
         )
 
-    @mixin_method(numpy.prod, {"float"})
+    @awkward1.mixin_class_method(numpy.prod, {"float"})
     def prod(self, other):
         return awkward1.zip(
             {"x": self.x * other, "y": self.y * other, "z": self.z * other},
@@ -163,7 +165,7 @@ class ThreeVector(TwoVector):
         )
 
 
-@mixin_class
+@awkward1.mixin_class(behavior)
 class SphericalThreeVector(ThreeVector, PolarTwoVector):
     """A spherical coordinate 3-d vector
 
@@ -197,7 +199,7 @@ class SphericalThreeVector(ThreeVector, PolarTwoVector):
         return self.rho ** 2
 
 
-@mixin_class
+@awkward1.mixin_class(behavior)
 class LorentzVector(ThreeVector):
     """A cartesian Lorentz vector
 
@@ -222,11 +224,11 @@ class LorentzVector(ThreeVector):
     def mass(self):
         return numpy.sqrt(self.mass2)
 
-    @mixin_method(numpy.absolute)
+    @awkward1.mixin_class_method(numpy.absolute)
     def abs(self):
         return self.mass
 
-    @mixin_method(numpy.add, {"LorentzVector"})
+    @awkward1.mixin_class_method(numpy.add, {"LorentzVector"})
     def add(self, other):
         return awkward1.zip(
             {
@@ -249,7 +251,7 @@ class LorentzVector(ThreeVector):
             with_name="LorentzVector",
         )
 
-    @mixin_method(numpy.prod, {"float"})
+    @awkward1.mixin_class_method(numpy.prod, {"float"})
     def prod(self, other):
         return awkward1.zip(
             {
@@ -270,7 +272,7 @@ class LorentzVector(ThreeVector):
     def nearest(self, other, metric=lambda a, b: a.delta_r(b), return_metric=False):
         """Return nearest object to this one
 
-        Only works for first axis (i.e. top-level ListArrays)
+        The default metric is `delta_r`.
         """
         a, b = awkward1.unzip(awkward1.cartesian([self, other], nested=True))
         mval = metric(a, b)
@@ -280,7 +282,7 @@ class LorentzVector(ThreeVector):
         return b[mmin]
 
 
-@mixin_class
+@awkward1.mixin_class(behavior)
 class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
     """A Lorentz vector using pseudorapidity and mass
 
@@ -333,7 +335,7 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
     def mass2(self):
         return self.mass ** 2
 
-    @mixin_method(numpy.prod, {"float"})
+    @awkward1.mixin_class_method(numpy.prod, {"float"})
     def prod(self, other):
         return awkward1.zip(
             {
