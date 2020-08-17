@@ -7,7 +7,7 @@ class BaseSchema:
     def __init__(self):
         pass
 
-    def __call__(self, base_form, partition_key):
+    def __call__(self, base_form):
         return base_form
 
 
@@ -90,7 +90,7 @@ class NanoAODSchema(BaseSchema):
     def __init__(self, version="6"):
         self._version = version
 
-    def _build_collections(self, forms, partition_key):
+    def _build_collections(self, forms):
         # parse into high-level records (collections, list collections, and singletons)
         collections = set(k.split("_")[0] for k in forms)
         collections -= set(
@@ -149,7 +149,6 @@ class NanoAODSchema(BaseSchema):
                         "parameters": {
                             "__doc__": offsets["parameters"]["__doc__"],
                             "__record__": mixin,
-                            "events_key": partition_key,
                             "collection_name": name,
                         },
                         "form_key": quote("!invalid")
@@ -168,7 +167,6 @@ class NanoAODSchema(BaseSchema):
                         # This makes more sense as offsets doc but it seems that is empty
                         "__doc__": content["parameters"]["__doc__"],
                         "__array__": mixin,
-                        "events_key": partition_key,
                         "collection_name": name,
                     },
                     "form_key": concat(offsets["form_key"], "!skip"),
@@ -188,7 +186,6 @@ class NanoAODSchema(BaseSchema):
                     "contents": content,
                     "parameters": {
                         "__record__": mixin,
-                        "events_key": partition_key,
                         "collection_name": name,
                     },
                     "form_key": quote("!invalid")
@@ -196,15 +193,14 @@ class NanoAODSchema(BaseSchema):
 
         return output
 
-    def __call__(self, base_form, partition_key):
+    def __call__(self, base_form):
         params = {
             "__record__": "NanoEvents",
-            "partition_key": partition_key,
         }
         params.update(base_form.get("parameters", {}))
         return {
             "class": "RecordArray",
-            "contents": self._build_collections(base_form["contents"], partition_key),
+            "contents": self._build_collections(base_form["contents"]),
             "parameters": params,
             "form_key": quote("!invalid")
         }

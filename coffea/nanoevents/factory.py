@@ -1,6 +1,5 @@
 import logging
 import json
-from weakref import WeakValueDictionary
 import numpy
 import awkward1
 import uproot4
@@ -20,18 +19,11 @@ class NanoEventsFactory:
     mixins will work ok if the factory goes out of scope, however.
     """
 
-    _active = WeakValueDictionary()
-
-    def __init__(self, schema, base_form, mapping, partition_key):
-        if not isinstance(schema, schemas.BaseSchema):
-            raise RuntimeError
-        self._schema = schema
-        self._base_form = base_form
+    def __init__(self, form, mapping, partition_key):
+        self._form = form
         self._mapping = mapping
         self._partition_key = partition_key
-        self._form = self._schema(self._base_form, self._partition_key)
         self._events = None
-        NanoEventsFactory._active[self._partition_key] = self
 
     @classmethod
     def from_file(
@@ -59,6 +51,8 @@ class NanoEventsFactory:
             schema : BaseSchema
                 A schema class deriving from ``BaseSchema`` and implementing the desired view of the file
         """
+        if not isinstance(schema, schemas.BaseSchema):
+            raise RuntimeError("Invalid schema type")
         if isinstance(file, str):
             tree = uproot4.open(file + ":" + treepath)
         elif isinstance(file, uproot4.reading.ReadOnlyDirectory):
@@ -78,24 +72,8 @@ class NanoEventsFactory:
         # TODO: wrap mapping with cache
         mapping = UprootSourceMapping(uuidpfn, uproot_options={"array_cache": None})
         base_form = cls._extract_base_form(tree)
-        return cls(schema, base_form, mapping, partition_key)
-
-    @classmethod
-    def _instance(cls, key):
-        try:
-            return cls._active[key]
-        except KeyError:
-            raise RuntimeError(
-                "NanoEventsFactory instance was lost, cross-references are now invalid"
-            )
-
-    @classmethod
-    def get_events(cls, key):
-        """The events corresponding to the factory keyed by ``key``
-
-        This is used mainly for indirections
-        """
-        return cls._instance(key).events()
+        form = schema(base_form)
+        return cls(form, mapping, partition_key)
 
     def __len__(self):
         uuid, treepath, entryrange = key_to_tuple(self._partition_key)
@@ -143,6 +121,10 @@ class NanoEventsFactory:
 
         """
         if self._events is None:
+            behavior = {
+                "__events_factory__": self,
+            }
+            behavior.update(awkward1.behavior)
             self._events = awkward1.from_arrayset(
                 self._form,
                 self._mapping,
@@ -150,6 +132,7 @@ class NanoEventsFactory:
                 sep="/",
                 lazy=True,
                 lazy_lengths=len(self),
+                behavior=behavior,
             )
 
         return self._events

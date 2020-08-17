@@ -48,8 +48,7 @@ class NanoCollection:
 
         This can be called at any time from any collection, as long as
         the NanoEventsFactory instance exists."""
-        key = self.layout.purelist_parameter("events_key")
-        return NanoEventsFactory.get_events(key)
+        return self.behavior["__events_factory__"].events()
 
 
 @mixin_class
