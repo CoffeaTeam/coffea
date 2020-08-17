@@ -1,6 +1,5 @@
 import awkward1
 from coffea.nanoevents.methods import base, vector, candidate
-from coffea.nanoevents.methods.util import apply_global_index
 
 
 behavior = {}
@@ -67,19 +66,19 @@ class GenParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     @property
     def parent(self):
         """Accessor to the parent particle"""
-        return apply_global_index(self.genPartIdxMotherG, self._events().GenPart)
+        return self._events().GenPart._apply_global_index(self.genPartIdxMotherG)
 
     @property
     def distinctParent(self):
-        return apply_global_index(self.distinctParentIdxG, self._events().GenPart)
+        return self._events().GenPart._apply_global_index(self.distinctParentIdxG)
 
     @property
     def children(self):
-        return apply_global_index(self.childrenIdxG, self._events().GenPart)
+        return self._events().GenPart._apply_global_index(self.childrenIdxG)
 
     @property
     def distinctChildren(self):
-        return apply_global_index(self.distinctChildrenIdxG, self._events().GenPart)
+        return self._events().GenPart._apply_global_index(self.distinctChildrenIdxG)
 
 
 @awkward1.mixin_class(behavior)
@@ -89,7 +88,7 @@ class GenVisTau(candidate.PtEtaPhiMCandidate, base.NanoCollection):
     @property
     def parent(self):
         """Accessor to the parent particle"""
-        return apply_global_index(self.genPartIdxMotherG, self._events().GenPart)
+        return self._events().GenPart._apply_global_index(self.genPartIdxMotherG)
 
 
 @awkward1.mixin_class(behavior)
@@ -130,15 +129,15 @@ class Electron(candidate.PtEtaPhiMCandidate, base.NanoCollection):
 
     @property
     def matched_gen(self):
-        return apply_global_index(self.genPartIdxG, self._events().GenPart)
+        return self._events().GenPart._apply_global_index(self.genPartIdxG)
 
     @property
     def matched_jet(self):
-        return apply_global_index(self.jetIdxG, self._events().Jet)
+        return self._events().Jet._apply_global_index(self.jetIdxG)
 
     @property
     def matched_photon(self):
-        return apply_global_index(self.photonIdxG, self._events().Photon)
+        return self._events().Photon._apply_global_index(self.photonIdxG)
 
 
 @awkward1.mixin_class(behavior)
@@ -147,15 +146,15 @@ class Muon(candidate.PtEtaPhiMCandidate, base.NanoCollection):
 
     @property
     def matched_fsrPhoton(self):
-        return apply_global_index(self.fsrPhotonIdxG, self._events().FsrPhoton)
+        return self._events().FsrPhoton._apply_global_index(self.fsrPhotonIdxG)
 
     @property
     def matched_gen(self):
-        return apply_global_index(self.genPartIdxG, self._events().GenPart)
+        return self._events().GenPart._apply_global_index(self.genPartIdxG)
 
     @property
     def matched_jet(self):
-        return apply_global_index(self.jetIdxG, self._events().Jet)
+        return self._events().Jet._apply_global_index(self.jetIdxG)
 
 
 @awkward1.mixin_class(behavior)
@@ -164,11 +163,11 @@ class Tau(candidate.PtEtaPhiMCandidate, base.NanoCollection):
 
     @property
     def matched_gen(self):
-        return apply_global_index(self.genPartIdxG, self._events().GenPart)
+        return self._events().GenPart._apply_global_index(self.genPartIdxG)
 
     @property
     def matched_jet(self):
-        return apply_global_index(self.jetIdxG, self._events().Jet)
+        return self._events().Jet._apply_global_index(self.jetIdxG)
 
 
 @awkward1.mixin_class(behavior)
@@ -203,15 +202,15 @@ class Photon(candidate.PtEtaPhiMCandidate, base.NanoCollection):
 
     @property
     def matched_electron(self):
-        return apply_global_index(self.electronIdxG, self._events().Electron)
+        return self._events().Electron._apply_global_index(self.electronIdxG)
 
     @property
     def matched_gen(self):
-        return apply_global_index(self.genPartIdxG, self._events().GenPart)
+        return self._events().GenPart._apply_global_index(self.genPartIdxG)
 
     @property
     def matched_jet(self):
-        return apply_global_index(self.jetIdxG, self._events().Jet)
+        return self._events().Jet._apply_global_index(self.jetIdxG)
 
 
 @awkward1.mixin_class(behavior)
@@ -220,7 +219,7 @@ class FsrPhoton(candidate.PtEtaPhiMCandidate, base.NanoCollection):
 
     @property
     def matched_muon(self):
-        return apply_global_index(self.muonIdxG, self._events().Muon)
+        return self._events().Muon._apply_global_index(self.muonIdxG)
 
 
 @awkward1.mixin_class(behavior)
@@ -251,15 +250,15 @@ class Jet(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
 
     @property
     def matched_electrons(self):
-        return apply_global_index(self.electronIdxG, self._events().Electron)
+        return self._events().Electron._apply_global_index(self.electronIdxG)
 
     @property
     def matched_muons(self):
-        return apply_global_index(self.muonIdxG, self._events().Muon)
+        return self._events().Muon._apply_global_index(self.muonIdxG)
 
     @property
     def matched_gen(self):
-        return apply_global_index(self.genJetIdxG, self._events().GenJet)
+        return self._events().GenJet._apply_global_index(self.genJetIdxG)
 
 
 @awkward1.mixin_class(behavior)
@@ -290,7 +289,7 @@ class FatJet(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
 
     @property
     def subjets(self):
-        return apply_global_index(self.subJetIdxG, self._events().SubJet)
+        return self._events().SubJet._apply_global_index(self.subJetIdxG)
 
 
 @awkward1.mixin_class(behavior)

@@ -45,6 +45,27 @@ class NanoCollection:
         Used with global indexes to resolve cross-references"""
         return self._getlistarray().content
 
+    def _apply_global_index(self, index):
+        """Internal method to take from a collection using a flat index
+
+        This is often necessary to be able to still resolve cross-references on
+        reduced arrays or single records.
+        """
+        if isinstance(index, int):
+            out = self._content()[index]
+        else:
+            def flat_take(layout):
+                idx = awkward1.Array(layout)
+                return self._content()[idx.mask[idx >= 0]]
+
+            def descend(layout, depth):
+                if layout.purelist_depth == 1:
+                    return lambda: flat_take(layout)
+
+            (index,) = awkward1.broadcast_arrays(index)
+            out = awkward1._util.recursively_apply(index.layout, descend)
+        return awkward1._util.wrap(out, self.behavior, cache=self.cache)
+
     def _events(self):
         """Internal method to get the originally-constructed NanoEvents
 
