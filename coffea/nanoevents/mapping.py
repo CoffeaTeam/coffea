@@ -1,15 +1,16 @@
 from cachetools import LRUCache
 from collections.abc import Mapping
-import numpy
 import uproot4
+import numpy
 import coffea.nanoevents.transforms as transforms
 from coffea.nanoevents.util import key_to_tuple, tuple_to_key
 
 
 class UprootSourceMapping(Mapping):
+    _debug = False
+
     def __init__(self, uuid_pfnmap, cache=None):
         self._uuid_pfnmap = uuid_pfnmap
-        self._debug = False
         self._cache = cache
         self.setup()
 
@@ -24,12 +25,10 @@ class UprootSourceMapping(Mapping):
     def __getstate__(self):
         return {
             "uuid_pfnmap": self._uuid_pfnmap,
-            "debug": self._debug,
         }
 
     def __setstate__(self, state):
         self._uuid_pfnmap = state["uuid_pfnmap"]
-        self._debug = state["debug"]
         self._cache = None
         self.setup()
 
@@ -70,7 +69,7 @@ class UprootSourceMapping(Mapping):
 
     def __getitem__(self, key):
         uuid, treepath, start, stop, nodes = UprootSourceMapping.interpret_key(key)
-        if self._debug:
+        if UprootSourceMapping._debug:
             print("Gettting:", uuid, treepath, start, stop, nodes)
         stack = []
         skip = False
@@ -95,8 +94,12 @@ class UprootSourceMapping(Mapping):
                 stack.append(node)
         if len(stack) != 1:
             raise RuntimeError(f"Syntax error in form key {nodes}")
-        out = numpy.array(stack.pop())
-        if out.dtype == numpy.object:
+        out = stack.pop()
+        try:
+            out = numpy.array(out)
+        except ValueError:
+            if UprootSourceMapping._debug:
+                print(out)
             raise RuntimeError(
                 f"Left with non-bare array after evaluating form key {nodes}"
             )

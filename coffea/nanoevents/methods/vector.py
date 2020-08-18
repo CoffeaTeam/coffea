@@ -286,7 +286,7 @@ class LorentzVector(ThreeVector):
 class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
     """A Lorentz vector using pseudorapidity and mass
 
-    This class overloads the pt, eta, phi, mass  properties with getitem accessors
+    This class overloads the pt, eta, phi, mass properties with getitem accessors
     and provides properties rho, theta, r, z, t
     Some additional properties are overridden for performance
     """
@@ -345,4 +345,66 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
                 "mass": self.mass * other,
             },
             with_name="PtEtaPhiMLorentzVector",
+        )
+
+
+@awkward1.mixin_class(behavior)
+class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
+    """A Lorentz vector using pseudorapidity and energy
+
+    This class overloads the pt, eta, phi, energy, t properties with getitem accessors
+    and provides properties rho, theta, r, z
+    Some additional properties are overridden for performance
+    """
+
+    @property
+    def pt(self):
+        return self["pt"]
+
+    @property
+    def eta(self):
+        return self["eta"]
+
+    @property
+    def phi(self):
+        return self["phi"]
+
+    @property
+    def energy(self):
+        return self["energy"]
+
+    @property
+    def t(self):
+        return self["energy"]
+
+    @property
+    def rho(self):
+        return self.pt * numpy.cosh(self.eta)
+
+    @property
+    def theta(self):
+        raise NotImplementedError
+
+    @property
+    def r(self):
+        return self.pt
+
+    @property
+    def z(self):
+        return self.pt * numpy.sinh(self.eta)
+
+    @property
+    def rho2(self):
+        return self.rho ** 2
+
+    @awkward1.mixin_class_method(numpy.prod, {"float"})
+    def prod(self, other):
+        return awkward1.zip(
+            {
+                "pt": self.pt * other,
+                "eta": self.eta,
+                "phi": self.phi,
+                "energy": self.energy * other,
+            },
+            with_name="PtEtaPhiELorentzVector",
         )

@@ -54,6 +54,7 @@ class NanoCollection:
         if isinstance(index, int):
             out = self._content()[index]
         else:
+
             def flat_take(layout):
                 idx = awkward1.Array(layout)
                 return self._content()[idx.mask[idx >= 0]]
