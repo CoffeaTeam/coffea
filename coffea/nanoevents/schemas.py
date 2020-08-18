@@ -2,7 +2,7 @@ from coffea.nanoevents import transforms
 from coffea.nanoevents.util import quote, concat
 
 
-def zip_forms(forms, name):
+def zip_forms(forms, name, record_name=None):
     if not isinstance(forms, dict):
         raise ValueError("Expected a dictionary")
     if all(form["class"].startswith("ListOffsetArray") for form in forms.values()):
@@ -16,6 +16,8 @@ def zip_forms(forms, name):
             "contents": {k: form["content"] for k, form in forms.items()},
             "form_key": quote("!invalid," + name),
         }
+        if record_name is not None:
+            record["parameters"] = {"__record__": record_name}
         return {
             "class": first["class"],
             "offsets": first["offsets"],
@@ -23,13 +25,16 @@ def zip_forms(forms, name):
             "form_key": first["form_key"],
         }
     elif all(form["class"] == "NumpyArray" for form in forms.values()):
-        return {
+        record = {
             "class": "RecordArray",
-            "contents": {k: form["content"] for k, form in forms},
+            "contents": {k: form for k, form in forms},
             "form_key": quote("!invalid," + name),
         }
+        if record_name is not None:
+            record["parameters"] = {"__record__": record_name}
+        return record
     else:
-        raise ValueError("Cannot zip forms")
+        raise NotImplementedError("Cannot zip forms")
 
 
 class BaseSchema:
