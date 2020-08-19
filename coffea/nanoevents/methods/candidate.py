@@ -1,17 +1,25 @@
+"""Physics object candidate mixin
+
+This provides just a Lorentz vector with charge, but maybe
+in the future it will provide some sort of composite candiate building tool
+that automatically resolves duplicates in the chain.
+"""
 import numpy
 import awkward1
-from coffea.nanoevents.methods.mixin import mixin_class, mixin_method
-from coffea.nanoevents.methods.vector import LorentzVector, PtEtaPhiMLorentzVector
+from coffea.nanoevents.methods import vector
 
 
-@mixin_class
-class Candidate(LorentzVector):
+behavior = dict(vector.behavior)
+
+
+@awkward1.mixin_class(behavior)
+class Candidate(vector.LorentzVector):
     """A Lorentz vector with charge
 
     Properties this class requires: x, y, z, t, charge
     """
 
-    @mixin_method(numpy.add, {"Candidate"})
+    @awkward1.mixin_class_method(numpy.add, {"Candidate"})
     def add(self, other):
         return awkward1.zip(
             {
@@ -37,8 +45,8 @@ class Candidate(LorentzVector):
         )
 
 
-@mixin_class
-class PtEtaPhiMCandidate(Candidate, PtEtaPhiMLorentzVector):
+@awkward1.mixin_class(behavior)
+class PtEtaPhiMCandidate(Candidate, vector.PtEtaPhiMLorentzVector):
     """A Lorentz vector in eta, mass coordinates with charge
 
     Properties this class requires: pt, eta, phi, mass, charge

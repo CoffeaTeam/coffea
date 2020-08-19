@@ -22,7 +22,7 @@ def crossref(events):
 
 
 def test_read_nanomc():
-    factory = NanoEventsFactory(os.path.abspath('tests/samples/nano_dy.root'))
+    factory = NanoEventsFactory.from_file(os.path.abspath('tests/samples/nano_dy.root'))
     events = factory.events()
 
     # test after views first
@@ -46,7 +46,7 @@ def test_read_nanomc():
 
 
 def test_read_nanodata():
-    factory = NanoEventsFactory(os.path.abspath('tests/samples/nano_dimuon.root'))
+    factory = NanoEventsFactory.from_file(os.path.abspath('tests/samples/nano_dimuon.root'))
     events = factory.events()
 
     crossref(events)

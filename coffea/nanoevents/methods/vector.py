@@ -1,9 +1,50 @@
+"""2D, 3D, and Lorentz vector class mixins
+
+These mixins will eventually be superceded by the `vector <https://github.com/scikit-hep/vector>`__ library,
+which will hopefully be feature-compatible.
+
+A small example::
+
+    import numpy as np
+    import awkward1 as ak
+    from coffea.nanoevents.methods import vector
+    ak.behavior.update(vector.behavior)
+
+    n = 1000
+
+    vec = ak.zip(
+        {
+            "x": np.random.normal(size=n),
+            "y": np.random.normal(size=n),
+            "z": np.random.normal(size=n),
+        },
+        with_name="ThreeVector",
+    )
+
+    vec4 = ak.zip(
+        {
+            "pt": vec.r,
+            "eta": -np.log(np.tan(vec.theta/2)),
+            "phi": vec.phi,
+            "mass": np.full(n, 1.),
+        },
+        with_name="PtEtaPhiMLorentzVector",
+    )
+
+    assert np.allclose(np.array(vec4.x), np.array(vec.x))
+    assert np.allclose(np.array(vec4.y), np.array(vec.y))
+    assert np.allclose(np.array(vec4.z), np.array(vec.z))
+    assert np.allclose(np.array(abs(2*vec + vec4) / abs(vec)), 3)
+
+"""
 import numpy
 import awkward1
-from coffea.nanoevents.methods.mixin import mixin_class, mixin_method
 
 
-@mixin_class
+behavior = {}
+
+
+@awkward1.mixin_class(behavior)
 class TwoVector:
     """A cartesian 2-dimensional vector
 
@@ -39,11 +80,11 @@ class TwoVector:
     def pt(self):
         return self.r
 
-    @mixin_method(numpy.absolute)
+    @awkward1.mixin_class_method(numpy.absolute)
     def abs(self):
         return self.r
 
-    @mixin_method(numpy.add, {"TwoVector"})
+    @awkward1.mixin_class_method(numpy.add, {"TwoVector"})
     def add(self, other):
         return awkward1.zip(
             {"x": self.x + other.x, "y": self.y + other.y}, with_name="TwoVector",
@@ -58,7 +99,7 @@ class TwoVector:
             with_name="TwoVector",
         )
 
-    @mixin_method(numpy.prod, {"float"})
+    @awkward1.mixin_class_method(numpy.multiply, {float, int})
     def prod(self, other):
         return awkward1.zip(
             {"x": self.x * other, "y": self.y * other}, with_name="TwoVector",
@@ -72,7 +113,7 @@ class TwoVector:
         return (self.phi - other.phi + numpy.pi) % (2 * numpy.pi) - numpy.pi
 
 
-@mixin_class
+@awkward1.mixin_class(behavior)
 class PolarTwoVector(TwoVector):
     """A polar coordinate 2-d vector
 
@@ -102,7 +143,7 @@ class PolarTwoVector(TwoVector):
         return self.r ** 2
 
 
-@mixin_class
+@awkward1.mixin_class(behavior)
 class ThreeVector(TwoVector):
     """A cartesian 3-dimensional vector
 
@@ -134,11 +175,11 @@ class ThreeVector(TwoVector):
     def p(self):
         return self.rho
 
-    @mixin_method(numpy.absolute)
+    @awkward1.mixin_class_method(numpy.absolute)
     def abs(self):
         return self.p
 
-    @mixin_method(numpy.add, {"ThreeVector"})
+    @awkward1.mixin_class_method(numpy.add, {"ThreeVector"})
     def add(self, other):
         return awkward1.zip(
             {"x": self.x + other.x, "y": self.y + other.y, "z": self.z + other.z},
@@ -155,7 +196,7 @@ class ThreeVector(TwoVector):
             with_name="ThreeVector",
         )
 
-    @mixin_method(numpy.prod, {"float"})
+    @awkward1.mixin_class_method(numpy.multiply, {float, int})
     def prod(self, other):
         return awkward1.zip(
             {"x": self.x * other, "y": self.y * other, "z": self.z * other},
@@ -163,7 +204,7 @@ class ThreeVector(TwoVector):
         )
 
 
-@mixin_class
+@awkward1.mixin_class(behavior)
 class SphericalThreeVector(ThreeVector, PolarTwoVector):
     """A spherical coordinate 3-d vector
 
@@ -197,7 +238,7 @@ class SphericalThreeVector(ThreeVector, PolarTwoVector):
         return self.rho ** 2
 
 
-@mixin_class
+@awkward1.mixin_class(behavior)
 class LorentzVector(ThreeVector):
     """A cartesian Lorentz vector
 
@@ -222,11 +263,11 @@ class LorentzVector(ThreeVector):
     def mass(self):
         return numpy.sqrt(self.mass2)
 
-    @mixin_method(numpy.absolute)
+    @awkward1.mixin_class_method(numpy.absolute)
     def abs(self):
         return self.mass
 
-    @mixin_method(numpy.add, {"LorentzVector"})
+    @awkward1.mixin_class_method(numpy.add, {"LorentzVector"})
     def add(self, other):
         return awkward1.zip(
             {
@@ -249,7 +290,7 @@ class LorentzVector(ThreeVector):
             with_name="LorentzVector",
         )
 
-    @mixin_method(numpy.prod, {"float"})
+    @awkward1.mixin_class_method(numpy.multiply, {float, int})
     def prod(self, other):
         return awkward1.zip(
             {
@@ -270,7 +311,7 @@ class LorentzVector(ThreeVector):
     def nearest(self, other, metric=lambda a, b: a.delta_r(b), return_metric=False):
         """Return nearest object to this one
 
-        Only works for first axis (i.e. top-level ListArrays)
+        The default metric is `delta_r`.
         """
         a, b = awkward1.unzip(awkward1.cartesian([self, other], nested=True))
         mval = metric(a, b)
@@ -280,11 +321,11 @@ class LorentzVector(ThreeVector):
         return b[mmin]
 
 
-@mixin_class
+@awkward1.mixin_class(behavior)
 class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
     """A Lorentz vector using pseudorapidity and mass
 
-    This class overloads the pt, eta, phi, mass  properties with getitem accessors
+    This class overloads the pt, eta, phi, mass properties with getitem accessors
     and provides properties rho, theta, r, z, t
     Some additional properties are overridden for performance
     """
@@ -333,7 +374,7 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
     def mass2(self):
         return self.mass ** 2
 
-    @mixin_method(numpy.prod, {"float"})
+    @awkward1.mixin_class_method(numpy.multiply, {float, int})
     def prod(self, other):
         return awkward1.zip(
             {
@@ -343,4 +384,66 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
                 "mass": self.mass * other,
             },
             with_name="PtEtaPhiMLorentzVector",
+        )
+
+
+@awkward1.mixin_class(behavior)
+class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
+    """A Lorentz vector using pseudorapidity and energy
+
+    This class overloads the pt, eta, phi, energy, t properties with getitem accessors
+    and provides properties rho, theta, r, z
+    Some additional properties are overridden for performance
+    """
+
+    @property
+    def pt(self):
+        return self["pt"]
+
+    @property
+    def eta(self):
+        return self["eta"]
+
+    @property
+    def phi(self):
+        return self["phi"]
+
+    @property
+    def energy(self):
+        return self["energy"]
+
+    @property
+    def t(self):
+        return self["energy"]
+
+    @property
+    def rho(self):
+        return self.pt * numpy.cosh(self.eta)
+
+    @property
+    def theta(self):
+        raise NotImplementedError
+
+    @property
+    def r(self):
+        return self.pt
+
+    @property
+    def z(self):
+        return self.pt * numpy.sinh(self.eta)
+
+    @property
+    def rho2(self):
+        return self.rho ** 2
+
+    @awkward1.mixin_class_method(numpy.multiply, {float, int})
+    def prod(self, other):
+        return awkward1.zip(
+            {
+                "pt": self.pt * other,
+                "eta": self.eta,
+                "phi": self.phi,
+                "energy": self.energy * other,
+            },
+            with_name="PtEtaPhiELorentzVector",
         )

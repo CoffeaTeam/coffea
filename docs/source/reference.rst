@@ -19,7 +19,10 @@ and/or heavy dependencies.  Below lists the packages available in the ``coffea``
     coffea.nanoaod
     coffea.nanoaod.methods
     coffea.nanoevents
-    coffea.nanoevents.methods
+    coffea.nanoevents.methods.vector
+    coffea.nanoevents.methods.candidate
+    coffea.nanoevents.methods.base
+    coffea.nanoevents.methods.nanoaod
     coffea.lookup_tools
     coffea.jetmet_tools
     coffea.btag_tools

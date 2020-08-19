@@ -57,13 +57,14 @@ def get_description():
 
 
 INSTALL_REQUIRES = ['awkward>=0.12.20',
-                    'awkward1>=0.2.25',
+                    'uproot-methods>=0.7.3',
+                    'uproot>=3.11.0',
+                    'awkward1>=0.2.32',
+                    'uproot4>=0.0.17',
                     'matplotlib<3' if six.PY2 else 'matplotlib>=3',
                     'numba>=0.43.1',
                     'numpy>=1.16.0',
                     'scipy>=1.1.0',
-                    'uproot-methods>=0.7.3',
-                    'uproot>=3.11.0',
                     'futures; python_version == "2.7"',
                     'tqdm>=4.27.0',
                     'lz4',

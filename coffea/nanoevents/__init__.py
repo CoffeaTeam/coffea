@@ -2,8 +2,11 @@
 
 """
 from coffea.nanoevents.factory import NanoEventsFactory
-import coffea.nanoevents.methods
+from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema, TreeMakerSchema
 
 __all__ = [
     "NanoEventsFactory",
+    "BaseSchema",
+    "NanoAODSchema",
+    "TreeMakerSchema",
 ]
