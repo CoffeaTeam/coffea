@@ -2,7 +2,7 @@ from coffea.nanoevents import transforms
 from coffea.nanoevents.util import quote, concat
 
 
-def zip_forms(forms, name, record_name=None):
+def zip_forms(forms, name, record_name=None, offsets=None):
     if not isinstance(forms, dict):
         raise ValueError("Expected a dictionary")
     if all(form["class"].startswith("ListOffsetArray") for form in forms.values()):
@@ -18,16 +18,34 @@ def zip_forms(forms, name, record_name=None):
         }
         if record_name is not None:
             record["parameters"] = {"__record__": record_name}
-        return {
-            "class": first["class"],
-            "offsets": first["offsets"],
-            "content": record,
-            "form_key": first["form_key"],
-        }
+        if offsets is None:
+            return {
+                "class": first["class"],
+                "offsets": first["offsets"],
+                "content": record,
+                "form_key": first["form_key"],
+            }
+        else:
+            if offsets["class"] != "NumpyArray":
+                raise ValueError
+            if offsets["primitive"] == "int32":
+                arrayclass = "ListOffsetArray32"
+                offsetstype = "i32"
+            elif offsets["primitive"] == "int64":
+                arrayclass = "ListOffsetArray64"
+                offsetstype = "i64"
+            else:
+                raise ValueError("Unrecognized offsets data type")
+            return {
+                "class": arrayclass,
+                "offsets": offsetstype,
+                "content": record,
+                "form_key": concat(offsets["form_key"], "!skip"),
+            }
     elif all(form["class"] == "NumpyArray" for form in forms.values()):
         record = {
             "class": "RecordArray",
-            "contents": {k: form for k, form in forms},
+            "contents": {k: form for k, form in forms.items()},
             "form_key": quote("!invalid," + name),
         }
         if record_name is not None:
@@ -206,57 +224,40 @@ class NanoAODSchema(BaseSchema):
                 # list collection
                 offsets = branch_forms["o" + name]
                 content = {
-                    k[len(name) + 1 :]: branch_forms[k]["content"]
+                    k[len(name) + 1 :]: branch_forms[k]
                     for k in branch_forms
                     if k.startswith(name + "_")
                 }
-                output[name] = {
-                    "class": "ListOffsetArray64",
-                    "offsets": "i64",
-                    "content": {
-                        "class": "RecordArray",
-                        "contents": content,
-                        "parameters": {
-                            "__doc__": offsets["parameters"]["__doc__"],
-                            "__record__": mixin,
-                            "collection_name": name,
-                        },
-                        "form_key": quote("!invalid," + name),
-                    },
-                    "form_key": concat(offsets["form_key"], "!skip"),
-                }
-            elif "o" + name in branch_forms:
-                # list singleton
-                offsets = branch_forms["o" + name]
-                content = branch_forms[name]["content"]
-                output[name] = {
-                    "class": "ListOffsetArray64",
-                    "offsets": "i64",
-                    "content": content,
-                    "parameters": {
-                        # This makes more sense as offsets doc but it seems that is empty
-                        "__doc__": content["parameters"]["__doc__"],
-                        "__array__": mixin,
+                output[name] = zip_forms(
+                    content, name, record_name=mixin, offsets=offsets
+                )
+                output[name]["content"]["parameters"].update(
+                    {
+                        "__doc__": offsets["parameters"]["__doc__"],
                         "collection_name": name,
-                    },
-                    "form_key": concat(offsets["form_key"], "!skip"),
-                }
+                    }
+                )
+            elif "o" + name in branch_forms:
+                # list singleton, can use branch's own offsets
+                output[name] = branch_forms[name]
+                output[name]["parameters"].update(
+                    {"__array__": mixin, "collection_name": name}
+                )
             elif name in branch_forms:
                 # singleton
                 output[name] = branch_forms[name]
             else:
                 # simple collection
-                content = {
-                    k[len(name) + 1 :]: branch_forms[k]
-                    for k in branch_forms
-                    if k.startswith(name + "_")
-                }
-                output[name] = {
-                    "class": "RecordArray",
-                    "contents": content,
-                    "parameters": {"__record__": mixin, "collection_name": name},
-                    "form_key": quote("!invalid," + name),
-                }
+                output[name] = zip_forms(
+                    {
+                        k[len(name) + 1 :]: branch_forms[k]
+                        for k in branch_forms
+                        if k.startswith(name + "_")
+                    },
+                    name,
+                    record_name=mixin,
+                )
+                output[name]["parameters"].update({"collection_name": name})
 
         return output
 
@@ -338,6 +339,8 @@ class TreeMakerSchema(BaseSchema):
             "GenTaus",
             "Jets",
             "JetsAK8",
+            "JetsAK8_subjets",
+            "JetsAK15",
             "Muons",
             "PrimaryVertices",
             "TAPElectronTracks",
@@ -347,8 +350,12 @@ class TreeMakerSchema(BaseSchema):
         ]
         for cname in collections:
             items = sorted(k for k in branch_forms if k.startswith(cname + "_"))
+            if len(items) == 0:
+                continue
             if cname == "JetsAK8":
                 items = [k for k in items if not k.startswith("JetsAK8_subjets")]
+            if cname == "JetsAK8_subjets":
+                items = [k for k in items if not k.endswith("Offsets")]
             if cname not in branch_forms:
                 collection = zip_forms(
                     {k[len(cname) + 1]: branch_forms.pop(k) for k in items}, cname
