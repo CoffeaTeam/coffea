@@ -500,7 +500,7 @@ class Bin(DenseAxis):
         """
         if (isinstance(identifier, np.ndarray) and len(identifier.shape) == 1) or isinstance(identifier, numbers.Number):
             if self._uniform:
-                idx = np.clip(np.floor((identifier - self._lo) * self._bins / (self._hi - self._lo)) + 1, 0, self._bins + 1)
+                idx = np.clip(np.floor((identifier - self._lo) * float(self._bins) / (self._hi - self._lo)) + 1, 0, self._bins + 1)
                 if isinstance(idx, np.ndarray):
                     idx[np.isnan(idx)] = self.size - 1
                     idx = idx.astype(int)
