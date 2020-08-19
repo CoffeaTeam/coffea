@@ -2,7 +2,7 @@ from cachetools import LRUCache
 from collections.abc import Mapping
 import uproot4
 import numpy
-import coffea.nanoevents.transforms as transforms
+from coffea.nanoevents import transforms
 from coffea.nanoevents.util import key_to_tuple, tuple_to_key
 
 
