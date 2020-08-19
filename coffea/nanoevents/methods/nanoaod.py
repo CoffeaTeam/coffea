@@ -8,6 +8,22 @@ behavior.update(base.behavior)
 behavior.update(candidate.behavior)
 
 
+class NanoAODEvents(behavior["NanoEvents"]):
+    def __repr__(self):
+        return f"<event {self.run}:{self.luminosityBlock}:{self.event}>"
+
+
+behavior["NanoEvents"] = NanoAODEvents
+
+
+def set_repr_name(classname):
+    def namefcn(self):
+        return classname
+
+    behavior[("__typestr__",classname)] = classname[0].lower() + classname[1:]
+    behavior[classname].__repr__ = namefcn
+
+
 @awkward1.mixin_class(behavior)
 class PtEtaPhiMCollection(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     """Generic collection that has Lorentz vector properties"""
@@ -81,6 +97,9 @@ class GenParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
         return self._events().GenPart._apply_global_index(self.distinctChildrenIdxG)
 
 
+set_repr_name("GenParticle")
+
+
 @awkward1.mixin_class(behavior)
 class GenVisTau(candidate.PtEtaPhiMCandidate, base.NanoCollection):
     """NanoAOD visible tau object"""
@@ -89,6 +108,9 @@ class GenVisTau(candidate.PtEtaPhiMCandidate, base.NanoCollection):
     def parent(self):
         """Accessor to the parent particle"""
         return self._events().GenPart._apply_global_index(self.genPartIdxMotherG)
+
+
+set_repr_name("GenVisTau")
 
 
 @awkward1.mixin_class(behavior)
@@ -140,6 +162,9 @@ class Electron(candidate.PtEtaPhiMCandidate, base.NanoCollection):
         return self._events().Photon._apply_global_index(self.photonIdxG)
 
 
+set_repr_name("Electron")
+
+
 @awkward1.mixin_class(behavior)
 class Muon(candidate.PtEtaPhiMCandidate, base.NanoCollection):
     """NanoAOD muon object"""
@@ -157,6 +182,9 @@ class Muon(candidate.PtEtaPhiMCandidate, base.NanoCollection):
         return self._events().Jet._apply_global_index(self.jetIdxG)
 
 
+set_repr_name("Muon")
+
+
 @awkward1.mixin_class(behavior)
 class Tau(candidate.PtEtaPhiMCandidate, base.NanoCollection):
     """NanoAOD tau object"""
@@ -168,6 +196,9 @@ class Tau(candidate.PtEtaPhiMCandidate, base.NanoCollection):
     @property
     def matched_jet(self):
         return self._events().Jet._apply_global_index(self.jetIdxG)
+
+
+set_repr_name("Tau")
 
 
 @awkward1.mixin_class(behavior)
@@ -213,6 +244,9 @@ class Photon(candidate.PtEtaPhiMCandidate, base.NanoCollection):
         return self._events().Jet._apply_global_index(self.jetIdxG)
 
 
+set_repr_name("Photon")
+
+
 @awkward1.mixin_class(behavior)
 class FsrPhoton(candidate.PtEtaPhiMCandidate, base.NanoCollection):
     """NanoAOD fsr photon object"""
@@ -220,6 +254,9 @@ class FsrPhoton(candidate.PtEtaPhiMCandidate, base.NanoCollection):
     @property
     def matched_muon(self):
         return self._events().Muon._apply_global_index(self.muonIdxG)
+
+
+set_repr_name("FsrPhoton")
 
 
 @awkward1.mixin_class(behavior)
@@ -261,6 +298,9 @@ class Jet(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
         return self._events().GenJet._apply_global_index(self.genJetIdxG)
 
 
+set_repr_name("Jet")
+
+
 @awkward1.mixin_class(behavior)
 class FatJet(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     """NanoAOD large radius jet object"""
@@ -292,6 +332,9 @@ class FatJet(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
         return self._events().SubJet._apply_global_index(self.subJetIdxG)
 
 
+set_repr_name("FatJet")
+
+
 @awkward1.mixin_class(behavior)
 class MissingET(vector.PolarTwoVector, base.NanoCollection):
     """NanoAOD Missing transverse energy object"""
@@ -299,3 +342,6 @@ class MissingET(vector.PolarTwoVector, base.NanoCollection):
     @property
     def r(self):
         return self["pt"]
+
+
+set_repr_name("MissingET")

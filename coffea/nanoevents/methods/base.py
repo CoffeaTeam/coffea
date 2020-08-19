@@ -17,6 +17,9 @@ class NanoEvents:
         return self.layout.purelist_parameter("metadata")
 
 
+behavior[("__typestr__", "NanoEvents")] = "event"
+
+
 @awkward1.mixin_class(behavior)
 class NanoCollection:
     """A NanoEvents collection

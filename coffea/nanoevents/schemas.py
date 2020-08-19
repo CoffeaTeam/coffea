@@ -2,6 +2,25 @@ from coffea.nanoevents import transforms
 from coffea.nanoevents.util import quote, concat
 
 
+def listarray_form(content, offsets):
+    if offsets["class"] != "NumpyArray":
+        raise ValueError
+    if offsets["primitive"] == "int32":
+        arrayclass = "ListOffsetArray32"
+        offsetstype = "i32"
+    elif offsets["primitive"] == "int64":
+        arrayclass = "ListOffsetArray64"
+        offsetstype = "i64"
+    else:
+        raise ValueError("Unrecognized offsets data type")
+    return {
+        "class": arrayclass,
+        "offsets": offsetstype,
+        "content": content,
+        "form_key": concat(offsets["form_key"], "!skip"),
+    }
+
+
 def zip_forms(forms, name, record_name=None, offsets=None):
     if not isinstance(forms, dict):
         raise ValueError("Expected a dictionary")
@@ -26,22 +45,7 @@ def zip_forms(forms, name, record_name=None, offsets=None):
                 "form_key": first["form_key"],
             }
         else:
-            if offsets["class"] != "NumpyArray":
-                raise ValueError
-            if offsets["primitive"] == "int32":
-                arrayclass = "ListOffsetArray32"
-                offsetstype = "i32"
-            elif offsets["primitive"] == "int64":
-                arrayclass = "ListOffsetArray64"
-                offsetstype = "i64"
-            else:
-                raise ValueError("Unrecognized offsets data type")
-            return {
-                "class": arrayclass,
-                "offsets": offsetstype,
-                "content": record,
-                "form_key": concat(offsets["form_key"], "!skip"),
-            }
+            return listarray_form(record, offsets)
     elif all(form["class"] == "NumpyArray" for form in forms.values()):
         record = {
             "class": "RecordArray",
@@ -53,6 +57,20 @@ def zip_forms(forms, name, record_name=None, offsets=None):
         return record
     else:
         raise NotImplementedError("Cannot zip forms")
+
+
+def nest_jagged_forms(parent, child, counts_name, name):
+    """Place child listarray inside parent listarray as a double-jagged array"""
+    if not parent["class"].startswith("ListOffsetArray"):
+        raise ValueError
+    if parent["content"]["class"] != "RecordArray":
+        raise ValueError
+    if not child["class"].startswith("ListOffsetArray"):
+        raise ValueError
+    counts = parent["content"]["contents"][counts_name]
+    offsets = transforms.counts2offsets_form(counts)
+    inner = listarray_form(child["content"], offsets)
+    parent["content"]["contents"][name] = inner
 
 
 class BaseSchema:
@@ -84,9 +102,9 @@ class BaseSchema:
     @property
     def behavior(self):
         """Behaviors necessary to implement this schema"""
-        from coffea.nanoevents.methods.base import behavior
+        import coffea.nanoevents.methods.base
 
-        return behavior
+        return base.behavior
 
 
 class NanoAODSchema(BaseSchema):
@@ -264,9 +282,9 @@ class NanoAODSchema(BaseSchema):
     @property
     def behavior(self):
         """Behaviors necessary to implement this schema"""
-        from coffea.nanoevents.methods.nanoaod import behavior
+        from coffea.nanoevents.methods import nanoaod
 
-        return behavior
+        return nanoaod.behavior
 
 
 class TreeMakerSchema(BaseSchema):
@@ -354,6 +372,7 @@ class TreeMakerSchema(BaseSchema):
                 continue
             if cname == "JetsAK8":
                 items = [k for k in items if not k.startswith("JetsAK8_subjets")]
+                items.append("JetsAK8_subjetsOffsets")  # FIXME: actually counts
             if cname == "JetsAK8_subjets":
                 items = [k for k in items if not k.endswith("Offsets")]
             if cname not in branch_forms:
@@ -373,6 +392,7 @@ class TreeMakerSchema(BaseSchema):
                         item
                     )["content"]
 
+        nest_jagged_forms(branch_forms["JetsAK8"], branch_forms.pop("JetsAK8_subjets"), "subjetsOffsets", "subjets")
         return branch_forms
 
     @property
