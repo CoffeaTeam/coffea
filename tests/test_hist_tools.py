@@ -258,3 +258,8 @@ def test_issue_247():
 
     newaxis = hist.Bin('new', 'new', h.axis('old').edges()[np.cumsum([0, 2, 3, 5])])
     h4 = h.rebin('old', newaxis)
+
+def test_issue_333():
+    axis = hist.Bin("channel", "Channel b1", 50, 0, 2000)
+    temp = np.arange(0, 2000, 40, dtype=np.int16)
+    assert np.all(axis.index(temp) == np.arange(50) + 1)
