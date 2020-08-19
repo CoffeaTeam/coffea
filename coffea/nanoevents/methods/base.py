@@ -1,3 +1,4 @@
+"""Basic NanoEvents and NanoCollection mixins"""
 import awkward1
 
 

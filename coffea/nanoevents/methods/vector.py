@@ -1,3 +1,42 @@
+"""2D, 3D, and Lorentz vector class mixins
+
+These mixins will eventually be superceded by the `vector <https://github.com/scikit-hep/vector>`__ library,
+which will hopefully be feature-compatible.
+
+A small example::
+
+    import numpy as np
+    import awkward1 as ak
+    from coffea.nanoevents.methods import vector
+    ak.behavior.update(vector.behavior)
+
+    n = 1000
+
+    vec = ak.zip(
+        {
+            "x": np.random.normal(size=n),
+            "y": np.random.normal(size=n),
+            "z": np.random.normal(size=n),
+        },
+        with_name="ThreeVector",
+    )
+
+    vec4 = ak.zip(
+        {
+            "pt": vec.r,
+            "eta": -np.log(np.tan(vec.theta/2)),
+            "phi": vec.phi,
+            "mass": np.full(n, 1.),
+        },
+        with_name="PtEtaPhiMLorentzVector",
+    )
+
+    assert np.allclose(np.array(vec4.x), np.array(vec.x))
+    assert np.allclose(np.array(vec4.y), np.array(vec.y))
+    assert np.allclose(np.array(vec4.z), np.array(vec.z))
+    assert np.allclose(np.array(abs(2*vec + vec4) / abs(vec)), 3)
+
+"""
 import numpy
 import awkward1
 
@@ -60,7 +99,7 @@ class TwoVector:
             with_name="TwoVector",
         )
 
-    @awkward1.mixin_class_method(numpy.prod, {"float"})
+    @awkward1.mixin_class_method(numpy.multiply, {float, int})
     def prod(self, other):
         return awkward1.zip(
             {"x": self.x * other, "y": self.y * other}, with_name="TwoVector",
@@ -157,7 +196,7 @@ class ThreeVector(TwoVector):
             with_name="ThreeVector",
         )
 
-    @awkward1.mixin_class_method(numpy.prod, {"float"})
+    @awkward1.mixin_class_method(numpy.multiply, {float, int})
     def prod(self, other):
         return awkward1.zip(
             {"x": self.x * other, "y": self.y * other, "z": self.z * other},
@@ -251,7 +290,7 @@ class LorentzVector(ThreeVector):
             with_name="LorentzVector",
         )
 
-    @awkward1.mixin_class_method(numpy.prod, {"float"})
+    @awkward1.mixin_class_method(numpy.multiply, {float, int})
     def prod(self, other):
         return awkward1.zip(
             {
@@ -335,7 +374,7 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
     def mass2(self):
         return self.mass ** 2
 
-    @awkward1.mixin_class_method(numpy.prod, {"float"})
+    @awkward1.mixin_class_method(numpy.multiply, {float, int})
     def prod(self, other):
         return awkward1.zip(
             {
@@ -397,7 +436,7 @@ class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
     def rho2(self):
         return self.rho ** 2
 
-    @awkward1.mixin_class_method(numpy.prod, {"float"})
+    @awkward1.mixin_class_method(numpy.multiply, {float, int})
     def prod(self, other):
         return awkward1.zip(
             {
