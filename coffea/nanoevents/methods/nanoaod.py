@@ -20,7 +20,7 @@ def set_repr_name(classname):
     def namefcn(self):
         return classname
 
-    behavior[("__typestr__",classname)] = classname[0].lower() + classname[1:]
+    behavior[("__typestr__", classname)] = classname[0].lower() + classname[1:]
     behavior[classname].__repr__ = namefcn
 
 

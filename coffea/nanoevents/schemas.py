@@ -102,7 +102,7 @@ class BaseSchema:
     @property
     def behavior(self):
         """Behaviors necessary to implement this schema"""
-        import coffea.nanoevents.methods.base
+        from coffea.nanoevents.methods import base
 
         return base.behavior
 
@@ -392,7 +392,12 @@ class TreeMakerSchema(BaseSchema):
                         item
                     )["content"]
 
-        nest_jagged_forms(branch_forms["JetsAK8"], branch_forms.pop("JetsAK8_subjets"), "subjetsOffsets", "subjets")
+        nest_jagged_forms(
+            branch_forms["JetsAK8"],
+            branch_forms.pop("JetsAK8_subjets"),
+            "subjetsOffsets",
+            "subjets",
+        )
         return branch_forms
 
     @property
