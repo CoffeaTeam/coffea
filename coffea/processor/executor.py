@@ -417,7 +417,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             coffea_command = 'python {} {} {} {}'.format(basename(command_path), basename(infile_function), basename(infile_item), basename(outfile))
             wrapped_command = './{}'.format(basename(wrapper))
             wrapped_command += ' --environment {}'.format(basename(env_file))
-            wrapped_command += ' --unpack-to "$WORK_QUEUE_SANDBOX"/{}-env {}'.format(env_file, coffea_command)
+            wrapped_command += ' --unpack-to "$WORK_QUEUE_SANDBOX"/{}-env {}'.format(basename(env_file), coffea_command)
 
             t = wq.Task(wrapped_command)
             t.specify_category('default')
