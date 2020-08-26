@@ -72,7 +72,7 @@ class NanoEventsFactory:
         if not issubclass(schemaclass, BaseSchema):
             raise RuntimeError("Invalid schema type")
         if isinstance(file, str):
-            tree = uproot4.open(file + ":" + treepath)
+            tree = uproot4.open(file)[treepath]
         elif isinstance(file, uproot4.reading.ReadOnlyDirectory):
             tree = file[treepath]
         if entry_start is None or entry_start < 0:
