@@ -962,10 +962,15 @@ def run_uproot_job(fileset,
     if not isinstance(processor_instance, ProcessorABC):
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
 
+    # make a copy since we modify in-place
+    executor_args = dict(executor_args)
+
     if pre_executor is None:
         pre_executor = executor
     if pre_args is None:
         pre_args = dict(executor_args)
+    else:
+        pre_args = dict(pre_args)
     if metadata_cache is None:
         metadata_cache = DEFAULT_METADATA_CACHE
 
@@ -975,7 +980,11 @@ def run_uproot_job(fileset,
 
     # pop _get_metdata args here (also sent to _work_function)
     skipbadfiles = executor_args.pop('skipbadfiles', False)
-    retries = executor_args.pop('retries', 0)
+    if executor is dask_executor:
+        # this executor has a builtin retry mechanism
+        retries = 0
+    else:
+        retries = executor_args.pop('retries', 0)
     xrootdtimeout = executor_args.pop('xrootdtimeout', None)
     align_clusters = executor_args.pop('align_clusters', False)
     metadata_fetcher = partial(_get_metadata,
