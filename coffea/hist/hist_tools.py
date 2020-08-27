@@ -1249,7 +1249,8 @@ class Hist(AccumulatorABC):
             factor : float or dict
                 A number or mapping of identifier to number
             axis : optional
-                Which (sparse) axis the dict applies to
+                Which (sparse) axis the dict applies to, may be a tuples of axes.
+                The dict keys must follow the same structure.
 
         Examples
         --------
@@ -1258,6 +1259,8 @@ class Hist(AccumulatorABC):
         in the `Hist` example:
 
         >>> h.scale({'ducks': 0.3, 'geese': 1.2}, axis='species')
+        >>> h.scale({('ducks',): 0.5}, axis=('species',))
+        >>> h.scale({('geese', 'honk'): 5.0}, axis=('species', 'vocalization'))
         """
         if self._sumw2 is None:
             self._init_sumw2()
@@ -1266,13 +1269,17 @@ class Hist(AccumulatorABC):
                 self._sumw[key] *= factor
                 self._sumw2[key] *= factor**2
         elif isinstance(factor, dict):
-            axis = self.axis(axis)
-            isparse = self._isparse(axis)
-            factor = dict((axis.index(k), v) for k, v in factor.items())
+            if not isinstance(axis, tuple):
+                axis = (axis,)
+                factor = {(k,): v for k, v in factor.items()}
+            axis = tuple(map(self.axis, axis))
+            isparse = list(map(self._isparse, axis))
+            factor = {tuple(a.index(e) for a, e in zip(axis, k)): v for k, v in factor.items()}
             for key in self._sumw.keys():
-                if key[isparse] in factor:
-                    self._sumw[key] *= factor[key[isparse]]
-                    self._sumw2[key] *= factor[key[isparse]]**2
+                factor_key = tuple(key[i] for i in isparse)
+                if factor_key in factor:
+                    self._sumw[key] *= factor[factor_key]
+                    self._sumw2[key] *= factor[factor_key]**2
         elif isinstance(factor, np.ndarray):
             axis = self.axis(axis)
             raise NotImplementedError("Scale dense dimension by a factor")

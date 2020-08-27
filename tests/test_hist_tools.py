@@ -121,6 +121,8 @@ def test_hist():
         'birds': ['goose', 'crane'],
         'mammals': ['bison', 'fox'],
     }
+    h_mascots.scale({("goose",): 0.5}, axis=("animal",))
+    h_mascots.scale({("goose", "honk"): 2.0}, axis=("animal", "vocalization"))
     h_species = h_mascots.group("animal", species_class, classes)
 
     assert set(h_species.integrate("vocalization").values().keys()) == set([('birds',), ('mammals',)])
