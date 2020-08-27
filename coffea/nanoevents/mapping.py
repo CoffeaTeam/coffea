@@ -39,7 +39,7 @@ class UprootSourceMapping(Mapping):
         except KeyError:
             pass
         pfn = self._uuid_pfnmap[uuid]
-        tree = uproot4.open(pfn + ":" + treepath, **self._uproot_options)
+        tree = uproot4.open(pfn, **self._uproot_options)[treepath]
         if str(tree.file.uuid) != uuid:
             raise RuntimeError(
                 f"UUID of file {pfn} does not match expected value ({uuid})"
