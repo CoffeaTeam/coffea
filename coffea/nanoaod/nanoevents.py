@@ -72,7 +72,7 @@ class NanoCollection(awkward.VirtualArray):
                     (name, counts, array, methods),
                     type=awkward.type.ArrayType(len(counts), float('inf'), array.type.to),
                 )
-                out.__doc__ = counts.__doc__
+                out.__doc__ = counts.__doc__ or array.__doc__
                 array = out
             return array
         elif jagged:
@@ -85,7 +85,7 @@ class NanoCollection(awkward.VirtualArray):
                 (name, counts, columns, methods),
                 type=awkward.type.ArrayType(len(counts), float('inf'), tabletype),
             )
-            out.__doc__ = counts.__doc__
+            out.__doc__ = counts.__doc__ or array.__doc__
             return out
         else:
             Table = cls._get_mixin(methods, awkward.Table)
