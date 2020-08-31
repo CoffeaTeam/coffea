@@ -1,4 +1,5 @@
 import warnings
+import weakref
 import json
 import awkward1
 import uproot4
@@ -15,7 +16,7 @@ class NanoEventsFactory:
         self._mapping = mapping
         self._partition_key = partition_key
         self._cache = cache
-        self._events = None
+        self._events = lambda: None
 
     def __getstate__(self):
         return {
@@ -29,7 +30,7 @@ class NanoEventsFactory:
         self._mapping = state["mapping"]
         self._partition_key = state["partition_key"]
         self._cache = None
-        self._events = None
+        self._events = lambda: None
 
     @classmethod
     def from_file(
@@ -141,10 +142,11 @@ class NanoEventsFactory:
 
     def events(self):
         """Build events"""
-        if self._events is None:
+        events = self._events()
+        if events is None:
             behavior = dict(self._schema.behavior)
             behavior["__events_factory__"] = self
-            self._events = awkward1.from_arrayset(
+            events = awkward1.from_arrayset(
                 self._schema.form,
                 self._mapping,
                 prefix=self._partition_key,
@@ -154,5 +156,6 @@ class NanoEventsFactory:
                 lazy_cache="attach" if self._cache is None else self._cache,
                 behavior=behavior,
             )
+            self._events = weakref.ref(events)
 
-        return self._events
+        return events
