@@ -7,7 +7,7 @@ from coffea.nanoevents.util import key_to_tuple, tuple_to_key
 
 
 class TrivialOpener:
-    def __init__(self, uuid_pfnmap, uproot_options=None):
+    def __init__(self, uuid_pfnmap, uproot_options={}):
         self._uuid_pfnmap = uuid_pfnmap
         self._uproot_options = uproot_options
 
@@ -31,7 +31,7 @@ class UprootSourceMapping(Mapping):
 
     def setup(self):
         if self._cache is None:
-            self._cache = LRUCache(10)
+            self._cache = LRUCache(1)
 
     def __getstate__(self):
         return {
@@ -56,10 +56,6 @@ class UprootSourceMapping(Mapping):
     def preload_tree(self, uuid, treepath, tree):
         """To save a double-open when using NanoEventsFactory.from_file"""
         key = "UprootSourceMapping:" + tuple_to_key((uuid, treepath))
-        self._cache.update(tree.file.array_cache)
-        self._cache.update(tree.file.object_cache)
-        tree.file.array_cache = self._cache
-        tree.file.object_cache = self._cache
         self._cache[key] = tree
 
     @classmethod
