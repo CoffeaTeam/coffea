@@ -3,7 +3,7 @@ import json
 import awkward1
 import uproot4
 from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
-from coffea.nanoevents.mapping import UprootSourceMapping, CachedMapping
+from coffea.nanoevents.mapping import TrivialOpener, UprootSourceMapping, CachedMapping
 from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema
 
 
@@ -85,7 +85,7 @@ class NanoEventsFactory:
             "{0}-{1}".format(entry_start, entry_stop),
         )
         uuidpfn = {partition_tuple[0]: tree.file.file_path}
-        mapping = UprootSourceMapping(uuidpfn)
+        mapping = UprootSourceMapping(TrivialOpener(uuidpfn))
         mapping.preload_tree(partition_tuple[0], partition_tuple[1], tree)
         if persistent_cache is not None:
             mapping = CachedMapping(persistent_cache, mapping)
