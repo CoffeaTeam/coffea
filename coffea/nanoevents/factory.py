@@ -8,9 +8,7 @@ from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema
 
 
 class NanoEventsFactory:
-    """A factory class to build NanoEvents objects
-
-    """
+    """A factory class to build NanoEvents objects"""
 
     def __init__(self, schema, mapping, partition_key, cache=None):
         self._schema = schema
@@ -139,9 +137,7 @@ class NanoEventsFactory:
         }
 
     def events(self):
-        """Build events
-
-        """
+        """Build events"""
         if self._events is None:
             behavior = dict(self._schema.behavior)
             behavior["__events_factory__"] = self

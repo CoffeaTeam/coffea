@@ -179,11 +179,17 @@ class NanoAODSchema(BaseSchema):
         ),
         "GenPart_childrenIdxG": (
             transforms.children_form,
-            ("oGenPart", "GenPart_genPartIdxMotherG",),
+            (
+                "oGenPart",
+                "GenPart_genPartIdxMotherG",
+            ),
         ),
         "GenPart_distinctChildrenIdxG": (
             transforms.children_form,
-            ("oGenPart", "GenPart_distinctParentIdxG",),
+            (
+                "oGenPart",
+                "GenPart_distinctParentIdxG",
+            ),
         ),
     }
     """Default special arrays, where the callable and input arrays are specified in the value"""

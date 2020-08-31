@@ -87,7 +87,8 @@ class TwoVector:
     @awkward1.mixin_class_method(numpy.add, {"TwoVector"})
     def add(self, other):
         return awkward1.zip(
-            {"x": self.x + other.x, "y": self.y + other.y}, with_name="TwoVector",
+            {"x": self.x + other.x, "y": self.y + other.y},
+            with_name="TwoVector",
         )
 
     def sum(self, axis=-1):
@@ -102,7 +103,8 @@ class TwoVector:
     @awkward1.mixin_class_method(numpy.multiply, {float, int})
     def prod(self, other):
         return awkward1.zip(
-            {"x": self.x * other, "y": self.y * other}, with_name="TwoVector",
+            {"x": self.x * other, "y": self.y * other},
+            with_name="TwoVector",
         )
 
     def delta_phi(self, other):
