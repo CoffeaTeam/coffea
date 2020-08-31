@@ -6,29 +6,40 @@ from coffea.nanoevents import transforms
 from coffea.nanoevents.util import key_to_tuple, tuple_to_key
 
 
+class TrivialOpener:
+    def __init__(self, uuid_pfnmap, uproot_options={}):
+        self._uuid_pfnmap = uuid_pfnmap
+        self._uproot_options = uproot_options
+
+    def open_uuid(self, uuid):
+        pfn = self._uuid_pfnmap[uuid]
+        rootdir = uproot4.open(pfn, **self._uproot_options)
+        if str(rootdir.file.uuid) != uuid:
+            raise RuntimeError(
+                f"UUID of file {pfn} does not match expected value ({uuid})"
+            )
+        return rootdir
+
+
 class UprootSourceMapping(Mapping):
     _debug = False
 
-    def __init__(self, uuid_pfnmap, cache=None):
-        self._uuid_pfnmap = uuid_pfnmap
+    def __init__(self, fileopener, cache=None):
+        self._fileopener = fileopener
         self._cache = cache
         self.setup()
 
     def setup(self):
         if self._cache is None:
-            self._cache = LRUCache(10)
-        self._uproot_options = {
-            "array_cache": self._cache,
-            "object_cache": self._cache,
-        }
+            self._cache = LRUCache(1)
 
     def __getstate__(self):
         return {
-            "uuid_pfnmap": self._uuid_pfnmap,
+            "fileopener": self._fileopener,
         }
 
     def __setstate__(self, state):
-        self._uuid_pfnmap = state["uuid_pfnmap"]
+        self._fileopener = state["fileopener"]
         self._cache = None
         self.setup()
 
@@ -38,22 +49,13 @@ class UprootSourceMapping(Mapping):
             return self._cache[key]
         except KeyError:
             pass
-        pfn = self._uuid_pfnmap[uuid]
-        tree = uproot4.open(pfn, **self._uproot_options)[treepath]
-        if str(tree.file.uuid) != uuid:
-            raise RuntimeError(
-                f"UUID of file {pfn} does not match expected value ({uuid})"
-            )
+        tree = self._fileopener.open_uuid(uuid)[treepath]
         self._cache[key] = tree
         return tree
 
     def preload_tree(self, uuid, treepath, tree):
         """To save a double-open when using NanoEventsFactory.from_file"""
         key = "UprootSourceMapping:" + tuple_to_key((uuid, treepath))
-        self._cache.update(tree.file.array_cache)
-        self._cache.update(tree.file.object_cache)
-        tree.file.array_cache = self._cache
-        tree.file.object_cache = self._cache
         self._cache[key] = tree
 
     @classmethod

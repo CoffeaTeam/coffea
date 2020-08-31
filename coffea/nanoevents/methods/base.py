@@ -35,7 +35,10 @@ class NanoCollection:
         def descend(layout, depth):
             islistarray = isinstance(
                 layout,
-                (awkward1.layout.ListOffsetArray32, awkward1.layout.ListOffsetArray64,),
+                (
+                    awkward1.layout.ListOffsetArray32,
+                    awkward1.layout.ListOffsetArray64,
+                ),
             )
             if islistarray and layout.content.parameter("collection_name") is not None:
                 return lambda: layout

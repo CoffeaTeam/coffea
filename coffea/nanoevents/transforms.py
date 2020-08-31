@@ -149,7 +149,9 @@ def distinctParent_form(parents, pdg):
         "form_key": parents["form_key"],
     }
     form["content"]["form_key"] = concat(
-        parents["content"]["form_key"], pdg["content"]["form_key"], "!distinctParent",
+        parents["content"]["form_key"],
+        pdg["content"]["form_key"],
+        "!distinctParent",
     )
     return form
 
@@ -226,7 +228,8 @@ def children(stack):
     coffsets, ccontent = _children_kernel(offsets, parents)
     out = awkward1.Array(
         awkward1.layout.ListOffsetArray64(
-            awkward1.layout.Index64(coffsets), awkward1.layout.NumpyArray(ccontent),
+            awkward1.layout.Index64(coffsets),
+            awkward1.layout.NumpyArray(ccontent),
         )
     )
     stack.append(out)
@@ -269,7 +272,8 @@ def nestedindex(stack):
     offsets = numpy.arange(0, len(out) + 1, n, dtype=numpy.int64)
     out = awkward1.Array(
         awkward1.layout.ListOffsetArray64(
-            awkward1.layout.Index64(offsets), awkward1.layout.NumpyArray(out),
+            awkward1.layout.Index64(offsets),
+            awkward1.layout.NumpyArray(out),
         )
     )
     stack.append(out)

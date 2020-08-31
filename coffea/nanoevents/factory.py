@@ -3,14 +3,12 @@ import json
 import awkward1
 import uproot4
 from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
-from coffea.nanoevents.mapping import UprootSourceMapping, CachedMapping
+from coffea.nanoevents.mapping import TrivialOpener, UprootSourceMapping, CachedMapping
 from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema
 
 
 class NanoEventsFactory:
-    """A factory class to build NanoEvents objects
-
-    """
+    """A factory class to build NanoEvents objects"""
 
     def __init__(self, schema, mapping, partition_key, cache=None):
         self._schema = schema
@@ -44,6 +42,7 @@ class NanoEventsFactory:
         persistent_cache=None,
         schemaclass=NanoAODSchema,
         metadata=None,
+        uproot_options={},
     ):
         """Quickly build NanoEvents from a file
 
@@ -68,11 +67,13 @@ class NanoEventsFactory:
                 A schema class deriving from `BaseSchema` and implementing the desired view of the file
             metadata : dict, optional
                 Arbitrary metadata to add to the `base.NanoEvents` object
+            uproot_options : dict, optional
+                Any options to pass to ``uproot4.open``
         """
         if not issubclass(schemaclass, BaseSchema):
             raise RuntimeError("Invalid schema type")
         if isinstance(file, str):
-            tree = uproot4.open(file)[treepath]
+            tree = uproot4.open(file, **uproot_options)[treepath]
         elif isinstance(file, uproot4.reading.ReadOnlyDirectory):
             tree = file[treepath]
         if entry_start is None or entry_start < 0:
@@ -85,7 +86,7 @@ class NanoEventsFactory:
             "{0}-{1}".format(entry_start, entry_stop),
         )
         uuidpfn = {partition_tuple[0]: tree.file.file_path}
-        mapping = UprootSourceMapping(uuidpfn)
+        mapping = UprootSourceMapping(TrivialOpener(uuidpfn, uproot_options))
         mapping.preload_tree(partition_tuple[0], partition_tuple[1], tree)
         if persistent_cache is not None:
             mapping = CachedMapping(persistent_cache, mapping)
@@ -139,9 +140,7 @@ class NanoEventsFactory:
         }
 
     def events(self):
-        """Build events
-
-        """
+        """Build events"""
         if self._events is None:
             behavior = dict(self._schema.behavior)
             behavior["__events_factory__"] = self
