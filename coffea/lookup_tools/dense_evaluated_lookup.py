@@ -18,12 +18,12 @@ def numba_apply_1d(functions, variables):
 
 def numbaize(fstr, varlist):
     """
-        Convert function string to numba function
-        Supports only simple math for now
-        """
+    Convert function string to numba function
+    Supports only simple math for now
+    """
 
     lstr = "lambda %s: %s" % (",".join(varlist), fstr)
-    func = eval(lstr, {'log': np.log, 'sqrt': np.sqrt})
+    func = eval(lstr, {"log": np.log, "sqrt": np.sqrt})
     nfunc = numba.njit(func)
     return nfunc
 
@@ -39,40 +39,57 @@ class dense_evaluated_lookup(lookup_base):
         else:
             self._dimension = len(dims)
         if self._dimension == 0:
-            raise Exception('Could not define dimension for {}'.format(whattype))
+            raise Exception("Could not define dimension for {}".format(whattype))
         self._axes = deepcopy(dims)
         self._feval_dim = None
-        vals_are_strings = ('string' in values.dtype.name or
-                            'str' in values.dtype.name or
-                            'unicode' in values.dtype.name or
-                            'bytes' in values.dtype.name)  # ....
+        vals_are_strings = (
+            "string" in values.dtype.name
+            or "str" in values.dtype.name
+            or "unicode" in values.dtype.name
+            or "bytes" in values.dtype.name
+        )  # ....
         if not isinstance(values, np.ndarray):
-            raise TypeError('values is not a numpy array, but %r' % type(values))
+            raise TypeError("values is not a numpy array, but %r" % type(values))
         if not vals_are_strings:
-            raise Exception('Non-string values passed to dense_evaluated_lookup!')
+            raise Exception("Non-string values passed to dense_evaluated_lookup!")
         if feval_dim is None:
-            raise Exception('Evaluation dimensions not specified in dense_evaluated_lookup')
-        funcs = np.zeros(shape=values.shape, dtype='O')
+            raise Exception(
+                "Evaluation dimensions not specified in dense_evaluated_lookup"
+            )
+        funcs = np.zeros(shape=values.shape, dtype="O")
         for i in range(values.size):
             idx = np.unravel_index(i, shape=values.shape)
-            funcs[idx] = numbaize(values[idx], ['x'])
+            funcs[idx] = numbaize(values[idx], ["x"])
         self._values = deepcopy(funcs)
         # TODO: support for multidimensional functions and functions with variables other than 'x'
         if len(feval_dim) > 1:
-            raise Exception('lookup_tools.evaluator only accepts 1D functions right now!')
+            raise Exception(
+                "lookup_tools.evaluator only accepts 1D functions right now!"
+            )
         self._feval_dim = feval_dim[0]
 
     def _evaluate(self, *args):
         indices = []
         for arg in args:
             if type(arg) == awkward.JaggedArray:
-                raise Exception('JaggedArray in inputs')
+                raise Exception("JaggedArray in inputs")
         if self._dimension == 1:
-            indices.append(np.clip(np.searchsorted(self._axes, args[0], side='right') - 1, 0, self._values.shape[0] - 1))
+            indices.append(
+                np.clip(
+                    np.searchsorted(self._axes, args[0], side="right") - 1,
+                    0,
+                    self._values.shape[0] - 1,
+                )
+            )
         else:
             for dim in range(self._dimension):
-                indices.append(np.clip(np.searchsorted(self._axes[dim], args[dim], side='right') - 1,
-                                       0, self._values.shape[len(self._axes) - dim - 1] - 1))
+                indices.append(
+                    np.clip(
+                        np.searchsorted(self._axes[dim], args[dim], side="right") - 1,
+                        0,
+                        self._values.shape[len(self._axes) - dim - 1] - 1,
+                    )
+                )
         indices.reverse()
         return numba_apply_1d(self._values[tuple(indices)], args[self._feval_dim])
 

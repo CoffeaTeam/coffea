@@ -11,10 +11,11 @@ def masked_bin_eval(dim1_indices, dimN_bins, dimN_vals):
     dimN_indices = np.empty_like(dim1_indices)
     for i in np.unique(dim1_indices):
         idx = np.where(dim1_indices == i)
-        dimN_indices[idx] = np.clip(np.searchsorted(dimN_bins[i],
-                                                    dimN_vals[idx],
-                                                    side='right') - 1,
-                                    0, len(dimN_bins[i]) - 2)
+        dimN_indices[idx] = np.clip(
+            np.searchsorted(dimN_bins[i], dimN_vals[idx], side="right") - 1,
+            0,
+            len(dimN_bins[i]) - 2,
+        )
     return dimN_indices
 
 
@@ -30,6 +31,7 @@ class jec_uncertainty_lookup(lookup_base):
 
     The list of required jet properties are given in junc_lut.signature
     """
+
     def __init__(self, formula, bins_and_orders, knots_and_vars):
         """
         The constructor takes the output of the "convert_junc_txt_file"
@@ -39,13 +41,13 @@ class jec_uncertainty_lookup(lookup_base):
         self._dim_order = bins_and_orders[1]
         self._bins = bins_and_orders[0]
         self._eval_vars = knots_and_vars[1]
-        self._eval_knots = knots_and_vars[0]['knots']
+        self._eval_knots = knots_and_vars[0]["knots"]
         self._eval_downs = []
         self._eval_ups = []
         self._formula_str = formula.strip('"')
         self._formula = None
-        if self._formula_str != 'None' and self._formula_str != '':
-            raise Exception('jet energy uncertainties have no formula!')
+        if self._formula_str != "None" and self._formula_str != "":
+            raise Exception("jet energy uncertainties have no formula!")
 
         for binname in self._dim_order[1:]:
             binsaslists = self._bins[binname].tolist()
@@ -54,14 +56,18 @@ class jec_uncertainty_lookup(lookup_base):
         # convert downs and ups into interp1ds
         # (yes this only works for one binning dimension right now, fight me)
         for bin in range(self._bins[self._dim_order[0]].size - 1):
-            self._eval_downs.append(interp1d(self._eval_knots,
-                                             knots_and_vars[0]['downs'][bin]))
-            self._eval_ups.append(interp1d(self._eval_knots,
-                                           knots_and_vars[0]['ups'][bin]))
+            self._eval_downs.append(
+                interp1d(self._eval_knots, knots_and_vars[0]["downs"][bin])
+            )
+            self._eval_ups.append(
+                interp1d(self._eval_knots, knots_and_vars[0]["ups"][bin])
+            )
 
         # get the jit to compile if we've got more than one bin dim
         if len(self._dim_order) > 1:
-            masked_bin_eval(np.array([0]), self._bins[self._dim_order[1]], np.array([0.0]))
+            masked_bin_eval(
+                np.array([0]), self._bins[self._dim_order[1]], np.array([0.0])
+            )
 
         self._signature = deepcopy(self._dim_order)
         for eval in self._eval_vars:
@@ -76,22 +82,31 @@ class jec_uncertainty_lookup(lookup_base):
 
     def _evaluate(self, *args):
         """ uncertainties = f(args) """
-        bin_vals = {argname: args[self._dim_args[argname]] for argname in self._dim_order}
-        eval_vals = {argname: args[self._eval_args[argname]] for argname in self._eval_vars}
+        bin_vals = {
+            argname: args[self._dim_args[argname]] for argname in self._dim_order
+        }
+        eval_vals = {
+            argname: args[self._eval_args[argname]] for argname in self._eval_vars
+        }
 
         # lookup the bins that we care about
         dim1_name = self._dim_order[0]
-        dim1_indices = np.clip(np.searchsorted(self._bins[dim1_name],
-                                               bin_vals[dim1_name],
-                                               side='right') - 1,
-                               0, self._bins[dim1_name].size - 2)
+        dim1_indices = np.clip(
+            np.searchsorted(self._bins[dim1_name], bin_vals[dim1_name], side="right")
+            - 1,
+            0,
+            self._bins[dim1_name].size - 2,
+        )
 
         # get clamp values and clip the inputs
         outs = np.ones(shape=(args[0].size, 2), dtype=np.float)
         for i in np.unique(dim1_indices):
             mask = np.where(dim1_indices == i)
-            vals = np.clip(eval_vals[self._eval_vars[0]][mask],
-                           self._eval_knots[0], self._eval_knots[-1])
+            vals = np.clip(
+                eval_vals[self._eval_vars[0]][mask],
+                self._eval_knots[0],
+                self._eval_knots[-1],
+            )
             outs[:, 0][mask] += self._eval_ups[i](vals)
             outs[:, 1][mask] -= self._eval_downs[i](vals)
 
@@ -103,7 +118,7 @@ class jec_uncertainty_lookup(lookup_base):
         return self._signature
 
     def __repr__(self):
-        out = 'binned dims   : %s\n' % (self._dim_order)
-        out += 'eval vars     : %s\n' % (self._eval_vars)
-        out += 'signature     : (%s)\n' % (','.join(self._signature))
+        out = "binned dims   : %s\n" % (self._dim_order)
+        out += "eval vars     : %s\n" % (self._eval_vars)
+        out += "signature     : (%s)\n" % (",".join(self._signature))
         return out

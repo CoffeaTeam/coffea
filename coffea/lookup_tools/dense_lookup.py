@@ -15,13 +15,15 @@ class dense_lookup(lookup_base):
         else:
             self._dimension = len(dims)
         if self._dimension == 0:
-            raise Exception('Could not define dimension for {}'.format(whattype))
+            raise Exception("Could not define dimension for {}".format(whattype))
         self._axes = deepcopy(dims)
         self._feval_dim = None
-        vals_are_strings = ('string' in values.dtype.name or
-                            'str' in values.dtype.name or
-                            'unicode' in values.dtype.name or
-                            'bytes' in values.dtype.name)  # ....
+        vals_are_strings = (
+            "string" in values.dtype.name
+            or "str" in values.dtype.name
+            or "unicode" in values.dtype.name
+            or "bytes" in values.dtype.name
+        )  # ....
         if not isinstance(values, numpy.ndarray):
             raise TypeError("values is not a numpy array, but %r" % type(values))
         if vals_are_strings:
@@ -31,10 +33,23 @@ class dense_lookup(lookup_base):
     def _evaluate(self, *args):
         indices = []
         if self._dimension == 1:
-            indices.append(numpy.clip(numpy.searchsorted(self._axes, args[0], side='right') - 1, 0, self._values.shape[0] - 1))
+            indices.append(
+                numpy.clip(
+                    numpy.searchsorted(self._axes, args[0], side="right") - 1,
+                    0,
+                    self._values.shape[0] - 1,
+                )
+            )
         else:
             for dim in range(self._dimension):
-                indices.append(numpy.clip(numpy.searchsorted(self._axes[dim], args[dim], side='right') - 1, 0, self._values.shape[dim] - 1))
+                indices.append(
+                    numpy.clip(
+                        numpy.searchsorted(self._axes[dim], args[dim], side="right")
+                        - 1,
+                        0,
+                        self._values.shape[dim] - 1,
+                    )
+                )
         return self._values[tuple(indices)]
 
     def __repr__(self):

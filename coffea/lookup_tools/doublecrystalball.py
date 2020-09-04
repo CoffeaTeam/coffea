@@ -1,5 +1,12 @@
 import numpy as np
-from scipy.stats._continuous_distns import rv_continuous, _norm_pdf_C, _norm_cdf, _norm_ppf, sc, _lazywhere
+from scipy.stats._continuous_distns import (
+    rv_continuous,
+    _norm_pdf_C,
+    _norm_cdf,
+    _norm_ppf,
+    sc,
+    _lazywhere,
+)
 
 
 class doublecrystalball_gen(rv_continuous):
@@ -34,16 +41,21 @@ class doublecrystalball_gen(rv_continuous):
         """
         Return PDF of the double-sided crystalball function.
         """
-        N = 1.0 / (mL / betaL / (mL - 1) * np.exp(-0.5 * betaL * betaL) +
-                   mH / betaH / (mH - 1) * np.exp(-0.5 * betaH * betaH) +
-                   _norm_pdf_C * (_norm_cdf(betaH) - _norm_cdf(-betaL)))
+        N = 1.0 / (
+            mL / betaL / (mL - 1) * np.exp(-0.5 * betaL * betaL)
+            + mH / betaH / (mH - 1) * np.exp(-0.5 * betaH * betaH)
+            + _norm_pdf_C * (_norm_cdf(betaH) - _norm_cdf(-betaL))
+        )
 
         def core(x, beta, m):
             return np.exp(-0.5 * x * x)
 
         def tail(x, beta, m):
-            return ((m / beta)**m * np.exp(-0.5 * beta * beta) *
-                    (m / beta - beta - x)**(-m))
+            return (
+                (m / beta) ** m
+                * np.exp(-0.5 * beta * beta)
+                * (m / beta - beta - x) ** (-m)
+            )
 
         def lhs(x, betaL, betaH, mL, mH):
             return tail(x, betaL, mL)
@@ -57,15 +69,21 @@ class doublecrystalball_gen(rv_continuous):
         """
         Return the log of the PDF of the double-sided crystalball function.
         """
-        N = 1.0 / (mL / betaL / (mL - 1) * np.exp(-0.5 * betaL * betaL) +
-                   mH / betaH / (mH - 1) * np.exp(-0.5 * betaH * betaH) +
-                   _norm_pdf_C * (_norm_cdf(betaH) - _norm_cdf(-betaL)))
+        N = 1.0 / (
+            mL / betaL / (mL - 1) * np.exp(-0.5 * betaL * betaL)
+            + mH / betaH / (mH - 1) * np.exp(-0.5 * betaH * betaH)
+            + _norm_pdf_C * (_norm_cdf(betaH) - _norm_cdf(-betaL))
+        )
 
         def core(x, beta, m):
             return -0.5 * x * x
 
         def tail(x, beta, m):
-            return m * np.log(m / beta) - 0.5 * beta * beta - m * np.log(m / beta - beta - x)
+            return (
+                m * np.log(m / beta)
+                - 0.5 * beta * beta
+                - m * np.log(m / beta - beta - x)
+            )
 
         def lhs(x, betaL, betaH, mL, mH):
             return tail(x, betaL, mL)
@@ -73,15 +91,19 @@ class doublecrystalball_gen(rv_continuous):
         def rhs(x, betaL, betaH, mL, mH):
             return _lazywhere(x < betaH, (-x, betaH, mH), f=core, f2=tail)
 
-        return np.log(N) + _lazywhere(x > -betaL, (x, betaL, betaH, mL, mH), f=rhs, f2=lhs)
+        return np.log(N) + _lazywhere(
+            x > -betaL, (x, betaL, betaH, mL, mH), f=rhs, f2=lhs
+        )
 
     def _cdf(self, x, betaL, betaH, mL, mH):
         """
         Return CDF of the double-sided crystalball function
         """
-        N = 1.0 / (mL / betaL / (mL - 1) * np.exp(-0.5 * betaL * betaL) +
-                   mH / betaH / (mH - 1) * np.exp(-0.5 * betaH * betaH) +
-                   _norm_pdf_C * (_norm_cdf(betaH) - _norm_cdf(-betaL)))
+        N = 1.0 / (
+            mL / betaL / (mL - 1) * np.exp(-0.5 * betaL * betaL)
+            + mH / betaH / (mH - 1) * np.exp(-0.5 * betaH * betaH)
+            + _norm_pdf_C * (_norm_cdf(betaH) - _norm_cdf(-betaL))
+        )
 
         def inttail(beta, m):
             return m / beta / (m - 1) * np.exp(-0.5 * beta * beta)
@@ -90,15 +112,23 @@ class doublecrystalball_gen(rv_continuous):
             return _norm_pdf_C * (_norm_cdf(betaH) - _norm_cdf(-betaL))
 
         def tail(x, beta, m):
-            return ((m / beta)**m * np.exp(-0.5 * beta * beta) *
-                    (m / beta - beta - x)**(1 - m) / (m - 1))
+            return (
+                (m / beta) ** m
+                * np.exp(-0.5 * beta * beta)
+                * (m / beta - beta - x) ** (1 - m)
+                / (m - 1)
+            )
 
         def hightail(x, betaL, betaH, mL, mH):
-            return (inttail(betaL, mL) + intcore(betaL, betaH) +
-                    inttail(betaH, mH) - tail(-x, betaH, mH))
+            return (
+                inttail(betaL, mL)
+                + intcore(betaL, betaH)
+                + inttail(betaH, mH)
+                - tail(-x, betaH, mH)
+            )
 
         def core(x, betaL, betaH, mL, mH):
-            return (inttail(betaL, mL) + _norm_pdf_C * (_norm_cdf(x) - _norm_cdf(-betaL)))
+            return inttail(betaL, mL) + _norm_pdf_C * (_norm_cdf(x) - _norm_cdf(-betaL))
 
         def lhs(x, betaL, betaH, mL, mH):
             return tail(x, betaL, mL)
@@ -112,6 +142,7 @@ class doublecrystalball_gen(rv_continuous):
         """
         Return PPF of the double-sided crystalball function
         """
+
         def inttail(beta, m):
             return m / beta / (m - 1) * np.exp(-0.5 * beta * beta)
 
@@ -124,8 +155,12 @@ class doublecrystalball_gen(rv_continuous):
             C = CL + CH
             N = 1 / (C + intcore(betaL, betaH))
             eb2H = np.exp(-0.5 * betaH * betaH)
-            return -(mH / betaH - betaH -
-                     ((mH - 1) * (mH / betaH)**(-mH) / eb2H * (1 - p) / N)**(1 / (1 - mH)))
+            return -(
+                mH / betaH
+                - betaH
+                - ((mH - 1) * (mH / betaH) ** (-mH) / eb2H * (1 - p) / N)
+                ** (1 / (1 - mH))
+            )
 
         def lowtail(p, betaL, betaH, mL, mH):
             CL = inttail(betaL, mL)
@@ -133,8 +168,11 @@ class doublecrystalball_gen(rv_continuous):
             C = CL + CH
             N = 1 / (C + intcore(betaL, betaH))
             eb2L = np.exp(-0.5 * betaL * betaL)
-            return (mL / betaL - betaL -
-                    ((mL - 1) * (mL / betaL)**(-mL) / eb2L * p / N)**(1 / (1 - mL)))
+            return (
+                mL / betaL
+                - betaL
+                - ((mL - 1) * (mL / betaL) ** (-mL) / eb2L * p / N) ** (1 / (1 - mL))
+            )
 
         def core(p, betaL, betaH, mL, mH):
             CL = inttail(betaL, mL)
@@ -146,18 +184,22 @@ class doublecrystalball_gen(rv_continuous):
         def ppf_greater(p, betaL, betaH, mL, mH):
             N = 1.0 / (inttail(betaL, mL) + intcore(betaL, betaH) + inttail(betaH, mH))
             pbetaH = 1 - (N * (mH / betaH) * np.exp(-0.5 * betaH * betaH) / (mH - 1))
-            return _lazywhere(p > pbetaH, (p, betaL, betaH, mL, mH), f=hightail, f2=core)
+            return _lazywhere(
+                p > pbetaH, (p, betaL, betaH, mL, mH), f=hightail, f2=core
+            )
 
         N = 1.0 / (inttail(betaL, mL) + intcore(betaL, betaH) + inttail(betaH, mH))
         pbetaL = N * (mL / betaL) * np.exp(-0.5 * betaL * betaL) / (mL - 1)
-        return _lazywhere(p < pbetaL, (p, betaL, betaH, mL, mH), f=lowtail, f2=ppf_greater)
+        return _lazywhere(
+            p < pbetaL, (p, betaL, betaH, mL, mH), f=lowtail, f2=ppf_greater
+        )
 
     def _munp(self, n, betaL, betaH, mL, mH):
         """
         Returns the n-th non-central moment of the double-sided crystalball function.
         """
         # this should be copied from crystalball and updated
-        raise(NotImplementedError)
+        raise (NotImplementedError)
 
     def _argcheck(self, betaL, betaH, mL, mH):
         """
@@ -166,4 +208,6 @@ class doublecrystalball_gen(rv_continuous):
         return (mL > 1) & (betaL > 0) & (mH > 1) & (betaH > 1)
 
 
-doublecrystalball = doublecrystalball_gen(name='doublecrystalball', longname="A Double-sided Crystalball Function")
+doublecrystalball = doublecrystalball_gen(
+    name="doublecrystalball", longname="A Double-sided Crystalball Function"
+)

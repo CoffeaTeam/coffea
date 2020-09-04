@@ -25,13 +25,20 @@ class lookup_base(object):
             ):
                 nplike = awkward1.nplike.of(*inputs)
                 if not isinstance(nplike, awkward1.nplike.Numpy):
-                    raise NotImplementedError("support for cupy/jax/etc. numpy extensions")
+                    raise NotImplementedError(
+                        "support for cupy/jax/etc. numpy extensions"
+                    )
                 result = self._evaluate(*[nplike.asarray(x) for x in inputs])
                 return lambda: (awkward1.layout.NumpyArray(result),)
             return None
 
         behavior = awkward1._util.behaviorof(*args)
-        args = [awkward1.operations.convert.to_layout(arg, allow_record=False, allow_other=True) for arg in args]
+        args = [
+            awkward1.operations.convert.to_layout(
+                arg, allow_record=False, allow_other=True
+            )
+            for arg in args
+        ]
         out = awkward1._util.broadcast_and_apply(args, getfunction, behavior)
         assert isinstance(out, tuple) and len(out) == 1
         return awkward1._util.wrap(out[0], behavior)
@@ -44,15 +51,24 @@ class lookup_base(object):
             if isinstance(inputs[i], awkward.JaggedArray):
                 if offsets is not None and offsets.base is not inputs[i].offsets.base:
                     if type(offsets) is int:
-                        raise Exception('Do not mix JaggedArrays and numpy arrays when calling derived class of lookup_base')
-                    elif type(offsets) is numpy.ndarray and offsets.base is not inputs[i].offsets.base:
-                        raise Exception('All input jagged arrays must have a common structure (offsets)!')
+                        raise Exception(
+                            "Do not mix JaggedArrays and numpy arrays when calling derived class of lookup_base"
+                        )
+                    elif (
+                        type(offsets) is numpy.ndarray
+                        and offsets.base is not inputs[i].offsets.base
+                    ):
+                        raise Exception(
+                            "All input jagged arrays must have a common structure (offsets)!"
+                        )
                 offsets = inputs[i].offsets
                 inputs[i] = inputs[i].content
             elif isinstance(inputs[i], numpy.ndarray):
                 if offsets is not None:
                     if type(offsets) is numpy.ndarray:
-                        raise Exception('do not mix JaggedArrays and numpy arrays when calling a derived class of lookup_base')
+                        raise Exception(
+                            "do not mix JaggedArrays and numpy arrays when calling a derived class of lookup_base"
+                        )
                 offsets = -1
         retval = self._evaluate(*tuple(inputs))
         if offsets is not None and type(offsets) is not int:
