@@ -1,5 +1,7 @@
-from ..util import awkward
-from ..util import numpy as np
+import numpy
+import awkward
+import awkward1
+import numbers
 
 
 class lookup_base(object):
@@ -8,7 +10,33 @@ class lookup_base(object):
         pass
 
     def __call__(self, *args):
-        inputs = list(args)
+        if all(isinstance(x, (numpy.ndarray, numbers.Number)) for x in args):
+            return self._evaluate(*args)
+        elif any(isinstance(x, awkward.JaggedArray) for x in args):
+            return self._call_ak0(list(args))
+
+        def getfunction(inputs, depth):
+            if all(
+                isinstance(x, awkward1.layout.NumpyArray)
+                or not isinstance(
+                    x, (awkward1.layout.Content, awkward1.partition.PartitionedArray)
+                )
+                for x in inputs
+            ):
+                nplike = awkward1.nplike.of(*inputs)
+                if not isinstance(nplike, awkward1.nplike.Numpy):
+                    raise NotImplementedError("support for cupy/jax/etc. numpy extensions")
+                result = self._evaluate(*[nplike.asarray(x) for x in inputs])
+                return lambda: (awkward1.layout.NumpyArray(result),)
+            return None
+
+        behavior = awkward1._util.behaviorof(*args)
+        args = [awkward1.operations.convert.to_layout(arg, allow_record=False, allow_other=True) for arg in args]
+        out = awkward1._util.broadcast_and_apply(args, getfunction, behavior)
+        assert isinstance(out, tuple) and len(out) == 1
+        return awkward1._util.wrap(out[0], behavior)
+
+    def _call_ak0(self, inputs):
         offsets = None
         # TODO: check can use offsets (this should always be true for striped)
         # Alternatively we can just use starts and stops
@@ -17,13 +45,13 @@ class lookup_base(object):
                 if offsets is not None and offsets.base is not inputs[i].offsets.base:
                     if type(offsets) is int:
                         raise Exception('Do not mix JaggedArrays and numpy arrays when calling derived class of lookup_base')
-                    elif type(offsets) is np.ndarray and offsets.base is not inputs[i].offsets.base:
+                    elif type(offsets) is numpy.ndarray and offsets.base is not inputs[i].offsets.base:
                         raise Exception('All input jagged arrays must have a common structure (offsets)!')
                 offsets = inputs[i].offsets
                 inputs[i] = inputs[i].content
-            elif isinstance(inputs[i], np.ndarray):
+            elif isinstance(inputs[i], numpy.ndarray):
                 if offsets is not None:
-                    if type(offsets) is np.ndarray:
+                    if type(offsets) is numpy.ndarray:
                         raise Exception('do not mix JaggedArrays and numpy arrays when calling a derived class of lookup_base')
                 offsets = -1
         retval = self._evaluate(*tuple(inputs))

@@ -248,3 +248,14 @@ def test_rochester():
     mc_err[~hasgen.flatten()] = mc_errsmear.flatten()
     assert(all(np.isclose(mc_err, official_mc_err, atol=1e-8)))
 
+def test_dense_lookup():
+    from coffea.lookup_tools.dense_lookup import dense_lookup
+    import numpy
+    import awkward1
+
+    a = awkward1.Array([[.1, .2], [.3]])
+    lookup = dense_lookup(numpy.ones(shape=(3, 4)), (numpy.linspace(0, 1, 4), numpy.linspace(0, 1, 5)))
+
+    assert lookup(.1, .3) == 1.
+    assert numpy.all(lookup(.1, numpy.array([.3, .5])) == numpy.array([1., 1.]))
+    assert awkward1.to_list(lookup(a, a)) == [[1.0, 1.0], [1.0]]
