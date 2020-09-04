@@ -310,17 +310,53 @@ class LorentzVector(ThreeVector):
     def delta_r(self, other):
         return numpy.sqrt(self.delta_r2(other))
 
-    def nearest(self, other, metric=lambda a, b: a.delta_r(b), return_metric=False):
+    def nearest(
+        self,
+        other,
+        axis=1,
+        metric=lambda a, b: a.delta_r(b),
+        return_metric=False,
+        threshold=None,
+    ):
         """Return nearest object to this one
 
-        The default metric is `delta_r`.
+        Finds item in ``other`` satisfying ``min(metric(self, other))``.
+        The two arrays should be broadcast-compatible on all axes other than the specified
+        axis, which will be used to form a cartesian product. If axis=None, broadcast arrays directly.
+        The return shape will be that of ``self``.
+
+        Parameters
+        ----------
+            other : awkward1.Array
+                Another array with same shape in all but ``axis``
+            axis : int, optional
+                The axis to form the cartesian product (default 1). If None, the metric
+                is directly evaluated on the input arrays (i.e. they should broadcast)
+            metric : callable
+                A function of two arguments, returning a scalar. The default metric is `delta_r`.
+            return_metric : bool, optional
+                If true, return both the closest object and its metric (default false)
+            threshold : Number, optional
+                If set, any objects with ``metric > threshold`` will be masked from the result
         """
-        a, b = awkward1.unzip(awkward1.cartesian([self, other], nested=True))
+        if axis is None:
+            a, b = self, other
+            # NotImplementedError: ak.firsts with axis=-1
+            axis = other.layout.purelist_depth - 2
+        else:
+            a, b = awkward1.unzip(
+                awkward1.cartesian([self, other], axis=axis, nested=True)
+            )
         mval = metric(a, b)
-        mmin = awkward1.argmin(mval, axis=-1)
+        # prefer keepdims=True: awkward-1.0 #434
+        mmin = awkward1.singletons(awkward1.argmin(mval, axis=axis + 1))
+        out = awkward1.firsts(b[mmin], axis=axis + 1)
+        metric = awkward1.firsts(mval[mmin], axis=axis + 1)
+        if threshold is not None:
+            out = out.mask[metric <= threshold]
         if return_metric:
-            return b[mmin], mval[mmin]
-        return b[mmin]
+            return out, metric
+        return out
 
 
 @awkward1.mixin_class(behavior)
