@@ -1,5 +1,6 @@
 from __future__ import print_function, division
 from coffea import processor
+from coffea.processor.executor import uproot
 
 import warnings
 
@@ -29,7 +30,6 @@ def do_dask_job(client, filelist, compression=0):
     assert( hists['cutflow']['Data_pt'] == 84 )
     assert( hists['cutflow']['Data_mass'] == 66 )
     
-
 def do_dask_cached(client, filelist, cachestrategy=None):
     from coffea.processor.test_items import NanoEventsProcessor
     from coffea.processor.dask import register_columncache
@@ -37,7 +37,7 @@ def do_dask_cached(client, filelist, cachestrategy=None):
 
     exe_args = {
         'client': client,
-        'nano': True,
+        'schema': processor.NanoAODSchema,
         'cachestrategy': cachestrategy,
         'savemetrics': True,
         'worker_affinity': True if cachestrategy is not None else False,
@@ -56,8 +56,7 @@ def do_dask_cached(client, filelist, cachestrategy=None):
     assert( hists['cutflow']['Data_mass'] == 66 )
     return hists['worker']
 
-
-def test_dask_local():
+def test_dask_job():
     distributed = pytest.importorskip("distributed", minversion="2.6.0")
     # `python setup.py pytest` doesn't seem to play nicely with separate processses
     client = distributed.Client(processes=False, dashboard_address=None)
@@ -72,6 +71,30 @@ def test_dask_local():
 
     do_dask_job(client, filelist)
     do_dask_job(client, filelist, compression=2)
+
+    filelist = {
+        'ZJets': {'treename': 'Events', 'files': [osp.join(os.getcwd(),'tests/samples/nano_dy.root')]},
+        'Data' : {'treename': 'Events', 'files': [osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')]}
+    }
+
+    do_dask_job(client, filelist)
+
+    client.close()
+
+@pytest.mark.skipif(int(uproot.version.version_info[0])<=3, reason="NanoEventsProcessor requires uproot4 or higher")
+def test_dask_cached():
+    distributed = pytest.importorskip("distributed", minversion="2.6.0")
+    # `python setup.py pytest` doesn't seem to play nicely with separate processses
+    client = distributed.Client(processes=False, dashboard_address=None)
+
+    import os
+    import os.path as osp
+
+    filelist = {
+        'ZJets': [osp.join(os.getcwd(),'tests/samples/nano_dy.root')],
+        'Data' : [osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')]
+    }
+
     do_dask_cached(client, filelist)
     workers1 = do_dask_cached(client, filelist, 'dask-worker')
     assert len(workers1) > 0
@@ -83,10 +106,6 @@ def test_dask_local():
         'Data' : {'treename': 'Events', 'files': [osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')]}
     }
 
-    do_dask_job(client, filelist)
+    do_dask_cached(client, filelist)
 
     client.close()
-
-
-if __name__ == '__main__':
-    test_dask_local()

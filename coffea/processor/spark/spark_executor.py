@@ -11,6 +11,7 @@ from functools import partial
 
 from ..executor import _futures_handler
 from coffea.nanoaod import NanoEvents
+from coffea.nanoevents import schemas
 
 import pyspark
 import pyspark.sql.functions as fn
@@ -72,7 +73,7 @@ class SparkExecutor(object):
         return self._counts
 
     def __call__(self, spark, dfslist, theprocessor, output, thread_workers,
-                 use_df_cache, flatten, nano, status=True, unit='datasets', desc='Processing'):
+                 use_df_cache, flatten, schema, status=True, unit='datasets', desc='Processing'):
         # processor needs to be a global
         global processor_instance, coffea_udf, coffea_udf_flat, coffea_udf_nano
         processor_instance = theprocessor
@@ -110,8 +111,13 @@ class SparkExecutor(object):
                 co_udf = coffea_udf
                 if flatten:
                     co_udf = coffea_udf_flat
-                if nano:
-                    co_udf = coffea_udf_nano
+                if schema is not None:
+                    if issubclass(schema, NanoEvents):
+                        co_udf = coffea_udf_nano
+                    elif issubclass(schema, schemas.BaseSchema):
+                        raise ValueError("The uproot4 version of NanoEvents (%s) has not been implemented yet" % (str(schema.__name__)))
+                    else:
+                        raise ValueError("Expected schema to derive from BaseSchema or be an instance of NanoEvents (%s)" % (str(schema.__name__)))
                 futures.add(executor.submit(self._launch_analysis, ds, df, co_udf, cols_w_ds))
             # wait for the spark jobs to come in
             self._rawresults = {}

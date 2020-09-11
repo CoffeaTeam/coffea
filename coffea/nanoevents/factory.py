@@ -2,7 +2,7 @@ import warnings
 import weakref
 import json
 import awkward1
-import uproot4
+import uproot4 as uproot
 from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
 from coffea.nanoevents.mapping import TrivialOpener, UprootSourceMapping, CachedMapping
 from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema
@@ -49,8 +49,8 @@ class NanoEventsFactory:
 
         Parameters
         ----------
-            file : str or uproot4.reading.ReadOnlyDirectory
-                The filename or already opened file using e.g. ``uproot4.open()``
+            file : str or uproot.reading.ReadOnlyDirectory
+                The filename or already opened file using e.g. ``uproot.open()``
             treepath : str, optional
                 Name of the tree to read in the file
             entry_start : int, optional
@@ -69,14 +69,18 @@ class NanoEventsFactory:
             metadata : dict, optional
                 Arbitrary metadata to add to the `base.NanoEvents` object
             uproot_options : dict, optional
-                Any options to pass to ``uproot4.open``
+                Any options to pass to ``uproot.open``
         """
         if not issubclass(schemaclass, BaseSchema):
             raise RuntimeError("Invalid schema type")
         if isinstance(file, str):
-            tree = uproot4.open(file, **uproot_options)[treepath]
-        elif isinstance(file, uproot4.reading.ReadOnlyDirectory):
+            tree = uproot.open(file, **uproot_options)[treepath]
+        elif isinstance(file, uproot.reading.ReadOnlyDirectory):
             tree = file[treepath]
+        elif "<class 'uproot.rootio.ROOTDirectory'>" == str(type(file)):
+            raise RuntimeError("The file intance (%s) is an uproot3 type, but this module is only compatible with uproot4 or higher" % (str(type(file))))
+        else:
+            raise RuntimeError("Invalid file instance (%s)" % (str(type(file))))
         if entry_start is None or entry_start < 0:
             entry_start = 0
         if entry_stop is None or entry_stop > tree.num_entries:
@@ -114,7 +118,7 @@ class NanoEventsFactory:
             if len(branch):
                 continue
             form = branch.interpretation.awkward_form(None)
-            form = uproot4._util.awkward_form_remove_uproot(awkward1, form)
+            form = uproot._util.awkward_form_remove_uproot(awkward1, form)
             form = json.loads(form.tojson())
             if (
                 form["class"].startswith("ListOffset")

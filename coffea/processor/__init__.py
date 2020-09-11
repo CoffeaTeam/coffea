@@ -27,6 +27,13 @@ from .accumulator import (
     defaultdict_accumulator,
     column_accumulator,
 )
+from ..nanoevents.schemas import (
+    NanoAODSchema,
+    TreeMakerSchema,
+)
+from ..nanoaod.nanoevents import (
+    NanoEvents,
+)
 
 __all__ = [
     'ProcessorABC',
@@ -49,4 +56,7 @@ __all__ = [
     'dict_accumulator',
     'defaultdict_accumulator',
     'column_accumulator',
+    'NanoAODSchema',
+    'TreeMakerSchema',
+    'NanoEvents',
 ]

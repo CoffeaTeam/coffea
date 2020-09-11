@@ -295,6 +295,17 @@ class NanoAODSchema(BaseSchema):
 
 
 class TreeMakerSchema(BaseSchema):
+    """TreeMaker schema builder
+
+    The TreeMaker schema is built from all branches found in the supplied file, based on
+    the naming pattern of the branches. From those arrays, TreeMaker collections are formed
+    as collections of branches grouped by name, where:
+
+    FIX ME
+
+    All collections are then zipped into one `base.NanoEvents` record and returned.
+    """
+
     def __init__(self, base_form):
         super().__init__(base_form)
         self._form["contents"] = self._build_collections(self._form["contents"])
@@ -362,6 +373,7 @@ class TreeMakerSchema(BaseSchema):
             "GenMuons",
             "GenParticles",
             "GenTaus",
+            "GenVertices",
             "Jets",
             "JetsAK8",
             "JetsAK8_subjets",
@@ -379,9 +391,9 @@ class TreeMakerSchema(BaseSchema):
                 continue
             if cname == "JetsAK8":
                 items = [k for k in items if not k.startswith("JetsAK8_subjets")]
-                items.append("JetsAK8_subjetsOffsets")  # FIXME: actually counts
+                items.append("JetsAK8_subjetsCounts")
             if cname == "JetsAK8_subjets":
-                items = [k for k in items if not k.endswith("Offsets")]
+                items = [k for k in items if not k.endswith("Counts")]
             if cname not in branch_forms:
                 collection = zip_forms(
                     {k[len(cname) + 1]: branch_forms.pop(k) for k in items}, cname
@@ -402,9 +414,10 @@ class TreeMakerSchema(BaseSchema):
         nest_jagged_forms(
             branch_forms["JetsAK8"],
             branch_forms.pop("JetsAK8_subjets"),
-            "subjetsOffsets",
+            "subjetsCounts",
             "subjets",
         )
+
         return branch_forms
 
     @property
