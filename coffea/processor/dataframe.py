@@ -1,4 +1,4 @@
-from ..util import awkward
+#from ..util import awkward
 
 try:
     from collections.abc import MutableMapping
@@ -27,14 +27,14 @@ class LazyDataFrame(MutableMapping):
             Remove jagged structure from columns read
     """
     def __init__(self, tree, entrystart=None, entrystop=None, preload_items=None, flatten=False):
-        import uproot
+        import uproot4 as uproot
         self._tree = tree
         self._flatten = flatten
-        self._branchargs = {'awkwardlib': awkward, 'flatten': flatten}
-        entrystart, entrystop = uproot.tree._normalize_entrystartstop(tree.numentries, entrystart, entrystop)
-        self._branchargs['entrystart'] = entrystart
-        self._branchargs['entrystop'] = entrystop
-        self._available = {k.decode('ascii') for k in self._tree.keys()}
+        self._branchargs = {'library': "ak"}  #, 'flatten': flatten}
+        entrystart, entrystop = uproot.behaviors.TBranch._regularize_entries_start_stop(tree.num_entries, entrystart, entrystop)
+        self._branchargs['entry_start'] = entrystart
+        self._branchargs['entry_stop'] = entrystop
+        self._available = {k for k in self._tree.keys()}
         self._dict = {}
         self._materialized = set()
         if preload_items:

@@ -10,7 +10,7 @@ import copy
 import shutil
 import json
 import cloudpickle
-import uproot
+import uproot4 as uproot
 import subprocess
 import re
 import os
@@ -40,16 +40,6 @@ except ImportError:
 
 _PICKLE_PROTOCOL = pickle.HIGHEST_PROTOCOL
 DEFAULT_METADATA_CACHE = LRUCache(100000)
-
-
-# instrument xrootd source
-if not hasattr(uproot.source.xrootd.XRootDSource, '_read_real'):
-    def _read(self, chunkindex):
-        self.bytesread = getattr(self, 'bytesread', 0) + self._chunkbytes
-        return self._read_real(chunkindex)
-
-    uproot.source.xrootd.XRootDSource._read_real = uproot.source.xrootd.XRootDSource._read
-    uproot.source.xrootd.XRootDSource._read = _read
 
 
 class FileMeta(object):
@@ -745,14 +735,6 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
         item, processor_instance = item
     if not isinstance(processor_instance, ProcessorABC):
         processor_instance = cloudpickle.loads(lz4f.decompress(processor_instance))
-    if mmap:
-        localsource = {}
-    else:
-        opts = dict(uproot.FileSource.defaults)
-        opts.update({'parallel': None})
-
-        def localsource(path):
-            return uproot.FileSource(path, **opts)
 
     import warnings
     out = processor_instance.accumulator.identity()

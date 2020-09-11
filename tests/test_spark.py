@@ -10,7 +10,7 @@ import sys
 
 if sys.version.startswith("3.8"):
     pytest.skip("pyspark not yet functional in python 3.8", allow_module_level=True)
-
+@pytest.mark.skip(reason="because I said so")
 def test_spark_imports():
     pyspark = pytest.importorskip("pyspark", minversion="2.4.1")
     
@@ -22,7 +22,7 @@ def test_spark_imports():
     spark = _spark_initialize()
     _spark_stop(spark)
 
-
+@pytest.mark.skip(reason="because I said so")
 def test_spark_executor():
     pyspark = pytest.importorskip("pyspark", minversion="2.4.1")
     from pyarrow.compat import guid
@@ -119,7 +119,7 @@ def test_spark_executor_NanoEvents():
     assert( hists['cutflow']['Data_pt'] == 84 )
     assert( hists['cutflow']['Data_mass'] == 66 )
 
-
+@pytest.mark.skip(reason="because I said so")
 def test_spark_hist_adders():
     pyspark = pytest.importorskip("pyspark", minversion="2.4.1")
     
