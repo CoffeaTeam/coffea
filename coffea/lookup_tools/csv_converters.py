@@ -8,6 +8,11 @@ btag_feval_dims = {0: [1], 1: [1], 2: [1], 3: [2]}
 
 
 def convert_btag_csv_file(csvFilePath):
+    warnings.warn(
+        "Auto-conversion of btag CSV files is deprecated. Try coffea.btag_tools.BTagScaleFactor!",
+        DeprecationWarning,
+    )
+
     fopen = open
     fmode = "rt"
     if ".gz" in csvFilePath:
