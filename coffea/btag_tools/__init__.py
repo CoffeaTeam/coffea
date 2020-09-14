@@ -6,5 +6,5 @@ corrections and uncertainties on columnar data.
 from .btagscalefactor import BTagScaleFactor
 
 __all__ = [
-    'BTagScaleFactor',
+    "BTagScaleFactor",
 ]

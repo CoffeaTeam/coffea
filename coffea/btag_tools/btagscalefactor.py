@@ -4,7 +4,7 @@ from coffea.lookup_tools.dense_mapped_lookup import dense_mapped_lookup
 
 
 class BTagScaleFactor:
-    '''A class holding one complete BTag scale factor for a given working point
+    """A class holding one complete BTag scale factor for a given working point
 
     Parameters
     ----------
@@ -18,20 +18,30 @@ class BTagScaleFactor:
             Defaults to 'comb,comb,incl'
         keep_df : bool, optional
             If set true, keep the parsed dataframe as an attribute (.df) for later inspection
-    '''
+    """
+
     LOOSE, MEDIUM, TIGHT, RESHAPE = range(4)
     FLAV_B, FLAV_C, FLAV_UDSG = range(3)
     _flavor = numpy.array([0, 4, 5, 6])
     _flavor2btvflavor = {0: FLAV_UDSG, 4: FLAV_C, 5: FLAV_B}
-    _wpString = {'loose': LOOSE, 'medium': MEDIUM, 'tight': TIGHT, 'reshape': RESHAPE}
+    _wpString = {"loose": LOOSE, "medium": MEDIUM, "tight": TIGHT, "reshape": RESHAPE}
     _expectedColumns = [
-        'OperatingPoint', 'measurementType', 'sysType', 'jetFlavor', 'etaMin',
-        'etaMax', 'ptMin', 'ptMax', 'discrMin', 'discrMax', 'formula'
+        "OperatingPoint",
+        "measurementType",
+        "sysType",
+        "jetFlavor",
+        "etaMin",
+        "etaMax",
+        "ptMin",
+        "ptMax",
+        "discrMin",
+        "discrMax",
+        "formula",
     ]
 
     @classmethod
     def readcsv(cls, filename):
-        '''Reads a BTag-formmated CSV file into a pandas dataframe
+        """Reads a BTag-formmated CSV file into a pandas dataframe
 
         This function also merges the bin min and max into a tuple representing the bin
 
@@ -46,43 +56,54 @@ class BTagScaleFactor:
                 A dataframe containing all info in the file
             discriminator : str
                 The name of the discriminator the correction map is for
-        '''
+        """
         df = pandas.read_csv(filename, skipinitialspace=True)
-        discriminator = df.columns[0].split(';')[0]
+        discriminator = df.columns[0].split(";")[0]
 
         def cleanup(colname):
-            if ';' in colname:
-                _, colname = colname.split(';')
+            if ";" in colname:
+                _, colname = colname.split(";")
             return colname.strip()
+
         df.rename(columns=cleanup, inplace=True)
         if not list(df.columns) == BTagScaleFactor._expectedColumns:
-            raise RuntimeError('Columns in BTag scale factor file %s as expected' % filename)
-        for var in ['eta', 'pt', 'discr']:
-            df[var + 'Bin'] = list(zip(df[var + 'Min'], df[var + 'Max']))
-            del df[var + 'Min']
-            del df[var + 'Max']
+            raise RuntimeError(
+                "Columns in BTag scale factor file %s as expected" % filename
+            )
+        for var in ["eta", "pt", "discr"]:
+            df[var + "Bin"] = list(zip(df[var + "Min"], df[var + "Max"]))
+            del df[var + "Min"]
+            del df[var + "Max"]
         return df, discriminator
 
-    def __init__(self, filename, workingpoint, methods='comb,comb,incl', keep_df=False):
+    def __init__(self, filename, workingpoint, methods="comb,comb,incl", keep_df=False):
         if workingpoint not in [0, 1, 2, 3]:
             try:
                 workingpoint = BTagScaleFactor._wpString[workingpoint.lower()]
             except (KeyError, AttributeError):
-                raise ValueError('Unrecognized working point')
-        methods = methods.split(',')
+                raise ValueError("Unrecognized working point")
+        methods = methods.split(",")
         self.workingpoint = workingpoint
         df, self.discriminator = BTagScaleFactor.readcsv(filename)
-        cut = (df['jetFlavor'] == self.FLAV_B) & (df['measurementType'] == methods[0])
+        cut = (df["jetFlavor"] == self.FLAV_B) & (df["measurementType"] == methods[0])
         if len(methods) > 1:
-            cut |= (df['jetFlavor'] == self.FLAV_C) & (df['measurementType'] == methods[1])
+            cut |= (df["jetFlavor"] == self.FLAV_C) & (
+                df["measurementType"] == methods[1]
+            )
         if len(methods) > 2:
-            cut |= (df['jetFlavor'] == self.FLAV_UDSG) & (df['measurementType'] == methods[2])
-        cut &= df['OperatingPoint'] == workingpoint
+            cut |= (df["jetFlavor"] == self.FLAV_UDSG) & (
+                df["measurementType"] == methods[2]
+            )
+        cut &= df["OperatingPoint"] == workingpoint
         df = df[cut]
-        mavailable = list(df['measurementType'].unique())
+        mavailable = list(df["measurementType"].unique())
         if not all(m in mavailable for m in methods):
-            raise ValueError('Unrecognized jet correction method, available: %r' % mavailable)
-        df = df.set_index(['sysType', 'jetFlavor', 'etaBin', 'ptBin', 'discrBin']).sort_index()
+            raise ValueError(
+                "Unrecognized jet correction method, available: %r" % mavailable
+            )
+        df = df.set_index(
+            ["sysType", "jetFlavor", "etaBin", "ptBin", "discrBin"]
+        ).sort_index()
         if keep_df:
             self.df = df
         self._corrections = {}
@@ -90,16 +111,33 @@ class BTagScaleFactor:
             corr = df.loc[syst]
             allbins = list(corr.index)
             # NOTE: here we force the class to assume abs(eta) based on lack of examples where signed eta is used
-            edges_eta = numpy.array(sorted(set(abs(x) for tup in corr.index.levels[1] for x in tup)))
-            edges_pt = numpy.array(sorted(set(x for tup in corr.index.levels[2] for x in tup)))
-            edges_discr = numpy.array(sorted(set(x for tup in corr.index.levels[3] for x in tup)))
-            bin_low_edges = numpy.meshgrid(self._flavor[:-1], edges_eta[:-1], edges_pt[:-1], edges_discr[:-1], indexing='ij')
+            edges_eta = numpy.array(
+                sorted(set(abs(x) for tup in corr.index.levels[1] for x in tup))
+            )
+            edges_pt = numpy.array(
+                sorted(set(x for tup in corr.index.levels[2] for x in tup))
+            )
+            edges_discr = numpy.array(
+                sorted(set(x for tup in corr.index.levels[3] for x in tup))
+            )
+            bin_low_edges = numpy.meshgrid(
+                self._flavor[:-1],
+                edges_eta[:-1],
+                edges_pt[:-1],
+                edges_discr[:-1],
+                indexing="ij",
+            )
             mapping = numpy.full(bin_low_edges[0].shape, -1)
 
             def findbin(flavor, eta, pt, discr):
                 btvflavor = self._flavor2btvflavor[flavor]
                 for i, (fbin, ebin, pbin, dbin) in enumerate(allbins):
-                    if btvflavor == fbin and ebin[0] <= eta < ebin[1] and pbin[0] <= pt < pbin[1] and dbin[0] <= discr < dbin[1]:
+                    if (
+                        btvflavor == fbin
+                        and ebin[0] <= eta < ebin[1]
+                        and pbin[0] <= pt < pbin[1]
+                        and dbin[0] <= discr < dbin[1]
+                    ):
                         return i
                 return -1
 
@@ -111,19 +149,19 @@ class BTagScaleFactor:
                 self._corrections[syst] = dense_mapped_lookup(
                     (self._flavor, edges_eta, edges_pt, edges_discr),
                     mapping,
-                    numpy.array(corr['formula']),
+                    numpy.array(corr["formula"]),
                     3,
                 )
             else:
                 self._corrections[syst] = dense_mapped_lookup(
                     (self._flavor, edges_eta, edges_pt),
                     mapping[..., 0],
-                    numpy.array(corr['formula']),
+                    numpy.array(corr["formula"]),
                     2,
                 )
 
     def eval(self, systematic, flavor, abseta, pt, discr=None, ignore_missing=False):
-        '''Evaluate this scale factor as a function of jet properties
+        """Evaluate this scale factor as a function of jet properties
 
         Parameters
         ----------
@@ -148,15 +186,21 @@ class BTagScaleFactor:
         -------
             out : numpy.ndarray or awkward.Array
                 An array with shape matching ``pt``, containing the per-jet scale factor
-        '''
+        """
         if systematic not in self._corrections:
             raise ValueError("Unrecognized systematic: %s" % systematic)
         if self.workingpoint == BTagScaleFactor.RESHAPE:
             if discr is None:
-                raise ValueError('RESHAPE scale factor requires a discriminant array')
-            return self._corrections[systematic](flavor, abseta, pt, discr, ignore_missing)
+                raise ValueError("RESHAPE scale factor requires a discriminant array")
+            return self._corrections[systematic](
+                flavor, abseta, pt, discr, ignore_missing=ignore_missing
+            )
         else:
-            return self._corrections[systematic](flavor, abseta, pt, ignore_missing)
+            return self._corrections[systematic](
+                flavor, abseta, pt, ignore_missing=ignore_missing
+            )
 
-    def __call__(self, systematic, flavor, abseta, pt, discr=None, ignore_missing=False):
+    def __call__(
+        self, systematic, flavor, abseta, pt, discr=None, ignore_missing=False
+    ):
         return self.eval(systematic, flavor, abseta, pt, discr, ignore_missing)

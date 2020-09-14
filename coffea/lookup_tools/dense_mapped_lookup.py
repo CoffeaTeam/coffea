@@ -21,8 +21,10 @@ class dense_mapped_lookup(lookup_base):
             try:
                 return dense_mapped_lookup._formulaCache[formula]
             except KeyError:
-                if 'x' in formula:
-                    feval = eval('lambda x: ' + formula, {'log': numpy.log, 'sqrt': numpy.sqrt})
+                if "x" in formula:
+                    feval = eval(
+                        "lambda x: " + formula, {"log": numpy.log, "sqrt": numpy.sqrt}
+                    )
                     out = numba.jit()(feval)
                 else:
                     out = eval(formula)
@@ -32,26 +34,37 @@ class dense_mapped_lookup(lookup_base):
     def _lookup(self, axis, values):
         if len(axis) == 2:
             return numpy.zeros(shape=values.shape, dtype=numpy.uint)
-        return numpy.clip(numpy.searchsorted(axis, values, side='right') - 1, 0, len(axis) - 2)
+        return numpy.clip(
+            numpy.searchsorted(axis, values, side="right") - 1, 0, len(axis) - 2
+        )
 
     def _evaluate(self, *args, ignore_missing=False):
-        idx = (
-            self._lookup(axis, arg)
-            for axis, arg in zip(self._axes, args)
-        )
+        if len(args) != len(self._axes):
+            raise ValueError(
+                "Incorrect number of arguments specified (expected %d got %d)"
+                % (len(args), len(self._axes))
+            )
+        idx = (self._lookup(axis, arg) for axis, arg in zip(self._axes, args))
         mapidx = self._mapping[tuple(idx)]
-        out = numpy.ones(mapidx.shape, dtype=args[0].dtype)
+        print(args)
+        out = numpy.ones(mapidx.shape, dtype=numpy.common_type(*args))
         for ifunc in numpy.unique(mapidx):
             if ifunc < 0 and not ignore_missing:
-                raise ValueError('No correction was available for some items')
+                raise ValueError("No correction was available for some items")
             func = dense_mapped_lookup._compile(self._formulas[ifunc])
-            where = (mapidx == ifunc)
+            where = mapidx == ifunc
             if isinstance(func, numbers.Number):
                 out[where] = func
             else:
                 if self._feval_dim is None:
                     raise RuntimeError("expected a dimension to pass to the formula")
-                out[where] = func(numpy.clip(args[self._feval_dim][where], self._axes[self._feval_dim][0], self._axes[self._feval_dim][-1]))
+                out[where] = func(
+                    numpy.clip(
+                        args[self._feval_dim][where],
+                        self._axes[self._feval_dim][0],
+                        self._axes[self._feval_dim][-1],
+                    )
+                )
 
         return out
 
