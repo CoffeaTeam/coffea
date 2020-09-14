@@ -5,15 +5,16 @@ import numbers
 
 
 class lookup_base(object):
-    # base class for all objects that do some sort of value or function lookup
+    """Base class for all objects that do some sort of value or function lookup"""
+
     def __init__(self):
         pass
 
-    def __call__(self, *args):
+    def __call__(self, *args, **kwargs):
         if all(isinstance(x, (numpy.ndarray, numbers.Number)) for x in args):
-            return self._evaluate(*args)
+            return self._evaluate(*args, **kwargs)
         elif any(isinstance(x, awkward.JaggedArray) for x in args):
-            return self._call_ak0(list(args))
+            return self._call_ak0(list(args), **kwargs)
 
         def getfunction(inputs, depth):
             if all(
@@ -28,7 +29,7 @@ class lookup_base(object):
                     raise NotImplementedError(
                         "support for cupy/jax/etc. numpy extensions"
                     )
-                result = self._evaluate(*[nplike.asarray(x) for x in inputs])
+                result = self._evaluate(*[nplike.asarray(x) for x in inputs], **kwargs)
                 return lambda: (awkward1.layout.NumpyArray(result),)
             return None
 
@@ -43,7 +44,7 @@ class lookup_base(object):
         assert isinstance(out, tuple) and len(out) == 1
         return awkward1._util.wrap(out[0], behavior)
 
-    def _call_ak0(self, inputs):
+    def _call_ak0(self, inputs, **kwargs):
         offsets = None
         # TODO: check can use offsets (this should always be true for striped)
         # Alternatively we can just use starts and stops
@@ -70,10 +71,10 @@ class lookup_base(object):
                             "do not mix JaggedArrays and numpy arrays when calling a derived class of lookup_base"
                         )
                 offsets = -1
-        retval = self._evaluate(*tuple(inputs))
+        retval = self._evaluate(*tuple(inputs), **kwargs)
         if offsets is not None and type(offsets) is not int:
             retval = awkward.JaggedArray.fromoffsets(offsets, retval)
         return retval
 
-    def _evaluate(self, *args):
+    def _evaluate(self, *args, **kwargs):
         raise NotImplementedError
