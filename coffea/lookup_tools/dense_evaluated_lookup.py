@@ -1,8 +1,7 @@
-from ..lookup_tools.lookup_base import lookup_base
+from coffea.lookup_tools.lookup_base import lookup_base
 
-from ..util import numpy as np
-from ..util import awkward
-from ..util import numba
+import numpy
+import numba
 
 from copy import deepcopy
 
@@ -10,7 +9,7 @@ from copy import deepcopy
 # methods for dealing with b-tag SFs
 @numba.jit(forceobj=True)
 def numba_apply_1d(functions, variables):
-    out = np.empty(variables.shape)
+    out = numpy.empty(variables.shape)
     for i in range(functions.size):
         out[i] = functions[i](variables[i])
     return out
@@ -23,7 +22,7 @@ def numbaize(fstr, varlist):
     """
 
     lstr = "lambda %s: %s" % (",".join(varlist), fstr)
-    func = eval(lstr, {"log": np.log, "sqrt": np.sqrt})
+    func = eval(lstr, {"log": numpy.log, "sqrt": numpy.sqrt})
     nfunc = numba.njit(func)
     return nfunc
 
@@ -34,7 +33,7 @@ class dense_evaluated_lookup(lookup_base):
         super(dense_evaluated_lookup, self).__init__()
         self._dimension = 0
         whattype = type(dims)
-        if whattype == np.ndarray:
+        if whattype == numpy.ndarray:
             self._dimension = 1
         else:
             self._dimension = len(dims)
@@ -48,7 +47,7 @@ class dense_evaluated_lookup(lookup_base):
             or "unicode" in values.dtype.name
             or "bytes" in values.dtype.name
         )  # ....
-        if not isinstance(values, np.ndarray):
+        if not isinstance(values, numpy.ndarray):
             raise TypeError("values is not a numpy array, but %r" % type(values))
         if not vals_are_strings:
             raise Exception("Non-string values passed to dense_evaluated_lookup!")
@@ -56,9 +55,9 @@ class dense_evaluated_lookup(lookup_base):
             raise Exception(
                 "Evaluation dimensions not specified in dense_evaluated_lookup"
             )
-        funcs = np.zeros(shape=values.shape, dtype="O")
+        funcs = numpy.zeros(shape=values.shape, dtype="O")
         for i in range(values.size):
-            idx = np.unravel_index(i, shape=values.shape)
+            idx = numpy.unravel_index(i, shape=values.shape)
             funcs[idx] = numbaize(values[idx], ["x"])
         self._values = deepcopy(funcs)
         # TODO: support for multidimensional functions and functions with variables other than 'x'
@@ -70,13 +69,10 @@ class dense_evaluated_lookup(lookup_base):
 
     def _evaluate(self, *args):
         indices = []
-        for arg in args:
-            if type(arg) == awkward.JaggedArray:
-                raise Exception("JaggedArray in inputs")
         if self._dimension == 1:
             indices.append(
-                np.clip(
-                    np.searchsorted(self._axes, args[0], side="right") - 1,
+                numpy.clip(
+                    numpy.searchsorted(self._axes, args[0], side="right") - 1,
                     0,
                     self._values.shape[0] - 1,
                 )
@@ -84,8 +80,8 @@ class dense_evaluated_lookup(lookup_base):
         else:
             for dim in range(self._dimension):
                 indices.append(
-                    np.clip(
-                        np.searchsorted(self._axes[dim], args[dim], side="right") - 1,
+                    numpy.clip(
+                        numpy.searchsorted(self._axes[dim], args[dim], side="right") - 1,
                         0,
                         self._values.shape[len(self._axes) - dim - 1] - 1,
                     )
