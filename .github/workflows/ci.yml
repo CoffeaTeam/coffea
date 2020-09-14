@@ -84,7 +84,7 @@ jobs:
       run: |
         coverage run --source=coffea/ setup.py pytest
     - name: Test work_queue
-      if: matrix.os == 'ubuntu-latest'
+      if: false and matrix.os == 'ubuntu-latest'
       shell: bash -l {0}
       run: |
         conda create --name coffea-env-${{ matrix.python-version }} python=${{ matrix.python-version }}
