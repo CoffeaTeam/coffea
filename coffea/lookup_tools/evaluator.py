@@ -5,39 +5,41 @@ from .jersf_lookup import jersf_lookup
 from .jec_uncertainty_lookup import jec_uncertainty_lookup
 from .rochester_lookup import rochester_lookup
 
-lookup_types = {'dense_lookup': dense_lookup,
-                'dense_evaluated_lookup': dense_evaluated_lookup,
-                'jme_standard_function': jme_standard_function,
-                'jersf_lookup': jersf_lookup,
-                'jec_uncertainty_lookup': jec_uncertainty_lookup,
-                'rochester_lookup': rochester_lookup
-               }
+lookup_types = {
+    "dense_lookup": dense_lookup,
+    "dense_evaluated_lookup": dense_evaluated_lookup,
+    "jme_standard_function": jme_standard_function,
+    "jersf_lookup": jersf_lookup,
+    "jec_uncertainty_lookup": jec_uncertainty_lookup,
+    "rochester_lookup": rochester_lookup,
+}
 
 
 class evaluator(object):
     """
-        The evaluator class serves as a single point of extry for
-        looking up values of histograms and other functions read in
-        with the extractor class. Stored look ups can be indexed by
-        name and then called through an overloaded __call__ function.
+    The evaluator class serves as a single point of extry for
+    looking up values of histograms and other functions read in
+    with the extractor class. Stored look ups can be indexed by
+    name and then called through an overloaded __call__ function.
 
-        Example::
+    Example::
 
-            #assuming 'eta' and 'pt' are array like objects
-            wgts = "testSF2d scalefactors_Tight_Electron tests/samples/testSF2d.histo.root"
-            extractor.add_weight_sets([wgts])
-            extractor.finalize(reduce_list=['testSF2d'])
-            evaluator = extractor.make_evaluator()
-            out = evaluator["testSF2d"](eta, pt)
+        #assuming 'eta' and 'pt' are array like objects
+        wgts = "testSF2d scalefactors_Tight_Electron tests/samples/testSF2d.histo.root"
+        extractor.add_weight_sets([wgts])
+        extractor.finalize(reduce_list=['testSF2d'])
+        evaluator = extractor.make_evaluator()
+        out = evaluator["testSF2d"](eta, pt)
 
-        The returned value has the same shape as the input arguments.
+    The returned value has the same shape as the input arguments.
 
-        lookup_types is a map of possible contructors for extracted data
+    lookup_types is a map of possible contructors for extracted data
     """
+
     def __init__(self, names, types, primitives):
         """
-            initialize the evaluator from a list of inputs names,
-            lookup types, and input primitive data
+        initialize the evaluator from a list of inputs names,
+        lookup types, and input primitive data
         """
         self._functions = {}
         for key in names.keys():
@@ -46,8 +48,8 @@ class evaluator(object):
             self._functions[key] = lookup_types[lookup_type](*lookup_def)
 
     def __dir__(self):
-        """ dir is overloaded to list all available functions
-            in the evaluator
+        """dir is overloaded to list all available functions
+        in the evaluator
         """
         return self._functions.keys()
 

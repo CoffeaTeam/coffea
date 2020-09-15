@@ -8,6 +8,6 @@ from .extractor import extractor
 from .evaluator import evaluator
 
 __all__ = [
-    'extractor',
-    'evaluator',
+    "extractor",
+    "evaluator",
 ]
