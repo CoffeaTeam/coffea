@@ -46,7 +46,6 @@ class dense_mapped_lookup(lookup_base):
             )
         idx = (self._lookup(axis, arg) for axis, arg in zip(self._axes, args))
         mapidx = self._mapping[tuple(idx)]
-        print(args)
         out = numpy.ones(mapidx.shape, dtype=numpy.common_type(*args))
         for ifunc in numpy.unique(mapidx):
             if ifunc < 0 and not ignore_missing:
