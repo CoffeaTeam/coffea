@@ -1,13 +1,15 @@
 from __future__ import division
 from collections import namedtuple
-from ..util import numpy as np
-from ..processor.accumulator import AccumulatorABC
+import numpy as np
+from coffea.processor.accumulator import AccumulatorABC
+import coffea.util
 import copy
 import functools
 import math
 import numbers
 import re
 import warnings
+import awkward1
 
 # Python 2 and 3 compatibility
 _regex_pattern = re.compile("dummy").__class__
@@ -498,7 +500,10 @@ class Bin(DenseAxis):
         Returns an integer corresponding to the index in the axis where the histogram would be filled.
         The integer range includes flow bins: ``0 = underflow, n+1 = overflow, n+2 = nanflow``
         """
-        if (isinstance(identifier, np.ndarray) and len(identifier.shape) == 1) or isinstance(identifier, numbers.Number):
+        isarray = isinstance(identifier, (awkward1.Array, np.ndarray))
+        if isarray or isinstance(identifier, numbers.Number):
+            if isarray:
+                identifier = coffea.util._ensure_flat(identifier)
             if self._uniform:
                 idx = np.clip(np.floor((identifier - self._lo) * float(self._bins) / (self._hi - self._lo)) + 1, 0, self._bins + 1)
                 if isinstance(idx, np.ndarray):
@@ -946,14 +951,17 @@ class Hist(AccumulatorABC):
         >>> h.fill(species='ducks', x=np.random.normal(size=10), y=np.random.normal(size=10), weight=np.ones(size=10) * 3)
 
         """
+        weight = values.pop("weight", None)
+        if isinstance(weight, (awkward1.Array, np.ndarray)):
+            weight = coffea.util._ensure_flat(weight)
         if not all(d.name in values for d in self._axes):
             missing = ", ".join(d.name for d in self._axes if d.name not in values)
             raise ValueError("Not all axes specified for %r.  Missing: %s" % (self, missing))
-        if not all(name in self._axes or name == 'weight' for name in values):
-            extra = ", ".join(name for name in values if not (name in self._axes or name == 'weight'))
+        if not all(name in self._axes for name in values):
+            extra = ", ".join(name for name in values if name not in self._axes)
             raise ValueError("Unrecognized axes specified for %r.  Extraneous: %s" % (self, extra))
 
-        if "weight" in values and self._sumw2 is None:
+        if weight is not None and self._sumw2 is None:
             self._init_sumw2()
 
         sparse_key = tuple(d.index(values[d.name]) for d in self.sparse_axes())
@@ -965,12 +973,12 @@ class Hist(AccumulatorABC):
         if self.dense_dim() > 0:
             dense_indices = tuple(d.index(values[d.name]) for d in self._axes if isinstance(d, DenseAxis))
             xy = np.atleast_1d(np.ravel_multi_index(dense_indices, self._dense_shape))
-            if "weight" in values:
+            if weight is not None:
                 self._sumw[sparse_key][:] += np.bincount(
-                    xy, weights=values["weight"], minlength=np.array(self._dense_shape).prod()
+                    xy, weights=weight, minlength=np.array(self._dense_shape).prod()
                 ).reshape(self._dense_shape)
                 self._sumw2[sparse_key][:] += np.bincount(
-                    xy, weights=values["weight"] ** 2, minlength=np.array(self._dense_shape).prod()
+                    xy, weights=weight ** 2, minlength=np.array(self._dense_shape).prod()
                 ).reshape(self._dense_shape)
             else:
                 self._sumw[sparse_key][:] += np.bincount(
@@ -981,9 +989,9 @@ class Hist(AccumulatorABC):
                         xy, weights=None, minlength=np.array(self._dense_shape).prod()
                     ).reshape(self._dense_shape)
         else:
-            if "weight" in values:
-                self._sumw[sparse_key] += np.sum(values["weight"])
-                self._sumw2[sparse_key] += np.sum(values["weight"]**2)
+            if weight is not None:
+                self._sumw[sparse_key] += np.sum(weight)
+                self._sumw2[sparse_key] += np.sum(weight**2)
             else:
                 self._sumw[sparse_key] += 1.
                 if self._sumw2 is not None:
