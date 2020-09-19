@@ -37,6 +37,7 @@ A small example::
     assert np.allclose(np.array(abs(2*vec + vec4) / abs(vec)), 3)
 
 """
+import numbers
 import numpy
 import awkward1
 
@@ -102,7 +103,7 @@ class TwoVector:
         )
         return awkward1._util.wrap(out, cache=self.cache, behavior=self.behavior)
 
-    @awkward1.mixin_class_method(numpy.multiply, {float, int})
+    @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
     def prod(self, other):
         return awkward1.zip(
             {"x": self.x * other, "y": self.y * other},
@@ -202,7 +203,7 @@ class ThreeVector(TwoVector):
         )
         return awkward1._util.wrap(out, cache=self.cache, behavior=self.behavior)
 
-    @awkward1.mixin_class_method(numpy.multiply, {float, int})
+    @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
     def prod(self, other):
         return awkward1.zip(
             {"x": self.x * other, "y": self.y * other, "z": self.z * other},
@@ -298,7 +299,7 @@ class LorentzVector(ThreeVector):
         )
         return awkward1._util.wrap(out, cache=self.cache, behavior=self.behavior)
 
-    @awkward1.mixin_class_method(numpy.multiply, {float, int})
+    @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
     def prod(self, other):
         return awkward1.zip(
             {
@@ -418,7 +419,7 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
     def mass2(self):
         return self.mass ** 2
 
-    @awkward1.mixin_class_method(numpy.multiply, {float, int})
+    @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
     def prod(self, other):
         return awkward1.zip(
             {
@@ -480,7 +481,7 @@ class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
     def rho2(self):
         return self.rho ** 2
 
-    @awkward1.mixin_class_method(numpy.multiply, {float, int})
+    @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
     def prod(self, other):
         return awkward1.zip(
             {
