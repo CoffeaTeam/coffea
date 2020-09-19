@@ -92,13 +92,15 @@ class TwoVector:
         )
 
     def sum(self, axis=-1):
-        return awkward1.zip(
+        out = awkward1.zip(
             {
                 "x": awkward1.sum(self.x, axis=axis),
                 "y": awkward1.sum(self.y, axis=axis),
             },
             with_name="TwoVector",
+            highlevel=False,
         )
+        return awkward1._util.wrap(out, cache=self.cache, behavior=self.behavior)
 
     @awkward1.mixin_class_method(numpy.multiply, {float, int})
     def prod(self, other):
@@ -189,14 +191,16 @@ class ThreeVector(TwoVector):
         )
 
     def sum(self, axis=-1):
-        return awkward1.zip(
+        out = awkward1.zip(
             {
                 "x": awkward1.sum(self.x, axis=axis),
                 "y": awkward1.sum(self.y, axis=axis),
                 "z": awkward1.sum(self.z, axis=axis),
             },
             with_name="ThreeVector",
+            highlevel=False,
         )
+        return awkward1._util.wrap(out, cache=self.cache, behavior=self.behavior)
 
     @awkward1.mixin_class_method(numpy.multiply, {float, int})
     def prod(self, other):
@@ -282,7 +286,7 @@ class LorentzVector(ThreeVector):
         )
 
     def sum(self, axis=-1):
-        return awkward1.zip(
+        out = awkward1.zip(
             {
                 "x": awkward1.sum(self.x, axis=axis),
                 "y": awkward1.sum(self.y, axis=axis),
@@ -290,7 +294,9 @@ class LorentzVector(ThreeVector):
                 "t": awkward1.sum(self.t, axis=axis),
             },
             with_name="LorentzVector",
+            highlevel=False,
         )
+        return awkward1._util.wrap(out, cache=self.cache, behavior=self.behavior)
 
     @awkward1.mixin_class_method(numpy.multiply, {float, int})
     def prod(self, other):
