@@ -2,9 +2,9 @@
 
 """
 import awkward
+import awkward1
 import hashlib
-
-from awkward.util import numpy
+import numpy
 import numba
 
 akd = awkward
@@ -51,3 +51,24 @@ def _hash(items):
     # python 3.3 salts hash(), we want it to persist across processes
     x = hashlib.md5(bytes(';'.join(str(x) for x in items), 'ascii'))
     return int(x.hexdigest()[:16], base=16)
+
+
+def _ensure_flat(array, allow_missing=False):
+    """Normalize an array to a flat numpy array or raise ValueError"""
+    if isinstance(array, awkward.AwkwardArray):
+        array = awkward1.from_awkward0(array)
+    elif not isinstance(array, (awkward1.Array, numpy.ndarray)):
+        raise ValueError("Expected a numpy or awkward array, received: %r" % array)
+
+    aktype = awkward1.type(array)
+    if not isinstance(aktype, awkward1.types.ArrayType):
+        raise ValueError("Expected an array type, received: %r" % aktype)
+    isprimitive = isinstance(aktype.type, awkward1.types.PrimitiveType)
+    isoptionprimitive = isinstance(aktype.type, awkward1.types.OptionType) and isinstance(aktype.type.type, awkward1.types.PrimitiveType)
+    if allow_missing and not (isprimitive or isoptionprimitive):
+        raise ValueError("Expected an array of type N * primitive or N * ?primitive, received: %r" % aktype)
+    if not (allow_missing or isprimitive):
+        raise ValueError("Expected an array of type N * primitive, received: %r" % aktype)
+    if isinstance(array, awkward1.Array):
+        array = awkward1.to_numpy(array, allow_missing=allow_missing)
+    return array
