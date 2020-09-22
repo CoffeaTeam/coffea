@@ -82,7 +82,7 @@ jobs:
       env:
         ARROW_PRE_0_15_IPC_FORMAT: 1
       run: |
-        coverage run --source=coffea/ setup.py pytest
+        coverage run --source=coffea/ -m pytest tests
     - name: Test work_queue
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.7
       shell: bash -l {0}
