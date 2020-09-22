@@ -37,6 +37,7 @@ A small example::
     assert np.allclose(np.array(abs(2*vec + vec4) / abs(vec)), 3)
 
 """
+import numbers
 import numpy
 import awkward1
 
@@ -92,15 +93,17 @@ class TwoVector:
         )
 
     def sum(self, axis=-1):
-        return awkward1.zip(
+        out = awkward1.zip(
             {
                 "x": awkward1.sum(self.x, axis=axis),
                 "y": awkward1.sum(self.y, axis=axis),
             },
             with_name="TwoVector",
+            highlevel=False,
         )
+        return awkward1._util.wrap(out, cache=self.cache, behavior=self.behavior)
 
-    @awkward1.mixin_class_method(numpy.multiply, {float, int})
+    @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
     def prod(self, other):
         return awkward1.zip(
             {"x": self.x * other, "y": self.y * other},
@@ -189,16 +192,18 @@ class ThreeVector(TwoVector):
         )
 
     def sum(self, axis=-1):
-        return awkward1.zip(
+        out = awkward1.zip(
             {
                 "x": awkward1.sum(self.x, axis=axis),
                 "y": awkward1.sum(self.y, axis=axis),
                 "z": awkward1.sum(self.z, axis=axis),
             },
             with_name="ThreeVector",
+            highlevel=False,
         )
+        return awkward1._util.wrap(out, cache=self.cache, behavior=self.behavior)
 
-    @awkward1.mixin_class_method(numpy.multiply, {float, int})
+    @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
     def prod(self, other):
         return awkward1.zip(
             {"x": self.x * other, "y": self.y * other, "z": self.z * other},
@@ -282,7 +287,7 @@ class LorentzVector(ThreeVector):
         )
 
     def sum(self, axis=-1):
-        return awkward1.zip(
+        out = awkward1.zip(
             {
                 "x": awkward1.sum(self.x, axis=axis),
                 "y": awkward1.sum(self.y, axis=axis),
@@ -290,9 +295,11 @@ class LorentzVector(ThreeVector):
                 "t": awkward1.sum(self.t, axis=axis),
             },
             with_name="LorentzVector",
+            highlevel=False,
         )
+        return awkward1._util.wrap(out, cache=self.cache, behavior=self.behavior)
 
-    @awkward1.mixin_class_method(numpy.multiply, {float, int})
+    @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
     def prod(self, other):
         return awkward1.zip(
             {
@@ -412,7 +419,7 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
     def mass2(self):
         return self.mass ** 2
 
-    @awkward1.mixin_class_method(numpy.multiply, {float, int})
+    @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
     def prod(self, other):
         return awkward1.zip(
             {
@@ -474,7 +481,7 @@ class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
     def rho2(self):
         return self.rho ** 2
 
-    @awkward1.mixin_class_method(numpy.multiply, {float, int})
+    @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
     def prod(self, other):
         return awkward1.zip(
             {
