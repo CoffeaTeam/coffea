@@ -27,11 +27,11 @@ from .accumulator import (
     defaultdict_accumulator,
     column_accumulator,
 )
-from ..nanoevents.schemas import (
+from coffea.nanoevents.schemas import (
     NanoAODSchema,
     TreeMakerSchema,
 )
-from ..nanoaod.nanoevents import (
+from coffea.nanoaod.nanoevents import (
     NanoEvents,
 )
 

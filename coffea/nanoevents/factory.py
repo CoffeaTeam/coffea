@@ -78,9 +78,9 @@ class NanoEventsFactory:
         elif isinstance(file, uproot.reading.ReadOnlyDirectory):
             tree = file[treepath]
         elif "<class 'uproot.rootio.ROOTDirectory'>" == str(type(file)):
-            raise RuntimeError("The file intance (%s) is an uproot3 type, but this module is only compatible with uproot4 or higher" % (str(type(file))))
+            raise RuntimeError("The file instance (%r) is an uproot3 type, but this module is only compatible with uproot4 or higher" % file)
         else:
-            raise RuntimeError("Invalid file instance (%s)" % (str(type(file))))
+            raise TypeError("Invalid file type (%s)" % (str(type(file))))
         if entry_start is None or entry_start < 0:
             entry_start = 0
         if entry_stop is None or entry_stop > tree.num_entries:

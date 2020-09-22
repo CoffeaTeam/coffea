@@ -115,7 +115,7 @@ class SparkExecutor(object):
                     if issubclass(schema, NanoEvents):
                         co_udf = coffea_udf_nano
                     elif issubclass(schema, schemas.BaseSchema):
-                        raise ValueError("The uproot4 version of NanoEvents (%s) has not been implemented yet" % (str(schema.__name__)))
+                        raise NotImplementedError("The uproot4 version of NanoEvents (%s) has not been implemented yet" % (str(schema.__name__)))
                     else:
                         raise ValueError("Expected schema to derive from BaseSchema or be an instance of NanoEvents (%s)" % (str(schema.__name__)))
                 futures.add(executor.submit(self._launch_analysis, ds, df, co_udf, cols_w_ds))
