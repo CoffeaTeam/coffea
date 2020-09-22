@@ -2,13 +2,13 @@ import pytest
 import os
 import uproot
 from coffea import processor
-from coffea.processor.test_items import NanoEventsProcessor
+from coffea.processor.test_items import NanoEvents0Processor
 from coffea.nanoaod import NanoEvents
 
 
 def test_preloaded_nanoevents():
     columns = ['nMuon','Muon_pt','Muon_eta','Muon_phi','Muon_mass','Muon_charge', 'nJet', 'Jet_eta']
-    p = NanoEventsProcessor(columns=columns)
+    p = NanoEvents0Processor(columns=columns)
 
     tree = uproot.open(os.path.abspath('tests/samples/nano_dy.root'))['Events']
     arrays = tree.arrays(columns, flatten=True, namedecode='ascii')

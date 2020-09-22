@@ -179,10 +179,10 @@ def test_processorabc():
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason='problems with paths on windows')
 def test_lazy_dataframe():
-    import uproot
+    import uproot4
     from coffea.processor import LazyDataFrame
     
-    tree = uproot.open(osp.abspath('tests/samples/nano_dy.root'))['Events']
+    tree = uproot4.open(osp.abspath('tests/samples/nano_dy.root'))['Events']
     entrystart = 0
     entrystop = 100
     
@@ -198,7 +198,7 @@ def test_lazy_dataframe():
     
     assert('Muon_eta' in df.available)
     
-    assert(df.size == tree.numentries)
+    assert(df.size == tree.num_entries)
 
     with pytest.raises(KeyError):
         x = df['notthere']
@@ -206,10 +206,10 @@ def test_lazy_dataframe():
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason='problems with paths on windows')
 def test_lazy_dataframe_getattr():
-    import uproot
+    import uproot4
     from coffea.processor import LazyDataFrame
     
-    tree = uproot.open(osp.abspath('tests/samples/nano_dy.root'))['Events']
+    tree = uproot4.open(osp.abspath('tests/samples/nano_dy.root'))['Events']
     entrystart = 0
     entrystop = 100
     
@@ -223,7 +223,7 @@ def test_lazy_dataframe_getattr():
     
     assert('Muon_eta' in df.available)
     
-    assert(df.size == tree.numentries)
+    assert(df.size == tree.num_entries)
 
     with pytest.raises(AttributeError):
         x = df.notthere

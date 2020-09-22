@@ -44,6 +44,7 @@ class NanoEventsFactory:
         schemaclass=NanoAODSchema,
         metadata=None,
         uproot_options={},
+        access_log=None,
     ):
         """Quickly build NanoEvents from a file
 
@@ -70,6 +71,8 @@ class NanoEventsFactory:
                 Arbitrary metadata to add to the `base.NanoEvents` object
             uproot_options : dict, optional
                 Any options to pass to ``uproot.open``
+            access_log : list, optional
+                Pass a list instance to record which branches were lazily accessed by this instance
         """
         if not issubclass(schemaclass, BaseSchema):
             raise RuntimeError("Invalid schema type")
@@ -78,7 +81,10 @@ class NanoEventsFactory:
         elif isinstance(file, uproot.reading.ReadOnlyDirectory):
             tree = file[treepath]
         elif "<class 'uproot.rootio.ROOTDirectory'>" == str(type(file)):
-            raise RuntimeError("The file instance (%r) is an uproot3 type, but this module is only compatible with uproot4 or higher" % file)
+            raise RuntimeError(
+                "The file instance (%r) is an uproot3 type, but this module is only compatible with uproot4 or higher"
+                % file
+            )
         else:
             raise TypeError("Invalid file type (%s)" % (str(type(file))))
         if entry_start is None or entry_start < 0:
@@ -91,7 +97,9 @@ class NanoEventsFactory:
             "{0}-{1}".format(entry_start, entry_stop),
         )
         uuidpfn = {partition_tuple[0]: tree.file.file_path}
-        mapping = UprootSourceMapping(TrivialOpener(uuidpfn, uproot_options))
+        mapping = UprootSourceMapping(
+            TrivialOpener(uuidpfn, uproot_options), access_log=access_log
+        )
         mapping.preload_tree(partition_tuple[0], partition_tuple[1], tree)
         if persistent_cache is not None:
             mapping = CachedMapping(persistent_cache, mapping)

@@ -10,7 +10,7 @@ import copy
 import shutil
 import json
 import cloudpickle
-import uproot4 as uproot
+import uproot4
 import subprocess
 import re
 import os
@@ -728,6 +728,45 @@ def parsl_executor(items, function, accumulator, **kwargs):
     return accumulator
 
 
+class Uproot3Context(object):
+    def __init__(self, filename, xrootdtimeout, mmap):
+        import uproot
+        xrootdsource = dict(uproot.source.xrootd.XRootDSource.defaults)
+        xrootdsource['timeout'] = xrootdtimeout
+        if mmap:
+            localsource = {}
+        else:
+            opts = dict(uproot.FileSource.defaults)
+            opts.update({'parallel': None})
+
+            def localsource(path):
+                return uproot.FileSource(path, **opts)
+
+        self._opener = lambda: uproot.open(filename, localsource=localsource, xrootdsource=xrootdsource)
+
+    def __enter__(self):
+        self._file = self._opener()
+        return self._file
+
+    def __exit__(self, *_):
+        self._file.source.close()
+
+
+def _get_cache(strategy):
+    cache = None
+    if strategy == 'dask-worker':
+        from distributed import get_worker
+        from coffea.processor.dask import ColumnCache
+        worker = get_worker()
+        try:
+            cache = worker.plugins[ColumnCache.name]
+        except KeyError:
+            # emit warning if not found?
+            pass
+
+    return cache
+
+
 def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                    mmap=False, schema=None, cachestrategy=None, skipbadfiles=False,
                    retries=0, xrootdtimeout=None):
@@ -741,38 +780,25 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
     retry_count = 0
     while retry_count <= retries:
         try:
-            from uproot.source.xrootd import XRootDSource
-            xrootdsource = XRootDSource.defaults
-            xrootdsource['timeout'] = xrootdtimeout
-            if schema is not None:
-                cache = None
-                if cachestrategy == 'dask-worker':
-                    from distributed import get_worker
-                    from .dask import ColumnCache
-                    worker = get_worker()
-                    try:
-                        cache = worker.plugins[ColumnCache.name]
-                    except KeyError:
-                        # emit warning if not found?
-                        pass
-                if issubclass(schema, schemas.BaseSchema):
-                    file = uproot.open(item.filename)
-                    factory = NanoEventsFactory.from_file(
-                        file=file,
-                        treepath=item.treename,
-                        entry_start=item.entrystart,
-                        entry_stop=item.entrystop,
-                        runtime_cache=cache,
-                        schemaclass=schema,
-                        metadata={
-                            'dataset': item.dataset,
-                            'filename': item.filename,
-                        },
-                    )
-                    df = factory.events()
-                elif issubclass(schema, NanoEvents):
-                    file = uproot.open(item.filename, localsource=localsource, xrootdsource=xrootdsource)
-                    df = NanoEvents.from_file(
+            if schema is NanoEvents:
+                # this is the only uproot3-dependent option
+                filecontext = Uproot3Context(item.filename, xrootdtimeout, mmap)
+            else:
+                filecontext = uproot4.open(
+                    item.filename,
+                    timeout=xrootdtimeout,
+                    file_handler=uproot4.MemmapSource if mmap else uproot4.MultithreadedFileSource,
+                )
+            with filecontext as file:
+                if schema is None:
+                    # To deprecate
+                    tree = file[item.treename]
+                    events = LazyDataFrame(tree, item.entrystart, item.entrystop, flatten=flatten)
+                    events['dataset'] = item.dataset
+                    events['filename'] = item.filename
+                elif schema is NanoEvents:
+                    # To deprecate
+                    events = NanoEvents.from_file(
                         file=file,
                         treename=item.treename,
                         entrystart=item.entrystart,
@@ -781,34 +807,41 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                             'dataset': item.dataset,
                             'filename': item.filename,
                         },
-                        cache=cache,
+                        cache=_get_cache(cachestrategy),
                     )
+                elif issubclass(schema, schemas.BaseSchema):
+                    materialized = []
+                    factory = NanoEventsFactory.from_file(
+                        file=file,
+                        treepath=item.treename,
+                        entry_start=item.entrystart,
+                        entry_stop=item.entrystop,
+                        runtime_cache=_get_cache(cachestrategy),
+                        schemaclass=schema,
+                        metadata={
+                            'dataset': item.dataset,
+                            'filename': item.filename,
+                        },
+                        access_log=materialized,
+                    )
+                    events = factory.events()
                 else:
-                    raise ValueError("Expected schema to derive from BaseSchema or be an instance of NanoEvents (%s)" % (str(schema.__name__)))
-            else:
-                file = uproot.open(item.filename, localsource=localsource, xrootdsource=xrootdsource)
-                tree = file[item.treename]
-                df = LazyDataFrame(tree, item.entrystart, item.entrystop, flatten=flatten)
-                df['dataset'] = item.dataset
-                df['filename'] = item.filename
-            tic = time.time()
-            out = processor_instance.process(df)
-            toc = time.time()
-            metrics = dict_accumulator()
-            if savemetrics:
-                if isinstance(file.source, uproot.source.xrootd.XRootDSource):
-                    metrics['bytesread'] = value_accumulator(int, file.source.bytesread)
-                    metrics['dataservers'] = set_accumulator({file.source._source.get_property('DataServer')})
-                metrics['columns'] = set_accumulator(df.materialized)
-                metrics['entries'] = value_accumulator(int, df.size)
-                metrics['processtime'] = value_accumulator(float, toc - tic)
-            wrapped_out = dict_accumulator({'out': out, 'metrics': metrics})
-            if hasattr(uproot, 'reading') and isinstance(file, uproot.reading.ReadOnlyDirectory):
-                file.close()
-            elif hasattr(uproot, 'rootio') and isinstance(file, uproot.rootio.ROOTDirectory):
-                file.source.close()
-            else:
-                raise ValueError("Expected either a ROOTDirectory (uproot3) or ReadOnlyDirectory (uproot4)")
+                    raise ValueError("Expected schema to derive from BaseSchema or NanoEvents, instead got %r" % schema)
+                tic = time.time()
+                out = processor_instance.process(events)
+                toc = time.time()
+                metrics = dict_accumulator()
+                if savemetrics:
+                    if isinstance(file, uproot4.ReadOnlyDirectory):
+                        metrics['bytesread'] = value_accumulator(int, file.file.source.num_requested_bytes)
+                    if issubclass(schema, schemas.BaseSchema):
+                        metrics['columns'] = set_accumulator(materialized)
+                        metrics['entries'] = value_accumulator(int, len(events))
+                    else:
+                        metrics['columns'] = set_accumulator(events.materialized)
+                        metrics['entries'] = value_accumulator(int, events.size)
+                    metrics['processtime'] = value_accumulator(float, toc - tic)
+                return dict_accumulator({'out': out, 'metrics': metrics})
             break
         # catch xrootd errors and optionally skip
         # or retry to read the file
@@ -868,16 +901,11 @@ def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None, align
     retry_count = 0
     while retry_count <= retries:
         try:
-            # add timeout option according to modified uproot numentries defaults
-            xrootdsource = {"timeout": xrootdtimeout, "chunkbytes": 32 * 1024, "limitbytes": 1024**2, "parallel": False}
-            file = uproot.open(item.filename, xrootdsource=xrootdsource)
+            file = uproot4.open(item.filename, timeout=xrootdtimeout)
             tree = file[item.treename]
-            if isinstance(file, uproot.rootio.ROOTDirectory):
-                metadata = {'numentries': tree.numentries, 'uuid': file._context.uuid}
-            else:
-                metadata = {'numentries': tree.num_entries, 'uuid': file.file.fUUID}
+            metadata = {'numentries': tree.num_entries, 'uuid': file.file.fUUID}
             if align_clusters:
-                metadata['clusters'] = [0] + list(c[1] for c in tree.clusters())
+                metadata['clusters'] = tree.common_entry_offsets()
             out = set_accumulator([FileMeta(item.dataset, item.filename, item.treename, metadata)])
             break
         except OSError as e:
@@ -917,8 +945,8 @@ def run_uproot_job(fileset,
     '''A tool to run a processor using uproot for data delivery
 
     A convenience wrapper to submit jobs for a file set, which is a
-    dictionary of dataset: [file list] entries.  Supports only uproot
-    reading, via the LazyDataFrame class.  For more customized processing,
+    dictionary of dataset: [file list] entries.  Supports only uproot TTree
+    reading, via NanoEvents or LazyDataFrame.  For more customized processing,
     e.g. to read other objects from the files and pass them into data frames,
     one can write a similar function in their user code.
 
@@ -942,7 +970,6 @@ def run_uproot_job(fileset,
             `futures_executor`, `dask_executor`, or `parsl_executor` for available options.
             Some options that affect the behavior of this function:
             'savemetrics' saves some detailed metrics for xrootd processing (default False);
-            'flatten' removes any jagged structure from the input files (default False);
             'schema' builds the dataframe as a `NanoEvents` object rather than `LazyDataFrame` (default ``None``);
                 schema options include `NanoEvents`, `NanoAODSchema` and `TreeMakerSchema`
             'processor_compression' sets the compression level used to send processor instance to workers (default 1).
@@ -1053,6 +1080,8 @@ def run_uproot_job(fileset,
 
     # pop all _work_function args here
     savemetrics = executor_args.pop('savemetrics', False)
+    if "flatten" in executor_args:
+        warnings.warn("Executor argument 'flatten' is deprecated, please refactor your processor to accept awkward arrays", DeprecationWarning)
     flatten = executor_args.pop('flatten', False)
     mmap = executor_args.pop('mmap', False)
     schema = executor_args.pop('schema', None)

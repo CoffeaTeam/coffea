@@ -1,6 +1,5 @@
 from __future__ import print_function, division
 from coffea import processor
-from coffea.processor.executor import uproot
 
 import warnings
 
@@ -31,13 +30,13 @@ def do_dask_job(client, filelist, compression=0):
     assert( hists['cutflow']['Data_mass'] == 66 )
     
 def do_dask_cached(client, filelist, cachestrategy=None):
-    from coffea.processor.test_items import NanoEventsProcessor
+    from coffea.processor.test_items import NanoEvents0Processor
     from coffea.processor.dask import register_columncache
     register_columncache(client)
 
     exe_args = {
         'client': client,
-        'schema': processor.NanoAODSchema,
+        'schema': processor.NanoEvents,
         'cachestrategy': cachestrategy,
         'savemetrics': True,
         'worker_affinity': True if cachestrategy is not None else False,
@@ -45,7 +44,7 @@ def do_dask_cached(client, filelist, cachestrategy=None):
     hists, metrics = processor.run_uproot_job(
         filelist,
         'Events',
-        processor_instance=NanoEventsProcessor(canaries=['0001a210a3f8364811eaa29ff5b55c90beef;Events;0;40;Muon_pt']),
+        processor_instance=NanoEvents0Processor(canaries=['0001a210a3f8364811eaa29ff5b55c90beef;Events;0;40;Muon_pt']),
         executor=processor.dask_executor,
         executor_args=exe_args
     )
@@ -81,7 +80,6 @@ def test_dask_job():
 
     client.close()
 
-@pytest.mark.skipif(int(uproot.version.version_info[0])<=3, reason="NanoEventsProcessor requires uproot4 or higher")
 def test_dask_cached():
     distributed = pytest.importorskip("distributed", minversion="2.6.0")
     # `python setup.py pytest` doesn't seem to play nicely with separate processses

@@ -1,3 +1,4 @@
+import awkward1 as ak
 from coffea import hist, processor
 
 
@@ -11,10 +12,10 @@ class NanoEventsProcessor(processor.ProcessorABC):
 
         self._accumulator = processor.dict_accumulator(
             {
-                'mass': hist.Hist("Counts", dataset_axis, mass_axis),
-                'pt': hist.Hist("Counts", dataset_axis, pt_axis),
-                'cutflow': processor.defaultdict_accumulator(int),
-                'worker': processor.set_accumulator(),
+                "mass": hist.Hist("Counts", dataset_axis, mass_axis),
+                "pt": hist.Hist("Counts", dataset_axis, pt_axis),
+                "cutflow": processor.defaultdict_accumulator(int),
+                "worker": processor.set_accumulator(),
             }
         )
 
@@ -29,24 +30,15 @@ class NanoEventsProcessor(processor.ProcessorABC):
     def process(self, events):
         output = self.accumulator.identity()
 
-        dataset = events.metadata['dataset']
+        dataset = events.metadata["dataset"]
 
-        dimuon = events.Muon.choose(2)
-        dimuon = dimuon.i0 + dimuon.i1
+        dimuon = ak.combinations(events.Muon, 2)
+        dimuon = dimuon["0"] + dimuon["1"]
 
-        magickey = events.Muon.array.content.pt.persistentkey
-        if magickey in self._canaries:
-            try:
-                from distributed import get_worker
-                worker = get_worker()
-                output['worker'].add(worker.name)
-            except ValueError:
-                pass
-
-        output['pt'].fill(dataset=dataset, pt=events.Muon.pt.flatten())
-        output['mass'].fill(dataset=dataset, mass=dimuon.mass.flatten())
-        output['cutflow']['%s_pt' % dataset] += sum(events.Muon.counts)
-        output['cutflow']['%s_mass' % dataset] += sum(dimuon.counts)
+        output["pt"].fill(dataset=dataset, pt=ak.flatten(events.Muon.pt))
+        output["mass"].fill(dataset=dataset, mass=ak.flatten(dimuon.mass))
+        output["cutflow"]["%s_pt" % dataset] += sum(ak.num(events.Muon))
+        output["cutflow"]["%s_mass" % dataset] += sum(ak.num(dimuon))
 
         return output
 
