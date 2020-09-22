@@ -1,4 +1,5 @@
 from coffea import (hist,processor)
+from coffea.processor.executor import uproot
 
 import warnings
 
@@ -48,7 +49,7 @@ def test_spark_executor():
                 'Data'  : {'files': ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')], 'treename': 'Events'}
                 }
 
-    from coffea.processor.test_items import NanoTestProcessor, NanoEventsProcessor
+    from coffea.processor.test_items import NanoTestProcessor
     from coffea.processor.spark.spark_executor import spark_executor
 
     columns = ['nMuon','Muon_pt','Muon_eta','Muon_phi','Muon_mass', 'Muon_charge']
@@ -71,10 +72,44 @@ def test_spark_executor():
     assert( hists['cutflow']['ZJets_mass'] == 6 )
     assert( hists['cutflow']['Data_pt'] == 84 )
     assert( hists['cutflow']['Data_mass'] == 66 )
+
+    _spark_stop(spark)
+
+
+@pytest.mark.skipif(int(uproot.version.version_info[0])<=3, reason="NanoEventsProcessor requires uproot4 or higher")
+def test_spark_executor_NanoEvents():
+    pyspark = pytest.importorskip("pyspark", minversion="2.4.1")
+    from pyarrow.compat import guid
     
+    from coffea.processor.spark.detail import (_spark_initialize,
+                                               _spark_make_dfs,
+                                               _spark_stop)
+    from coffea.processor import run_spark_job
+
+    import os
+    import os.path as osp
+
+    import pyspark.sql
+    spark_config = pyspark.sql.SparkSession.builder \
+        .appName('spark-executor-test-%s' % guid()) \
+        .master('local[*]') \
+        .config('spark.sql.execution.arrow.enabled','true') \
+        .config('spark.executor.x509proxyname','x509_u12409') \
+        .config('spark.sql.execution.arrow.maxRecordsPerBatch', 200000)
+
+    spark = _spark_initialize(config=spark_config,log_level='ERROR',spark_progress=False)
+
+    filelist = {'ZJets': {'files': ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dy.root')], 'treename': 'Events' },
+                'Data'  : {'files': ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')], 'treename': 'Events'}
+                }
+
+    from coffea.processor.test_items import NanoEventsProcessor
+    from coffea.processor.spark.spark_executor import spark_executor
+
+    columns = ['nMuon','Muon_pt','Muon_eta','Muon_phi','Muon_mass', 'Muon_charge']
     proc = NanoEventsProcessor(columns=columns)
     hists = run_spark_job(filelist, processor_instance=proc, executor=spark_executor, spark=spark, thread_workers=1,
-                          executor_args={'file_type': 'root', 'nano': True})
+                          executor_args={'file_type': 'root', 'schema': processor.NanoAODSchema})
 
     _spark_stop(spark)
 

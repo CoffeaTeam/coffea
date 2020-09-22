@@ -3,7 +3,6 @@ import concurrent.futures
 from functools import partial
 from itertools import repeat
 import time
-import uproot
 import pickle
 import sys
 import math
@@ -30,6 +29,7 @@ from .dataframe import (
     LazyDataFrame,
 )
 from ..nanoaod import NanoEvents
+from ..nanoevents import NanoEventsFactory, schemas
 from ..util import _hash
 
 try:
@@ -739,7 +739,7 @@ def parsl_executor(items, function, accumulator, **kwargs):
 
 
 def _work_function(item, processor_instance, flatten=False, savemetrics=False,
-                   mmap=False, nano=False, cachestrategy=None, skipbadfiles=False,
+                   mmap=False, schema=None, cachestrategy=None, skipbadfiles=False,
                    retries=0, xrootdtimeout=None):
     if processor_instance == 'heavy':
         item, processor_instance = item
@@ -762,8 +762,7 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
             from uproot.source.xrootd import XRootDSource
             xrootdsource = XRootDSource.defaults
             xrootdsource['timeout'] = xrootdtimeout
-            file = uproot.open(item.filename, localsource=localsource, xrootdsource=xrootdsource)
-            if nano:
+            if schema is not None:
                 cache = None
                 if cachestrategy == 'dask-worker':
                     from distributed import get_worker
@@ -774,18 +773,38 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                     except KeyError:
                         # emit warning if not found?
                         pass
-                df = NanoEvents.from_file(
-                    file=file,
-                    treename=item.treename,
-                    entrystart=item.entrystart,
-                    entrystop=item.entrystop,
-                    metadata={
-                        'dataset': item.dataset,
-                        'filename': item.filename
-                    },
-                    cache=cache,
-                )
+                if issubclass(schema, schemas.BaseSchema):
+                    file = uproot.open(item.filename)
+                    factory = NanoEventsFactory.from_file(
+                        file=file,
+                        treepath=item.treename,
+                        entry_start=item.entrystart,
+                        entry_stop=item.entrystop,
+                        runtime_cache=cache,
+                        schemaclass=schema,
+                        metadata={
+                            'dataset': item.dataset,
+                            'filename': item.filename,
+                        },
+                    )
+                    df = factory.events()
+                elif issubclass(schema, NanoEvents):
+                    file = uproot.open(item.filename, localsource=localsource, xrootdsource=xrootdsource)
+                    df = NanoEvents.from_file(
+                        file=file,
+                        treename=item.treename,
+                        entrystart=item.entrystart,
+                        entrystop=item.entrystop,
+                        metadata={
+                            'dataset': item.dataset,
+                            'filename': item.filename,
+                        },
+                        cache=cache,
+                    )
+                else:
+                    raise ValueError("Expected schema to derive from BaseSchema or be an instance of NanoEvents (%s)" % (str(schema.__name__)))
             else:
+                file = uproot.open(item.filename, localsource=localsource, xrootdsource=xrootdsource)
                 tree = file[item.treename]
                 df = LazyDataFrame(tree, item.entrystart, item.entrystop, flatten=flatten)
                 df['dataset'] = item.dataset
@@ -802,7 +821,12 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                 metrics['entries'] = value_accumulator(int, df.size)
                 metrics['processtime'] = value_accumulator(float, toc - tic)
             wrapped_out = dict_accumulator({'out': out, 'metrics': metrics})
-            file.source.close()
+            if hasattr(uproot, 'reading') and isinstance(file, uproot.reading.ReadOnlyDirectory):
+                file.close()
+            elif hasattr(uproot, 'rootio') and isinstance(file, uproot.rootio.ROOTDirectory):
+                file.source.close()
+            else:
+                raise ValueError("Expected either a ROOTDirectory (uproot3) or ReadOnlyDirectory (uproot4)")
             break
         # catch xrootd errors and optionally skip
         # or retry to read the file
@@ -866,7 +890,10 @@ def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None, align
             xrootdsource = {"timeout": xrootdtimeout, "chunkbytes": 32 * 1024, "limitbytes": 1024**2, "parallel": False}
             file = uproot.open(item.filename, xrootdsource=xrootdsource)
             tree = file[item.treename]
-            metadata = {'numentries': tree.numentries, 'uuid': file._context.uuid}
+            if isinstance(file, uproot.rootio.ROOTDirectory):
+                metadata = {'numentries': tree.numentries, 'uuid': file._context.uuid}
+            else:
+                metadata = {'numentries': tree.num_entries, 'uuid': file.file.fUUID}
             if align_clusters:
                 metadata['clusters'] = [0] + list(c[1] for c in tree.clusters())
             out = set_accumulator([FileMeta(item.dataset, item.filename, item.treename, metadata)])
@@ -934,7 +961,8 @@ def run_uproot_job(fileset,
             Some options that affect the behavior of this function:
             'savemetrics' saves some detailed metrics for xrootd processing (default False);
             'flatten' removes any jagged structure from the input files (default False);
-            'nano' builds the dataframe as a `NanoEvents` object rather than `LazyDataFrame` (default False);
+            'schema' builds the dataframe as a `NanoEvents` object rather than `LazyDataFrame` (default ``None``);
+                schema options include `NanoEvents`, `NanoAODSchema` and `TreeMakerSchema`
             'processor_compression' sets the compression level used to send processor instance to workers (default 1).
             'skipbadfiles' instead of failing on a bad file, skip it (default False)
             'retries' optionally retry n times (default 0)
@@ -957,6 +985,9 @@ def run_uproot_job(fileset,
             (about 1MB depending on the length of filenames, etc.)  If you edit an input file
             (please don't) during a session, the session can be restarted to clear the cache.
     '''
+
+    import warnings
+
     if not isinstance(fileset, (Mapping, str)):
         raise ValueError("Expected fileset to be a mapping dataset: list(files) or filename")
     if not isinstance(processor_instance, ProcessorABC):
@@ -1042,7 +1073,11 @@ def run_uproot_job(fileset,
     savemetrics = executor_args.pop('savemetrics', False)
     flatten = executor_args.pop('flatten', False)
     mmap = executor_args.pop('mmap', False)
+    schema = executor_args.pop('schema', None)
     nano = executor_args.pop('nano', False)
+    if nano:
+        warnings.warn("Please use 'schema': processor.NanoEvents rather than 'nano': True to enable awkward0 NanoEvents processing", DeprecationWarning)
+        schema = NanoEvents
     cachestrategy = executor_args.pop('cachestrategy', None)
     pi_compression = executor_args.pop('processor_compression', 1)
     if pi_compression is None:
@@ -1054,7 +1089,7 @@ def run_uproot_job(fileset,
         flatten=flatten,
         savemetrics=savemetrics,
         mmap=mmap,
-        nano=nano,
+        schema=schema,
         cachestrategy=cachestrategy,
         skipbadfiles=skipbadfiles,
         retries=retries,
@@ -1234,7 +1269,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     executor_args.setdefault('laurelin_version', '1.1.1')
     executor_args.setdefault('treeName', 'Events')
     executor_args.setdefault('flatten', False)
-    executor_args.setdefault('nano', False)
+    executor_args.setdefault('schema', None)
     executor_args.setdefault('cache', True)
     executor_args.setdefault('skipbadfiles', False)
     executor_args.setdefault('retries', 0)
@@ -1242,7 +1277,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     file_type = executor_args['file_type']
     treeName = executor_args['treeName']
     flatten = executor_args['flatten']
-    nano = executor_args['nano']
+    schema = executor_args['schema']
     use_cache = executor_args['cache']
 
     if executor_args['config'] is None:
@@ -1266,7 +1301,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
                                   thread_workers, file_type, treeName)
 
     output = processor_instance.accumulator.identity()
-    executor(spark, dfslist, processor_instance, output, thread_workers, use_cache, flatten, nano)
+    executor(spark, dfslist, processor_instance, output, thread_workers, use_cache, flatten, schema)
     processor_instance.postprocess(output)
 
     if killSpark:
