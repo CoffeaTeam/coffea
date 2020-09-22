@@ -985,6 +985,9 @@ def run_uproot_job(fileset,
             (about 1MB depending on the length of filenames, etc.)  If you edit an input file
             (please don't) during a session, the session can be restarted to clear the cache.
     '''
+
+    import warnings
+
     if not isinstance(fileset, (Mapping, str)):
         raise ValueError("Expected fileset to be a mapping dataset: list(files) or filename")
     if not isinstance(processor_instance, ProcessorABC):
@@ -1071,6 +1074,10 @@ def run_uproot_job(fileset,
     flatten = executor_args.pop('flatten', False)
     mmap = executor_args.pop('mmap', False)
     schema = executor_args.pop('schema', None)
+    nano = executor_args.pop('nano', False)
+    if nano:
+        warnings.warn("Please use 'schema': processor.NanoEvents rather than 'nano': True to enable awkward0 NanoEvents processing", DeprecationWarning)
+        schema = NanoEvents
     cachestrategy = executor_args.pop('cachestrategy', None)
     pi_compression = executor_args.pop('processor_compression', 1)
     if pi_compression is None:
