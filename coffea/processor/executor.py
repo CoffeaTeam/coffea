@@ -1289,6 +1289,10 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     treeName = executor_args['treeName']
     flatten = executor_args['flatten']
     schema = executor_args['schema']
+    nano = executor_args.pop('nano', False)
+    if nano:
+        warnings.warn("Please use 'schema': processor.NanoEvents rather than 'nano': True to enable awkward0 NanoEvents processing", DeprecationWarning)
+        schema = NanoEvents
     use_cache = executor_args['cache']
 
     if executor_args['config'] is None:
