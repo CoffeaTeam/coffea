@@ -112,7 +112,7 @@ class SparkExecutor(object):
                 if flatten:
                     co_udf = coffea_udf_flat
                 if schema is not None:
-                    if issubclass(schema, NanoEvents):
+                    if schema is NanoEvents:
                         co_udf = coffea_udf_nano
                     elif issubclass(schema, schemas.BaseSchema):
                         raise NotImplementedError("The uproot4 version of NanoEvents (%s) has not been implemented yet" % (str(schema.__name__)))

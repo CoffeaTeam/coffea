@@ -24,9 +24,10 @@ class TrivialOpener:
 class UprootSourceMapping(Mapping):
     _debug = False
 
-    def __init__(self, fileopener, cache=None):
+    def __init__(self, fileopener, cache=None, access_log=None):
         self._fileopener = fileopener
         self._cache = cache
+        self._access_log = access_log
         self.setup()
 
     def setup(self):
@@ -83,8 +84,19 @@ class UprootSourceMapping(Mapping):
                 skip = True
                 continue
             elif node == "!load":
-                branch = self._tree(uuid, treepath)[stack.pop()]
-                stack.append(branch.array(entry_start=start, entry_stop=stop))
+                branch = stack.pop()
+                if self._access_log is not None:
+                    self._access_log.append(branch)
+                branch = self._tree(uuid, treepath)[branch]
+                # make sure uproot is single-core since our calling context might not be
+                stack.append(
+                    branch.array(
+                        entry_start=start,
+                        entry_stop=stop,
+                        decompression_executor=uproot4.source.futures.TrivialExecutor(),
+                        interpretation_executor=uproot4.source.futures.TrivialExecutor(),
+                    )
+                )
             elif node.startswith("!"):
                 tname = node[1:]
                 if not hasattr(transforms, tname):

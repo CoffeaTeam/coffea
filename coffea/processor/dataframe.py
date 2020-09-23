@@ -1,9 +1,6 @@
-from ..util import awkward
-
-try:
-    from collections.abc import MutableMapping
-except ImportError:
-    from collections import MutableMapping
+from collections.abc import MutableMapping
+import awkward1
+import uproot4
 
 
 class LazyDataFrame(MutableMapping):
@@ -15,7 +12,7 @@ class LazyDataFrame(MutableMapping):
 
     Parameters
     ----------
-        tree : uproot.TTree
+        tree : uproot4.TTree
             Tree to read
         entrystart : int, optional
             First entry to read, default: 0
@@ -26,15 +23,23 @@ class LazyDataFrame(MutableMapping):
         flatten : bool
             Remove jagged structure from columns read
     """
-    def __init__(self, tree, entrystart=None, entrystop=None, preload_items=None, flatten=False):
-        import uproot
+
+    def __init__(
+        self, tree, entrystart=None, entrystop=None, preload_items=None, flatten=False
+    ):
         self._tree = tree
         self._flatten = flatten
-        self._branchargs = {'awkwardlib': awkward, 'flatten': flatten}
-        entrystart, entrystop = uproot.tree._normalize_entrystartstop(tree.numentries, entrystart, entrystop)
-        self._branchargs['entrystart'] = entrystart
-        self._branchargs['entrystop'] = entrystop
-        self._available = {k.decode('ascii') for k in self._tree.keys()}
+        self._branchargs = {
+            "decompression_executor": uproot4.source.futures.TrivialExecutor(),
+            "interpretation_executor": uproot4.source.futures.TrivialExecutor(),
+        }
+        if entrystart is None or entrystart < 0:
+            entrystart = 0
+        if entrystop is None or entrystop > tree.num_entries:
+            entrystop = tree.num_entries
+        self._branchargs["entry_start"] = entrystart
+        self._branchargs["entry_stop"] = entrystop
+        self._available = {k for k in self._tree.keys()}
         self._dict = {}
         self._materialized = set()
         if preload_items:
@@ -48,7 +53,11 @@ class LazyDataFrame(MutableMapping):
             return self._dict[key]
         elif key in self._tree:
             self._materialized.add(key)
-            self._dict[key] = self._tree[key].array(**self._branchargs)
+            array = self._tree[key].array(**self._branchargs)
+            if self._flatten and isinstance(awkward1.type(array).type, awkward1.types.ListType):
+                array = awkward1.flatten(array)
+            array = awkward1.to_awkward0(array)
+            self._dict[key] = array
             return self._dict[key]
         else:
             raise KeyError(key)
@@ -93,7 +102,7 @@ class LazyDataFrame(MutableMapping):
     @property
     def size(self):
         """Length of column vector"""
-        return (self._branchargs['entrystop'] - self._branchargs['entrystart'])
+        return self._branchargs["entry_stop"] - self._branchargs["entry_start"]
 
     def preload(self, columns):
         """Force loading of several columns
@@ -120,6 +129,7 @@ class PreloadedDataFrame(MutableMapping):
         items : dict
             Mapping of column name to column array
     """
+
     def __init__(self, size, items):
         self._size = size
         self._dict = items
