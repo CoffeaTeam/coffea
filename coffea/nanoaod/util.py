@@ -1,4 +1,3 @@
-import six
 import awkward
 
 
@@ -10,6 +9,5 @@ def _mixin(methods, awkwardtype):
         raise ValueError("Can only mixin methods deriving from awkward Methods ABC")
     newtype = type(methods.__name__ + 'Array', (methods, awkwardtype), {})
     newtype.__dir__ = lambda self: dir(methods) + awkwardtype.__dir__(self)
-    if six.PY3:
-        newtype.__doc__ = methods.__doc__
+    newtype.__doc__ = methods.__doc__
     return newtype
