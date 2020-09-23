@@ -1,5 +1,6 @@
 from collections.abc import MutableMapping
 import awkward1
+import uproot4
 
 
 class LazyDataFrame(MutableMapping):
@@ -28,7 +29,10 @@ class LazyDataFrame(MutableMapping):
     ):
         self._tree = tree
         self._flatten = flatten
-        self._branchargs = {"library": "ak"}
+        self._branchargs = {
+            "decompression_executor": uproot4.source.futures.TrivialExecutor(),
+            "interpretation_executor": uproot4.source.futures.TrivialExecutor(),
+        }
         if entrystart is None or entrystart < 0:
             entrystart = 0
         if entrystop is None or entrystop > tree.num_entries:
