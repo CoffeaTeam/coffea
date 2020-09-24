@@ -1,8 +1,7 @@
-from six import with_metaclass
 from abc import ABCMeta, abstractmethod
 
 
-class ProcessorABC(with_metaclass(ABCMeta)):
+class ProcessorABC(metaclass=ABCMeta):
     '''ABC for a generalized processor
 
     The various data delivery mechanisms (spark, striped, uproot, uproot+futures, condor, ...)
