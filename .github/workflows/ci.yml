@@ -36,15 +36,13 @@ jobs:
     needs: linter
     strategy:
       matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest] #
+        os: [ubuntu-latest, macOS-latest, windows-latest]
         java-version: [1.8]
-        python-version: [3.6, 3.7, 3.8] #
+        python-version: [3.6, 3.7, 3.8]
     name: test coffea (${{ matrix.os }}) - python ${{ matrix.python-version }}, JDK${{ matrix.java-version }}
 
     steps:
     - uses: actions/checkout@master
-    - run: |
-        git fetch --no-tags --prune --depth=1 origin +refs/heads/*:refs/remotes/origin/*
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
@@ -72,42 +70,48 @@ jobs:
         ARROW_PRE_0_15_IPC_FORMAT: 1
       run: |
         pytest --cov-report=xml --cov=coffea tests
-    - name: Set up Conda (Linux/MacOS)
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.7
-      uses: conda-incubator/setup-miniconda@v1.7.0
-      with:
-        auto-update-conda: true
-        python-version: ${{ matrix.python-version }}
-    - name: Test work_queue
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.7
-      shell: bash -l {0}
-      run: |
-        conda create --name coffea-env-${{ matrix.python-version }} python=${{ matrix.python-version }}
-        conda activate coffea-env-${{ matrix.python-version }}
-        conda install -c conda-forge ndcctools dill
-        python -m pip install -I .
-        cd tests
-        python wq.py
     - name: Upload codecov
-      if: success() && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.7
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.7
       run: |
         python -m pip install codecov
         codecov
     - name: Install graphviz
-      if: success()
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.7
       uses: kamiazya/setup-graphviz@v1 
     - name: Install pandoc
-      if: success() && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.7
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.7
       uses: r-lib/actions/setup-pandoc@v1
     - name: Build documentation
-      if: success() && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.7
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.7
       run: |
         source docs/build_docs.sh
     - name: Deploy documentation
-      if: success() && github.event_name != 'pull_request' && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.7
+      if: github.event_name != 'pull_request' && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.7
       uses: crazy-max/ghaction-github-pages@v1.0.1
       with:
         target_branch: gh-pages
         build_dir: docs/build/html
       env:
         GITHUB_PAT: ${{ secrets.GITHUB_OAUTH }}
+
+  testwq:
+    runs-on: ubuntu-latest
+    needs: linter
+    name: test coffea-workqueue
+
+    steps:
+    - uses: actions/checkout@master
+    - name: Set up Conda
+      uses: conda-incubator/setup-miniconda@v1.7.0
+      with:
+        auto-update-conda: true
+        python-version: 3.7
+    - name: Test work_queue
+      shell: bash -l {0}
+      run: |
+        conda create --name coffea-env python=3.7
+        conda activate coffea-env
+        conda install -c conda-forge ndcctools dill
+        python -m pip install .
+        cd tests
+        python wq.py
