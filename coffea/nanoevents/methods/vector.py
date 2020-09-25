@@ -352,7 +352,7 @@ class LorentzVector(ThreeVector):
 
     @property
     def mass(self):
-        """Invariant mass (+, -, -, -)
+        r"""Invariant mass (+, -, -, -)
 
         :math:`\sqrt{t^2-x^2-y^2-z^2}`
         """
@@ -411,7 +411,7 @@ class LorentzVector(ThreeVector):
         return (self.eta - other.eta) ** 2 + self.delta_phi(other) ** 2
 
     def delta_r(self, other):
-        """Distance between two Lorentz vectors in (eta,phi) plane
+        r"""Distance between two Lorentz vectors in (eta,phi) plane
 
         :math:`\sqrt{\Delta\eta^2 + \Delta\phi^2}`
         """
@@ -497,7 +497,7 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
 
     @property
     def mass(self):
-        """Invariant mass (+, -, -, -)
+        r"""Invariant mass (+, -, -, -)
 
         :math:`\sqrt{t^2-x^2-y^2-z^2}`
         """
