@@ -16,11 +16,12 @@ behavior = dict(vector.behavior)
 class Candidate(vector.LorentzVector):
     """A Lorentz vector with charge
 
-    Properties this class requires: x, y, z, t, charge
+    This mixin class requires the parent class to provide items `x`, `y`, `z`, `t`, and `charge`.
     """
 
     @awkward1.mixin_class_method(numpy.add, {"Candidate"})
     def add(self, other):
+        """Add two candidates together elementwise using `x`, `y`, `z`, `t`, and `charge` components"""
         return awkward1.zip(
             {
                 "x": self.x + other.x,
@@ -33,6 +34,7 @@ class Candidate(vector.LorentzVector):
         )
 
     def sum(self, axis=-1):
+        """Sum an array of vectors elementwise using `x`, `y`, `z`, `t`, and `charge` components"""
         return awkward1.zip(
             {
                 "x": awkward1.sum(self.x, axis=axis),
@@ -49,7 +51,7 @@ class Candidate(vector.LorentzVector):
 class PtEtaPhiMCandidate(Candidate, vector.PtEtaPhiMLorentzVector):
     """A Lorentz vector in eta, mass coordinates with charge
 
-    Properties this class requires: pt, eta, phi, mass, charge
+    This mixin class requires the parent class to provide items `x`, `y`, `z`, `t`, and `charge`.
     """
 
     pass
