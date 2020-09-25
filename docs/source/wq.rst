@@ -1,9 +1,10 @@
-.. _coffea+wq:
+.. _intro-coffea-wq:
 
-Coffea + Work Queue
-===================
+Work Queue
+==========
 
-Work Queue is a production framework used to build large scale master-
+`Work Queue <https://cctools.readthedocs.io/en/latest/work_queue/>`_ is a
+production framework used to build large scale master-
 worker applications, developed by the Cooperative Computing Laboratory
 (CCL) at the University of Notre Dame. This executor functions as the
 master program which submits chunks of data as tasks. A remote worker,

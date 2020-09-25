@@ -1,4 +1,7 @@
 from .JaggedCandidateMethods import JaggedCandidateMethods
 from ..util import awkward
 
-JaggedCandidateArray = awkward.Methods.mixin(JaggedCandidateMethods, awkward.JaggedArray)
+class JaggedCandidateArray(JaggedCandidateMethods, awkward.JaggedArray):
+    """Candidate methods mixed in with an awkward0 JaggedArray"""
+
+    pass
