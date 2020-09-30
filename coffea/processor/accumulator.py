@@ -1,4 +1,3 @@
-from six import with_metaclass
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 import numpy
@@ -9,7 +8,7 @@ except ImportError:
     from collections import Set, Mapping
 
 
-class AccumulatorABC(with_metaclass(ABCMeta)):
+class AccumulatorABC(metaclass=ABCMeta):
     '''ABC for an accumulator
 
     Derived class must implement:

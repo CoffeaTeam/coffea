@@ -1,7 +1,11 @@
 """2D, 3D, and Lorentz vector class mixins
 
 These mixins will eventually be superceded by the `vector <https://github.com/scikit-hep/vector>`__ library,
-which will hopefully be feature-compatible.
+which will hopefully be feature-compatible. The 2D vector provides cartesian and polar coordinate attributes,
+where ``r`` represents the polar distance from the origin..  The 3D vector provides cartesian and spherical coordinates,
+where ``rho`` represents the 3D distance from the origin and ``r`` is the axial distance from the z axis, so that it can
+subclass the 2D vector. The Lorentz vector also subclasses the 3D vector, adding ``t`` as the fourth
+cartesian coordinate. Aliases typical of momentum vectors are also provided.
 
 A small example::
 
@@ -49,50 +53,71 @@ behavior = {}
 class TwoVector:
     """A cartesian 2-dimensional vector
 
-    A heavy emphasis towards a momentum vector interpretation is assumed.
-    Properties this class requires: x, y
+    A heavy emphasis towards a momentum vector interpretation is assumed, hence
+    properties like `px` and `py` are provided in addition to `x` and `y`.
+
+    This mixin class requires the parent class to provide items `x` and `y`.
     """
 
     @property
     def r(self):
+        r"""Distance from origin in XY plane
+
+        :math:`\sqrt{x^2+y^2}`
+        """
         return numpy.sqrt(self.r2)
 
     @property
     def phi(self):
+        r"""Polar angle relative to X axis
+
+        :math:`\text{arctan2}(y, x)`
+        """
         return numpy.arctan2(self.y, self.x)
 
     @property
     def px(self):
+        """Alias for `x`"""
         return self.x
 
     @property
     def py(self):
+        """Alias for `y`"""
         return self.y
 
     @property
     def r2(self):
+        """Squared `r`"""
         return self.x ** 2 + self.y ** 2
 
     @property
     def pt2(self):
+        """Alias for `r2`"""
         return self.r2
 
     @property
     def pt(self):
+        """Alias for `r`"""
         return self.r
 
     @awkward1.mixin_class_method(numpy.absolute)
-    def abs(self):
+    def absolute(self):
+        """Returns magnitude of the 2D vector
+
+        Alias for `r`
+        """
         return self.r
 
     @awkward1.mixin_class_method(numpy.add, {"TwoVector"})
     def add(self, other):
+        """Add two vectors together elementwise using `x` and `y` components"""
         return awkward1.zip(
             {"x": self.x + other.x, "y": self.y + other.y},
             with_name="TwoVector",
         )
 
     def sum(self, axis=-1):
+        """Sum an array of vectors elementwise using `x` and `y` components"""
         out = awkward1.zip(
             {
                 "x": awkward1.sum(self.x, axis=axis),
@@ -104,14 +129,15 @@ class TwoVector:
         return awkward1._util.wrap(out, cache=self.cache, behavior=self.behavior)
 
     @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
-    def prod(self, other):
+    def multiply(self, other):
+        """Multiply this vector by a scalar elementwise using `x` and `y` components"""
         return awkward1.zip(
             {"x": self.x * other, "y": self.y * other},
             with_name="TwoVector",
         )
 
     def delta_phi(self, other):
-        """Compute difference in angle
+        """Compute difference in angle between two vectors
 
         Returns a value within [-pi, pi)
         """
@@ -120,31 +146,47 @@ class TwoVector:
 
 @awkward1.mixin_class(behavior)
 class PolarTwoVector(TwoVector):
-    """A polar coordinate 2-d vector
+    """A polar coordinate 2-dimensional vector
 
-    This class overloads the properties r, phi with getitem accessors
-    and provides properties x, y
+    This mixin class requires the parent class to provide items `r` and `phi`.
     Some additional properties are overridden for performance
     """
 
     @property
     def x(self):
+        r"""Cartesian x value
+
+        :math:`r \cos{\phi}`
+        """
         return self.r * numpy.cos(self.phi)
 
     @property
     def y(self):
+        r"""Cartesian y value
+
+        :math:`r \sin{\phi}`
+        """
         return self.r * numpy.sin(self.phi)
 
     @property
     def r(self):
+        r"""Distance from origin in XY plane
+
+        :math:`\sqrt{x^2+y^2}`
+        """
         return self["r"]
 
     @property
     def phi(self):
+        r"""Azimuthal angle relative to X axis in XY plane
+
+        :math:`\text{arctan2}(y, x)`
+        """
         return self["phi"]
 
     @property
     def r2(self):
+        """Squared `r`"""
         return self.r ** 2
 
 
@@ -153,45 +195,63 @@ class ThreeVector(TwoVector):
     """A cartesian 3-dimensional vector
 
     A heavy emphasis towards a momentum vector interpretation is assumed.
-    Properties this class requires: x, y, z
+    This mixin class requires the parent class to provide items `x`, `y`, and `z`.
     """
 
     @property
     def pz(self):
+        """Alias for `z`"""
         return self.z
 
     @property
     def rho2(self):
+        """Squared `rho`"""
         return self.r2 + self.z ** 2
 
     @property
     def rho(self):
+        r"""Distance from origin in 3D
+
+        :math:`\sqrt{x^2+y^2+z^2} = \sqrt{r^2+z^2}`
+        """
         return numpy.sqrt(self.rho2)
 
     @property
     def theta(self):
+        r"""Inclination angle from XY plane
+
+        :math:`\text{arctan2}(r, z)`
+        """
         return numpy.arctan2(self.r, self.z)
 
     @property
     def p2(self):
+        """Squared `p`"""
         return self.rho2
 
     @property
     def p(self):
+        """Alias for `rho`"""
         return self.rho
 
     @awkward1.mixin_class_method(numpy.absolute)
-    def abs(self):
+    def absolute(self):
+        """Returns magnitude of the 3D vector
+
+        Alias for `rho`
+        """
         return self.p
 
     @awkward1.mixin_class_method(numpy.add, {"ThreeVector"})
     def add(self, other):
+        """Add two vectors together elementwise using `x`, `y`, and `z` components"""
         return awkward1.zip(
             {"x": self.x + other.x, "y": self.y + other.y, "z": self.z + other.z},
             with_name="ThreeVector",
         )
 
     def sum(self, axis=-1):
+        """Sum an array of vectors elementwise using `x`, `y`, and `z` components"""
         out = awkward1.zip(
             {
                 "x": awkward1.sum(self.x, axis=axis),
@@ -204,7 +264,8 @@ class ThreeVector(TwoVector):
         return awkward1._util.wrap(out, cache=self.cache, behavior=self.behavior)
 
     @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
-    def prod(self, other):
+    def multiply(self, other):
+        """Multiply this vector by a scalar elementwise using `x`, `y`, and `z` components"""
         return awkward1.zip(
             {"x": self.x * other, "y": self.y * other, "z": self.z * other},
             with_name="ThreeVector",
@@ -213,35 +274,52 @@ class ThreeVector(TwoVector):
 
 @awkward1.mixin_class(behavior)
 class SphericalThreeVector(ThreeVector, PolarTwoVector):
-    """A spherical coordinate 3-d vector
+    """A spherical coordinate 3-dimensional vector
 
-    This class overloads the properties rho, theta with getitem accessors
-    and provides properties r, z
+    This mixin class requires the parent class to provide items `rho`, `theta`, and `phi`.
     Some additional properties are overridden for performance
     """
 
     @property
     def r(self):
+        r"""Distance from origin in XY plane
+
+        :math:`\sqrt{x^2+y^2} = \rho \sin(\theta)`
+        """
         return self.rho * numpy.sin(self.theta)
 
     @property
     def z(self):
+        r"""Cartesian z value
+
+        :math:`\rho \cos(\theta)`
+        """
         return self.rho * numpy.cos(self.theta)
 
     @property
     def rho(self):
+        r"""Distance from origin in 3D
+
+        :math:`\sqrt{x^2+y^2+z^2} = \sqrt{r^2+z^2}`
+        """
         return self["rho"]
 
     @property
     def theta(self):
+        r"""Inclination angle from XY plane
+
+        :math:`\text{arctan2}(r, z)`
+        """
         return self["theta"]
 
     @property
     def p(self):
+        """Alias for `rho`"""
         return self.rho
 
     @property
     def p2(self):
+        """Squared `p`"""
         return self.rho ** 2
 
 
@@ -250,32 +328,47 @@ class LorentzVector(ThreeVector):
     """A cartesian Lorentz vector
 
     A heavy emphasis towards a momentum vector interpretation is assumed.
-    + - - - metric
-    Properties this class requires: x, y, z, t
+    (+, -, -, -) metric
+    This mixin class requires the parent class to provide items `x`, `y`, `z`, and `t`.
     """
 
     @property
     def energy(self):
+        """Alias for `t`"""
         return self.t
 
     @property
     def eta(self):
+        r"""Pseudorapidity
+
+        :math:`-\ln[\tan(\theta/2)] = \text{arcsinh}(z/r)`
+        """
         return numpy.arcsinh(self.z / self.r)
 
     @property
     def mass2(self):
+        """Squared `mass`"""
         return self.t ** 2 - self.p2
 
     @property
     def mass(self):
+        r"""Invariant mass (+, -, -, -)
+
+        :math:`\sqrt{t^2-x^2-y^2-z^2}`
+        """
         return numpy.sqrt(self.mass2)
 
     @awkward1.mixin_class_method(numpy.absolute)
-    def abs(self):
+    def absolute(self):
+        """Magnitude of this Lorentz vector
+
+        Alias for `mass`
+        """
         return self.mass
 
     @awkward1.mixin_class_method(numpy.add, {"LorentzVector"})
     def add(self, other):
+        """Add two vectors together elementwise using `x`, `y`, `z`, and `t` components"""
         return awkward1.zip(
             {
                 "x": self.x + other.x,
@@ -287,6 +380,7 @@ class LorentzVector(ThreeVector):
         )
 
     def sum(self, axis=-1):
+        """Sum an array of vectors elementwise using `x`, `y`, `z`, and `t` components"""
         out = awkward1.zip(
             {
                 "x": awkward1.sum(self.x, axis=axis),
@@ -300,7 +394,8 @@ class LorentzVector(ThreeVector):
         return awkward1._util.wrap(out, cache=self.cache, behavior=self.behavior)
 
     @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
-    def prod(self, other):
+    def multiply(self, other):
+        """Multiply this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components"""
         return awkward1.zip(
             {
                 "x": self.x * other,
@@ -312,9 +407,14 @@ class LorentzVector(ThreeVector):
         )
 
     def delta_r2(self, other):
+        """Squared `delta_r`"""
         return (self.eta - other.eta) ** 2 + self.delta_phi(other) ** 2
 
     def delta_r(self, other):
+        r"""Distance between two Lorentz vectors in (eta,phi) plane
+
+        :math:`\sqrt{\Delta\eta^2 + \Delta\phi^2}`
+        """
         return numpy.sqrt(self.delta_r2(other))
 
     def nearest(
@@ -370,57 +470,95 @@ class LorentzVector(ThreeVector):
 class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
     """A Lorentz vector using pseudorapidity and mass
 
-    This class overloads the pt, eta, phi, mass properties with getitem accessors
-    and provides properties rho, theta, r, z, t
+    This mixin class requires the parent class to provide items `pt`, `eta`, `phi`, and `mass`.
     Some additional properties are overridden for performance
     """
 
     @property
     def pt(self):
+        """Alias for `r`"""
         return self["pt"]
 
     @property
     def eta(self):
+        r"""Pseudorapidity
+
+        :math:`-\ln\tan(\theta/2) = \text{arcsinh}(z/r)`
+        """
         return self["eta"]
 
     @property
     def phi(self):
+        r"""Azimuthal angle relative to X axis in XY plane
+
+        :math:`\text{arctan2}(y, x)`
+        """
         return self["phi"]
 
     @property
     def mass(self):
+        r"""Invariant mass (+, -, -, -)
+
+        :math:`\sqrt{t^2-x^2-y^2-z^2}`
+        """
         return self["mass"]
 
     @property
     def rho(self):
+        r"""Distance from origin in 3D
+
+        :math:`\sqrt{x^2+y^2+z^2} = \sqrt{r^2+z^2}`
+        """
         return self.pt * numpy.cosh(self.eta)
 
     @property
     def theta(self):
-        raise NotImplementedError
+        r"""Inclination angle from XY plane
+
+        :math:`\text{arctan2}(r, z) = 2\text{arctan}(e^{-\eta})`
+        """
+        return 2 * numpy.arctan(numpy.exp(-self.eta))
 
     @property
     def r(self):
+        r"""Distance from origin in XY plane
+
+        :math:`\sqrt{x^2+y^2} = \rho \sin(\theta)`
+        """
         return self.pt
 
     @property
     def z(self):
+        r"""Cartesian z value
+
+        :math:`\rho \cos(\theta) = r \sinh(\eta)`
+        """
         return self.pt * numpy.sinh(self.eta)
 
     @property
     def t(self):
+        r"""Cartesian time component
+
+        :math:`\sqrt{\rho^2+m^2}`
+        """
         return numpy.hypot(self.rho, self.mass)
 
     @property
     def rho2(self):
+        """Squared `rho`"""
         return self.rho ** 2
 
     @property
     def mass2(self):
+        """Squared `mass`"""
         return self.mass ** 2
 
     @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
-    def prod(self, other):
+    def multiply(self, other):
+        """Multiply this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components
+
+        In reality, this multiplies `pt` and `mass` by the scalar quanitity for performance
+        """
         return awkward1.zip(
             {
                 "pt": self.pt * other,
@@ -436,53 +574,87 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
 class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
     """A Lorentz vector using pseudorapidity and energy
 
-    This class overloads the pt, eta, phi, energy, t properties with getitem accessors
-    and provides properties rho, theta, r, z
+    This mixin class requires the parent class to provide items `pt`, `eta`, `phi`, and `energy`.
     Some additional properties are overridden for performance
     """
 
     @property
     def pt(self):
+        """Alias for `r`"""
         return self["pt"]
 
     @property
     def eta(self):
+        r"""Pseudorapidity
+
+        :math:`-\ln\tan(\theta/2) = \text{arcsinh}(z/r)`
+        """
         return self["eta"]
 
     @property
     def phi(self):
+        r"""Azimuthal angle relative to X axis in XY plane
+
+        :math:`\text{arctan2}(y, x)`
+        """
         return self["phi"]
 
     @property
     def energy(self):
+        """Alias for `t`"""
         return self["energy"]
 
     @property
     def t(self):
+        r"""Cartesian time component
+
+        :math:`\sqrt{\rho^2+m^2}`
+        """
         return self["energy"]
 
     @property
     def rho(self):
+        r"""Distance from origin in 3D
+
+        :math:`\sqrt{x^2+y^2+z^2} = \sqrt{r^2+z^2}`
+        """
         return self.pt * numpy.cosh(self.eta)
 
     @property
     def theta(self):
-        raise NotImplementedError
+        r"""Inclination angle from XY plane
+
+        :math:`\text{arctan2}(r, z) = 2\text{arctan}(e^{-\eta})`
+        """
+        return 2 * numpy.arctan(numpy.exp(-self.eta))
 
     @property
     def r(self):
+        r"""Distance from origin in XY plane
+
+        :math:`\sqrt{x^2+y^2} = \rho \sin(\theta)`
+        """
         return self.pt
 
     @property
     def z(self):
+        r"""Cartesian z value
+
+        :math:`r \sinh(\eta)`
+        """
         return self.pt * numpy.sinh(self.eta)
 
     @property
     def rho2(self):
+        """Squared `rho`"""
         return self.rho ** 2
 
     @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
-    def prod(self, other):
+    def multiply(self, other):
+        """Multiply this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components
+
+        In reality, this multiplies `pt` and `energy` by the scalar quanitity for performance
+        """
         return awkward1.zip(
             {
                 "pt": self.pt * other,
