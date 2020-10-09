@@ -1070,11 +1070,11 @@ def run_uproot_job(fileset,
             filemeta = fileset.pop()
             if nchunks[filemeta.dataset] >= maxchunks:
                 continue
+            if skipbadfiles and not filemeta.populated(clusters=align_clusters):
+                continue
             if not filemeta.populated(clusters=align_clusters):
                 filemeta.metadata = metadata_fetcher(filemeta).pop().metadata
                 metadata_cache[filemeta] = filemeta.metadata
-            if skipbadfiles and not filemeta.populated(clusters=align_clusters):
-                continue
             for chunk in filemeta.chunks(chunksize, align_clusters):
                 chunks.append(chunk)
                 nchunks[filemeta.dataset] += 1
