@@ -6,10 +6,10 @@ but have been migrated and updated to be compatible with awkward-array 1.0
 import numpy
 import awkward1
 import coffea.util
-from coffea.processor import dict_accumulator, AccumulatorABC
+import coffea.processor
 
 
-class WeightStatistics(AccumulatorABC):
+class WeightStatistics(coffea.processor.AccumulatorABC):
     def __init__(self, sumw, sumw2, minw, maxw, n):
         self.sumw = sumw
         self.sumw2 = sumw2
@@ -53,7 +53,7 @@ class Weights:
         self._weight = numpy.ones(size)
         self._weights = {}
         self._modifiers = {}
-        self._weightStats = dict_accumulator()
+        self._weightStats = coffea.processor.dict_accumulator()
         self._storeIndividual = storeIndividual
 
     @property

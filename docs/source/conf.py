@@ -16,7 +16,6 @@ import importlib
 from functools import reduce
 import inspect
 import subprocess
-sys.path.insert(0, os.path.abspath('../..'))
 import coffea
 print("sys.path:", sys.path)
 print("coffea version:", coffea.__version__)
@@ -48,10 +47,12 @@ extensions = [
     'sphinx.ext.linkcode',
     'sphinx.ext.napoleon',
     'sphinx_automodapi.automodapi',
+    'sphinx_automodapi.smart_resolver',
 ]
 
 numpydoc_show_class_members = False
 nbsphinx_execute = 'never'
+autosummary_generate = True
 
 def linkcode_resolve(domain, info):
     if domain != 'py':
@@ -78,6 +79,7 @@ templates_path = ['_templates']
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
+    'numpy': ('http://docs.scipy.org/doc/numpy', None),
 }
 
 # The master toctree document.

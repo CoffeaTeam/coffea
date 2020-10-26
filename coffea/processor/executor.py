@@ -245,6 +245,8 @@ _wq_queue = None
 def work_queue_executor(items, function, accumulator, **kwargs):
     """Execute using Work Queue
 
+    For more information, see :ref:`intro-coffea-wq`
+
     Parameters
     ----------
         items : list
@@ -273,8 +275,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         disk : int
             Amount of disk space (in MB) for work queue task. If unset, use a whole worker.
         resources-mode : one of 'fixed', or 'auto'. Default is 'fixed'.
-            'fixed' - allocate cores, memory, and disk specified for each task.
-            'auto'  - use cores, memory, and disk as maximum values to allocate.
+            - 'fixed': allocate cores, memory, and disk specified for each task.
+            - 'auto': use cores, memory, and disk as maximum values to allocate.
                       Useful when the resources used by a task are not known, as
                       it lets work queue find an efficient value for maximum
                       throughput.
@@ -971,16 +973,18 @@ def run_uproot_job(fileset,
         executor_args : dict, optional
             Arguments to pass to executor.  See `iterative_executor`,
             `futures_executor`, `dask_executor`, or `parsl_executor` for available options.
-            Some options that affect the behavior of this function:
-            'savemetrics' saves some detailed metrics for xrootd processing (default False);
-            'schema' builds the dataframe as a `NanoEvents` object rather than `LazyDataFrame` (default ``None``);
-                schema options include `NanoEvents`, `NanoAODSchema` and `TreeMakerSchema`
-            'processor_compression' sets the compression level used to send processor instance to workers (default 1).
-            'skipbadfiles' instead of failing on a bad file, skip it (default False)
-            'retries' optionally retry n times (default 0)
-            'xrootdtimeout' timeout for xrootd read (seconds)
-            'tailtimeout' timeout requirement on job tails (seconds)
-            'align_clusters' aligns the chunks to natural boundaries in the ROOT files
+            Some options are not passed to executors but rather and affect the behavior of the
+            work function itself:
+
+            - ``savemetrics`` saves some detailed metrics for xrootd processing (default False)
+            - ``schema`` builds the dataframe as a `NanoEvents` object rather than `LazyDataFrame`
+              (default ``None``); schema options include `NanoEvents`, `NanoAODSchema` and `TreeMakerSchema`
+            - ``processor_compression`` sets the compression level used to send processor instance to workers (default 1)
+            - ``skipbadfiles`` instead of failing on a bad file, skip it (default False)
+            - ``retries`` optionally retry processing of a chunk on failure (default 0)
+            - ``xrootdtimeout`` timeout for xrootd read (seconds)
+            - ``tailtimeout`` timeout requirement on job tails (seconds)
+            - ``align_clusters`` aligns the chunks to natural boundaries in the ROOT files (default False)
         pre_executor : callable
             A function like executor, used to calculate fileset metadata
             Defaults to executor

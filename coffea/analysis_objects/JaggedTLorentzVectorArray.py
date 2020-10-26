@@ -1,4 +1,8 @@
 import uproot_methods
-from ..util import awkward
+from coffea.util import awkward
 
-JaggedTLorentzVectorArray = awkward.Methods.mixin(uproot_methods.classes.TLorentzVector.ArrayMethods, awkward.JaggedArray)
+
+class JaggedTLorentzVectorArray(uproot_methods.classes.TLorentzVector.ArrayMethods, awkward.JaggedArray):
+    """TLorentzVector methods mixed in with an awkward0 JaggedArray"""
+
+    pass

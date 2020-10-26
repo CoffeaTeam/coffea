@@ -64,7 +64,6 @@ INSTALL_REQUIRES = ['awkward>=0.12.20',
                     'numba>=0.50.0',
                     'numpy>=1.16.0',
                     'scipy>=1.1.0',
-                    'futures; python_version == "2.7"',
                     'tqdm>=4.27.0',
                     'lz4',
                     'cloudpickle>=1.2.3',
@@ -77,7 +76,7 @@ EXTRAS_REQUIRE = {}
 EXTRAS_REQUIRE['spark'] = ['pyspark>=2.4.1,<3.0.0', 'pyarrow>=0.10.0,!=0.14.0', 'jinja2']
 EXTRAS_REQUIRE['parsl'] = ['parsl>=0.7.2']
 EXTRAS_REQUIRE['dask'] = ['dask>=2.6.0', 'distributed>=2.6.0', 'bokeh>=1.3.4', 'blosc']
-EXTRAS_REQUIRE['dev'] = ['flake8', 'pytest', 'pytest-cov']
+EXTRAS_REQUIRE['dev'] = ['flake8', 'pytest', 'pytest-cov', 'sphinx', 'nbsphinx', 'sphinx-rtd-theme', 'sphinx-automodapi']
 
 setup(name="coffea",
       version=get_version(),

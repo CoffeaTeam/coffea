@@ -1,22 +1,58 @@
 from abc import ABCMeta, abstractmethod
+from collections.abc import Set, Mapping
 from collections import defaultdict
 import numpy
 
-try:
-    from collections.abc import Set, Mapping
-except ImportError:
-    from collections import Set, Mapping
-
 
 class AccumulatorABC(metaclass=ABCMeta):
-    '''ABC for an accumulator
+    '''Abstract base class for an accumulator
 
-    Derived class must implement:
+    Accumulators are abstract objects that enable the reduce stage of the typical map-reduce
+    scaleout that we do in Coffea. One concrete example is a histogram. The idea is that an
+    accumulator definition holds enough information to be able to create an empty accumulator
+    (the ``identity()`` method) and add two compatible accumulators together (the ``add()`` method).
+    The former is not strictly necessary, but helps with book-keeping. Here we show an example usage
+    of a few accumulator types. An arbitrary-depth nesting of dictionary accumulators is supported, much
+    like the behavior of directories in ROOT hadd.
+
+    After defining an accumulator::
+
+        from coffea.processor import dict_accumulator, column_accumulator, defaultdict_accumulator
+        from coffea.hist import Hist, Bin
+        import numpy as np
+
+        adef = dict_accumulator({
+            'cutflow': defaultdict_accumulator(int),
+            'pt': Hist("counts", Bin("pt", "$p_T$", 100, 0, 100)),
+            'final_pt': column_accumulator(np.zeros(shape=(0,))),
+        })
+
+    Notice that this function does not mutate ``adef``::
+
+        def fill(n):
+            ptvals = np.random.exponential(scale=30, size=n)
+            cut = ptvals > 200.
+            acc = adef.identity()
+            acc['cutflow']['pt>200'] += cut.sum()
+            acc['pt'].fill(pt=ptvals)
+            acc['final_pt'] += column_accumulator(ptvals[cut])
+            return acc
+
+    As such, we can execute it several times in parallel and reduce the result::
+
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            outputs = executor.map(fill, [2000, 2000])
+
+        combined = sum(outputs, adef.identity())
+
+
+    Derived classes must implement
         - ``identity()``: returns a new object of same type as self,
           such that ``self + self.identity() == self``
         - ``add(other)``: adds an object of same type as self to self
 
-    Concrete implementations are then provided for ``__add__``, ``__radd__``, and ``__iadd__``
+    Concrete implementations are then provided for ``__add__``, ``__radd__``, and ``__iadd__``.
     '''
     @abstractmethod
     def identity(self):

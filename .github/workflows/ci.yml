@@ -86,7 +86,7 @@ jobs:
     - name: Build documentation
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.7
       run: |
-        source docs/build_docs.sh
+        cd docs && make html
     - name: Deploy documentation
       if: github.event_name == 'push' && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.7
       uses: crazy-max/ghaction-github-pages@v1.0.1

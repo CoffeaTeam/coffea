@@ -55,7 +55,7 @@ The necessary dependencies can be installed easily via ``pip`` using the setupto
    - Apache `Spark <https://spark.apache.org/>`_ distributed executor: ``pip install coffea[spark]``
    - `parsl <http://parsl-project.org/>`_ distributed executor: ``pip install coffea[parsl]``
    - `dask <https://distributed.dask.org/en/latest/>`_ distributed executor: ``pip install coffea[dask]``
-   - `Work Queue <https://cctools.readthedocs.io/en/latest/work_queue/>`_ distributed executor: see :ref:`coffea+wq` for installation instructions
+   - `Work Queue <https://cctools.readthedocs.io/en/latest/work_queue/>`_ distributed executor: see :ref:`intro-coffea-wq` for installation instructions
 
 Multiple extras can be installed together via, e.g. ``pip install coffea[dask,spark]``
 
@@ -121,27 +121,29 @@ to make a new kernel available that uses this environment.
 For Developers
 --------------
 
-1. Install development dependencies and download source:
+1. Download source:
 
   .. code-block:: bash
 
-    pip install flake8 pytest coverage
     git clone https://github.com/CoffeaTeam/coffea
 
-2. Install:
+2. Install with development dependencies:
 
   .. code-block:: bash
 
     cd coffea
-    pip install --editable .
-    // to install extras, use .[extra]
+    pip install --editable .[dev]
+    // or if you need to work on the executors, e.g. dask,
+    pip install --editable .[dev,dask]
 
 3. Develop a cool new feature or fix some bugs
 
-4. Test and build documentation:
+4. Lint source, run tests, and build documentation:
 
   .. code-block:: bash
 
-    python setup.py flake8
-    python setup.py pytest
-    source docs/build_docs.sh
+    flake8 coffea
+    pytest tests
+    pushd docs && make html && popd
+
+5. Make a pull request!
