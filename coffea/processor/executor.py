@@ -830,7 +830,10 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                 else:
                     raise ValueError("Expected schema to derive from BaseSchema or NanoEvents, instead got %r" % schema)
                 tic = time.time()
-                out = processor_instance.process(events)
+                try:
+                    out = processor_instance.process(events)
+                except Exception as e:
+                    raise type(e)(str(e) + '\n\n When processing: \n %s \n' % item.filename).with_traceback(sys.exc_info()[2]) from None
                 toc = time.time()
                 metrics = dict_accumulator()
                 if savemetrics:
@@ -1071,11 +1074,11 @@ def run_uproot_job(fileset,
             filemeta = fileset.pop()
             if nchunks[filemeta.dataset] >= maxchunks:
                 continue
+            if skipbadfiles and not filemeta.populated(clusters=align_clusters):
+                continue
             if not filemeta.populated(clusters=align_clusters):
                 filemeta.metadata = metadata_fetcher(filemeta).pop().metadata
                 metadata_cache[filemeta] = filemeta.metadata
-            if skipbadfiles and not filemeta.populated(clusters=align_clusters):
-                continue
             for chunk in filemeta.chunks(chunksize, align_clusters):
                 chunks.append(chunk)
                 nchunks[filemeta.dataset] += 1
