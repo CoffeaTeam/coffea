@@ -39,7 +39,7 @@ class AccumulatorABC(metaclass=ABCMeta):
             return acc
 
     As such, we can execute it several times in parallel and reduce the result::
-        
+
         import concurrent.futures
         with concurrent.futures.ThreadPoolExecutor() as executor:
             outputs = executor.map(fill, [2000, 2000])
