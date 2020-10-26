@@ -87,6 +87,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.7
       run: |
         cd docs && make html
+        touch build/html/.nojekyll
     - name: Deploy documentation
       if: github.event_name == 'push' && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.7
       uses: crazy-max/ghaction-github-pages@v1.0.1
