@@ -833,7 +833,7 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                 try:
                     out = processor_instance.process(events)
                 except Exception as e:
-                    raise type(e)(str(e) + '\n\n When processing: \n %s \n' % item.filename).with_traceback(sys.exc_info()[2]) from None
+                    raise Exception(f"Failed processing file: {item.filename} ({item.entrystart}-{item.entrystop})") from e
                 toc = time.time()
                 metrics = dict_accumulator()
                 if savemetrics:
