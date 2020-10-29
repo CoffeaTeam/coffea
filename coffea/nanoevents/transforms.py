@@ -109,6 +109,7 @@ def local2global(stack):
     target_offsets = stack.pop()
     index = stack.pop()
     index = index.mask[index >= 0] + target_offsets[:-1]
+    index = index.mask[index < target_offsets[1:]]
     out = numpy.array(awkward1.flatten(awkward1.fill_none(index, -1)))
     if out.dtype != numpy.int64:
         raise RuntimeError
