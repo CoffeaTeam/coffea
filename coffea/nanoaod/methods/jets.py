@@ -139,7 +139,6 @@ class Jet(LorentzVector):
             )
             embedded_genjet.__doc__ = genjet.__doc__
             self['matched_gen'] = embedded_genjet
-            del self['genJetIdx']
 
         if 'JetPFCands' in events.columns:
             pfcand_link = events['JetPFCands']

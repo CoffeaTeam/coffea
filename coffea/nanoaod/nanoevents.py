@@ -131,7 +131,7 @@ class NanoCollection(awkward.VirtualArray):
         index.type.takes = self.array.offsets[-1]
         index = awkward.JaggedArray.fromoffsets(self.array.offsets, content=index)
         globalindex = (index + destination.array.starts).flatten()
-        invalid = (index < 0).flatten()
+        invalid = ((destination.array.counts <= index) | (index < 0)).flatten()
         if any(invalid):
             globalindex[invalid] = -1
             # note: parent virtual must derive from this type
