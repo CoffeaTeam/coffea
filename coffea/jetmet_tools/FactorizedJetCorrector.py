@@ -4,6 +4,7 @@ import re
 from ..util import awkward
 from ..util import numpy as np
 from copy import deepcopy
+from functools import reduce
 
 
 def _checkConsistency(against, tocheck):
@@ -150,39 +151,21 @@ class FactorizedJetCorrector(object):
             #'jecs' will be formatted like [[jec_jet1 jec_jet2 ...] ...]
 
         """
-        localargs = {}
-        localargs.update(kwargs)
-        corrVars = []
+        corrVars = {}
         if 'JetPt' in kwargs.keys():
-            corrVars.append('JetPt')
-            localargs['JetPt'] = kwargs['JetPt'].copy()
+            corrVars['JetPt'] = kwargs['JetPt']
+            kwargs.pop('JetPt')
         if 'JetE' in kwargs.keys():
-            corrVars.append('JetE')
-            localargs['JetE'] = kwargs['JetE'].copy()
+            corrVars['JetE'] = kwargs['JetE']
+            kwargs.pop('JetE')
         if len(corrVars) == 0:
             raise Exception('No variable to correct, need JetPt or JetE in inputs!')
-        firstarg = localargs[self._signature[0]]
-        cumulativeCorrection = 1.0
-        counts = None
-        if isinstance(firstarg, awkward.JaggedArray):
-            counts = firstarg.counts
-            cumulativeCorrection = firstarg.ones_like().flatten()
-            for key in localargs.keys():
-                localargs[key] = localargs[key].flatten().copy()
-        else:
-            cumulativeCorrection = np.ones_like(firstarg)
+
         corrections = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
-            args = []
-            for input in sig:
-                args.append(localargs[input])
-            corr = func(*tuple(args))
-            for var in corrVars:
-                localargs[var] *= corr
-            cumulativeCorrection *= corr
-            corrections.append(cumulativeCorrection)
-        if counts is not None:
-            for i in range(len(corrections)):
-                corrections[i] = awkward.JaggedArray.fromcounts(counts, corrections[i])
+            cumCorr = reduce(lambda x, y: x * y, corrections, 1.0)
+            fargs = tuple(cumCorr * corrVars[arg] if arg in corrVars.keys() else kwargs[arg] for arg in sig)
+            corrections.append(func(*fargs))
+
         return corrections

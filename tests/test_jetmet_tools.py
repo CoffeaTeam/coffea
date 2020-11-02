@@ -4,11 +4,14 @@ import sys
 from coffea import lookup_tools
 import uproot
 from coffea.util import awkward
+from coffea.util import awkward1
 from coffea.util import numpy as np
 
 import pytest
 
 from dummy_distributions import dummy_jagged_eta_pt, dummy_four_momenta
+
+awkwardlibs = ["ak0", "ak1"]
 
 
 def jetmet_evaluator():
@@ -34,11 +37,11 @@ def jetmet_evaluator():
 evaluator = jetmet_evaluator()
 
 
-def test_factorized_jet_corrector():
+@pytest.mark.parametrize("awkwardlib", awkwardlibs)
+def test_factorized_jet_corrector(awkwardlib):
     from coffea.jetmet_tools import FactorizedJetCorrector
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
-
     test_Rho = np.full_like(test_eta, 100.)
     test_A = np.full_like(test_eta, 5.)
 
@@ -69,23 +72,38 @@ def test_factorized_jet_corrector():
 
     test_pt_jag = make_starts_stops(counts, test_pt, 5)
     test_eta_jag = make_starts_stops(counts, test_eta, 3)
-
     test_Rho_jag = awkward.JaggedArray.fromcounts(counts, test_Rho)
     test_A_jag = awkward.JaggedArray.fromcounts(counts, test_A)
+    if awkwardlib == "ak1":
+        test_pt_jag = awkward1.from_awkward0(test_pt_jag)
+        test_eta_jag = awkward1.from_awkward0(test_eta_jag)
+        test_Rho_jag = awkward1.from_awkward0(test_Rho_jag)
+        test_A_jag = awkward1.from_awkward0(test_A_jag)
 
     corrs_jag = corrector.getCorrection(JetEta=test_eta_jag, Rho=test_Rho_jag, JetPt=test_pt_jag, JetA=test_A_jag)
 
-    assert((np.abs(pt_copy - test_pt_jag.flatten()) < 1e-6).all())
-    assert((np.abs(corrs - corrs_jag.flatten()) < 1e-6).all())
+    if awkwardlib == "ak1":
+        assert(awkward1.all(np.abs(pt_copy - awkward1.flatten(test_pt_jag)) < 1e-6))
+        assert(awkward1.all(np.abs(corrs - awkward1.flatten(corrs_jag)) < 1e-6))
+    else:
+        assert((np.abs(pt_copy - test_pt_jag.flatten()) < 1e-6).all())
+        assert((np.abs(corrs - corrs_jag.flatten()) < 1e-6).all())
 
 
-
-def test_jet_resolution():
+@pytest.mark.parametrize("awkwardlib", awkwardlibs)
+def test_jet_resolution(awkwardlib):
     from coffea.jetmet_tools import JetResolution
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
-
     test_Rho = np.full_like(test_eta, 100.)
+    
+    test_pt_jag = awkward.JaggedArray.fromcounts(counts, test_pt)
+    test_eta_jag = awkward.JaggedArray.fromcounts(counts, test_eta)
+    test_Rho_jag = awkward.JaggedArray.fromcounts(counts, test_Rho)
+    if awkwardlib == "ak1":
+        test_pt_jag = awkward1.from_awkward0(test_pt_jag)
+        test_eta_jag = awkward1.from_awkward0(test_eta_jag)
+        test_Rho_jag = awkward1.from_awkward0(test_Rho_jag)
 
     jer_names = ['Spring16_25nsV10_MC_PtResolution_AK4PFPuppi']
     reso = JetResolution(**{name: evaluator[name] for name in jer_names})
@@ -93,12 +111,21 @@ def test_jet_resolution():
     print(reso)
 
     resos = reso.getResolution(JetEta=test_eta, Rho=test_Rho, JetPt=test_pt)
+    
+    resos = reso.getResolution(JetEta=test_eta_jag, Rho=test_Rho_jag, JetPt=test_pt_jag)
 
 
-def test_jet_correction_uncertainty():
+@pytest.mark.parametrize("awkwardlib", awkwardlibs)
+def test_jet_correction_uncertainty(awkwardlib):
     from coffea.jetmet_tools import JetCorrectionUncertainty
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
+
+    test_pt_jag = awkward.JaggedArray.fromcounts(counts, test_pt)
+    test_eta_jag = awkward.JaggedArray.fromcounts(counts, test_eta)
+    if awkwardlib == "ak1":
+        test_pt_jag = awkward1.from_awkward0(test_pt_jag)
+        test_eta_jag = awkward1.from_awkward0(test_eta_jag)
 
     junc_names = ['Summer16_23Sep2016V3_MC_Uncertainty_AK4PFPuppi']
     junc = JetCorrectionUncertainty(**{name: evaluator[name] for name in junc_names})
@@ -107,14 +134,27 @@ def test_jet_correction_uncertainty():
 
     juncs = junc.getUncertainty(JetEta=test_eta, JetPt=test_pt)
 
-    for level, corrs in juncs:
+    juncs_jag = list(junc.getUncertainty(JetEta=test_eta_jag, JetPt=test_pt_jag))
+    
+    for i, (level, corrs) in enumerate(juncs):
         assert(corrs.shape[0] == test_eta.shape[0])
+        if awkwardlib == "ak1":
+            assert(awkward1.all(corrs == awkward1.flatten(juncs_jag[i][1])))
+        if awkwardlib == "ak0":
+            assert((corrs == juncs_jag[i][1].flatten()).all())
 
 
-def test_jet_correction_uncertainty_sources():
+@pytest.mark.parametrize("awkwardlib", awkwardlibs)
+def test_jet_correction_uncertainty_sources(awkwardlib):
     from coffea.jetmet_tools import JetCorrectionUncertainty
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
+
+    test_pt_jag = awkward.JaggedArray.fromcounts(counts, test_pt)
+    test_eta_jag = awkward.JaggedArray.fromcounts(counts, test_eta)
+    if awkwardlib == "ak1":
+        test_pt_jag = awkward1.from_awkward0(test_pt_jag)
+        test_eta_jag = awkward1.from_awkward0(test_eta_jag)
 
     junc_names = []
     levels = []
@@ -122,21 +162,38 @@ def test_jet_correction_uncertainty_sources():
         if 'Summer16_23Sep2016V3_MC_UncertaintySources_AK4PFPuppi' in name:
             junc_names.append(name)
             levels.append(name.split('_')[-1])
+        #test for underscore in dataera
+        if 'Fall17_17Nov2017_V6_MC_UncertaintySources_AK4PFchs_AbsoluteFlavMap' in name:
+            junc_names.append(name)
+            levels.append(name.split('_')[-1])
     junc = JetCorrectionUncertainty(**{name: evaluator[name] for name in junc_names})
 
     print(junc)
 
     juncs = junc.getUncertainty(JetEta=test_eta, JetPt=test_pt)
-
-    for level, corrs in juncs:
+    
+    juncs_jag = list(junc.getUncertainty(JetEta=test_eta_jag, JetPt=test_pt_jag))
+    
+    for i, (level, corrs) in enumerate(juncs):
         assert(level in levels)
         assert(corrs.shape[0] == test_eta.shape[0])
+        if awkwardlib == "ak1":
+            assert(awkward1.all(corrs == awkward1.flatten(juncs_jag[i][1])))
+        if awkwardlib == "ak0":
+            assert((corrs == juncs_jag[i][1].flatten()).all())
 
 
-def test_jet_correction_regrouped_uncertainty_sources():
+@pytest.mark.parametrize("awkwardlib", awkwardlibs)
+def test_jet_correction_regrouped_uncertainty_sources(awkwardlib):
     from coffea.jetmet_tools import JetCorrectionUncertainty
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
+
+    test_pt_jag = awkward.JaggedArray.fromcounts(counts, test_pt)
+    test_eta_jag = awkward.JaggedArray.fromcounts(counts, test_eta)
+    if awkwardlib == "ak1":
+        test_pt_jag = awkward1.from_awkward0(test_pt_jag)
+        test_eta_jag = awkward1.from_awkward0(test_eta_jag)
 
     junc_names = []
     levels = []
@@ -151,14 +208,27 @@ def test_jet_correction_regrouped_uncertainty_sources():
 
     print(junc)
 
-    for tpl in list(junc.getUncertainty(JetEta=test_eta, JetPt=test_pt)):
+    juncs_jag = list(junc.getUncertainty(JetEta=test_eta_jag, JetPt=test_pt_jag))
+
+    for i, tpl in enumerate(list(junc.getUncertainty(JetEta=test_eta, JetPt=test_pt))):
         assert(tpl[0] in levels)
         assert(tpl[1].shape[0] == test_eta.shape[0])
+        if awkwardlib == "ak1":
+            assert(awkward1.all(tpl[1] == awkward1.flatten(juncs_jag[i][1])))
+        if awkwardlib == "ak0":
+            assert((tpl[1] == juncs_jag[i][1].flatten()).all())
 
-def test_jet_resolution_sf():
+@pytest.mark.parametrize("awkwardlib", awkwardlibs)
+def test_jet_resolution_sf(awkwardlib):
     from coffea.jetmet_tools import JetResolutionScaleFactor
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
+
+    test_pt_jag = awkward.JaggedArray.fromcounts(counts, test_pt)
+    test_eta_jag = awkward.JaggedArray.fromcounts(counts, test_eta)
+    if awkwardlib == "ak1":
+        test_pt_jag = awkward1.from_awkward0(test_pt_jag)
+        test_eta_jag = awkward1.from_awkward0(test_eta_jag)
 
     jersf_names = ['Spring16_25nsV10_MC_SF_AK4PFPuppi']
     resosf = JetResolutionScaleFactor(**{name: evaluator[name] for name in jersf_names})
@@ -166,12 +236,31 @@ def test_jet_resolution_sf():
     print(resosf)
 
     resosfs = resosf.getScaleFactor(JetEta=test_eta)
+    
+    resosfs_jag = resosf.getScaleFactor(JetEta=test_eta_jag)
+    
+    if awkwardlib == "ak1":
+        assert(awkward1.all(resosfs == awkward1.flatten(resosfs_jag)))
+    if awkwardlib == "ak0":
+        assert((resosfs == resosfs_jag.flatten()).all())
 
-def test_jet_resolution_sf_2d():
+@pytest.mark.parametrize("awkwardlib", awkwardlibs)
+def test_jet_resolution_sf_2d(awkwardlib):
     from coffea.jetmet_tools import JetResolutionScaleFactor
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
+    
+    test_pt_jag = awkward.JaggedArray.fromcounts(counts, test_pt)
+    test_eta_jag = awkward.JaggedArray.fromcounts(counts, test_eta)
+    if awkwardlib == "ak1":
+        test_pt_jag = awkward1.from_awkward0(test_pt_jag)
+        test_eta_jag = awkward1.from_awkward0(test_eta_jag)
+    
     resosf = JetResolutionScaleFactor(**{name: evaluator[name] for name in ["Autumn18_V7_MC_SF_AK4PFchs"]})
+    
     resosfs = resosf.getScaleFactor(JetPt=test_pt, JetEta=test_eta)
+    
+    resosfs_jag = resosf.getScaleFactor(JetPt=test_pt_jag, JetEta=test_eta_jag)
+    
 
 def test_jet_transformer():
     import numpy as np
@@ -251,28 +340,3 @@ def test_jet_transformer():
         assert('mass_'+unc+'_down' in jets.columns)
         assert('pt_'+unc+'_up' in met.columns)
         assert('phi_'+unc+'_up' in met.columns)
-
-def test_jet_correction_uncertainty_sources():
-    from coffea.jetmet_tools import JetCorrectionUncertainty
-
-    counts, test_eta, test_pt = dummy_jagged_eta_pt()
-
-    junc_names = []
-    levels = []
-    for name in dir(evaluator):
-        if 'Summer16_23Sep2016V3_MC_UncertaintySources_AK4PFPuppi' in name:
-            junc_names.append(name)
-            levels.append(name.split('_')[-1])
-        #test for underscore in dataera
-        if 'Fall17_17Nov2017_V6_MC_UncertaintySources_AK4PFchs_AbsoluteFlavMap' in name:
-            junc_names.append(name)
-            levels.append(name.split('_')[-1])
-    junc = JetCorrectionUncertainty(**{name: evaluator[name] for name in junc_names})
-
-    print(junc)
-
-    juncs = junc.getUncertainty(JetEta=test_eta, JetPt=test_pt)
-
-    for level, corrs in juncs:
-        assert(level in levels)
-        assert(corrs.shape[0] == test_eta.shape[0])
