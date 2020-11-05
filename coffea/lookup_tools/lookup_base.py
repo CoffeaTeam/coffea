@@ -42,7 +42,7 @@ class lookup_base(object):
         ]
         out = awkward1._util.broadcast_and_apply(args, getfunction, behavior)
         assert isinstance(out, tuple) and len(out) == 1
-        return awkward1._util.wrap(out[0], behavior)
+        return awkward1._util.wrap(out[0], behavior=behavior)
 
     def _call_ak0(self, inputs, **kwargs):
         offsets = None
