@@ -58,7 +58,7 @@ def get_description():
 INSTALL_REQUIRES = ['awkward>=0.12.20',
                     'uproot-methods>=0.7.3',
                     'uproot>=3.11.0',
-                    'awkward1>=0.3.0',
+                    'awkward1>=0.4.3',
                     'uproot4>=0.0.17',
                     'matplotlib>=3',
                     'numba>=0.50.0',

@@ -165,7 +165,7 @@ class NanoEventsFactory:
                 sep="/",
                 lazy=True,
                 lazy_lengths=len(self),
-                lazy_cache="attach" if self._cache is None else self._cache,
+                lazy_cache="new" if self._cache is None else self._cache,
                 behavior=behavior,
             )
             self._events = weakref.ref(events)
