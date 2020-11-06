@@ -2,6 +2,7 @@ from ..lookup_tools.jme_standard_function import jme_standard_function
 import warnings
 import re
 from ..util import awkward
+from ..util import awkward1
 from ..util import numpy as np
 from copy import deepcopy
 
@@ -137,8 +138,15 @@ class JetResolution(object):
         resos = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
-            args = []
-            for input in sig:
-                args.append(kwargs[input])
-            resos.append(func(*tuple(args)))
+            args = tuple(kwargs[input] for input in sig)
+
+            if isinstance(args[0], awkward.array.base.AwkwardArray):
+                resos.append(awkward.VirtualArray(func, args=args))
+            elif isinstance(args[0], np.ndarray):
+                resos.append(func(*args))  # np is non-lazy
+            elif isinstance(args[0], awkward1.highlevel.Array):
+                resos.append(awkward1.virtual(func, args=args))
+            else:
+                raise Exception('Unknown array library for inputs.')
+
         return resos[-1]

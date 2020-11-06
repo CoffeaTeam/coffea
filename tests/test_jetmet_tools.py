@@ -7,7 +7,7 @@ from coffea.util import awkward
 from coffea.util import awkward1
 from coffea.util import numpy as np
 
-import pytest
+import pytest, time
 
 from dummy_distributions import dummy_jagged_eta_pt, dummy_four_momenta
 
@@ -173,14 +173,16 @@ def test_jet_correction_uncertainty_sources(awkwardlib):
     juncs = junc.getUncertainty(JetEta=test_eta, JetPt=test_pt)
     
     juncs_jag = list(junc.getUncertainty(JetEta=test_eta_jag, JetPt=test_pt_jag))
-    
+
     for i, (level, corrs) in enumerate(juncs):
         assert(level in levels)
         assert(corrs.shape[0] == test_eta.shape[0])
+        tic = time.time()
         if awkwardlib == "ak1":
             assert(awkward1.all(corrs == awkward1.flatten(juncs_jag[i][1])))
         if awkwardlib == "ak0":
             assert((corrs == juncs_jag[i][1].flatten()).all())
+        toc = time.time()
 
 
 @pytest.mark.parametrize("awkwardlib", awkwardlibs)

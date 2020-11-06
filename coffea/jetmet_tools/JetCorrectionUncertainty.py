@@ -2,6 +2,7 @@ from ..lookup_tools.jec_uncertainty_lookup import jec_uncertainty_lookup
 import warnings
 import re
 from ..util import awkward
+from ..util import awkward1
 from ..util import numpy as np
 from copy import deepcopy
 
@@ -153,8 +154,15 @@ class JetCorrectionUncertainty(object):
         uncs = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
-            args = []
-            for input in sig:
-                args.append(kwargs[input])
-            uncs.append(func(*tuple(args)))
+            args = tuple(kwargs[input] for input in sig)
+
+            if isinstance(args[0], awkward.array.base.AwkwardArray):
+                uncs.append(awkward.VirtualArray(func, args=args))
+            elif isinstance(args[0], np.ndarray):
+                uncs.append(func(*args))  # np is non-lazy
+            elif isinstance(args[0], awkward1.highlevel.Array):
+                uncs.append(awkward1.virtual(func, args=args))
+            else:
+                raise Exception('Unknown array library for inputs.')
+
         return zip(self._levels, uncs)

@@ -2,6 +2,7 @@ from ..lookup_tools.jme_standard_function import jme_standard_function
 import warnings
 import re
 from ..util import awkward
+from ..util import awkward1
 from ..util import numpy as np
 from copy import deepcopy
 from functools import reduce
@@ -139,6 +140,7 @@ class FactorizedJetCorrector(object):
 
         """
         subCorrs = self.getSubCorrections(**kwargs)
+
         return subCorrs[-1]
 
     def getSubCorrections(self, **kwargs):
@@ -164,8 +166,17 @@ class FactorizedJetCorrector(object):
         corrections = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
-            cumCorr = reduce(lambda x, y: x * y, corrections, 1.0)
+            print(self._levels[i])
+            cumCorr = reduce(lambda x, y: y * x, corrections, 1.0)
             fargs = tuple(cumCorr * corrVars[arg] if arg in corrVars.keys() else kwargs[arg] for arg in sig)
-            corrections.append(func(*fargs))
+
+            if isinstance(fargs[0], awkward.array.base.AwkwardArray):
+                corrections.append(awkward.VirtualArray(func, args=fargs))
+            elif isinstance(fargs[0], np.ndarray):
+                corrections.append(func(*fargs))  # np is non-lazy
+            elif isinstance(fargs[0], awkward1.highlevel.Array):
+                corrections.append(awkward1.virtual(func, args=fargs))
+            else:
+                raise Exception('Unknown array library for inputs.')
 
         return corrections
