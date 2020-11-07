@@ -151,6 +151,7 @@ class JetCorrectionUncertainty(object):
             #in a zip iterator
 
         """
+        cache = kwargs.pop('lazy_cache', None)
         uncs = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
@@ -161,7 +162,7 @@ class JetCorrectionUncertainty(object):
             elif isinstance(args[0], np.ndarray):
                 uncs.append(func(*args))  # np is non-lazy
             elif isinstance(args[0], awkward1.highlevel.Array):
-                uncs.append(awkward1.virtual(func, args=args))
+                uncs.append(awkward1.virtual(func, args=args, length=len(args[0]), cache=cache))
             else:
                 raise Exception('Unknown array library for inputs.')
 

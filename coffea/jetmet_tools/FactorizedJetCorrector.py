@@ -153,6 +153,7 @@ class FactorizedJetCorrector(object):
             #'jecs' will be formatted like [[jec_jet1 jec_jet2 ...] ...]
 
         """
+        cache = kwargs.pop('lazy_cache', None)
         corrVars = {}
         if 'JetPt' in kwargs.keys():
             corrVars['JetPt'] = kwargs['JetPt']
@@ -166,7 +167,6 @@ class FactorizedJetCorrector(object):
         corrections = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
-            print(self._levels[i])
             cumCorr = reduce(lambda x, y: y * x, corrections, 1.0)
             fargs = tuple(cumCorr * corrVars[arg] if arg in corrVars.keys() else kwargs[arg] for arg in sig)
 
@@ -175,7 +175,7 @@ class FactorizedJetCorrector(object):
             elif isinstance(fargs[0], np.ndarray):
                 corrections.append(func(*fargs))  # np is non-lazy
             elif isinstance(fargs[0], awkward1.highlevel.Array):
-                corrections.append(awkward1.virtual(func, args=fargs))
+                corrections.append(awkward1.virtual(func, args=fargs, length=len(fargs[0]), cache=cache))
             else:
                 raise Exception('Unknown array library for inputs.')
 

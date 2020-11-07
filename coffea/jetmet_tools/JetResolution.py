@@ -135,6 +135,7 @@ class JetResolution(object):
             jrs = reso.getResolution(JetProperty1=jet.property1,...)
 
         """
+        cache = kwargs.pop('lazy_cache', None)
         resos = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
@@ -145,7 +146,7 @@ class JetResolution(object):
             elif isinstance(args[0], np.ndarray):
                 resos.append(func(*args))  # np is non-lazy
             elif isinstance(args[0], awkward1.highlevel.Array):
-                resos.append(awkward1.virtual(func, args=args))
+                resos.append(awkward1.virtual(func, args=args, length=len(args[0]), cache=cache))
             else:
                 raise Exception('Unknown array library for inputs.')
 

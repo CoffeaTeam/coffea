@@ -7,7 +7,7 @@ from coffea.util import awkward
 from coffea.util import awkward1
 from coffea.util import numpy as np
 
-import pytest, time
+import pytest, time  # , pyinstrument
 
 from dummy_distributions import dummy_jagged_eta_pt, dummy_four_momenta
 
@@ -344,18 +344,19 @@ def test_jet_transformer():
         assert('phi_'+unc+'_up' in met.columns)
 
 
-@pytest.mark.parametrize("awkwardlib", awkwardlibs)
+@pytest.mark.parametrize("awkwardlib", ["ak1"])
 def test_corrected_jets_factory(awkwardlib):
     import os
     from coffea.jetmet_tools import CorrectedJetsFactory, JECStack
 
     events = None
+    cache = {}
     if awkwardlib == "ak0":
         from coffea.nanoaod import NanoEvents
         events = NanoEvents.from_file(os.path.abspath('tests/samples/nano_dy.root'))
     elif awkwardlib == "ak1":
         from coffea.nanoevents import NanoEventsFactory
-        factory = NanoEventsFactory.from_file(os.path.abspath('tests/samples/nano_dy.root'))
+        factory = NanoEventsFactory.from_file(os.path.abspath('tests/samples/nano_dy.root'), runtime_cache=cache)
         events = factory.events()
     
     jec_stack_names = ['Summer16_23Sep2016V3_MC_L1FastJet_AK4PFPuppi',
@@ -373,22 +374,47 @@ def test_corrected_jets_factory(awkwardlib):
 
     name_map = jec_stack.blank_name_map
     name_map['JetPt'] = 'pt'
+    name_map['JetMass'] = 'mass'
     name_map['JetEta'] = 'eta'
     name_map['JetA'] = 'area'
     
-    events.Jet['pt_raw'] = events.Jet['rawFactor'] * events.Jet['pt']
-    events.Jet['mass_raw'] = events.Jet['rawFactor'] * events.Jet['mass']
+    jets = events.Jet
+    
+    jets['pt_raw'] = events.Jet['rawFactor'] * events.Jet['pt']
+    jets['mass_raw'] = events.Jet['rawFactor'] * events.Jet['mass']
     if awkwardlib == "ak0":
-        events.Jet['pt_gen'] = events.Jet.matched_gen.pt.fillna(0.)
-        events.Jet['rho'] = events.Jet.pt.tojagged(events.fixedGridRhoFastjetAll)
+        jets['pt_gen'] = events.Jet.matched_gen.pt.fillna(0.)
+        jets['rho'] = events.Jet.pt.tojagged(events.fixedGridRhoFastjetAll)
     if awkwardlib == "ak1":
-        events.Jet['pt_gen'] = awkward1.fill_none(events.Jet.matched_gen.pt, 0.)
-        events.Jet['rho'] = awkward1.broadcast_arrays(events.fixedGridRhoFastjetAll, events.Jet.pt)
-    name_map['ptGetJet'] = 'pt_gen'
+        jets['pt_gen'] = awkward1.fill_none(events.Jet.matched_gen.pt, 0.)
+        jets['rho'] = awkward1.broadcast_arrays(events.fixedGridRhoFastjetAll, events.Jet.pt)[0]
+    name_map['ptGenJet'] = 'pt_gen'
     name_map['ptRaw'] = 'pt_raw'
     name_map['massRaw'] = 'mass_raw'
     name_map['Rho'] = 'rho'
     
+    if awkwardlib == "ak0":
+        print(jets.columns)
+    if awkwardlib == "ak1":
+        print(awkward1.keys(jets))
+    
     print(name_map)
-
+    
+    tic = time.time()
     jet_factory = CorrectedJetsFactory(name_map, jec_stack)
+    toc = time.time()
+    
+    print('setup time =', toc-tic)
+    
+    tic = time.time()
+    corrected_jets =jet_factory.build(jets, lazy_cache=events.caches[0])
+    toc = time.time()
+
+    print('build time =', toc-tic)
+    
+    #prof = pyinstrument.Profiler()
+    #prof.start()
+    #corrected_jets = jet_factory.build(jets, lazy_cache=events.caches[0])
+    #prof.stop()
+    
+    #print(prof.output_text(unicode=True, color=True, show_all=True))
