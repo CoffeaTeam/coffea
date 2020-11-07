@@ -342,3 +342,53 @@ def test_jet_transformer():
         assert('mass_'+unc+'_down' in jets.columns)
         assert('pt_'+unc+'_up' in met.columns)
         assert('phi_'+unc+'_up' in met.columns)
+
+
+@pytest.mark.parametrize("awkwardlib", awkwardlibs)
+def test_corrected_jets_factory(awkwardlib):
+    import os
+    from coffea.jetmet_tools import CorrectedJetsFactory, JECStack
+
+    events = None
+    if awkwardlib == "ak0":
+        from coffea.nanoaod import NanoEvents
+        events = NanoEvents.from_file(os.path.abspath('tests/samples/nano_dy.root'))
+    elif awkwardlib == "ak1":
+        from coffea.nanoevents import NanoEventsFactory
+        factory = NanoEventsFactory.from_file(os.path.abspath('tests/samples/nano_dy.root'))
+        events = factory.events()
+    
+    jec_stack_names = ['Summer16_23Sep2016V3_MC_L1FastJet_AK4PFPuppi',
+                       'Summer16_23Sep2016V3_MC_L2Relative_AK4PFPuppi',
+                       'Summer16_23Sep2016V3_MC_L2L3Residual_AK4PFPuppi',
+                       'Summer16_23Sep2016V3_MC_L3Absolute_AK4PFPuppi',
+                       'Spring16_25nsV10_MC_PtResolution_AK4PFPuppi',
+                       'Spring16_25nsV10_MC_SF_AK4PFPuppi']
+    for key in evaluator.keys():
+        if 'Summer16_23Sep2016V3_MC_UncertaintySources_AK4PFPuppi' in key:
+            jec_stack_names.append(key)
+
+    jec_inputs = {name: evaluator[name] for name in jec_stack_names}
+    jec_stack = JECStack(jec_inputs)
+
+    name_map = jec_stack.blank_name_map
+    name_map['JetPt'] = 'pt'
+    name_map['JetEta'] = 'eta'
+    name_map['JetA'] = 'area'
+    
+    events.Jet['pt_raw'] = events.Jet['rawFactor'] * events.Jet['pt']
+    events.Jet['mass_raw'] = events.Jet['rawFactor'] * events.Jet['mass']
+    if awkwardlib == "ak0":
+        events.Jet['pt_gen'] = events.Jet.matched_gen.pt.fillna(0.)
+        events.Jet['rho'] = events.Jet.pt.tojagged(events.fixedGridRhoFastjetAll)
+    if awkwardlib == "ak1":
+        events.Jet['pt_gen'] = awkward1.fill_none(events.Jet.matched_gen.pt, 0.)
+        events.Jet['rho'] = awkward1.broadcast_arrays(events.fixedGridRhoFastjetAll, events.Jet.pt)
+    name_map['ptGetJet'] = 'pt_gen'
+    name_map['ptRaw'] = 'pt_raw'
+    name_map['massRaw'] = 'mass_raw'
+    name_map['Rho'] = 'rho'
+    
+    print(name_map)
+
+    jet_factory = CorrectedJetsFactory(name_map, jec_stack)

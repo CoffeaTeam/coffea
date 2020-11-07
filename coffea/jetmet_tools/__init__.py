@@ -10,7 +10,7 @@ from .JetCorrectionUncertainty import JetCorrectionUncertainty
 from .JetTransformer import JetTransformer
 
 from .JECStack import JECStack
-from .CorrectedJets import CorrectedJets
+from .CorrectedJetsFactory import CorrectedJetsFactory
 # from .MetUncertaintyCalculator import calculateType1MetXY
 
 __all__ = [
@@ -20,5 +20,5 @@ __all__ = [
     'JetCorrectionUncertainty',
     'JetTransformer',
     'JECStack',
-    'CorrectedJets'
+    'CorrectedJetsFactory'
 ]
