@@ -158,7 +158,7 @@ class JetCorrectionUncertainty(object):
             args = tuple(kwargs[input] for input in sig)
 
             if isinstance(args[0], awkward.array.base.AwkwardArray):
-                uncs.append(awkward.VirtualArray(func, args=args))
+                uncs.append(awkward.VirtualArray(func, args=args, cache=cache))
             elif isinstance(args[0], np.ndarray):
                 uncs.append(func(*args))  # np is non-lazy
             elif isinstance(args[0], awkward1.highlevel.Array):

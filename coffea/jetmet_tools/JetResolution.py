@@ -142,7 +142,7 @@ class JetResolution(object):
             args = tuple(kwargs[input] for input in sig)
 
             if isinstance(args[0], awkward.array.base.AwkwardArray):
-                resos.append(awkward.VirtualArray(func, args=args))
+                resos.append(awkward.VirtualArray(func, args=args, cache=cache))
             elif isinstance(args[0], np.ndarray):
                 resos.append(func(*args))  # np is non-lazy
             elif isinstance(args[0], awkward1.highlevel.Array):

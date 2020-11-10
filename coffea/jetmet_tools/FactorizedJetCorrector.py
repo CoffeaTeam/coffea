@@ -139,9 +139,24 @@ class FactorizedJetCorrector(object):
             jecs = corrector.getCorrection(JetProperty1=jet.property1,...)
 
         """
-        subCorrs = self.getSubCorrections(**kwargs)
+        cache = kwargs.get('lazy_cache', None)
+        first_arg = kwargs[self.signature[0]]
 
-        return subCorrs[-1]
+        def total_corr(jec, **kwargs):
+            corrs = jec.getSubCorrections(**kwargs)
+            return reduce(lambda x, y: y * x, corrs, 1.0)
+
+        out = None
+        if isinstance(first_arg, awkward.array.base.AwkwardArray):
+            out = awkward.VirtualArray(total_corr, args=(self, ), kwargs=kwargs, cache=cache)
+        elif isinstance(first_arg, np.ndarray):
+            out = total_corr()  # np is non-lazy
+        elif isinstance(first_arg, awkward1.highlevel.Array):
+            out = awkward1.virtual(total_corr, args=(self, ), kwargs=kwargs, length=len(first_arg), cache=cache)
+        else:
+            raise Exception('Unknown array library for inputs.')
+
+        return out
 
     def getSubCorrections(self, **kwargs):
         """
@@ -171,7 +186,7 @@ class FactorizedJetCorrector(object):
             fargs = tuple(cumCorr * corrVars[arg] if arg in corrVars.keys() else kwargs[arg] for arg in sig)
 
             if isinstance(fargs[0], awkward.array.base.AwkwardArray):
-                corrections.append(awkward.VirtualArray(func, args=fargs))
+                corrections.append(awkward.VirtualArray(func, args=fargs, cache=cache))
             elif isinstance(fargs[0], np.ndarray):
                 corrections.append(func(*fargs))  # np is non-lazy
             elif isinstance(fargs[0], awkward1.highlevel.Array):
