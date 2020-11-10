@@ -1,9 +1,9 @@
 from ..lookup_tools.jme_standard_function import jme_standard_function
 import warnings
 import re
-from ..util import awkward
-from ..util import awkward1
-from ..util import numpy as np
+import awkward
+import awkward1
+import numpy as np
 from copy import deepcopy
 from functools import reduce
 

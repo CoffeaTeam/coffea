@@ -1,7 +1,7 @@
-from .JECStack import JECStack
-from coffea.util import awkward
-from coffea.util import awkward1
-from coffea.util import numpy as np
+from coffea.jetmet_tools.JECStack import JECStack
+import awkward
+import awkward1
+import numpy as np
 from collections import namedtuple
 import warnings
 from copy import copy
@@ -44,7 +44,7 @@ def rand_gauss_ak1(arr, var):
             or not isinstance(layout, (awkward1.layout.Content,
                                        awkward1.partition.PartitionedArray)
            )):
-            return lambda: awkward1.layout.NumpyArray(np.random.normal(size=awkward1.count(item)))
+            return lambda: awkward1.layout.NumpyArray(np.random.normal(size=len(layout)))
         return None
 
     out = awkward1._util.recursively_apply(
@@ -70,7 +70,7 @@ def jer_smear(arr, variation, forceStochastic, ptGenJet, ptJet, etaJet):
                 or not isinstance(layout, (awkward1.layout.Content,
                                            awkward1.partition.PartitionedArray)
                )):
-                return lambda: awkward1.layout.NumpyArray(np.zeros_like(size=awkward1.count(jetPt)))
+                return lambda: awkward1.layout.NumpyArray(np.zeros_like(size=len(jetPt)))
             return None
         if forceStochastic:
             pt_gen = awkward1._util.recursively_apply(

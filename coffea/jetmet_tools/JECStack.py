@@ -1,7 +1,7 @@
-from .FactorizedJetCorrector import FactorizedJetCorrector, _levelre
-from .JetResolution import JetResolution
-from .JetResolutionScaleFactor import JetResolutionScaleFactor
-from .JetCorrectionUncertainty import JetCorrectionUncertainty
+from coffea.jetmet_tools.FactorizedJetCorrector import FactorizedJetCorrector, _levelre
+from coffea.jetmet_tools.JetResolution import JetResolution
+from coffea.jetmet_tools.JetResolutionScaleFactor import JetResolutionScaleFactor
+from coffea.jetmet_tools.JetCorrectionUncertainty import JetCorrectionUncertainty
 
 _singletons = ['jer', 'jersf']
 _nicenames = ['JES Uncertainty Calculator',
