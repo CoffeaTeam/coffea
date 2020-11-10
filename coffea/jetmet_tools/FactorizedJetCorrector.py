@@ -150,7 +150,7 @@ class FactorizedJetCorrector(object):
         if isinstance(first_arg, awkward.array.base.AwkwardArray):
             out = awkward.VirtualArray(total_corr, args=(self, ), kwargs=kwargs, cache=cache)
         elif isinstance(first_arg, np.ndarray):
-            out = total_corr()  # np is non-lazy
+            out = total_corr(self, **kwargs)  # np is non-lazy
         elif isinstance(first_arg, awkward1.highlevel.Array):
             out = awkward1.virtual(total_corr, args=(self, ), kwargs=kwargs, length=len(first_arg), cache=cache)
         else:

@@ -344,7 +344,7 @@ def test_jet_transformer():
         assert('phi_'+unc+'_up' in met.columns)
 
 
-@pytest.mark.parametrize("awkwardlib", awkwardlibs)
+@pytest.mark.parametrize("awkwardlib", ["ak1"])#, awkwardlibs)
 def test_corrected_jets_factory(awkwardlib):
     import os
     from coffea.jetmet_tools import CorrectedJetsFactory, JECStack
