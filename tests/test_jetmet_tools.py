@@ -7,7 +7,7 @@ from coffea.util import awkward
 from coffea.util import awkward1
 from coffea.util import numpy as np
 
-import pytest, time, pyinstrument
+import pytest, time # , pyinstrument
 
 from dummy_distributions import dummy_jagged_eta_pt, dummy_four_momenta
 
@@ -410,14 +410,14 @@ def test_corrected_jets_factory(awkwardlib):
     print('setup time =', toc-tic)
     
     tic = time.time()
-    prof = pyinstrument.Profiler()
-    prof.start()
+    #prof = pyinstrument.Profiler()
+    #prof.start()
     corrected_jets = jet_factory.build(jets)#, lazy_cache=events_cache)
-    prof.stop()
+    #prof.stop()
     toc = time.time()
 
     print('corrected_jets build time =', toc-tic)
-    print(prof.output_text(unicode=True, color=True, show_all=True))
+    #print(prof.output_text(unicode=True, color=True, show_all=True))
    
     print(type(jets))
     print(type(corrected_jets))
