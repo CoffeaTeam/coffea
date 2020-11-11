@@ -111,12 +111,12 @@ def _work_function(item, processor_instance, flatten=False,
                     events = factory.events()
                 else:
                     raise ValueError("Expected schema to derive from BaseSchema or NanoEvents, instead got %r" % schema)
-                #tic = time.time()
+                # tic = time.time()
                 try:
                     out = processor_instance.process(events)
                 except Exception as e:
                     raise Exception(f"Failed processing file: {item.filename} ({item.entrystart}-{item.entrystop})") from e
-                #toc = time.time()
+                # toc = time.time()
                 return out
             break
         # catch xrootd errors and optionally skip
