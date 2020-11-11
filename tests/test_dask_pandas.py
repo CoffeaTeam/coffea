@@ -47,7 +47,7 @@ def do_dask_pandas_job(client, filelist):
     assert( output[output.dataset=='ZJets'].shape[0] == 6 )
     assert( output[output.dataset=='Data'].shape[0] == 18 )
 
-    print(output)
+    #print(output)
 
 def test_dask_pandas_job():
     distributed = pytest.importorskip("distributed", minversion="2.6.0")
@@ -65,4 +65,3 @@ def test_dask_pandas_job():
     do_dask_pandas_job(client, filelist)
 
     client.close()
-test_dask_pandas_job()
