@@ -21,7 +21,7 @@ from .executor import (
 from .executor_pandas import (
     dask_pandas_executor,
     run_uproot_pandas_job
-    )
+)
 from .accumulator import (
     AccumulatorABC,
     value_accumulator,

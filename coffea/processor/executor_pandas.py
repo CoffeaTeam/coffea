@@ -1,14 +1,23 @@
+from __future__ import print_function, division
+import concurrent.futures
 from functools import partial
 from itertools import repeat
 import time
 import pickle
+import sys
+import math
 import copy
+import shutil
+import json
 import cloudpickle
+import uproot4
+import subprocess
+import re
+import os
+from tqdm.auto import tqdm
+from collections import defaultdict
 from cachetools import LRUCache
 import lz4.frame as lz4f
-import pandas as pd
-import dask.dataframe as dd
-
 from .processor import ProcessorABC
 from .accumulator import (
     AccumulatorABC,
@@ -16,24 +25,30 @@ from .accumulator import (
     set_accumulator,
     dict_accumulator,
 )
+from .dataframe import (
+    LazyDataFrame,
+)
 from ..nanoaod import NanoEvents
 from ..nanoevents import NanoEventsFactory, schemas
+from ..util import _hash
 
 try:
     from collections.abc import Mapping, Sequence
 except ImportError:
     from collections import Mapping, Sequence
 
+
 _PICKLE_PROTOCOL = pickle.HIGHEST_PROTOCOL
 DEFAULT_METADATA_CACHE = LRUCache(100000)
 
-from .executor import _normalize_fileset, _get_metadata, Uproot3Context, _get_cache, _reduce
-
+from .executor import _normalize_fileset, _get_metadata, Uproot3Context, _get_cache, _reduce, _hash
+import pandas as pd
+import dask.dataframe as dd
 
 def _work_function(item, processor_instance, flatten=False,
                    mmap=False, schema=None, cachestrategy=None, skipbadfiles=False,
                    retries=0, xrootdtimeout=None):
-    """ 
+    """
         Exactly the same as _work_function() from executor.py, except:
             - 'out' is a Pandas DataFrame, not AccumulatorABC
             - not saving any metrics, only the processor output
@@ -129,7 +144,7 @@ def _work_function(item, processor_instance, flatten=False,
 
 
 def dask_pandas_executor(items, function, accumulator, **kwargs):
-    """ 
+    """
         Exactly the same as dask_executor except:
             - reducing is done only for 'get_metadata' function
             - output of the processor is collected into a distributed Dask DataFrame
@@ -206,20 +221,19 @@ def dask_pandas_executor(items, function, accumulator, **kwargs):
         df = dd.from_delayed(work)
         accumulator['out'] = df
         return accumulator
-        
 
 
 def run_uproot_pandas_job(fileset,
-                   treename,
-                   processor_instance,
-                   executor,
-                   executor_args={},
-                   pre_executor=None,
-                   pre_args=None,
-                   chunksize=100000,
-                   maxchunks=None,
-                   metadata_cache=None,
-                   ):
+                          treename,
+                          processor_instance,
+                          executor,
+                          executor_args={},
+                          pre_executor=None,
+                          pre_args=None,
+                          chunksize=100000,
+                          maxchunks=None,
+                          metadata_cache=None,
+                          ):
     """ 
         Exactly the same as run_uproot_job() except:
             - output initialized as a Dask DataFrame
@@ -346,4 +360,3 @@ def run_uproot_pandas_job(fileset,
     processor_instance.postprocess(out)
 
     return wrapped_out['out']
-
