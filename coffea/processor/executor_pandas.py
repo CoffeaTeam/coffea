@@ -45,6 +45,7 @@ from .executor import _normalize_fileset, _get_metadata, Uproot3Context, _get_ca
 import pandas as pd
 import dask.dataframe as dd
 
+
 def _work_function(item, processor_instance, flatten=False,
                    mmap=False, schema=None, cachestrategy=None, skipbadfiles=False,
                    retries=0, xrootdtimeout=None):
@@ -110,12 +111,12 @@ def _work_function(item, processor_instance, flatten=False,
                     events = factory.events()
                 else:
                     raise ValueError("Expected schema to derive from BaseSchema or NanoEvents, instead got %r" % schema)
-                tic = time.time()
+                #tic = time.time()
                 try:
                     out = processor_instance.process(events)
                 except Exception as e:
                     raise Exception(f"Failed processing file: {item.filename} ({item.entrystart}-{item.entrystop})") from e
-                toc = time.time()
+                #toc = time.time()
                 return out
             break
         # catch xrootd errors and optionally skip
@@ -199,7 +200,7 @@ def dask_pandas_executor(items, function, accumulator, **kwargs):
         )
 
     # only reduce when getting the list of input files
-    if (function_name=='get_metadata'):
+    if (function_name == 'get_metadata'):
         while len(work) > 1:
             work = client.map(
                 reducer,
@@ -234,7 +235,7 @@ def run_uproot_pandas_job(fileset,
                           maxchunks=None,
                           metadata_cache=None,
                           ):
-    """ 
+    """
         Exactly the same as run_uproot_job() except:
             - output initialized as a Dask DataFrame
             - not saving metrics (there aren't any)
