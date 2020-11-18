@@ -1,6 +1,8 @@
 import numpy
 import uproot
 import awkward
+import awkward1
+import pyarrow
 from .methods import collection_methods
 from .util import _mixin
 from ..util import _hex, _ascii
@@ -271,6 +273,83 @@ class NanoEvents(awkward.Table):
         return events
 
     @classmethod
+    def from_arrow(cls, table, metadata={}):
+        '''Build NanoEvents from Apache Arrow Table
+        
+        Parameters
+        ----------
+            table: pyarrow.lib.Table
+                An IPC Table.
+            metadata: dict, optional
+                Arbitrary metadata to embed in this NanoEvents table
+        '''
+        arrays = awkward1.from_arrow(table)
+
+        def nptype(event):
+            '''Returns the np.dtype of the elements in the event Array.
+            '''
+            try:
+                flattened_array = awkward1.flatten(arrays.events[event])
+            except ValueError as ex:
+                flattened_array = arrays.events[event]
+            return awkward1.to_numpy(flattened_array).dtype
+
+        def isjagged(event):
+            '''Detects whether the array is a JaggedArray or not.
+            '''
+            name = event.split("_")[0]
+            jagged_events = [
+                'CorrT1METJet', 
+                'Electron', 
+                'GenJetAK8', 
+                'GenJet', 
+                'GenPart', 
+                'SubGenJetAK8', 
+                'GenVisTau', 
+                'IsoTrack', 
+                'Jet', 
+                'LHEPart', 
+                'Muon', 
+                'Photon', 
+                'GenDressedLepton', 
+                'SoftActivityJet', 
+                'Tau', 
+                'TrigObj', 
+                'SV'
+            ]
+
+            # is_jaggered = False
+            # try:
+            #     awkward1.to_numpy(arrays.events[event])
+            # except ValueError as ex:
+            #     is_jaggered = True
+            # return is_jaggered
+
+            return name in jagged_events
+
+        def generator(event):
+            '''Generates numpy arrays out of Awkward Arrays.
+            '''
+            try:
+                flattened_array = awkward1.flatten(arrays.events[event])
+            except ValueError as ex:
+                flattened_array = arrays.events[event]
+            return awkward1.to_numpy(flattened_array)
+
+        # Generate virtual arrays out of Arrow arrays
+        virtual_arrays = {}
+        for event in list(arrays.events.fields):
+            if isjagged(event):
+                virtual_type = awkward.type.ArrayType(float('inf'), nptype(event))
+            else:
+                virtual_type =  awkward.type.ArrayType(len(arrays.events), nptype(event))
+
+            virtual_arrays[event] = awkward.VirtualArray(generator, event, type=virtual_type)
+            virtual_arrays[event].__doc__ = event
+        
+        return NanoEvents.from_arrays(virtual_arrays, metadata=metadata)
+
+    @classmethod
     def from_file(cls, file, treename=b'Events', entrystart=None, entrystop=None, cache=None, methods=None, metadata=None):
         '''Build NanoEvents directly from ROOT file
 
@@ -296,8 +375,14 @@ class NanoEvents(awkward.Table):
         '''
         if cache is None:
             cache = {}
+
+        if isinstance(file, str) and file.endswith('.arrow'):
+            table = pyarrow.ipc.open_stream(file).read_all()
+            return NanoEvents.from_arrow(table)
+
         if not isinstance(file, uproot.rootio.ROOTDirectory):
             file = uproot.open(file)
+
         tree = file[treename]
         entrystart, entrystop = uproot.tree._normalize_entrystartstop(tree.numentries, entrystart, entrystop)
         arrays = {}

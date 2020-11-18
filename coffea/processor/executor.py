@@ -8,6 +8,8 @@ import sys
 import math
 import copy
 import shutil
+import awkward1 as ak
+import awkward
 import json
 import cloudpickle
 import uproot4
@@ -768,10 +770,21 @@ def _get_cache(strategy):
 
     return cache
 
+ 
+class RadosContext(object): 
+    def __init__(self, filename):
+        self.filename = filename 
+          
+    def __enter__(self): 
+        return self
+      
+    def __exit__(self, exc_type, exc_value, exc_traceback): 
+        pass
+
 
 def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                    mmap=False, schema=None, cachestrategy=None, skipbadfiles=False,
-                   retries=0, xrootdtimeout=None):
+                   retries=0, xrootdtimeout=None, rados=False):
     if processor_instance == 'heavy':
         item, processor_instance = item
     if not isinstance(processor_instance, ProcessorABC):
@@ -779,12 +792,16 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
 
     import warnings
     out = processor_instance.accumulator.identity()
+
     retry_count = 0
     while retry_count <= retries:
         try:
             if schema is NanoEvents:
                 # this is the only uproot3-dependent option
-                filecontext = Uproot3Context(item.filename, xrootdtimeout, mmap)
+                if rados:
+                    filecontext = RadosContext(item.filename)
+                else:
+                    filecontext = Uproot3Context(item.filename, xrootdtimeout, mmap)
             else:
                 filecontext = uproot4.open(
                     item.filename,
@@ -800,17 +817,32 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                     events['filename'] = item.filename
                 elif schema is NanoEvents:
                     # To deprecate
-                    events = NanoEvents.from_file(
-                        file=file,
-                        treename=item.treename,
-                        entrystart=item.entrystart,
-                        entrystop=item.entrystop,
-                        metadata={
-                            'dataset': item.dataset,
-                            'filename': item.filename,
-                        },
-                        cache=_get_cache(cachestrategy),
-                    )
+                    if rados:
+                        from pyarrow import dataset as ds
+                        import pyarrow as pa
+
+                        table = pa.ipc.open_stream('nano_dy_final.arrow'.format(item.filename[8:])).read_all()
+                        das = ds.dataset(source=[item.filename[8:]], format=ds.RadosFormat("test-pool", "/etc/ceph/ceph.conf"), schema=table.schema)
+                        table = das.to_table()
+                        events = NanoEvents.from_arrow(
+                            table,
+                            metadata={
+                                'dataset': item.dataset,
+                                'filename': item.filename,
+                            }
+                        )
+                    else:
+                        events = NanoEvents.from_file(
+                            file=file,
+                            treename=item.treename,
+                            entrystart=item.entrystart,
+                            entrystop=item.entrystop,
+                            metadata={
+                                'dataset': item.dataset,
+                                'filename': item.filename,
+                            },
+                            cache=_get_cache(cachestrategy),
+                        )
                 elif issubclass(schema, schemas.BaseSchema):
                     materialized = []
                     factory = NanoEventsFactory.from_file(
@@ -1034,56 +1066,66 @@ def run_uproot_job(fileset,
         retries = executor_args.pop('retries', 0)
     xrootdtimeout = executor_args.pop('xrootdtimeout', None)
     align_clusters = executor_args.pop('align_clusters', False)
-    metadata_fetcher = partial(_get_metadata,
-                               skipbadfiles=skipbadfiles,
-                               retries=retries,
-                               xrootdtimeout=xrootdtimeout,
-                               align_clusters=align_clusters,
-                               )
 
+    rados = False
+    if fileset[0].filename.startswith('rados://'):
+        # we assume that all the sources are rados sources.    
+        rados = True
+    
     chunks = []
-    if maxchunks is None:
-        # this is a bit of an abuse of map-reduce but ok
-        to_get = set(filemeta for filemeta in fileset if not filemeta.populated(clusters=align_clusters))
-        if len(to_get) > 0:
-            out = set_accumulator()
-            pre_arg_override = {
-                'desc': 'Preprocessing',
-                'unit': 'file',
-                'compression': None,
-                'tailtimeout': None,
-                'worker_affinity': False,
-            }
-            pre_args.update(pre_arg_override)
-            pre_executor(to_get, metadata_fetcher, out, **pre_args)
-            while out:
-                item = out.pop()
-                metadata_cache[item] = item.metadata
-            for filemeta in fileset:
-                filemeta.maybe_populate(metadata_cache)
-        while fileset:
-            filemeta = fileset.pop()
-            if skipbadfiles and not filemeta.populated(clusters=align_clusters):
-                continue
-            for chunk in filemeta.chunks(chunksize, align_clusters):
-                chunks.append(chunk)
-    else:
-        # get just enough file info to compute chunking
-        nchunks = defaultdict(int)
-        while fileset:
-            filemeta = fileset.pop()
-            if nchunks[filemeta.dataset] >= maxchunks:
-                continue
-            if skipbadfiles and not filemeta.populated(clusters=align_clusters):
-                continue
-            if not filemeta.populated(clusters=align_clusters):
-                filemeta.metadata = metadata_fetcher(filemeta).pop().metadata
-                metadata_cache[filemeta] = filemeta.metadata
-            for chunk in filemeta.chunks(chunksize, align_clusters):
-                chunks.append(chunk)
-                nchunks[filemeta.dataset] += 1
+    if not rados:
+        metadata_fetcher = partial(_get_metadata,
+                                skipbadfiles=skipbadfiles,
+                                retries=retries,
+                                xrootdtimeout=xrootdtimeout,
+                                align_clusters=align_clusters,
+                                )
+        if maxchunks is None:
+            # this is a bit of an abuse of map-reduce but ok
+            to_get = set(filemeta for filemeta in fileset if not filemeta.populated(clusters=align_clusters))
+            if len(to_get) > 0:
+                out = set_accumulator()
+                pre_arg_override = {
+                    'desc': 'Preprocessing',
+                    'unit': 'file',
+                    'compression': None,
+                    'tailtimeout': None,
+                    'worker_affinity': False,
+                }
+                pre_args.update(pre_arg_override)
+                pre_executor(to_get, metadata_fetcher, out, **pre_args)
+                while out:
+                    item = out.pop()
+                    metadata_cache[item] = item.metadata
+                for filemeta in fileset:
+                    filemeta.maybe_populate(metadata_cache)
+            while fileset:
+                filemeta = fileset.pop()
+                if skipbadfiles and not filemeta.populated(clusters=align_clusters):
+                    continue
+                for chunk in filemeta.chunks(chunksize, align_clusters):
+                    chunks.append(chunk)
+        else:
+            # get just enough file info to compute chunking
+            nchunks = defaultdict(int)
+            while fileset:
+                filemeta = fileset.pop()
                 if nchunks[filemeta.dataset] >= maxchunks:
-                    break
+                    continue
+                if skipbadfiles and not filemeta.populated(clusters=align_clusters):
+                    continue
+                if not filemeta.populated(clusters=align_clusters):
+                    filemeta.metadata = metadata_fetcher(filemeta).pop().metadata
+                    metadata_cache[filemeta] = filemeta.metadata
+                for chunk in filemeta.chunks(chunksize, align_clusters):
+                    chunks.append(chunk)
+                    nchunks[filemeta.dataset] += 1
+                    if nchunks[filemeta.dataset] >= maxchunks:
+                        break
+    
+    else:
+        for filemeta in fileset:
+            chunks.append(WorkItem(filemeta.dataset, filemeta.filename, filemeta.treename, None, None, None))
 
     # pop all _work_function args here
     savemetrics = executor_args.pop('savemetrics', False)
@@ -1112,6 +1154,7 @@ def run_uproot_job(fileset,
         skipbadfiles=skipbadfiles,
         retries=retries,
         xrootdtimeout=xrootdtimeout,
+        rados=rados
     )
     # hack around dask/dask#5503 which is really a silly request but here we are
     if executor is dask_executor:
