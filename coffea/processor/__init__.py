@@ -18,10 +18,6 @@ from .executor import (
     run_parsl_job,
     run_spark_job
 )
-from .executor_pandas import (
-    dask_pandas_executor,
-    run_uproot_pandas_job
-)
 from .accumulator import (
     AccumulatorABC,
     value_accumulator,
@@ -53,8 +49,6 @@ __all__ = [
     'run_uproot_job',
     'run_parsl_job',
     'run_spark_job',
-    'dask_pandas_executor',
-    'run_uproot_pandas_job',
     'AccumulatorABC',
     'value_accumulator',
     'list_accumulator',

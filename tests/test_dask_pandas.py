@@ -17,13 +17,13 @@ def do_dask_pandas_job(client, filelist):
     exe_args = {
         'client': client,
         'schema': processor.NanoEvents,
-        'compression': None,
+        'use_dataframes': True
     }
 
     output = processor.run_uproot_pandas_job(filelist,
                                      treename,
                                      processor_instance=proc,
-                                     executor=processor.dask_pandas_executor,
+                                     executor=processor.dask_executor,
                                      executor_args=exe_args)
 
 
@@ -47,7 +47,7 @@ def do_dask_pandas_job(client, filelist):
     assert( output[output.dataset=='ZJets'].shape[0] == 6 )
     assert( output[output.dataset=='Data'].shape[0] == 18 )
 
-    #print(output)
+    # print(output)
 
 def test_dask_pandas_job():
     distributed = pytest.importorskip("distributed", minversion="2.6.0")
