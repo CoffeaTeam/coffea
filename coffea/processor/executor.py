@@ -672,7 +672,8 @@ def dask_executor(items, function, accumulator, **kwargs):
             progress(work, multi=True, notebook=False)
         df = dd.from_delayed(work)
         accumulator['out'] = df
-        return accumulator        
+        return accumulator
+
 
 def parsl_executor(items, function, accumulator, **kwargs):
     """Execute using parsl pyapp wrapper
@@ -845,12 +846,12 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                     events = factory.events()
                 else:
                     raise ValueError("Expected schema to derive from BaseSchema or NanoEvents, instead got %r" % schema)
-                # tic = time.time()
+                tic = time.time()
                 try:
                     out = processor_instance.process(events)
                 except Exception as e:
                     raise Exception(f"Failed processing file: {item.filename} ({item.entrystart}-{item.entrystop})") from e
-                # toc = time.time()
+                toc = time.time()
                 if use_dataframes:
                     return out
                 else:
@@ -1116,7 +1117,7 @@ def run_uproot_job(fileset,
     mmap = executor_args.pop('mmap', False)
     schema = executor_args.pop('schema', None)
     nano = executor_args.pop('nano', False)
-    use_dataframes = executor_args.pop('use_dataframes',False)
+    use_dataframes = executor_args.pop('use_dataframes', False)
     if nano:
         warnings.warn("Please use 'schema': processor.NanoEvents rather than 'nano': True to enable awkward0 NanoEvents processing", DeprecationWarning)
         schema = NanoEvents
