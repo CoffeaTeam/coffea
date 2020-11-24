@@ -140,6 +140,7 @@ class FactorizedJetCorrector(object):
 
         """
         cache = kwargs.get('lazy_cache', None)
+        form = kwargs.get('form', None)
         first_arg = kwargs[self.signature[0]]
 
         def total_corr(jec, **kwargs):
@@ -152,7 +153,7 @@ class FactorizedJetCorrector(object):
         elif isinstance(first_arg, np.ndarray):
             out = total_corr(self, **kwargs)  # np is non-lazy
         elif isinstance(first_arg, awkward1.highlevel.Array):
-            out = awkward1.virtual(total_corr, args=(self, ), kwargs=kwargs, length=len(first_arg), cache=cache)
+            out = awkward1.virtual(total_corr, args=(self, ), kwargs=kwargs, length=len(first_arg), form=form, cache=cache)
         else:
             raise Exception('Unknown array library for inputs.')
 
@@ -169,6 +170,7 @@ class FactorizedJetCorrector(object):
 
         """
         cache = kwargs.pop('lazy_cache', None)
+        form = kwargs.pop('form', None)
         corrVars = {}
         if 'JetPt' in kwargs.keys():
             corrVars['JetPt'] = kwargs['JetPt']
@@ -182,7 +184,7 @@ class FactorizedJetCorrector(object):
         corrections = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
-            cumCorr = reduce(lambda x, y: y * x, corrections, 1.0)
+            cumCorr = reduce(lambda x, y: y * x, corrections, np.array(1., dtype=np.float32))
             fargs = tuple(cumCorr * corrVars[arg] if arg in corrVars.keys() else kwargs[arg] for arg in sig)
 
             if isinstance(fargs[0], awkward.array.base.AwkwardArray):
@@ -190,7 +192,7 @@ class FactorizedJetCorrector(object):
             elif isinstance(fargs[0], np.ndarray):
                 corrections.append(func(*fargs))  # np is non-lazy
             elif isinstance(fargs[0], awkward1.highlevel.Array):
-                corrections.append(awkward1.virtual(func, args=fargs, length=len(fargs[0]), cache=cache))
+                corrections.append(awkward1.virtual(func, args=fargs, length=len(fargs[0]), form=form, cache=cache))
             else:
                 raise Exception('Unknown array library for inputs.')
 

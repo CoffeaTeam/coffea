@@ -136,6 +136,7 @@ class JetResolutionScaleFactor(object):
 
         """
         cache = kwargs.pop('lazy_cache', None)
+        form = kwargs.pop('form', None)
         sfs = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
@@ -146,7 +147,7 @@ class JetResolutionScaleFactor(object):
             elif isinstance(args[0], np.ndarray):
                 sfs.append(func(*args))  # np is non-lazy
             elif isinstance(args[0], awkward1.highlevel.Array):
-                sfs.append(awkward1.virtual(func, args=args, length=len(args[0]), cache=cache))
+                sfs.append(awkward1.virtual(func, args=args, length=len(args[0]), form=form, cache=cache))
             else:
                 raise Exception('Unknown array library for inputs.')
 

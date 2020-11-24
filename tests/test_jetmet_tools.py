@@ -7,7 +7,7 @@ from coffea.util import awkward
 from coffea.util import awkward1
 from coffea.util import numpy as np
 
-import pytest, time # , pyinstrument
+import pytest, time, pyinstrument
 
 from dummy_distributions import dummy_jagged_eta_pt, dummy_four_momenta
 
@@ -386,7 +386,8 @@ def test_corrected_jets_factory(awkwardlib):
         jets['pt_gen'] = jets.matched_gen.pt.fillna(0.)
         jets['rho'] = jets.pt.tojagged(events.fixedGridRhoFastjetAll)
     if awkwardlib == "ak1":
-        jets['pt_gen'] = awkward1.fill_none(jets.matched_gen.pt, 0.)
+        jets['pt_gen'] = awkward1.values_astype(awkward1.fill_none(jets.matched_gen.pt, 0), np.float32)
+        print(jets['pt_gen'].layout)
         jets['rho'] = awkward1.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
     name_map['ptGenJet'] = 'pt_gen'
     name_map['ptRaw'] = 'pt_raw'
@@ -398,7 +399,7 @@ def test_corrected_jets_factory(awkwardlib):
         print(jets.columns)
         events_cache = events._cache
     if awkwardlib == "ak1":
-        print(awkward1.keys(jets))
+        print(awkward1.fields(jets))
         events_cache = events.caches[0]
     
     print(name_map)
@@ -410,18 +411,23 @@ def test_corrected_jets_factory(awkwardlib):
     print('setup time =', toc-tic)
     
     tic = time.time()
-    #prof = pyinstrument.Profiler()
-    #prof.start()
-    corrected_jets = jet_factory.build(jets)#, lazy_cache=events_cache)
-    #prof.stop()
+    prof = pyinstrument.Profiler()
+    prof.start()
+    corrected_jets = jet_factory.build(jets, lazy_cache=events_cache)
+    prof.stop()
     toc = time.time()
 
     print('corrected_jets build time =', toc-tic)
-    #print(prof.output_text(unicode=True, color=True, show_all=True))
-   
-    print(type(jets))
-    print(type(corrected_jets))
-    print(awkward1.keys(corrected_jets))
+    
+    tic = time.time()
+    for unc in jet_factory.uncertainties():
+        print(unc)
+        print(corrected_jets[unc].up.pt)
+        print(corrected_jets[unc].down.pt)
+    toc = time.time()
+    
+    #print(corrected_jets['JER'].down.type)
+    print(prof.output_text(unicode=True, color=True, show_all=True))
    
     #print(corrected_jets['JER'].down.pt)
     #print(corrected_jets.pt)
