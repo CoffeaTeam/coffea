@@ -798,6 +798,8 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                     events = LazyDataFrame(tree, item.entrystart, item.entrystop, flatten=flatten)
                     events['dataset'] = item.dataset
                     events['filename'] = item.filename
+                    events['entrystart'] = item.entrystart
+                    events['entrystop'] = item.entrystop,
                 elif schema is NanoEvents:
                     # To deprecate
                     events = NanoEvents.from_file(
@@ -808,6 +810,8 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                         metadata={
                             'dataset': item.dataset,
                             'filename': item.filename,
+                            'entrystart': item.entrystart,
+                            'entrystop': item.entrystop,
                         },
                         cache=_get_cache(cachestrategy),
                     )
@@ -823,6 +827,8 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                         metadata={
                             'dataset': item.dataset,
                             'filename': item.filename,
+                            'entrystart': item.entrystart,
+                            'entrystop': item.entrystop,
                         },
                         access_log=materialized,
                     )
