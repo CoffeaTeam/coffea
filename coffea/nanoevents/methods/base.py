@@ -80,3 +80,6 @@ class NanoCollection:
         This can be called at any time from any collection, as long as
         the NanoEventsFactory instance exists."""
         return self.behavior["__events_factory__"].events()
+
+
+__all__ = ["NanoCollection", "NanoEvents"]
