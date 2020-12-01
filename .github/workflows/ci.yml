@@ -111,6 +111,8 @@ jobs:
         python-version: 3.7
     - name: Test work_queue
       shell: bash -l {0}
+      env:
+        ACTIONS_ALLOW_UNSECURE_COMMANDS: true
       run: |
         conda create --name coffea-env python=3.7
         conda activate coffea-env
