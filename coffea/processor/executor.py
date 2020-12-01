@@ -794,6 +794,8 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
 
     import warnings
     if use_dataframes:
+        import pandas as pd
+        import dask.dataframe as dd
         out = dd.from_pandas(pd.DataFrame(), npartitions=1)
     else:
         out = processor_instance.accumulator.identity()
@@ -1148,6 +1150,8 @@ def run_uproot_job(fileset,
         closure = partial(closure, processor_instance=pi_to_send)
 
     if use_dataframes:
+        import pandas as pd
+        import dask.dataframe as dd
         out = dd.from_pandas(pd.DataFrame(), npartitions=1)
         wrapped_out = dict_accumulator({'out': out})
     else:
