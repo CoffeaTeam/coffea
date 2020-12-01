@@ -105,14 +105,12 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - name: Set up Conda
-      uses: conda-incubator/setup-miniconda@v1.7.0
+      uses: conda-incubator/setup-miniconda@v2.0.0
       with:
         auto-update-conda: true
         python-version: 3.7
     - name: Test work_queue
       shell: bash -l {0}
-      env:
-        ACTIONS_ALLOW_UNSECURE_COMMANDS: true
       run: |
         conda create --name coffea-env python=3.7
         conda activate coffea-env
