@@ -55,3 +55,6 @@ class PtEtaPhiMCandidate(Candidate, vector.PtEtaPhiMLorentzVector):
     """
 
     pass
+
+
+__all__ = ["Candidate", "PtEtaPhiMCandidate"]

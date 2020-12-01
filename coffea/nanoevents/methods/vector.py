@@ -126,7 +126,7 @@ class TwoVector:
             with_name="TwoVector",
             highlevel=False,
         )
-        return awkward1._util.wrap(out, cache=self.cache, behavior=self.behavior)
+        return awkward1.Array(out, behavior=self.behavior)
 
     @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
@@ -261,7 +261,7 @@ class ThreeVector(TwoVector):
             with_name="ThreeVector",
             highlevel=False,
         )
-        return awkward1._util.wrap(out, cache=self.cache, behavior=self.behavior)
+        return awkward1.Array(out, behavior=self.behavior)
 
     @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
@@ -391,7 +391,7 @@ class LorentzVector(ThreeVector):
             with_name="LorentzVector",
             highlevel=False,
         )
-        return awkward1._util.wrap(out, cache=self.cache, behavior=self.behavior)
+        return awkward1.Array(out, behavior=self.behavior)
 
     @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
@@ -664,3 +664,7 @@ class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
             },
             with_name="PtEtaPhiELorentzVector",
         )
+
+
+__all__ = ["TwoVector", "PolarTwoVector", "ThreeVector", "SphericalThreeVector",
+           "LorentzVector", "PtEtaPhiMLorentzVector", "PtEtaPhiELorentzVector"]

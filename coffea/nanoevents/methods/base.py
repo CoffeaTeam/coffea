@@ -60,19 +60,19 @@ class NanoCollection:
         """
         if isinstance(index, int):
             out = self._content()[index]
-        else:
+            return awkward1.Record(out, behavior=self.behavior)
 
-            def flat_take(layout):
-                idx = awkward1.Array(layout)
-                return self._content()[idx.mask[idx >= 0]]
+        def flat_take(layout):
+            idx = awkward1.Array(layout)
+            return self._content()[idx.mask[idx >= 0]]
 
-            def descend(layout, depth):
-                if layout.purelist_depth == 1:
-                    return lambda: flat_take(layout)
+        def descend(layout, depth):
+            if layout.purelist_depth == 1:
+                return lambda: flat_take(layout)
 
-            (index,) = awkward1.broadcast_arrays(index)
-            out = awkward1._util.recursively_apply(index.layout, descend)
-        return awkward1._util.wrap(out, self.behavior, cache=self.cache)
+        (index,) = awkward1.broadcast_arrays(index)
+        out = awkward1._util.recursively_apply(index.layout, descend)
+        return awkward1.Array(out, behavior=self.behavior)
 
     def _events(self):
         """Internal method to get the originally-constructed NanoEvents
@@ -80,3 +80,6 @@ class NanoCollection:
         This can be called at any time from any collection, as long as
         the NanoEventsFactory instance exists."""
         return self.behavior["__events_factory__"].events()
+
+
+__all__ = ["NanoCollection", "NanoEvents"]

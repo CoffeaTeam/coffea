@@ -11,7 +11,7 @@ from coffea.util import numpy as np
 import requests
 import os
 
-url = 'http://scikit-hep.org/uproot/examples/HZZ.root'
+url = 'https://github.com/scikit-hep/uproot3/blob/master/tests/samples/HZZ.root?raw=true'
 r = requests.get(url)
 with open(os.path.join(os.getcwd(), 'HZZ.root'), 'wb') as f:
     f.write(r.content)
