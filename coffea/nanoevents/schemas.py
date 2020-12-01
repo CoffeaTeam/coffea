@@ -217,7 +217,7 @@ class NanoAODSchema(BaseSchema):
         # Create global index virtual arrays for indirection
         idxbranches = [k for k in branch_forms if "Idx" in k]
         for name in collections:
-            indexers = [k for k in idxbranches if k.startswith(name)]
+            indexers = [k for k in idxbranches if k.startswith(name + "_")]
             for k in indexers:
                 target = k[len(name) + 1 : k.find("Idx")]
                 target = target[0].upper() + target[1:]
