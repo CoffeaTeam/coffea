@@ -18,8 +18,6 @@ from tqdm.auto import tqdm
 from collections import defaultdict
 from cachetools import LRUCache
 import lz4.frame as lz4f
-import pandas as pd
-import dask.dataframe as dd
 from .processor import ProcessorABC
 from .accumulator import (
     AccumulatorABC,
@@ -594,7 +592,10 @@ def dask_executor(items, function, accumulator, **kwargs):
 
             .. note:: If ``heavy_input`` is set, ``function`` is assumed to be pure.
     """
+    import pandas as pd
+    import dask.dataframe as dd
     from dask.delayed import delayed
+
     if len(items) == 0:
         return accumulator
     client = kwargs.pop('client')
