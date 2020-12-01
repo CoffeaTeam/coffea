@@ -20,7 +20,7 @@ def do_dask_pandas_job(client, filelist):
         'use_dataframes': True
     }
 
-    output = processor.run_uproot_pandas_job(filelist,
+    output = processor.run_uproot_job(filelist,
                                      treename,
                                      processor_instance=proc,
                                      executor=processor.dask_executor,

@@ -1160,6 +1160,7 @@ def run_uproot_job(fileset,
     exe_args = {
         'unit': 'chunk',
         'function_name': type(processor_instance).__name__,
+        'use_dataframes': use_dataframes
     }
     exe_args.update(executor_args)
     executor(chunks, closure, wrapped_out, **exe_args)
