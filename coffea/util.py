@@ -14,6 +14,7 @@ nb = numba
 import lz4.frame
 import cloudpickle
 
+supported_column_file_types = {b'root': 'root', b'PAR1': 'parquet'}
 
 def load(filename):
     '''Load a coffea file from disk
@@ -32,6 +33,15 @@ def save(output, filename):
         thepickle = cloudpickle.dumps(output)
         fout.write(thepickle)
 
+
+def get_column_file_type(filestr):
+    # TODO: xrootd
+    with open(filestr, 'rb') as f:
+        try:
+            return supported_column_file_types[f.read(4)]
+        except:
+            raise Exception('Unsupported column source file type.'
+                            ' Not one of {0}'.format(list(supported_column_file_types.keys())))
 
 def _hex(string):
     try:

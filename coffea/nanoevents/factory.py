@@ -3,6 +3,7 @@ import weakref
 import json
 import awkward1
 import uproot4 as uproot
+
 from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
 from coffea.nanoevents.mapping import TrivialOpener, UprootSourceMapping, CachedMapping
 from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema
