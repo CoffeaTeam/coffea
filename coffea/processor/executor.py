@@ -589,6 +589,9 @@ def dask_executor(items, function, accumulator, **kwargs):
             items in a tuple (item, heavy_input) that is passed to function.
         function_name : str, optional
             Name of the function being passed
+        use_dataframes: bool, optional
+            Retrieve output as a distributed Dask DataFrame (default: False).
+            The outputs of individual tasks must be Pandas DataFrames.
 
             .. note:: If ``heavy_input`` is set, ``function`` is assumed to be pure.
     """
@@ -1011,6 +1014,8 @@ def run_uproot_job(fileset,
             - ``xrootdtimeout`` timeout for xrootd read (seconds)
             - ``tailtimeout`` timeout requirement on job tails (seconds)
             - ``align_clusters`` aligns the chunks to natural boundaries in the ROOT files (default False)
+            - ``use_dataframes`` retrieve output as a distributed Dask DataFrame (default False).
+                Only works with `dask_executor`; the processor output must be a Pandas DataFrame.
         pre_executor : callable
             A function like executor, used to calculate fileset metadata
             Defaults to executor
@@ -1121,6 +1126,9 @@ def run_uproot_job(fileset,
     schema = executor_args.pop('schema', None)
     nano = executor_args.pop('nano', False)
     use_dataframes = executor_args.pop('use_dataframes', False)
+    if (executor is not dask_executor) and use_dataframes:
+        warnings.warn("Only Dask executor supports DataFrame outputs! Resetting 'use_dataframes' argument to False.")
+        use_dataframes = False
     if nano:
         warnings.warn("Please use 'schema': processor.NanoEvents rather than 'nano': True to enable awkward0 NanoEvents processing", DeprecationWarning)
         schema = NanoEvents
