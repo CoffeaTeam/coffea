@@ -14,6 +14,7 @@ import uproot4
 import subprocess
 import re
 import os
+import uuid
 from tqdm.auto import tqdm
 from collections import defaultdict
 from cachetools import LRUCache
@@ -791,13 +792,21 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                     timeout=xrootdtimeout,
                     file_handler=uproot4.MemmapSource if mmap else uproot4.MultithreadedFileSource,
                 )
+            metadata = {
+                'dataset': item.dataset,
+                'filename': item.filename,
+                'treename': item.treename,
+                'entrystart': item.entrystart,
+                'entrystop': item.entrystop,
+                'fileuuid': str(uuid.UUID(bytes=item.fileuuid))
+            }
             with filecontext as file:
                 if schema is None:
                     # To deprecate
                     tree = file[item.treename]
                     events = LazyDataFrame(tree, item.entrystart, item.entrystop, flatten=flatten)
-                    events['dataset'] = item.dataset
-                    events['filename'] = item.filename
+                    for key, value in metadata.items():
+                        events[key] = value
                 elif schema is NanoEvents:
                     # To deprecate
                     events = NanoEvents.from_file(
@@ -805,10 +814,7 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                         treename=item.treename,
                         entrystart=item.entrystart,
                         entrystop=item.entrystop,
-                        metadata={
-                            'dataset': item.dataset,
-                            'filename': item.filename,
-                        },
+                        metadata=metadata,
                         cache=_get_cache(cachestrategy),
                     )
                 elif issubclass(schema, schemas.BaseSchema):
@@ -820,10 +826,7 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                         entry_stop=item.entrystop,
                         runtime_cache=_get_cache(cachestrategy),
                         schemaclass=schema,
-                        metadata={
-                            'dataset': item.dataset,
-                            'filename': item.filename,
-                        },
+                        metadata=metadata,
                         access_log=materialized,
                     )
                     events = factory.events()
