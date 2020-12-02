@@ -14,6 +14,7 @@ import uproot4
 import subprocess
 import re
 import os
+import uuid
 from tqdm.auto import tqdm
 from collections import defaultdict
 from cachetools import LRUCache
@@ -797,7 +798,7 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                 'treename': item.treename,
                 'entrystart': item.entrystart,
                 'entrystop': item.entrystop,
-                'fileuuid': list(item.fileuuid)  # list to be JSON serializable
+                'fileuuid': str(uuid.UUID(bytes=item.fileuuid))
             }
             with filecontext as file:
                 if schema is None:
