@@ -7,7 +7,7 @@ from coffea.util import awkward
 from coffea.util import awkward1
 from coffea.util import numpy as np
 
-import pytest, time, pyinstrument
+import pytest, time # , pyinstrument
 
 from dummy_distributions import dummy_jagged_eta_pt, dummy_four_momenta
 
@@ -344,20 +344,15 @@ def test_jet_transformer():
         assert('phi_'+unc+'_up' in met.columns)
 
 
-@pytest.mark.parametrize("awkwardlib", ["ak1"])#, awkwardlibs)
-def test_corrected_jets_factory(awkwardlib):
+def test_corrected_jets_factory():
     import os
-    from coffea.jetmet_tools import CorrectedJetsFactory, JECStack
+    from coffea.jetmet_tools import CorrectedJetsFactory, CorrectedMETFactory, JECStack
 
     events = None
     cache = {}
-    if awkwardlib == "ak0":
-        from coffea.nanoaod import NanoEvents
-        events = NanoEvents.from_file(os.path.abspath('tests/samples/nano_dy.root'))
-    elif awkwardlib == "ak1":
-        from coffea.nanoevents import NanoEventsFactory
-        factory = NanoEventsFactory.from_file(os.path.abspath('tests/samples/nano_dy.root'), runtime_cache=cache)
-        events = factory.events()
+    from coffea.nanoevents import NanoEventsFactory
+    factory = NanoEventsFactory.from_file(os.path.abspath('tests/samples/nano_dy.root'))
+    events = factory.events()
     
     jec_stack_names = ['Summer16_23Sep2016V3_MC_L1FastJet_AK4PFPuppi',
                        'Summer16_23Sep2016V3_MC_L2Relative_AK4PFPuppi',
@@ -382,25 +377,15 @@ def test_corrected_jets_factory(awkwardlib):
     
     jets['pt_raw'] = jets['rawFactor'] * jets['pt']
     jets['mass_raw'] = jets['rawFactor'] * jets['mass']
-    if awkwardlib == "ak0":
-        jets['pt_gen'] = jets.matched_gen.pt.fillna(0.)
-        jets['rho'] = jets.pt.tojagged(events.fixedGridRhoFastjetAll)
-    if awkwardlib == "ak1":
-        jets['pt_gen'] = awkward1.values_astype(awkward1.fill_none(jets.matched_gen.pt, 0), np.float32)
-        print(jets['pt_gen'].layout)
-        jets['rho'] = awkward1.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
+    jets['pt_gen'] = awkward1.values_astype(awkward1.fill_none(jets.matched_gen.pt, 0), np.float32)
+    print(jets['pt_gen'].layout)
+    jets['rho'] = awkward1.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
     name_map['ptGenJet'] = 'pt_gen'
     name_map['ptRaw'] = 'pt_raw'
     name_map['massRaw'] = 'mass_raw'
     name_map['Rho'] = 'rho'
     
-    events_cache = None
-    if awkwardlib == "ak0":
-        print(jets.columns)
-        events_cache = events._cache
-    if awkwardlib == "ak1":
-        print(awkward1.fields(jets))
-        events_cache = events.caches[0]
+    events_cache = events.caches[0]
     
     print(name_map)
     
@@ -408,16 +393,18 @@ def test_corrected_jets_factory(awkwardlib):
     jet_factory = CorrectedJetsFactory(name_map, jec_stack)
     toc = time.time()
     
-    print('setup time =', toc-tic)
+    print('setup corrected jets time =', toc-tic)
     
     tic = time.time()
-    prof = pyinstrument.Profiler()
-    prof.start()
+    #prof = pyinstrument.Profiler()
+    #prof.start()
     corrected_jets = jet_factory.build(jets, lazy_cache=events_cache)
-    prof.stop()
+    #prof.stop()
     toc = time.time()
 
     print('corrected_jets build time =', toc-tic)
+    
+    #sprint(prof.output_text(unicode=True, color=True, show_all=True))
     
     tic = time.time()
     for unc in jet_factory.uncertainties():
@@ -425,33 +412,44 @@ def test_corrected_jets_factory(awkwardlib):
         print(corrected_jets[unc].up.pt)
         print(corrected_jets[unc].down.pt)
     toc = time.time()
+
+    print('build all jet variations =', toc-tic)
+
+    name_map['METpt'] = 'pt'
+    name_map['METphi'] = 'phi'
+    name_map['METx'] = 'x'
+    name_map['METy'] = 'y'
+    name_map['JETx'] = 'x'
+    name_map['JETy'] = 'y'
+    name_map['xMETRaw'] = 'x_raw'
+    name_map['yMETRaw'] = 'y_raw'
+    name_map['UnClusteredEnergyDeltaX'] = 'MetUnclustEnUpDeltaX'
+    name_map['UnClusteredEnergyDeltaY'] = 'MetUnclustEnUpDeltaY'
+
+    tic = time.time()
+    met_factory = CorrectedMETFactory(name_map)
+    toc = time.time()
     
-    #print(corrected_jets['JER'].down.type)
-    print(prof.output_text(unicode=True, color=True, show_all=True))
-   
-    #print(corrected_jets['JER'].down.pt)
-    #print(corrected_jets.pt)
-    #print(corrected_jets['JER'].up.pt)
-    
-    #tic = time.time()
-    #uncertainty_handler = jet_factory.build_uncertainties(corrected_jets)#, lazy_cache=events_cache)
-    #toc = time.time()
-    
-    #print('uncertainty_handler build time =', toc-tic)
-    
+    print('setup corrected MET time =', toc-tic)
+
+
+    met = events.MET
+    tic = time.time()
     #prof = pyinstrument.Profiler()
     #prof.start()
-
-    #tic = time.time()
-    #for key in uncertainty_handler.keys():
-    #    uncertainty = uncertainty_handler[key]
-    #    up_var = uncertainty.up
-    #    down_var = uncertainty.down
-    #toc = time.time()
-    
+    corrected_met = met_factory.build(met, corrected_jets, lazy_cache=events_cache)
     #prof.stop()
-    #print(prof.output_text(unicode=True, color=True, show_all=True))
-    
-    print('build all variations =', toc-tic)
+    toc = time.time()
 
+    #print(prof.output_text(unicode=True, color=True, show_all=True))
+
+    print('corrected_met build time =', toc-tic)
+
+    tic = time.time()
+    for unc in (jet_factory.uncertainties() + met_factory.uncertainties()):
+        print(unc)
+        print(corrected_met[unc].up.pt)
+        print(corrected_met[unc].down.pt)
+    toc = time.time()
     
+    print('build all met variations =', toc-tic)

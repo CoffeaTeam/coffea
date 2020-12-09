@@ -21,6 +21,7 @@ _JERSF_FORM = {
     "primitive": "float32"
 }
 
+
 # we're gonna assume that the first record array we encounter is the flattened data
 def rewrap_recordarray(layout, depth, data):
     if isinstance(layout, awkward1.layout.RecordArray):
@@ -172,7 +173,10 @@ class CorrectedJetsFactory(object):
             out.extend(['JES_{0}'.format(unc) for unc in self.jec_stack.junc.levels])
         return out
 
-    def build(self, jets, lazy_cache=None):
+    def build(self, jets, lazy_cache):
+        if lazy_cache is None:
+            raise Exception('CorrectedJetsFactory requires a awkward-array cache to function correctly.')
+
         fields = None
         out = None
         wrap = None
@@ -209,13 +213,14 @@ class CorrectedJetsFactory(object):
         jec_name_map['JetMass'] = jec_name_map['ptRaw']
         jec_args = {k: out[jec_name_map[k]] for k in self.jec_stack.jec.signature}
         out['jet_energy_correction'] = self.jec_stack.jec.getCorrection(**jec_args, form=form, lazy_cache=lazy_cache)
+
         # finally the lazy binding to the JEC
         def jec_var_corr(arr, varName):
             return arr['jet_energy_correction'] * arr[varName]
 
         init_pt = partial(VirtualType, jec_var_corr, args=(out, self.name_map['ptRaw']), cache=lazy_cache)
         init_mass = partial(VirtualType, jec_var_corr, args=(out, self.name_map['massRaw']), cache=lazy_cache)
-        
+
         out[self.name_map['JetPt']] = init_pt(length=len(out), form=form) if isak1 else init_pt()
         out[self.name_map['JetMass']] = init_mass(length=len(out), form=form) if isak1 else init_mass()
 

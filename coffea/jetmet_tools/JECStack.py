@@ -85,7 +85,10 @@ class JECStack(object):
 
     @property
     def blank_name_map(self):
-        out = {'massRaw', 'ptRaw', 'JetMass', 'JetPt'}
+        out = {'massRaw', 'ptRaw', 'JetMass', 'JetPt',
+               'METpt', 'METphi', 'METx', 'METy', 'JETx', 'JETy',
+               'xMETRaw', 'yMETRaw',
+               'UnClusteredEnergyDeltaX', 'UnClusteredEnergyDeltaY'}
         for name in self._jec.signature:
             out.add(name)
         for name in self._junc.signature:

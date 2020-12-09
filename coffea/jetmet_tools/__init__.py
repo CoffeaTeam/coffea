@@ -11,7 +11,7 @@ from .JetTransformer import JetTransformer
 
 from .JECStack import JECStack
 from .CorrectedJetsFactory import CorrectedJetsFactory
-# from .MetUncertaintyCalculator import calculateType1MetXY
+from .CorrectedMETFactory import CorrectedMETFactory
 
 __all__ = [
     'FactorizedJetCorrector',
@@ -20,5 +20,6 @@ __all__ = [
     'JetCorrectionUncertainty',
     'JetTransformer',
     'JECStack',
-    'CorrectedJetsFactory'
+    'CorrectedJetsFactory',
+    'CorrectedMETFactory'
 ]
