@@ -145,7 +145,7 @@ class FactorizedJetCorrector(object):
 
         def total_corr(jec, **kwargs):
             corrs = jec.getSubCorrections(**kwargs)
-            return reduce(lambda x, y: y * x, corrs, 1.0)
+            return reduce(lambda x, y: y * x , corrs, 1.0)
 
         out = None
         if isinstance(first_arg, awkward.array.base.AwkwardArray):
@@ -184,8 +184,10 @@ class FactorizedJetCorrector(object):
         corrections = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
-            cumCorr = reduce(lambda x, y: y * x, corrections, np.array(1., dtype=np.float32))
-            fargs = tuple(cumCorr * corrVars[arg] if arg in corrVars.keys() else kwargs[arg] for arg in sig)
+            cumCorr = reduce(lambda x, y: y * x, corrections, 1.0)
+            print(i, cumCorr)
+            print(corrVars)
+            fargs = tuple((cumCorr * corrVars[arg]) if arg in corrVars.keys() else kwargs[arg] for arg in sig)
 
             if isinstance(fargs[0], awkward.array.base.AwkwardArray):
                 corrections.append(awkward.VirtualArray(func, args=fargs, cache=cache))
