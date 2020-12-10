@@ -16,6 +16,7 @@ import cloudpickle
 
 supported_column_file_types = {b'root': 'root', b'PAR1': 'parquet'}
 
+
 def load(filename):
     '''Load a coffea file from disk
     '''
@@ -34,14 +35,46 @@ def save(output, filename):
         fout.write(thepickle)
 
 
-def get_column_file_type(filestr):
-    # TODO: xrootd
-    with open(filestr, 'rb') as f:
-        try:
-            return supported_column_file_types[f.read(4)]
-        except:
-            raise Exception('Unsupported column source file type.'
-                            ' Not one of {0}'.format(list(supported_column_file_types.keys())))
+def get_column_file_type(filestr, timeout=10):
+    bytes = None
+    if filestr.startswith('root'):
+        from uproot4.source.xrootd import XRootDResource
+        resource = XRootDResource(filestr, timeout=timeout)
+        bytes = resource.file.read(0, 4, timeout=timeout)[1]
+        resource.file.close()
+    elif filestr.startswith('http'):
+        from uproot4.source.http import HTTPResource, make_connection, full_path
+        import requests
+        actual_url = None
+        head = requests.head(filestr)
+        while head.is_redirect:
+            head = requests.head(head.next.url)
+        actual_url = head.url
+        resource = HTTPResource(actual_url, timeout=timeout)
+        connection = make_connection(resource.parsed_url, timeout)
+        connection.request(
+            "GET",
+            full_path(resource.parsed_url),
+            headers={"Range": "bytes={0}-{1}".format(0, 3)},
+        )
+        bytes = resource.get(connection, 0, 4)
+        connection.close()
+    else:
+        with open(filestr, 'rb') as file:
+            bytes = file.read(4)
+
+    type = None
+    try:
+        type = supported_column_file_types[bytes]
+    except KeyError:
+        raise Exception('Unsupported column source file type {0}.'
+                        ' Not one of {1}'.format(bytes, list(supported_column_file_types.keys())))
+
+    if filestr.startswith(('root', 'http')) and type == 'parquet':
+        raise Exception('Reading parquet files does not yet support reads over xrootd to http(s)!')
+
+    return type
+
 
 def _hex(string):
     try:

@@ -1,11 +1,12 @@
 import warnings
 import weakref
-import json
 import awkward1
 import uproot4 as uproot
 
 from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
-from coffea.nanoevents.mapping import TrivialOpener, UprootSourceMapping, CachedMapping
+from coffea.nanoevents.mapping import (TrivialUprootOpener, TrivialParquetOpener,
+                                       UprootSourceMapping, ParquetSourceMapping,
+                                       CachedMapping)
 from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema
 
 
@@ -99,12 +100,12 @@ class NanoEventsFactory:
         )
         uuidpfn = {partition_tuple[0]: tree.file.file_path}
         mapping = UprootSourceMapping(
-            TrivialOpener(uuidpfn, uproot_options), access_log=access_log
+            TrivialUprootOpener(uuidpfn, uproot_options), access_log=access_log
         )
-        mapping.preload_tree(partition_tuple[0], partition_tuple[1], tree)
+        mapping.preload_column_source(partition_tuple[0], partition_tuple[1], tree)
         if persistent_cache is not None:
             mapping = CachedMapping(persistent_cache, mapping)
-        base_form = cls._extract_base_form(tree)
+        base_form = mapping._extract_base_form(tree)
         if metadata is not None:
             base_form["parameters"]["metadata"] = metadata
         schema = schemaclass(base_form)
@@ -114,44 +115,6 @@ class NanoEventsFactory:
         uuid, treepath, entryrange = key_to_tuple(self._partition_key)
         start, stop = (int(x) for x in entryrange.split("-"))
         return stop - start
-
-    @classmethod
-    def _extract_base_form(cls, tree):
-        branch_forms = {}
-        for key, branch in tree.iteritems():
-            if "," in key or "!" in key:
-                warnings.warn(
-                    f"Skipping {key} because it contains characters that NanoEvents cannot accept [,!]"
-                )
-                continue
-            if len(branch):
-                continue
-            form = branch.interpretation.awkward_form(None)
-            form = uproot._util.awkward_form_remove_uproot(awkward1, form)
-            form = json.loads(form.tojson())
-            if (
-                form["class"].startswith("ListOffset")
-                and form["content"]["class"] == "NumpyArray"  # noqa
-            ):
-                form["form_key"] = quote(f"{key},!load")
-                form["content"]["form_key"] = quote(f"{key},!load,!content")
-                form["content"]["parameters"] = {"__doc__": branch.title}
-            elif form["class"] == "NumpyArray":
-                form["form_key"] = quote(f"{key},!load")
-                form["parameters"] = {"__doc__": branch.title}
-            else:
-                warnings.warn(
-                    f"Skipping {key} as it is not interpretable by NanoEvents"
-                )
-                continue
-            branch_forms[key] = form
-
-        return {
-            "class": "RecordArray",
-            "contents": branch_forms,
-            "parameters": {"__doc__": tree.title},
-            "form_key": "",
-        }
 
     def events(self):
         """Build events"""
