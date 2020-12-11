@@ -65,17 +65,17 @@ def _parse_jme_formatted_file(
     offset = 1
     for i in range(nBinnedVars):
         columns.extend(["%s%s" % (layout[i + offset], mm) for mm in minMax])
-        dtypes.extend(["<f8", "<f8"])
+        dtypes.extend(["<f4", "<f4"])
     columns.append("NVars")
     dtypes.append("<i8")
     offset += nBinnedVars + 1
     if not interpolatedFunc:
         for i in range(nEvalVars):
             columns.extend(["%s%s" % (layout[i + offset], mm) for mm in minMax])
-            dtypes.extend(["<f8", "<f8"])
+            dtypes.extend(["<f4", "<f4"])
     for i in range(nParms):
         columns.append("p%i" % i)
-        dtypes.append("<f8")
+        dtypes.append("<f4")
 
     for f in funcs_to_cap:
         formula = formula.replace(f, f.upper())
@@ -96,7 +96,7 @@ def _parse_jme_formatted_file(
         nParms = pars.shape[1] - len(columns)
         for i in range(nParms):
             columns.append("p%i" % i)
-            dtypes.append("<f8")
+            dtypes.append("<f4")
         pars = np.core.records.fromarrays(
             pars.transpose(), names=columns, formats=dtypes
         )
@@ -413,11 +413,11 @@ def convert_effective_area_file(eaFilePath):
     offset = 1
     for i in range(nBinnedVars):
         columns.extend(["%s%s" % (layout[i + offset], mm) for mm in minMax])
-        dtypes.extend(["<f8", "<f8"])
+        dtypes.extend(["<f4", "<f4"])
     offset += nBinnedVars + 1
     for i in range(nEvalVars):
         columns.append("%s" % (layout[i + offset]))
-        dtypes.append("<f8")
+        dtypes.append("<f4")
 
     pars = np.genfromtxt(
         eaFilePath,

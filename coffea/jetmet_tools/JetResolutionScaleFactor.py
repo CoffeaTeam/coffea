@@ -2,6 +2,7 @@ from ..lookup_tools.jersf_lookup import jersf_lookup
 import warnings
 import re
 from ..util import awkward
+from ..util import awkward1
 from ..util import numpy as np
 from copy import deepcopy
 
@@ -134,11 +135,20 @@ class JetResolutionScaleFactor(object):
             jersfs = jersf.getScaleFactor(JetProperty1=jet.property1,...)
 
         """
+        cache = kwargs.pop('lazy_cache', None)
+        form = kwargs.pop('form', None)
         sfs = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
-            args = []
-            for input in sig:
-                args.append(kwargs[input])
-            sfs.append(func(*tuple(args)))
+            args = tuple(kwargs[input] for input in sig)
+
+            if isinstance(args[0], awkward.array.base.AwkwardArray):
+                sfs.append(awkward.VirtualArray(func, args=args, cache=cache))
+            elif isinstance(args[0], np.ndarray):
+                sfs.append(func(*args))  # np is non-lazy
+            elif isinstance(args[0], awkward1.highlevel.Array):
+                sfs.append(awkward1.virtual(func, args=args, length=len(args[0]), form=form, cache=cache))
+            else:
+                raise Exception('Unknown array library for inputs.')
+
         return sfs[-1]

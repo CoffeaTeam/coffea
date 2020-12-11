@@ -45,36 +45,14 @@ class lookup_base(object):
         return awkward1._util.wrap(out[0], behavior=behavior)
 
     def _call_ak0(self, inputs, **kwargs):
-        offsets = None
-        # TODO: check can use offsets (this should always be true for striped)
-        # Alternatively we can just use starts and stops
-        for i in range(len(inputs)):
-            if isinstance(inputs[i], awkward.JaggedArray):
-                if offsets is not None and offsets.base is not inputs[i].offsets.base:
-                    if type(offsets) is int:
-                        raise Exception(
-                            "Do not mix JaggedArrays and numpy arrays when calling derived class of lookup_base"
-                        )
-                    elif (
-                        type(offsets) is numpy.ndarray
-                        and offsets.base is not inputs[i].offsets.base
-                    ):
-                        raise Exception(
-                            "All input jagged arrays must have a common structure (offsets)!"
-                        )
-                offsets = inputs[i].offsets
-                inputs[i] = inputs[i].content
-            elif isinstance(inputs[i], numpy.ndarray):
-                if offsets is not None:
-                    if type(offsets) is numpy.ndarray:
-                        raise Exception(
-                            "do not mix JaggedArrays and numpy arrays when calling a derived class of lookup_base"
-                        )
-                offsets = -1
-        retval = self._evaluate(*tuple(inputs), **kwargs)
-        if offsets is not None and type(offsets) is not int:
-            retval = awkward.JaggedArray.fromoffsets(offsets, retval)
-        return retval
+        if not all([isinstance(input, awkward.JaggedArray) for input in inputs]):
+            raise Exception(
+                "Do not mix JaggedArrays and other arrays when calling derived class of lookup_base"
+            )
+        wrap, arrays = awkward.util.unwrap_jagged(inputs[0],
+                                                  inputs[0].JaggedArray,
+                                                  inputs)
+        return wrap(self._evaluate(*tuple(arrays), **kwargs))
 
     def _evaluate(self, *args, **kwargs):
         raise NotImplementedError
