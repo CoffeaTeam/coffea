@@ -40,6 +40,56 @@ class NanoEventsFactory:
         self._events = lambda: None
 
     @classmethod
+    def from_file(
+        cls,
+        file,
+        treepath="/Events",
+        entry_start=None,
+        entry_stop=None,
+        runtime_cache=None,
+        persistent_cache=None,
+        schemaclass=NanoAODSchema,
+        metadata=None,
+        uproot_options={},
+        access_log=None,
+    ):
+        """Quickly build NanoEvents from a root file
+
+        Parameters
+        ----------
+            file : str or uproot.reading.ReadOnlyDirectory
+                The filename or already opened file using e.g. ``uproot.open()``
+            treepath : str, optional
+                Name of the tree to read in the file
+            entry_start : int, optional
+                Start at this entry offset in the tree (default 0)
+            entry_stop : int, optional
+                Stop at this entry offset in the tree (default end of tree)
+            runtime_cache : dict, optional
+                A dict-like interface to a cache object. This cache is expected to last the
+                duration of the program only, and will be used to hold references to materialized
+                awkward1 arrays, etc.
+            persistent_cache : dict, optional
+                A dict-like interface to a cache object. Only bare numpy arrays will be placed in this cache,
+                using globally-unique keys.
+            schemaclass : BaseSchema
+                A schema class deriving from `BaseSchema` and implementing the desired view of the file
+            metadata : dict, optional
+                Arbitrary metadata to add to the `base.NanoEvents` object
+            uproot_options : dict, optional
+                Any options to pass to ``uproot.open``
+            access_log : list, optional
+                Pass a list instance to record which branches were lazily accessed by this instance
+        """
+        warnings.warn("DEPRECATION NOTICE:\nNanoEventsFactory.from_file is deprecated, please"
+                      " migrate your code to use NanoEventsFactory.from_root.\nUsing"
+                      " NanoEventsFactory.from_file will result in an error in the next"
+                      " major release of coffea.")
+        return cls.from_root(file, treepath, entry_start, entry_stop,
+                             runtime_cache, persistent_cache, schemaclass,
+                             metadata, uproot_options, access_log)
+
+    @classmethod
     def from_root(
         cls,
         file,
@@ -98,7 +148,7 @@ class NanoEventsFactory:
         if entry_stop is None or entry_stop > tree.num_entries:
             entry_stop = tree.num_entries
 
-        partition_meta = (
+        partition_key = (
             str(tree.file.uuid),
             tree.object_path,
             "{0}-{1}".format(entry_start, entry_stop),
@@ -111,7 +161,7 @@ class NanoEventsFactory:
 
         base_form = mapping._extract_base_form(tree)
 
-        return cls._from_mapping(mapping, partition_meta, base_form,
+        return cls._from_mapping(mapping, partition_key, base_form,
                                  runtime_cache, persistent_cache,
                                  schemaclass, metadata)
 
@@ -175,7 +225,7 @@ class NanoEventsFactory:
         pquuid = None if pqmeta is None else pqmeta.get(b'uuid', None)
         pqurl = str(None if pqmeta is None else pqmeta.get(b'url', None))
 
-        partition_meta = (
+        partition_key = (
             str(pquuid),
             pqurl,
             "{0}-{1}".format(entry_start, entry_stop),
@@ -189,7 +239,7 @@ class NanoEventsFactory:
 
         base_form = mapping._extract_base_form(table_file.schema_arrow)
 
-        return cls._from_mapping(mapping, partition_meta, base_form,
+        return cls._from_mapping(mapping, partition_key, base_form,
                                  runtime_cache, persistent_cache,
                                  schemaclass, metadata)
 
@@ -197,7 +247,7 @@ class NanoEventsFactory:
     def _from_mapping(
         cls,
         mapping,
-        partition_meta,
+        partition_key,
         base_form,
         runtime_cache,
         persistent_cache,
@@ -210,8 +260,10 @@ class NanoEventsFactory:
         ----------
             mapping : Mapping
                 The mapping of a column_source to columns.
-            partition_meta : tuple
+            partition_key : tuple
                 Basic information about the column source, uuid, paths.
+            base_form : dict
+                The awkward form describing the nanoevents interpretation of the mapped file.
             runtime_cache : dict
                 A dict-like interface to a cache object. This cache is expected to last the
                 duration of the program only, and will be used to hold references to materialized

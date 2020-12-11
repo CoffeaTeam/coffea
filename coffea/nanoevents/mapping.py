@@ -288,7 +288,10 @@ class ParquetSourceMapping(BaseSourceMapping):
             self.column = column
 
         def array(self, entry_start, entry_stop):
-            aspa = self.source.read(self.column)[entry_start:entry_stop][0].chunk(0)
+            # make sure uproot is single-core since our calling context might not be
+            aspa = self.source.read(
+                self.column, use_threads=False
+            )[entry_start:entry_stop][0].chunk(0)
             out = None
             if isinstance(aspa, (pa.lib.ListArray, pa.lib.LargeListArray)):
                 value_type = aspa.type.value_type
@@ -379,7 +382,6 @@ class ParquetSourceMapping(BaseSourceMapping):
         return ParquetSourceMapping.UprootLikeShim(columnsource, name)
 
     def extract_column(self, columnhandle, start, stop):
-        # make sure uproot is single-core since our calling context might not be
         return columnhandle.array(entry_start=start, entry_stop=stop)
 
     def __len__(self):
