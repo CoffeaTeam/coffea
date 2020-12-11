@@ -39,7 +39,6 @@ class TrivialUprootOpener(UUIDOpener):
 # IMPORTANT -> For now the uuid is just the uuid of the pfn.
 #              Later we should use the ParquetFile common_metadata to populate.
 class TrivialParquetOpener(UUIDOpener):
-
     class UprootLikeShim:
         def __init__(self, file):
             self.file = file
@@ -63,8 +62,8 @@ class TrivialParquetOpener(UUIDOpener):
         pfn = self._uuid_pfnmap[uuid]
         parfile = pq.ParquetFile(pfn, **self._parquet_options)
         pqmeta = parfile.schema_arrow.metadata
-        pquuid = None if pqmeta is None else pqmeta.get(b'uuid', None)
-        pfn = None if pqmeta is None else pqmeta.get(b'url', None)
+        pquuid = None if pqmeta is None else pqmeta.get(b"uuid", None)
+        pfn = None if pqmeta is None else pqmeta.get(b"url", None)
         if str(pquuid) != uuid:
             raise RuntimeError(
                 f"UUID of file {pfn} does not match expected value ({uuid})"
@@ -266,7 +265,7 @@ def arrow_schema_to_awkward_form(schema):
                 inner_shape=[],
                 itemsize=dtype.dtype.itemsize,
                 format=dtype.dtype.char,
-            )
+            ),
         )
     elif isinstance(schema, pa.lib.DataType):
         dtype = schema.to_pandas_dtype()()
@@ -276,7 +275,7 @@ def arrow_schema_to_awkward_form(schema):
             format=dtype.dtype.char,
         )
     else:
-        raise Exception('Unrecognized pyarrow array type')
+        raise Exception("Unrecognized pyarrow array type")
     return None
 
 
@@ -295,24 +294,32 @@ class ParquetSourceMapping(BaseSourceMapping):
                 value_type = aspa.type.value_type
                 offsets = None
                 if isinstance(aspa, pa.lib.LargeListArray):
-                    offsets = numpy.frombuffer(aspa.buffers()[1], dtype=numpy.int64)[:len(aspa) + 1]
+                    offsets = numpy.frombuffer(aspa.buffers()[1], dtype=numpy.int64)[
+                        : len(aspa) + 1
+                    ]
                 else:
-                    offsets = numpy.frombuffer(aspa.buffers()[1], dtype=numpy.int32)[:len(aspa) + 1]
+                    offsets = numpy.frombuffer(aspa.buffers()[1], dtype=numpy.int32)[
+                        : len(aspa) + 1
+                    ]
                     offsets = offsets.astype(numpy.int64)
                 offsets = awkward1.layout.Index64(offsets)
 
                 if not isinstance(value_type, pa.lib.DataType):
-                    raise Exception('arrow only accepts single jagged arrays for now...')
+                    raise Exception(
+                        "arrow only accepts single jagged arrays for now..."
+                    )
                 dtype = value_type.to_pandas_dtype()
                 flat = aspa.flatten()
-                content = numpy.frombuffer(flat.buffers()[1], dtype=dtype)[:len(flat)]
+                content = numpy.frombuffer(flat.buffers()[1], dtype=dtype)[: len(flat)]
                 content = awkward1.layout.NumpyArray(content)
                 out = awkward1.layout.ListOffsetArray64(offsets, content)
             elif isinstance(aspa, pa.lib.NumericArray):
-                out = numpy.frombuffer(aspa.buffers()[1], dtype=aspa.type.to_pandas_dtype())[:len(aspa)]
+                out = numpy.frombuffer(
+                    aspa.buffers()[1], dtype=aspa.type.to_pandas_dtype()
+                )[: len(aspa)]
                 out = awkward1.layout.NumpyArray(out)
             else:
-                raise Exception('array is not flat array or jagged list')
+                raise Exception("array is not flat array or jagged list")
             return awkward1.Array(out)
 
     def __init__(self, fileopener, cache=None, access_log=None):
@@ -332,8 +339,8 @@ class ParquetSourceMapping(BaseSourceMapping):
                 continue
 
             form = None
-            if b'form' in fmeta:
-                form = json.loads(fmeta[b'form'])
+            if b"form" in fmeta:
+                form = json.loads(fmeta[b"form"])
             else:
                 schema = field.type
                 form = arrow_schema_to_awkward_form(schema)
@@ -345,14 +352,16 @@ class ParquetSourceMapping(BaseSourceMapping):
             ):
                 form["form_key"] = quote(f"{key},!load")
                 form["content"]["form_key"] = quote(f"{key},!load,!content")
-                if b'title' in fmeta:
-                    form["content"]["parameters"] = {"__doc__": fmeta[b'title'].decode()}
+                if b"title" in fmeta:
+                    form["content"]["parameters"] = {
+                        "__doc__": fmeta[b"title"].decode()
+                    }
                 elif "__doc__" not in form["content"]["parameters"]:
                     form["content"]["parameters"] = {"__doc__": key}
             elif form["class"] == "NumpyArray":
                 form["form_key"] = quote(f"{key},!load")
-                if b'title' in fmeta:
-                    form["parameters"] = {"__doc__": fmeta[b'title'].decode()}
+                if b"title" in fmeta:
+                    form["parameters"] = {"__doc__": fmeta[b"title"].decode()}
                 elif "__doc__" not in form["parameters"]:
                     form["parameters"] = {"__doc__": key}
             else:

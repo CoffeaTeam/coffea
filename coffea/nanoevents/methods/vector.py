@@ -666,5 +666,12 @@ class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
         )
 
 
-__all__ = ["TwoVector", "PolarTwoVector", "ThreeVector", "SphericalThreeVector",
-           "LorentzVector", "PtEtaPhiMLorentzVector", "PtEtaPhiELorentzVector"]
+__all__ = [
+    "TwoVector",
+    "PolarTwoVector",
+    "ThreeVector",
+    "SphericalThreeVector",
+    "LorentzVector",
+    "PtEtaPhiMLorentzVector",
+    "PtEtaPhiELorentzVector",
+]

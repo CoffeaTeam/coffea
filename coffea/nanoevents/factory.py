@@ -9,9 +9,13 @@ import io
 import uuid
 
 from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
-from coffea.nanoevents.mapping import (TrivialUprootOpener, TrivialParquetOpener,
-                                       UprootSourceMapping, ParquetSourceMapping,
-                                       CachedMapping)
+from coffea.nanoevents.mapping import (
+    TrivialUprootOpener,
+    TrivialParquetOpener,
+    UprootSourceMapping,
+    ParquetSourceMapping,
+    CachedMapping,
+)
 from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema
 
 
@@ -81,13 +85,24 @@ class NanoEventsFactory:
             access_log : list, optional
                 Pass a list instance to record which branches were lazily accessed by this instance
         """
-        warnings.warn("DEPRECATION NOTICE:\nNanoEventsFactory.from_file is deprecated, please"
-                      " migrate your code to use NanoEventsFactory.from_root.\nUsing"
-                      " NanoEventsFactory.from_file will result in an error in the next"
-                      " major release of coffea.")
-        return cls.from_root(file, treepath, entry_start, entry_stop,
-                             runtime_cache, persistent_cache, schemaclass,
-                             metadata, uproot_options, access_log)
+        warnings.warn(
+            "DEPRECATION NOTICE:\nNanoEventsFactory.from_file is deprecated, please"
+            " migrate your code to use NanoEventsFactory.from_root.\nUsing"
+            " NanoEventsFactory.from_file will result in an error in the next"
+            " major release of coffea."
+        )
+        return cls.from_root(
+            file,
+            treepath,
+            entry_start,
+            entry_stop,
+            runtime_cache,
+            persistent_cache,
+            schemaclass,
+            metadata,
+            uproot_options,
+            access_log,
+        )
 
     @classmethod
     def from_root(
@@ -161,9 +176,15 @@ class NanoEventsFactory:
 
         base_form = mapping._extract_base_form(tree)
 
-        return cls._from_mapping(mapping, partition_key, base_form,
-                                 runtime_cache, persistent_cache,
-                                 schemaclass, metadata)
+        return cls._from_mapping(
+            mapping,
+            partition_key,
+            base_form,
+            runtime_cache,
+            persistent_cache,
+            schemaclass,
+            metadata,
+        )
 
     @classmethod
     def from_parquet(
@@ -207,8 +228,15 @@ class NanoEventsFactory:
             access_log : list, optional
                 Pass a list instance to record which branches were lazily accessed by this instance
         """
-        ftypes = (str, pathlib.Path, pyarrow.NativeFile,
-                  io.TextIOBase, io.BufferedIOBase, io.RawIOBase, io.IOBase)
+        ftypes = (
+            str,
+            pathlib.Path,
+            pyarrow.NativeFile,
+            io.TextIOBase,
+            io.BufferedIOBase,
+            io.RawIOBase,
+            io.IOBase,
+        )
         if isinstance(file, ftypes):
             table_file = pyarrow.parquet.ParquetFile(file, **parquet_options)
         elif isinstance(file, pyarrow.parquet.ParquetFile):
@@ -222,12 +250,12 @@ class NanoEventsFactory:
             entry_stop = table_file.metadata.num_rows
 
         pqmeta = table_file.schema_arrow.metadata
-        pquuid = None if pqmeta is None else pqmeta.get(b'uuid', None)
-        pqobj_path = None if pqmeta is None else pqmeta.get(b'object_path', None)
+        pquuid = None if pqmeta is None else pqmeta.get(b"uuid", None)
+        pqobj_path = None if pqmeta is None else pqmeta.get(b"object_path", None)
 
         partition_key = (
-            str(None) if pquuid is None else pquuid.decode('ascii'),
-            str(None) if pqobj_path is None else pqobj_path.decode('ascii'),
+            str(None) if pquuid is None else pquuid.decode("ascii"),
+            str(None) if pqobj_path is None else pqobj_path.decode("ascii"),
             "{0}-{1}".format(entry_start, entry_stop),
         )
         uuidpfn = {partition_key[0]: pqobj_path}
@@ -239,9 +267,15 @@ class NanoEventsFactory:
 
         base_form = mapping._extract_base_form(table_file.schema_arrow)
 
-        return cls._from_mapping(mapping, partition_key, base_form,
-                                 runtime_cache, persistent_cache,
-                                 schemaclass, metadata)
+        return cls._from_mapping(
+            mapping,
+            partition_key,
+            base_form,
+            runtime_cache,
+            persistent_cache,
+            schemaclass,
+            metadata,
+        )
 
     @classmethod
     def _from_mapping(
