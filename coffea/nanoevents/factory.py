@@ -153,11 +153,11 @@ class NanoEventsFactory:
             tree.object_path,
             "{0}-{1}".format(entry_start, entry_stop),
         )
-        uuidpfn = {partition_meta[0]: tree.file.file_path}
+        uuidpfn = {partition_key[0]: tree.file.file_path}
         mapping = UprootSourceMapping(
             TrivialUprootOpener(uuidpfn, uproot_options), access_log=access_log
         )
-        mapping.preload_column_source(partition_meta[0], partition_meta[1], tree)
+        mapping.preload_column_source(partition_key[0], partition_key[1], tree)
 
         base_form = mapping._extract_base_form(tree)
 
@@ -230,12 +230,12 @@ class NanoEventsFactory:
             pqurl,
             "{0}-{1}".format(entry_start, entry_stop),
         )
-        uuidpfn = {partition_meta[0]: pqurl}
+        uuidpfn = {partition_key[0]: pqurl}
         mapping = ParquetSourceMapping(
             TrivialParquetOpener(uuidpfn, parquet_options), access_log=access_log
         )
         shim = TrivialParquetOpener.UprootLikeShim(table_file)
-        mapping.preload_column_source(partition_meta[0], partition_meta[1], shim)
+        mapping.preload_column_source(partition_key[0], partition_key[1], shim)
 
         base_form = mapping._extract_base_form(table_file.schema_arrow)
 
@@ -284,7 +284,7 @@ class NanoEventsFactory:
         if metadata is not None:
             base_form["parameters"]["metadata"] = metadata
         schema = schemaclass(base_form)
-        return cls(schema, mapping, tuple_to_key(partition_meta), cache=runtime_cache)
+        return cls(schema, mapping, tuple_to_key(partition_key), cache=runtime_cache)
 
     def __len__(self):
         uuid, treepath, entryrange = key_to_tuple(self._partition_key)
