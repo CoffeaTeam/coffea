@@ -3,13 +3,17 @@ from __future__ import print_function, division
 import os
 from coffea import lookup_tools
 import uproot
+from coffea.util import awkward1
 from coffea.util import awkward
 from coffea.util import numpy as np
 from awkward import JaggedArray
 from coffea.nanoaod import NanoEvents
+import pytest
 
 from dummy_distributions import dummy_jagged_eta_pt
 
+
+awkwardlibs = ["ak0", "ak1"]
 
 def test_extractor_exceptions():
     extractor = lookup_tools.extractor()
@@ -36,13 +40,17 @@ def test_extractor_exceptions():
     except Exception as e:
         assert(e.args[0] == 'Cannot make an evaluator from unfinalized extractor!')
 
-def test_evaluator_exceptions():
+@pytest.mark.parametrize("awkwardlib", awkwardlibs)
+def test_evaluator_exceptions(awkwardlib):
     extractor = lookup_tools.extractor()
     extractor.add_weight_sets(["testSF2d scalefactors_Tight_Electron tests/samples/testSF2d.histo.root"])
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
     test_eta_jagged = awkward.JaggedArray.fromcounts(counts, test_eta)
     test_pt_jagged = awkward.JaggedArray.fromcounts(counts, test_pt)
+    if awkwardlib == "ak1":
+        test_eta_jagged = awkward1.from_awkward0(test_eta_jagged)
+        test_pt_jagged = awkward1.from_awkward0(test_pt_jagged)
 
     extractor.finalize()
     evaluator = extractor.make_evaluator()
@@ -50,16 +58,20 @@ def test_evaluator_exceptions():
     try:
         test_out = evaluator["testSF2d"](test_pt_jagged, test_eta)
     except Exception as e:
-        assert(e.args[0] == 'do not mix JaggedArrays and numpy arrays when calling a derived class of lookup_base')
+        if awkwardlib == "ak0":
+            assert(e.args[0] == 'Do not mix JaggedArrays and other arrays when calling derived class of lookup_base')
+        if awkwardlib == "ak1":
+            assert(isinstance(e, ValueError))
 
-def test_evaluator_exceptions():
+def test_evaluate_noimpl():
     from coffea.lookup_tools.lookup_base import lookup_base
     try:
         lookup_base()._evaluate()
     except NotImplementedError:
         pass
 
-def test_root_scalefactors():
+@pytest.mark.parametrize("awkwardlib", awkwardlibs)
+def test_root_scalefactors(awkwardlib):
     extractor = lookup_tools.extractor()
     extractor.add_weight_sets(["testSF2d scalefactors_Tight_Electron tests/samples/testSF2d.histo.root"])
     
@@ -78,10 +90,17 @@ def test_root_scalefactors():
     # test structured eval
     test_eta_jagged = awkward.JaggedArray.fromcounts(counts, test_eta)
     test_pt_jagged = awkward.JaggedArray.fromcounts(counts, test_pt)
+    if awkwardlib == "ak1":
+        test_eta_jagged = awkward1.from_awkward0(test_eta_jagged)
+        test_pt_jagged = awkward1.from_awkward0(test_pt_jagged)
     test_out_jagged = evaluator["testSF2d"](test_eta_jagged, test_pt_jagged)
 
-    assert (test_out_jagged.counts==counts).all()
-    assert (test_out==test_out_jagged.flatten()).all()
+    if awkwardlib == "ak0":
+        assert (test_out_jagged.counts==counts).all()
+        assert (test_out==test_out_jagged.flatten()).all()
+    if awkwardlib == "ak1":
+        assert awkward1.all(awkward1.num(test_out_jagged)==counts)
+        assert awkward1.all(awkward1.flatten(test_out_jagged)==test_out)
 
     # From make_expected_lookup.py
     expected_output = np.array([
@@ -143,7 +162,8 @@ def test_histo_json_scalefactors():
     print(sf_out)
     print(sf_err_out)
 
-def test_jec_txt_scalefactors():
+@pytest.mark.parametrize("awkwardlib", awkwardlibs)
+def test_jec_txt_scalefactors(awkwardlib):
     extractor = lookup_tools.extractor()
     extractor.add_weight_sets([
         "testJEC * tests/samples/Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi.jec.txt",
@@ -165,24 +185,39 @@ def test_jec_txt_scalefactors():
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
     
+    # test structured eval
+    test_eta_jagged = awkward.JaggedArray.fromcounts(counts, test_eta)
+    test_pt_jagged = awkward.JaggedArray.fromcounts(counts, test_pt)
+    if awkwardlib == "ak1":
+        test_eta_jagged = awkward1.from_awkward0(test_eta_jagged)
+        test_pt_jagged = awkward1.from_awkward0(test_pt_jagged)
+    
+    
     jec_out = evaluator['testJECFall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi'](test_eta,test_pt)
+    jec_out_jagged = evaluator['testJECFall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi'](test_eta_jagged,test_pt_jagged)
 
     print(evaluator['testJECFall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi'])
     
     jec_out = evaluator['Summer16_07Aug2017_V11_L1fix_MC_L2Relative_AK4PFchs'](test_eta,test_pt)
+    jec_out_jagged = evaluator['Summer16_07Aug2017_V11_L1fix_MC_L2Relative_AK4PFchs'](test_eta_jagged,test_pt_jagged)
     
     print(evaluator['Summer16_07Aug2017_V11_L1fix_MC_L2Relative_AK4PFchs'])
 
     jersf = evaluator['Spring16_25nsV10_MC_SF_AK4PFPuppi']
     
+    jersf_out = evaluator['Spring16_25nsV10_MC_SF_AK4PFPuppi'](test_eta,test_pt)
+    jersf_out_jagged = evaluator['Spring16_25nsV10_MC_SF_AK4PFPuppi'](test_eta_jagged,test_pt_jagged)
+    
     print(evaluator['Spring16_25nsV10_MC_SF_AK4PFPuppi'])
     
     junc_out = evaluator['Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi'](test_eta,test_pt)
+    junc_out_jagged = evaluator['Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi'](test_eta_jagged,test_pt_jagged)
 
     print(evaluator['Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi'])
     
     assert('Autumn18_V8_MC_UncertaintySources_AK4PFchs_AbsoluteScale' in evaluator.keys())
     junc_out = evaluator['Autumn18_V8_MC_UncertaintySources_AK4PFchs_AbsoluteScale'](test_eta,test_pt)
+    junc_out_jagged = evaluator['Autumn18_V8_MC_UncertaintySources_AK4PFchs_AbsoluteScale'](test_eta_jagged,test_pt_jagged)
     print(evaluator['Autumn18_V8_MC_UncertaintySources_AK4PFchs_AbsoluteScale'])
 
 def test_jec_txt_effareas():
