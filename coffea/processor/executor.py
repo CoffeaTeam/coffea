@@ -842,7 +842,7 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                     )
                 elif issubclass(schema, schemas.BaseSchema):
                     materialized = []
-                    factory = NanoEventsFactory.from_file(
+                    factory = NanoEventsFactory.from_root(
                         file=file,
                         treepath=item.treename,
                         entry_start=item.entrystart,

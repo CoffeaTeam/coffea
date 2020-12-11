@@ -351,7 +351,7 @@ def test_corrected_jets_factory():
     events = None
     cache = {}
     from coffea.nanoevents import NanoEventsFactory
-    factory = NanoEventsFactory.from_file(os.path.abspath('tests/samples/nano_dy.root'))
+    factory = NanoEventsFactory.from_root(os.path.abspath('tests/samples/nano_dy.root'))
     events = factory.events()
     
     jec_stack_names = ['Summer16_23Sep2016V3_MC_L1FastJet_AK4PFPuppi',

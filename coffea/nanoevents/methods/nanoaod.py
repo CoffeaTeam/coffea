@@ -347,6 +347,16 @@ class MissingET(vector.PolarTwoVector, base.NanoCollection):
 
 _set_repr_name("MissingET")
 
-__all__ = ["PtEtaPhiMCollection", "GenParticle", "GenVisTau",
-           "Electron", "Muon", "Tau", "Photon", "FsrPhoton",
-           "Jet", "FatJet", "MissingET"]
+__all__ = [
+    "PtEtaPhiMCollection",
+    "GenParticle",
+    "GenVisTau",
+    "Electron",
+    "Muon",
+    "Tau",
+    "Photon",
+    "FsrPhoton",
+    "Jet",
+    "FatJet",
+    "MissingET",
+]

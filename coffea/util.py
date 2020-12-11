@@ -14,6 +14,8 @@ nb = numba
 import lz4.frame
 import cloudpickle
 
+supported_column_file_types = {b'root': 'root', b'PAR1': 'parquet'}
+
 
 def load(filename):
     '''Load a coffea file from disk
