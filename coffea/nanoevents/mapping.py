@@ -3,7 +3,8 @@ from cachetools import LRUCache
 from collections.abc import Mapping
 import uproot4
 import awkward1
-import pyarrow
+import pyarrow as pa
+import pyarrow.parquet as pq
 import numpy
 import json
 from coffea.nanoevents import transforms
@@ -53,19 +54,20 @@ class TrivialParquetOpener(UUIDOpener):
             return self.file
 
     def __init__(self, uuid_pfnmap, parquet_options={}):
-        super(TrivialUprootOpener, self).__init__(uuid_pfnmap)
+        super(TrivialParquetOpener, self).__init__(uuid_pfnmap)
         self._parquet_options = parquet_options
         self._schema_map = None
 
     def open_uuid(self, uuid):
         pfn = self._uuid_pfnmap[uuid]
-        parfile = pyarrow.parquet.ParquetFile(pfn, **self._parquet_options)
-        if parfile.common_metadata is not None and 'uuid' in parfile.common_metadata:
-            uuid = parfile.common_metadata['uuid']
-            if str(parfile.file.uuid) != uuid:
-                raise RuntimeError(
-                    f"UUID of file {pfn} does not match expected value ({uuid})"
-                )
+        parfile = pq.ParquetFile(pfn, **self._parquet_options)
+        pqmeta = parfile.schema_arrow.metadata
+        pquuid = None if pqmeta is None else pqmeta.get(b'uuid', None)
+        pfn = None if pqmeta is None else pqmeta.get(b'url', None)
+        if str(pquuid) != uuid:
+            raise RuntimeError(
+                f"UUID of file {pfn} does not match expected value ({uuid})"
+            )
         return TrivialParquetOpener.UprootLikeShim(parfile)
 
 
@@ -108,7 +110,7 @@ class BaseSourceMapping(Mapping):
         return source
 
     def preload_column_source(self, uuid, path_in_source, source):
-        """To save a double-open when using NanoEventsFactory.from_file"""
+        """To save a double-open when using NanoEventsFactory._from_mapping"""
         key = self.key_root() + tuple_to_key((uuid, path_in_source))
         self._cache[key] = source
 
@@ -254,6 +256,29 @@ class UprootSourceMapping(BaseSourceMapping):
         raise NotImplementedError
 
 
+def arrow_schema_to_awkward_form(schema):
+    if isinstance(schema, (pa.lib.ListType, pa.lib.LargeListType)):
+        dtype = schema.value_type.to_pandas_dtype()()
+        return awkward1.forms.ListOffsetForm(
+            offsets="i64",
+            content=awkward1.forms.NumpyForm(
+                inner_shape=[],
+                itemsize=dtype.dtype.itemsize,
+                format=dtype.dtype.char,
+            )
+        )
+    elif isinstance(schema, pa.lib.DataType):
+        dtype = schema.to_pandas_dtype()()
+        return awkward1.forms.NumpyForm(
+            inner_shape=[],
+            itemsize=dtype.dtype.itemsize,
+            format=dtype.dtype.char,
+        )
+    else:
+        raise Exception('Unrecognized pyarrow array type')
+    return None
+
+
 class ParquetSourceMapping(BaseSourceMapping):
     _debug = False
 
@@ -263,46 +288,82 @@ class ParquetSourceMapping(BaseSourceMapping):
             self.column = column
 
         def array(self, entry_start, entry_stop):
-            return awkward1.from_arrow(self.source.read(self.column)[entry_start:entry_stop][0])
+            aspa = self.source.read(self.column)[entry_start:entry_stop][0].chunk(0)
+            out = None
+            if isinstance(aspa, (pa.lib.ListArray, pa.lib.LargeListArray)):
+                value_type = aspa.type.value_type
+                offsets = None
+                if isinstance(aspa, pa.lib.LargeListArray):
+                    offsets = numpy.frombuffer(aspa.buffers()[1], dtype=numpy.int64)[:len(aspa) + 1]
+                else:
+                    offsets = numpy.frombuffer(aspa.buffers()[1], dtype=numpy.int32)[:len(aspa) + 1]
+                    offsets = offsets.astype(numpy.int64)
+                offsets = awkward1.layout.Index64(offsets)
+
+                if not isinstance(value_type, pa.lib.DataType):
+                    raise Exception('arrow only accepts single jagged arrays for now...')
+                dtype = value_type.to_pandas_dtype()
+                flat = aspa.flatten()
+                content = numpy.frombuffer(flat.buffers()[1], dtype=dtype)[:len(flat)]
+                content = awkward1.layout.NumpyArray(content)
+                out = awkward1.layout.ListOffsetArray64(offsets, content)
+            elif isinstance(aspa, pa.lib.NumericArray):
+                out = numpy.frombuffer(aspa.buffers()[1], dtype=aspa.type.to_pandas_dtype())[:len(aspa)]
+                out = awkward1.layout.NumpyArray(out)
+            else:
+                raise Exception('array is not flat array or jagged list')
+            return awkward1.Array(out)
 
     def __init__(self, fileopener, cache=None, access_log=None):
         super(ParquetSourceMapping, self).__init__(fileopener, cache, access_log)
 
     @classmethod
-    def _extract_base_form(cls, source):
+    def _extract_base_form(cls, arrow_schema):
         column_forms = {}
-        for key, column in source.iteritems():
+        for field in arrow_schema:
+            key = field.name
+            fmeta = field.metadata
+
             if "," in key or "!" in key:
                 warnings.warn(
                     f"Skipping {key} because it contains characters that NanoEvents cannot accept [,!]"
                 )
                 continue
-            if len(column):
-                continue
-            form = column.interpretation.awkward_form(None)
-            form = uproot4._util.awkward_form_remove_uproot(awkward1, form)
-            form = json.loads(form.tojson())
+
+            form = None
+            if b'form' in fmeta:
+                form = json.loads(fmeta[b'form'])
+            else:
+                schema = field.type
+                form = arrow_schema_to_awkward_form(schema)
+                form = json.loads(form.tojson())
+
             if (
                 form["class"].startswith("ListOffset")
                 and form["content"]["class"] == "NumpyArray"  # noqa
             ):
                 form["form_key"] = quote(f"{key},!load")
                 form["content"]["form_key"] = quote(f"{key},!load,!content")
-                form["content"]["parameters"] = {"__doc__": column.title}
+                if b'title' in fmeta:
+                    form["content"]["parameters"] = {"__doc__": fmeta[b'title'].decode()}
+                elif "__doc__" not in form["content"]["parameters"]:
+                    form["content"]["parameters"] = {"__doc__": key}
             elif form["class"] == "NumpyArray":
                 form["form_key"] = quote(f"{key},!load")
-                form["parameters"] = {"__doc__": column.title}
+                if b'title' in fmeta:
+                    form["parameters"] = {"__doc__": fmeta[b'title'].decode()}
+                elif "__doc__" not in form["parameters"]:
+                    form["parameters"] = {"__doc__": key}
             else:
                 warnings.warn(
                     f"Skipping {key} as it is not interpretable by NanoEvents"
                 )
                 continue
             column_forms[key] = form
-
         return {
             "class": "RecordArray",
             "contents": column_forms,
-            "parameters": {"__doc__": source.title},
+            "parameters": {"__doc__": "parquetfile"},
             "form_key": "",
         }
 
