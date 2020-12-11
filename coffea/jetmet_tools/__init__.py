@@ -8,7 +8,10 @@ from .JetResolution import JetResolution
 from .JetResolutionScaleFactor import JetResolutionScaleFactor
 from .JetCorrectionUncertainty import JetCorrectionUncertainty
 from .JetTransformer import JetTransformer
-# from .MetUncertaintyCalculator import calculateType1MetXY
+
+from .JECStack import JECStack
+from .CorrectedJetsFactory import CorrectedJetsFactory
+from .CorrectedMETFactory import CorrectedMETFactory
 
 __all__ = [
     'FactorizedJetCorrector',
@@ -16,4 +19,7 @@ __all__ = [
     'JetResolutionScaleFactor',
     'JetCorrectionUncertainty',
     'JetTransformer',
+    'JECStack',
+    'CorrectedJetsFactory',
+    'CorrectedMETFactory'
 ]
