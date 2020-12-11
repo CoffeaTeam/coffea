@@ -4,8 +4,7 @@ from coffea.jetmet_tools.JetResolutionScaleFactor import JetResolutionScaleFacto
 from coffea.jetmet_tools.JetCorrectionUncertainty import JetCorrectionUncertainty
 
 _singletons = ['jer', 'jersf']
-_nicenames = ['JES Uncertainty Calculator',
-              'Jet Resolution Calculator',
+_nicenames = ['Jet Resolution Calculator',
               'Jet Resolution Scale Factor Calculator']
 
 
@@ -40,7 +39,7 @@ class JECStack(object):
 
         if jec is None:
             if len(assembled['jec']) == 0:
-                raise Exception('JECStack must have a JEC specified in the input corrections list or as an argument!')
+                self._jec = None  # allow for no JEC
             else:
                 self._jec = FactorizedJetCorrector(**{name: corrections[name] for name in assembled['jec']})
         else:
@@ -89,8 +88,9 @@ class JECStack(object):
                'METpt', 'METphi', 'METx', 'METy', 'JETx', 'JETy',
                'xMETRaw', 'yMETRaw',
                'UnClusteredEnergyDeltaX', 'UnClusteredEnergyDeltaY'}
-        for name in self._jec.signature:
-            out.add(name)
+        if self._jec is not None:
+            for name in self._jec.signature:
+                out.add(name)
         for name in self._junc.signature:
             out.add(name)
         for name in self._jer.signature:

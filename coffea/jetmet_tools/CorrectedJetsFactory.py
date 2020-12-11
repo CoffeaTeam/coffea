@@ -150,7 +150,7 @@ class CorrectedJetsFactory(object):
         total_signature = set()
         for part in _stack_parts:
             attr = getattr(jec_stack, part)
-            if part is not None:
+            if attr is not None:
                 total_signature.update(attr.signature)
 
         missing = total_signature - set(name_map.keys())
@@ -211,8 +211,11 @@ class CorrectedJetsFactory(object):
         jec_name_map.update(self.name_map)
         jec_name_map['JetPt'] = jec_name_map['ptRaw']
         jec_name_map['JetMass'] = jec_name_map['ptRaw']
-        jec_args = {k: out[jec_name_map[k]] for k in self.jec_stack.jec.signature}
-        out['jet_energy_correction'] = self.jec_stack.jec.getCorrection(**jec_args, form=form, lazy_cache=lazy_cache)
+        if self.jec_stack.jec is not None:
+            jec_args = {k: out[jec_name_map[k]] for k in self.jec_stack.jec.signature}
+            out['jet_energy_correction'] = self.jec_stack.jec.getCorrection(**jec_args, form=form, lazy_cache=lazy_cache)
+        else:
+            out['jet_energy_correction'] = awkward1.ones_like(out[self.name_map['JetPt']])
 
         # finally the lazy binding to the JEC
         def jec_var_corr(arr, varName):
