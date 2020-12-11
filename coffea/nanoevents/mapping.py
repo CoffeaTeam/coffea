@@ -45,7 +45,8 @@ class TrivialParquetOpener(UUIDOpener):
             self.file = file
 
         def read(self, column_name):
-            return self.file.read([column_name])
+            # make sure uproot is single-core since our calling context might not be
+            return self.file.read([column_name], use_threads=False)
 
         # for right now spoof the notion of directories in files
         # parquet can do it but we've gotta convince people to
@@ -288,10 +289,7 @@ class ParquetSourceMapping(BaseSourceMapping):
             self.column = column
 
         def array(self, entry_start, entry_stop):
-            # make sure uproot is single-core since our calling context might not be
-            aspa = self.source.read(
-                self.column, use_threads=False
-            )[entry_start:entry_stop][0].chunk(0)
+            aspa = self.source.read(self.column)[entry_start:entry_stop][0].chunk(0)
             out = None
             if isinstance(aspa, (pa.lib.ListArray, pa.lib.LargeListArray)):
                 value_type = aspa.type.value_type

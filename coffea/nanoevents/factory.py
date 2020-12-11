@@ -222,15 +222,15 @@ class NanoEventsFactory:
             entry_stop = table_file.metadata.num_rows
 
         pqmeta = table_file.schema_arrow.metadata
-        pquuid = None if pqmeta is None else pqmeta.get(b'uuid', None)
-        pqurl = str(None if pqmeta is None else pqmeta.get(b'url', None))
+        pquuid = str(None if pqmeta is None else pqmeta.get(b'uuid', None))
+        pqobj_path = str(None if pqmeta is None else pqmeta.get(b'object_path', None))
 
         partition_key = (
             str(pquuid),
-            pqurl,
+            pqobj_path,
             "{0}-{1}".format(entry_start, entry_stop),
         )
-        uuidpfn = {partition_key[0]: pqurl}
+        uuidpfn = {partition_key[0]: pqobj_path}
         mapping = ParquetSourceMapping(
             TrivialParquetOpener(uuidpfn, parquet_options), access_log=access_log
         )
