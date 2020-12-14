@@ -13,8 +13,7 @@ nb = numba
 
 import lz4.frame
 import cloudpickle
-
-supported_column_file_types = {b'root': 'root', b'PAR1': 'parquet'}
+import warnings
 
 
 def load(filename):
@@ -74,3 +73,48 @@ def _ensure_flat(array, allow_missing=False):
     if isinstance(array, awkward1.Array):
         array = awkward1.to_numpy(array, allow_missing=allow_missing)
     return array
+
+
+# lifted from awkward1 - https://github.com/scikit-hep/awkward-1.0/blob/5fe31a916bf30df6c2ea10d4094f6f1aefcf3d0c/src/awkward/_util.py#L47-L61 # noqa
+# we will drive the deprecations as errors using the awkward1 flag for it
+# since this is largely an awkward1 related campaign
+class Awkward0Warning(FutureWarning):
+    pass
+
+
+def deprecate(exception, version, date=None):
+    if awkward1.deprecations_as_errors:
+        raise exception
+    else:
+        if date is None:
+            date = ""
+        else:
+            date = " (target date: " + date + ")"
+        message = """In coffea version {0}{1}, this will be an error.
+(Set awkward1.deprecations_as_errors = True to get a stack trace now.)
+{2}: {3}""".format(
+            version, date, type(exception).__name__, str(exception)
+        )
+        warnings.warn(message, Awkward0Warning)
+
+
+# if we have found awkward0 being passed to coffea, complain
+def deprecate_detected_awkward0(*args, **kwargs):
+    has_ak0 = any([isinstance(arg, awkward.array.base.AwkwardArray) for arg in args])
+    has_ak0 |= any([isinstance(arg, awkward.array.base.AwkwardArray) for arg in kwargs.values()])
+
+    # special case, if no args or kwargs given just emit!
+    if len(args) == len(kwargs) == 0:
+        has_ak0 = True
+
+    if has_ak0:
+        e = TypeError('Use of awkward 0.x arrays in coffea is deprecated!\nIn coming releases'
+                      ' coffea will only accept awkward > 1.0 arrays and awkward0-only classes'
+                      ' will be removed.')
+        deprecate(e, '0.7', date='January 2021')
+
+
+def deprecate_awkward0_util(item):
+    e = TypeError('{0} relies exclusively on awkward 0.x and will be removed in upcoming'
+                  ' versions of coffea!'.format(item))
+    deprecate(e, '0.7', date='January 2021')

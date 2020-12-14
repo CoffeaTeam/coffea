@@ -3,6 +3,8 @@ import awkward
 import awkward1
 import numbers
 
+from coffea.util import deprecate_detected_awkward0
+
 
 class lookup_base(object):
     """Base class for all objects that do some sort of value or function lookup"""
@@ -11,6 +13,7 @@ class lookup_base(object):
         pass
 
     def __call__(self, *args, **kwargs):
+        deprecate_detected_awkward0(*args, **kwargs)
         if all(isinstance(x, (numpy.ndarray, numbers.Number)) for x in args):
             return self._evaluate(*args, **kwargs)
         elif any(isinstance(x, awkward.JaggedArray) for x in args):

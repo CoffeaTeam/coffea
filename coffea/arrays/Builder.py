@@ -1,6 +1,7 @@
 import awkward
 
-from ..util import awkward as util_awkward
+from coffea.util import awkward as util_awkward
+from coffea.util import deprecate_awkward0_util
 import uproot_methods
 from uproot_methods.classes.TLorentzVector import ArrayMethods, TLorentzVectorArray, TLorentzVector
 
@@ -60,6 +61,8 @@ class SaiyanArray(SaiyanCommonMethods, TLorentzVectorArray):
 
 
 def Initialize(items):
+    deprecate_awkward0_util('Saiyan array initializer and classes')
+
     argkeys = items.keys()
     p4 = None
 

@@ -1,8 +1,8 @@
 import uproot_methods
 
 import math
-from ..util import awkward
-from ..util import numpy as np
+from coffea.util import awkward, deprecate_awkward0_util
+from coffea.util import numpy as np
 
 
 # functions to quickly cash useful quantities
@@ -153,6 +153,8 @@ class JaggedCandidateMethods(awkward.Methods):
                                                                ...)
 
         """
+        deprecate_awkward0_util(cls)
+
         items = kwargs
         argkeys = items.keys()
         p4 = None
