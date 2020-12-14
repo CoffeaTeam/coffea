@@ -3,7 +3,7 @@ import uproot
 import awkward
 from .methods import collection_methods
 from .util import _mixin
-from ..util import _hex, _ascii
+from ..util import _hex, _ascii, deprecate_awkward0_util
 
 
 class NanoCollection(awkward.VirtualArray):
@@ -55,6 +55,7 @@ class NanoCollection(awkward.VirtualArray):
 
         Returns a NanoCollection object, possibly mixed in with methods.
         '''
+        deprecate_awkward0_util(cls)
         outtype = cls._get_mixin(methods)
         jagged = 'n' + name in arrays.keys()
         columns = {k[len(name) + 1:]: arrays[k] for k in arrays.keys() if k.startswith(name + '_')}
@@ -241,6 +242,7 @@ class NanoEvents(awkward.Table):
 
         Returns a NanoEvents object
         '''
+        deprecate_awkward0_util(cls)
         arrays = dict(arrays)
         for k in arrays:
             if isinstance(arrays[k], awkward.VirtualArray):
