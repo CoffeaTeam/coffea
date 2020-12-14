@@ -91,7 +91,7 @@ def deprecate(exception, version, date=None):
         else:
             date = " (target date: " + date + ")"
         message = """In coffea version {0}{1}, this will be an error.
-(Set ak.deprecations_as_errors = True to get a stack trace now.)
+(Set awkward1.deprecations_as_errors = True to get a stack trace now.)
 {2}: {3}""".format(
             version, date, type(exception).__name__, str(exception)
         )
