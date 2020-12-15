@@ -4,11 +4,13 @@ on:
   push:
     branches:
       - master
+      - backports-v0.6.x
     tags:
       - v*.*.*
   pull_request:
     branches:
       - master
+      - backports-v0.6.x
   # Run daily at 0:01 UTC
   schedule:
     - cron:  '1 0 * * *'
