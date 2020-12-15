@@ -1,8 +1,7 @@
 from ..lookup_tools.jme_standard_function import jme_standard_function
 import warnings
 import re
-import awkward
-import awkward1
+import awkward as ak
 import numpy as np
 from copy import deepcopy
 from functools import reduce
@@ -148,12 +147,10 @@ class FactorizedJetCorrector(object):
             return reduce(lambda x, y: y * x , corrs, 1.0)
 
         out = None
-        if isinstance(first_arg, awkward.array.base.AwkwardArray):
-            out = awkward.VirtualArray(total_corr, args=(self, ), kwargs=kwargs, cache=cache)
+        if isinstance(first_arg, ak.highlevel.Array):
+            out = ak.virtual(total_corr, args=(self, ), kwargs=kwargs, length=len(first_arg), form=form, cache=cache)
         elif isinstance(first_arg, np.ndarray):
             out = total_corr(self, **kwargs)  # np is non-lazy
-        elif isinstance(first_arg, awkward1.highlevel.Array):
-            out = awkward1.virtual(total_corr, args=(self, ), kwargs=kwargs, length=len(first_arg), form=form, cache=cache)
         else:
             raise Exception('Unknown array library for inputs.')
 
@@ -189,12 +186,10 @@ class FactorizedJetCorrector(object):
             print(corrVars)
             fargs = tuple((cumCorr * corrVars[arg]) if arg in corrVars.keys() else kwargs[arg] for arg in sig)
 
-            if isinstance(fargs[0], awkward.array.base.AwkwardArray):
-                corrections.append(awkward.VirtualArray(func, args=fargs, cache=cache))
+            if isinstance(fargs[0], ak.highlevel.Array):
+                corrections.append(ak.virtual(func, args=fargs, length=len(fargs[0]), form=form, cache=cache))
             elif isinstance(fargs[0], np.ndarray):
                 corrections.append(func(*fargs))  # np is non-lazy
-            elif isinstance(fargs[0], awkward1.highlevel.Array):
-                corrections.append(awkward1.virtual(func, args=fargs, length=len(fargs[0]), form=form, cache=cache))
             else:
                 raise Exception('Unknown array library for inputs.')
 

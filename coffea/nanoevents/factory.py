@@ -1,7 +1,7 @@
 import warnings
 import weakref
-import awkward1
-import uproot4 as uproot
+import awkward as ak
+import uproot
 import pyarrow
 import pyarrow.parquet
 import pathlib
@@ -72,7 +72,7 @@ class NanoEventsFactory:
             runtime_cache : dict, optional
                 A dict-like interface to a cache object. This cache is expected to last the
                 duration of the program only, and will be used to hold references to materialized
-                awkward1 arrays, etc.
+                awkward arrays, etc.
             persistent_cache : dict, optional
                 A dict-like interface to a cache object. Only bare numpy arrays will be placed in this cache,
                 using globally-unique keys.
@@ -133,7 +133,7 @@ class NanoEventsFactory:
             runtime_cache : dict, optional
                 A dict-like interface to a cache object. This cache is expected to last the
                 duration of the program only, and will be used to hold references to materialized
-                awkward1 arrays, etc.
+                awkward arrays, etc.
             persistent_cache : dict, optional
                 A dict-like interface to a cache object. Only bare numpy arrays will be placed in this cache,
                 using globally-unique keys.
@@ -215,7 +215,7 @@ class NanoEventsFactory:
             runtime_cache : dict, optional
                 A dict-like interface to a cache object. This cache is expected to last the
                 duration of the program only, and will be used to hold references to materialized
-                awkward1 arrays, etc.
+                awkward arrays, etc.
             persistent_cache : dict, optional
                 A dict-like interface to a cache object. Only bare numpy arrays will be placed in this cache,
                 using globally-unique keys.
@@ -301,7 +301,7 @@ class NanoEventsFactory:
             runtime_cache : dict
                 A dict-like interface to a cache object. This cache is expected to last the
                 duration of the program only, and will be used to hold references to materialized
-                awkward1 arrays, etc.
+                awkward arrays, etc.
             persistent_cache : dict
                 A dict-like interface to a cache object. Only bare numpy arrays will be placed in this cache,
                 using globally-unique keys.
@@ -331,7 +331,7 @@ class NanoEventsFactory:
         if events is None:
             behavior = dict(self._schema.behavior)
             behavior["__events_factory__"] = self
-            events = awkward1.from_arrayset(
+            events = ak.from_arrayset(
                 self._schema.form,
                 self._mapping,
                 prefix=self._partition_key,

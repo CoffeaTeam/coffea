@@ -9,7 +9,7 @@ import math
 import numbers
 import re
 import warnings
-import awkward1
+import awkward as ak
 
 # Python 2 and 3 compatibility
 _regex_pattern = re.compile("dummy").__class__
@@ -500,7 +500,7 @@ class Bin(DenseAxis):
         Returns an integer corresponding to the index in the axis where the histogram would be filled.
         The integer range includes flow bins: ``0 = underflow, n+1 = overflow, n+2 = nanflow``
         """
-        isarray = isinstance(identifier, (awkward1.Array, np.ndarray))
+        isarray = isinstance(identifier, (ak.Array, np.ndarray))
         if isarray or isinstance(identifier, numbers.Number):
             if isarray:
                 identifier = coffea.util._ensure_flat(identifier)
@@ -952,7 +952,7 @@ class Hist(AccumulatorABC):
 
         """
         weight = values.pop("weight", None)
-        if isinstance(weight, (awkward1.Array, np.ndarray)):
+        if isinstance(weight, (ak.Array, np.ndarray)):
             weight = coffea.util._ensure_flat(weight)
         if not all(d.name in values for d in self._axes):
             missing = ", ".join(d.name for d in self._axes if d.name not in values)

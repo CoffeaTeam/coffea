@@ -61,7 +61,7 @@ class SaiyanArray(SaiyanCommonMethods, TLorentzVectorArray):
 
 
 def Initialize(items):
-    deprecate_awkward0_util('Saiyan array initializer and classes')
+    raise RuntimeError('Usage of saiyan is not longer supported, please use NanoEvents.')
 
     argkeys = items.keys()
     p4 = None

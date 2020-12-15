@@ -5,7 +5,7 @@ import numpy as np
 # the PR can be merged
 # from scipy.stats import crystalball
 from .doublecrystalball import doublecrystalball
-from awkward import JaggedArray
+import awkward as ak
 from coffea.lookup_tools.dense_lookup import dense_lookup
 
 
@@ -210,23 +210,16 @@ class rochester_lookup:
     def _kExtra(self, kpt, eta, nl, u, s=0, m=0):
         # if it is a jagged array, save the offsets then flatten everything
         # needed for the ternary conditions later
-        offsets = None
-        if isinstance(kpt, JaggedArray):
-            offsets = kpt.offsets
-            kpt = kpt.flatten()
-            eta = eta.flatten()
-            nl = nl.flatten()
-            u = u.flatten()
         abseta = abs(eta)
         kData = self._kRes[s][m][1](abseta)  # type 1 is data
         kMC = self._kRes[s][m][0](abseta)  # type 0 is MC
         mask = kData > kMC
-        x = np.zeros_like(kpt)
+        x = ak.zeros_like(kpt)
         sigma = self._sigma(kpt, eta, nl, s, m)
         # Rochester cbA = beta, cbN = m, as well as cbM (always 0?) = loc and cbS = scale to transform y = (x-loc)/scale in the pdf method
         cbA = self._cbA[s][m](abseta, nl)
         cbN = self._cbN[s][m](abseta, nl)
-        loc = np.zeros_like(u)
+        loc = ak.zeros_like(u)
         cbS = self._cbS[s][m](abseta, nl)
         invcdf = doublecrystalball.ppf(u, cbA, cbA, cbN, cbN, loc, cbS)
         x[mask] = (
@@ -234,8 +227,7 @@ class rochester_lookup:
             * sigma[mask]
             * invcdf[mask]
         )
-        result = np.ones_like(kpt)
-        result[(x > -1)] = 1.0 / (1.0 + x[x > -1])
-        if offsets is not None:
-            result = JaggedArray.fromoffsets(offsets, result)
+        result = ak.where(x > -1, 1.0 / (1.0 + x[x > -1]), ak.ones_like(kpt))
+        if isinstance(kpt, np.ndarray):
+            result = np.array(result)
         return result

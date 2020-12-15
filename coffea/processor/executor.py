@@ -10,7 +10,7 @@ import copy
 import shutil
 import json
 import cloudpickle
-import uproot4
+import uproot
 import subprocess
 import re
 import os
@@ -29,7 +29,6 @@ from .accumulator import (
 from .dataframe import (
     LazyDataFrame,
 )
-from ..nanoaod import NanoEvents
 from ..nanoevents import NanoEventsFactory, schemas
 from ..util import _hash
 
@@ -813,30 +812,6 @@ def parsl_executor(items, function, accumulator, **kwargs):
     return accumulator
 
 
-class Uproot3Context(object):
-    def __init__(self, filename, xrootdtimeout, mmap):
-        import uproot
-        xrootdsource = dict(uproot.source.xrootd.XRootDSource.defaults)
-        xrootdsource['timeout'] = xrootdtimeout
-        if mmap:
-            localsource = {}
-        else:
-            opts = dict(uproot.FileSource.defaults)
-            opts.update({'parallel': None})
-
-            def localsource(path):
-                return uproot.FileSource(path, **opts)
-
-        self._opener = lambda: uproot.open(filename, localsource=localsource, xrootdsource=xrootdsource)
-
-    def __enter__(self):
-        self._file = self._opener()
-        return self._file
-
-    def __exit__(self, *_):
-        self._file.source.close()
-
-
 def _get_cache(strategy):
     cache = None
     if strategy == 'dask-worker':
@@ -870,15 +845,11 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
     retry_count = 0
     while retry_count <= retries:
         try:
-            if schema is NanoEvents:
-                # this is the only uproot3-dependent option
-                filecontext = Uproot3Context(item.filename, xrootdtimeout, mmap)
-            else:
-                filecontext = uproot4.open(
-                    item.filename,
-                    timeout=xrootdtimeout,
-                    file_handler=uproot4.MemmapSource if mmap else uproot4.MultithreadedFileSource,
-                )
+            filecontext = uproot.open(
+                item.filename,
+                timeout=xrootdtimeout,
+                file_handler=uproot.MemmapSource if mmap else uproot.MultithreadedFileSource,
+            )
             metadata = {
                 'dataset': item.dataset,
                 'filename': item.filename,
@@ -894,16 +865,6 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                     events = LazyDataFrame(tree, item.entrystart, item.entrystop, flatten=flatten)
                     for key, value in metadata.items():
                         events[key] = value
-                elif schema is NanoEvents:
-                    # To deprecate
-                    events = NanoEvents.from_file(
-                        file=file,
-                        treename=item.treename,
-                        entrystart=item.entrystart,
-                        entrystop=item.entrystop,
-                        metadata=metadata,
-                        cache=_get_cache(cachestrategy),
-                    )
                 elif issubclass(schema, schemas.BaseSchema):
                     materialized = []
                     factory = NanoEventsFactory.from_root(
@@ -918,7 +879,7 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                     )
                     events = factory.events()
                 else:
-                    raise ValueError("Expected schema to derive from BaseSchema or NanoEvents, instead got %r" % schema)
+                    raise ValueError("Expected schema to derive from nanoevents.BaseSchema, instead got %r" % schema)
                 tic = time.time()
                 try:
                     out = processor_instance.process(events)
@@ -930,7 +891,7 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                 else:
                     metrics = dict_accumulator()
                     if savemetrics:
-                        if isinstance(file, uproot4.ReadOnlyDirectory):
+                        if isinstance(file, uproot.ReadOnlyDirectory):
                             metrics['bytesread'] = value_accumulator(int, file.file.source.num_requested_bytes)
                         if issubclass(schema, schemas.BaseSchema):
                             metrics['columns'] = set_accumulator(materialized)
@@ -1002,7 +963,7 @@ def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None, align
     retry_count = 0
     while retry_count <= retries:
         try:
-            file = uproot4.open(item.filename, timeout=xrootdtimeout)
+            file = uproot.open(item.filename, timeout=xrootdtimeout)
             tree = file[item.treename]
             metadata = {'numentries': tree.num_entries, 'uuid': file.file.fUUID}
             if align_clusters:
@@ -1191,14 +1152,14 @@ def run_uproot_job(fileset,
     flatten = executor_args.pop('flatten', False)
     mmap = executor_args.pop('mmap', False)
     schema = executor_args.pop('schema', None)
-    nano = executor_args.pop('nano', False)
+    nano = executor_args.pop('nano', None)
     use_dataframes = executor_args.pop('use_dataframes', False)
     if (executor is not dask_executor) and use_dataframes:
         warnings.warn("Only Dask executor supports DataFrame outputs! Resetting 'use_dataframes' argument to False.")
         use_dataframes = False
-    if nano:
-        warnings.warn("Please use 'schema': processor.NanoEvents rather than 'nano': True to enable awkward0 NanoEvents processing", DeprecationWarning)
-        schema = NanoEvents
+    if nano is not None:
+        raise ValueError("Awkward0 NanoEvents no longer supported.",
+                         "Please use 'schema': processor.NanoAODSchema to enable awkward NanoEvents processing.")
     cachestrategy = executor_args.pop('cachestrategy', None)
     pi_compression = executor_args.pop('processor_compression', 1)
     if pi_compression is None:
@@ -1408,10 +1369,10 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     treeName = executor_args['treeName']
     flatten = executor_args['flatten']
     schema = executor_args['schema']
-    nano = executor_args.pop('nano', False)
-    if nano:
-        warnings.warn("Please use 'schema': processor.NanoEvents rather than 'nano': True to enable awkward0 NanoEvents processing", DeprecationWarning)
-        schema = NanoEvents
+    nano = executor_args.pop('nano', None)
+    if nano is not None:
+        raise ValueError("Awkward0 NanoEvents no longer supported.",
+                         "Please use 'schema': processor.NanoAODSchema to enable awkward NanoEvents processing.")
     use_cache = executor_args['cache']
 
     if executor_args['config'] is None:

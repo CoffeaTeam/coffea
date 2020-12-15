@@ -1,8 +1,8 @@
 import warnings
 from cachetools import LRUCache
 from collections.abc import Mapping
-import uproot4
-import awkward1
+import uproot
+import awkward as ak
 import pyarrow as pa
 import pyarrow.parquet as pq
 import numpy
@@ -28,7 +28,7 @@ class TrivialUprootOpener(UUIDOpener):
 
     def open_uuid(self, uuid):
         pfn = self._uuid_pfnmap[uuid]
-        rootdir = uproot4.open(pfn, **self._uproot_options)
+        rootdir = uproot.open(pfn, **self._uproot_options)
         if str(rootdir.file.uuid) != uuid:
             raise RuntimeError(
                 f"UUID of file {pfn} does not match expected value ({uuid})"
@@ -203,7 +203,7 @@ class UprootSourceMapping(BaseSourceMapping):
             if len(branch):
                 continue
             form = branch.interpretation.awkward_form(None)
-            form = uproot4._util.awkward_form_remove_uproot(awkward1, form)
+            form = uproot._util.awkward_form_remove_uproot(ak, form)
             form = json.loads(form.tojson())
             if (
                 form["class"].startswith("ListOffset")
@@ -245,8 +245,8 @@ class UprootSourceMapping(BaseSourceMapping):
         return columnhandle.array(
             entry_start=start,
             entry_stop=stop,
-            decompression_executor=uproot4.source.futures.TrivialExecutor(),
-            interpretation_executor=uproot4.source.futures.TrivialExecutor(),
+            decompression_executor=uproot.source.futures.TrivialExecutor(),
+            interpretation_executor=uproot.source.futures.TrivialExecutor(),
         )
 
     def __len__(self):
@@ -259,9 +259,9 @@ class UprootSourceMapping(BaseSourceMapping):
 def arrow_schema_to_awkward_form(schema):
     if isinstance(schema, (pa.lib.ListType, pa.lib.LargeListType)):
         dtype = schema.value_type.to_pandas_dtype()()
-        return awkward1.forms.ListOffsetForm(
+        return ak.forms.ListOffsetForm(
             offsets="i64",
-            content=awkward1.forms.NumpyForm(
+            content=ak.forms.NumpyForm(
                 inner_shape=[],
                 itemsize=dtype.dtype.itemsize,
                 format=dtype.dtype.char,
@@ -269,7 +269,7 @@ def arrow_schema_to_awkward_form(schema):
         )
     elif isinstance(schema, pa.lib.DataType):
         dtype = schema.to_pandas_dtype()()
-        return awkward1.forms.NumpyForm(
+        return ak.forms.NumpyForm(
             inner_shape=[],
             itemsize=dtype.dtype.itemsize,
             format=dtype.dtype.char,
@@ -302,7 +302,7 @@ class ParquetSourceMapping(BaseSourceMapping):
                         : len(aspa) + 1
                     ]
                     offsets = offsets.astype(numpy.int64)
-                offsets = awkward1.layout.Index64(offsets)
+                offsets = ak.layout.Index64(offsets)
 
                 if not isinstance(value_type, pa.lib.DataType):
                     raise Exception(
@@ -311,16 +311,16 @@ class ParquetSourceMapping(BaseSourceMapping):
                 dtype = value_type.to_pandas_dtype()
                 flat = aspa.flatten()
                 content = numpy.frombuffer(flat.buffers()[1], dtype=dtype)[: len(flat)]
-                content = awkward1.layout.NumpyArray(content)
-                out = awkward1.layout.ListOffsetArray64(offsets, content)
+                content = ak.layout.NumpyArray(content)
+                out = ak.layout.ListOffsetArray64(offsets, content)
             elif isinstance(aspa, pa.lib.NumericArray):
                 out = numpy.frombuffer(
                     aspa.buffers()[1], dtype=aspa.type.to_pandas_dtype()
                 )[: len(aspa)]
-                out = awkward1.layout.NumpyArray(out)
+                out = ak.layout.NumpyArray(out)
             else:
                 raise Exception("array is not flat array or jagged list")
-            return awkward1.Array(out)
+            return ak.Array(out)
 
     def __init__(self, fileopener, cache=None, access_log=None):
         super(ParquetSourceMapping, self).__init__(fileopener, cache, access_log)

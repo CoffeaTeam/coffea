@@ -1,7 +1,6 @@
 from collections.abc import MutableMapping
-import awkward1
-import uproot4
-from coffea.util import deprecate_detected_awkward0
+import awkward as ak
+import uproot
 
 
 class LazyDataFrame(MutableMapping):
@@ -55,10 +54,8 @@ class LazyDataFrame(MutableMapping):
         elif key in self._tree:
             self._materialized.add(key)
             array = self._tree[key].array(**self._branchargs)
-            if self._flatten and isinstance(awkward1.type(array).type, awkward1.types.ListType):
-                array = awkward1.flatten(array)
-            array = awkward1.to_awkward0(array)
-            deprecate_detected_awkward0(array)
+            if self._flatten and isinstance(ak.type(array).type, ak.types.ListType):
+                array = ak.flatten(array)
             self._dict[key] = array
             return self._dict[key]
         else:
@@ -143,7 +140,6 @@ class PreloadedDataFrame(MutableMapping):
     def __getitem__(self, key):
         self._accessed.add(key)
         out = self._dict[key]
-        deprecate_detected_awkward0(out)
         return out
 
     def __getattr__(self, key):

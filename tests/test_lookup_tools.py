@@ -3,17 +3,14 @@ from __future__ import print_function, division
 import os
 from coffea import lookup_tools
 import uproot
-from coffea.util import awkward1
-from coffea.util import awkward
+import awkward as ak
+import awkward0 as ak0
 from coffea.util import numpy as np
-from awkward import JaggedArray
-from coffea.nanoaod import NanoEvents
+from coffea.nanoevents import NanoEventsFactory
 import pytest
 
 from dummy_distributions import dummy_jagged_eta_pt
 
-
-awkwardlibs = ["ak0", "ak1"]
 
 def test_extractor_exceptions():
     extractor = lookup_tools.extractor()
@@ -40,17 +37,15 @@ def test_extractor_exceptions():
     except Exception as e:
         assert(e.args[0] == 'Cannot make an evaluator from unfinalized extractor!')
 
-@pytest.mark.parametrize("awkwardlib", awkwardlibs)
-def test_evaluator_exceptions(awkwardlib):
+def test_evaluator_exceptions():
     extractor = lookup_tools.extractor()
     extractor.add_weight_sets(["testSF2d scalefactors_Tight_Electron tests/samples/testSF2d.histo.root"])
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
-    test_eta_jagged = awkward.JaggedArray.fromcounts(counts, test_eta)
-    test_pt_jagged = awkward.JaggedArray.fromcounts(counts, test_pt)
-    if awkwardlib == "ak1":
-        test_eta_jagged = awkward1.from_awkward0(test_eta_jagged)
-        test_pt_jagged = awkward1.from_awkward0(test_pt_jagged)
+    test_eta_jagged = ak0.JaggedArray.fromcounts(counts, test_eta)
+    test_pt_jagged = ak0.JaggedArray.fromcounts(counts, test_pt)
+    test_eta_jagged = ak.from_awkward0(test_eta_jagged)
+    test_pt_jagged = ak.from_awkward0(test_pt_jagged)
 
     extractor.finalize()
     evaluator = extractor.make_evaluator()
@@ -58,10 +53,7 @@ def test_evaluator_exceptions(awkwardlib):
     try:
         test_out = evaluator["testSF2d"](test_pt_jagged, test_eta)
     except Exception as e:
-        if awkwardlib == "ak0":
-            assert(e.args[0] == 'Do not mix JaggedArrays and other arrays when calling derived class of lookup_base')
-        if awkwardlib == "ak1":
-            assert(isinstance(e, ValueError))
+        assert(isinstance(e, ValueError))
 
 def test_evaluate_noimpl():
     from coffea.lookup_tools.lookup_base import lookup_base
@@ -70,8 +62,7 @@ def test_evaluate_noimpl():
     except NotImplementedError:
         pass
 
-@pytest.mark.parametrize("awkwardlib", awkwardlibs)
-def test_root_scalefactors(awkwardlib):
+def test_root_scalefactors():
     extractor = lookup_tools.extractor()
     extractor.add_weight_sets(["testSF2d scalefactors_Tight_Electron tests/samples/testSF2d.histo.root"])
     
@@ -88,19 +79,14 @@ def test_root_scalefactors(awkwardlib):
     print(evaluator["testSF2d"])
     
     # test structured eval
-    test_eta_jagged = awkward.JaggedArray.fromcounts(counts, test_eta)
-    test_pt_jagged = awkward.JaggedArray.fromcounts(counts, test_pt)
-    if awkwardlib == "ak1":
-        test_eta_jagged = awkward1.from_awkward0(test_eta_jagged)
-        test_pt_jagged = awkward1.from_awkward0(test_pt_jagged)
+    test_eta_jagged = ak0.JaggedArray.fromcounts(counts, test_eta)
+    test_pt_jagged = ak0.JaggedArray.fromcounts(counts, test_pt)
+    test_eta_jagged = ak.from_awkward0(test_eta_jagged)
+    test_pt_jagged = ak.from_awkward0(test_pt_jagged)
     test_out_jagged = evaluator["testSF2d"](test_eta_jagged, test_pt_jagged)
-
-    if awkwardlib == "ak0":
-        assert (test_out_jagged.counts==counts).all()
-        assert (test_out==test_out_jagged.flatten()).all()
-    if awkwardlib == "ak1":
-        assert awkward1.all(awkward1.num(test_out_jagged)==counts)
-        assert awkward1.all(awkward1.flatten(test_out_jagged)==test_out)
+    
+    assert ak.all(awkward1.num(test_out_jagged)==counts)
+    assert ak.all(awkward1.flatten(test_out_jagged)==test_out)
 
     # From make_expected_lookup.py
     expected_output = np.array([
@@ -162,8 +148,7 @@ def test_histo_json_scalefactors():
     print(sf_out)
     print(sf_err_out)
 
-@pytest.mark.parametrize("awkwardlib", awkwardlibs)
-def test_jec_txt_scalefactors(awkwardlib):
+def test_jec_txt_scalefactors():
     extractor = lookup_tools.extractor()
     extractor.add_weight_sets([
         "testJEC * tests/samples/Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi.jec.txt",
@@ -186,11 +171,10 @@ def test_jec_txt_scalefactors(awkwardlib):
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
     
     # test structured eval
-    test_eta_jagged = awkward.JaggedArray.fromcounts(counts, test_eta)
-    test_pt_jagged = awkward.JaggedArray.fromcounts(counts, test_pt)
-    if awkwardlib == "ak1":
-        test_eta_jagged = awkward1.from_awkward0(test_eta_jagged)
-        test_pt_jagged = awkward1.from_awkward0(test_pt_jagged)
+    test_eta_jagged = ak0.JaggedArray.fromcounts(counts, test_eta)
+    test_pt_jagged = ak0.JaggedArray.fromcounts(counts, test_pt)
+    test_eta_jagged = ak.from_awkward0(test_eta_jagged)
+    test_pt_jagged = ak.from_awkward0(test_pt_jagged)
     
     
     jec_out = evaluator['testJECFall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi'](test_eta,test_pt)
@@ -252,7 +236,9 @@ def test_rochester():
     mc_rand = np.load('tests/samples/nano_dy_rochester_rand.npy')
 
     # test against nanoaod
-    events = NanoEvents.from_file(os.path.abspath('tests/samples/nano_dimuon.root'))
+    events = NanoEventsFactory \
+                .from_file(os.path.abspath('tests/samples/nano_dimuon.root')) \
+                .events()
 
     data_k = rochester.kScaleDT(events.Muon.charge, events.Muon.pt, events.Muon.eta, events.Muon.phi)
     assert(all(np.isclose(data_k.flatten(), official_data_k)))
@@ -261,10 +247,13 @@ def test_rochester():
     assert(all(np.isclose(data_err, official_data_err, atol=1e-8)))
 
     # test against mc
-    events = NanoEvents.from_file(os.path.abspath('tests/samples/nano_dy.root'))
+    events = NanoEventsFactory \
+                .from_file(os.path.abspath('tests/samples/nano_dy.root')) \
+                .events()
 
-    hasgen = ~np.isnan(events.Muon.matched_gen.pt.fillna(np.nan))
-    mc_rand = JaggedArray.fromoffsets(hasgen.offsets, mc_rand)
+    hasgen = ~np.isnan(ak.fill_none(nevents.Muon.matched_gen.pt, p.nan))
+    mc_rand = ak0.JaggedArray.fromoffsets(hasgen.offsets, mc_rand)
+    mc_rand = ak1.from_awkward0(mc_rand)
     mc_kspread = rochester.kSpreadMC(events.Muon.charge[hasgen], events.Muon.pt[hasgen], events.Muon.eta[hasgen], events.Muon.phi[hasgen],
                                      events.Muon.matched_gen.pt[hasgen])
     mc_ksmear = rochester.kSmearMC(events.Muon.charge[~hasgen], events.Muon.pt[~hasgen], events.Muon.eta[~hasgen], events.Muon.phi[~hasgen],
@@ -288,9 +277,9 @@ def test_dense_lookup():
     import numpy
     import awkward1
 
-    a = awkward1.Array([[.1, .2], [.3]])
+    a = ak.Array([[.1, .2], [.3]])
     lookup = dense_lookup(numpy.ones(shape=(3, 4)), (numpy.linspace(0, 1, 4), numpy.linspace(0, 1, 5)))
 
     assert lookup(.1, .3) == 1.
     assert numpy.all(lookup(.1, numpy.array([.3, .5])) == numpy.array([1., 1.]))
-    assert awkward1.to_list(lookup(a, a)) == [[1.0, 1.0], [1.0]]
+    assert ak.to_list(lookup(a, a)) == [[1.0, 1.0], [1.0]]
