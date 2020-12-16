@@ -281,6 +281,9 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                       Useful when the resources used by a task are not known, as
                       it lets work queue find an efficient value for maximum
                       throughput.
+        verbose : bool
+            If true, emit a message on each task submission and completion.
+            Default is false.
         debug-log : str
             Filename for debug output
         stats-log : str
@@ -315,6 +318,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
     global _wq_queue
 
+    verbose_mode = kwargs.pop('verbose',False)
     debug_log = kwargs.pop('debug-log', None)
     stats_log = kwargs.pop('stats-log', None)
     trans_log = kwargs.pop('transactions-log', None)
@@ -435,17 +439,18 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             # Add pair to dict
             id_output['{}'.format(task_id)] = outfile
 
-            print('Submitted task (id #{}): {}'.format(task_id, wrapped_command))
+            if(verbose_mode):
+                print('Submitted task (id #{}): {}'.format(task_id, wrapped_command))
 
-        print('Waiting for tasks to complete...')
+        if(verbose_mode):
+            print('Waiting for tasks to complete...')
 
         while not _wq_queue.empty():
             t = _wq_queue.wait(5)
             if t:
-                print('Task (id #{}) complete: {} (return code {})'.format(t.id, t.command, t.return_status))
+                if verbose_mode:
+                    print('Task (id #{}) complete: {} (return code {})'.format(t.id, t.command, t.return_status))
 
-                if output:
-                    print('Output:\n{}'.format(t.output))
                     print('allocated cores: {}, memory: {} MB, disk: {} MB'.format(
                         t.resources_allocated.cores,
                         t.resources_allocated.memory,
@@ -456,6 +461,9 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                             t.resources_measured.memory,
                             t.resources_measured.disk,
                             t.resources_measured.wall_time / 1000000))
+
+                if output and t.output:
+                    print('Task id #{} output:\n{}',format(t.id,t.output))
 
                 if t.result != 0:
                     print('Task id #{} failed with code: {}'.format(t.id, t.result))
