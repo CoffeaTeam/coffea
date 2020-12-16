@@ -404,7 +404,9 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
         add_fn = _iadd
 
-        for i, item in tqdm(enumerate(items), disable=not status, unit=unit, total=len(items), desc=desc):
+	# First generate all of the tasks and submit to WQ.
+
+        for i, item in tqdm(enumerate(items), disable=not status, unit=unit, total=len(items), desc="Creating Tasks"):
             with open(os.path.join(tmpdir, 'item_{}.p'.format(i)), 'wb') as wf:
                 dill.dump(item, wf)
 
@@ -442,11 +444,18 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             if(verbose_mode):
                 print('Submitted task (id #{}): {}'.format(task_id, wrapped_command))
 
-        if(verbose_mode):
-            print('Waiting for tasks to complete...')
+        # Then wait for the same number of tasks to complete.
 
-        while not _wq_queue.empty():
-            t = _wq_queue.wait(5)
+        for i in tqdm(range(len(items)), disable=not status, unit=unit, desc="Processing"):
+
+            # This awkward bit of logic is used so that we iterate
+            # the tqdm progress bar the correct number of times.
+ 
+            while True:
+                    t = _wq_queue.wait(5)
+                    if t:
+                        break
+          
             if t:
                 if verbose_mode:
                     print('Task (id #{}) complete: {} (return code {})'.format(t.id, t.command, t.return_status))
