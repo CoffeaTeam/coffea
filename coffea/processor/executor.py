@@ -482,7 +482,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                             t.resources_measured.wall_time / 1000000))
 
                 if output and t.output:
-                    print('Task id #{} output:\n{}', format(t.id, t.output))
+                    print('Task id #{} output:\n{}'.format(t.id, t.output))
 
                 if t.result != 0:
                     print('Task id #{} failed with code: {}'.format(t.id, t.result))
