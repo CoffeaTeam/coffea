@@ -375,8 +375,8 @@ def test_corrected_jets_factory():
     
     jets = events.Jet
     
-    jets['pt_raw'] = jets['rawFactor'] * jets['pt']
-    jets['mass_raw'] = jets['rawFactor'] * jets['mass']
+    jets['pt_raw'] = (1 - jets['rawFactor']) * jets['pt']
+    jets['mass_raw'] = (1 - jets['rawFactor']) * jets['mass']
     jets['pt_gen'] = awkward1.values_astype(awkward1.fill_none(jets.matched_gen.pt, 0), np.float32)
     print(jets['pt_gen'].layout)
     jets['rho'] = awkward1.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
