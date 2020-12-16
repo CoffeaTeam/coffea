@@ -267,20 +267,36 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             Set to ``None`` for no compression.
 
         # work queue specific options:
-        environment-file : str
-            Python environment to use. Required.
         cores : int
             Number of cores for work queue task. If unset, use a whole worker.
         memory : int
             Amount of memory (in MB) for work queue task. If unset, use a whole worker.
         disk : int
             Amount of disk space (in MB) for work queue task. If unset, use a whole worker.
+
         resources-mode : one of 'fixed', or 'auto'. Default is 'fixed'.
             - 'fixed': allocate cores, memory, and disk specified for each task.
             - 'auto': use cores, memory, and disk as maximum values to allocate.
                       Useful when the resources used by a task are not known, as
                       it lets work queue find an efficient value for maximum
                       throughput.
+        resource-monitor : bool
+            If true, (false is the default) turns on resource monitoring for Work Queue.
+
+        master-name : str
+            Name to refer to this work queue master.
+            Sets port to 0 (any available port) if port not given.
+        port : int
+            Port number for work queue master program. Defaults to 9123 if
+            master-name not given.
+        password-file: str
+            Location of a file containing a password used to authenticate workers.
+
+        environment-file : str
+            Python environment to use. Required.
+        wrapper : str
+            Wrapper script to run/open python environment tarball. Defaults to python_package_run found in PATH.
+
         verbose : bool
             If true, emit a message on each task submission and completion.
             Default is false.
@@ -290,23 +306,11 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             Filename for tasks statistics output
         transactions-log : str
             Filename for tasks lifetime reports output
-        master-name : str
-            Name to refer to this work queue master.
-            Sets port to 0 (any available port) if port not given.
-        port : int
-            Port number for work queue master program. Defaults to 9123 if
-            master-name not given.
-        wrapper : str
-            Wrapper script to run/open python environment tarball. Defaults to python_package_run found in PATH.
         print-stdout : bool
             If true (default), print the standard output of work queue task on completion.
         queue-mode : one of 'persistent' or 'one-per-stage'. Default is 'persistent'.
             'persistent' - One queue is used for all stages of processing.
             'one-per-stage' - A new queue is used for each of the stages of processing.
-        resource-monitor : bool
-            If true, (false is the default) turns on resource monitoring for Work Queue.
-        password-file: str
-            Location of a file containing a password used to authenticate workers.
     """
     try:
         import work_queue as wq
