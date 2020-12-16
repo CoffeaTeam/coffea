@@ -324,7 +324,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
     global _wq_queue
 
-    verbose_mode = kwargs.pop('verbose',False)
+    verbose_mode = kwargs.pop('verbose', False)
     debug_log = kwargs.pop('debug-log', None)
     stats_log = kwargs.pop('stats-log', None)
     trans_log = kwargs.pop('transactions-log', None)
@@ -350,7 +350,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     clevel = kwargs.pop('compression', 1)
     filepath = kwargs.pop('filepath', '.')
     output = kwargs.pop('print-stdout', False)
-    password_file = kwargs.pop('password-file',None)
+    password_file = kwargs.pop('password-file', None)
 
     if clevel is not None:
         function = _compression_wrapper(clevel, function)
@@ -414,7 +414,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
         add_fn = _iadd
 
-	# First generate all of the tasks and submit to WQ.
+        # First generate all of the tasks and submit to WQ.
 
         for i, item in tqdm(enumerate(items), disable=not status, unit=unit, total=len(items), desc="Creating Tasks"):
             with open(os.path.join(tmpdir, 'item_{}.p'.format(i)), 'wb') as wf:
@@ -456,16 +456,16 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
         # Then wait for the same number of tasks to complete.
 
-        for i in tqdm(range(len(items)), disable=not status, unit=unit, desc="Processing"):
+        for i in tqdm(range(len(items)), disable=not status, unit=unit, desc=desc):
 
             # This awkward bit of logic is used so that we iterate
             # the tqdm progress bar the correct number of times.
- 
+
             while True:
-                    t = _wq_queue.wait(5)
-                    if t:
-                        break
-          
+                t = _wq_queue.wait(5)
+                if t:
+                    break
+
             if t:
                 if verbose_mode:
                     print('Task (id #{}) complete: {} (return code {})'.format(t.id, t.command, t.return_status))
@@ -482,7 +482,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                             t.resources_measured.wall_time / 1000000))
 
                 if output and t.output:
-                    print('Task id #{} output:\n{}',format(t.id,t.output))
+                    print('Task id #{} output:\n{}', format(t.id, t.output))
 
                 if t.result != 0:
                     print('Task id #{} failed with code: {}'.format(t.id, t.result))
