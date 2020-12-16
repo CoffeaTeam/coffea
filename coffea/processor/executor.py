@@ -305,6 +305,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             'one-per-stage' - A new queue is used for each of the stages of processing.
         resource-monitor : bool
             If true, (false is the default) turns on resource monitoring for Work Queue.
+        password-file: str
+            Location of a file containing a password used to authenticate workers.
     """
     try:
         import work_queue as wq
@@ -344,6 +346,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     clevel = kwargs.pop('compression', 1)
     filepath = kwargs.pop('filepath', '.')
     output = kwargs.pop('print-stdout', False)
+    password_file = kwargs.pop('password-file',None)
 
     if clevel is not None:
         function = _compression_wrapper(clevel, function)
@@ -391,6 +394,9 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             _wq_queue.tune('category-steady-n-tasks', 3)
             _wq_queue.specify_category_max_resources('default', {})
             _wq_queue.specify_category_mode('default', wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT)
+
+        if password_file is not None:
+            _wq_queue.specify_password_file(password_file)
 
         # Define function input here
         infile_function = os.path.join(tmpdir, 'function.p')
