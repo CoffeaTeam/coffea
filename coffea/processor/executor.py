@@ -209,7 +209,7 @@ def _futures_handler(futures_set, output, status, unit, desc, add_fn, tailtimeou
         raise
 
 
-def _coffea_fn_as_file_wrapper(tmpdir):
+def wqex_create_function_wrapper(tmpdir):
     """ Writes a wrapper script to run dilled python functions and arguments.
     The wrapper takes as arguments the name of three files: function, argument, and output.
     The files function and argument have the dilled function and argument, respectively.
@@ -238,14 +238,6 @@ with open(out, "wb") as f:
     dill.dump(pickle_out, f) """)
 
     return name
-
-#
-# Work Queue Executor:
-# Global Work Queue object to allow queue to be used
-# across executor invocations.
-#
-
-_wq_queue = None
 
 #
 # Work Queue Executor:
@@ -318,6 +310,14 @@ def wqex_output_task( task, verbose_mode, resource_mode, output_mode ):
 
     if task.result != 0:
         print('Task id #{} failed with code: {}'.format(task.id, task.result))
+
+#
+# Work Queue Executor:
+# Global Work Queue object to allow queue to be used
+# across executor invocations.
+#
+
+_wq_queue = None
 
 #
 # Work Queue Executor: Main Loop
@@ -404,11 +404,30 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
     global _wq_queue
 
+    # Standard executor options:
+    unit = kwargs.pop('unit', 'items')
+    status = kwargs.pop('status', True)
+    desc = kwargs.pop('desc', 'Processing')
+    clevel = kwargs.pop('compression', 1)
+    filepath = kwargs.pop('filepath', '.')
+
+    if clevel is not None:
+        function = _compression_wrapper(clevel, function)
+
+    # Work Queue specific options:
     verbose_mode = kwargs.pop('verbose', False)
     debug_log = kwargs.pop('debug-log', None)
     stats_log = kwargs.pop('stats-log', None)
     trans_log = kwargs.pop('transactions-log', None)
-
+    output = kwargs.pop('print-stdout', False)
+    password_file = kwargs.pop('password-file', None)
+    env_file = kwargs.pop('environment-file', None)
+    wrapper = kwargs.pop('wrapper', shutil.which('python_package_run'))
+    resources_mode = kwargs.pop('resources-mode', 'fixed')
+    cores = kwargs.pop('cores', None)
+    memory = kwargs.pop('memory', None)
+    disk = kwargs.pop('disk', None)
+    resource_monitor = kwargs.pop('resource-monitor', False)
     master_name = kwargs.pop('master-name', None)
     port = kwargs.pop('port', None)
     if port is None:
@@ -418,26 +437,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             port = 9123
 
     queue_mode = kwargs.pop('queue-mode', 'persistent')
-
     if _wq_queue is None or queue_mode == 'one-per-stage':
         _wq_queue = wq.WorkQueue(port, name=master_name, debug_log=debug_log, stats_log=stats_log, transactions_log=trans_log)
-
-    print('Listening for work queue workers on port {}...'.format(_wq_queue.port))
-
-    unit = kwargs.pop('unit', 'items')
-    status = kwargs.pop('status', True)
-    desc = kwargs.pop('desc', 'Processing')
-    clevel = kwargs.pop('compression', 1)
-    filepath = kwargs.pop('filepath', '.')
-    output = kwargs.pop('print-stdout', False)
-    password_file = kwargs.pop('password-file', None)
-
-    if clevel is not None:
-        function = _compression_wrapper(clevel, function)
-
-    # work queue specific options:
-    env_file = kwargs.pop('environment-file', None)
-    wrapper = kwargs.pop('wrapper', shutil.which('python_package_run'))
 
     if not env_file:
         raise TypeError("environment-file argument missing. It should name a conda environment as a tar file.")
@@ -447,13 +448,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     if not wrapper:
         raise ValueError("Location of python_package_run could not be determined automatically.\nUse 'wrapper' argument to the work_queue_executor.")
 
-    # fixed, or auto
-    resources_mode = kwargs.pop('resources-mode', 'fixed')
-    cores = kwargs.pop('cores', None)
-    memory = kwargs.pop('memory', None)
-    disk = kwargs.pop('disk', None)
-    resource_monitor = kwargs.pop('resource-monitor', False)
-
+    # If explicit resources are given, collect them into default_resources
     default_resources = {}
     if cores:
         default_resources['cores'] = cores
@@ -462,14 +457,17 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     if disk:
         default_resources['disk'] = disk
 
+    # Working within a custom temporary directory:
     with tempfile.TemporaryDirectory(prefix="wq-executor-tmp-", dir=filepath) as tmpdir:
-        # Pickle function
+
+        # Save the executable function in a dilled file.
         with open(os.path.join(tmpdir, 'function.p'), 'wb') as wf:
             dill.dump(function, wf)
 
-        # Set up Work Queue
-        command_path = _coffea_fn_as_file_wrapper(tmpdir)
+        # Create a wrapper script to run the function.
+        command_path = wqex_create_function_wrapper(tmpdir)
 
+        # Enable monitoring and auto resource consumption, if desired:
         if resource_monitor:
             _wq_queue.enable_monitoring()
 
@@ -479,27 +477,34 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             _wq_queue.specify_category_max_resources('default', {})
             _wq_queue.specify_category_mode('default', wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT)
 
+        # Make use of the stored password file, if enabled.
         if password_file is not None:
             _wq_queue.specify_password_file(password_file)
 
-        # Define function input here
         infile_function = os.path.join(tmpdir, 'function.p')
 
-        # Iterative Executor Specifications
+        # Nothing to do?  Just return the accumulator.
         if len(items) == 0:
             return accumulator
 
         add_fn = _iadd
 
+        # Keep track of total tasks in each state.
         tasks_submitted = 0
         tasks_done = 0
         tasks_total = len(items)
 
+        print('Listening for work queue workers on port {}...'.format(_wq_queue.port))
+
+        # Create a progress bar that will be advanced manually.
         progress_bar = tqdm(total=tasks_total,position=1,disable=not status,desc="Processing")
 
+        # Main loop of executor
         while tasks_done < tasks_total:
 
             tasks_waiting = tasks_done-tasks_submitted  # get something from the queue
+
+            # Submit tasks into the queue, until at least 100 are idle.
 
             while tasks_submitted < tasks_total and tasks_waiting < 100:
                task = wqex_create_task(tasks_submitted,items[tasks_submitted],wrapper,env_file,command_path,infile_function,tmpdir)
@@ -508,6 +513,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
                if(verbose_mode):
                    print('Submitted task (id #{}): {}'.format(task_id,task.command))
+
+            # When done submitting, look for completed tasks.
 
             task = _wq_queue.wait(5)
             if task:
