@@ -245,7 +245,6 @@ with open(out, "wb") as f:
 #
 
 def wqex_create_task( itemid, item, wrapper, env_file, command_path, infile_function, tmpdir ):
-
     import dill
     from os.path import basename
     import work_queue as wq
@@ -289,7 +288,6 @@ def wqex_create_task( itemid, item, wrapper, env_file, command_path, infile_func
 #
 
 def wqex_output_task( task, verbose_mode, resource_mode, output_mode ):
-
     if verbose_mode:
         print('Task (id #{}) complete: {} (return code {})'.format(task.id, task.command, task.return_status))
 
@@ -497,8 +495,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         print('Listening for work queue workers on port {}...'.format(_wq_queue.port))
 
         # Create a dual progress bar to show submission and completion.
-        submit_bar = tqdm(total=tasks_total,position=0,disable=not status,desc="Submitted")
-        complete_bar = tqdm(total=tasks_total,position=1,disable=not status,desc="Completed")
+        submit_bar = tqdm(total=tasks_total, position=0, disable=not status, unit=unit, desc="Submitted")
+        complete_bar = tqdm(total=tasks_total, position=1, disable=not status, unit=unit, desc=desc)
 
         itemiter = iter(items)
 
@@ -507,23 +505,23 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
             # Submit tasks into the queue, but no more than 100 idle tasks
             while tasks_submitted < tasks_total and _wq_queue.stats.tasks_waiting < 100:
-               item = next(itemiter)
-               task = wqex_create_task(tasks_submitted,item,wrapper,env_file,command_path,infile_function,tmpdir)
-               task_id = _wq_queue.submit(task)
-               tasks_submitted += 1
+                item = next(itemiter)
+                task = wqex_create_task(tasks_submitted, item, wrapper, env_file, command_path, infile_function, tmpdir)
+                task_id = _wq_queue.submit(task)
+                tasks_submitted += 1
 
-               if(verbose_mode):
-                   print('Submitted task (id #{}): {}'.format(task_id,task.command))
-               else:
-                   submit_bar.update(1)
-                   complete_bar.update(0)
+                if(verbose_mode):
+                    print('Submitted task (id #{}): {}'.format(task_id, task.command))
+                else:
+                    submit_bar.update(1)
+                    complete_bar.update(0)
 
             # When done submitting, look for completed tasks.
 
             task = _wq_queue.wait(5)
             if task:
                 # Display details of the completed task
-                wqex_output_task(task,verbose_mode,resource_monitor,output)
+                wqex_output_task(task, verbose_mode, resource_monitor, output)
                 if task.result != 0:
                     print('Stopping execution')
                     break
