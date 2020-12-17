@@ -244,17 +244,17 @@ with open(out, "wb") as f:
 # Generate a WQ task from a Coffea item.
 #
 
-def wqex_create_task( i, item, wrapper, env_file, command_path, infile_function, tmpdir ):
+def wqex_create_task( itemid, item, wrapper, env_file, command_path, infile_function, tmpdir ):
 
     import dill
     from os.path import basename
     import work_queue as wq
 
-    with open(os.path.join(tmpdir, 'item_{}.p'.format(i)), 'wb') as wf:
+    with open(os.path.join(tmpdir, 'item_{}.p'.format(itemid)), 'wb') as wf:
         dill.dump(item, wf)
 
-    infile_item = os.path.join(tmpdir, 'item_{}.p'.format(i))
-    outfile = os.path.join(tmpdir, 'output_{}.p'.format(i))
+    infile_item = os.path.join(tmpdir, 'item_{}.p'.format(itemid))
+    outfile = os.path.join(tmpdir, 'output_{}.p'.format(itemid))
 
     coffea_command = 'python {} {} {} {}'.format(basename(command_path), basename(infile_function), basename(infile_item), basename(outfile))
     wrapped_command = './{}'.format(basename(wrapper))
@@ -278,8 +278,8 @@ def wqex_create_task( i, item, wrapper, env_file, command_path, infile_function,
 
     task.specify_output_file(outfile, cache=False)
 
-    # save the output file in the tag for coffea to pull out later
-    task.specify_tag(outfile)
+    # Put the item ID into the tag to associate upon completion.
+    task.specify_tag("{}".format(itemid))
 
     return task
 
@@ -500,12 +500,15 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         submit_bar = tqdm(total=tasks_total,position=0,disable=not status,desc="Submitted")
         complete_bar = tqdm(total=tasks_total,position=1,disable=not status,desc="Completed")
 
+        itemiter = iter(items)
+
         # Main loop of executor
         while tasks_done < tasks_total:
 
             # Submit tasks into the queue, but no more than 100 idle tasks
             while tasks_submitted < tasks_total and _wq_queue.stats.tasks_waiting < 100:
-               task = wqex_create_task(tasks_submitted,items[tasks_submitted],wrapper,env_file,command_path,infile_function,tmpdir)
+               item = next(itemiter)
+               task = wqex_create_task(tasks_submitted,item,wrapper,env_file,command_path,infile_function,tmpdir)
                task_id = _wq_queue.submit(task)
                tasks_submitted += 1
 
@@ -519,16 +522,25 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
             task = _wq_queue.wait(5)
             if task:
+                # Display details of the completed task
                 wqex_output_task(task,verbose_mode,resource_monitor,output)
-
                 if task.result != 0:
                     print('Stopping execution')
                     break
 
-                with open(task.tag, 'rb') as rf:
-                    unpickle_output = dill.load(rf)
+                # The task tag remembers the itemid for us.
+                itemid = task.tag
+                itemfile = os.path.join(tmpdir, 'item_{}.p'.format(itemid))
+                outfile = os.path.join(tmpdir, 'output_{}.p'.format(itemid))
 
+                # Accumulate results from the pickled output
+                with open(outfile, 'rb') as rf:
+                    unpickle_output = dill.load(rf)
                 add_fn(accumulator, unpickle_output)
+
+                # Remove output files as we go to avoid unbounded disk
+                os.remove(itemfile)
+                os.remove(outfile)
 
                 tasks_done += 1
 
@@ -538,9 +550,6 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
         submit_bar.close()
         complete_bar.close()
-
-        if os.path.exists(command_path):
-            os.remove(command_path)
 
         return accumulator
 
