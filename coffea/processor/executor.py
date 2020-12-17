@@ -239,12 +239,8 @@ with open(out, "wb") as f:
 
     return name
 
-#
-# Work Queue Executor:
-# Generate a WQ task from a Coffea item.
-#
 
-def wqex_create_task( itemid, item, wrapper, env_file, command_path, infile_function, tmpdir ):
+def wqex_create_task(itemid, item, wrapper, env_file, command_path, infile_function, tmpdir):
     import dill
     from os.path import basename
     import work_queue as wq
@@ -282,12 +278,8 @@ def wqex_create_task( itemid, item, wrapper, env_file, command_path, infile_func
 
     return task
 
-#
-# Work Queue Executor:
-# Display output of a task depending on various modes
-#
 
-def wqex_output_task( task, verbose_mode, resource_mode, output_mode ):
+def wqex_output_task(task, verbose_mode, resource_mode, output_mode):
     if verbose_mode:
         print('Task (id #{}) complete: {} (return code {})'.format(task.id, task.command, task.return_status))
 
@@ -309,17 +301,9 @@ def wqex_output_task( task, verbose_mode, resource_mode, output_mode ):
     if task.result != 0:
         print('Task id #{} failed with code: {}'.format(task.id, task.result))
 
-#
-# Work Queue Executor:
-# Global Work Queue object to allow queue to be used
-# across executor invocations.
-#
 
 _wq_queue = None
 
-#
-# Work Queue Executor: Main Loop
-#
 
 def work_queue_executor(items, function, accumulator, **kwargs):
     """Execute using Work Queue
