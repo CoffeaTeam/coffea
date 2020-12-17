@@ -39,6 +39,6 @@ if sys.version_info.major < 3:
 # control severity for utils.deprecate
 deprecations_as_errors = False
 
-__all__ = [    
+__all__ = [
     'deprecations_as_errors'
 ]

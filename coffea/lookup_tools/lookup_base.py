@@ -1,5 +1,5 @@
 import numpy
-import awkward
+import awkward as ak
 import numbers
 
 
@@ -12,37 +12,37 @@ class lookup_base(object):
     def __call__(self, *args, **kwargs):
         if all(isinstance(x, (numpy.ndarray, numbers.Number)) for x in args):
             return self._evaluate(*args, **kwargs)
-        elif any(not isinstance(x, awkward.Array) for x in args):
+        elif any(not isinstance(x, ak.Array) for x in args):
             raise TypeError('lookup base must receive high level awkward arrays,'
                             ' numpy arrays, or numbers!')
 
         def getfunction(inputs, depth):
             if all(
-                isinstance(x, awkward1.layout.NumpyArray)
+                isinstance(x, ak.layout.NumpyArray)
                 or not isinstance(
-                    x, (awkward1.layout.Content, awkward1.partition.PartitionedArray)
+                    x, (ak.layout.Content, ak.partition.PartitionedArray)
                 )
                 for x in inputs
             ):
-                nplike = awkward1.nplike.of(*inputs)
-                if not isinstance(nplike, awkward1.nplike.Numpy):
+                nplike = ak.nplike.of(*inputs)
+                if not isinstance(nplike, ak.nplike.Numpy):
                     raise NotImplementedError(
                         "support for cupy/jax/etc. numpy extensions"
                     )
                 result = self._evaluate(*[nplike.asarray(x) for x in inputs], **kwargs)
-                return lambda: (awkward1.layout.NumpyArray(result),)
+                return lambda: (ak.layout.NumpyArray(result),)
             return None
 
-        behavior = awkward1._util.behaviorof(*args)
+        behavior = ak._util.behaviorof(*args)
         args = [
-            awkward1.operations.convert.to_layout(
+            ak.operations.convert.to_layout(
                 arg, allow_record=False, allow_other=True
             )
             for arg in args
         ]
-        out = awkward1._util.broadcast_and_apply(args, getfunction, behavior)
+        out = ak._util.broadcast_and_apply(args, getfunction, behavior)
         assert isinstance(out, tuple) and len(out) == 1
-        return awkward1._util.wrap(out[0], behavior=behavior)
+        return ak._util.wrap(out[0], behavior=behavior)
 
     def _evaluate(self, *args, **kwargs):
         raise NotImplementedError

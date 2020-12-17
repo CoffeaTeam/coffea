@@ -12,7 +12,7 @@ class LazyDataFrame(MutableMapping):
 
     Parameters
     ----------
-        tree : uproot4.TTree
+        tree : uproot.TTree
             Tree to read
         entrystart : int, optional
             First entry to read, default: 0
@@ -30,8 +30,8 @@ class LazyDataFrame(MutableMapping):
         self._tree = tree
         self._flatten = flatten
         self._branchargs = {
-            "decompression_executor": uproot4.source.futures.TrivialExecutor(),
-            "interpretation_executor": uproot4.source.futures.TrivialExecutor(),
+            "decompression_executor": uproot.source.futures.TrivialExecutor(),
+            "interpretation_executor": uproot.source.futures.TrivialExecutor(),
         }
         if entrystart is None or entrystart < 0:
             entrystart = 0

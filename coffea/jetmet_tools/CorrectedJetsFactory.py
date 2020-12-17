@@ -58,13 +58,7 @@ def jer_smear(arr, variation, forceStochastic, ptGenJet, ptJet, etaJet):
     pt_gen = arr[ptGenJet] if not forceStochastic else None
     jetPt = arr[ptJet]
 
-    if isinstance(jetPt, awkward.array.base.AwkwardArray):
-        if forceStochastic:
-            wrap, arrays = awkward.util.unwrap_jagged(jetPt,
-                                                      jetPt.JaggedArray,
-                                                      (jetPt, ))
-            pt_gen = wrap(np.zeros_like(arrays[0], dtype=np.float32))
-    elif isinstance(jetPt, ak.highlevel.Array):
+    if isinstance(jetPt, ak.highlevel.Array):
         def getfunction(layout, depth):
             if (isinstance(layout, ak.layout.NumpyArray)
                 or not isinstance(layout, (ak.layout.Content,
@@ -91,14 +85,7 @@ def jer_smear(arr, variation, forceStochastic, ptGenJet, ptJet, etaJet):
     min_jet_pt_corr = min_jet_pt / jetPt
 
     smearfact = None
-    if isinstance(arr, awkward.array.base.AwkwardArray):
-        wrap, arrays = awkward.util.unwrap_jagged(jetPt,
-                                                  jetPt.JaggedArray,
-                                                  (jetPt, min_jet_pt_corr))
-        smearfact = np.where(doHybrid.content, detSmear.content, stochSmear.content)
-        smearfact = np.where((smearfact * arrays[0]) < arrays[1], arrays[1], smearfact)
-        smearfact = wrap(smearfact)
-    elif isinstance(arr, ak.highlevel.Array):
+    if isinstance(arr, ak.highlevel.Array):
         smearfact = ak.where(doHybrid, detSmear, stochSmear)
         smearfact = ak.where((smearfact * jetPt) < min_jet_pt,
                              min_jet_pt_corr,
@@ -211,11 +198,11 @@ class CorrectedJetsFactory(object):
         init_pt = partial(VirtualType, jec_var_corr, args=(out, self.name_map['ptRaw']), cache=lazy_cache)
         init_mass = partial(VirtualType, jec_var_corr, args=(out, self.name_map['massRaw']), cache=lazy_cache)
 
-        out[self.name_map['JetPt']] = init_pt(length=len(out), form=form) if isak1 else init_pt()
-        out[self.name_map['JetMass']] = init_mass(length=len(out), form=form) if isak1 else init_mass()
+        out[self.name_map['JetPt']] = init_pt(length=len(out), form=form)
+        out[self.name_map['JetMass']] = init_mass(length=len(out), form=form)
 
-        out[self.name_map['JetPt'] + '_jec'] = init_pt(length=len(out), form=form) if isak1 else init_pt()
-        out[self.name_map['JetMass'] + '_jec'] = init_mass(length=len(out), form=form) if isak1 else init_mass()
+        out[self.name_map['JetPt'] + '_jec'] = init_pt(length=len(out), form=form)
+        out[self.name_map['JetMass'] + '_jec'] = init_mass(length=len(out), form=form)
 
         # in jer we need to have a stash for the intermediate JEC products
         has_jer = False
@@ -243,18 +230,18 @@ class CorrectedJetsFactory(object):
                                       jer_name_map['JetEta']),
                                 cache=lazy_cache
                                 )
-            out['jet_energy_resolution_correction'] = init_jerc(length=len(out), form=form) if isak1 else init_jerc()
+            out['jet_energy_resolution_correction'] = init_jerc(length=len(out), form=form)
 
             def jer_smeared_val(arr, base, varName):
                 return arr['jet_energy_resolution_correction'] * base[varName]
 
             init_pt_jer = partial(VirtualType, jer_smeared_val, args=(out, out, jer_name_map['JetPt']), cache=lazy_cache)
             init_mass_jer = partial(VirtualType, jer_smeared_val, args=(out, out, jer_name_map['JetPt']), cache=lazy_cache)
-            out[self.name_map['JetPt']] = init_pt_jer(length=len(out), form=form) if isak1 else init_pt_jer()
-            out[self.name_map['JetMass']] = init_mass_jer(length=len(out), form=form) if isak1 else init_mass_jer()
+            out[self.name_map['JetPt']] = init_pt_jer(length=len(out), form=form)
+            out[self.name_map['JetMass']] = init_mass_jer(length=len(out), form=form)
 
-            out[self.name_map['JetPt'] + '_jer'] = init_pt_jer(length=len(out), form=form) if isak1 else init_pt_jer()
-            out[self.name_map['JetMass'] + '_jer'] = init_mass_jer(length=len(out), form=form) if isak1 else init_mass_jer()
+            out[self.name_map['JetPt'] + '_jer'] = init_pt_jer(length=len(out), form=form)
+            out[self.name_map['JetMass'] + '_jer'] = init_mass_jer(length=len(out), form=form)
 
             # JER systematics
             jerc_up = partial(VirtualType,
@@ -266,11 +253,11 @@ class CorrectedJetsFactory(object):
                               cache=lazy_cache
                               )
             up = ak.flatten(jets)
-            up['jet_energy_resolution_correction'] = jerc_up(length=len(out), form=form) if isak1 else jerc_up()
+            up['jet_energy_resolution_correction'] = jerc_up(length=len(out), form=form)
             init_pt_jer = partial(VirtualType, jer_smeared_val, args=(up, out, jer_name_map['JetPt']), cache=lazy_cache)
             init_mass_jer = partial(VirtualType, jer_smeared_val, args=(up, out, jer_name_map['JetPt']), cache=lazy_cache)
-            up[self.name_map['JetPt']] = init_pt_jer(length=len(out), form=form) if isak1 else init_pt_jer()
-            up[self.name_map['JetMass']] = init_mass_jer(length=len(out), form=form) if isak1 else init_mass_jer()
+            up[self.name_map['JetPt']] = init_pt_jer(length=len(out), form=form)
+            up[self.name_map['JetMass']] = init_mass_jer(length=len(out), form=form)
 
             jerc_down = partial(VirtualType,
                                 jer_smear,
@@ -281,11 +268,11 @@ class CorrectedJetsFactory(object):
                                 cache=lazy_cache
                                 )
             down = ak.flatten(jets)
-            down['jet_energy_resolution_correction'] = jerc_down(length=len(out), form=form) if isak1 else jerc_down()
+            down['jet_energy_resolution_correction'] = jerc_down(length=len(out), form=form)
             init_pt_jer = partial(VirtualType, jer_smeared_val, args=(down, out, jer_name_map['JetPt']), cache=lazy_cache)
             init_mass_jer = partial(VirtualType, jer_smeared_val, args=(down, out, jer_name_map['JetPt']), cache=lazy_cache)
-            down[self.name_map['JetPt']] = init_pt_jer(length=len(out), form=form) if isak1 else init_pt_jer()
-            down[self.name_map['JetMass']] = init_mass_jer(length=len(out), form=form) if isak1 else init_mass_jer()
+            down[self.name_map['JetPt']] = init_pt_jer(length=len(out), form=form)
+            down[self.name_map['JetMass']] = init_mass_jer(length=len(out), form=form)
             out['JER'] = ak.zip({'up': up, 'down': down}, depth_limit=1, with_name='JetSystematic')
 
         if self.jec_stack.junc is not None:
