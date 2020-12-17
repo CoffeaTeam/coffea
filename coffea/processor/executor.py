@@ -235,7 +235,11 @@ with open(arg, "rb") as f:
 
 pickle_out = exec_function(exec_item)
 with open(out, "wb") as f:
-    dill.dump(pickle_out, f) """)
+    dill.dump(pickle_out, f)
+
+# Force an OS exit here to avoid a bug in xrootd finalization
+os._exit(0)
+""")
 
     return name
 
