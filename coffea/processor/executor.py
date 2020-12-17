@@ -496,8 +496,9 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
         print('Listening for work queue workers on port {}...'.format(_wq_queue.port))
 
-        # Create a progress bar that will be advanced manually.
-        progress_bar = tqdm(total=tasks_total,position=1,disable=not status,desc="Processing")
+        # Create a dual progress bar to show submission and completion.
+        submit_bar = tqdm(total=tasks_total,position=0,disable=not status,desc="Submitted")
+        complete_bar = tqdm(total=tasks_total,position=1,disable=not status,desc="Completed")
 
         # Main loop of executor
         while tasks_done < tasks_total:
@@ -513,6 +514,9 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
                if(verbose_mode):
                    print('Submitted task (id #{}): {}'.format(task_id,task.command))
+               else:
+                   submit_bar.update(1)
+                   complete_bar.update(0)
 
             # When done submitting, look for completed tasks.
 
@@ -532,7 +536,11 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                 tasks_done += 1
 
                 if(not verbose_mode):
-                    progress_bar.update(1)
+                    submit_bar.update(0)
+                    complete_bar.update(1)
+
+        submit_bar.close()
+        complete_bar.close()
 
         if os.path.exists(command_path):
             os.remove(command_path)
