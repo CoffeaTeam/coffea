@@ -239,9 +239,78 @@ with open(out, "wb") as f:
 
     return name
 
+#
+# Global Work Queue object to allow queue to be used
+# across executor invocations.
+#
 
 _wq_queue = None
 
+#
+# Generate a WQ task from a Coffea item.
+#
+
+def wqex_create_task( i, item, wrapper, env_file, command_path, infile_function, tmpdir ):
+
+    import dill
+    from os.path import basename
+    import work_queue as wq
+
+    with open(os.path.join(tmpdir, 'item_{}.p'.format(i)), 'wb') as wf:
+        dill.dump(item, wf)
+
+    infile_item = os.path.join(tmpdir, 'item_{}.p'.format(i))
+    outfile = os.path.join(tmpdir, 'output_{}.p'.format(i))
+
+    coffea_command = 'python {} {} {} {}'.format(basename(command_path), basename(infile_function), basename(infile_item), basename(outfile))
+    wrapped_command = './{}'.format(basename(wrapper))
+    wrapped_command += ' --environment {}'.format(basename(env_file))
+    wrapped_command += ' --unpack-to "$WORK_QUEUE_SANDBOX"/{}-env {}'.format(basename(env_file), coffea_command)
+
+    t = wq.Task(wrapped_command)
+    t.specify_category('default')
+
+    t.specify_input_file(command_path, cache=True)
+    t.specify_input_file(infile_function, cache=False)
+    t.specify_input_file(infile_item, cache=False)
+    t.specify_input_file(env_file, cache=True)
+    t.specify_input_file(wrapper, cache=True)
+
+    if re.search('://', item.filename):
+        # This looks like an URL. Not transfering file.
+        pass
+    else:
+        t.specify_input_file(item.filename, remote_name=item.filename, cache=True)
+
+    t.specify_output_file(outfile, cache=False)
+
+    # save the output file in the tag for coffea to pull out later
+    t.specify_tag(outfile)
+
+    return t
+
+def wqex_output_task( t, verbose_mode, resource_mode, output_mode ):
+
+    if verbose_mode:
+        print('Task (id #{}) complete: {} (return code {})'.format(t.id, t.command, t.return_status))
+
+        print('allocated cores: {}, memory: {} MB, disk: {} MB'.format(
+            t.resources_allocated.cores,
+            t.resources_allocated.memory,
+            t.resources_allocated.disk))
+
+        if resource_mode:
+            print('measured cores: {}, memory: {} MB, disk {} MB, runtime {}'.format(
+                t.resources_measured.cores,
+                t.resources_measured.memory,
+                t.resources_measured.disk,
+                t.resources_measured.wall_time / 1000000))
+
+    if output_mode and t.output:
+        print('Task id #{} output:\n{}'.format(t.id, t.output))
+
+    if t.result != 0:
+        print('Task id #{} failed with code: {}'.format(t.id, t.result))
 
 def work_queue_executor(items, function, accumulator, **kwargs):
     """Execute using Work Queue
@@ -405,95 +474,48 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         # Define function input here
         infile_function = os.path.join(tmpdir, 'function.p')
 
-        # Dictionary to keep track of output file corresponding to task id
-        id_output = {}
-
         # Iterative Executor Specifications
         if len(items) == 0:
             return accumulator
 
         add_fn = _iadd
 
-        # First generate all of the tasks and submit to WQ.
+        tasks_submitted = 0
+        tasks_done = 0
+        tasks_total = len(items)
 
-        for i, item in tqdm(enumerate(items), disable=not status, unit=unit, total=len(items), desc="Creating Tasks"):
-            with open(os.path.join(tmpdir, 'item_{}.p'.format(i)), 'wb') as wf:
-                dill.dump(item, wf)
+        progress_bar = tqdm(total=tasks_total,position=1,disable=not status,desc="Processing")
 
-            infile_item = os.path.join(tmpdir, 'item_{}.p'.format(i))
-            outfile = os.path.join(tmpdir, 'output_{}.p'.format(i))
+        i=0
 
-            coffea_command = 'python {} {} {} {}'.format(basename(command_path), basename(infile_function), basename(infile_item), basename(outfile))
-            wrapped_command = './{}'.format(basename(wrapper))
-            wrapped_command += ' --environment {}'.format(basename(env_file))
-            wrapped_command += ' --unpack-to "$WORK_QUEUE_SANDBOX"/{}-env {}'.format(basename(env_file), coffea_command)
+        while tasks_done < tasks_total:
 
-            t = wq.Task(wrapped_command)
-            t.specify_category('default')
+            tasks_waiting = tasks_done-tasks_submitted  # get something from the queue
 
-            t.specify_input_file(command_path, cache=True)
-            t.specify_input_file(infile_function, cache=False)
-            t.specify_input_file(infile_item, cache=False)
+            while tasks_submitted < tasks_total and tasks_waiting < 100:
+               task = wqex_create_task(tasks_submitted,items[i],wrapper,env_file,command_path,infile_function,tmpdir)
+               task_id = _wq_queue.submit(task)
+               tasks_submitted += 1
+               i += 1
 
-            # conda environment files
-            t.specify_input_file(env_file, cache=True)
-            t.specify_input_file(wrapper, cache=True)
+               if(verbose_mode):
+                   print('Submitted task (id #{}): {}'.format(task_id,task.command))
 
-            if re.search('://', item.filename):
-                # This looks like an URL. Not transfering file.
-                pass
-            else:
-                t.specify_input_file(item.filename, remote_name=item.filename, cache=True)
+            task = _wq_queue.wait(5)
+            if task:
+                wqex_output_task(task,verbose_mode,resource_monitor,output)
 
-            t.specify_output_file(outfile, cache=False)
-
-            task_id = _wq_queue.submit(t)
-            # Add pair to dict
-            id_output['{}'.format(task_id)] = outfile
-
-            if(verbose_mode):
-                print('Submitted task (id #{}): {}'.format(task_id, wrapped_command))
-
-        # Then wait for the same number of tasks to complete.
-
-        for i in tqdm(range(len(items)), disable=not status, unit=unit, desc=desc):
-
-            # This awkward bit of logic is used so that we iterate
-            # the tqdm progress bar the correct number of times.
-
-            while True:
-                t = _wq_queue.wait(5)
-                if t:
-                    break
-
-            if t:
-                if verbose_mode:
-                    print('Task (id #{}) complete: {} (return code {})'.format(t.id, t.command, t.return_status))
-
-                    print('allocated cores: {}, memory: {} MB, disk: {} MB'.format(
-                        t.resources_allocated.cores,
-                        t.resources_allocated.memory,
-                        t.resources_allocated.disk))
-                    if resource_monitor:
-                        print('measured cores: {}, memory: {} MB, disk {} MB, runtime {}'.format(
-                            t.resources_measured.cores,
-                            t.resources_measured.memory,
-                            t.resources_measured.disk,
-                            t.resources_measured.wall_time / 1000000))
-
-                if output and t.output:
-                    print('Task id #{} output:\n{}'.format(t.id, t.output))
-
-                if t.result != 0:
-                    print('Task id #{} failed with code: {}'.format(t.id, t.result))
+                if task.result != 0:
                     print('Stopping execution')
                     break
 
-                # Unpickle output, add to accumulator
-                with open(id_output['{}'.format(t.id)], 'rb') as rf:
+                with open(task.tag, 'rb') as rf:
                     unpickle_output = dill.load(rf)
 
                 add_fn(accumulator, unpickle_output)
+
+                tasks_done += 1
+                progress_bar.update(1)
 
         if os.path.exists(command_path):
             os.remove(command_path)
