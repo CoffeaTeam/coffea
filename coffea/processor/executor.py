@@ -267,50 +267,54 @@ def wqex_create_task( i, item, wrapper, env_file, command_path, infile_function,
     wrapped_command += ' --environment {}'.format(basename(env_file))
     wrapped_command += ' --unpack-to "$WORK_QUEUE_SANDBOX"/{}-env {}'.format(basename(env_file), coffea_command)
 
-    t = wq.Task(wrapped_command)
-    t.specify_category('default')
+    task = wq.Task(wrapped_command)
+    task.specify_category('default')
 
-    t.specify_input_file(command_path, cache=True)
-    t.specify_input_file(infile_function, cache=False)
-    t.specify_input_file(infile_item, cache=False)
-    t.specify_input_file(env_file, cache=True)
-    t.specify_input_file(wrapper, cache=True)
+    task.specify_input_file(command_path, cache=True)
+    task.specify_input_file(infile_function, cache=False)
+    task.specify_input_file(infile_item, cache=False)
+    task.specify_input_file(env_file, cache=True)
+    task.specify_input_file(wrapper, cache=True)
 
     if re.search('://', item.filename):
         # This looks like an URL. Not transfering file.
         pass
     else:
-        t.specify_input_file(item.filename, remote_name=item.filename, cache=True)
+        task.specify_input_file(item.filename, remote_name=item.filename, cache=True)
 
-    t.specify_output_file(outfile, cache=False)
+    task.specify_output_file(outfile, cache=False)
 
     # save the output file in the tag for coffea to pull out later
-    t.specify_tag(outfile)
+    task.specify_tag(outfile)
 
-    return t
+    return task
 
-def wqex_output_task( t, verbose_mode, resource_mode, output_mode ):
+#
+# Display output of a task depending on various modes
+#
+
+def wqex_output_task( task, verbose_mode, resource_mode, output_mode ):
 
     if verbose_mode:
-        print('Task (id #{}) complete: {} (return code {})'.format(t.id, t.command, t.return_status))
+        print('Task (id #{}) complete: {} (return code {})'.format(task.id, task.command, task.return_status))
 
-        print('allocated cores: {}, memory: {} MB, disk: {} MB'.format(
-            t.resources_allocated.cores,
-            t.resources_allocated.memory,
-            t.resources_allocated.disk))
+        print('Allocated cores: {}, memory: {} MB, disk: {} MB'.format(
+            task.resources_allocated.cores,
+            task.resources_allocated.memory,
+            task.resources_allocated.disk))
 
         if resource_mode:
-            print('measured cores: {}, memory: {} MB, disk {} MB, runtime {}'.format(
-                t.resources_measured.cores,
-                t.resources_measured.memory,
-                t.resources_measured.disk,
-                t.resources_measured.wall_time / 1000000))
+            print('Measured cores: {}, memory: {} MB, disk {} MB, runtime {}'.format(
+                task.resources_measured.cores,
+                task.resources_measured.memory,
+                task.resources_measured.disk,
+                task.resources_measured.wall_time / 1000000))
 
-    if output_mode and t.output:
-        print('Task id #{} output:\n{}'.format(t.id, t.output))
+    if output_mode and task.output:
+        print('Task id #{} output:\n{}'.format(task.id, task.output))
 
-    if t.result != 0:
-        print('Task id #{} failed with code: {}'.format(t.id, t.result))
+    if task.result != 0:
+        print('Task id #{} failed with code: {}'.format(task.id, task.result))
 
 def work_queue_executor(items, function, accumulator, **kwargs):
     """Execute using Work Queue
@@ -486,17 +490,14 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
         progress_bar = tqdm(total=tasks_total,position=1,disable=not status,desc="Processing")
 
-        i=0
-
         while tasks_done < tasks_total:
 
             tasks_waiting = tasks_done-tasks_submitted  # get something from the queue
 
             while tasks_submitted < tasks_total and tasks_waiting < 100:
-               task = wqex_create_task(tasks_submitted,items[i],wrapper,env_file,command_path,infile_function,tmpdir)
+               task = wqex_create_task(tasks_submitted,items[tasks_submitted],wrapper,env_file,command_path,infile_function,tmpdir)
                task_id = _wq_queue.submit(task)
                tasks_submitted += 1
-               i += 1
 
                if(verbose_mode):
                    print('Submitted task (id #{}): {}'.format(task_id,task.command))
@@ -515,7 +516,9 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                 add_fn(accumulator, unpickle_output)
 
                 tasks_done += 1
-                progress_bar.update(1)
+
+                if(not verbose_mode):
+                    progress_bar.update(1)
 
         if os.path.exists(command_path):
             os.remove(command_path)
