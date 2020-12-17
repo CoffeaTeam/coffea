@@ -240,6 +240,7 @@ with open(out, "wb") as f:
     return name
 
 #
+# Work Queue Executor:
 # Global Work Queue object to allow queue to be used
 # across executor invocations.
 #
@@ -247,6 +248,7 @@ with open(out, "wb") as f:
 _wq_queue = None
 
 #
+# Work Queue Executor:
 # Generate a WQ task from a Coffea item.
 #
 
@@ -290,6 +292,7 @@ def wqex_create_task( i, item, wrapper, env_file, command_path, infile_function,
     return task
 
 #
+# Work Queue Executor:
 # Display output of a task depending on various modes
 #
 
@@ -315,6 +318,10 @@ def wqex_output_task( task, verbose_mode, resource_mode, output_mode ):
 
     if task.result != 0:
         print('Task id #{} failed with code: {}'.format(task.id, task.result))
+
+#
+# Work Queue Executor: Main Loop
+#
 
 def work_queue_executor(items, function, accumulator, **kwargs):
     """Execute using Work Queue
