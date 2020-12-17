@@ -19,16 +19,15 @@ as the master machine.
 
 .. code-block:: bash
   # Create a new environment
-  conda create --name conda-coffea-wq-env
-  conda activate conda-coffea-wq-env
+  conda create --name coffea-env
+  conda activate coffea-env
   
   # Install Coffea and Work Queue into the environment
   conda install python=3.8.3 six dill
-  conda install -c conda-forge ndcctools conda-pack xrootd
-  pip install coffea
+  conda install -c conda-forge coffea ndcctools conda-pack xrootd
     
   # Pack the environment into a portable tarball.
-  conda-pack --name conda-coffea-wq-env --output conda-coffea-wq-env.tar.gz
+  conda-pack --name coffea-env --output coffea-env.tar.gz
 
 To run an analysis, you must set up a work queue executor
 with appropriate arguments.  Here is a complete example that
@@ -43,11 +42,30 @@ shows the creation of tasks.  It is now waiting for worker
 processes to connect and execute tasks.
 
 For testing purposes, you can start a single worker on the same
-machine, and direct it to connect to your master process.  With
-a single worker, the process will be gradual as it completes
-on task at a time.
+machine, and direct it to connect to your master process, like this;
+
+>>> work_queue_worker <hostname> 9123
+
+Or:
 
 >>> work_queue_worker -N coffea-wq-${USER}
+
+With a single worker, the process will be gradual as it completes
+one task (or a few tasks) at a time.  The output will be similar to this:
+
+.. code-block::
+  ------------------------------------------------
+  Example Coffea Analysis with Work Queue Executor
+  ------------------------------------------------
+  Master Name: -N coffea-wq-fred
+  Environment: conda-env.tar.gz
+  Wrapper Path: /path/to/python_package_run
+  ------------------------------------------------
+  Listening for work queue workers on port 9123...
+  Creating Tasks: 100%|█████████████████████████████████████████████████████████████████████████| 4/4 [00:00<00:00, 2653.36chunk/s]
+  Processing: 100%|███████████████████████████████████████████████████████████████████████████████| 4/4 [03:06<00:00, 46.61s/chunk]
+  {'sumw': defaultdict_accumulator(<class 'float'>, {'DoubleMuon': 400224.0}), 'mass': <Hist (dataset,mass) instance at 0x7f3309da17f0>}
+
 
 To run at larger scale, you will need to run a large number
 of workers on a cluster or other infrastructure.  For example,
