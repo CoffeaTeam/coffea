@@ -116,40 +116,41 @@ fileset = {
 
 work_queue_executor_args = {
 
-	# Options are common to all executors:
-	'flatten': True,
-	'compression': 1,
-	'nano' : False,
-	'schema' : BaseSchema,
-        'skipbadfiles': False,      # Note that maxchunks only works if this is false.
+    # Options are common to all executors:
+    'flatten': True,
+    'compression': 1,
+    'nano' : False,
+    'schema' : BaseSchema,
+    'skipbadfiles': False,      # Note that maxchunks only works if this is false.
  
-	# Options specific to Work Queue: resources to allocate per task.
-	'resources-mode' : 'auto',  # Adapt task resources to what's observed.
-        'resource-monitor': True,   # Measure actual resource consumption
+    # Options specific to Work Queue: resources to allocate per task.
+    'resources-mode' : 'auto',  # Adapt task resources to what's observed.
+    'resource-monitor': True,   # Measure actual resource consumption
 
-	# With resources set to auto, these are the max values for any task.
-	'cores': 2,                 # Cores needed per task
-        'disk': 2000,                # Disk needed per task (MB)
-        'memory': 2000,              # Memory needed per task (MB)
 
-	# Options to control how workers find this master.
-        'master-name': wq_master_name,
-        'port': 9123,     # Port for manager to listen on: if zero, will choose automatically.
+    # With resources set to auto, these are the max values for any task.
+    'cores': 2,                 # Cores needed per task
+    'disk': 2000,                # Disk needed per task (MB)
+    'memory': 2000,              # Memory needed per task (MB)
 
-	# Options to control how the environment is constructed.
-	# The named tarball will be transferred to each worker
-	# and activated using the wrapper script.
-        'environment-file': wq_env_tarball,
-        'wrapper' : wq_wrapper_path,
+    # Options to control how workers find this master.
+    'master-name': wq_master_name,
+    'port': 9123,     # Port for manager to listen on: if zero, will choose automatically.
 
-	# Debugging: Display output of task if not empty.
-        'print-stdout': True,
+    # Options to control how the environment is constructed.
+    # The named tarball will be transferred to each worker
+    # and activated using the wrapper script.
+    'environment-file': wq_env_tarball,
+    'wrapper' : wq_wrapper_path,
 
-	# Debugging: Display notes about each task submitted/complete.
-	'verbose': False,
+    # Debugging: Display output of task if not empty.
+    'print-stdout': True,
 
-	# Debugging: Produce a lot at the master side of things.
-	'debug-log' : 'coffea-wq.log',
+    # Debugging: Display notes about each task submitted/complete.
+    'verbose': False,
+
+    # Debugging: Produce a lot at the master side of things.
+    'debug-log' : 'coffea-wq.log',
 }
 
 ###############################################################
@@ -160,15 +161,15 @@ import time
 tstart = time.time()
 
 output = processor.run_uproot_job(
-	fileset,
-	treename='Events',
-	processor_instance=MyProcessor(),
-	executor=processor.work_queue_executor,
-	executor_args=work_queue_executor_args,
-	chunksize=100000,
+    fileset,
+    treename='Events',
+    processor_instance=MyProcessor(),
+    executor=processor.work_queue_executor,
+    executor_args=work_queue_executor_args,
+    chunksize=100000,
 
-	# Change this to None for a large run:
-	maxchunks=4,
+    # Change this to None for a large run:
+    maxchunks=4,
 )
 
 elapsed = time.time() - tstart
