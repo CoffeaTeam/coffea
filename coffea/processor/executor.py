@@ -503,11 +503,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         # Main loop of executor
         while tasks_done < tasks_total:
 
-            tasks_waiting = tasks_done-tasks_submitted  # get something from the queue
-
-            # Submit tasks into the queue, until at least 100 are idle.
-
-            while tasks_submitted < tasks_total and tasks_waiting < 100:
+            # Submit tasks into the queue, but no more than 100 idle tasks
+            while tasks_submitted < tasks_total and _wq_queue.stats.tasks_waiting < 100:
                task = wqex_create_task(tasks_submitted,items[tasks_submitted],wrapper,env_file,command_path,infile_function,tmpdir)
                task_id = _wq_queue.submit(task)
                tasks_submitted += 1
