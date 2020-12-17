@@ -18,6 +18,7 @@ sent to each worker in order to provide the same environment
 as the master machine.
 
 .. code-block:: bash
+
   # Create a new environment
   conda create --name coffea-env
   conda activate coffea-env
@@ -44,16 +45,21 @@ processes to connect and execute tasks.
 For testing purposes, you can start a single worker on the same
 machine, and direct it to connect to your master process, like this;
 
->>> work_queue_worker <hostname> 9123
+.. code-block::
+
+  work_queue_worker <hostname> 9123
 
 Or:
 
->>> work_queue_worker -N coffea-wq-${USER}
+.. code-block::
+
+  work_queue_worker -N coffea-wq-${USER}
 
 With a single worker, the process will be gradual as it completes
 one task (or a few tasks) at a time.  The output will be similar to this:
 
 .. code-block::
+
   ------------------------------------------------
   Example Coffea Analysis with Work Queue Executor
   ------------------------------------------------
@@ -71,8 +77,10 @@ To run at larger scale, you will need to run a large number
 of workers on a cluster or other infrastructure.  For example,
 to submit 32 workers to an HTCondor pool:
 
->>> condor_submit_workers -N coffea-wq-${USER} 32
+.. code-block::
+
+  condor_submit_workers -N coffea-wq-${USER} 32
 
 For more information on starting and managing workers
 on various batch systems and clusters, see the
-`Work Queue <https://cctools.readthedocs.io/en/latest/work_queue/>` documentation
+`Work Queue <https://cctools.readthedocs.io/en/latest/work_queue/>`_ documentation
