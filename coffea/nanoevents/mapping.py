@@ -3,8 +3,6 @@ from cachetools import LRUCache
 from collections.abc import Mapping
 import uproot4
 import awkward1
-import pyarrow as pa
-import pyarrow.parquet as pq
 import numpy
 import json
 from coffea.nanoevents import transforms
@@ -59,6 +57,7 @@ class TrivialParquetOpener(UUIDOpener):
         self._schema_map = None
 
     def open_uuid(self, uuid):
+        import pyarrow.parquet as pq
         pfn = self._uuid_pfnmap[uuid]
         parfile = pq.ParquetFile(pfn, **self._parquet_options)
         pqmeta = parfile.schema_arrow.metadata
@@ -257,6 +256,7 @@ class UprootSourceMapping(BaseSourceMapping):
 
 
 def arrow_schema_to_awkward_form(schema):
+    import pyarrow as pa
     if isinstance(schema, (pa.lib.ListType, pa.lib.LargeListType)):
         dtype = schema.value_type.to_pandas_dtype()()
         return awkward1.forms.ListOffsetForm(
@@ -288,6 +288,7 @@ class ParquetSourceMapping(BaseSourceMapping):
             self.column = column
 
         def array(self, entry_start, entry_stop):
+            import pyarrow as pa
             aspa = self.source.read(self.column)[entry_start:entry_stop][0].chunk(0)
             out = None
             if isinstance(aspa, (pa.lib.ListArray, pa.lib.LargeListArray)):
