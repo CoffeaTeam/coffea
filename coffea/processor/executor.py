@@ -260,7 +260,7 @@ def wqex_create_task(itemid, item, wrapper, env_file, command_path, infile_funct
 
     # If wrapper and env provided, add that.
     if wrapper and env_file:
-        command = './{} --environment {} --unpack-to "$WORK_QUEUE_SANDBOX"/{}-env {}'.format(basename(wrapper),basename(env_file),basename(env_file),command)
+        command = './{} --environment {} --unpack-to "$WORK_QUEUE_SANDBOX"/{}-env {}'.format(basename(wrapper), basename(env_file), basename(env_file), command)
 
     task = wq.Task(command)
     task.specify_category('default')
