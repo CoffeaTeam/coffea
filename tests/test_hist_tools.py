@@ -158,9 +158,9 @@ def test_hist():
     assert h_less.sum("vocalization", "height", "mass", "animal").values()[()] == 1004.
 
 def test_export1d():
-    import uproot
+    import uproot3
     import os
-    from coffea.hist import export1d
+    from coffea.hist.export import export1d
 
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
@@ -171,11 +171,11 @@ def test_export1d():
 
     filename = 'test_export1d.root'
 
-    with uproot.create(filename) as fout:
+    with uproot3.create(filename) as fout:
         fout['regular_joe'] = hout
         fout.close()
 
-    with uproot.open(filename) as fin:
+    with uproot3.open(filename) as fin:
         hin = fin['regular_joe']
 
 

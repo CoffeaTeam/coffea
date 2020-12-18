@@ -23,8 +23,9 @@ def test_import():
 
 def fill_lepton_kinematics():
     import uproot
-    import uproot_methods
-    import awkward
+    import awkward as ak
+    from coffea.nanoevents.methods import candidate
+    ak.behavior.update(candidate.behavior)
 
     # histogram creation and manipulation
     from coffea import hist
@@ -32,22 +33,17 @@ def fill_lepton_kinematics():
     fin = uproot.open("HZZ.root")
     tree = fin["events"]
 
-    arrays = {k.replace('Electron_', ''): v for k, v in tree.arrays("Electron_*", namedecode='ascii').items()}
-    p4 = uproot_methods.TLorentzVectorArray.from_cartesian(arrays.pop('Px'),
-                                                           arrays.pop('Py'),
-                                                           arrays.pop('Pz'),
-                                                           arrays.pop('E'),
-                                                           )
-    electrons = awkward.JaggedArray.zip(p4=p4, **arrays)
+    arrays = {k.replace('Electron_', '') \
+               .strip('P') \
+               .replace('E','t').lower(): v for k, v in tree.arrays(filter_name="Electron_*",
+                                                                    how=dict).items()}
+    electrons = ak.zip(arrays, with_name='Candidate')
 
-    arrays = {k.replace('Muon_', ''): v for k, v in tree.arrays("Muon_*", namedecode='ascii').items()}
-    p4 = uproot_methods.TLorentzVectorArray.from_cartesian(
-        arrays.pop('Px'),
-        arrays.pop('Py'),
-        arrays.pop('Pz'),
-        arrays.pop('E'),
-    )
-    muons = awkward.JaggedArray.zip(p4=p4, **arrays)
+    arrays = {k.replace('Muon_', '') \
+               .strip('P') \
+               .replace('E','t').lower(): v for k, v in tree.arrays(filter_name="Muon_*",
+                                                                    how=dict).items()}
+    muons = ak.zip(arrays, with_name='Candidate')
 
     # Two types of axes exist presently: bins and categories
     lepton_kinematics = hist.Hist("Events",
@@ -58,8 +54,8 @@ def fill_lepton_kinematics():
 
     # Pass keyword arguments to fill, all arrays must be flat numpy arrays
     # User is responsible for ensuring all arrays have same jagged structure!
-    lepton_kinematics.fill(flavor="electron", pt=electrons['p4'].pt.flatten(), eta=electrons['p4'].eta.flatten())
-    lepton_kinematics.fill(flavor="muon", pt=muons['p4'].pt.flatten(), eta=muons['p4'].eta.flatten())
+    lepton_kinematics.fill(flavor="electron", pt=ak.flatten(electrons.pt), eta=ak.flatten(electrons.eta))
+    lepton_kinematics.fill(flavor="muon", pt=ak.flatten(muons.pt), eta=ak.flatten(muons.eta))
 
     return lepton_kinematics
 
