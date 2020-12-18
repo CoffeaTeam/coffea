@@ -2,8 +2,8 @@ import pytest
 import os
 import uproot
 from coffea import processor
-from coffea.processor.test_items import NanoEvents0Processor
-from coffea.nanoaod import NanoEvents
+from coffea.processor.test_items import NanoEventsProcessor
+from coffea.nanoevents import NanoEventsFactory
 
 
 def test_preloaded_nanoevents():

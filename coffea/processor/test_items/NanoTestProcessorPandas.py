@@ -1,7 +1,6 @@
 from coffea import hist, processor
-from coffea.analysis_objects import JaggedCandidateArray as CandArray
-from coffea.util import awkward as akd
-from coffea.util import numpy as np
+import awkward as ak
+import numpy as np
 import pandas as pd
 
 

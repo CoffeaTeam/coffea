@@ -226,7 +226,7 @@ class rochester_lookup:
         cbA_flat = ak.flatten(cbA)
         cbN_flat = ak.flatten(cbN)
         cbS_flat = ak.flatten(cbS)
-        
+
         invcdf = ak.unflatten(
             doublecrystalball.ppf(u_flat,
                                   cbA_flat, cbA_flat,
@@ -238,7 +238,7 @@ class rochester_lookup:
         x = ak.where(mask,
                      (np.sqrt(kData[mask] * kData[mask] - kMC[mask] * kMC[mask])
                       * sigma[mask] * invcdf[mask]),
-                      x
+                     x
         )
         result = ak.where(x > -1, 1.0 / (1.0 + x[x > -1]), ak.ones_like(kpt))
         if isinstance(kpt, np.ndarray):

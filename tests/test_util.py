@@ -1,11 +1,11 @@
 from coffea.util import load, save
-from coffea.processor.test_items import NanoTestProcessor
+from coffea.processor.test_items import NanoEventsProcessor
 import os
 
 def test_loadsave():
     filename = 'testprocessor.coffea'
     try:
-        aprocessor = NanoTestProcessor()
+        aprocessor = NanoEventsProcessor()
         save(aprocessor, filename)
         newprocessor = load(filename)
         assert 'pt' in newprocessor.accumulator

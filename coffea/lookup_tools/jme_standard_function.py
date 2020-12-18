@@ -158,7 +158,7 @@ class jme_standard_function(lookup_base):
                 clamp_mins = ak.flatten(self._eval_clamp_mins[eval_name])[0]
             else:
                 clamp_mins = np.array(self._eval_clamp_mins[eval_name][bin_tuple])
-                
+
             clamp_maxs = None
             if len(ak.flatten(self._eval_clamp_maxs[eval_name])) == 1:
                 clamp_maxs = ak.flatten(self._eval_clamp_maxs[eval_name])[0]

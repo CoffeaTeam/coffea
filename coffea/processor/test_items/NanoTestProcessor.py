@@ -1,7 +1,6 @@
 from coffea import hist, processor
-from coffea.analysis_objects import JaggedCandidateArray as CandArray
-from coffea.util import awkward as akd
-from coffea.util import numpy as np
+import awkward as ak
+import numpy as np
 
 
 class NanoTestProcessor(processor.ProcessorABC):
@@ -33,8 +32,8 @@ class NanoTestProcessor(processor.ProcessorABC):
         dataset = df["dataset"]
 
         muon = None
-        if isinstance(df["Muon_pt"], akd.JaggedArray):
-            muon = CandArray.candidatesfromcounts(
+        if isinstance(df["Muon_pt"], ak.JaggedArray):
+            muon = ak.JaggedArray.candidatesfromcounts(
                 counts=df["Muon_pt"].counts,
                 pt=df["Muon_pt"].content,
                 eta=df["Muon_eta"].content,
@@ -42,7 +41,7 @@ class NanoTestProcessor(processor.ProcessorABC):
                 mass=df["Muon_mass"].content,
             )
         else:
-            muon = CandArray.candidatesfromcounts(
+            muon = ak.JaggedArray.candidatesfromcounts(
                 counts=df["nMuon"],
                 pt=df["Muon_pt"],
                 eta=df["Muon_eta"],
