@@ -255,19 +255,22 @@ def wqex_create_task(itemid, item, wrapper, env_file, command_path, infile_funct
     infile_item = os.path.join(tmpdir, 'item_{}.p'.format(itemid))
     outfile = os.path.join(tmpdir, 'output_{}.p'.format(itemid))
 
-    coffea_command = 'python {} {} {} {}'.format(basename(command_path), basename(infile_function), basename(infile_item), basename(outfile))
-    wrapped_command = './{}'.format(basename(wrapper))
-    wrapped_command += ' --environment {}'.format(basename(env_file))
-    wrapped_command += ' --unpack-to "$WORK_QUEUE_SANDBOX"/{}-env {}'.format(basename(env_file), coffea_command)
+    # Base command just invokes python on the function and data.
+    command = 'python {} {} {} {}'.format(basename(command_path), basename(infile_function), basename(infile_item), basename(outfile))
 
-    task = wq.Task(wrapped_command)
+    # If wrapper and env provided, add that.
+    if wrapper and env_file:
+        command = './{} --environment {} --unpack-to "$WORK_QUEUE_SANDBOX"/{}-env {}'.format(basename(wrapper),basename(env_file),basename(env_file),command)
+
+    task = wq.Task(command)
     task.specify_category('default')
-
     task.specify_input_file(command_path, cache=True)
     task.specify_input_file(infile_function, cache=False)
     task.specify_input_file(infile_item, cache=False)
-    task.specify_input_file(env_file, cache=True)
-    task.specify_input_file(wrapper, cache=True)
+
+    if wrapper and env_file:
+        task.specify_input_file(env_file, cache=True)
+        task.specify_input_file(wrapper, cache=True)
 
     if re.search('://', item.filename):
         # This looks like an URL. Not transfering file.
@@ -426,12 +429,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     if _wq_queue is None or queue_mode == 'one-per-stage':
         _wq_queue = wq.WorkQueue(port, name=master_name, debug_log=debug_log, stats_log=stats_log, transactions_log=trans_log)
 
-    if not env_file:
-        raise TypeError("environment-file argument missing. It should name a conda environment as a tar file.")
-    elif not os.path.exists(env_file):
-        raise ValueError("environment-file does not name an existing conda environment as a tar file.")
-
-    if not wrapper:
+    if env_file and not wrapper:
         raise ValueError("Location of python_package_run could not be determined automatically.\nUse 'wrapper' argument to the work_queue_executor.")
 
     # If explicit resources are given, collect them into default_resources
