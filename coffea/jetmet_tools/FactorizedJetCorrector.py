@@ -182,8 +182,6 @@ class FactorizedJetCorrector(object):
         for i, func in enumerate(self._funcs):
             sig = func.signature
             cumCorr = reduce(lambda x, y: y * x, corrections, 1.0)
-            print(i, cumCorr)
-            print(corrVars)
             fargs = tuple((cumCorr * corrVars[arg]) if arg in corrVars.keys() else kwargs[arg] for arg in sig)
 
             if isinstance(fargs[0], ak.highlevel.Array):

@@ -44,10 +44,10 @@ class CorrectedMETFactory(object):
         out[self.name_map['METphi'] + '_orig'] = out[self.name_map['METphi']]
 
         def corrected_met_cartesian(met, rawJets, corrJets, dim):
-            return met[f'{dim}_orig'] - np.sum(getattr(rawJets, dim) - getattr(corrJets, dim))
+            return met[f'{dim}_orig'] - ak.sum(getattr(rawJets, dim) - getattr(corrJets, dim), axis=-1)
 
         def corrected_met_cartesian_unc(met, rawJets, corrJets, dimMET, dimJets):
-            return getattr(met, dimMET) - np.sum(getattr(rawJets, dimJets) - getattr(corrJets, dimJets))
+            return getattr(met, dimMET) - ak.sum(getattr(rawJets, dimJets) - getattr(corrJets, dimJets), axis=-1)
 
         out['corrected_met_x'] = ak.virtual(
             corrected_met_cartesian,
