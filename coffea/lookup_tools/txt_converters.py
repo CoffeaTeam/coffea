@@ -1,5 +1,5 @@
-from ..util import awkward
-from ..util import numpy as np
+import awkward as ak
+import numpy as np
 import os
 import sys
 import warnings
@@ -183,8 +183,8 @@ def _build_standard_jme_lookup(
                     theBins = np.union1d(binMins, binMaxs[-1:])
                 allBins = np.append(allBins, theBins)
                 counts = np.append(counts, theBins.size)
-            bins[layout[i + offset_name]] = awkward.JaggedArray.fromcounts(
-                counts, allBins
+            bins[layout[i + offset_name]] = ak.unflatten(
+                allBins, counts
             )
         bin_order.append(layout[i + offset_name])
         offset_col += 1
@@ -202,19 +202,19 @@ def _build_standard_jme_lookup(
     jagged_counts = np.ones(bins[bin_order[0]].size - 1, dtype=np.int)
     if len(bin_order) > 1:
         jagged_counts = np.maximum(
-            bins[bin_order[1]].counts - 1, 0
+            ak.num(bins[bin_order[1]]) - 1, 0
         )  # need counts-1 since we only care about Nbins
     for i in range(nEvalVars):
         var_order.append(layout[i + offset_name])
         if not interpolatedFunc:
-            clamp_mins[layout[i + offset_name]] = awkward.JaggedArray.fromcounts(
-                jagged_counts, np.atleast_1d(pars[columns[i + offset_col]])
+            clamp_mins[layout[i + offset_name]] = ak.unflatten(
+                np.atleast_1d(pars[columns[i + offset_col]]), jagged_counts
             )
-            clamp_maxs[layout[i + offset_name]] = awkward.JaggedArray.fromcounts(
-                jagged_counts, np.atleast_1d(pars[columns[i + offset_col + 1]])
+            clamp_maxs[layout[i + offset_name]] = ak.unflatten(
+                np.atleast_1d(pars[columns[i + offset_col + 1]]), jagged_counts
             )
-            assert clamp_mins[layout[i + offset_name]].valid()
-            assert clamp_maxs[layout[i + offset_name]].valid()
+            assert ak.is_valid(clamp_mins[layout[i + offset_name]])
+            assert ak.is_valid(clamp_maxs[layout[i + offset_name]])
             offset_col += 1
 
     # now get the parameters, which we will look up with the clamped values
@@ -222,10 +222,10 @@ def _build_standard_jme_lookup(
     parm_order = []
     offset_col = 2 * nBinnedVars + 1 + int(not interpolatedFunc) * 2 * nEvalVars
     for i in range(nParms):
-        jag = awkward.JaggedArray.fromcounts(
-            jagged_counts, pars[columns[i + offset_col]]
+        jag = ak.unflatten(
+            pars[columns[i + offset_col]], jagged_counts
         )
-        assert jag.valid()
+        assert ak.is_valid(jag)
         parms.append(jag)
         parm_order.append("p%i" % (i))
 
@@ -368,13 +368,13 @@ def convert_junc_txt_component(juncFilePath, uncFile):
         knots = vals[0 : len(vals) : 3]
         downs = vals[1 : len(vals) : 3]
         ups = vals[2 : len(vals) : 3]
-        downs = np.array([down.flatten() for down in downs])
-        ups = np.array([up.flatten() for up in ups])
+        downs = np.array([np.array(ak.flatten(down)) for down in downs])
+        ups = np.array([np.array(ak.flatten(up)) for up in ups])
         for knotv in knots:
-            knot = np.unique(knotv.flatten())
+            knot = np.unique(np.array(ak.flatten(knotv)))
             if knot.size != 1:
                 raise Exception("Multiple bin low edges found")
-        knots = np.array([np.unique(k.flatten())[0] for k in knots])
+        knots = np.array([np.unique(np.array(ak.flatten(k)))[0] for k in knots])
         vallist[2] = ({"knots": knots, "ups": ups.T, "downs": downs.T}, vallist[2][-1])
         vallist = vallist[:-1]
         wrapped_up[newkey] = tuple(vallist)
@@ -454,8 +454,8 @@ def convert_effective_area_file(eaFilePath):
                 theBins = np.union1d(binMins, binMaxs)
                 allBins = np.append(allBins, theBins)
                 counts = np.append(counts, theBins.size)
-            bins[layout[i + offset_name]] = awkward.JaggedArray.fromcounts(
-                counts, allBins
+            bins[layout[i + offset_name]] = ak.unflatten(
+                allBins, counts
             )
         bin_order.append(layout[i + offset_name])
         offset_col += 1

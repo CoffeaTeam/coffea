@@ -55,8 +55,8 @@ def get_description():
     return description[start:stop].strip()  # before + + after
 
 
-INSTALL_REQUIRES = ['awkward>=1.0.0',
-                    'uproot>=4.0.0',
+INSTALL_REQUIRES = ['awkward>=1.0.1',
+                    'uproot>=4.0.1rc2',
                     'uproot3-methods>=0.10.0',
                     'uproot3>=3.14.1',
                     'pyarrow>=1.0.0',

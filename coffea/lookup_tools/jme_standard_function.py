@@ -1,8 +1,8 @@
 from .lookup_base import lookup_base
 
-from ..util import awkward
-from ..util import numpy
-from ..util import numpy as np
+import awkward as ak
+import numpy
+import numpy as np
 from copy import deepcopy
 
 from scipy.special import erf
@@ -57,7 +57,8 @@ def flatten_idxs(idx_in, jaggedarray):
     else:
         raise Exception("jme_standard_function only works for two binning dimensions!")
 
-    good_idx = idx_out < jaggedarray.content.size
+    flattened = ak.flatten(jaggedarray)
+    good_idx = idx_out < len(flattened)
     if (~good_idx).any():
         input_idxs = tuple(
             [idx_out[~good_idx]] + [idx_in[i][~good_idx] for i in range(len(idx_in))]
@@ -65,7 +66,7 @@ def flatten_idxs(idx_in, jaggedarray):
         raise Exception(
             "Calculated invalid index {} for"
             " array with length {}".format(
-                np.vstack(input_idxs), jaggedarray.content.size
+                np.vstack(input_idxs), len(flattened)
             )
         )
 
@@ -153,34 +154,23 @@ class jme_standard_function(lookup_base):
         eval_values = []
         for eval_name in self._eval_vars:
             clamp_mins = None
-            if self._eval_clamp_mins[eval_name].content.size == 1:
-                clamp_mins = self._eval_clamp_mins[eval_name].content[0]
+            if len(ak.flatten(self._eval_clamp_mins[eval_name])) == 1:
+                clamp_mins = ak.flatten(self._eval_clamp_mins[eval_name])[0]
             else:
-                idxs = flatten_idxs(bin_tuple, self._eval_clamp_mins[eval_name])
-                clamp_mins = self._eval_clamp_mins[eval_name].content[idxs]
-                if isinstance(clamp_mins, awkward.JaggedArray):
-                    if clamp_mins.content.size == 1:
-                        clamp_mins = clamp_mins.content[0]
-                    else:
-                        clamp_mins = clamp_mins.flatten()
+                clamp_mins = np.array(self._eval_clamp_mins[eval_name][bin_tuple])
+                
             clamp_maxs = None
-            if self._eval_clamp_maxs[eval_name].content.size == 1:
-                clamp_maxs = self._eval_clamp_maxs[eval_name].content[0]
+            if len(ak.flatten(self._eval_clamp_maxs[eval_name])) == 1:
+                clamp_maxs = ak.flatten(self._eval_clamp_maxs[eval_name])[0]
             else:
-                idxs = flatten_idxs(bin_tuple, self._eval_clamp_maxs[eval_name])
-                clamp_maxs = self._eval_clamp_maxs[eval_name].content[idxs]
-                if isinstance(clamp_maxs, awkward.JaggedArray):
-                    if clamp_maxs.content.size == 1:
-                        clamp_maxs = clamp_maxs.content[0]
-                    else:
-                        clamp_maxs = clamp_maxs.flatten()
+                clamp_maxs = np.array(self._eval_clamp_maxs[eval_name][bin_tuple])
+
             eval_values.append(np.clip(eval_vals[eval_name], clamp_mins, clamp_maxs))
 
         # get parameter values
         parm_values = []
         if len(self._parms) > 0:
-            idxs = flatten_idxs(bin_tuple, self._parms[0])
-            parm_values = [parm.content[idxs] for parm in self._parms]
+            parm_values = [np.array(parm[bin_tuple]) for parm in self._parms]
 
         return self._formula(*tuple(parm_values + eval_values))
 

@@ -219,13 +219,26 @@ class rochester_lookup:
         # Rochester cbA = beta, cbN = m, as well as cbM (always 0?) = loc and cbS = scale to transform y = (x-loc)/scale in the pdf method
         cbA = self._cbA[s][m](abseta, nl)
         cbN = self._cbN[s][m](abseta, nl)
-        loc = ak.zeros_like(u)
         cbS = self._cbS[s][m](abseta, nl)
-        invcdf = doublecrystalball.ppf(u, cbA, cbA, cbN, cbN, loc, cbS)
-        x[mask] = (
-            np.sqrt(kData[mask] * kData[mask] - kMC[mask] * kMC[mask])
-            * sigma[mask]
-            * invcdf[mask]
+        counts = ak.num(u)
+        u_flat = ak.flatten(u)
+        loc = ak.zeros_like(u_flat)
+        cbA_flat = ak.flatten(cbA)
+        cbN_flat = ak.flatten(cbN)
+        cbS_flat = ak.flatten(cbS)
+        
+        invcdf = ak.unflatten(
+            doublecrystalball.ppf(u_flat,
+                                  cbA_flat, cbA_flat,
+                                  cbN_flat, cbN_flat,
+                                  loc, cbS_flat),
+            counts
+        )
+
+        x = ak.where(mask,
+                     (np.sqrt(kData[mask] * kData[mask] - kMC[mask] * kMC[mask])
+                      * sigma[mask] * invcdf[mask]),
+                      x
         )
         result = ak.where(x > -1, 1.0 / (1.0 + x[x > -1]), ak.ones_like(kpt))
         if isinstance(kpt, np.ndarray):
