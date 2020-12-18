@@ -3,7 +3,7 @@ import warnings
 from cachetools import LRUCache
 from collections.abc import Mapping
 import numpy
-import coffea.nanoevents.transforms as transforms
+from coffea.nanoevents import transforms
 from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
 
 
