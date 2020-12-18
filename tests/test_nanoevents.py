@@ -1,5 +1,5 @@
 import os
-import awkward1 as ak
+import awkward as ak
 from coffea.nanoevents import NanoEventsFactory
 import pytest
 

@@ -10,7 +10,7 @@ cartesian coordinate. Aliases typical of momentum vectors are also provided.
 A small example::
 
     import numpy as np
-    import awkward1 as ak
+    import awkward as ak
     from coffea.nanoevents.methods import vector
     ak.behavior.update(vector.behavior)
 
@@ -43,13 +43,13 @@ A small example::
 """
 import numbers
 import numpy
-import awkward1
+import awkward as ak
 
 
 behavior = {}
 
 
-@awkward1.mixin_class(behavior)
+@ak.mixin_class(behavior)
 class TwoVector:
     """A cartesian 2-dimensional vector
 
@@ -100,7 +100,7 @@ class TwoVector:
         """Alias for `r`"""
         return self.r
 
-    @awkward1.mixin_class_method(numpy.absolute)
+    @ak.mixin_class_method(numpy.absolute)
     def absolute(self):
         """Returns magnitude of the 2D vector
 
@@ -108,30 +108,30 @@ class TwoVector:
         """
         return self.r
 
-    @awkward1.mixin_class_method(numpy.add, {"TwoVector"})
+    @ak.mixin_class_method(numpy.add, {"TwoVector"})
     def add(self, other):
         """Add two vectors together elementwise using `x` and `y` components"""
-        return awkward1.zip(
+        return ak.zip(
             {"x": self.x + other.x, "y": self.y + other.y},
             with_name="TwoVector",
         )
 
     def sum(self, axis=-1):
         """Sum an array of vectors elementwise using `x` and `y` components"""
-        out = awkward1.zip(
+        out = ak.zip(
             {
-                "x": awkward1.sum(self.x, axis=axis),
-                "y": awkward1.sum(self.y, axis=axis),
+                "x": ak.sum(self.x, axis=axis),
+                "y": ak.sum(self.y, axis=axis),
             },
             with_name="TwoVector",
             highlevel=False,
         )
-        return awkward1.Array(out, behavior=self.behavior)
+        return ak.Array(out, behavior=self.behavior)
 
-    @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
+    @ak.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
         """Multiply this vector by a scalar elementwise using `x` and `y` components"""
-        return awkward1.zip(
+        return ak.zip(
             {"x": self.x * other, "y": self.y * other},
             with_name="TwoVector",
         )
@@ -144,7 +144,7 @@ class TwoVector:
         return (self.phi - other.phi + numpy.pi) % (2 * numpy.pi) - numpy.pi
 
 
-@awkward1.mixin_class(behavior)
+@ak.mixin_class(behavior)
 class PolarTwoVector(TwoVector):
     """A polar coordinate 2-dimensional vector
 
@@ -190,7 +190,7 @@ class PolarTwoVector(TwoVector):
         return self.r ** 2
 
 
-@awkward1.mixin_class(behavior)
+@ak.mixin_class(behavior)
 class ThreeVector(TwoVector):
     """A cartesian 3-dimensional vector
 
@@ -234,7 +234,7 @@ class ThreeVector(TwoVector):
         """Alias for `rho`"""
         return self.rho
 
-    @awkward1.mixin_class_method(numpy.absolute)
+    @ak.mixin_class_method(numpy.absolute)
     def absolute(self):
         """Returns magnitude of the 3D vector
 
@@ -242,37 +242,37 @@ class ThreeVector(TwoVector):
         """
         return self.p
 
-    @awkward1.mixin_class_method(numpy.add, {"ThreeVector"})
+    @ak.mixin_class_method(numpy.add, {"ThreeVector"})
     def add(self, other):
         """Add two vectors together elementwise using `x`, `y`, and `z` components"""
-        return awkward1.zip(
+        return ak.zip(
             {"x": self.x + other.x, "y": self.y + other.y, "z": self.z + other.z},
             with_name="ThreeVector",
         )
 
     def sum(self, axis=-1):
         """Sum an array of vectors elementwise using `x`, `y`, and `z` components"""
-        out = awkward1.zip(
+        out = ak.zip(
             {
-                "x": awkward1.sum(self.x, axis=axis),
-                "y": awkward1.sum(self.y, axis=axis),
-                "z": awkward1.sum(self.z, axis=axis),
+                "x": ak.sum(self.x, axis=axis),
+                "y": ak.sum(self.y, axis=axis),
+                "z": ak.sum(self.z, axis=axis),
             },
             with_name="ThreeVector",
             highlevel=False,
         )
-        return awkward1.Array(out, behavior=self.behavior)
+        return ak.Array(out, behavior=self.behavior)
 
-    @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
+    @ak.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
         """Multiply this vector by a scalar elementwise using `x`, `y`, and `z` components"""
-        return awkward1.zip(
+        return ak.zip(
             {"x": self.x * other, "y": self.y * other, "z": self.z * other},
             with_name="ThreeVector",
         )
 
 
-@awkward1.mixin_class(behavior)
+@ak.mixin_class(behavior)
 class SphericalThreeVector(ThreeVector, PolarTwoVector):
     """A spherical coordinate 3-dimensional vector
 
@@ -323,7 +323,7 @@ class SphericalThreeVector(ThreeVector, PolarTwoVector):
         return self.rho ** 2
 
 
-@awkward1.mixin_class(behavior)
+@ak.mixin_class(behavior)
 class LorentzVector(ThreeVector):
     """A cartesian Lorentz vector
 
@@ -358,7 +358,7 @@ class LorentzVector(ThreeVector):
         """
         return numpy.sqrt(self.mass2)
 
-    @awkward1.mixin_class_method(numpy.absolute)
+    @ak.mixin_class_method(numpy.absolute)
     def absolute(self):
         """Magnitude of this Lorentz vector
 
@@ -366,10 +366,10 @@ class LorentzVector(ThreeVector):
         """
         return self.mass
 
-    @awkward1.mixin_class_method(numpy.add, {"LorentzVector"})
+    @ak.mixin_class_method(numpy.add, {"LorentzVector"})
     def add(self, other):
         """Add two vectors together elementwise using `x`, `y`, `z`, and `t` components"""
-        return awkward1.zip(
+        return ak.zip(
             {
                 "x": self.x + other.x,
                 "y": self.y + other.y,
@@ -381,22 +381,22 @@ class LorentzVector(ThreeVector):
 
     def sum(self, axis=-1):
         """Sum an array of vectors elementwise using `x`, `y`, `z`, and `t` components"""
-        out = awkward1.zip(
+        out = ak.zip(
             {
-                "x": awkward1.sum(self.x, axis=axis),
-                "y": awkward1.sum(self.y, axis=axis),
-                "z": awkward1.sum(self.z, axis=axis),
-                "t": awkward1.sum(self.t, axis=axis),
+                "x": ak.sum(self.x, axis=axis),
+                "y": ak.sum(self.y, axis=axis),
+                "z": ak.sum(self.z, axis=axis),
+                "t": ak.sum(self.t, axis=axis),
             },
             with_name="LorentzVector",
             highlevel=False,
         )
-        return awkward1.Array(out, behavior=self.behavior)
+        return ak.Array(out, behavior=self.behavior)
 
-    @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
+    @ak.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
         """Multiply this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components"""
-        return awkward1.zip(
+        return ak.zip(
             {
                 "x": self.x * other,
                 "y": self.y * other,
@@ -434,7 +434,7 @@ class LorentzVector(ThreeVector):
 
         Parameters
         ----------
-            other : awkward1.Array
+            other : awkward.Array
                 Another array with same shape in all but ``axis``
             axis : int, optional
                 The axis to form the cartesian product (default 1). If None, the metric
@@ -451,14 +451,14 @@ class LorentzVector(ThreeVector):
             # NotImplementedError: ak.firsts with axis=-1
             axis = other.layout.purelist_depth - 2
         else:
-            a, b = awkward1.unzip(
-                awkward1.cartesian([self, other], axis=axis, nested=True)
+            a, b = ak.unzip(
+                ak.cartesian([self, other], axis=axis, nested=True)
             )
         mval = metric(a, b)
         # prefer keepdims=True: awkward-1.0 #434
-        mmin = awkward1.singletons(awkward1.argmin(mval, axis=axis + 1))
-        out = awkward1.firsts(b[mmin], axis=axis + 1)
-        metric = awkward1.firsts(mval[mmin], axis=axis + 1)
+        mmin = ak.singletons(ak.argmin(mval, axis=axis + 1))
+        out = ak.firsts(b[mmin], axis=axis + 1)
+        metric = ak.firsts(mval[mmin], axis=axis + 1)
         if threshold is not None:
             out = out.mask[metric <= threshold]
         if return_metric:
@@ -466,7 +466,7 @@ class LorentzVector(ThreeVector):
         return out
 
 
-@awkward1.mixin_class(behavior)
+@ak.mixin_class(behavior)
 class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
     """A Lorentz vector using pseudorapidity and mass
 
@@ -553,13 +553,13 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
         """Squared `mass`"""
         return self.mass ** 2
 
-    @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
+    @ak.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
         """Multiply this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components
 
         In reality, this multiplies `pt` and `mass` by the scalar quanitity for performance
         """
-        return awkward1.zip(
+        return ak.zip(
             {
                 "pt": self.pt * other,
                 "eta": self.eta,
@@ -570,7 +570,7 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
         )
 
 
-@awkward1.mixin_class(behavior)
+@ak.mixin_class(behavior)
 class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
     """A Lorentz vector using pseudorapidity and energy
 
@@ -649,13 +649,13 @@ class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
         """Squared `rho`"""
         return self.rho ** 2
 
-    @awkward1.mixin_class_method(numpy.multiply, {numbers.Number})
+    @ak.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
         """Multiply this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components
 
         In reality, this multiplies `pt` and `energy` by the scalar quanitity for performance
         """
-        return awkward1.zip(
+        return ak.zip(
             {
                 "pt": self.pt * other,
                 "eta": self.eta,
