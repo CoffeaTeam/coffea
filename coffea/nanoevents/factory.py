@@ -2,8 +2,6 @@ import warnings
 import weakref
 import awkward1
 import uproot4 as uproot
-import pyarrow
-import pyarrow.parquet
 import pathlib
 import io
 import uuid
@@ -228,6 +226,8 @@ class NanoEventsFactory:
             access_log : list, optional
                 Pass a list instance to record which branches were lazily accessed by this instance
         """
+        import pyarrow
+        import pyarrow.parquet
         ftypes = (
             str,
             pathlib.Path,
