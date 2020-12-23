@@ -20,15 +20,10 @@ class LazyDataFrame(MutableMapping):
             Last entry to read, default None (read to end)
         preload_items : iterable
             Force preloading of a set of columns from the tree
-        flatten : bool
-            Remove jagged structure from columns read
     """
 
-    def __init__(
-        self, tree, entrystart=None, entrystop=None, preload_items=None, flatten=False
-    ):
+    def __init__(self, tree, entrystart=None, entrystop=None, preload_items=None):
         self._tree = tree
-        self._flatten = flatten
         self._branchargs = {
             "decompression_executor": uproot.source.futures.TrivialExecutor(),
             "interpretation_executor": uproot.source.futures.TrivialExecutor(),
@@ -54,8 +49,6 @@ class LazyDataFrame(MutableMapping):
         elif key in self._tree:
             self._materialized.add(key)
             array = self._tree[key].array(**self._branchargs)
-            if self._flatten and isinstance(ak.type(array).type, ak.types.ListType):
-                array = ak.flatten(array)
             self._dict[key] = array
             return self._dict[key]
         else:

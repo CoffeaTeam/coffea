@@ -827,13 +827,16 @@ def _get_cache(strategy):
     return cache
 
 
-def _work_function(item, processor_instance, flatten=False, savemetrics=False,
+def _work_function(item, processor_instance, savemetrics=False,
                    mmap=False, schema=None, cachestrategy=None, skipbadfiles=False,
                    retries=0, xrootdtimeout=None, use_dataframes=False):
     if processor_instance == 'heavy':
         item, processor_instance = item
     if not isinstance(processor_instance, ProcessorABC):
         processor_instance = cloudpickle.loads(lz4f.decompress(processor_instance))
+
+    if schema is None:
+        schema = schemas.BaseSchema
 
     import warnings
     if use_dataframes:
@@ -859,13 +862,7 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                 'fileuuid': str(uuid.UUID(bytes=item.fileuuid))
             }
             with filecontext as file:
-                if schema is None:
-                    # To deprecate
-                    tree = file[item.treename]
-                    events = LazyDataFrame(tree, item.entrystart, item.entrystop, flatten=flatten)
-                    for key, value in metadata.items():
-                        events[key] = value
-                elif issubclass(schema, schemas.BaseSchema):
+                if issubclass(schema, schemas.BaseSchema):
                     materialized = []
                     factory = NanoEventsFactory.from_root(
                         file=file,
@@ -1148,17 +1145,15 @@ def run_uproot_job(fileset,
     # pop all _work_function args here
     savemetrics = executor_args.pop('savemetrics', False)
     if "flatten" in executor_args:
-        warnings.warn("Executor argument 'flatten' is deprecated, please refactor your processor to accept awkward arrays", DeprecationWarning)
-    flatten = executor_args.pop('flatten', False)
+        raise ValueError("Executor argument 'flatten' is deprecated, please refactor your processor to accept awkward arrays")
     mmap = executor_args.pop('mmap', False)
     schema = executor_args.pop('schema', None)
-    nano = executor_args.pop('nano', None)
     use_dataframes = executor_args.pop('use_dataframes', False)
     if (executor is not dask_executor) and use_dataframes:
         warnings.warn("Only Dask executor supports DataFrame outputs! Resetting 'use_dataframes' argument to False.")
         use_dataframes = False
-    if nano is not None:
-        raise ValueError("Awkward0 NanoEvents no longer supported.",
+    if "nano" in executor_args:
+        raise ValueError("Awkward0 NanoEvents no longer supported.\n"
                          "Please use 'schema': processor.NanoAODSchema to enable awkward NanoEvents processing.")
     cachestrategy = executor_args.pop('cachestrategy', None)
     pi_compression = executor_args.pop('processor_compression', 1)
@@ -1168,7 +1163,6 @@ def run_uproot_job(fileset,
         pi_to_send = lz4f.compress(cloudpickle.dumps(processor_instance), compression_level=pi_compression)
     closure = partial(
         _work_function,
-        flatten=flatten,
         savemetrics=savemetrics,
         mmap=mmap,
         schema=schema,
@@ -1270,7 +1264,6 @@ def run_parsl_job(fileset, treename, processor_instance, executor, executor_args
     executor_args.setdefault('config', _default_cfg)
     executor_args.setdefault('timeout', 180)
     executor_args.setdefault('chunking_timeout', 10)
-    executor_args.setdefault('flatten', False)
     executor_args.setdefault('compression', 0)
     executor_args.setdefault('skipbadfiles', False)
     executor_args.setdefault('retries', 0)

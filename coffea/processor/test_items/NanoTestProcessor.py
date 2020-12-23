@@ -1,6 +1,7 @@
 from coffea import hist, processor
 import awkward as ak
 import numpy as np
+from coffea.nanoevents.methods import vector
 
 
 class NanoTestProcessor(processor.ProcessorABC):
@@ -27,34 +28,24 @@ class NanoTestProcessor(processor.ProcessorABC):
         return self._accumulator
 
     def process(self, df):
+        ak.behavior.update(vector.behavior)
         output = self.accumulator.identity()
 
-        dataset = df["dataset"]
+        dataset = df.metadata["dataset"]
 
-        muon = None
-        if isinstance(df["Muon_pt"], ak.JaggedArray):
-            muon = ak.JaggedArray.candidatesfromcounts(
-                counts=df["Muon_pt"].counts,
-                pt=df["Muon_pt"].content,
-                eta=df["Muon_eta"].content,
-                phi=df["Muon_phi"].content,
-                mass=df["Muon_mass"].content,
-            )
-        else:
-            muon = ak.JaggedArray.candidatesfromcounts(
-                counts=df["nMuon"],
-                pt=df["Muon_pt"],
-                eta=df["Muon_eta"],
-                phi=df["Muon_phi"],
-                mass=df["Muon_mass"],
-            )
+        muon = ak.zip({'pt': df.Muon_pt,
+                       'eta': df.Muon_eta,
+                       'phi': df.Muon_phi,
+                       'mass': df.Muon_mass},
+                      with_name="PtEtaPhiMLorentzVector")
 
-        dimuon = muon.distincts()
+        dimuon = ak.combinations(muon, 2)
+        dimuon = dimuon["0"] + dimuon["1"]
 
-        output["pt"].fill(dataset=dataset, pt=muon.pt.flatten())
-        output["mass"].fill(dataset=dataset, mass=dimuon.mass.flatten())
-        output["cutflow"]["%s_pt" % dataset] += np.sum(muon.counts)
-        output["cutflow"]["%s_mass" % dataset] += np.sum(dimuon.counts)
+        output["pt"].fill(dataset=dataset, pt=ak.flatten(muon.pt))
+        output["mass"].fill(dataset=dataset, mass=ak.flatten(dimuon.mass))
+        output["cutflow"]["%s_pt" % dataset] += np.sum(ak.num(muon))
+        output["cutflow"]["%s_mass" % dataset] += np.sum(ak.num(dimuon))
 
         return output
 

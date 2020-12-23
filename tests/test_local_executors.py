@@ -40,11 +40,10 @@ def test_nanoevents_analysis(executor, compression, maxchunks):
     assert hists["cutflow"]["Data_mass"] == 66
 
 
-@pytest.mark.parametrize("flatten", [True, False])
 @pytest.mark.parametrize(
     "executor", [processor.iterative_executor, processor.futures_executor]
 )
-def test_dataframe_analysis(executor, flatten):
+def test_dataframe_analysis(executor):
     from coffea.processor.test_items import NanoTestProcessor
 
     filelist = {
@@ -55,7 +54,6 @@ def test_dataframe_analysis(executor, flatten):
 
     exe_args = {
         "workers": 1,
-        "flatten": flatten,
     }
 
     hists = processor.run_uproot_job(
