@@ -1203,87 +1203,6 @@ def run_uproot_job(fileset,
     return wrapped_out['out']
 
 
-def run_parsl_job(fileset, treename, processor_instance, executor, executor_args={}, chunksize=200000):
-    '''A wrapper to submit parsl jobs
-
-    .. note:: Deprecated in favor of `run_uproot_job` with the `parsl_executor`
-
-    Jobs are specified by a file set, which is a dictionary of
-    dataset: [file list] entries.  Supports only uproot reading,
-    via the LazyDataFrame class.  For more customized processing,
-    e.g. to read other objects from the files and pass them into data frames,
-    one can write a similar function in their user code.
-
-    Parameters
-    ----------
-        fileset : dict
-            dictionary {dataset: [file, file], }
-        treename : str
-            name of tree inside each root file
-        processor_instance : ProcessorABC
-            An instance of a class deriving from ProcessorABC
-        executor : coffea.processor.parsl.parsl_executor
-            Must be the parsl executor, or otherwise derive from
-            ``coffea.processor.parsl.ParslExecutor``
-        executor_args : dict
-            Extra arguments to pass to executor.  Special options
-            interpreted here: 'config' provides a parsl dataflow
-            configuration.
-        chunksize : int, optional
-            Number of entries to process at a time in the data frame
-
-    '''
-
-    try:
-        import parsl
-    except ImportError as e:
-        print('you must have parsl installed to call run_parsl_job()!', file=sys.stderr)
-        raise e
-
-    import warnings
-
-    warnings.warn("run_parsl_job is deprecated and will be removed in 0.7.0, replaced by run_uproot_job",
-                  DeprecationWarning)
-
-    from .parsl.parsl_executor import ParslExecutor
-    from .parsl.detail import _default_cfg
-
-    if not isinstance(fileset, Mapping):
-        raise ValueError("Expected fileset to be a mapping dataset: list(files)")
-    if not isinstance(processor_instance, ProcessorABC):
-        raise ValueError("Expected processor_instance to derive from ProcessorABC")
-    if isinstance(executor, ParslExecutor):
-        warnings.warn("ParslExecutor class is deprecated replacing with processor.parsl_executor",
-                      DeprecationWarning)
-        executor = parsl_executor
-    elif executor == parsl_executor:
-        pass
-    else:
-        raise ValueError("Expected executor to derive from ParslExecutor or be executor.parsl_executor")
-
-    executor_args.setdefault('config', _default_cfg)
-    executor_args.setdefault('timeout', 180)
-    executor_args.setdefault('chunking_timeout', 10)
-    executor_args.setdefault('compression', 0)
-    executor_args.setdefault('skipbadfiles', False)
-    executor_args.setdefault('retries', 0)
-    executor_args.setdefault('xrootdtimeout', None)
-
-    try:
-        parsl.dfk()
-        executor_args.pop('config')
-    except RuntimeError:
-        pass
-
-    output = run_uproot_job(fileset,
-                            treename,
-                            processor_instance=processor_instance,
-                            executor=executor,
-                            executor_args=executor_args)
-
-    return output
-
-
 def run_spark_job(fileset, processor_instance, executor, executor_args={},
                   spark=None, partitionsize=200000, thread_workers=16):
     '''A wrapper to submit spark jobs
@@ -1352,7 +1271,6 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     executor_args.setdefault('file_type', 'parquet')
     executor_args.setdefault('laurelin_version', '1.1.1')
     executor_args.setdefault('treeName', 'Events')
-    executor_args.setdefault('flatten', False)
     executor_args.setdefault('schema', None)
     executor_args.setdefault('cache', True)
     executor_args.setdefault('skipbadfiles', False)
@@ -1360,11 +1278,11 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     executor_args.setdefault('xrootdtimeout', None)
     file_type = executor_args['file_type']
     treeName = executor_args['treeName']
-    flatten = executor_args['flatten']
     schema = executor_args['schema']
-    nano = executor_args.pop('nano', None)
-    if nano is not None:
-        raise ValueError("Awkward0 NanoEvents no longer supported.",
+    if "flatten" in executor_args:
+        raise ValueError("Executor argument 'flatten' is deprecated, please refactor your processor to accept awkward arrays")
+    if "nano" in executor_args:
+        raise ValueError("Awkward0 NanoEvents no longer supported.\n"
                          "Please use 'schema': processor.NanoAODSchema to enable awkward NanoEvents processing.")
     use_cache = executor_args['cache']
 
@@ -1389,7 +1307,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
                                   thread_workers, file_type, treeName)
 
     output = processor_instance.accumulator.identity()
-    executor(spark, dfslist, processor_instance, output, thread_workers, use_cache, flatten, schema)
+    executor(spark, dfslist, processor_instance, output, thread_workers, use_cache, schema)
     processor_instance.postprocess(output)
 
     if killSpark:

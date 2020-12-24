@@ -15,7 +15,6 @@ from .executor import (
     parsl_executor,
     work_queue_executor,
     run_uproot_job,
-    run_parsl_job,
     run_spark_job
 )
 from .accumulator import (
@@ -44,7 +43,6 @@ __all__ = [
     'parsl_executor',
     'work_queue_executor',
     'run_uproot_job',
-    'run_parsl_job',
     'run_spark_job',
     'AccumulatorABC',
     'value_accumulator',

@@ -30,11 +30,11 @@ def do_parsl_job(filelist, flatten=False, compression=0, config=None):
         'compression': compression,
         'config': config,
     }
-    hists = processor.run_parsl_job(filelist,
-                                    treename,
-                                    processor_instance=proc,
-                                    executor=processor.executor.parsl_executor,
-                                    executor_args=exe_args)
+    hists = processor.run_uproot_job(filelist,
+                                     treename,
+                                     processor_instance=proc,
+                                     executor=processor.executor.parsl_executor,
+                                     executor_args=exe_args)
 
     assert( hists['cutflow']['ZJets_pt'] == 18 )
     assert( hists['cutflow']['ZJets_mass'] == 6 )
