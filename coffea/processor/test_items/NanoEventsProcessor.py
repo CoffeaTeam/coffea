@@ -1,5 +1,6 @@
 import awkward as ak
 from coffea import hist, processor
+from coffea import nanoevents
 
 
 class NanoEventsProcessor(processor.ProcessorABC):
@@ -31,6 +32,19 @@ class NanoEventsProcessor(processor.ProcessorABC):
         output = self.accumulator.identity()
 
         dataset = events.metadata["dataset"]
+
+        mapping = events.behavior["__events_factory__"]._mapping
+        events.Muon.pt
+        if isinstance(mapping, nanoevents.mapping.CachedMapping):
+            keys_in_cache = list(mapping.cache.cache.keys())
+            has_canaries = [canary in keys_in_cache for canary in self._canaries]
+            if has_canaries:
+                try:
+                    from distributed import get_worker
+                    worker = get_worker()
+                    output['worker'].add(worker.name)
+                except ValueError:
+                    pass
 
         dimuon = ak.combinations(events.Muon, 2)
         dimuon = dimuon["0"] + dimuon["1"]
