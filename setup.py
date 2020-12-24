@@ -76,7 +76,7 @@ EXTRAS_REQUIRE = {}
 EXTRAS_REQUIRE['spark'] = ['pyspark>=2.4.1,<3.0.0', 'jinja2']
 EXTRAS_REQUIRE['parsl'] = ['parsl>=1.0.0']
 EXTRAS_REQUIRE['dask'] = ['dask[dataframe]>=2.6.0', 'distributed>=2.6.0', 'bokeh>=1.3.4', 'blosc<1.10.0']
-EXTRAS_REQUIRE['dev'] = ['flake8', 'pytest', 'pytest-cov',
+EXTRAS_REQUIRE['dev'] = ['flake8', 'pytest', 'pytest-cov', 'pytest-mpl',
                          'sphinx', 'nbsphinx', 'sphinx-rtd-theme', 'sphinx-automodapi']
 
 setup(name="coffea",
