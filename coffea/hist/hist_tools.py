@@ -954,6 +954,8 @@ class Hist(AccumulatorABC):
         weight = values.pop("weight", None)
         if isinstance(weight, (awkward1.Array, np.ndarray)):
             weight = coffea.util._ensure_flat(weight)
+        if isinstance(weight, numbers.Number):
+            weight = np.atleast_1d(weight)
         if not all(d.name in values for d in self._axes):
             missing = ", ".join(d.name for d in self._axes if d.name not in values)
             raise ValueError("Not all axes specified for %r.  Missing: %s" % (self, missing))

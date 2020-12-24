@@ -265,3 +265,7 @@ def test_issue_333():
     axis = hist.Bin("channel", "Channel b1", 50, 0, 2000)
     temp = np.arange(0, 2000, 40, dtype=np.int16)
     assert np.all(axis.index(temp) == np.arange(50) + 1)
+
+def test_issue_394():
+    dummy = hist.Hist("Dummy" , hist.Cat("sample", "sample"), hist.Bin("dummy", "Number of events", 1, 0, 1))
+    dummy.fill(sample="test", dummy=1, weight=0.5)
