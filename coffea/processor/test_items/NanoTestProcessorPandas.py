@@ -31,7 +31,7 @@ class NanoTestProcessorPandas(processor.ProcessorABC):
         muons = events.Muon[events.Muon.pt > 20]
 
         counts = ak.num(muons)
-        one_muon =  ak.to_numpy(counts > 0)
+        one_muon = ak.to_numpy(counts > 0)
         two_muons = ak.to_numpy(counts > 1)
 
         output.loc[one_muon, 'mu1_pt'] = ak.to_numpy(muons[one_muon][:, 0].pt)
