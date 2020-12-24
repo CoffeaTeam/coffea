@@ -405,15 +405,18 @@ class NanoEventsFactory:
         """Build events"""
         events = self._events()
         if events is None:
+            prefix = self._partition_key
+
+            def key_formatter(partition, form_key, attribute):
+                return prefix + f'{partition}/{form_key}/{attribute}'
             behavior = dict(self._schema.behavior)
             behavior["__events_factory__"] = self
-            events = ak.from_arrayset(
+            events = ak.from_buffers(
                 self._schema.form,
+                len(self),
                 self._mapping,
-                prefix=self._partition_key,
-                sep="/",
+                key_format=key_formatter,
                 lazy=True,
-                lazy_lengths=len(self),
                 lazy_cache="new" if self._cache is None else self._cache,
                 behavior=behavior,
             )

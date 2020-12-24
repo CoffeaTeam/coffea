@@ -5,6 +5,15 @@ import awkward as ak
 from coffea.nanoevents.util import concat
 
 
+def data(stack):
+    """Extract content from array
+    (currently a noop, can probably take place of !content)
+
+    Signature: data,!data
+    """
+    pass
+
+
 def offsets(stack):
     """Extract offsets from ListOffsetArray
 
