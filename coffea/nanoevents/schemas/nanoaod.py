@@ -1,3 +1,4 @@
+import warnings
 from coffea.nanoevents import transforms
 from coffea.nanoevents.util import quote, concat
 from .base import BaseSchema, listarray_form, zip_forms, nest_jagged_forms
@@ -23,7 +24,12 @@ class NanoAODSchema(BaseSchema):
 
     Collections are assigned mixin types according to the `mixins` mapping.
     All collections are then zipped into one `base.NanoEvents` record and returned.
+
+    There is a class-level variable ``warn_missing_crossrefs`` which will alter the behavior of
+    NanoAODSchema. If warn_missing_crossrefs is true then when a missing global index cross-ref
+    target is encountered a warning will be issued instead of an exception. (Default: False)
     """
+    warn_missing_crossrefs = False
 
     mixins = {
         "CaloMET": "MissingET",
@@ -118,10 +124,14 @@ class NanoAODSchema(BaseSchema):
                 target = k[len(name) + 1 : k.find("Idx")]
                 target = target[0].upper() + target[1:]
                 if target not in collections:
-                    raise RuntimeError(
+                    problem = RuntimeError(
                         "Parsing indexer %s, expected to find collection %s but did not"
                         % (k, target)
                     )
+                    if self.__class__.warn_missing_crossrefs:
+                        warnings.warn(str(problem), RuntimeWarning)
+                    else:
+                        raise problem
                 branch_forms[k + "G"] = transforms.local2global_form(
                     branch_forms[k], branch_forms["o" + target]
                 )
