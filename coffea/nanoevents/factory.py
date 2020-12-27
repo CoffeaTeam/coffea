@@ -45,67 +45,6 @@ class NanoEventsFactory:
         self._events = lambda: None
 
     @classmethod
-    def from_file(
-        cls,
-        file,
-        treepath="/Events",
-        entry_start=None,
-        entry_stop=None,
-        runtime_cache=None,
-        persistent_cache=None,
-        schemaclass=NanoAODSchema,
-        metadata=None,
-        uproot_options={},
-        access_log=None,
-    ):
-        """Quickly build NanoEvents from a root file
-
-        Parameters
-        ----------
-            file : str or uproot.reading.ReadOnlyDirectory
-                The filename or already opened file using e.g. ``uproot.open()``
-            treepath : str, optional
-                Name of the tree to read in the file
-            entry_start : int, optional
-                Start at this entry offset in the tree (default 0)
-            entry_stop : int, optional
-                Stop at this entry offset in the tree (default end of tree)
-            runtime_cache : dict, optional
-                A dict-like interface to a cache object. This cache is expected to last the
-                duration of the program only, and will be used to hold references to materialized
-                awkward arrays, etc.
-            persistent_cache : dict, optional
-                A dict-like interface to a cache object. Only bare numpy arrays will be placed in this cache,
-                using globally-unique keys.
-            schemaclass : BaseSchema
-                A schema class deriving from `BaseSchema` and implementing the desired view of the file
-            metadata : dict, optional
-                Arbitrary metadata to add to the `base.NanoEvents` object
-            uproot_options : dict, optional
-                Any options to pass to ``uproot.open``
-            access_log : list, optional
-                Pass a list instance to record which branches were lazily accessed by this instance
-        """
-        warnings.warn(
-            "DEPRECATION NOTICE:\nNanoEventsFactory.from_file is deprecated, please"
-            " migrate your code to use NanoEventsFactory.from_root.\nUsing"
-            " NanoEventsFactory.from_file will result in an error in the next"
-            " major release of coffea."
-        )
-        return cls.from_root(
-            file,
-            treepath,
-            entry_start,
-            entry_stop,
-            runtime_cache,
-            persistent_cache,
-            schemaclass,
-            metadata,
-            uproot_options,
-            access_log,
-        )
-
-    @classmethod
     def from_root(
         cls,
         file,
