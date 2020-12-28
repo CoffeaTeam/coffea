@@ -423,9 +423,8 @@ class LorentzVector(ThreeVector):
                      metric=lambda a, b: a.delta_r(b),
                      return_combos=False
     ):
-        """Return a list of a metric evaluated between this object and others
+        """Return a list of a metric evaluated between this object and another.
 
-        Finds item in ``other`` satisfying ``min(metric(self, other))``.
         The two arrays should be broadcast-compatible on all axes other than the specified
         axis, which will be used to form a cartesian product. If axis=None, broadcast arrays directly.
         The return shape will be that of ``self`` with a new axis with shape of ``other`` appended

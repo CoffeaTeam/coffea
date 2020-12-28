@@ -347,7 +347,8 @@ class NanoEventsFactory:
             prefix = self._partition_key
 
             def key_formatter(partition, form_key, attribute):
-                return prefix + f'{partition}/{form_key}/{attribute}'
+                return prefix + f'/{partition}/{form_key}/{attribute}'
+
             behavior = dict(self._schema.behavior)
             behavior["__events_factory__"] = self
             events = ak.from_buffers(

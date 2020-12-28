@@ -1031,8 +1031,8 @@ def run_uproot_job(fileset,
             work function itself:
 
             - ``savemetrics`` saves some detailed metrics for xrootd processing (default False)
-            - ``schema`` builds the dataframe as a `NanoEvents` object rather than `LazyDataFrame`
-              (default ``None``); schema options include `NanoEvents`, `NanoAODSchema` and `TreeMakerSchema`
+            - ``schema`` builds the dataframe as a `nanoevents` object rather than `LazyDataFrame`
+              (default ``BaseSchema``); schema options include `BaseSchema`, `NanoAODSchema`, and `TreeMakerSchema`
             - ``processor_compression`` sets the compression level used to send processor instance to workers (default 1)
             - ``skipbadfiles`` instead of failing on a bad file, skip it (default False)
             - ``retries`` optionally retry processing of a chunk on failure (default 0)
@@ -1147,7 +1147,7 @@ def run_uproot_job(fileset,
     if "flatten" in executor_args:
         raise ValueError("Executor argument 'flatten' is deprecated, please refactor your processor to accept awkward arrays")
     mmap = executor_args.pop('mmap', False)
-    schema = executor_args.pop('schema', None)
+    schema = executor_args.pop('schema', schemas.BaseSchema)
     use_dataframes = executor_args.pop('use_dataframes', False)
     if (executor is not dask_executor) and use_dataframes:
         warnings.warn("Only Dask executor supports DataFrame outputs! Resetting 'use_dataframes' argument to False.")

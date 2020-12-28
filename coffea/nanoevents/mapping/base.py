@@ -69,7 +69,7 @@ class BaseSourceMapping(Mapping):
 
     @classmethod
     def interpret_key(cls, key):
-        uuid, treepath, entryrange, form_key, *layoutattr = key_to_tuple(key)
+        uuid, treepath, entryrange, partition, form_key, *layoutattr = key_to_tuple(key)
         start, stop = (int(x) for x in entryrange.split("-"))
         nodes = form_key.split(",")
         if len(layoutattr) == 1:
