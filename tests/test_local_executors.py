@@ -7,12 +7,13 @@ if sys.platform.startswith("win"):
     pytest.skip("skipping tests that only function in linux", allow_module_level=True)
 
 
+@pytest.mark.parametrize("chunksize", [100000, 5])
 @pytest.mark.parametrize("maxchunks", [None, 1000])
 @pytest.mark.parametrize("compression", [None, 0, 2])
 @pytest.mark.parametrize(
     "executor", [processor.iterative_executor, processor.futures_executor]
 )
-def test_nanoevents_analysis(executor, compression, maxchunks):
+def test_nanoevents_analysis(executor, compression, maxchunks, chunksize):
     from coffea.processor.test_items import NanoEventsProcessor
 
     filelist = {
@@ -31,7 +32,7 @@ def test_nanoevents_analysis(executor, compression, maxchunks):
 
     hists = processor.run_uproot_job(
         filelist, treename, NanoEventsProcessor(), executor, executor_args=exe_args,
-        maxchunks=maxchunks,
+        maxchunks=maxchunks, chunksize=chunksize
     )
 
     assert hists["cutflow"]["ZJets_pt"] == 18
