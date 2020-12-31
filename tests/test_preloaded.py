@@ -15,7 +15,7 @@ def test_preloaded_nanoevents():
     arrays = tree.arrays(columns, how=dict)
     src = SimplePreloadedColumnSource(arrays,
                                       rootdir.file.uuid,
-                                      len(arrays['nMuon']),
+                                      tree.num_entries,
                                       object_path='/Events')
     print(arrays)
 
