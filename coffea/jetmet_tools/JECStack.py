@@ -91,12 +91,15 @@ class JECStack(object):
         if self._jec is not None:
             for name in self._jec.signature:
                 out.add(name)
-        for name in self._junc.signature:
-            out.add(name)
-        for name in self._jer.signature:
-            out.add(name)
-        for name in self._jersf.signature:
-            out.add(name)
+        if self._junc is not None:
+            for name in self._junc.signature:
+                out.add(name)
+        if self._jer is not None:
+            for name in self._jer.signature:
+                out.add(name)
+        if self._jersf is not None:
+            for name in self._jersf.signature:
+                out.add(name)
         return {name: None for name in out}
 
     @property

@@ -1,5 +1,9 @@
+import warnings
 from .hist_tools import SparseAxis, DenseAxis
-from uproot3_methods.classes.TH1 import Methods as TH1Methods
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    from uproot3_methods.classes.TH1 import Methods as TH1Methods
 
 
 class TH1(TH1Methods, list):

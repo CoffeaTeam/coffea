@@ -4,7 +4,7 @@ global coffea_udf
 def coffea_udf(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last }}{% endfor %}):
     global processor_instance, lz4_clevel, nano_schema
     
-    columns = [{% for col in cols %}ak.Array({{col}}){{ "," if not loop.last }}{% endfor %}]
+    columns = [{% for col in cols %}awkward.Array({{col}}){{ "," if not loop.last }}{% endfor %}]
     names = [{% for col in cols %}{{"'"|safe+col+"'"|safe}}{{ "," if not loop.last }}{% endfor %}]
 
     size = len(dataset)
@@ -16,9 +16,9 @@ def coffea_udf(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last }}{%
     
     vals = processor_instance.process(events)
     
-    valsblob = lz4f.compress(pkl.dumps(vals), compression_level=lz4_clevel)
+    valsblob = lz4.frame.compress(pickle.dumps(vals), compression_level=lz4_clevel)
     
-    outs = np.full(shape=(size, ), fill_value=b'', dtype='O')
+    outs = numpy.full(shape=(size, ), fill_value=b'', dtype='O')
     outs[0] = valsblob
     
-    return pd.Series(outs)
+    return pandas.Series(outs)
