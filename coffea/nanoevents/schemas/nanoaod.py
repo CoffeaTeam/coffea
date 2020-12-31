@@ -29,6 +29,7 @@ class NanoAODSchema(BaseSchema):
     NanoAODSchema. If warn_missing_crossrefs is true then when a missing global index cross-ref
     target is encountered a warning will be issued instead of an exception. (Default: False)
     """
+
     warn_missing_crossrefs = False
 
     mixins = {

@@ -1,15 +1,15 @@
 from coffea.jetmet_tools.JECStack import JECStack
-import awkward as ak
-import numpy as np
+import awkward
+import numpy
 import warnings
 from copy import copy
 from functools import partial
 
 
 _stack_parts = ['jec', 'junc', 'jer', 'jersf']
-_MIN_JET_ENERGY = np.array(1e-2, dtype=np.float32)
-_ONE_F32 = np.array(1., dtype=np.float32)
-_ZERO_F32 = np.array(0., dtype=np.float32)
+_MIN_JET_ENERGY = numpy.array(1e-2, dtype=numpy.float32)
+_ONE_F32 = numpy.array(1., dtype=numpy.float32)
+_ZERO_F32 = numpy.array(0., dtype=numpy.float32)
 _JERSF_FORM = {
     "class": "NumpyArray",
     "inner_shape": [
@@ -23,87 +23,87 @@ _JERSF_FORM = {
 
 # we're gonna assume that the first record array we encounter is the flattened data
 def rewrap_recordarray(layout, depth, data):
-    if isinstance(layout, ak.layout.RecordArray):
+    if isinstance(layout, awkward.layout.RecordArray):
         return lambda: data
     return None
 
 
 def awkward_rewrap(arr, like_what, gfunc):
-    behavior = ak._util.behaviorof(like_what)
+    behavior = awkward._util.behaviorof(like_what)
     func = partial(gfunc, data=arr.layout)
-    layout = ak.operations.convert.to_layout(like_what)
-    newlayout = ak._util.recursively_apply(layout, func)
-    return ak._util.wrap(newlayout, behavior=behavior)
+    layout = awkward.operations.convert.to_layout(like_what)
+    newlayout = awkward._util.recursively_apply(layout, func)
+    return awkward._util.wrap(newlayout, behavior=behavior)
 
 
 def rand_gauss(arr, var):
     item = arr[var]
 
     def getfunction(layout, depth):
-        if (isinstance(layout, ak.layout.NumpyArray)
-            or not isinstance(layout, (ak.layout.Content,
-                                       ak.partition.PartitionedArray)
+        if (isinstance(layout, awkward.layout.NumpyArray)
+            or not isinstance(layout, (awkward.layout.Content,
+                                       awkward.partition.PartitionedArray)
            )):
-            return lambda: ak.layout.NumpyArray(np.random.normal(size=len(layout)).astype(np.float32))
+            return lambda: awkward.layout.NumpyArray(numpy.random.normal(size=len(layout)).astype(numpy.float32))
         return None
 
-    out = ak._util.recursively_apply(
-        ak.operations.convert.to_layout(item),
+    out = awkward._util.recursively_apply(
+        awkward.operations.convert.to_layout(item),
         getfunction)
     assert out is not None
-    return ak._util.wrap(out, ak._util.behaviorof(item))
+    return awkward._util.wrap(out, awkward._util.behaviorof(item))
 
 
 def jer_smear(arr, variation, forceStochastic, ptGenJet, ptJet, etaJet):
     pt_gen = arr[ptGenJet] if not forceStochastic else None
     jetPt = arr[ptJet]
 
-    if isinstance(jetPt, ak.highlevel.Array):
+    if isinstance(jetPt, awkward.highlevel.Array):
         def getfunction(layout, depth):
-            if (isinstance(layout, ak.layout.NumpyArray)
-                or not isinstance(layout, (ak.layout.Content,
-                                           ak.partition.PartitionedArray)
+            if (isinstance(layout, awkward.layout.NumpyArray)
+                or not isinstance(layout, (awkward.layout.Content,
+                                           awkward.partition.PartitionedArray)
                )):
-                return lambda: ak.layout.NumpyArray(np.zeros_like(size=len(jetPt), dtype=np.float32))
+                return lambda: awkward.layout.NumpyArray(numpy.zeros_like(size=len(jetPt), dtype=numpy.float32))
             return None
         if forceStochastic:
-            pt_gen = ak._util.recursively_apply(
-                ak.operations.convert.to_layout(jetPt),
+            pt_gen = awkward._util.recursively_apply(
+                awkward.operations.convert.to_layout(jetPt),
                 getfunction)
-            pt_gen = ak._util.wrap(pt_gen, ak._util.behaviorof(jetPt))
+            pt_gen = awkward._util.wrap(pt_gen, awkward._util.behaviorof(jetPt))
     else:
-        raise Exception('\'arr\' must be an awkward array of some kind!')
+        raise Exception("'arr' must be an awkward array of some kind!")
 
     jersmear = arr['jet_energy_resolution'] * arr['jet_resolution_rand_gauss']
     jersf = arr['jet_energy_resolution_scale_factor'][:, variation]
     doHybrid = pt_gen > 0
 
     detSmear = 1 + (jersf - 1) * (jetPt - pt_gen) / jetPt  # because of awkward1.0#367
-    stochSmear = 1 + np.sqrt(np.maximum(jersf**2 - 1, 0)) * jersmear
+    stochSmear = 1 + numpy.sqrt(numpy.maximum(jersf**2 - 1, 0)) * jersmear
 
-    min_jet_pt = _MIN_JET_ENERGY / np.cosh(arr[etaJet])
+    min_jet_pt = _MIN_JET_ENERGY / numpy.cosh(arr[etaJet])
     min_jet_pt_corr = min_jet_pt / jetPt
 
     smearfact = None
-    if isinstance(arr, ak.highlevel.Array):
-        smearfact = ak.where(doHybrid, detSmear, stochSmear)
-        smearfact = ak.where((smearfact * jetPt) < min_jet_pt,
-                             min_jet_pt_corr,
-                             smearfact)
+    if isinstance(arr, awkward.highlevel.Array):
+        smearfact = awkward.where(doHybrid, detSmear, stochSmear)
+        smearfact = awkward.where((smearfact * jetPt) < min_jet_pt,
+                                  min_jet_pt_corr,
+                                  smearfact)
 
         def getfunction(layout, depth):
-            if (isinstance(layout, ak.layout.NumpyArray)
-                or not isinstance(layout, (ak.layout.Content,
-                                           ak.partition.PartitionedArray)
+            if (isinstance(layout, awkward.layout.NumpyArray)
+                or not isinstance(layout, (awkward.layout.Content,
+                                           awkward.partition.PartitionedArray)
                )):
-                return lambda: ak.layout.NumpyArray(smearfact)
+                return lambda: awkward.layout.NumpyArray(smearfact)
             return None
-        smearfact = ak._util.recursively_apply(
-            ak.operations.convert.to_layout(jetPt),
+        smearfact = awkward._util.recursively_apply(
+            awkward.operations.convert.to_layout(jetPt),
             getfunction)
-        smearfact = ak._util.wrap(smearfact, ak._util.behaviorof(jetPt))
+        smearfact = awkward._util.wrap(smearfact, awkward._util.behaviorof(jetPt))
     else:
-        raise Exception('\'arr\' must be an awkward array of some kind!')
+        raise Exception("'arr' must be an awkward array of some kind!")
 
     return smearfact
 
@@ -160,13 +160,13 @@ class CorrectedJetsFactory(object):
         wrap = None
         VirtualType = None
         form = None
-        if isinstance(jets, ak.highlevel.Array):
-            fields = ak.fields(jets)
+        if isinstance(jets, awkward.highlevel.Array):
+            fields = awkward.fields(jets)
             if len(fields) == 0:
                 raise Exception('Detected awkward: \'jets\' must have attributes specified by keys!')
-            out = ak.flatten(jets)
+            out = awkward.flatten(jets)
             wrap = partial(awkward_rewrap, like_what=jets, gfunc=rewrap_recordarray)
-            VirtualType = ak.virtual
+            VirtualType = awkward.virtual
             form = out[self.name_map['ptRaw']].layout.form
         else:
             raise Exception('\'jets\' must be an awkward > 1.0.0 array of some kind!')
@@ -189,7 +189,7 @@ class CorrectedJetsFactory(object):
             jec_args = {k: out[jec_name_map[k]] for k in self.jec_stack.jec.signature}
             out['jet_energy_correction'] = self.jec_stack.jec.getCorrection(**jec_args, form=form, lazy_cache=lazy_cache)
         else:
-            out['jet_energy_correction'] = ak.ones_like(out[self.name_map['JetPt']])
+            out['jet_energy_correction'] = awkward.ones_like(out[self.name_map['JetPt']])
 
         # finally the lazy binding to the JEC
         def jec_var_corr(arr, varName):
@@ -252,7 +252,7 @@ class CorrectedJetsFactory(object):
                                     jer_name_map['JetEta']),
                               cache=lazy_cache
                               )
-            up = ak.flatten(jets)
+            up = awkward.flatten(jets)
             up['jet_energy_resolution_correction'] = jerc_up(length=len(out), form=form)
             init_pt_jer = partial(VirtualType, jer_smeared_val, args=(up, out, jer_name_map['JetPt']), cache=lazy_cache)
             init_mass_jer = partial(VirtualType, jer_smeared_val, args=(up, out, jer_name_map['JetPt']), cache=lazy_cache)
@@ -267,13 +267,13 @@ class CorrectedJetsFactory(object):
                                       jer_name_map['JetEta']),
                                 cache=lazy_cache
                                 )
-            down = ak.flatten(jets)
+            down = awkward.flatten(jets)
             down['jet_energy_resolution_correction'] = jerc_down(length=len(out), form=form)
             init_pt_jer = partial(VirtualType, jer_smeared_val, args=(down, out, jer_name_map['JetPt']), cache=lazy_cache)
             init_mass_jer = partial(VirtualType, jer_smeared_val, args=(down, out, jer_name_map['JetPt']), cache=lazy_cache)
             down[self.name_map['JetPt']] = init_pt_jer(length=len(out), form=form)
             down[self.name_map['JetMass']] = init_mass_jer(length=len(out), form=form)
-            out['JER'] = ak.zip({'up': up, 'down': down}, depth_limit=1, with_name='JetSystematic')
+            out['JER'] = awkward.zip({'up': up, 'down': down}, depth_limit=1, with_name='JetSystematic')
 
         if self.jec_stack.junc is not None:
             juncnames = {}
@@ -292,7 +292,7 @@ class CorrectedJetsFactory(object):
                 def junc_smeared_val(arr, up_down, uncname, varName):
                     return arr[f'jet_energy_uncertainty_{uncname}'][:, up_down] * arr[varName]
 
-                up = ak.flatten(jets)
+                up = awkward.flatten(jets)
                 up[self.name_map['JetPt']] = VirtualType(junc_smeared_val,
                                                          args=(out, 0, name,
                                                                juncnames['JetPt'],
@@ -308,7 +308,7 @@ class CorrectedJetsFactory(object):
                                                            form=form,
                                                            cache=lazy_cache)
 
-                down = ak.flatten(jets)
+                down = awkward.flatten(jets)
                 down[self.name_map['JetPt']] = VirtualType(junc_smeared_val,
                                                            args=(out, 1, name,
                                                                  juncnames['JetPt'],
@@ -323,6 +323,6 @@ class CorrectedJetsFactory(object):
                                                              length=len(out),
                                                              form=form,
                                                              cache=lazy_cache)
-                out[f'JES_{name}'] = ak.zip({'up': up, 'down': down}, depth_limit=1, with_name='JetSystematic')
+                out[f'JES_{name}'] = awkward.zip({'up': up, 'down': down}, depth_limit=1, with_name='JetSystematic')
 
         return wrap(out)

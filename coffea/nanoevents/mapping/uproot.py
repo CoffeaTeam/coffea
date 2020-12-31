@@ -2,7 +2,7 @@ import warnings
 from cachetools import LRUCache
 from collections.abc import Mapping
 import uproot
-import awkward as ak
+import awkward
 import numpy
 import json
 from coffea.nanoevents.mapping.base import UUIDOpener, BaseSourceMapping
@@ -42,7 +42,7 @@ class UprootSourceMapping(BaseSourceMapping):
             if len(branch):
                 continue
             form = branch.interpretation.awkward_form(None)
-            form = uproot._util.awkward_form_remove_uproot(ak, form)
+            form = uproot._util.awkward_form_remove_uproot(awkward, form)
             form = json.loads(form.tojson())
             if (
                 form["class"].startswith("ListOffset")

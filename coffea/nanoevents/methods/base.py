@@ -1,11 +1,11 @@
 """Basic NanoEvents and NanoCollection mixins"""
-import awkward as ak
+import awkward
 
 
 behavior = {}
 
 
-@ak.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class NanoEvents:
     """NanoEvents mixin class
 
@@ -21,7 +21,7 @@ class NanoEvents:
 behavior[("__typestr__", "NanoEvents")] = "event"
 
 
-@ak.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class NanoCollection:
     """A NanoEvents collection
 
@@ -36,14 +36,14 @@ class NanoCollection:
             islistarray = isinstance(
                 layout,
                 (
-                    ak.layout.ListOffsetArray32,
-                    ak.layout.ListOffsetArray64,
+                    awkward.layout.ListOffsetArray32,
+                    awkward.layout.ListOffsetArray64,
                 ),
             )
             if islistarray and layout.content.parameter("collection_name") is not None:
                 return lambda: layout
 
-        return ak._util.recursively_apply(self.layout, descend)
+        return awkward._util.recursively_apply(self.layout, descend)
 
     def _content(self):
         """Internal method to get jagged collection content
@@ -60,19 +60,19 @@ class NanoCollection:
         """
         if isinstance(index, int):
             out = self._content()[index]
-            return ak.Record(out, behavior=self.behavior)
+            return awkward.Record(out, behavior=self.behavior)
 
         def flat_take(layout):
-            idx = ak.Array(layout)
+            idx = awkward.Array(layout)
             return self._content()[idx.mask[idx >= 0]]
 
         def descend(layout, depth):
             if layout.purelist_depth == 1:
                 return lambda: flat_take(layout)
 
-        (index,) = ak.broadcast_arrays(index)
-        out = ak._util.recursively_apply(index.layout, descend)
-        return ak.Array(out, behavior=self.behavior)
+        (index,) = awkward.broadcast_arrays(index)
+        out = awkward._util.recursively_apply(index.layout, descend)
+        return awkward.Array(out, behavior=self.behavior)
 
     def _events(self):
         """Internal method to get the originally-constructed NanoEvents

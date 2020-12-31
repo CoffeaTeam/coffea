@@ -3,11 +3,11 @@ from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from tqdm import tqdm
-import pickle as pkl
-import lz4.frame as lz4f
-import numpy as np
-import pandas as pd
-import awkward as ak
+import pickle
+import lz4.frame
+import numpy
+import pandas
+import awkward
 from functools import partial
 
 from ..executor import _futures_handler
@@ -32,8 +32,8 @@ def agg_histos_raw(series, processor_instance, lz4_clevel):
         return goodlines[0]
     outhist = processor_instance.accumulator.identity()
     for line in goodlines:
-        outhist.add(pkl.loads(lz4f.decompress(line)))
-    return lz4f.compress(pkl.dumps(outhist), compression_level=lz4_clevel)
+        outhist.add(pickle.loads(lz4.frame.decompress(line)))
+    return lz4.frame.compress(pickle.dumps(outhist), compression_level=lz4_clevel)
 
 
 @fn.pandas_udf(BinaryType(), fn.PandasUDFType.GROUPED_AGG)
@@ -47,8 +47,8 @@ def reduce_histos_raw(df, processor_instance, lz4_clevel):
     mask = (histos.str.len() > 0)
     outhist = processor_instance.accumulator.identity()
     for line in histos[mask]:
-        outhist.add(pkl.loads(lz4f.decompress(line)))
-    return pd.DataFrame(data={'histos': np.array([lz4f.compress(pkl.dumps(outhist), compression_level=lz4_clevel)], dtype='O')})
+        outhist.add(pickle.loads(lz4.frame.decompress(line)))
+    return pandas.DataFrame(data={'histos': numpy.array([lz4.frame.compress(pickle.dumps(outhist), compression_level=lz4_clevel)], dtype='O')})
 
 
 @fn.pandas_udf(StructType([StructField('histos', BinaryType(), True)]), fn.PandasUDFType.GROUPED_MAP)
@@ -126,7 +126,7 @@ class SparkExecutor(object):
             if bitstream.empty:
                 raise Exception('The histogram list returned from spark is empty in dataset: %s, something went wrong!' % ds)
             bits = bitstream[bitstream.columns[0]][0]
-            output.add(pkl.loads(lz4f.decompress(bits)))
+            output.add(pickle.loads(lz4.frame.decompress(bits)))
 
     def _pruneandcache_data(self, ds, df, columns, cacheit):
         if cacheit:

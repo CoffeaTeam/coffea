@@ -1,6 +1,6 @@
 import warnings
 import weakref
-import awkward as ak
+import awkward
 import uproot
 import pathlib
 import io
@@ -170,6 +170,7 @@ class NanoEventsFactory:
         """
         import pyarrow
         import pyarrow.parquet
+
         ftypes = (
             str,
             pathlib.Path,
@@ -257,17 +258,21 @@ class NanoEventsFactory:
                 Pass a list instance to record which branches were lazily accessed by this instance
         """
         if not isinstance(array_source, Mapping):
-            raise TypeError("Invalid array source type (%s)" % (str(type(array_source))))
-        if not hasattr(array_source, 'metadata'):
-            raise TypeError("array_source must have 'metadata' with uuid, num_rows, and object_path")
+            raise TypeError(
+                "Invalid array source type (%s)" % (str(type(array_source)))
+            )
+        if not hasattr(array_source, "metadata"):
+            raise TypeError(
+                "array_source must have 'metadata' with uuid, num_rows, and object_path"
+            )
 
         if entry_start is None or entry_start < 0:
             entry_start = 0
-        if entry_stop is None or entry_stop > array_source.metadata['num_rows']:
-            entry_stop = array_source.metadata['num_rows']
+        if entry_stop is None or entry_stop > array_source.metadata["num_rows"]:
+            entry_stop = array_source.metadata["num_rows"]
 
-        uuid = array_source.metadata['uuid']
-        obj_path = array_source.metadata['object_path']
+        uuid = array_source.metadata["uuid"]
+        obj_path = array_source.metadata["object_path"]
 
         partition_key = (
             str(uuid),
@@ -347,11 +352,11 @@ class NanoEventsFactory:
             prefix = self._partition_key
 
             def key_formatter(partition, form_key, attribute):
-                return prefix + f'/{partition}/{form_key}/{attribute}'
+                return prefix + f"/{partition}/{form_key}/{attribute}"
 
             behavior = dict(self._schema.behavior)
             behavior["__events_factory__"] = self
-            events = ak.from_buffers(
+            events = awkward.from_buffers(
                 self._schema.form,
                 len(self),
                 self._mapping,

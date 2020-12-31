@@ -1,7 +1,7 @@
 import warnings
 from cachetools import LRUCache
 from collections.abc import Mapping
-import awkward as ak
+import awkward
 import numpy
 import json
 from coffea.nanoevents.mapping.base import UUIDOpener, BaseSourceMapping
@@ -32,6 +32,7 @@ class TrivialParquetOpener(UUIDOpener):
 
     def open_uuid(self, uuid):
         import pyarrow.parquet as pq
+
         pfn = self._uuid_pfnmap[uuid]
         parfile = pq.ParquetFile(pfn, **self._parquet_options)
         pqmeta = parfile.schema_arrow.metadata
@@ -46,11 +47,12 @@ class TrivialParquetOpener(UUIDOpener):
 
 def arrow_schema_to_awkward_form(schema):
     import pyarrow as pa
+
     if isinstance(schema, (pa.lib.ListType, pa.lib.LargeListType)):
         dtype = schema.value_type.to_pandas_dtype()()
-        return ak.forms.ListOffsetForm(
+        return awkward.forms.ListOffsetForm(
             offsets="i64",
-            content=ak.forms.NumpyForm(
+            content=awkward.forms.NumpyForm(
                 inner_shape=[],
                 itemsize=dtype.dtype.itemsize,
                 format=dtype.dtype.char,
@@ -58,7 +60,7 @@ def arrow_schema_to_awkward_form(schema):
         )
     elif isinstance(schema, pa.lib.DataType):
         dtype = schema.to_pandas_dtype()()
-        return ak.forms.NumpyForm(
+        return awkward.forms.NumpyForm(
             inner_shape=[],
             itemsize=dtype.dtype.itemsize,
             format=dtype.dtype.char,
@@ -78,6 +80,7 @@ class ParquetSourceMapping(BaseSourceMapping):
 
         def array(self, entry_start, entry_stop):
             import pyarrow as pa
+
             aspa = self.source.read(self.column)[entry_start:entry_stop][0].chunk(0)
             out = None
             if isinstance(aspa, (pa.lib.ListArray, pa.lib.LargeListArray)):
@@ -92,7 +95,7 @@ class ParquetSourceMapping(BaseSourceMapping):
                         : len(aspa) + 1
                     ]
                     offsets = offsets.astype(numpy.int64)
-                offsets = ak.layout.Index64(offsets)
+                offsets = awkward.layout.Index64(offsets)
 
                 if not isinstance(value_type, pa.lib.DataType):
                     raise Exception(
@@ -101,16 +104,16 @@ class ParquetSourceMapping(BaseSourceMapping):
                 dtype = value_type.to_pandas_dtype()
                 flat = aspa.flatten()
                 content = numpy.frombuffer(flat.buffers()[1], dtype=dtype)[: len(flat)]
-                content = ak.layout.NumpyArray(content)
-                out = ak.layout.ListOffsetArray64(offsets, content)
+                content = awkward.layout.NumpyArray(content)
+                out = awkward.layout.ListOffsetArray64(offsets, content)
             elif isinstance(aspa, pa.lib.NumericArray):
                 out = numpy.frombuffer(
                     aspa.buffers()[1], dtype=aspa.type.to_pandas_dtype()
                 )[: len(aspa)]
-                out = ak.layout.NumpyArray(out)
+                out = awkward.layout.NumpyArray(out)
             else:
                 raise Exception("array is not flat array or jagged list")
-            return ak.Array(out)
+            return awkward.Array(out)
 
     def __init__(self, fileopener, cache=None, access_log=None):
         super(ParquetSourceMapping, self).__init__(fileopener, cache, access_log)

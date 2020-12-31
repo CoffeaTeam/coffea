@@ -5,24 +5,24 @@ in the future it will provide some sort of composite candiate building tool
 that automatically resolves duplicates in the chain.
 """
 import numpy
-import awkward as ak
+import awkward
 from coffea.nanoevents.methods import vector
 
 
 behavior = dict(vector.behavior)
 
 
-@ak.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Candidate(vector.LorentzVector):
     """A Lorentz vector with charge
 
     This mixin class requires the parent class to provide items `x`, `y`, `z`, `t`, and `charge`.
     """
 
-    @ak.mixin_class_method(numpy.add, {"Candidate"})
+    @awkward.mixin_class_method(numpy.add, {"Candidate"})
     def add(self, other):
         """Add two candidates together elementwise using `x`, `y`, `z`, `t`, and `charge` components"""
-        return ak.zip(
+        return awkward.zip(
             {
                 "x": self.x + other.x,
                 "y": self.y + other.y,
@@ -35,19 +35,19 @@ class Candidate(vector.LorentzVector):
 
     def sum(self, axis=-1):
         """Sum an array of vectors elementwise using `x`, `y`, `z`, `t`, and `charge` components"""
-        return ak.zip(
+        return awkward.zip(
             {
-                "x": ak.sum(self.x, axis=axis),
-                "y": ak.sum(self.y, axis=axis),
-                "z": ak.sum(self.z, axis=axis),
-                "t": ak.sum(self.t, axis=axis),
-                "charge": ak.sum(self.charge, axis=axis),
+                "x": awkward.sum(self.x, axis=axis),
+                "y": awkward.sum(self.y, axis=axis),
+                "z": awkward.sum(self.z, axis=axis),
+                "t": awkward.sum(self.t, axis=axis),
+                "charge": awkward.sum(self.charge, axis=axis),
             },
             with_name="Candidate",
         )
 
 
-@ak.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class PtEtaPhiMCandidate(Candidate, vector.PtEtaPhiMLorentzVector):
     """A Lorentz vector in eta, mass coordinates with charge
 

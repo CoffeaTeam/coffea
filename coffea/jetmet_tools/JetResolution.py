@@ -1,8 +1,8 @@
-from ..lookup_tools.jme_standard_function import jme_standard_function
+from coffea.lookup_tools.jme_standard_function import jme_standard_function
 import warnings
 import re
-import awkward as ak
-from ..util import numpy as np
+import awkward
+import numpy
 from copy import deepcopy
 
 
@@ -141,9 +141,9 @@ class JetResolution(object):
             sig = func.signature
             args = tuple(kwargs[input] for input in sig)
 
-            if isinstance(args[0], ak.highlevel.Array):
-                resos.append(ak.virtual(func, args=args, length=len(args[0]), form=form, cache=cache))
-            elif isinstance(args[0], np.ndarray):
+            if isinstance(args[0], awkward.highlevel.Array):
+                resos.append(awkward.virtual(func, args=args, length=len(args[0]), form=form, cache=cache))
+            elif isinstance(args[0], numpy.ndarray):
                 resos.append(func(*args))  # np is non-lazy
             else:
                 raise Exception('Unknown array library for inputs.')

@@ -34,7 +34,7 @@ class NanoEventsProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
 
         mapping = events.behavior["__events_factory__"]._mapping
-        events.Muon.pt
+        muon_pt = events.Muon.pt
         if isinstance(mapping, nanoevents.mapping.CachedMapping):
             keys_in_cache = list(mapping.cache.cache.keys())
             has_canaries = [canary in keys_in_cache for canary in self._canaries]
@@ -49,7 +49,7 @@ class NanoEventsProcessor(processor.ProcessorABC):
         dimuon = ak.combinations(events.Muon, 2)
         dimuon = dimuon["0"] + dimuon["1"]
 
-        output["pt"].fill(dataset=dataset, pt=ak.flatten(events.Muon.pt))
+        output["pt"].fill(dataset=dataset, pt=ak.flatten(muon_pt))
         output["mass"].fill(dataset=dataset, mass=ak.flatten(dimuon.mass))
         output["cutflow"]["%s_pt" % dataset] += sum(ak.num(events.Muon))
         output["cutflow"]["%s_mass" % dataset] += sum(ak.num(dimuon))

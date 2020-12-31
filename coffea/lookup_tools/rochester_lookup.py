@@ -1,11 +1,11 @@
 import os
-import numpy as np
+import numpy
 
 # crystalball is single sided, local reimplementation of double-sided here until
 # the PR can be merged
 # from scipy.stats import crystalball
 from .doublecrystalball import doublecrystalball
-import awkward as ak
+import awkward
 from coffea.lookup_tools.dense_lookup import dense_lookup
 
 
@@ -76,7 +76,7 @@ class rochester_lookup:
 
         newargs = args + (0, 0)
         default = func(*newargs)
-        result = np.zeros_like(default)
+        result = numpy.zeros_like(default)
         for s in range(self._nsets):
             oneOver = 1.0 / self._members[s]
             for m in range(self._members[s]):
@@ -214,33 +214,36 @@ class rochester_lookup:
         kData = self._kRes[s][m][1](abseta)  # type 1 is data
         kMC = self._kRes[s][m][0](abseta)  # type 0 is MC
         mask = kData > kMC
-        x = ak.zeros_like(kpt)
+        x = awkward.zeros_like(kpt)
         sigma = self._sigma(kpt, eta, nl, s, m)
         # Rochester cbA = beta, cbN = m, as well as cbM (always 0?) = loc and cbS = scale to transform y = (x-loc)/scale in the pdf method
         cbA = self._cbA[s][m](abseta, nl)
         cbN = self._cbN[s][m](abseta, nl)
         cbS = self._cbS[s][m](abseta, nl)
-        counts = ak.num(u)
-        u_flat = ak.flatten(u)
-        loc = ak.zeros_like(u_flat)
-        cbA_flat = ak.flatten(cbA)
-        cbN_flat = ak.flatten(cbN)
-        cbS_flat = ak.flatten(cbS)
+        counts = awkward.num(u)
+        u_flat = awkward.flatten(u)
+        loc = awkward.zeros_like(u_flat)
+        cbA_flat = awkward.flatten(cbA)
+        cbN_flat = awkward.flatten(cbN)
+        cbS_flat = awkward.flatten(cbS)
 
-        invcdf = ak.unflatten(
-            doublecrystalball.ppf(u_flat,
-                                  cbA_flat, cbA_flat,
-                                  cbN_flat, cbN_flat,
-                                  loc, cbS_flat),
-            counts
+        invcdf = awkward.unflatten(
+            doublecrystalball.ppf(
+                u_flat, cbA_flat, cbA_flat, cbN_flat, cbN_flat, loc, cbS_flat
+            ),
+            counts,
         )
 
-        x = ak.where(mask,
-                     (np.sqrt(kData[mask] * kData[mask] - kMC[mask] * kMC[mask])
-                      * sigma[mask] * invcdf[mask]),
-                     x
+        x = awkward.where(
+            mask,
+            (
+                numpy.sqrt(kData[mask] * kData[mask] - kMC[mask] * kMC[mask])
+                * sigma[mask]
+                * invcdf[mask]
+            ),
+            x,
         )
-        result = ak.where(x > -1, 1.0 / (1.0 + x[x > -1]), ak.ones_like(kpt))
-        if isinstance(kpt, np.ndarray):
-            result = np.array(result)
+        result = awkward.where(x > -1, 1.0 / (1.0 + x[x > -1]), awkward.ones_like(kpt))
+        if isinstance(kpt, numpy.ndarray):
+            result = numpy.array(result)
         return result
