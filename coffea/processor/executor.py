@@ -10,7 +10,7 @@ import copy
 import shutil
 import json
 import cloudpickle
-import uproot4
+import uproot
 import subprocess
 import re
 import os
@@ -29,7 +29,6 @@ from .accumulator import (
 from .dataframe import (
     LazyDataFrame,
 )
-from ..nanoaod import NanoEvents
 from ..nanoevents import NanoEventsFactory, schemas
 from ..util import _hash
 
@@ -813,30 +812,6 @@ def parsl_executor(items, function, accumulator, **kwargs):
     return accumulator
 
 
-class Uproot3Context(object):
-    def __init__(self, filename, xrootdtimeout, mmap):
-        import uproot
-        xrootdsource = dict(uproot.source.xrootd.XRootDSource.defaults)
-        xrootdsource['timeout'] = xrootdtimeout
-        if mmap:
-            localsource = {}
-        else:
-            opts = dict(uproot.FileSource.defaults)
-            opts.update({'parallel': None})
-
-            def localsource(path):
-                return uproot.FileSource(path, **opts)
-
-        self._opener = lambda: uproot.open(filename, localsource=localsource, xrootdsource=xrootdsource)
-
-    def __enter__(self):
-        self._file = self._opener()
-        return self._file
-
-    def __exit__(self, *_):
-        self._file.source.close()
-
-
 def _get_cache(strategy):
     cache = None
     if strategy == 'dask-worker':
@@ -852,13 +827,16 @@ def _get_cache(strategy):
     return cache
 
 
-def _work_function(item, processor_instance, flatten=False, savemetrics=False,
+def _work_function(item, processor_instance, savemetrics=False,
                    mmap=False, schema=None, cachestrategy=None, skipbadfiles=False,
                    retries=0, xrootdtimeout=None, use_dataframes=False):
     if processor_instance == 'heavy':
         item, processor_instance = item
     if not isinstance(processor_instance, ProcessorABC):
         processor_instance = cloudpickle.loads(lz4f.decompress(processor_instance))
+
+    if schema is None:
+        schema = schemas.BaseSchema
 
     import warnings
     if use_dataframes:
@@ -870,15 +848,11 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
     retry_count = 0
     while retry_count <= retries:
         try:
-            if schema is NanoEvents:
-                # this is the only uproot3-dependent option
-                filecontext = Uproot3Context(item.filename, xrootdtimeout, mmap)
-            else:
-                filecontext = uproot4.open(
-                    item.filename,
-                    timeout=xrootdtimeout,
-                    file_handler=uproot4.MemmapSource if mmap else uproot4.MultithreadedFileSource,
-                )
+            filecontext = uproot.open(
+                item.filename,
+                timeout=xrootdtimeout,
+                file_handler=uproot.MemmapSource if mmap else uproot.MultithreadedFileSource,
+            )
             metadata = {
                 'dataset': item.dataset,
                 'filename': item.filename,
@@ -888,37 +862,21 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                 'fileuuid': str(uuid.UUID(bytes=item.fileuuid))
             }
             with filecontext as file:
-                if schema is None:
-                    # To deprecate
-                    tree = file[item.treename]
-                    events = LazyDataFrame(tree, item.entrystart, item.entrystop, flatten=flatten)
-                    for key, value in metadata.items():
-                        events[key] = value
-                elif schema is NanoEvents:
-                    # To deprecate
-                    events = NanoEvents.from_file(
-                        file=file,
-                        treename=item.treename,
-                        entrystart=item.entrystart,
-                        entrystop=item.entrystop,
-                        metadata=metadata,
-                        cache=_get_cache(cachestrategy),
-                    )
-                elif issubclass(schema, schemas.BaseSchema):
+                if issubclass(schema, schemas.BaseSchema):
                     materialized = []
                     factory = NanoEventsFactory.from_root(
                         file=file,
                         treepath=item.treename,
                         entry_start=item.entrystart,
                         entry_stop=item.entrystop,
-                        runtime_cache=_get_cache(cachestrategy),
+                        persistent_cache=_get_cache(cachestrategy),
                         schemaclass=schema,
                         metadata=metadata,
                         access_log=materialized,
                     )
                     events = factory.events()
                 else:
-                    raise ValueError("Expected schema to derive from BaseSchema or NanoEvents, instead got %r" % schema)
+                    raise ValueError("Expected schema to derive from nanoevents.BaseSchema, instead got %r" % schema)
                 tic = time.time()
                 try:
                     out = processor_instance.process(events)
@@ -930,7 +888,7 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                 else:
                     metrics = dict_accumulator()
                     if savemetrics:
-                        if isinstance(file, uproot4.ReadOnlyDirectory):
+                        if isinstance(file, uproot.ReadOnlyDirectory):
                             metrics['bytesread'] = value_accumulator(int, file.file.source.num_requested_bytes)
                         if issubclass(schema, schemas.BaseSchema):
                             metrics['columns'] = set_accumulator(materialized)
@@ -1002,7 +960,7 @@ def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None, align
     retry_count = 0
     while retry_count <= retries:
         try:
-            file = uproot4.open(item.filename, timeout=xrootdtimeout)
+            file = uproot.open(item.filename, timeout=xrootdtimeout)
             tree = file[item.treename]
             metadata = {'numentries': tree.num_entries, 'uuid': file.file.fUUID}
             if align_clusters:
@@ -1073,8 +1031,8 @@ def run_uproot_job(fileset,
             work function itself:
 
             - ``savemetrics`` saves some detailed metrics for xrootd processing (default False)
-            - ``schema`` builds the dataframe as a `NanoEvents` object rather than `LazyDataFrame`
-              (default ``None``); schema options include `NanoEvents`, `NanoAODSchema` and `TreeMakerSchema`
+            - ``schema`` builds the dataframe as a `nanoevents` object rather than `LazyDataFrame`
+              (default ``BaseSchema``); schema options include `BaseSchema`, `NanoAODSchema`, and `TreeMakerSchema`
             - ``processor_compression`` sets the compression level used to send processor instance to workers (default 1)
             - ``skipbadfiles`` instead of failing on a bad file, skip it (default False)
             - ``retries`` optionally retry processing of a chunk on failure (default 0)
@@ -1187,18 +1145,16 @@ def run_uproot_job(fileset,
     # pop all _work_function args here
     savemetrics = executor_args.pop('savemetrics', False)
     if "flatten" in executor_args:
-        warnings.warn("Executor argument 'flatten' is deprecated, please refactor your processor to accept awkward arrays", DeprecationWarning)
-    flatten = executor_args.pop('flatten', False)
+        raise ValueError("Executor argument 'flatten' is deprecated, please refactor your processor to accept awkward arrays")
     mmap = executor_args.pop('mmap', False)
-    schema = executor_args.pop('schema', None)
-    nano = executor_args.pop('nano', False)
+    schema = executor_args.pop('schema', schemas.BaseSchema)
     use_dataframes = executor_args.pop('use_dataframes', False)
     if (executor is not dask_executor) and use_dataframes:
         warnings.warn("Only Dask executor supports DataFrame outputs! Resetting 'use_dataframes' argument to False.")
         use_dataframes = False
-    if nano:
-        warnings.warn("Please use 'schema': processor.NanoEvents rather than 'nano': True to enable awkward0 NanoEvents processing", DeprecationWarning)
-        schema = NanoEvents
+    if "nano" in executor_args:
+        raise ValueError("Awkward0 NanoEvents no longer supported.\n"
+                         "Please use 'schema': processor.NanoAODSchema to enable awkward NanoEvents processing.")
     cachestrategy = executor_args.pop('cachestrategy', None)
     pi_compression = executor_args.pop('processor_compression', 1)
     if pi_compression is None:
@@ -1207,7 +1163,6 @@ def run_uproot_job(fileset,
         pi_to_send = lz4f.compress(cloudpickle.dumps(processor_instance), compression_level=pi_compression)
     closure = partial(
         _work_function,
-        flatten=flatten,
         savemetrics=savemetrics,
         mmap=mmap,
         schema=schema,
@@ -1246,88 +1201,6 @@ def run_uproot_job(fileset,
     if savemetrics and not use_dataframes:
         return out, wrapped_out['metrics']
     return wrapped_out['out']
-
-
-def run_parsl_job(fileset, treename, processor_instance, executor, executor_args={}, chunksize=200000):
-    '''A wrapper to submit parsl jobs
-
-    .. note:: Deprecated in favor of `run_uproot_job` with the `parsl_executor`
-
-    Jobs are specified by a file set, which is a dictionary of
-    dataset: [file list] entries.  Supports only uproot reading,
-    via the LazyDataFrame class.  For more customized processing,
-    e.g. to read other objects from the files and pass them into data frames,
-    one can write a similar function in their user code.
-
-    Parameters
-    ----------
-        fileset : dict
-            dictionary {dataset: [file, file], }
-        treename : str
-            name of tree inside each root file
-        processor_instance : ProcessorABC
-            An instance of a class deriving from ProcessorABC
-        executor : coffea.processor.parsl.parsl_executor
-            Must be the parsl executor, or otherwise derive from
-            ``coffea.processor.parsl.ParslExecutor``
-        executor_args : dict
-            Extra arguments to pass to executor.  Special options
-            interpreted here: 'config' provides a parsl dataflow
-            configuration.
-        chunksize : int, optional
-            Number of entries to process at a time in the data frame
-
-    '''
-
-    try:
-        import parsl
-    except ImportError as e:
-        print('you must have parsl installed to call run_parsl_job()!', file=sys.stderr)
-        raise e
-
-    import warnings
-
-    warnings.warn("run_parsl_job is deprecated and will be removed in 0.7.0, replaced by run_uproot_job",
-                  DeprecationWarning)
-
-    from .parsl.parsl_executor import ParslExecutor
-    from .parsl.detail import _default_cfg
-
-    if not isinstance(fileset, Mapping):
-        raise ValueError("Expected fileset to be a mapping dataset: list(files)")
-    if not isinstance(processor_instance, ProcessorABC):
-        raise ValueError("Expected processor_instance to derive from ProcessorABC")
-    if isinstance(executor, ParslExecutor):
-        warnings.warn("ParslExecutor class is deprecated replacing with processor.parsl_executor",
-                      DeprecationWarning)
-        executor = parsl_executor
-    elif executor == parsl_executor:
-        pass
-    else:
-        raise ValueError("Expected executor to derive from ParslExecutor or be executor.parsl_executor")
-
-    executor_args.setdefault('config', _default_cfg)
-    executor_args.setdefault('timeout', 180)
-    executor_args.setdefault('chunking_timeout', 10)
-    executor_args.setdefault('flatten', False)
-    executor_args.setdefault('compression', 0)
-    executor_args.setdefault('skipbadfiles', False)
-    executor_args.setdefault('retries', 0)
-    executor_args.setdefault('xrootdtimeout', None)
-
-    try:
-        parsl.dfk()
-        executor_args.pop('config')
-    except RuntimeError:
-        pass
-
-    output = run_uproot_job(fileset,
-                            treename,
-                            processor_instance=processor_instance,
-                            executor=executor,
-                            executor_args=executor_args)
-
-    return output
 
 
 def run_spark_job(fileset, processor_instance, executor, executor_args={},
@@ -1398,7 +1271,6 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     executor_args.setdefault('file_type', 'parquet')
     executor_args.setdefault('laurelin_version', '1.1.1')
     executor_args.setdefault('treeName', 'Events')
-    executor_args.setdefault('flatten', False)
     executor_args.setdefault('schema', None)
     executor_args.setdefault('cache', True)
     executor_args.setdefault('skipbadfiles', False)
@@ -1406,12 +1278,12 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     executor_args.setdefault('xrootdtimeout', None)
     file_type = executor_args['file_type']
     treeName = executor_args['treeName']
-    flatten = executor_args['flatten']
     schema = executor_args['schema']
-    nano = executor_args.pop('nano', False)
-    if nano:
-        warnings.warn("Please use 'schema': processor.NanoEvents rather than 'nano': True to enable awkward0 NanoEvents processing", DeprecationWarning)
-        schema = NanoEvents
+    if "flatten" in executor_args:
+        raise ValueError("Executor argument 'flatten' is deprecated, please refactor your processor to accept awkward arrays")
+    if "nano" in executor_args:
+        raise ValueError("Awkward0 NanoEvents no longer supported.\n"
+                         "Please use 'schema': processor.NanoAODSchema to enable awkward NanoEvents processing.")
     use_cache = executor_args['cache']
 
     if executor_args['config'] is None:
@@ -1435,7 +1307,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
                                   thread_workers, file_type, treeName)
 
     output = processor_instance.accumulator.identity()
-    executor(spark, dfslist, processor_instance, output, thread_workers, use_cache, flatten, schema)
+    executor(spark, dfslist, processor_instance, output, thread_workers, use_cache, schema)
     processor_instance.postprocess(output)
 
     if killSpark:

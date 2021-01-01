@@ -1,12 +1,11 @@
 import warnings
 import weakref
-import awkward1
-import uproot4 as uproot
-import pyarrow
-import pyarrow.parquet
+import awkward
+import uproot
 import pathlib
 import io
 import uuid
+from collections.abc import Mapping
 
 from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
 from coffea.nanoevents.mapping import (
@@ -14,6 +13,8 @@ from coffea.nanoevents.mapping import (
     TrivialParquetOpener,
     UprootSourceMapping,
     ParquetSourceMapping,
+    PreloadedOpener,
+    PreloadedSourceMapping,
     CachedMapping,
 )
 from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema
@@ -44,67 +45,6 @@ class NanoEventsFactory:
         self._events = lambda: None
 
     @classmethod
-    def from_file(
-        cls,
-        file,
-        treepath="/Events",
-        entry_start=None,
-        entry_stop=None,
-        runtime_cache=None,
-        persistent_cache=None,
-        schemaclass=NanoAODSchema,
-        metadata=None,
-        uproot_options={},
-        access_log=None,
-    ):
-        """Quickly build NanoEvents from a root file
-
-        Parameters
-        ----------
-            file : str or uproot.reading.ReadOnlyDirectory
-                The filename or already opened file using e.g. ``uproot.open()``
-            treepath : str, optional
-                Name of the tree to read in the file
-            entry_start : int, optional
-                Start at this entry offset in the tree (default 0)
-            entry_stop : int, optional
-                Stop at this entry offset in the tree (default end of tree)
-            runtime_cache : dict, optional
-                A dict-like interface to a cache object. This cache is expected to last the
-                duration of the program only, and will be used to hold references to materialized
-                awkward1 arrays, etc.
-            persistent_cache : dict, optional
-                A dict-like interface to a cache object. Only bare numpy arrays will be placed in this cache,
-                using globally-unique keys.
-            schemaclass : BaseSchema
-                A schema class deriving from `BaseSchema` and implementing the desired view of the file
-            metadata : dict, optional
-                Arbitrary metadata to add to the `base.NanoEvents` object
-            uproot_options : dict, optional
-                Any options to pass to ``uproot.open``
-            access_log : list, optional
-                Pass a list instance to record which branches were lazily accessed by this instance
-        """
-        warnings.warn(
-            "DEPRECATION NOTICE:\nNanoEventsFactory.from_file is deprecated, please"
-            " migrate your code to use NanoEventsFactory.from_root.\nUsing"
-            " NanoEventsFactory.from_file will result in an error in the next"
-            " major release of coffea."
-        )
-        return cls.from_root(
-            file,
-            treepath,
-            entry_start,
-            entry_stop,
-            runtime_cache,
-            persistent_cache,
-            schemaclass,
-            metadata,
-            uproot_options,
-            access_log,
-        )
-
-    @classmethod
     def from_root(
         cls,
         file,
@@ -133,7 +73,7 @@ class NanoEventsFactory:
             runtime_cache : dict, optional
                 A dict-like interface to a cache object. This cache is expected to last the
                 duration of the program only, and will be used to hold references to materialized
-                awkward1 arrays, etc.
+                awkward arrays, etc.
             persistent_cache : dict, optional
                 A dict-like interface to a cache object. Only bare numpy arrays will be placed in this cache,
                 using globally-unique keys.
@@ -215,7 +155,7 @@ class NanoEventsFactory:
             runtime_cache : dict, optional
                 A dict-like interface to a cache object. This cache is expected to last the
                 duration of the program only, and will be used to hold references to materialized
-                awkward1 arrays, etc.
+                awkward arrays, etc.
             persistent_cache : dict, optional
                 A dict-like interface to a cache object. Only bare numpy arrays will be placed in this cache,
                 using globally-unique keys.
@@ -228,6 +168,9 @@ class NanoEventsFactory:
             access_log : list, optional
                 Pass a list instance to record which branches were lazily accessed by this instance
         """
+        import pyarrow
+        import pyarrow.parquet
+
         ftypes = (
             str,
             pathlib.Path,
@@ -278,6 +221,83 @@ class NanoEventsFactory:
         )
 
     @classmethod
+    def from_preloaded(
+        cls,
+        array_source,
+        entry_start=None,
+        entry_stop=None,
+        runtime_cache=None,
+        persistent_cache=None,
+        schemaclass=NanoAODSchema,
+        metadata=None,
+        access_log=None,
+    ):
+        """Quickly build NanoEvents from a pre-loaded array source
+
+        Parameters
+        ----------
+            array_source : Mapping[str, awkward.Array]
+                A mapping of names to awkward arrays, it must have a metadata attribute with uuid,
+                num_rows, and path sub-items.
+            entry_start : int, optional
+                Start at this entry offset in the tree (default 0)
+            entry_stop : int, optional
+                Stop at this entry offset in the tree (default end of tree)
+            runtime_cache : dict, optional
+                A dict-like interface to a cache object. This cache is expected to last the
+                duration of the program only, and will be used to hold references to materialized
+                awkward arrays, etc.
+            persistent_cache : dict, optional
+                A dict-like interface to a cache object. Only bare numpy arrays will be placed in this cache,
+                using globally-unique keys.
+            schemaclass : BaseSchema
+                A schema class deriving from `BaseSchema` and implementing the desired view of the file
+            metadata : dict, optional
+                Arbitrary metadata to add to the `base.NanoEvents` object
+            access_log : list, optional
+                Pass a list instance to record which branches were lazily accessed by this instance
+        """
+        if not isinstance(array_source, Mapping):
+            raise TypeError(
+                "Invalid array source type (%s)" % (str(type(array_source)))
+            )
+        if not hasattr(array_source, "metadata"):
+            raise TypeError(
+                "array_source must have 'metadata' with uuid, num_rows, and object_path"
+            )
+
+        if entry_start is None or entry_start < 0:
+            entry_start = 0
+        if entry_stop is None or entry_stop > array_source.metadata["num_rows"]:
+            entry_stop = array_source.metadata["num_rows"]
+
+        uuid = array_source.metadata["uuid"]
+        obj_path = array_source.metadata["object_path"]
+
+        partition_key = (
+            str(uuid),
+            obj_path,
+            "{0}-{1}".format(entry_start, entry_stop),
+        )
+        uuidpfn = {uuid: array_source}
+        mapping = PreloadedSourceMapping(
+            PreloadedOpener(uuidpfn), access_log=access_log
+        )
+        mapping.preload_column_source(partition_key[0], partition_key[1], array_source)
+
+        base_form = mapping._extract_base_form(array_source)
+
+        return cls._from_mapping(
+            mapping,
+            partition_key,
+            base_form,
+            runtime_cache,
+            persistent_cache,
+            schemaclass,
+            metadata,
+        )
+
+    @classmethod
     def _from_mapping(
         cls,
         mapping,
@@ -301,7 +321,7 @@ class NanoEventsFactory:
             runtime_cache : dict
                 A dict-like interface to a cache object. This cache is expected to last the
                 duration of the program only, and will be used to hold references to materialized
-                awkward1 arrays, etc.
+                awkward arrays, etc.
             persistent_cache : dict
                 A dict-like interface to a cache object. Only bare numpy arrays will be placed in this cache,
                 using globally-unique keys.
@@ -329,15 +349,19 @@ class NanoEventsFactory:
         """Build events"""
         events = self._events()
         if events is None:
+            prefix = self._partition_key
+
+            def key_formatter(partition, form_key, attribute):
+                return prefix + f"/{partition}/{form_key}/{attribute}"
+
             behavior = dict(self._schema.behavior)
             behavior["__events_factory__"] = self
-            events = awkward1.from_arrayset(
+            events = awkward.from_buffers(
                 self._schema.form,
+                len(self),
                 self._mapping,
-                prefix=self._partition_key,
-                sep="/",
+                key_format=key_formatter,
                 lazy=True,
-                lazy_lengths=len(self),
                 lazy_cache="new" if self._cache is None else self._cache,
                 behavior=behavior,
             )

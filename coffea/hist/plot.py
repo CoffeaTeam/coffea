@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
-from ..util import numpy as np
+import numpy
 import scipy.stats
 import copy
 import warnings
@@ -35,22 +35,22 @@ def poisson_interval(sumw, sumw2, coverage=_coverage1sd):
     When a bin is zero, the scale of the nearest nonzero bin is substituted to scale the nominal upper bound.
     If all bins zero, a warning is generated and interval is set to ``sumw``.
     """
-    scale = np.empty_like(sumw)
+    scale = numpy.empty_like(sumw)
     scale[sumw != 0] = sumw2[sumw != 0] / sumw[sumw != 0]
-    if np.sum(sumw == 0) > 0:
-        missing = np.where(sumw == 0)
-        available = np.nonzero(sumw)
+    if numpy.sum(sumw == 0) > 0:
+        missing = numpy.where(sumw == 0)
+        available = numpy.nonzero(sumw)
         if len(available[0]) == 0:
             warnings.warn("All sumw are zero!  Cannot compute meaningful error bars", RuntimeWarning)
-            return np.vstack([sumw, sumw])
-        nearest = sum([np.subtract.outer(d, d0)**2 for d, d0 in zip(available, missing)]).argmin(axis=0)
+            return numpy.vstack([sumw, sumw])
+        nearest = sum([numpy.subtract.outer(d, d0)**2 for d, d0 in zip(available, missing)]).argmin(axis=0)
         argnearest = tuple(dim[nearest] for dim in available)
         scale[missing] = scale[argnearest]
     counts = sumw / scale
     lo = scale * scipy.stats.chi2.ppf((1 - coverage) / 2, 2 * counts) / 2.
     hi = scale * scipy.stats.chi2.ppf((1 + coverage) / 2, 2 * (counts + 1)) / 2.
-    interval = np.array([lo, hi])
-    interval[interval == np.nan] = 0.  # chi2.ppf produces nan for counts=0
+    interval = numpy.array([lo, hi])
+    interval[interval == numpy.nan] = 0.  # chi2.ppf produces nan for counts=0
     return interval
 
 
@@ -68,11 +68,11 @@ def clopper_pearson_interval(num, denom, coverage=_coverage1sd):
 
     c.f. http://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval
     """
-    if np.any(num > denom):
+    if numpy.any(num > denom):
         raise ValueError("Found numerator larger than denominator while calculating binomial uncertainty")
     lo = scipy.stats.beta.ppf((1 - coverage) / 2, num, denom - num + 1)
     hi = scipy.stats.beta.ppf((1 + coverage) / 2, num + 1, denom - num)
-    interval = np.array([lo, hi])
+    interval = numpy.array([lo, hi])
     interval[:, num == 0.] = 0.
     interval[1, num == denom] = 1.
     return interval
@@ -100,16 +100,16 @@ def normal_interval(pw, tw, pw2, tw2, coverage=_coverage1sd):
     eff = pw / tw
 
     variance = (pw2 * (1 - 2 * eff) + tw2 * eff**2) / (tw**2)
-    sigma = np.sqrt(variance)
+    sigma = numpy.sqrt(variance)
 
     prob = 0.5 * (1 - coverage)
-    delta = np.zeros_like(sigma)
+    delta = numpy.zeros_like(sigma)
     delta[sigma != 0] = scipy.stats.norm.ppf(prob, scale=sigma[sigma != 0])
 
-    lo = eff - np.minimum(eff + delta, np.ones_like(eff))
-    hi = np.maximum(eff - delta, np.zeros_like(eff)) - eff
+    lo = eff - numpy.minimum(eff + delta, numpy.ones_like(eff))
+    hi = numpy.maximum(eff - delta, numpy.zeros_like(eff)) - eff
 
-    return np.array([lo, hi])
+    return numpy.array([lo, hi])
 
 
 def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none', line_opts=None,
@@ -234,7 +234,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         def w2err(sumw, sumw2):
             err = []
             for a, b in zip(sumw, sumw2):
-                err.append(np.abs(poisson_interval(a, b) - a))
+                err.append(numpy.abs(poisson_interval(a, b) - a))
             return err
 
         kwargs = None
@@ -260,16 +260,16 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
                      **kwargs)
 
         if stack and error_opts is not None:
-            stack_sumw = np.sum(plot_info['sumw'], axis=0)
-            stack_sumw2 = np.sum(plot_info['sumw2'], axis=0)
+            stack_sumw = numpy.sum(plot_info['sumw'], axis=0)
+            stack_sumw2 = numpy.sum(plot_info['sumw2'], axis=0)
             err = poisson_interval(stack_sumw, stack_sumw2)
             if binwnorm is not None:
-                err *= binwnorm / np.diff(edges)[None, :]
+                err *= binwnorm / numpy.diff(edges)[None, :]
             opts = {'step': 'post', 'label': 'Sum unc.', 'hatch': '///',
                     'facecolor': 'none', 'edgecolor': (0, 0, 0, .5), 'linewidth': 0}
             opts.update(error_opts)
-            ax.fill_between(x=edges, y1=np.r_[err[0, :], err[0, -1]],
-                            y2=np.r_[err[1, :], err[1, -1]], **opts)
+            ax.fill_between(x=edges, y1=numpy.r_[err[0, :], err[0, -1]],
+                            y2=numpy.r_[err[1, :], err[1, -1]], **opts)
 
         if legend_opts is not None:
             _label = overlay.label if overlay is not None else ""
@@ -356,14 +356,14 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
 
         rsumw = sumw_num / sumw_denom
         if unc == 'clopper-pearson':
-            rsumw_err = np.abs(clopper_pearson_interval(sumw_num, sumw_denom) - rsumw)
+            rsumw_err = numpy.abs(clopper_pearson_interval(sumw_num, sumw_denom) - rsumw)
         elif unc == 'poisson-ratio':
             # poisson ratio n/m is equivalent to binomial n/(n+m)
-            rsumw_err = np.abs(clopper_pearson_interval(sumw_num, sumw_num + sumw_denom) - rsumw)
+            rsumw_err = numpy.abs(clopper_pearson_interval(sumw_num, sumw_num + sumw_denom) - rsumw)
         elif unc == 'num':
-            rsumw_err = np.abs(poisson_interval(rsumw, sumw2_num / sumw_denom**2) - rsumw)
+            rsumw_err = numpy.abs(poisson_interval(rsumw, sumw2_num / sumw_denom**2) - rsumw)
         elif unc == "normal":
-            rsumw_err = np.abs(normal_interval(sumw_num, sumw_denom, sumw2_num, sumw2_denom))
+            rsumw_err = numpy.abs(normal_interval(sumw_num, sumw_denom, sumw2_num, sumw2_denom))
         else:
             raise ValueError("Unrecognized uncertainty option: %r" % unc)
 
@@ -374,11 +374,11 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
             errbar = ax.errorbar(x=centers, y=rsumw, yerr=rsumw_err, **opts)
             plt.setp(errbar[1], 'marker', emarker)
         if denom_fill_opts is not None:
-            unity = np.ones_like(sumw_denom)
+            unity = numpy.ones_like(sumw_denom)
             denom_unc = poisson_interval(unity, sumw2_denom / sumw_denom**2)
             opts = {'step': 'post', 'facecolor': (0, 0, 0, 0.3), 'linewidth': 0}
             opts.update(denom_fill_opts)
-            ax.fill_between(edges, np.r_[denom_unc[0], denom_unc[0, -1]], np.r_[denom_unc[1], denom_unc[1, -1]], **opts)
+            ax.fill_between(edges, numpy.r_[denom_unc[0], denom_unc[0, -1]], numpy.r_[denom_unc[1], denom_unc[1, -1]], **opts)
         if guide_opts is not None:
             opts = {'linestyle': '--', 'color': (0, 0, 0, 0.5), 'linewidth': 1}
             opts.update(guide_opts)
@@ -468,10 +468,10 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
         # no support for different overflow behavior per axis, do it ourselves
         sumw = sumw[overflow_behavior(xoverflow), overflow_behavior(yoverflow)]
         sumw2 = sumw2[overflow_behavior(xoverflow), overflow_behavior(yoverflow)]
-        if (density or binwnorm is not None) and np.sum(sumw) > 0:
-            overallnorm = np.sum(sumw) * binwnorm if binwnorm is not None else 1.
-            areas = np.multiply.outer(np.diff(xedges), np.diff(yedges))
-            binnorms = overallnorm / (areas * np.sum(sumw))
+        if (density or binwnorm is not None) and numpy.sum(sumw) > 0:
+            overallnorm = numpy.sum(sumw) * binwnorm if binwnorm is not None else 1.
+            areas = numpy.multiply.outer(numpy.diff(xedges), numpy.diff(yedges))
+            binnorms = overallnorm / (areas * numpy.sum(sumw))
             sumw = sumw * binnorms
             sumw2 = sumw2 * binnorms**2
 
@@ -564,7 +564,7 @@ def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='non
         if isinstance(lastax, plt.Axes):
             shape = lastax.rowNum + 1, lastax.colNum + 1
         if shape[0] == nrow and shape[1] == ncol:
-            axes = np.array(fig.axes).reshape(shape)
+            axes = numpy.array(fig.axes).reshape(shape)
         else:
             fig.clear()
             # fig.set_size_inches(figsize)
@@ -651,7 +651,7 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
     sliders = {}
     for ax in histo.dense_axes():
         edge_vals = (histo.axis(ax.name).edges()[0], histo.axis(ax.name).edges()[-1])
-        _smallest_bin = np.min(np.diff(histo.axis(ax.name).edges()))
+        _smallest_bin = numpy.min(numpy.diff(histo.axis(ax.name).edges()))
         sliders[ax.name] = RangeSlider(title=ax.name, value=edge_vals, start=edge_vals[0], end=edge_vals[1],
                                        step=_smallest_bin, name=ax.name)
 
@@ -737,11 +737,11 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
                     # Apply cuts on shown axis
                     bin_los = bins[:-1][bins[:-1] > sliders[dense_name].value[0]]
                     bin_his = bins[1:][bins[1:] < sliders[dense_name].value[1]]
-                    new_bins = np.intersect1d(bin_los, bin_his)
-                    bin_ixs = np.searchsorted(bins, new_bins)[:-1]
+                    new_bins = numpy.intersect1d(bin_los, bin_his)
+                    bin_ixs = numpy.searchsorted(bins, new_bins)[:-1]
                     h = h[bin_ixs]
 
-                    sources[cat_ix].data = dict(left=new_bins[:-1], right=new_bins[1:], top=h, bottom=np.zeros_like(h))
+                    sources[cat_ix].data = dict(left=new_bins[:-1], right=new_bins[1:], top=h, bottom=numpy.zeros_like(h))
                 else:
                     sources[cat_ix].data = dict(left=[], right=[], top=[], bottom=[])
 
@@ -759,7 +759,7 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
                     if values != {}:
                         h = h1d.project(dense_name).values()[()]
                         bins = h1d.axis(dense_name).edges()
-                        sources_ghost[cat_ix].data = dict(left=bins[:-1], right=bins[1:], top=h, bottom=np.zeros_like(h))
+                        sources_ghost[cat_ix].data = dict(left=bins[:-1], right=bins[1:], top=h, bottom=numpy.zeros_like(h))
                     else:
                         sources_ghost[cat_ix].data = dict(left=[], right=[], top=[], bottom=[])
             else:

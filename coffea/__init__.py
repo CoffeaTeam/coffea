@@ -36,20 +36,9 @@ if sys.version_info.major < 3:
     warnings.warn('coffea only supports python3 as of 1 January 2020!')
     warnings.warn('If you are using python2 and run into problems please submit a pull request to fix the issue!')
 
-from . import (
-    hist,
-    lookup_tools,
-    analysis_objects,
-    jetmet_tools,
-    arrays,
-    util,
-)
+# control severity for utils.deprecate
+deprecations_as_errors = False
 
 __all__ = [
-    'hist',
-    'lookup_tools',
-    'analysis_objects',
-    'jetmet_tools',
-    'arrays',
-    'util',
+    'deprecations_as_errors'
 ]

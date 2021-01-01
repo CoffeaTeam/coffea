@@ -1,7 +1,6 @@
 from collections.abc import MutableMapping
-import awkward1
-import uproot4
-from coffea.util import deprecate_detected_awkward0
+import awkward
+import uproot
 
 
 class LazyDataFrame(MutableMapping):
@@ -13,7 +12,7 @@ class LazyDataFrame(MutableMapping):
 
     Parameters
     ----------
-        tree : uproot4.TTree
+        tree : uproot.TTree
             Tree to read
         entrystart : int, optional
             First entry to read, default: 0
@@ -21,18 +20,13 @@ class LazyDataFrame(MutableMapping):
             Last entry to read, default None (read to end)
         preload_items : iterable
             Force preloading of a set of columns from the tree
-        flatten : bool
-            Remove jagged structure from columns read
     """
 
-    def __init__(
-        self, tree, entrystart=None, entrystop=None, preload_items=None, flatten=False
-    ):
+    def __init__(self, tree, entrystart=None, entrystop=None, preload_items=None):
         self._tree = tree
-        self._flatten = flatten
         self._branchargs = {
-            "decompression_executor": uproot4.source.futures.TrivialExecutor(),
-            "interpretation_executor": uproot4.source.futures.TrivialExecutor(),
+            "decompression_executor": uproot.source.futures.TrivialExecutor(),
+            "interpretation_executor": uproot.source.futures.TrivialExecutor(),
         }
         if entrystart is None or entrystart < 0:
             entrystart = 0
@@ -55,10 +49,6 @@ class LazyDataFrame(MutableMapping):
         elif key in self._tree:
             self._materialized.add(key)
             array = self._tree[key].array(**self._branchargs)
-            if self._flatten and isinstance(awkward1.type(array).type, awkward1.types.ListType):
-                array = awkward1.flatten(array)
-            array = awkward1.to_awkward0(array)
-            deprecate_detected_awkward0(array)
             self._dict[key] = array
             return self._dict[key]
         else:
@@ -143,7 +133,6 @@ class PreloadedDataFrame(MutableMapping):
     def __getitem__(self, key):
         self._accessed.add(key)
         out = self._dict[key]
-        deprecate_detected_awkward0(out)
         return out
 
     def __getattr__(self, key):

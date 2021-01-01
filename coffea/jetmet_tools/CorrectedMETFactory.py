@@ -1,7 +1,6 @@
 from coffea.jetmet_tools.JECStack import JECStack
 import awkward
-import awkward1
-import numpy as np
+import numpy
 import warnings
 from copy import copy
 
@@ -25,12 +24,9 @@ class CorrectedMETFactory(object):
     def build(self, MET, corrected_jets, lazy_cache):
         if lazy_cache is None:
             raise Exception('CorrectedMETFactory requires a awkward-array cache to function correctly.')
-        if (isinstance(MET, awkward.array.base.AwkwardArray) or
-            isinstance(corrected_jets, awkward.array.base.AwkwardArray)):
-            raise Exception('Awkward0 not supported by CorrectedMETFactory, please use the JetTransformer or awkward1')
-        elif (not isinstance(MET, awkward1.highlevel.Array) or
-              not isinstance(corrected_jets, awkward1.highlevel.Array)):
-            raise Exception('\'MET\' must be an awkward array of some kind!')
+        if (not isinstance(MET, awkward.highlevel.Array) or
+            not isinstance(corrected_jets, awkward.highlevel.Array)):
+            raise Exception("'MET' and 'corrected_jets' must be an awkward array of some kind!")
 
         out = copy(MET)
 
@@ -48,31 +44,31 @@ class CorrectedMETFactory(object):
         out[self.name_map['METphi'] + '_orig'] = out[self.name_map['METphi']]
 
         def corrected_met_cartesian(met, rawJets, corrJets, dim):
-            return met[f'{dim}_orig'] - np.sum(getattr(rawJets, dim) - getattr(corrJets, dim))
+            return met[f'{dim}_orig'] - awkward.sum(getattr(rawJets, dim) - getattr(corrJets, dim), axis=-1)
 
         def corrected_met_cartesian_unc(met, rawJets, corrJets, dimMET, dimJets):
-            return getattr(met, dimMET) - np.sum(getattr(rawJets, dimJets) - getattr(corrJets, dimJets))
+            return getattr(met, dimMET) - awkward.sum(getattr(rawJets, dimJets) - getattr(corrJets, dimJets), axis=-1)
 
-        out['corrected_met_x'] = awkward1.virtual(
+        out['corrected_met_x'] = awkward.virtual(
             corrected_met_cartesian,
             args=(out, orig_jets, corrected_jets, self.name_map['JETx']),
             length=length, form=form, cache=lazy_cache
         )
-        out['corrected_met_y'] = awkward1.virtual(
+        out['corrected_met_y'] = awkward.virtual(
             corrected_met_cartesian,
             args=(out, orig_jets, corrected_jets, self.name_map['JETy']),
             length=length, form=form, cache=lazy_cache
         )
 
-        out[self.name_map['METpt']] = awkward1.virtual(
-            lambda met: np.hypot(met['corrected_met_x'], met['corrected_met_y']),
+        out[self.name_map['METpt']] = awkward.virtual(
+            lambda met: numpy.hypot(met['corrected_met_x'], met['corrected_met_y']),
             args=(out, ),
             length=length,
             form=form,
             cache=lazy_cache
         )
-        out[self.name_map['METphi']] = awkward1.virtual(
-            lambda met: np.arctan2(met['corrected_met_y'], met['corrected_met_x']),
+        out[self.name_map['METphi']] = awkward.virtual(
+            lambda met: numpy.arctan2(met['corrected_met_y'], met['corrected_met_x']),
             args=(out, ),
             length=length,
             form=form,
@@ -81,29 +77,29 @@ class CorrectedMETFactory(object):
 
         def make_unclustered_variant(themet, op, deltaX, deltaY):
             variant = copy(themet)
-            variant['corrected_met_x'] = awkward1.virtual(
+            variant['corrected_met_x'] = awkward.virtual(
                 lambda met: op(out['corrected_met_x'], out[f'{deltaX}']),
                 args=(out, ),
                 length=length,
                 form=form,
                 cache=lazy_cache
             )
-            variant['corrected_met_y'] = awkward1.virtual(
+            variant['corrected_met_y'] = awkward.virtual(
                 lambda met: op(out['corrected_met_y'], out[f'{deltaY}']),
                 args=(out, ),
                 length=length,
                 form=form,
                 cache=lazy_cache
             )
-            variant[self.name_map['METpt']] = awkward1.virtual(
-                lambda met: np.hypot(out['corrected_met_x'], out['corrected_met_y']),
+            variant[self.name_map['METpt']] = awkward.virtual(
+                lambda met: numpy.hypot(out['corrected_met_x'], out['corrected_met_y']),
                 args=(variant, ),
                 length=length,
                 form=form,
                 cache=lazy_cache
             )
-            variant[self.name_map['METphi']] = awkward1.virtual(
-                lambda met: np.arctan2(out['corrected_met_y'], out['corrected_met_x']),
+            variant[self.name_map['METphi']] = awkward.virtual(
+                lambda met: numpy.arctan2(out['corrected_met_y'], out['corrected_met_x']),
                 args=(variant, ),
                 length=length,
                 form=form,
@@ -117,31 +113,31 @@ class CorrectedMETFactory(object):
         unclus_down = make_unclustered_variant(MET, lambda x, y: x - y,
                                                self.name_map['UnClusteredEnergyDeltaX'],
                                                self.name_map['UnClusteredEnergyDeltaY'])
-        out['MET_UnclusteredEnergy'] = awkward1.zip({'up': unclus_up, 'down': unclus_down},
-                                                    depth_limit=1,
-                                                    with_name='METSystematic')
+        out['MET_UnclusteredEnergy'] = awkward.zip({'up': unclus_up, 'down': unclus_down},
+                                                   depth_limit=1,
+                                                   with_name='METSystematic')
 
         def make_variant(name, variation):
             variant = copy(MET)
-            variant['corrected_met_x'] = awkward1.virtual(
+            variant['corrected_met_x'] = awkward.virtual(
                 corrected_met_cartesian_unc,
                 args=(out, orig_jets, variation, self.name_map['METx'], self.name_map['JETx']),
                 length=length, form=form, cache=lazy_cache
             )
-            variant['corrected_met_y'] = awkward1.virtual(
+            variant['corrected_met_y'] = awkward.virtual(
                 corrected_met_cartesian_unc,
                 args=(out, orig_jets, variation, self.name_map['METy'], self.name_map['JETy']),
                 length=length, form=form, cache=lazy_cache
             )
-            variant[self.name_map['METpt']] = awkward1.virtual(
-                lambda met: np.hypot(met['corrected_met_x'], met['corrected_met_y']),
+            variant[self.name_map['METpt']] = awkward.virtual(
+                lambda met: numpy.hypot(met['corrected_met_x'], met['corrected_met_y']),
                 args=(variant, ),
                 length=length,
                 form=form,
                 cache=lazy_cache
             )
-            variant[self.name_map['METphi']] = awkward1.virtual(
-                lambda met: np.arctan2(met['corrected_met_y'], met['corrected_met_x']),
+            variant[self.name_map['METphi']] = awkward.virtual(
+                lambda met: numpy.arctan2(met['corrected_met_y'], met['corrected_met_x']),
                 args=(variant, ),
                 length=length,
                 form=form,
@@ -149,12 +145,12 @@ class CorrectedMETFactory(object):
             )
             return variant
 
-        for unc in filter(lambda x: x.startswith(('JER', 'JES')), awkward1.fields(corrected_jets)):
+        for unc in filter(lambda x: x.startswith(('JER', 'JES')), awkward.fields(corrected_jets)):
             up = make_variant(unc, corrected_jets[unc].up)
             down = make_variant(unc, corrected_jets[unc].down)
-            out[unc] = awkward1.zip({'up': up, 'down': down},
-                                    depth_limit=1,
-                                    with_name='METSystematic')
+            out[unc] = awkward.zip({'up': up, 'down': down},
+                                   depth_limit=1,
+                                   with_name='METSystematic')
         return out
 
     def uncertainties(self):

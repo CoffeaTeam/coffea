@@ -55,11 +55,10 @@ def get_description():
     return description[start:stop].strip()  # before + + after
 
 
-INSTALL_REQUIRES = ['awkward>=0.12.20,<1',
-                    'uproot-methods>=0.7.3,<=0.9',
-                    'uproot>=3.11.0,<4',
-                    'awkward1>=0.4.3,<1',
-                    'uproot4>=0.0.17,<1',
+INSTALL_REQUIRES = ['awkward>=1.0.1',
+                    'uproot>=4.0.1rc2',
+                    'uproot3-methods>=0.10.0',
+                    'uproot3>=3.14.1',
                     'pyarrow>=1.0.0',
                     'matplotlib>=3',
                     'numba>=0.50.0',
@@ -75,9 +74,10 @@ INSTALL_REQUIRES = ['awkward>=0.12.20,<1',
                     ]
 EXTRAS_REQUIRE = {}
 EXTRAS_REQUIRE['spark'] = ['pyspark>=2.4.1,<3.0.0', 'jinja2']
-EXTRAS_REQUIRE['parsl'] = ['parsl>=0.7.2']
+EXTRAS_REQUIRE['parsl'] = ['parsl>=1.0.0']
 EXTRAS_REQUIRE['dask'] = ['dask[dataframe]>=2.6.0', 'distributed>=2.6.0', 'bokeh>=1.3.4', 'blosc']
-EXTRAS_REQUIRE['dev'] = ['flake8', 'pytest', 'pytest-cov', 'sphinx', 'nbsphinx', 'sphinx-rtd-theme', 'sphinx-automodapi']
+EXTRAS_REQUIRE['dev'] = ['flake8', 'pytest', 'pytest-cov', 'pytest-mpl',
+                         'sphinx', 'nbsphinx', 'sphinx-rtd-theme', 'sphinx-automodapi']
 
 setup(name="coffea",
       version=get_version(),

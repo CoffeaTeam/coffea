@@ -2,7 +2,7 @@ import pytest
 from coffea.btag_tools import BTagScaleFactor
 from dummy_distributions import dummy_jagged_eta_pt
 import numpy
-import awkward1
+import awkward as ak
 
 def test_BTagScalefactor():
     sf1 = BTagScaleFactor('tests/samples/testBTagSF.btag.csv', 'medium')
@@ -17,10 +17,10 @@ def test_BTagScalefactor():
     test_discr = numpy.random.rand(len(test_eta))
     offsets = numpy.zeros(len(counts) + 1)
     offsets[1:] = numpy.cumsum(counts)
-    test_jets = awkward1.Array(
-        awkward1.layout.ListOffsetArray64(
-            awkward1.layout.Index64(offsets),
-            awkward1.zip({
+    test_jets = ak.Array(
+        ak.layout.ListOffsetArray64(
+            ak.layout.Index64(offsets),
+            ak.zip({
                 "pt": test_pt,
                 "eta": test_eta,
                 "flavor": test_flavor,

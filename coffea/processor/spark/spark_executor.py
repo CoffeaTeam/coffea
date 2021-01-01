@@ -3,15 +3,16 @@ from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from tqdm import tqdm
-import pickle as pkl
-import lz4.frame as lz4f
-import numpy as np
-import pandas as pd
+import pickle
+import lz4.frame
+import numpy
+import pandas
+import awkward
 from functools import partial
 
 from ..executor import _futures_handler
-from coffea.nanoaod import NanoEvents
-from coffea.nanoevents import schemas
+from coffea.nanoevents import NanoEventsFactory, schemas
+from coffea.nanoevents.mapping import SimplePreloadedColumnSource
 
 import pyspark
 import pyspark.sql.functions as fn
@@ -31,8 +32,8 @@ def agg_histos_raw(series, processor_instance, lz4_clevel):
         return goodlines[0]
     outhist = processor_instance.accumulator.identity()
     for line in goodlines:
-        outhist.add(pkl.loads(lz4f.decompress(line)))
-    return lz4f.compress(pkl.dumps(outhist), compression_level=lz4_clevel)
+        outhist.add(pickle.loads(lz4.frame.decompress(line)))
+    return lz4.frame.compress(pickle.dumps(outhist), compression_level=lz4_clevel)
 
 
 @fn.pandas_udf(BinaryType(), fn.PandasUDFType.GROUPED_AGG)
@@ -46,8 +47,8 @@ def reduce_histos_raw(df, processor_instance, lz4_clevel):
     mask = (histos.str.len() > 0)
     outhist = processor_instance.accumulator.identity()
     for line in histos[mask]:
-        outhist.add(pkl.loads(lz4f.decompress(line)))
-    return pd.DataFrame(data={'histos': np.array([lz4f.compress(pkl.dumps(outhist), compression_level=lz4_clevel)], dtype='O')})
+        outhist.add(pickle.loads(lz4.frame.decompress(line)))
+    return pandas.DataFrame(data={'histos': numpy.array([lz4.frame.compress(pickle.dumps(outhist), compression_level=lz4_clevel)], dtype='O')})
 
 
 @fn.pandas_udf(StructType([StructField('histos', BinaryType(), True)]), fn.PandasUDFType.GROUPED_MAP)
@@ -73,10 +74,15 @@ class SparkExecutor(object):
         return self._counts
 
     def __call__(self, spark, dfslist, theprocessor, output, thread_workers,
-                 use_df_cache, flatten, schema, status=True, unit='datasets', desc='Processing'):
+                 use_df_cache, schema, status=True, unit='datasets', desc='Processing'):
         # processor needs to be a global
-        global processor_instance, coffea_udf, coffea_udf_flat, coffea_udf_nano
+        global processor_instance, coffea_udf, nano_schema
         processor_instance = theprocessor
+        if schema is None:
+            schema = schemas.BaseSchema
+        if not issubclass(schema, schemas.BaseSchema):
+            raise ValueError("Expected schema to derive from BaseSchema (%s)" % (str(schema.__name__)))
+        nano_schema = schema
         # get columns from processor
         columns = processor_instance.columns
         cols_w_ds = ['dataset'] + columns
@@ -109,15 +115,6 @@ class SparkExecutor(object):
             futures = set()
             for ds, df in self._cacheddfs.items():
                 co_udf = coffea_udf
-                if flatten:
-                    co_udf = coffea_udf_flat
-                if schema is not None:
-                    if schema is NanoEvents:
-                        co_udf = coffea_udf_nano
-                    elif issubclass(schema, schemas.BaseSchema):
-                        raise NotImplementedError("The uproot4 version of NanoEvents (%s) has not been implemented yet" % (str(schema.__name__)))
-                    else:
-                        raise ValueError("Expected schema to derive from BaseSchema or be an instance of NanoEvents (%s)" % (str(schema.__name__)))
                 futures.add(executor.submit(self._launch_analysis, ds, df, co_udf, cols_w_ds))
             # wait for the spark jobs to come in
             self._rawresults = {}
@@ -129,7 +126,7 @@ class SparkExecutor(object):
             if bitstream.empty:
                 raise Exception('The histogram list returned from spark is empty in dataset: %s, something went wrong!' % ds)
             bits = bitstream[bitstream.columns[0]][0]
-            output.add(pkl.loads(lz4f.decompress(bits)))
+            output.add(pickle.loads(lz4.frame.decompress(bits)))
 
     def _pruneandcache_data(self, ds, df, columns, cacheit):
         if cacheit:

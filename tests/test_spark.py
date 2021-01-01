@@ -24,12 +24,13 @@ def test_spark_imports():
 
 def test_spark_executor():
     pyspark = pytest.importorskip("pyspark", minversion="2.4.1")
-    from pyarrow.compat import guid
+    from pyarrow.util import guid
     
     from coffea.processor.spark.detail import (_spark_initialize,
                                                _spark_make_dfs,
                                                _spark_stop)
     from coffea.processor import run_spark_job
+    from coffea.nanoevents import schemas
 
     import os
     import os.path as osp
@@ -48,7 +49,7 @@ def test_spark_executor():
                 'Data'  : {'files': ['file:'+osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')], 'treename': 'Events'}
                 }
 
-    from coffea.processor.test_items import NanoTestProcessor, NanoEvents0Processor
+    from coffea.processor.test_items import NanoTestProcessor, NanoEventsProcessor
     from coffea.processor.spark.spark_executor import spark_executor
 
     columns = ['nMuon','Muon_pt','Muon_eta','Muon_phi','Muon_mass', 'Muon_charge']
@@ -64,7 +65,7 @@ def test_spark_executor():
     assert( hists['cutflow']['Data_mass'] == 66 )
 
     hists = run_spark_job(filelist, processor_instance=proc, executor=spark_executor, spark=spark, thread_workers=1,
-                          executor_args={'file_type': 'root', 'flatten': True})
+                          executor_args={'file_type': 'root'})
     
     assert( sum(spark_executor.counts.values()) == 80 )
     assert( hists['cutflow']['ZJets_pt'] == 18 )
@@ -72,9 +73,9 @@ def test_spark_executor():
     assert( hists['cutflow']['Data_pt'] == 84 )
     assert( hists['cutflow']['Data_mass'] == 66 )
     
-    proc = NanoEvents0Processor(columns=columns)
+    proc = NanoEventsProcessor(columns=columns)
     hists = run_spark_job(filelist, processor_instance=proc, executor=spark_executor, spark=spark, thread_workers=1,
-                          executor_args={'file_type': 'root', 'nano': True})
+                          executor_args={'file_type': 'root', 'schema': schemas.NanoAODSchema})
 
     _spark_stop(spark)
 

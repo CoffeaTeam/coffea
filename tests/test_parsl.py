@@ -27,15 +27,14 @@ def do_parsl_job(filelist, flatten=False, compression=0, config=None):
     proc = NanoTestProcessor()
 
     exe_args = {
-        'flatten': flatten,
         'compression': compression,
         'config': config,
     }
-    hists = processor.run_parsl_job(filelist,
-                                    treename,
-                                    processor_instance=proc,
-                                    executor=processor.executor.parsl_executor,
-                                    executor_args=exe_args)
+    hists = processor.run_uproot_job(filelist,
+                                     treename,
+                                     processor_instance=proc,
+                                     executor=processor.executor.parsl_executor,
+                                     executor_args=exe_args)
 
     assert( hists['cutflow']['ZJets_pt'] == 18 )
     assert( hists['cutflow']['ZJets_mass'] == 6 )
@@ -43,7 +42,7 @@ def do_parsl_job(filelist, flatten=False, compression=0, config=None):
     assert( hists['cutflow']['Data_mass'] == 66 )
 
 
-@pytest.mark.skipif(sys.platform.startswith('darwin'), reason='parsl htex not working on osx again')
+#@pytest.mark.skipif(sys.platform.startswith('darwin'), reason='parsl htex not working on osx again')
 def test_parsl_htex_executor():
     parsl = pytest.importorskip("parsl", minversion="0.7.2")
     import os
@@ -87,7 +86,6 @@ def test_parsl_htex_executor():
     }
 
     do_parsl_job(filelist)
-    do_parsl_job(filelist, flatten=True)
 
 
 def test_parsl_deprecated():

@@ -17,9 +17,6 @@ from .hist_tools import (
     Cat,
     StringBin,
 )
-from .export import (
-    export1d,
-)
 from .plot import (
     poisson_interval,
     clopper_pearson_interval,
@@ -29,6 +26,7 @@ from .plot import (
     plot2d,
     plotgrid,
 )
+from .export import export1d
 
 __all__ = [
     'Hist',
@@ -36,7 +34,6 @@ __all__ = [
     'Interval',
     'Cat',
     'StringBin',
-    'export1d',
     'poisson_interval',
     'clopper_pearson_interval',
     'normal_interval',
@@ -44,4 +41,5 @@ __all__ = [
     'plotratio',
     'plot2d',
     'plotgrid',
+    'export1d'
 ]

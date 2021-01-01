@@ -179,10 +179,10 @@ def test_processorabc():
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason='problems with paths on windows')
 def test_lazy_dataframe():
-    import uproot4
+    import uproot
     from coffea.processor import LazyDataFrame
     
-    tree = uproot4.open(osp.abspath('tests/samples/nano_dy.root'))['Events']
+    tree = uproot.open(osp.abspath('tests/samples/nano_dy.root'))['Events']
     entrystart = 0
     entrystop = 100
     
@@ -206,10 +206,10 @@ def test_lazy_dataframe():
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason='problems with paths on windows')
 def test_lazy_dataframe_getattr():
-    import uproot4
+    import uproot
     from coffea.processor import LazyDataFrame
     
-    tree = uproot4.open(osp.abspath('tests/samples/nano_dy.root'))['Events']
+    tree = uproot.open(osp.abspath('tests/samples/nano_dy.root'))['Events']
     entrystart = 0
     entrystop = 100
     
@@ -244,20 +244,20 @@ def test_preloaded_dataframe():
     chunksize = 20
     index = 0
     
-    arrays = tree.arrays()
+    arrays = tree.arrays(['nMuon', 'Muon_eta'], how=dict)
     
-    df = PreloadedDataFrame(arrays[b'nMuon'].size, arrays)
+    df = PreloadedDataFrame(len(arrays['nMuon']), arrays)
 
     assert(len(arrays) == len(df))
     
-    df['nMuon'] = arrays[b'nMuon']
+    df['nMuon'] = arrays['nMuon']
     assert('nMuon' in df.available)
     
-    assert(np.all(df[b'nMuon'] == arrays[b'nMuon']))
+    assert(np.all(df['nMuon'] == arrays['nMuon']))
 
-    assert(b'Muon_eta' in df.available)
-    assert(b'nMuon' in df.materialized)
-    assert(df.size == arrays[b'nMuon'].size)
+    assert('Muon_eta' in df.available)
+    assert('nMuon' in df.materialized)
+    assert(df.size == len(arrays['nMuon']))
 
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason='problems with paths on windows')
@@ -269,17 +269,17 @@ def test_preloaded_dataframe_getattr():
     chunksize = 20
     index = 0
     
-    arrays = tree.arrays()
+    arrays = tree.arrays(['nMuon', 'Muon_eta'], how=dict)
     
-    df = PreloadedDataFrame(arrays[b'nMuon'].size, arrays)
+    df = PreloadedDataFrame(len(arrays['nMuon']), arrays)
 
     assert(len(arrays) == len(df))
     
-    df['nMuon'] = arrays[b'nMuon']
+    df['nMuon'] = arrays['nMuon']
     assert('nMuon' in df.available)
     
-    assert(np.all(df.nMuon == arrays[b'nMuon']))
+    assert(np.all(df.nMuon == arrays['nMuon']))
 
-    assert(b'Muon_eta' in df.available)
+    assert('Muon_eta' in df.available)
     assert('nMuon' in df.materialized)
-    assert(df.size == arrays[b'nMuon'].size)
+    assert(df.size == len(arrays['nMuon']))

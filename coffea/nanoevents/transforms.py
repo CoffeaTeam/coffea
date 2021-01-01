@@ -1,8 +1,17 @@
 import copy
 import numpy
 import numba
-import awkward1
+import awkward
 from coffea.nanoevents.util import concat
+
+
+def data(stack):
+    """Extract content from array
+    (currently a noop, can probably take place of !content)
+
+    Signature: data,!data
+    """
+    pass
 
 
 def offsets(stack):
@@ -110,7 +119,7 @@ def local2global(stack):
     index = stack.pop()
     index = index.mask[index >= 0] + target_offsets[:-1]
     index = index.mask[index < target_offsets[1:]]
-    out = numpy.array(awkward1.flatten(awkward1.fill_none(index, -1)))
+    out = numpy.array(awkward.flatten(awkward.fill_none(index, -1)))
     if out.dtype != numpy.int64:
         raise RuntimeError
     stack.append(out)
@@ -165,7 +174,7 @@ def distinctParent(stack):
     """
     pdg = stack.pop()
     parents = stack.pop()
-    stack.append(_distinctParent_kernel(awkward1.Array(parents), awkward1.Array(pdg)))
+    stack.append(_distinctParent_kernel(awkward.Array(parents), awkward.Array(pdg)))
 
 
 @numba.njit
@@ -227,10 +236,10 @@ def children(stack):
     parents = stack.pop()
     offsets = stack.pop()
     coffsets, ccontent = _children_kernel(offsets, parents)
-    out = awkward1.Array(
-        awkward1.layout.ListOffsetArray64(
-            awkward1.layout.Index64(coffsets),
-            awkward1.layout.NumpyArray(ccontent),
+    out = awkward.Array(
+        awkward.layout.ListOffsetArray64(
+            awkward.layout.Index64(coffsets),
+            awkward.layout.NumpyArray(ccontent),
         )
     )
     stack.append(out)
@@ -265,16 +274,16 @@ def nestedindex(stack):
     """
     indexers = stack[:]
     stack.clear()
-    # return awkward1.concatenate([idx[:, None] for idx in indexers], axis=1)
+    # return awkward.concatenate([idx[:, None] for idx in indexers], axis=1)
     n = len(indexers)
     out = numpy.empty(n * len(indexers[0]), dtype="int64")
     for i, idx in enumerate(indexers):
         out[i::n] = idx
     offsets = numpy.arange(0, len(out) + 1, n, dtype=numpy.int64)
-    out = awkward1.Array(
-        awkward1.layout.ListOffsetArray64(
-            awkward1.layout.Index64(offsets),
-            awkward1.layout.NumpyArray(out),
+    out = awkward.Array(
+        awkward.layout.ListOffsetArray64(
+            awkward.layout.Index64(offsets),
+            awkward.layout.NumpyArray(out),
         )
     )
     stack.append(out)
