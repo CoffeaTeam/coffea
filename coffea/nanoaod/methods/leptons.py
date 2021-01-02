@@ -65,23 +65,23 @@ class Electron(LeptonCommon):
 
     @property
     def isVeto(self):
-        '''Returns a boolean array marking veto-level cut-based photons'''
-        return (self.cutBased & (1 << self.VETO)).astype(bool)
+        '''Returns a boolean array marking veto-level cut-based electrons'''
+        return self.cutBased >= self.VETO
 
     @property
     def isLoose(self):
-        '''Returns a boolean array marking loose cut-based photons'''
-        return (self.cutBased & (1 << self.LOOSE)).astype(bool)
+        '''Returns a boolean array marking loose cut-based electrons'''
+        return self.cutBased >= self.LOOSE
 
     @property
     def isMedium(self):
-        '''Returns a boolean array marking medium cut-based photons'''
-        return (self.cutBased & (1 << self.MEDIUM)).astype(bool)
+        '''Returns a boolean array marking medium cut-based electrons'''
+        return self.cutBased >= self.MEDIUM
 
     @property
     def isTight(self):
-        '''Returns a boolean array marking tight cut-based photons'''
-        return (self.cutBased & (1 << self.TIGHT)).astype(bool)
+        '''Returns a boolean array marking tight cut-based electrons'''
+        return self.cutBased >= self.TIGHT
 
 
 class Muon(LeptonCommon):
