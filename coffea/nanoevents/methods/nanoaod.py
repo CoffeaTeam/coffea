@@ -132,23 +132,23 @@ class Electron(candidate.PtEtaPhiMCandidate, base.NanoCollection):
 
     @property
     def isVeto(self):
-        """Returns a boolean array marking veto cut-based photons"""
-        return (self.cutBased & (1 << self.VETO)) != 0
+        """Returns a boolean array marking veto cut-based electrons"""
+        return self.cutBased >= self.VETO
 
     @property
     def isLoose(self):
-        """Returns a boolean array marking loose cut-based photons"""
-        return (self.cutBased & (1 << self.LOOSE)) != 0
+        """Returns a boolean array marking loose cut-based electrons"""
+        return self.cutBased >= self.LOOSE
 
     @property
     def isMedium(self):
-        """Returns a boolean array marking medium cut-based photons"""
-        return (self.cutBased & (1 << self.MEDIUM)) != 0
+        """Returns a boolean array marking medium cut-based electrons"""
+        return self.cutBased >= self.MEDIUM
 
     @property
     def isTight(self):
-        """Returns a boolean array marking tight cut-based photons"""
-        return (self.cutBased & (1 << self.TIGHT)) != 0
+        """Returns a boolean array marking tight cut-based electrons"""
+        return self.cutBased >= self.TIGHT
 
     @property
     def matched_gen(self):
