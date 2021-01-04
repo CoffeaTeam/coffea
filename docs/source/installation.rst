@@ -11,9 +11,7 @@ To try coffea now, without installing anything, you can experiment with our
 Platform support
 ----------------
 Coffea is a python package distributed via `PyPI <https://pypi.org/project/coffea>`_. A python installation is required to use coffea.
-Python version 3.6 or newer is preferred since it supports all features of coffea, but a subset of coffea features will run in python 2.7 or newer.
-
-.. note:: Python 2 end-of-life is Jan. 1, 2020. All major scientific python packages will no longer provide support for python 2 by that date: https://python3statement.org/
+Python version 3.6 or newer is required.
 
 All functional features in each supported python version are routinely tested.
 You can see the python version you have installed by typing the following at the command prompt:
@@ -80,27 +78,30 @@ which then use coffea local executors, possibly multi-threaded. In this case, of
 is not available from batch workers, so a portable python enviroment needs to be created.
 Annoyingly, python virtual environments are not portable by default due to several hardcoded paths in specific locations,
 however there are not many locations and some sed hacks can save the day.
-Here is an example of a bash script that installs coffea on top of the LCG 96python3 software stack inside a portable virtual environment,
+Here is an example of a bash script that installs coffea on top of the LCG 98python3 software stack inside a portable virtual environment,
 with the caveat that cvmfs must be visible from batch workers:
 
 .. code-block:: bash
 
   #!/usr/bin/env bash
   NAME=coffeaenv
-  LCG=/cvmfs/sft.cern.ch/lcg/views/LCG_96python3/x86_64-centos7-gcc8-opt/setup.sh
+  LCG=/cvmfs/sft.cern.ch/lcg/views/LCG_98python3/x86_64-centos7-gcc9-opt
 
-  source $LCG
+  source $LCG/setup.sh
   # following https://aarongorka.com/blog/portable-virtualenv/, an alternative is https://github.com/pantsbuild/pex
   python -m venv --copies $NAME
   source $NAME/bin/activate
-  python -m pip install setuptools pip --upgrade
+  LOCALPATH=$(python -c 'import sys; print(f"{sys.prefix}/lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages")')
+  export PYTHONPATH=${LOCALPATH}:$PYTHONPATH
+  python -m pip install setuptools pip wheel --upgrade
   python -m pip install coffea
-  sed -i '40s/.*/VIRTUAL_ENV="$(cd "$(dirname "$(dirname "${BASH_SOURCE[0]}" )")" \&\& pwd)"/' $NAME/bin/activate
   sed -i '1s/#!.*python$/#!\/usr\/bin\/env python/' $NAME/bin/*
-  sed -i "2a source ${LCG}" $NAME/bin/activate
+  sed -i '40s/.*/VIRTUAL_ENV="$(cd "$(dirname "$(dirname "${BASH_SOURCE[0]}" )")" \&\& pwd)"/' $NAME/bin/activate
+  sed -i "2a source ${LCG}/setup.sh" $NAME/bin/activate
+  sed -i "3a export PYTHONPATH=${LOCALPATH}:\$PYTHONPATH" $NAME/bin/activate
   tar -zcf ${NAME}.tar.gz ${NAME}
 
-The resulting tarball size is about 5 MB.
+The resulting tarball size is about 60 MB.
 An example batch job wrapper script is:
 
 .. code-block:: bash
@@ -112,7 +113,7 @@ An example batch job wrapper script is:
   echo "Running command:" $@
   time $@ || exit $?
   
-Unless you install jupyter into this environment (which may bloat the tarball--LCG96 jupyter is reasonably recent), it is not visible inside the LCG jupyter server. From a shell with the virtual environment activated, you can execute::
+Unless you install jupyter into this environment (which may bloat the tarball--LCG98 jupyter is reasonably recent), it is not visible inside the LCG jupyter server. From a shell with the virtual environment activated, you can execute::
 
   python -m ipykernel install --user --name=coffeaenv
 
