@@ -3,12 +3,6 @@ channels:
   - anaconda
   - conda-forge
 dependencies:
-  - xxhash
-  - xrootd
-  - matplotlib>=3
-  - numba>=0.50
-  - numpy>=1.16
-  - scipy>=1.1
-  - pip
-  - pip:
-    - coffea>=0.6.45
+  - python==3.8.*
+  - xrootd==5.0.3
+  - coffea==0.6.*
