@@ -215,7 +215,7 @@ class Photon(candidate.PtEtaPhiMCandidate, base.NanoCollection):
 
     @property
     def mass(self):
-        return awkward.broadcast_arrays(self.pt, 0.0)[1]
+        return awkward.without_parameters(awkward.zeros_like(self.pt))
 
     @property
     def isLoose(self):
