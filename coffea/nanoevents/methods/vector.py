@@ -479,13 +479,12 @@ class LorentzVector(ThreeVector):
             threshold : Number, optional
                 If set, any objects with ``metric > threshold`` will be masked from the result
         """
-        mval, combos = self.metric_table(other, axis, metric, return_combinations=True)
+        mval, (a, b) = self.metric_table(other, axis, metric, return_combinations=True)
         if axis is None:
             # NotImplementedError: awkward.firsts with axis=-1
             axis = other.layout.purelist_depth - 2
-        # prefer keepdims=True: awkward-1.0 #434
-        mmin = awkward.singletons(awkward.argmin(mval, axis=axis + 1))
-        out = awkward.firsts(combos[1][mmin], axis=axis + 1)
+        mmin = awkward.argmin(mval, axis=axis + 1, keepdims=True)
+        out = awkward.firsts(b[mmin], axis=axis + 1)
         metric = awkward.firsts(mval[mmin], axis=axis + 1)
         if threshold is not None:
             out = out.mask[metric <= threshold]

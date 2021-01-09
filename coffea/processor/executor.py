@@ -828,15 +828,12 @@ def _get_cache(strategy):
 
 
 def _work_function(item, processor_instance, savemetrics=False,
-                   mmap=False, schema=None, cachestrategy=None, skipbadfiles=False,
+                   mmap=False, schema=schemas.BaseSchema, cachestrategy=None, skipbadfiles=False,
                    retries=0, xrootdtimeout=None, use_dataframes=False):
     if processor_instance == 'heavy':
         item, processor_instance = item
     if not isinstance(processor_instance, ProcessorABC):
         processor_instance = cloudpickle.loads(lz4f.decompress(processor_instance))
-
-    if schema is None:
-        schema = schemas.BaseSchema
 
     import warnings
     if use_dataframes:
@@ -862,7 +859,11 @@ def _work_function(item, processor_instance, savemetrics=False,
                 'fileuuid': str(uuid.UUID(bytes=item.fileuuid))
             }
             with filecontext as file:
-                if issubclass(schema, schemas.BaseSchema):
+                if schema is None:
+                    # To deprecate
+                    tree = file[item.treename]
+                    events = LazyDataFrame(tree, item.entrystart, item.entrystop, metadata=metadata)
+                elif issubclass(schema, schemas.BaseSchema):
                     materialized = []
                     factory = NanoEventsFactory.from_root(
                         file=file,
@@ -1031,8 +1032,9 @@ def run_uproot_job(fileset,
             work function itself:
 
             - ``savemetrics`` saves some detailed metrics for xrootd processing (default False)
-            - ``schema`` builds the dataframe as a `nanoevents` object rather than `LazyDataFrame`
-              (default ``BaseSchema``); schema options include `BaseSchema`, `NanoAODSchema`, and `TreeMakerSchema`
+            - ``schema`` builds the dataframe as a `nanoevents` object
+              (default ``BaseSchema``); schema options include `BaseSchema`, `NanoAODSchema`, and `TreeMakerSchema`.
+              If schema is None a `LazyDataFrame` is returned rather than NanoEvents, use for unruly ROOT files.
             - ``processor_compression`` sets the compression level used to send processor instance to workers (default 1)
             - ``skipbadfiles`` instead of failing on a bad file, skip it (default False)
             - ``retries`` optionally retry processing of a chunk on failure (default 0)
