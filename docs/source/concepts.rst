@@ -19,7 +19,7 @@ primitives in turn, to compute derived quantities and summary statistics. Array 
 the `scientific python ecosystem <https://www.scipy.org/about.html>`_, supported by the `numpy <https://numpy.org/>`_ library.
 However, although the existing scientific python stack is fully capable of analyzing rectangular arrays (i.e. 
 no variable-length array dimensions), HEP data is very irregular, and manipulating it can become awkward without
-first generalizing array structure a bit. The `awkward <https://github.com/scikit-hep/awkward-array>`_ package does this,
+first generalizing array structure a bit. The `awkward <https://awkward-array.org>`_ package does this,
 extending array programming capabilities to the complexity of HEP data.
 
 .. image:: images/columnar.png

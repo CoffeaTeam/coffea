@@ -5,7 +5,6 @@
 from .processor import ProcessorABC
 from .dataframe import (
     LazyDataFrame,
-    PreloadedDataFrame,
 )
 from .helpers import Weights, PackedSelection
 from .executor import (
@@ -34,7 +33,6 @@ from coffea.nanoevents.schemas import (
 __all__ = [
     'ProcessorABC',
     'LazyDataFrame',
-    'PreloadedDataFrame',
     'Weights',
     'PackedSelection',
     'iterative_executor',
