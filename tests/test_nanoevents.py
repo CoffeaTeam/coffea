@@ -48,6 +48,9 @@ def test_read_nanomc(suffix):
     crossref(events[ak.num(events.Jet) > 2])
     crossref(events)
 
+    # test issue 409
+    assert ak.to_list(events[[]].Photon.mass) == []
+
     if suffix == 'root':
         assert ak.any(events.Photon.isTight, axis=1).tolist()[:9] == [False, True, True, True, False, False, False, False, False]
     if suffix == 'parquet':
