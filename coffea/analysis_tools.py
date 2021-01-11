@@ -4,7 +4,6 @@ These helper classes were previously part of ``coffea.processor``
 but have been migrated and updated to be compatible with awkward-array 1.0
 """
 import numpy
-import awkward1
 import coffea.util
 import coffea.processor
 
@@ -239,7 +238,7 @@ class PackedSelection:
         ----------
             name : str
                 name of the selection
-            selection : numpy.ndarray or awkward1.Array
+            selection : numpy.ndarray or awkward.Array
                 a flat array of type ``bool`` or ``?bool``.
                 If this is not the first selection added, it must also have
                 the same shape as previously added selections. If the array
