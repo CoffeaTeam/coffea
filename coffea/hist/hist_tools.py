@@ -2,7 +2,6 @@ from __future__ import division
 from collections import namedtuple
 import numpy
 from coffea.processor.accumulator import AccumulatorABC
-import coffea.util
 import copy
 import functools
 import math
@@ -503,7 +502,7 @@ class Bin(DenseAxis):
         isarray = isinstance(identifier, (awkward.Array, numpy.ndarray))
         if isarray or isinstance(identifier, numbers.Number):
             if isarray:
-                identifier = coffea.util._ensure_flat(identifier)
+                identifier = numpy.asarray(identifier)
             if self._uniform:
                 idx = numpy.clip(numpy.floor((identifier - self._lo) * float(self._bins) / (self._hi - self._lo)) + 1, 0, self._bins + 1)
                 if isinstance(idx, numpy.ndarray):
@@ -953,7 +952,7 @@ class Hist(AccumulatorABC):
         """
         weight = values.pop("weight", None)
         if isinstance(weight, (awkward.Array, numpy.ndarray)):
-            weight = coffea.util._ensure_flat(weight)
+            weight = numpy.asarray(weight)
         if isinstance(weight, numbers.Number):
             weight = numpy.atleast_1d(weight)
         if not all(d.name in values for d in self._axes):

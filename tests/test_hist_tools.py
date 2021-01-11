@@ -1,7 +1,8 @@
 from __future__ import print_function, division
 
 from coffea import hist
-from coffea.util import numpy as np
+import numpy as np
+import awkward as ak
 
 from dummy_distributions import dummy_jagged_eta_pt
 import pytest
@@ -68,20 +69,21 @@ def test_hist():
                             label="fermi mascot showdown"
                           )
 
-    h_mascots_4 = hist.Hist(
-                            "fermi mascot showdown",
-                            animal,
-                            vocalization,
-                            height,
-                            # weight is a reserved keyword
-                            hist.Bin("mass", "weight (g=9.81m/s**2) [kg]", np.power(10., np.arange(5)-1)),
-                         axes=[animal,
-                               vocalization,
-                               height,
-                               # weight is a reserved keyword
-                               hist.Bin("mass", "weight (g=9.81m/s**2) [kg]", np.power(10., np.arange(5)-1)),],
+    with pytest.warns(UserWarning):
+        h_mascots_4 = hist.Hist(
+                                "fermi mascot showdown",
+                                animal,
+                                vocalization,
+                                height,
+                                # weight is a reserved keyword
+                                hist.Bin("mass", "weight (g=9.81m/s**2) [kg]", np.power(10., np.arange(5)-1)),
+                            axes=[animal,
+                                vocalization,
+                                height,
+                                # weight is a reserved keyword
+                                hist.Bin("mass", "weight (g=9.81m/s**2) [kg]", np.power(10., np.arange(5)-1)),],
 
-                       )
+                        )
 
     assert h_mascots_1._dense_shape == h_mascots_2._dense_shape
     assert h_mascots_2._dense_shape == h_mascots_3._dense_shape
@@ -158,7 +160,8 @@ def test_hist():
     assert h_less.sum("vocalization", "height", "mass", "animal").values()[()] == 1004.
 
 def test_export1d():
-    import uproot3
+    with pytest.warns(FutureWarning):
+        import uproot3
     import os
     from coffea.hist.export import export1d
 
@@ -269,3 +272,12 @@ def test_issue_333():
 def test_issue_394():
     dummy = hist.Hist("Dummy" , hist.Cat("sample", "sample"), hist.Bin("dummy", "Number of events", 1, 0, 1))
     dummy.fill(sample="test", dummy=1, weight=0.5)
+
+def test_fill_none():
+    dummy = hist.Hist("Dummy" , hist.Bin("x", "asdf", 1, 0, 1))
+    with pytest.raises(ValueError):
+        # attempt to fill with none
+        dummy.fill(x=ak.Array([0.1, None, 0.3]))
+
+    # allow fill when masked type but no Nones remain
+    dummy.fill(x=ak.Array([0.1, None, 0.3])[[True, False, True]])
