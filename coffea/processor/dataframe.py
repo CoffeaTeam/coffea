@@ -20,9 +20,11 @@ class LazyDataFrame(MutableMapping):
             Last entry to read, default None (read to end)
         preload_items : iterable
             Force preloading of a set of columns from the tree
+        metadata : Mapping
+            Additional metadata for the dataframe
     """
 
-    def __init__(self, tree, entrystart=None, entrystop=None, preload_items=None):
+    def __init__(self, tree, entrystart=None, entrystop=None, preload_items=None, metadata=None):
         self._tree = tree
         self._branchargs = {
             "decompression_executor": uproot.source.futures.TrivialExecutor(),
@@ -39,6 +41,7 @@ class LazyDataFrame(MutableMapping):
         self._materialized = set()
         if preload_items:
             self.preload(preload_items)
+        self._metadata = metadata
 
     def __delitem__(self, key):
         del self._dict[key]
@@ -96,6 +99,10 @@ class LazyDataFrame(MutableMapping):
         """Length of column vector"""
         return self._branchargs["entry_stop"] - self._branchargs["entry_start"]
 
+    @property
+    def metadata(self):
+        return self._metadata
+
     def preload(self, columns):
         """Force loading of several columns
 
@@ -107,63 +114,3 @@ class LazyDataFrame(MutableMapping):
         for name in columns:
             if name in self._tree:
                 _ = self[name]
-
-
-class PreloadedDataFrame(MutableMapping):
-    """A dataframe for instances like spark where the columns are preloaded
-
-    Provides a unified interface, matching that of LazyDataFrame.
-
-    Parameters
-    ----------
-        size : int
-            Number of rows
-        items : dict
-            Mapping of column name to column array
-    """
-
-    def __init__(self, size, items):
-        self._size = size
-        self._dict = items
-        self._accessed = set()
-
-    def __delitem__(self, key):
-        del self._dict[key]
-
-    def __getitem__(self, key):
-        self._accessed.add(key)
-        out = self._dict[key]
-        return out
-
-    def __getattr__(self, key):
-        if key.startswith("_"):
-            raise AttributeError(key)
-        try:
-            return self.__getitem__(key)
-        except KeyError:
-            raise AttributeError(key)
-
-    def __iter__(self):
-        for key in self._dict:
-            yield key
-
-    def __len__(self):
-        return len(self._dict)
-
-    def __setitem__(self, key, value):
-        self._dict[key] = value
-
-    @property
-    def available(self):
-        """List of available columns"""
-        return self._dict.keys()
-
-    @property
-    def materialized(self):
-        """List of accessed columns"""
-        return self._accessed
-
-    @property
-    def size(self):
-        """Length of column vector"""
-        return self._size

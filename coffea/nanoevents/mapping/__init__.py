@@ -14,5 +14,6 @@ __all__ = [
     "ParquetSourceMapping",
     "SimplePreloadedColumnSource",
     "PreloadedOpener",
-    "PreloadedSourceMapping" "CachedMapping",
+    "PreloadedSourceMapping",
+    "CachedMapping"
 ]

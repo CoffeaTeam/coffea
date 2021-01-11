@@ -20,6 +20,8 @@ def crossref(events):
     # check some cross-ref roundtrips (some may not be true always but they are for the test file)
     assert ak.all(events.Jet.matched_muons.matched_jet.pt == events.Jet.pt)
     assert ak.all(events.Electron.matched_photon.matched_electron.r9 == events.Electron.r9)
+    # exercise LorentzVector.nearest
+    assert ak.all(events.Muon.matched_jet.delta_r(events.Muon.nearest(events.Jet)) == 0.)
 
 suffixes = ['root', 'parquet']
 
