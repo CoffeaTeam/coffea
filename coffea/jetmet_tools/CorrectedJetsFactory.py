@@ -253,7 +253,7 @@ class CorrectedJetsFactory(object):
 
             out["jet_resolution_rand_gauss"] = awkward.virtual(
                 rand_gauss,
-                args=(out[jer_name_map["JetPt"]],),
+                args=(out[self.name_map["JetPt"] + "_orig"],),
                 cache=lazy_cache,
                 length=len(out),
                 form=scalar_form,
@@ -292,7 +292,7 @@ class CorrectedJetsFactory(object):
                 operator.mul,
                 args=(
                     out["jet_energy_resolution_correction"],
-                    out[jer_name_map["JetPt"]],
+                    out[jer_name_map["JetMass"]],
                 ),
                 cache=lazy_cache,
             )
@@ -342,7 +342,7 @@ class CorrectedJetsFactory(object):
                 operator.mul,
                 args=(
                     up["jet_energy_resolution_correction"],
-                    out[jer_name_map["JetPt"]],
+                    out[jer_name_map["JetMass"]],
                 ),
                 cache=lazy_cache,
             )
@@ -384,7 +384,7 @@ class CorrectedJetsFactory(object):
                 operator.mul,
                 args=(
                     down["jet_energy_resolution_correction"],
-                    out[jer_name_map["JetPt"]],
+                    out[jer_name_map["JetMass"]],
                 ),
                 cache=lazy_cache,
             )
