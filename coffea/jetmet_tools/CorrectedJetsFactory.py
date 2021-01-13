@@ -71,7 +71,7 @@ def jer_smear(
                 layout, (awkward.layout.Content, awkward.partition.PartitionedArray)
             ):
                 return lambda: awkward.layout.NumpyArray(
-                    numpy.zeros_like(size=len(jetPt), dtype=numpy.float32)
+                    numpy.zeros(shape=(len(jetPt), ), dtype=numpy.float32)
                 )
             return None
 
