@@ -64,24 +64,11 @@ def jer_smear(
 ):
     pt_gen = pt_gen if not forceStochastic else None
 
-    if isinstance(jetPt, awkward.highlevel.Array):
-
-        def getfunction(layout, depth):
-            if isinstance(layout, awkward.layout.NumpyArray) or not isinstance(
-                layout, (awkward.layout.Content, awkward.partition.PartitionedArray)
-            ):
-                return lambda: awkward.layout.NumpyArray(
-                    numpy.zeros_like(size=len(jetPt), dtype=numpy.float32)
-                )
-            return None
-
-        if forceStochastic:
-            pt_gen = awkward._util.recursively_apply(
-                awkward.operations.convert.to_layout(jetPt), getfunction
-            )
-            pt_gen = awkward._util.wrap(pt_gen, awkward._util.behaviorof(jetPt))
-    else:
+    if not isinstance(jetPt, awkward.highlevel.Array):
         raise Exception("'jetPt' must be an awkward array of some kind!")
+
+    if forceStochastic:
+        pt_gen = awkward.without_parameters(awkward.zeros_like(jetPt))
 
     jersmear = jet_energy_resolution * jet_resolution_rand_gauss
     jersf = jet_energy_resolution_scale_factor[:, variation]
@@ -194,7 +181,7 @@ class CorrectedJetsFactory(object):
 
         jec_name_map = dict(self.name_map)
         jec_name_map["JetPt"] = jec_name_map["ptRaw"]
-        jec_name_map["JetMass"] = jec_name_map["ptRaw"]
+        jec_name_map["JetMass"] = jec_name_map["massRaw"]
         if self.jec_stack.jec is not None:
             jec_args = {k: out[jec_name_map[k]] for k in self.jec_stack.jec.signature}
             out["jet_energy_correction"] = self.jec_stack.jec.getCorrection(
@@ -253,7 +240,7 @@ class CorrectedJetsFactory(object):
 
             out["jet_resolution_rand_gauss"] = awkward.virtual(
                 rand_gauss,
-                args=(out[jer_name_map["JetPt"]],),
+                args=(out[self.name_map["JetPt"] + "_orig"],),
                 cache=lazy_cache,
                 length=len(out),
                 form=scalar_form,
@@ -292,7 +279,7 @@ class CorrectedJetsFactory(object):
                 operator.mul,
                 args=(
                     out["jet_energy_resolution_correction"],
-                    out[jer_name_map["JetPt"]],
+                    out[jer_name_map["JetMass"]],
                 ),
                 cache=lazy_cache,
             )
@@ -342,7 +329,7 @@ class CorrectedJetsFactory(object):
                 operator.mul,
                 args=(
                     up["jet_energy_resolution_correction"],
-                    out[jer_name_map["JetPt"]],
+                    out[jer_name_map["JetMass"]],
                 ),
                 cache=lazy_cache,
             )
@@ -384,7 +371,7 @@ class CorrectedJetsFactory(object):
                 operator.mul,
                 args=(
                     down["jet_energy_resolution_correction"],
-                    out[jer_name_map["JetPt"]],
+                    out[jer_name_map["JetMass"]],
                 ),
                 cache=lazy_cache,
             )
