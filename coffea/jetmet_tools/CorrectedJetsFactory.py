@@ -194,7 +194,7 @@ class CorrectedJetsFactory(object):
 
         jec_name_map = dict(self.name_map)
         jec_name_map["JetPt"] = jec_name_map["ptRaw"]
-        jec_name_map["JetMass"] = jec_name_map["ptRaw"]
+        jec_name_map["JetMass"] = jec_name_map["massRaw"]
         if self.jec_stack.jec is not None:
             jec_args = {k: out[jec_name_map[k]] for k in self.jec_stack.jec.signature}
             out["jet_energy_correction"] = self.jec_stack.jec.getCorrection(
