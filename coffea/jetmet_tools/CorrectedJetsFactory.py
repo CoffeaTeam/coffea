@@ -4,6 +4,7 @@ import numpy
 import warnings
 from copy import copy
 from functools import partial
+import operator
 
 
 _stack_parts = ['jec', 'junc', 'jer', 'jersf']
@@ -36,9 +37,7 @@ def awkward_rewrap(arr, like_what, gfunc):
     return awkward._util.wrap(newlayout, behavior=behavior)
 
 
-def rand_gauss(arr, var):
-    item = arr[var]
-
+def rand_gauss(item):
     def getfunction(layout, depth):
         if (isinstance(layout, awkward.layout.NumpyArray)
             or not isinstance(layout, (awkward.layout.Content,
@@ -54,9 +53,8 @@ def rand_gauss(arr, var):
     return awkward._util.wrap(out, awkward._util.behaviorof(item))
 
 
-def jer_smear(arr, variation, forceStochastic, ptGenJet, ptJet, etaJet):
-    pt_gen = arr[ptGenJet] if not forceStochastic else None
-    jetPt = arr[ptJet]
+def jer_smear(variation, forceStochastic, pt_gen, jetPt, etaJet, jet_energy_resolution, jet_resolution_rand_gauss, jet_energy_resolution_scale_factor):
+    pt_gen = pt_gen if not forceStochastic else None
 
     if isinstance(jetPt, awkward.highlevel.Array):
         def getfunction(layout, depth):
@@ -72,39 +70,34 @@ def jer_smear(arr, variation, forceStochastic, ptGenJet, ptJet, etaJet):
                 getfunction)
             pt_gen = awkward._util.wrap(pt_gen, awkward._util.behaviorof(jetPt))
     else:
-        raise Exception("'arr' must be an awkward array of some kind!")
+        raise Exception("'jetPt' must be an awkward array of some kind!")
 
-    jersmear = arr['jet_energy_resolution'] * arr['jet_resolution_rand_gauss']
-    jersf = arr['jet_energy_resolution_scale_factor'][:, variation]
+    jersmear = jet_energy_resolution * jet_resolution_rand_gauss
+    jersf = jet_energy_resolution_scale_factor[:, variation]
     doHybrid = pt_gen > 0
 
     detSmear = 1 + (jersf - 1) * (jetPt - pt_gen) / jetPt  # because of awkward1.0#367
     stochSmear = 1 + numpy.sqrt(numpy.maximum(jersf**2 - 1, 0)) * jersmear
 
-    min_jet_pt = _MIN_JET_ENERGY / numpy.cosh(arr[etaJet])
+    min_jet_pt = _MIN_JET_ENERGY / numpy.cosh(etaJet)
     min_jet_pt_corr = min_jet_pt / jetPt
 
-    smearfact = None
-    if isinstance(arr, awkward.highlevel.Array):
-        smearfact = awkward.where(doHybrid, detSmear, stochSmear)
-        smearfact = awkward.where((smearfact * jetPt) < min_jet_pt,
-                                  min_jet_pt_corr,
-                                  smearfact)
+    smearfact = awkward.where(doHybrid, detSmear, stochSmear)
+    smearfact = awkward.where((smearfact * jetPt) < min_jet_pt,
+                                min_jet_pt_corr,
+                                smearfact)
 
-        def getfunction(layout, depth):
-            if (isinstance(layout, awkward.layout.NumpyArray)
-                or not isinstance(layout, (awkward.layout.Content,
-                                           awkward.partition.PartitionedArray)
-               )):
-                return lambda: awkward.layout.NumpyArray(smearfact)
-            return None
-        smearfact = awkward._util.recursively_apply(
-            awkward.operations.convert.to_layout(jetPt),
-            getfunction)
-        smearfact = awkward._util.wrap(smearfact, awkward._util.behaviorof(jetPt))
-    else:
-        raise Exception("'arr' must be an awkward array of some kind!")
-
+    def getfunction(layout, depth):
+        if (isinstance(layout, awkward.layout.NumpyArray)
+            or not isinstance(layout, (awkward.layout.Content,
+                                        awkward.partition.PartitionedArray)
+            )):
+            return lambda: awkward.layout.NumpyArray(smearfact)
+        return None
+    smearfact = awkward._util.recursively_apply(
+        awkward.operations.convert.to_layout(jetPt),
+        getfunction)
+    smearfact = awkward._util.wrap(smearfact, awkward._util.behaviorof(jetPt))
     return smearfact
 
 
@@ -154,22 +147,14 @@ class CorrectedJetsFactory(object):
     def build(self, jets, lazy_cache):
         if lazy_cache is None:
             raise Exception('CorrectedJetsFactory requires a awkward-array cache to function correctly.')
-
-        fields = None
-        out = None
-        wrap = None
-        VirtualType = None
-        form = None
-        if isinstance(jets, awkward.highlevel.Array):
-            fields = awkward.fields(jets)
-            if len(fields) == 0:
-                raise Exception('Detected awkward: \'jets\' must have attributes specified by keys!')
-            out = awkward.flatten(jets)
-            wrap = partial(awkward_rewrap, like_what=jets, gfunc=rewrap_recordarray)
-            VirtualType = awkward.virtual
-            form = out[self.name_map['ptRaw']].layout.form
-        else:
-            raise Exception('\'jets\' must be an awkward > 1.0.0 array of some kind!')
+        if not isinstance(jets, awkward.highlevel.Array):
+            raise Exception("'jets' must be an awkward > 1.0.0 array of some kind!")
+        fields = awkward.fields(jets)
+        if len(fields) == 0:
+            raise Exception('Detected awkward: \'jets\' must have attributes specified by keys!')
+        out = awkward.flatten(jets)
+        wrap = partial(awkward_rewrap, like_what=jets, gfunc=rewrap_recordarray)
+        scalar_form = awkward.without_parameters(out[self.name_map['ptRaw']]).layout.form
 
         if len(fields) == 0:
             raise Exception('Empty record, please pass a jet object with at least {self.real_sig} defined!')
@@ -181,98 +166,105 @@ class CorrectedJetsFactory(object):
             out[self.name_map['ptRaw']] = out[self.name_map['JetPt']]
             out[self.name_map['massRaw']] = out[self.name_map['JetMass']]
 
-        jec_name_map = {}
-        jec_name_map.update(self.name_map)
+        jec_name_map = dict(self.name_map)
         jec_name_map['JetPt'] = jec_name_map['ptRaw']
         jec_name_map['JetMass'] = jec_name_map['ptRaw']
         if self.jec_stack.jec is not None:
             jec_args = {k: out[jec_name_map[k]] for k in self.jec_stack.jec.signature}
-            out['jet_energy_correction'] = self.jec_stack.jec.getCorrection(**jec_args, form=form, lazy_cache=lazy_cache)
+            out['jet_energy_correction'] = self.jec_stack.jec.getCorrection(**jec_args, form=scalar_form, lazy_cache=lazy_cache)
         else:
-            out['jet_energy_correction'] = awkward.ones_like(out[self.name_map['JetPt']])
+            out['jet_energy_correction'] = awkward.without_parameters(awkward.ones_like(out[self.name_map['JetPt']]))
 
         # finally the lazy binding to the JEC
-        def jec_var_corr(arr, varName):
-            return arr['jet_energy_correction'] * arr[varName]
+        init_pt = partial(awkward.virtual, operator.mul, args=(out["jet_energy_correction"], out[self.name_map['ptRaw']]), cache=lazy_cache)
+        init_mass = partial(awkward.virtual, operator.mul, args=(out["jet_energy_correction"], out[self.name_map['massRaw']]), cache=lazy_cache)
 
-        init_pt = partial(VirtualType, jec_var_corr, args=(out, self.name_map['ptRaw']), cache=lazy_cache)
-        init_mass = partial(VirtualType, jec_var_corr, args=(out, self.name_map['massRaw']), cache=lazy_cache)
+        out[self.name_map['JetPt']] = init_pt(length=len(out), form=scalar_form)
+        out[self.name_map['JetMass']] = init_mass(length=len(out), form=scalar_form)
 
-        out[self.name_map['JetPt']] = init_pt(length=len(out), form=form)
-        out[self.name_map['JetMass']] = init_mass(length=len(out), form=form)
-
-        out[self.name_map['JetPt'] + '_jec'] = init_pt(length=len(out), form=form)
-        out[self.name_map['JetMass'] + '_jec'] = init_mass(length=len(out), form=form)
+        out[self.name_map['JetPt'] + '_jec'] = init_pt(length=len(out), form=scalar_form)
+        out[self.name_map['JetMass'] + '_jec'] = init_mass(length=len(out), form=scalar_form)
 
         # in jer we need to have a stash for the intermediate JEC products
         has_jer = False
         if self.jec_stack.jer is not None and self.jec_stack.jersf is not None:
             has_jer = True
-            jer_name_map = {}
-            jer_name_map.update(self.name_map)
+            jer_name_map = dict(self.name_map)
             jer_name_map['JetPt'] = jer_name_map['JetPt'] + '_jec'
             jer_name_map['JetMass'] = jer_name_map['JetMass'] + '_jec'
 
             jerargs = {k: out[jer_name_map[k]] for k in self.jec_stack.jer.signature}
-            out['jet_energy_resolution'] = self.jec_stack.jer.getResolution(**jerargs, form=form, lazy_cache=lazy_cache)
+            out['jet_energy_resolution'] = self.jec_stack.jer.getResolution(**jerargs, form=scalar_form, lazy_cache=lazy_cache)
 
             jersfargs = {k: out[jer_name_map[k]] for k in self.jec_stack.jersf.signature}
             out['jet_energy_resolution_scale_factor'] = self.jec_stack.jersf.getScaleFactor(**jersfargs, form=_JERSF_FORM, lazy_cache=lazy_cache)
 
-            init_rand_gauss = partial(VirtualType, args=(out, jer_name_map['JetPt']), cache=lazy_cache)
-            out['jet_resolution_rand_gauss'] = init_rand_gauss(rand_gauss, length=len(out), form=form)
+            out['jet_resolution_rand_gauss'] = awkward.virtual(rand_gauss, args=(out[jer_name_map['JetPt']],), cache=lazy_cache, length=len(out), form=scalar_form)
 
-            init_jerc = partial(VirtualType,
+            init_jerc = partial(awkward.virtual,
                                 jer_smear,
-                                args=(out, 0, self.forceStochastic,
-                                      jer_name_map['ptGenJet'],
-                                      jer_name_map['JetPt'],
-                                      jer_name_map['JetEta']),
+                                args=(
+                                    0,
+                                    self.forceStochastic,
+                                    out[jer_name_map['ptGenJet']],
+                                    out[jer_name_map['JetPt']],
+                                    out[jer_name_map['JetEta']],
+                                    out["jet_energy_resolution"],
+                                    out["jet_resolution_rand_gauss"],
+                                    out["jet_energy_resolution_scale_factor"],
+                                ),
                                 cache=lazy_cache
                                 )
-            out['jet_energy_resolution_correction'] = init_jerc(length=len(out), form=form)
+            out['jet_energy_resolution_correction'] = init_jerc(length=len(out), form=scalar_form)
 
-            def jer_smeared_val(arr, base, varName):
-                return arr['jet_energy_resolution_correction'] * base[varName]
+            init_pt_jer = partial(awkward.virtual, operator.mul, args=(out["jet_energy_resolution_correction"], out[jer_name_map['JetPt']]), cache=lazy_cache)
+            init_mass_jer = partial(awkward.virtual, operator.mul, args=(out["jet_energy_resolution_correction"], out[jer_name_map['JetPt']]), cache=lazy_cache)
+            out[self.name_map['JetPt']] = init_pt_jer(length=len(out), form=scalar_form)
+            out[self.name_map['JetMass']] = init_mass_jer(length=len(out), form=scalar_form)
 
-            init_pt_jer = partial(VirtualType, jer_smeared_val, args=(out, out, jer_name_map['JetPt']), cache=lazy_cache)
-            init_mass_jer = partial(VirtualType, jer_smeared_val, args=(out, out, jer_name_map['JetPt']), cache=lazy_cache)
-            out[self.name_map['JetPt']] = init_pt_jer(length=len(out), form=form)
-            out[self.name_map['JetMass']] = init_mass_jer(length=len(out), form=form)
-
-            out[self.name_map['JetPt'] + '_jer'] = init_pt_jer(length=len(out), form=form)
-            out[self.name_map['JetMass'] + '_jer'] = init_mass_jer(length=len(out), form=form)
+            out[self.name_map['JetPt'] + '_jer'] = init_pt_jer(length=len(out), form=scalar_form)
+            out[self.name_map['JetMass'] + '_jer'] = init_mass_jer(length=len(out), form=scalar_form)
 
             # JER systematics
-            jerc_up = partial(VirtualType,
+            jerc_up = partial(awkward.virtual,
                               jer_smear,
-                              args=(out, 1, self.forceStochastic,
-                                    jer_name_map['ptGenJet'],
-                                    jer_name_map['JetPt'],
-                                    jer_name_map['JetEta']),
+                              args=(1,
+                                    self.forceStochastic,
+                                    out[jer_name_map['ptGenJet']],
+                                    out[jer_name_map['JetPt']],
+                                    out[jer_name_map['JetEta']],
+                                    out["jet_energy_resolution"],
+                                    out["jet_resolution_rand_gauss"],
+                                    out["jet_energy_resolution_scale_factor"],
+                                    ),
                               cache=lazy_cache
                               )
             up = awkward.flatten(jets)
-            up['jet_energy_resolution_correction'] = jerc_up(length=len(out), form=form)
-            init_pt_jer = partial(VirtualType, jer_smeared_val, args=(up, out, jer_name_map['JetPt']), cache=lazy_cache)
-            init_mass_jer = partial(VirtualType, jer_smeared_val, args=(up, out, jer_name_map['JetPt']), cache=lazy_cache)
-            up[self.name_map['JetPt']] = init_pt_jer(length=len(out), form=form)
-            up[self.name_map['JetMass']] = init_mass_jer(length=len(out), form=form)
+            up['jet_energy_resolution_correction'] = jerc_up(length=len(out), form=scalar_form)
+            init_pt_jer = partial(awkward.virtual, operator.mul, args=(up["jet_energy_resolution_correction"], out[jer_name_map['JetPt']]), cache=lazy_cache)
+            init_mass_jer = partial(awkward.virtual, operator.mul, args=(up["jet_energy_resolution_correction"], out[jer_name_map['JetPt']]), cache=lazy_cache)
+            up[self.name_map['JetPt']] = init_pt_jer(length=len(out), form=scalar_form)
+            up[self.name_map['JetMass']] = init_mass_jer(length=len(out), form=scalar_form)
 
-            jerc_down = partial(VirtualType,
+            jerc_down = partial(awkward.virtual,
                                 jer_smear,
-                                args=(out, 2, self.forceStochastic,
-                                      jer_name_map['ptGenJet'],
-                                      jer_name_map['JetPt'],
-                                      jer_name_map['JetEta']),
+                                args=(2,
+                                      self.forceStochastic,
+                                      out[jer_name_map['ptGenJet']],
+                                      out[jer_name_map['JetPt']],
+                                      out[jer_name_map['JetEta']],
+                                      out["jet_energy_resolution"],
+                                      out["jet_resolution_rand_gauss"],
+                                      out["jet_energy_resolution_scale_factor"],
+                                      ),
                                 cache=lazy_cache
                                 )
             down = awkward.flatten(jets)
-            down['jet_energy_resolution_correction'] = jerc_down(length=len(out), form=form)
-            init_pt_jer = partial(VirtualType, jer_smeared_val, args=(down, out, jer_name_map['JetPt']), cache=lazy_cache)
-            init_mass_jer = partial(VirtualType, jer_smeared_val, args=(down, out, jer_name_map['JetPt']), cache=lazy_cache)
-            down[self.name_map['JetPt']] = init_pt_jer(length=len(out), form=form)
-            down[self.name_map['JetMass']] = init_mass_jer(length=len(out), form=form)
+            down['jet_energy_resolution_correction'] = jerc_down(length=len(out), form=scalar_form)
+            init_pt_jer = partial(awkward.virtual, operator.mul, args=(down["jet_energy_resolution_correction"], out[jer_name_map['JetPt']]), cache=lazy_cache)
+            init_mass_jer = partial(awkward.virtual, operator.mul, args=(down["jet_energy_resolution_correction"], out[jer_name_map['JetPt']]), cache=lazy_cache)
+            down[self.name_map['JetPt']] = init_pt_jer(length=len(out), form=scalar_form)
+            down[self.name_map['JetMass']] = init_mass_jer(length=len(out), form=scalar_form)
             out['JER'] = awkward.zip({'up': up, 'down': down}, depth_limit=1, with_name='JetSystematic')
 
         if self.jec_stack.junc is not None:
@@ -289,39 +281,39 @@ class CorrectedJetsFactory(object):
             for name, func in juncs:
                 out[f'jet_energy_uncertainty_{name}'] = func
 
-                def junc_smeared_val(arr, up_down, uncname, varName):
-                    return arr[f'jet_energy_uncertainty_{uncname}'][:, up_down] * arr[varName]
+                def junc_smeared_val(uncvals, up_down, variable):
+                    return uncvals[:, up_down] * variable
 
                 up = awkward.flatten(jets)
-                up[self.name_map['JetPt']] = VirtualType(junc_smeared_val,
-                                                         args=(out, 0, name,
-                                                               juncnames['JetPt'],
+                up[self.name_map['JetPt']] = awkward.virtual(junc_smeared_val,
+                                                         args=(out[f"jet_energy_uncertainty_{name}"], 0,
+                                                               out[juncnames['JetPt']],
                                                                ),
                                                          length=len(out),
-                                                         form=form,
+                                                         form=scalar_form,
                                                          cache=lazy_cache)
-                up[self.name_map['JetMass']] = VirtualType(junc_smeared_val,
-                                                           args=(out, 0, name,
-                                                                 juncnames['JetMass'],
+                up[self.name_map['JetMass']] = awkward.virtual(junc_smeared_val,
+                                                           args=(out[f"jet_energy_uncertainty_{name}"], 0,
+                                                                 out[juncnames['JetMass']],
                                                                  ),
                                                            length=len(out),
-                                                           form=form,
+                                                           form=scalar_form,
                                                            cache=lazy_cache)
 
                 down = awkward.flatten(jets)
-                down[self.name_map['JetPt']] = VirtualType(junc_smeared_val,
-                                                           args=(out, 1, name,
-                                                                 juncnames['JetPt'],
+                down[self.name_map['JetPt']] = awkward.virtual(junc_smeared_val,
+                                                           args=(out[f"jet_energy_uncertainty_{name}"], 1,
+                                                                 out[juncnames['JetPt']],
                                                                  ),
                                                            length=len(out),
-                                                           form=form,
+                                                           form=scalar_form,
                                                            cache=lazy_cache)
-                down[self.name_map['JetMass']] = VirtualType(junc_smeared_val,
-                                                             args=(out, 1, name,
-                                                                   juncnames['JetMass'],
+                down[self.name_map['JetMass']] = awkward.virtual(junc_smeared_val,
+                                                             args=(out[f"jet_energy_uncertainty_{name}"], 1,
+                                                                   out[juncnames['JetMass']],
                                                                    ),
                                                              length=len(out),
-                                                             form=form,
+                                                             form=scalar_form,
                                                              cache=lazy_cache)
                 out[f'JES_{name}'] = awkward.zip({'up': up, 'down': down}, depth_limit=1, with_name='JetSystematic')
 
