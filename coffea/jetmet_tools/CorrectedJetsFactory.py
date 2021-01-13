@@ -64,24 +64,11 @@ def jer_smear(
 ):
     pt_gen = pt_gen if not forceStochastic else None
 
-    if isinstance(jetPt, awkward.highlevel.Array):
-
-        def getfunction(layout, depth):
-            if isinstance(layout, awkward.layout.NumpyArray) or not isinstance(
-                layout, (awkward.layout.Content, awkward.partition.PartitionedArray)
-            ):
-                return lambda: awkward.layout.NumpyArray(
-                    numpy.zeros(shape=(len(jetPt), ), dtype=numpy.float32)
-                )
-            return None
-
-        if forceStochastic:
-            pt_gen = awkward._util.recursively_apply(
-                awkward.operations.convert.to_layout(jetPt), getfunction
-            )
-            pt_gen = awkward._util.wrap(pt_gen, awkward._util.behaviorof(jetPt))
-    else:
+    if not isinstance(jetPt, awkward.highlevel.Array):
         raise Exception("'jetPt' must be an awkward array of some kind!")
+
+    if forceStochastic:
+        pt_gen = awkward.without_parameters(awkward.zeros_like(jetPt))
 
     jersmear = jet_energy_resolution * jet_resolution_rand_gauss
     jersf = jet_energy_resolution_scale_factor[:, variation]
