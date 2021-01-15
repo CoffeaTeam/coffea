@@ -883,6 +883,8 @@ def _work_function(item, processor_instance, savemetrics=False,
                     out = processor_instance.process(events)
                 except Exception as e:
                     raise Exception(f"Failed processing file: {item.filename} ({item.entrystart}-{item.entrystop})") from e
+                if out is None:
+                    raise ValueError("Output of process() should not be None. Make sure your processor's process() function returns an accumulator.")
                 toc = time.time()
                 if use_dataframes:
                     return out
