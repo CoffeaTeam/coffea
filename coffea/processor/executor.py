@@ -267,41 +267,50 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             Set to ``None`` for no compression.
 
         # work queue specific options:
-        environment-file : str
-            Python environment to use. Required.
         cores : int
             Number of cores for work queue task. If unset, use a whole worker.
         memory : int
             Amount of memory (in MB) for work queue task. If unset, use a whole worker.
         disk : int
             Amount of disk space (in MB) for work queue task. If unset, use a whole worker.
+
         resources-mode : one of 'fixed', or 'auto'. Default is 'fixed'.
             - 'fixed': allocate cores, memory, and disk specified for each task.
             - 'auto': use cores, memory, and disk as maximum values to allocate.
                       Useful when the resources used by a task are not known, as
                       it lets work queue find an efficient value for maximum
                       throughput.
-        debug-log : str
-            Filename for debug output
-        stats-log : str
-            Filename for tasks statistics output
-        transactions-log : str
-            Filename for tasks lifetime reports output
+        resource-monitor : bool
+            If true, (false is the default) turns on resource monitoring for Work Queue.
+
         master-name : str
             Name to refer to this work queue master.
             Sets port to 0 (any available port) if port not given.
         port : int
             Port number for work queue master program. Defaults to 9123 if
             master-name not given.
+        password-file: str
+            Location of a file containing a password used to authenticate workers.
+
+        environment-file : str
+            Python environment to use. Required.
         wrapper : str
             Wrapper script to run/open python environment tarball. Defaults to python_package_run found in PATH.
+
+        verbose : bool
+            If true, emit a message on each task submission and completion.
+            Default is false.
+        debug-log : str
+            Filename for debug output
+        stats-log : str
+            Filename for tasks statistics output
+        transactions-log : str
+            Filename for tasks lifetime reports output
         print-stdout : bool
             If true (default), print the standard output of work queue task on completion.
         queue-mode : one of 'persistent' or 'one-per-stage'. Default is 'persistent'.
             'persistent' - One queue is used for all stages of processing.
             'one-per-stage' - A new queue is used for each of the stages of processing.
-        resource-monitor : bool
-            If true, (false is the default) turns on resource monitoring for Work Queue.
     """
     try:
         import work_queue as wq
@@ -315,6 +324,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
     global _wq_queue
 
+    verbose_mode = kwargs.pop('verbose', False)
     debug_log = kwargs.pop('debug-log', None)
     stats_log = kwargs.pop('stats-log', None)
     trans_log = kwargs.pop('transactions-log', None)
@@ -340,6 +350,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     clevel = kwargs.pop('compression', 1)
     filepath = kwargs.pop('filepath', '.')
     output = kwargs.pop('print-stdout', False)
+    password_file = kwargs.pop('password-file', None)
 
     if clevel is not None:
         function = _compression_wrapper(clevel, function)
@@ -388,6 +399,9 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             _wq_queue.specify_category_max_resources('default', {})
             _wq_queue.specify_category_mode('default', wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT)
 
+        if password_file is not None:
+            _wq_queue.specify_password_file(password_file)
+
         # Define function input here
         infile_function = os.path.join(tmpdir, 'function.p')
 
@@ -400,7 +414,9 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
         add_fn = _iadd
 
-        for i, item in tqdm(enumerate(items), disable=not status, unit=unit, total=len(items), desc=desc):
+        # First generate all of the tasks and submit to WQ.
+
+        for i, item in tqdm(enumerate(items), disable=not status, unit=unit, total=len(items), desc="Creating Tasks"):
             with open(os.path.join(tmpdir, 'item_{}.p'.format(i)), 'wb') as wf:
                 dill.dump(item, wf)
 
@@ -435,17 +451,25 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             # Add pair to dict
             id_output['{}'.format(task_id)] = outfile
 
-            print('Submitted task (id #{}): {}'.format(task_id, wrapped_command))
+            if(verbose_mode):
+                print('Submitted task (id #{}): {}'.format(task_id, wrapped_command))
 
-        print('Waiting for tasks to complete...')
+        # Then wait for the same number of tasks to complete.
 
-        while not _wq_queue.empty():
-            t = _wq_queue.wait(5)
+        for i in tqdm(range(len(items)), disable=not status, unit=unit, desc=desc):
+
+            # This awkward bit of logic is used so that we iterate
+            # the tqdm progress bar the correct number of times.
+
+            while True:
+                t = _wq_queue.wait(5)
+                if t:
+                    break
+
             if t:
-                print('Task (id #{}) complete: {} (return code {})'.format(t.id, t.command, t.return_status))
+                if verbose_mode:
+                    print('Task (id #{}) complete: {} (return code {})'.format(t.id, t.command, t.return_status))
 
-                if output:
-                    print('Output:\n{}'.format(t.output))
                     print('allocated cores: {}, memory: {} MB, disk: {} MB'.format(
                         t.resources_allocated.cores,
                         t.resources_allocated.memory,
@@ -456,6 +480,9 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                             t.resources_measured.memory,
                             t.resources_measured.disk,
                             t.resources_measured.wall_time / 1000000))
+
+                if output and t.output:
+                    print('Task id #{} output:\n{}'.format(t.id, t.output))
 
                 if t.result != 0:
                     print('Task id #{} failed with code: {}'.format(t.id, t.result))
