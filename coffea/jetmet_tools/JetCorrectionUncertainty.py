@@ -1,11 +1,9 @@
-from ..lookup_tools.jec_uncertainty_lookup import jec_uncertainty_lookup
+from coffea.lookup_tools.jec_uncertainty_lookup import jec_uncertainty_lookup
 import warnings
 import re
 import awkward
 import numpy
 from copy import deepcopy
-
-import re
 
 
 def _checkConsistency(against, tocheck):
@@ -22,7 +20,7 @@ def split_jec_name(name):
     info = name.split('_')
 
     # Check for the case of regrouped jes uncertainties
-    if "Regrouped" in info:
+    if "Regrouped" in info[0]:
         info.pop(0)
         if "UncertaintySources" in info:
             subinfo = info[info.index("UncertaintySources"):]
