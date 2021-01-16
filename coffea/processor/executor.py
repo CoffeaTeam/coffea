@@ -893,7 +893,7 @@ def _work_function(item, processor_instance, savemetrics=False,
                     if savemetrics:
                         if isinstance(file, uproot.ReadOnlyDirectory):
                             metrics['bytesread'] = value_accumulator(int, file.file.source.num_requested_bytes)
-                        if issubclass(schema, schemas.BaseSchema):
+                        if schema is not None and issubclass(schema, schemas.BaseSchema):
                             metrics['columns'] = set_accumulator(materialized)
                             metrics['entries'] = value_accumulator(int, len(events))
                         else:
