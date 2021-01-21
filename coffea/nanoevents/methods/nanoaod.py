@@ -298,6 +298,12 @@ class Jet(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     def matched_gen(self):
         return self._events().GenJet._apply_global_index(self.genJetIdxG)
 
+    @property
+    def constituents(self):
+        if "pFCandsIdxG" not in self.fields:
+            raise RuntimeError("PF candidates are only available for PFNano")
+        return self._events().JetPFCands._apply_global_index(self.pFCandsIdxG)
+
 
 _set_repr_name("Jet")
 
@@ -335,6 +341,12 @@ class FatJet(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     @property
     def matched_gen(self):
         return self._events().GenJetAK8._apply_global_index(self.genJetAK8IdxG)
+
+    @property
+    def constituents(self):
+        if "pFCandsIdxG" not in self.fields:
+            raise RuntimeError("PF candidates are only available for PFNano")
+        return self._events().FatJetPFCands._apply_global_index(self.pFCandsIdxG)
 
 
 _set_repr_name("FatJet")

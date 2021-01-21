@@ -138,6 +138,13 @@ class NanoAODSchema(BaseSchema):
         "Jet_electronIdxG": ["Jet_electronIdx1G", "Jet_electronIdx2G"],
     }
     """Nested collections, where nesting is accomplished by a fixed-length set of indexers"""
+    nested_index_items = {
+        "Jet_pFCandsIdxG": ("Jet_nConstituents", "JetPFCands"),
+        "FatJet_pFCandsIdxG": ("FatJet_nConstituents", "FatJetPFCands"),
+        "GenJet_pFCandsIdxG": ("GenJet_nConstituents", "GenJetCands"),
+        "GenFatJet_pFCandsIdxG": ("GenJetAK8_nConstituents", "GenFatJetCands"),
+    }
+    """Nested collections, where nesting is accomplished by assuming the target can be unflattened according to a source counts"""
     special_items = {
         "GenPart_distinctParentIdxG": (
             transforms.distinctParent_form,
@@ -205,6 +212,13 @@ class NanoAODSchema(BaseSchema):
             if all(idx in branch_forms for idx in indexers):
                 branch_forms[name] = transforms.nestedindex_form(
                     [branch_forms[idx] for idx in indexers]
+                )
+
+        # Create nested indexer from n* counts arrays
+        for name, (local_counts, target) in self.nested_index_items.items():
+            if local_counts in branch_forms and "o" + target in branch_forms:
+                branch_forms[name] = transforms.counts2nestedindex_form(
+                    branch_forms[local_counts], branch_forms["o" + target]
                 )
 
         # Create any special arrays
