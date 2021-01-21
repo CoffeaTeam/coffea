@@ -29,6 +29,10 @@ class NanoCollection:
     and other advanced mixin types.
     """
 
+    def _collection_name(self):
+        """The name of the collection (i.e. the field under events where it is found)"""
+        return self.layout.purelist_parameter("collection_name")
+
     def _getlistarray(self):
         """Do some digging to find the initial listarray"""
 

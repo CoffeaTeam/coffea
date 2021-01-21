@@ -40,6 +40,7 @@ class NanoAODSchema(BaseSchema):
         "METFixEE2017": "MissingET",
         "PuppiMET": "MissingET",
         "RawMET": "MissingET",
+        "RawPuppiMET": "MissingET",
         "TkMET": "MissingET",
         # pseudo-lorentz: pt, eta, phi, mass=0
         "IsoTrack": "PtEtaPhiMCollection",
@@ -48,11 +49,11 @@ class NanoAODSchema(BaseSchema):
         # True lorentz: pt, eta, phi, mass
         "FatJet": "FatJet",
         "GenDressedLepton": "PtEtaPhiMCollection",
+        "GenIsolatedPhoton": "PtEtaPhiMCollection",
         "GenJet": "PtEtaPhiMCollection",
-        "GenJetAK8": "FatJet",
+        "GenJetAK8": "PtEtaPhiMCollection",
         "Jet": "Jet",
         "LHEPart": "PtEtaPhiMCollection",
-        "SV": "PtEtaPhiMCollection",
         "SubGenJetAK8": "PtEtaPhiMCollection",
         "SubJet": "PtEtaPhiMCollection",
         # Candidate: lorentz + charge
@@ -64,17 +65,79 @@ class NanoAODSchema(BaseSchema):
         "GenVisTau": "GenVisTau",
         # special
         "GenPart": "GenParticle",
+        "PV": "Vertex",
+        "SV": "SecondaryVertex",
+        # PFNano extensions
+        "JetSVs": "AssociatedSV",
+        "FatJetSVs": "AssociatedSV",
+        "GenJetSVs": "AssociatedSV",
+        "GenFatJetSVs": "AssociatedSV",
+        "JetPFCands": "AssociatedPFCand",
+        "FatJetPFCands": "AssociatedPFCand",
+        "GenJetCands": "AssociatedPFCand",
+        "GenFatJetCands": "AssociatedPFCand",
+        "PFCands": "PFCand",
+        "GenCands": "PFCand",
     }
     """Default configuration for mixin types, based on the collection name.
 
     The types are implemented in the `coffea.nanoevents.methods.nanoaod` module.
+    """
+    cross_references = {
+        "Electron_genPartIdx": "GenPart",
+        "Electron_jetIdx": "Jet",
+        "Electron_photonIdx": "Photon",
+        "FatJet_genJetAK8Idx": "GenJetAK8",
+        "FatJet_subJetIdx1": "SubJet",
+        "FatJet_subJetIdx2": "SubJet",
+        "FsrPhoton_muonIdx": "Muon",
+        "GenPart_genPartIdxMother": "GenPart",
+        "GenVisTau_genPartIdxMother": "GenPart",
+        "Jet_electronIdx1": "Electron",
+        "Jet_electronIdx2": "Electron",
+        "Jet_genJetIdx": "GenJet",
+        "Jet_muonIdx1": "Muon",
+        "Jet_muonIdx2": "Muon",
+        "Muon_fsrPhotonIdx": "FsrPhoton",
+        "Muon_genPartIdx": "GenPart",
+        "Muon_jetIdx": "Jet",
+        "Photon_electronIdx": "Electron",
+        "Photon_genPartIdx": "GenPart",
+        "Photon_jetIdx": "Jet",
+        "Tau_genPartIdx": "GenPart",
+        "Tau_jetIdx": "Jet",
+        # PFNano extensions
+        "FatJetPFCands_jetIdx": "FatJet",  # breaks pattern
+        "FatJetPFCands_pFCandsIdx": "PFCands",
+        "FatJetSVs_jetIdx": "FatJet",  # breaks pattern
+        "FatJetSVs_sVIdx": "SV",
+        "FatJet_electronIdx3SJ": "Electron",
+        "FatJet_muonIdx3SJ": "Muon",
+        "GenFatJetCands_jetIdx": "GenJetAK8",  # breaks pattern
+        "GenFatJetCands_pFCandsIdx": "GenCands",  # breaks pattern
+        "GenFatJetSVs_jetIdx": "GenJetAK8",  # breaks pattern
+        "GenFatJetSVs_sVIdx": "SV",
+        "GenJetCands_jetIdx": "GenJet",  # breaks pattern
+        "GenJetCands_pFCandsIdx": "GenCands",  # breaks pattern
+        "GenJetSVs_jetIdx": "GenJet",  # breaks pattern
+        "GenJetSVs_sVIdx": "SV",
+        "JetPFCands_jetIdx": "Jet",
+        "JetPFCands_pFCandsIdx": "PFCands",
+        "JetSVs_jetIdx": "Jet",
+        "JetSVs_sVIdx": "SV",
+        "SubJet_subGenJetAK8Idx": "SubGenJetAK8",
+    }
+    """Cross-references, where an index is to be interpreted with respect to another collection
+
+    Each such cross-reference will be converted to a global indexer, so that arbitrarily sliced events
+    can still resolve the indirection back the parent events
     """
     nested_items = {
         "FatJet_subJetIdxG": ["FatJet_subJetIdx1G", "FatJet_subJetIdx2G"],
         "Jet_muonIdxG": ["Jet_muonIdx1G", "Jet_muonIdx2G"],
         "Jet_electronIdxG": ["Jet_electronIdx1G", "Jet_electronIdx2G"],
     }
-    """Default nested collections, where nesting is accomplished by a fixed-length set of indexers"""
+    """Nested collections, where nesting is accomplished by a fixed-length set of indexers"""
     special_items = {
         "GenPart_distinctParentIdxG": (
             transforms.distinctParent_form,
@@ -95,7 +158,7 @@ class NanoAODSchema(BaseSchema):
             ),
         ),
     }
-    """Default special arrays, where the callable and input arrays are specified in the value"""
+    """Special arrays, where the callable and input arrays are specified in the value"""
 
     def __init__(self, base_form, version="6"):
         self._version = version
@@ -118,25 +181,24 @@ class NanoAODSchema(BaseSchema):
                 )
 
         # Create global index virtual arrays for indirection
-        idxbranches = [k for k in branch_forms if "Idx" in k]
-        for name in collections:
-            indexers = [k for k in idxbranches if k.startswith(name + "_")]
-            for k in indexers:
-                target = k[len(name) + 1 : k.find("Idx")]
-                target = target[0].upper() + target[1:]
-                if target not in collections:
-                    problem = RuntimeError(
-                        "Parsing indexer %s, expected to find collection %s but did not"
-                        % (k, target)
+        for indexer, target in self.cross_references.items():
+            if indexer not in branch_forms:
+                if self.warn_missing_crossrefs:
+                    warnings.warn(
+                        f"Missing cross-reference index for {indexer} => {target}",
+                        RuntimeWarning,
                     )
-                    if self.__class__.warn_missing_crossrefs:
-                        warnings.warn(str(problem), RuntimeWarning)
-                        continue
-                    else:
-                        raise problem
-                branch_forms[k + "G"] = transforms.local2global_form(
-                    branch_forms[k], branch_forms["o" + target]
-                )
+                continue
+            if "o" + target not in branch_forms:
+                if self.warn_missing_crossrefs:
+                    warnings.warn(
+                        f"Missing cross-reference target for {indexer} => {target}",
+                        RuntimeWarning,
+                    )
+                continue
+            branch_forms[indexer + "G"] = transforms.local2global_form(
+                branch_forms[indexer], branch_forms["o" + target]
+            )
 
         # Create nested indexer from Idx1, Idx2, ... arrays
         for name, indexers in self.nested_items.items():
