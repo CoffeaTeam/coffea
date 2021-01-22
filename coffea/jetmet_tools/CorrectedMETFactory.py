@@ -8,13 +8,9 @@ from copy import copy
 class CorrectedMETFactory(object):
 
     def __init__(self, name_map):
-        if 'METpt' not in name_map or name_map['METpt'] is None:
-            warnings.warn('There is no name mapping for METpt,'
-                          ' CorrectedMETFactory will assume that <object>.pt is pt!')
-
-        if 'METphi' not in name_map or name_map['METphi'] is None:
-            warnings.warn('There is no name mapping for METphi,'
-                          ' CorrectedMETFactory will assume that <object>.phi is phi!')
+        for name in ['METpt', 'METphi', 'JetPt', 'JetPhi', 'ptRaw', 'UnClusteredEnergyDeltaX', 'UnClusteredEnergyDeltaY']:
+            if name not in name_map or name_map[name] is None:
+                raise ValueError(f'There is no name mapping for {name}, which is needed for CorrectedMETFactory')
 
         self.name_map = name_map
 
@@ -33,8 +29,8 @@ class CorrectedMETFactory(object):
             },
         )
         out = copy(MET)
-        out[self.name_map['METpt'] + '_orig'] = out[self.name_map['METpt']]
-        out[self.name_map['METphi'] + '_orig'] = out[self.name_map['METphi']]
+        out[self.name_map['METpt'] + '_orig'] = MET[self.name_map['METpt']]
+        out[self.name_map['METphi'] + '_orig'] = MET[self.name_map['METphi']]
 
         def corrected_polar_met(met_pt, met_phi, jet_pt, jet_phi, jet_pt_orig, deltas=None):
             sj, cj = numpy.sin(jet_phi), numpy.cos(jet_phi)
