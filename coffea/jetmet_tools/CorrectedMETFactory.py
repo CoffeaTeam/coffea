@@ -50,11 +50,11 @@ class CorrectedMETFactory(object):
             met_pt, met_phi, jet_pt, jet_phi, jet_pt_orig, deltas=None
         ):
             sj, cj = numpy.sin(jet_phi), numpy.cos(jet_phi)
-            x = met_pt * numpy.sin(met_phi) + awkward.sum(
-                jet_pt * sj - jet_pt_orig * sj, axis=1
-            )
-            y = met_pt * numpy.cos(met_phi) + awkward.sum(
+            x = met_pt * numpy.cos(met_phi) + awkward.sum(
                 jet_pt * cj - jet_pt_orig * cj, axis=1
+            )
+            y = met_pt * numpy.sin(met_phi) + awkward.sum(
+                jet_pt * sj - jet_pt_orig * sj, axis=1
             )
             if deltas:
                 positive, dx, dy = deltas
