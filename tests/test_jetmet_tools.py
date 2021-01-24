@@ -280,12 +280,7 @@ def test_corrected_jets_factory():
 
     name_map['METpt'] = 'pt'
     name_map['METphi'] = 'phi'
-    name_map['METx'] = 'x'
-    name_map['METy'] = 'y'
-    name_map['JETx'] = 'x'
-    name_map['JETy'] = 'y'
-    name_map['xMETRaw'] = 'x_raw'
-    name_map['yMETRaw'] = 'y_raw'
+    name_map['JetPhi'] = 'phi'
     name_map['UnClusteredEnergyDeltaX'] = 'MetUnclustEnUpDeltaX'
     name_map['UnClusteredEnergyDeltaY'] = 'MetUnclustEnUpDeltaY'
 
