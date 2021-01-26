@@ -131,6 +131,7 @@ class NanoAODSchema(BaseSchema):
                     )
                     if self.__class__.warn_missing_crossrefs:
                         warnings.warn(str(problem), RuntimeWarning)
+                        continue
                     else:
                         raise problem
                 branch_forms[k + "G"] = transforms.local2global_form(
