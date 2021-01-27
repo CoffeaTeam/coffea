@@ -49,7 +49,7 @@ def _parsl_stop():
 @timeout
 @python_app
 def derive_chunks(filename, treename, chunksize, ds, timeout=10):
-    import uproot
+    import uproot3 as uproot
     from collections.abc import Sequence
 
     uproot.XRootDSource.defaults["parallel"] = False

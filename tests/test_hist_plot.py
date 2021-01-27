@@ -22,9 +22,9 @@ def test_import():
 
 
 def fill_lepton_kinematics():
-    import uproot
-    import uproot_methods
-    import awkward
+    import uproot3 as uproot
+    import uproot3_methods as uproot_methods
+    import awkward0 as awkward
 
     # histogram creation and manipulation
     from coffea import hist

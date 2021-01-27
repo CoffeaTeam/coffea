@@ -1,9 +1,9 @@
-import awkward
+import awkward0 as awkward
 
 from coffea.util import awkward as util_awkward
 from coffea.util import deprecate_awkward0_util
-import uproot_methods
-from uproot_methods.classes.TLorentzVector import ArrayMethods, TLorentzVectorArray, TLorentzVector
+import uproot3_methods as uproot_methods
+from uproot3_methods.classes.TLorentzVector import ArrayMethods, TLorentzVectorArray, TLorentzVector
 
 JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, util_awkward.JaggedArray)
 

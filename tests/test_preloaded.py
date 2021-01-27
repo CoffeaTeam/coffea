@@ -1,6 +1,6 @@
 import pytest
 import os
-import uproot
+import uproot3 as uproot
 from coffea import processor
 from coffea.processor.test_items import NanoEvents0Processor
 from coffea.nanoaod import NanoEvents

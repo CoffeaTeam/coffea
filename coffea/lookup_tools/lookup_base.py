@@ -1,5 +1,5 @@
 import numpy
-import awkward
+import awkward0 as awkward
 import awkward1
 import numbers
 

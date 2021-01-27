@@ -1,5 +1,5 @@
 from .hist_tools import SparseAxis, DenseAxis
-from uproot_methods.classes.TH1 import Methods as TH1Methods
+from uproot3_methods.classes.TH1 import Methods as TH1Methods
 
 
 class TH1(TH1Methods, list):
@@ -32,10 +32,10 @@ def export1d(hist):
     --------
     Creating a coffea histogram, filling, and writing to a file::
 
-        import coffea, uproot, numpy
+        import coffea, uproot3, numpy
         h = coffea.hist.Hist("Events", coffea.hist.Bin("var", "some variable", 20, 0, 1))
         h.fill(var=numpy.random.normal(size=100))
-        fout = uproot.create('output.root')
+        fout = uproot3.create('output.root')
         fout['myhist'] = coffea.hist.export1d(h)
         fout.close()
 

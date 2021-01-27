@@ -751,7 +751,7 @@ def parsl_executor(items, function, accumulator, **kwargs):
 
 class Uproot3Context(object):
     def __init__(self, filename, xrootdtimeout, mmap):
-        import uproot
+        import uproot3 as uproot
         xrootdsource = dict(uproot.source.xrootd.XRootDSource.defaults)
         xrootdsource['timeout'] = xrootdtimeout
         if mmap:

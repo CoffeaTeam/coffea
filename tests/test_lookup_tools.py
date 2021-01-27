@@ -2,11 +2,11 @@ from __future__ import print_function, division
 
 import os
 from coffea import lookup_tools
-import uproot
+import uproot3 as uproot
 from coffea.util import awkward1
 from coffea.util import awkward
 from coffea.util import numpy as np
-from awkward import JaggedArray
+from awkward0 import JaggedArray
 from coffea.nanoaod import NanoEvents
 import pytest
 

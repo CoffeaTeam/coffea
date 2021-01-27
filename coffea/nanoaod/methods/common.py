@@ -1,7 +1,7 @@
 import numpy
-import awkward
-from uproot_methods.classes.TLorentzVector import PtEtaPhiMassArrayMethods
-from uproot_methods.classes.TVector2 import ArrayMethods as XYArrayMethods
+import awkward0 as awkward
+from uproot3_methods.classes.TLorentzVector import PtEtaPhiMassArrayMethods
+from uproot3_methods.classes.TVector2 import ArrayMethods as XYArrayMethods
 
 
 def _memoize(obj, name, constructor):

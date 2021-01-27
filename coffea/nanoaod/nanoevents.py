@@ -1,6 +1,6 @@
 import numpy
-import uproot
-import awkward
+import uproot3 as uproot
+import awkward0 as awkward
 from .methods import collection_methods
 from .util import _mixin
 from ..util import _hex, _ascii, deprecate_awkward0_util
@@ -278,8 +278,8 @@ class NanoEvents(awkward.Table):
 
         Parameters
         ----------
-            file : str or uproot.rootio.ROOTDirectory
-                The filename or already opened file using e.g. ``uproot.open()``
+            file : str or uproot3.rootio.ROOTDirectory
+                The filename or already opened file using e.g. ``uproot3.open()``
             treename : str, optional
                 Name of the tree to read in the file, defaults to ``Events``
             entrystart : int, optional

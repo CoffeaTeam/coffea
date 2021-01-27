@@ -1,6 +1,6 @@
 from coffea.util import awkward
 from coffea.util import numpy as np
-import uproot_methods
+import uproot3_methods as uproot_methods
 
 
 def dummy_jagged_eta_pt():

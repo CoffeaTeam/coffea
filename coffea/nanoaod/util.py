@@ -1,4 +1,4 @@
-import awkward
+import awkward0 as awkward
 
 
 def _mixin(methods, awkwardtype):

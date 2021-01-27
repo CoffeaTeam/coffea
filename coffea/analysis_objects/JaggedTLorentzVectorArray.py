@@ -1,4 +1,4 @@
-import uproot_methods
+import uproot3_methods as uproot_methods
 from coffea.util import awkward
 
 
