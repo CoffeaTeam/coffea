@@ -57,7 +57,8 @@ def get_description():
 
 INSTALL_REQUIRES = ['awkward0>=0.15.0',
                     'uproot3-methods>=0.10.0',
-                    'uproot>=3.14.1',
+                    'uproot3>=3.14.1',
+                    'cachetools',
                     'awkward1>=0.4.3,<1',
                     'uproot4>=0.0.17,<1',
                     'pyarrow>=1.0.0',
