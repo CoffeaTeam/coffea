@@ -1,6 +1,6 @@
 import numpy
 import awkward0 as awkward
-import awkward1
+import awkward as awkward1
 import numbers
 
 from coffea.util import deprecate_detected_awkward0
