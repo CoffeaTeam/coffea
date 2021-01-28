@@ -237,7 +237,7 @@ def test_lazy_dataframe_getattr():
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason='problems with paths on windows')
 def test_preloaded_dataframe():
-    import uproot
+    import uproot3 as uproot
     from coffea.processor import PreloadedDataFrame
 
     tree = uproot.open(osp.abspath('tests/samples/nano_dy.root'))['Events']
@@ -262,7 +262,7 @@ def test_preloaded_dataframe():
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason='problems with paths on windows')
 def test_preloaded_dataframe_getattr():
-    import uproot
+    import uproot3 as uproot
     from coffea.processor import PreloadedDataFrame
 
     tree = uproot.open(osp.abspath('tests/samples/nano_dy.root'))['Events']

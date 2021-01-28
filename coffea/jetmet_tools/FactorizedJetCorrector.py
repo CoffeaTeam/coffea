@@ -1,7 +1,7 @@
 from ..lookup_tools.jme_standard_function import jme_standard_function
 import warnings
 import re
-import awkward
+import awkward0 as awkward
 import awkward1
 import numpy as np
 from copy import deepcopy

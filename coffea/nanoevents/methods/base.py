@@ -1,5 +1,5 @@
 """Basic NanoEvents and NanoCollection mixins"""
-import awkward1
+import awkward as awkward1
 
 
 behavior = {}

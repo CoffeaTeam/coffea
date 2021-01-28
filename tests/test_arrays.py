@@ -1,4 +1,4 @@
-import uproot
+import uproot3 as uproot
 import numpy as np
 from coffea.arrays import Initialize
 

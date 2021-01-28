@@ -1,8 +1,8 @@
 import os
 import random
 import numpy as np
-import uproot
-from awkward import JaggedArray
+import uproot3 as uproot
+from awkward0 import JaggedArray
 
 import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True

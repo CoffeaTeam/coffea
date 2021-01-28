@@ -1,6 +1,6 @@
 from coffea.jetmet_tools.JECStack import JECStack
-import awkward
-import awkward1
+import awkward0 as awkward
+import awkward as awkward1
 import numpy as np
 import warnings
 from copy import copy

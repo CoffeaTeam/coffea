@@ -4,8 +4,8 @@ import sys
 import pytest
 import coffea
 from coffea.analysis_objects import JaggedCandidateArray, JaggedTLorentzVectorArray
-import uproot
-import uproot_methods
+import uproot3 as uproot
+import uproot3_methods as uproot_methods
 from coffea.util import awkward
 from coffea.util import numpy as np
 

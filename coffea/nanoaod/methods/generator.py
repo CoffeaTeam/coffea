@@ -1,5 +1,5 @@
 import numpy
-import awkward
+import awkward0 as awkward
 import numba
 from .common import LorentzVector, Candidate
 from ..util import _mixin

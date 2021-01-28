@@ -5,7 +5,7 @@ import numpy as np
 # the PR can be merged
 # from scipy.stats import crystalball
 from .doublecrystalball import doublecrystalball
-from awkward import JaggedArray
+from awkward0 import JaggedArray
 from coffea.lookup_tools.dense_lookup import dense_lookup
 
 

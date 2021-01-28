@@ -1,7 +1,7 @@
 """Utility functions
 
 """
-import awkward
+import awkward0 as awkward
 import awkward1
 import hashlib
 import numpy

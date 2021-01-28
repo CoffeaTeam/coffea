@@ -7,7 +7,7 @@ from coffea.analysis_objects.JaggedCandidateArray import JaggedCandidateArray
 from coffea.util import deprecate_awkward0_util
 
 import numpy as np
-from uproot_methods.classes.TLorentzVector import (
+from uproot3_methods.classes.TLorentzVector import (
     TLorentzVectorArray,
     ArrayMethods,
     PtEtaPhiMassArrayMethods

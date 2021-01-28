@@ -55,11 +55,12 @@ def get_description():
     return description[start:stop].strip()  # before + + after
 
 
-INSTALL_REQUIRES = ['awkward>=0.12.20,<1',
-                    'uproot-methods>=0.7.3,<=0.9',
-                    'uproot>=3.11.0,<4',
-                    'awkward1>=0.4.3,<1',
-                    'uproot4>=0.0.17,<1',
+INSTALL_REQUIRES = ['awkward0>=0.15.0',
+                    'uproot3-methods>=0.10.0',
+                    'uproot3>=3.14.1',
+                    'cachetools',
+                    'awkward1>=1.0.0',
+                    'uproot4>=4.0.0',
                     'pyarrow>=1.0.0',
                     'matplotlib>=3',
                     'numba>=0.50.0',

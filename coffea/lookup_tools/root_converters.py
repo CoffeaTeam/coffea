@@ -1,5 +1,5 @@
 from ..util import numpy as np
-import uproot
+import uproot3 as uproot
 import re
 
 cycle = re.compile(br";\d+")

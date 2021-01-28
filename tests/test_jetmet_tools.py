@@ -2,7 +2,7 @@ from __future__ import print_function
 import sys
 
 from coffea import lookup_tools
-import uproot
+import uproot3 as uproot
 from coffea.util import awkward
 from coffea.util import awkward1
 from coffea.util import numpy as np
@@ -266,7 +266,7 @@ def test_jet_resolution_sf_2d(awkwardlib):
 
 def test_jet_transformer():
     import numpy as np
-    import awkward as ak
+    import awkward0 as ak
     import math
     from coffea.analysis_objects import JaggedCandidateArray as CandArray
     from coffea.jetmet_tools import (FactorizedJetCorrector,

@@ -1,5 +1,5 @@
 from .common import LorentzVector
-import awkward
+import awkward0 as awkward
 
 
 class FatJet(LorentzVector):

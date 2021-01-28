@@ -1,7 +1,7 @@
 import warnings
 from cachetools import LRUCache
 from collections.abc import Mapping
-import uproot4
+import uproot as uproot4
 import awkward1
 import numpy
 import json
