@@ -133,9 +133,10 @@ work_queue_executor_args = {
     'resource-monitor': True,   # Measure actual resource consumption
 
     # With resources set to auto, these are the max values for any task.
-    'cores': 2,                 # Cores needed per task
+    'cores': 2,                  # Cores needed per task.
     'disk': 2000,                # Disk needed per task (MB)
     'memory': 2000,              # Memory needed per task (MB)
+    'gpus' : 0,                  # GPUs needed per task.
 
     # Options to control how workers find this master.
     'master-name': wq_master_name,

@@ -292,16 +292,18 @@ def wqex_output_task(task, verbose_mode, resource_mode, output_mode):
     if verbose_mode:
         print('Task (id #{}) complete: {} (return code {})'.format(task.id, task.command, task.return_status))
 
-        print('Allocated cores: {}, memory: {} MB, disk: {} MB'.format(
+        print('Allocated cores: {}, memory: {} MB, disk: {} MB, gpus: {}'.format(
             task.resources_allocated.cores,
             task.resources_allocated.memory,
-            task.resources_allocated.disk))
+            task.resources_allocated.disk,
+            task.resources_allocated.gpus))
 
         if resource_mode:
-            print('Measured cores: {}, memory: {} MB, disk {} MB, runtime {}'.format(
+            print('Measured cores: {}, memory: {} MB, disk {} MB, gpus: {}, runtime {}'.format(
                 task.resources_measured.cores,
                 task.resources_measured.memory,
                 task.resources_measured.disk,
+                task.resources_measures.gpus,
                 task.resources_measured.wall_time / 1000000))
 
     if output_mode and task.output:
@@ -344,6 +346,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             Amount of memory (in MB) for work queue task. If unset, use a whole worker.
         disk : int
             Amount of disk space (in MB) for work queue task. If unset, use a whole worker.
+        gpus : int
+            Number of GPUs to allocate to each task.  If unset, use zero.
 
         resources-mode : one of 'fixed', or 'auto'. Default is 'fixed'.
             - 'fixed': allocate cores, memory, and disk specified for each task.
@@ -421,6 +425,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     cores = kwargs.pop('cores', None)
     memory = kwargs.pop('memory', None)
     disk = kwargs.pop('disk', None)
+    gpus = kwargs.pop('gpus', None)
     resource_monitor = kwargs.pop('resource-monitor', False)
     master_name = kwargs.pop('master-name', None)
     port = kwargs.pop('port', None)
@@ -445,6 +450,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         default_resources['memory'] = memory
     if disk:
         default_resources['disk'] = disk
+    if gpus:
+        default_resoources['gpus'] = gpus
 
     # Working within a custom temporary directory:
     with tempfile.TemporaryDirectory(prefix="wq-executor-tmp-", dir=filepath) as tmpdir:
