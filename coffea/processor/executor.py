@@ -269,7 +269,7 @@ def wqex_create_task(itemid, item, wrapper, env_file, command_path, infile_funct
     task.specify_input_file(infile_item, cache=False)
 
     for f in extra_input_files:
-        task.specify_input_file(f,cache=True)
+        task.specify_input_file(f, cache=True)
 
     if wrapper and env_file:
         task.specify_input_file(env_file, cache=True)
@@ -369,7 +369,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             Location of a file containing a password used to authenticate workers.
 
         extra-input-files: list
-            A list of files in the current working directory to send along with each task.  Useful for small custom libraries and configuration files needed by the processor.
+            A list of files in the current working directory to send along with each task.
+            Useful for small custom libraries and configuration files needed by the processor.
         environment-file : str
             Python environment to use. Required.
         wrapper : str
@@ -417,7 +418,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     debug_log = kwargs.pop('debug-log', None)
     stats_log = kwargs.pop('stats-log', None)
     trans_log = kwargs.pop('transactions-log', None)
-    extra_input_files = kwargs.pop('extra-input-files',[])
+    extra_input_files = kwargs.pop('extra-input-files', [])
     output = kwargs.pop('print-stdout', False)
     password_file = kwargs.pop('password-file', None)
     env_file = kwargs.pop('environment-file', None)
@@ -452,7 +453,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     if disk:
         default_resources['disk'] = disk
     if gpus:
-        default_resoources['gpus'] = gpus
+        default_resources['gpus'] = gpus
 
     # Working within a custom temporary directory:
     with tempfile.TemporaryDirectory(prefix="wq-executor-tmp-", dir=filepath) as tmpdir:
