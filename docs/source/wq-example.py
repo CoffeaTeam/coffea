@@ -123,10 +123,14 @@ work_queue_executor_args = {
     'schema' : BaseSchema,
     'skipbadfiles': False,      # Note that maxchunks only works if this is false.
  
-    # Options specific to Work Queue: resources to allocate per task.
+    # Options specific to Work Queue:
+
+    # Additional files needed by the processor, such as local code libraries.
+    # 'extra-input-files' : [ 'myproc.py', 'config.dat' ],
+
+    # Resources to allocate per task.
     'resources-mode' : 'auto',  # Adapt task resources to what's observed.
     'resource-monitor': True,   # Measure actual resource consumption
-
 
     # With resources set to auto, these are the max values for any task.
     'cores': 2,                 # Cores needed per task
