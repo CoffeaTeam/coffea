@@ -205,7 +205,7 @@ class NanoEventsFactory:
         mapping = ParquetSourceMapping(
             TrivialParquetOpener(uuidpfn, parquet_options), access_log=access_log
         )
-        shim = TrivialParquetOpener.UprootLikeShim(table_file)
+        shim = TrivialParquetOpener.UprootLikeShim(file, table_file.schema_arrow, metadata['extras']['ceph_config_path'])
         mapping.preload_column_source(partition_key[0], partition_key[1], shim)
 
         base_form = mapping._extract_base_form(table_file.schema_arrow)

@@ -6,18 +6,22 @@ import numpy
 import json
 from coffea.nanoevents.mapping.base import UUIDOpener, BaseSourceMapping
 from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
-
+import pyarrow.dataset as ds
 
 # IMPORTANT -> For now the uuid is just the uuid of the pfn.
 #              Later we should use the ParquetFile common_metadata to populate.
 class TrivialParquetOpener(UUIDOpener):
     class UprootLikeShim:
-        def __init__(self, file):
+        def __init__(self, file, schema, ceph_config_path):
             self.file = file
+            self.schema = schema
+            self.ceph_config_path = ceph_config_path
 
         def read(self, column_name):
             # make sure uproot is single-core since our calling context might not be
-            return self.file.read([column_name], use_threads=False)
+            return ds.dataset(
+                self.file, schema=self.schema, format=ds.RadosParquetFileFormat(self.ceph_config_path.encode())
+            ).to_table(use_threads=False, columns=[column_name])
 
         # for right now spoof the notion of directories in files
         # parquet can do it but we've gotta convince people to

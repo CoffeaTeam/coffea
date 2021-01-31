@@ -96,15 +96,24 @@ class FileMeta(object):
 
 
 class WorkItem(object):
-    __slots__ = ['dataset', 'filename', 'treename', 'entrystart', 'entrystop', 'fileuuid']
+    __slots__ = [
+        'dataset', 
+        'filename', 
+        'treename', 
+        'entrystart', 
+        'entrystop', 
+        'fileuuid',
+        'extras'
+    ]
 
-    def __init__(self, dataset, filename, treename, entrystart, entrystop, fileuuid):
+    def __init__(self, dataset, filename, treename, entrystart, entrystop, fileuuid, extras):
         self.dataset = dataset
         self.filename = filename
         self.treename = treename
         self.entrystart = entrystart
         self.entrystop = entrystop
         self.fileuuid = fileuuid
+        self.extras = extras
 
 
 class _compression_wrapper(object):
@@ -843,9 +852,20 @@ def _get_cache(strategy):
     return cache
 
 
+class RadosParquetFile(): 
+    def __init__(self, filename):
+        self.filename = filename 
+          
+    def __enter__(self): 
+        return self
+      
+    def __exit__(self, exc_type, exc_value, exc_traceback): 
+        pass   
+
+
 def _work_function(item, processor_instance, savemetrics=False,
                    mmap=False, schema=schemas.BaseSchema, cachestrategy=None, skipbadfiles=False,
-                   retries=0, xrootdtimeout=None, use_dataframes=False):
+                   retries=0, xrootdtimeout=None, use_dataframes=False, format="root"):
     if processor_instance == 'heavy':
         item, processor_instance = item
     if not isinstance(processor_instance, ProcessorABC):
@@ -861,37 +881,59 @@ def _work_function(item, processor_instance, savemetrics=False,
     retry_count = 0
     while retry_count <= retries:
         try:
-            filecontext = uproot.open(
-                item.filename,
-                timeout=xrootdtimeout,
-                file_handler=uproot.MemmapSource if mmap else uproot.MultithreadedFileSource,
-            )
-            metadata = {
-                'dataset': item.dataset,
-                'filename': item.filename,
-                'treename': item.treename,
-                'entrystart': item.entrystart,
-                'entrystop': item.entrystop,
-                'fileuuid': str(uuid.UUID(bytes=item.fileuuid))
-            }
+            if format == "root":
+                filecontext = uproot.open(
+                    item.filename,
+                    timeout=xrootdtimeout,
+                    file_handler=uproot.MemmapSource if mmap else uproot.MultithreadedFileSource,
+                )
+                metadata = {
+                    'dataset': item.dataset,
+                    'filename': item.filename,
+                    'treename': item.treename,
+                    'entrystart': item.entrystart,
+                    'entrystop': item.entrystop,
+                    'fileuuid': str(uuid.UUID(bytes=item.fileuuid))
+                }
+            elif format == "parquet":
+                filecontext = RadosParquetFile(item.filename)
+                metadata = {
+                    'dataset': item.dataset,
+                    'filename': item.filename,
+                    'treename': item.treename,
+                    'entrystart': item.entrystart,
+                    'entrystop': item.entrystop,
+                    'fileuuid': item.fileuuid,
+                    'extras': item.extras
+                }
+
             with filecontext as file:
                 if schema is None:
                     # To deprecate
                     tree = file[item.treename]
                     events = LazyDataFrame(tree, item.entrystart, item.entrystop, metadata=metadata)
                 elif issubclass(schema, schemas.BaseSchema):
-                    materialized = []
-                    factory = NanoEventsFactory.from_root(
-                        file=file,
-                        treepath=item.treename,
-                        entry_start=item.entrystart,
-                        entry_stop=item.entrystop,
-                        persistent_cache=_get_cache(cachestrategy),
-                        schemaclass=schema,
-                        metadata=metadata,
-                        access_log=materialized,
-                    )
-                    events = factory.events()
+                    # change here
+                    if format == "root":
+                        materialized = []
+                        factory = NanoEventsFactory.from_root(
+                            file=file,
+                            treepath=item.treename,
+                            entry_start=item.entrystart,
+                            entry_stop=item.entrystop,
+                            persistent_cache=_get_cache(cachestrategy),
+                            schemaclass=schema,
+                            metadata=metadata,
+                            access_log=materialized,
+                        )
+                        events = factory.events()
+                    elif format == "parquet":
+                        factory = NanoEventsFactory.from_parquet(
+                            file=item.filename,
+                            treepath=item.treename, 
+                            metadata=metadata,
+                        )
+                        events = factory.events()
                 else:
                     raise ValueError("Expected schema to derive from nanoevents.BaseSchema, instead got %r" % schema)
                 tic = time.time()
@@ -1337,3 +1379,96 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
         spark = None
 
     return output
+
+
+def run_rados_parquet_job(basedir,
+                   treename,
+                   processor_instance,
+                   executor,
+                   executor_args={},
+                   ):
+    import warnings
+    if not isinstance(processor_instance, ProcessorABC):
+        raise ValueError("Expected processor_instance to derive from ProcessorABC")
+
+    import pyarrow.dataset as ds
+    dataset = ds.dataset(basedir, format="parquet")
+
+    # make a copy since we modify in-place
+    executor_args = dict(executor_args)
+
+    # pop _get_metdata args here (also sent to _work_function)
+    skipbadfiles = executor_args.pop('skipbadfiles', False)
+    if executor is dask_executor:
+        # this executor has a builtin retry mechanism
+        retries = 0
+    else:
+        retries = executor_args.pop('retries', 0)
+    xrootdtimeout = executor_args.pop('xrootdtimeout', None)
+    align_clusters = executor_args.pop('align_clusters', False)
+    ceph_config_path = executor_args.pop('ceph_config_path', '/etc/ceph/ceph.conf')
+
+    chunks = []
+    for filename in dataset.files:
+        chunks.append(WorkItem('dataset', filename, treename, 0, 0, '', {'ceph_config_path': ceph_config_path}))
+
+    # pop all _work_function args here
+    savemetrics = executor_args.pop('savemetrics', False)
+    if "flatten" in executor_args:
+        raise ValueError("Executor argument 'flatten' is deprecated, please refactor your processor to accept awkward arrays")
+    mmap = executor_args.pop('mmap', False)
+    schema = executor_args.pop('schema', schemas.BaseSchema)
+    use_dataframes = executor_args.pop('use_dataframes', False)
+    if (executor is not dask_executor) and use_dataframes:
+        warnings.warn("Only Dask executor supports DataFrame outputs! Resetting 'use_dataframes' argument to False.")
+        use_dataframes = False
+    if "nano" in executor_args:
+        raise ValueError("Awkward0 NanoEvents no longer supported.\n"
+                         "Please use 'schema': processor.NanoAODSchema to enable awkward NanoEvents processing.")
+    cachestrategy = executor_args.pop('cachestrategy', None)
+    pi_compression = executor_args.pop('processor_compression', 1)
+    if pi_compression is None:
+        pi_to_send = processor_instance
+    else:
+        pi_to_send = lz4f.compress(cloudpickle.dumps(processor_instance), compression_level=pi_compression)
+    closure = partial(
+        _work_function,
+        savemetrics=savemetrics,
+        mmap=mmap,
+        schema=schema,
+        cachestrategy=cachestrategy,
+        skipbadfiles=skipbadfiles,
+        retries=retries,
+        xrootdtimeout=xrootdtimeout,
+        use_dataframes=use_dataframes,
+        format="parquet"
+    )
+    # hack around dask/dask#5503 which is really a silly request but here we are
+    if executor is dask_executor:
+        executor_args['heavy_input'] = pi_to_send
+        closure = partial(closure, processor_instance='heavy')
+    else:
+        closure = partial(closure, processor_instance=pi_to_send)
+
+    if use_dataframes:
+        import pandas as pd
+        import dask.dataframe as dd
+        out = dd.from_pandas(pd.DataFrame(), npartitions=1)
+        wrapped_out = dict_accumulator({'out': out})
+    else:
+        out = processor_instance.accumulator.identity()
+        wrapped_out = dict_accumulator({'out': out, 'metrics': dict_accumulator()})
+    exe_args = {
+        'unit': 'chunk',
+        'function_name': type(processor_instance).__name__,
+        'use_dataframes': use_dataframes
+    }
+    exe_args.update(executor_args)
+    executor(chunks, closure, wrapped_out, **exe_args)
+
+    if not use_dataframes:
+        wrapped_out['metrics']['chunks'] = value_accumulator(int, len(chunks))
+    processor_instance.postprocess(out)
+    if savemetrics and not use_dataframes:
+        return out, wrapped_out['metrics']
+    return wrapped_out['out']
