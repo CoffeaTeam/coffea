@@ -12,13 +12,12 @@ except ImportError:
     print("work_queue is not installed. Omiting test.")
     sys.exit(0)
 
-def template_analysis(environment_file, filelist, executor, flatten, compression):
+def template_analysis(environment_file, filelist, executor, compression):
     from coffea.processor import run_uproot_job
     treename = 'Events'
     from coffea.processor.test_items import NanoTestProcessor
 
     exe_args = {
-        'flatten': flatten,
         'compression': compression,
         'environment-file': environment_file,
         'resources-mode': 'fixed',
@@ -55,10 +54,8 @@ def work_queue_example(environment_file):
     workers.disk   = 4000  # MB
 
     with workers:
-        #template_analysis(environment_file, filelist, work_queue_executor, flatten=False, compression=0)
-        #template_analysis(environment_file, filelist, work_queue_executor, flatten=True, compression=0)
-        #template_analysis(environment_file, filelist, work_queue_executor, flatten=False, compression=2)
-        template_analysis(environment_file, filelist, work_queue_executor, flatten=True, compression=2)
+        #template_analysis(environment_file, filelist, work_queue_executor, compression=0)
+        template_analysis(environment_file, filelist, work_queue_executor, compression=2)
 
 def create_conda_environment(env_file, py_version):
     """ Generate a conda environment file 'env_file' to send along the tasks. """

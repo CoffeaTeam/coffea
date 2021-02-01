@@ -1,4 +1,5 @@
-from ..util import numpy as np
+from coffea.util import deprecate
+import numpy
 
 
 class Weights(object):
@@ -17,7 +18,8 @@ class Weights(object):
             Default is false.
     """
     def __init__(self, size, storeIndividual=False):
-        self._weight = np.ones(size)
+        deprecate("This utility has moved to the `coffea.analysis_tools` subpackage and has new features, check it out!", 0.8)
+        self._weight = numpy.ones(size)
         self._weights = {}
         self._modifiers = {}
         self._weightStats = {}
@@ -49,18 +51,18 @@ class Weights(object):
         """
         if name.endswith('Up') or name.endswith('Down'):
             raise ValueError("Avoid using 'Up' and 'Down' in weight names, instead pass appropriate shifts to add() call")
-        weight = np.array(weight)
+        weight = numpy.array(weight)
         self._weight = self._weight * weight
         if self._storeIndividual:
             self._weights[name] = weight
         if weightUp is not None:
-            weightUp = np.array(weightUp)
+            weightUp = numpy.array(weightUp)
             if shift:
                 weightUp += weight
             weightUp[weight != 0.] /= weight[weight != 0.]
             self._modifiers[name + 'Up'] = weightUp
         if weightDown is not None:
-            weightDown = np.array(weightDown)
+            weightDown = numpy.array(weightDown)
             if shift:
                 weightDown = weight - weightDown
             weightDown[weight != 0.] /= weight[weight != 0.]
@@ -125,7 +127,7 @@ class Weights(object):
         if exclude:
             names = names - set(exclude)
 
-        w = np.ones(self._weight.size)
+        w = numpy.ones(self._weight.size)
         for name in names:
             w = w * self._weights[name]
 
@@ -159,7 +161,8 @@ class PackedSelection(object):
         """
         TODO: extend to multi-column for arbitrary bit depth
         """
-        self._dtype = np.dtype(dtype)
+        deprecate("This utility has moved to the `coffea.analysis_tools` subpackage and has new features, check it out!", 0.8)
+        self._dtype = numpy.dtype(dtype)
         self._names = []
         self._mask = None
 
@@ -180,9 +183,9 @@ class PackedSelection(object):
                 If not the first mask added, it must also have
                 the same shape as previously added masks.
         """
-        if isinstance(selection, np.ndarray) and selection.dtype == np.dtype('bool'):
+        if isinstance(selection, numpy.ndarray) and selection.dtype == numpy.dtype('bool'):
             if len(self._names) == 0:
-                self._mask = np.zeros(shape=selection.shape, dtype=self._dtype)
+                self._mask = numpy.zeros(shape=selection.shape, dtype=self._dtype)
             elif len(self._names) == 64:
                 raise RuntimeError("Exhausted all slots for %r, consider a larger dtype or fewer selections" % self._dtype)
             elif self._mask.shape != selection.shape:

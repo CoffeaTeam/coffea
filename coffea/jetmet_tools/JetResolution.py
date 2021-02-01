@@ -1,8 +1,8 @@
-from ..lookup_tools.jme_standard_function import jme_standard_function
+from coffea.lookup_tools.jme_standard_function import jme_standard_function
 import warnings
 import re
-from ..util import awkward
-from ..util import numpy as np
+import awkward
+import numpy
 from copy import deepcopy
 
 
@@ -134,11 +134,18 @@ class JetResolution(object):
             jrs = reso.getResolution(JetProperty1=jet.property1,...)
 
         """
+        cache = kwargs.pop('lazy_cache', None)
+        form = kwargs.pop('form', None)
         resos = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
-            args = []
-            for input in sig:
-                args.append(kwargs[input])
-            resos.append(func(*tuple(args)))
+            args = tuple(kwargs[input] for input in sig)
+
+            if isinstance(args[0], awkward.highlevel.Array):
+                resos.append(awkward.virtual(func, args=args, length=len(args[0]), form=form, cache=cache))
+            elif isinstance(args[0], numpy.ndarray):
+                resos.append(func(*args))  # np is non-lazy
+            else:
+                raise Exception('Unknown array library for inputs.')
+
         return resos[-1]

@@ -1,8 +1,7 @@
-from .lookup_base import lookup_base
+from coffea.lookup_tools.lookup_base import lookup_base
 
-from ..util import awkward
-from ..util import numpy
-from ..util import numpy as np
+import numpy
+import awkward
 from copy import deepcopy
 
 from scipy.special import erf
@@ -20,7 +19,7 @@ def wrap_formula(fstr, varlist):
     val = fstr
     try:
         val = float(fstr)
-        fstr = "np.full_like(%s,%f)" % (varlist[0], val)
+        fstr = "numpy.full_like(%s,%f)" % (varlist[0], val)
     except ValueError:
         val = fstr
     lstr = "lambda %s: %s" % (",".join(varlist), fstr)
@@ -29,11 +28,11 @@ def wrap_formula(fstr, varlist):
 
 
 def masked_bin_eval(dim1_indices, dimN_bins, dimN_vals):
-    dimN_indices = np.empty_like(dim1_indices)
-    for i in np.unique(dim1_indices):
-        idx = np.where(dim1_indices == i)
-        dimN_indices[idx] = np.clip(
-            np.searchsorted(dimN_bins[i], dimN_vals[idx], side="right") - 1,
+    dimN_indices = numpy.empty_like(dim1_indices)
+    for i in numpy.unique(dim1_indices):
+        idx = numpy.where(dim1_indices == i)
+        dimN_indices[idx] = numpy.clip(
+            numpy.searchsorted(dimN_bins[i], dimN_vals[idx], side="right") - 1,
             0,
             len(dimN_bins[i]) - 2,
         )
@@ -48,7 +47,7 @@ def flatten_idxs(idx_in, jaggedarray):
     jagged indices and flat indices in a jagged array's contents
     """
     if len(idx_in) == 0:
-        return np.array([], dtype=np.int)
+        return numpy.array([], dtype=numpy.int)
     idx_out = jaggedarray.starts[idx_in[0]]
     if len(idx_in) == 1:
         pass
@@ -57,16 +56,15 @@ def flatten_idxs(idx_in, jaggedarray):
     else:
         raise Exception("jme_standard_function only works for two binning dimensions!")
 
-    good_idx = idx_out < jaggedarray.content.size
+    flattened = awkward.flatten(jaggedarray)
+    good_idx = idx_out < len(flattened)
     if (~good_idx).any():
         input_idxs = tuple(
             [idx_out[~good_idx]] + [idx_in[i][~good_idx] for i in range(len(idx_in))]
         )
         raise Exception(
             "Calculated invalid index {} for"
-            " array with length {}".format(
-                np.vstack(input_idxs), jaggedarray.content.size
-            )
+            " array with length {}".format(numpy.vstack(input_idxs), len(flattened))
         )
 
     return idx_out
@@ -100,17 +98,19 @@ class jme_standard_function(lookup_base):
 
         for binname in self._dim_order[1:]:
             binsaslists = self._bins[binname].tolist()
-            self._bins[binname] = [np.array(bins) for bins in binsaslists]
+            self._bins[binname] = [numpy.array(bins) for bins in binsaslists]
 
         # get the jit to compile if we've got more than one bin dim
         if len(self._dim_order) > 1:
             masked_bin_eval(
-                np.array([0, 0]), self._bins[self._dim_order[1]], np.array([0.0, 0.0])
+                numpy.array([0, 0]),
+                self._bins[self._dim_order[1]],
+                numpy.array([0.0, 0.0]),
             )
 
         # compile the formula
         argsize = len(self._parm_order) + len(self._eval_vars)
-        some_ones = tuple([50 * np.ones(argsize) for i in range(argsize)])
+        some_ones = tuple([50 * numpy.ones(argsize) for i in range(argsize)])
         _ = self._formula(*some_ones)
 
         self._signature = deepcopy(self._dim_order)
@@ -135,8 +135,8 @@ class jme_standard_function(lookup_base):
 
         # lookup the bins that we care about
         dim1_name = self._dim_order[0]
-        dim1_indices = np.clip(
-            np.searchsorted(self._bins[dim1_name], bin_vals[dim1_name], side="right")
+        dim1_indices = numpy.clip(
+            numpy.searchsorted(self._bins[dim1_name], bin_vals[dim1_name], side="right")
             - 1,
             0,
             self._bins[dim1_name].size - 2,
@@ -153,34 +153,23 @@ class jme_standard_function(lookup_base):
         eval_values = []
         for eval_name in self._eval_vars:
             clamp_mins = None
-            if self._eval_clamp_mins[eval_name].content.size == 1:
-                clamp_mins = self._eval_clamp_mins[eval_name].content[0]
+            if len(awkward.flatten(self._eval_clamp_mins[eval_name])) == 1:
+                clamp_mins = awkward.flatten(self._eval_clamp_mins[eval_name])[0]
             else:
-                idxs = flatten_idxs(bin_tuple, self._eval_clamp_mins[eval_name])
-                clamp_mins = self._eval_clamp_mins[eval_name].content[idxs]
-                if isinstance(clamp_mins, awkward.JaggedArray):
-                    if clamp_mins.content.size == 1:
-                        clamp_mins = clamp_mins.content[0]
-                    else:
-                        clamp_mins = clamp_mins.flatten()
+                clamp_mins = numpy.array(self._eval_clamp_mins[eval_name][bin_tuple]).squeeze()
+
             clamp_maxs = None
-            if self._eval_clamp_maxs[eval_name].content.size == 1:
-                clamp_maxs = self._eval_clamp_maxs[eval_name].content[0]
+            if len(awkward.flatten(self._eval_clamp_maxs[eval_name])) == 1:
+                clamp_maxs = awkward.flatten(self._eval_clamp_maxs[eval_name])[0]
             else:
-                idxs = flatten_idxs(bin_tuple, self._eval_clamp_maxs[eval_name])
-                clamp_maxs = self._eval_clamp_maxs[eval_name].content[idxs]
-                if isinstance(clamp_maxs, awkward.JaggedArray):
-                    if clamp_maxs.content.size == 1:
-                        clamp_maxs = clamp_maxs.content[0]
-                    else:
-                        clamp_maxs = clamp_maxs.flatten()
-            eval_values.append(np.clip(eval_vals[eval_name], clamp_mins, clamp_maxs))
+                clamp_maxs = numpy.array(self._eval_clamp_maxs[eval_name][bin_tuple]).squeeze()
+
+            eval_values.append(numpy.clip(eval_vals[eval_name], clamp_mins, clamp_maxs))
 
         # get parameter values
         parm_values = []
         if len(self._parms) > 0:
-            idxs = flatten_idxs(bin_tuple, self._parms[0])
-            parm_values = [parm.content[idxs] for parm in self._parms]
+            parm_values = [numpy.array(parm[bin_tuple]).squeeze() for parm in self._parms]
 
         return self._formula(*tuple(parm_values + eval_values))
 

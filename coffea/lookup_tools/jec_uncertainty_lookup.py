@@ -99,7 +99,7 @@ class jec_uncertainty_lookup(lookup_base):
         )
 
         # get clamp values and clip the inputs
-        outs = np.ones(shape=(args[0].size, 2), dtype=np.float)
+        outs = np.ones(shape=(args[0].size, 2), dtype=np.float32)
         for i in np.unique(dim1_indices):
             mask = np.where(dim1_indices == i)
             vals = np.clip(

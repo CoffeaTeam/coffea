@@ -30,13 +30,14 @@ def do_dask_job(client, filelist, compression=0):
     assert( hists['cutflow']['Data_mass'] == 66 )
     
 def do_dask_cached(client, filelist, cachestrategy=None):
-    from coffea.processor.test_items import NanoEvents0Processor
+    from coffea.nanoevents import NanoAODSchema
+    from coffea.processor.test_items import NanoEventsProcessor
     from coffea.processor.dask import register_columncache
     register_columncache(client)
 
     exe_args = {
         'client': client,
-        'schema': processor.NanoEvents,
+        'schema': NanoAODSchema,
         'cachestrategy': cachestrategy,
         'savemetrics': True,
         'worker_affinity': True if cachestrategy is not None else False,
@@ -44,7 +45,7 @@ def do_dask_cached(client, filelist, cachestrategy=None):
     hists, metrics = processor.run_uproot_job(
         filelist,
         'Events',
-        processor_instance=NanoEvents0Processor(canaries=['0001a210a3f8364811eaa29ff5b55c90beef;Events;0;40;Muon_pt']),
+        processor_instance=NanoEventsProcessor(canaries=['a9490124-3648-11ea-89e9-f5b55c90beef/%2FEvents%3B1/0-40/nMuon%2C%21load%2C%21counts2offsets%2C%21skip/offsets', 'a9490124-3648-11ea-89e9-f5b55c90beef/%2FEvents%3B1/0-40/Muon_phi%2C%21load%2C%21content', 'a9490124-3648-11ea-89e9-f5b55c90beef/%2FEvents%3B1/0-40/Muon_pt%2C%21load%2C%21content', 'a9490124-3648-11ea-89e9-f5b55c90beef/%2FEvents%3B1/0-40/Muon_eta%2C%21load%2C%21content', 'a9490124-3648-11ea-89e9-f5b55c90beef/%2FEvents%3B1/0-40/Muon_mass%2C%21load%2C%21content', 'a9490124-3648-11ea-89e9-f5b55c90beef/%2FEvents%3B1/0-40/Muon_charge%2C%21load%2C%21content']),
         executor=processor.dask_executor,
         executor_args=exe_args
     )

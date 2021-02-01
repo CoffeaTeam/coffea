@@ -1,6 +1,7 @@
 import os
-import awkward1 as ak
+import awkward as ak
 from coffea.nanoevents import NanoEventsFactory
+import pytest
 
 
 def genroundtrips(genpart):
@@ -19,10 +20,15 @@ def crossref(events):
     # check some cross-ref roundtrips (some may not be true always but they are for the test file)
     assert ak.all(events.Jet.matched_muons.matched_jet.pt == events.Jet.pt)
     assert ak.all(events.Electron.matched_photon.matched_electron.r9 == events.Electron.r9)
+    # exercise LorentzVector.nearest
+    assert ak.all(events.Muon.matched_jet.delta_r(events.Muon.nearest(events.Jet)) == 0.)
 
+suffixes = ['root', 'parquet']
 
-def test_read_nanomc():
-    factory = NanoEventsFactory.from_file(os.path.abspath('tests/samples/nano_dy.root'))
+@pytest.mark.parametrize("suffix", suffixes)
+def test_read_nanomc(suffix):
+    path = os.path.abspath(f'tests/samples/nano_dy.{suffix}')
+    factory = getattr(NanoEventsFactory, f'from_{suffix}')(path)
     events = factory.events()
 
     # test after views first
@@ -42,11 +48,18 @@ def test_read_nanomc():
     crossref(events[ak.num(events.Jet) > 2])
     crossref(events)
 
-    assert ak.any(events.Photon.isTight, axis=1).tolist()[:9] == [False, True, True, True, False, False, False, False, False]
+    # test issue 409
+    assert ak.to_list(events[[]].Photon.mass) == []
 
+    if suffix == 'root':
+        assert ak.any(events.Photon.isTight, axis=1).tolist()[:9] == [False, True, True, True, False, False, False, False, False]
+    if suffix == 'parquet':
+        assert ak.any(events.Photon.isTight, axis=1).tolist()[:9] == [False, True, False, True, False, False, False, False, True]
 
-def test_read_nanodata():
-    factory = NanoEventsFactory.from_file(os.path.abspath('tests/samples/nano_dimuon.root'))
+@pytest.mark.parametrize("suffix", suffixes)
+def test_read_nanodata(suffix):
+    path = os.path.abspath(f'tests/samples/nano_dimuon.{suffix}')
+    factory =getattr(NanoEventsFactory, f'from_{suffix}')(path)
     events = factory.events()
 
     crossref(events)

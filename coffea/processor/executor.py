@@ -10,7 +10,7 @@ import copy
 import shutil
 import json
 import cloudpickle
-import uproot4
+import uproot
 import subprocess
 import re
 import os
@@ -29,7 +29,6 @@ from .accumulator import (
 from .dataframe import (
     LazyDataFrame,
 )
-from ..nanoaod import NanoEvents
 from ..nanoevents import NanoEventsFactory, schemas
 from ..util import _hash
 
@@ -209,7 +208,7 @@ def _futures_handler(futures_set, output, status, unit, desc, add_fn, tailtimeou
         raise
 
 
-def _coffea_fn_as_file_wrapper(tmpdir):
+def wqex_create_function_wrapper(tmpdir):
     """ Writes a wrapper script to run dilled python functions and arguments.
     The wrapper takes as arguments the name of three files: function, argument, and output.
     The files function and argument have the dilled function and argument, respectively.
@@ -235,9 +234,83 @@ with open(arg, "rb") as f:
 
 pickle_out = exec_function(exec_item)
 with open(out, "wb") as f:
-    dill.dump(pickle_out, f) """)
+    dill.dump(pickle_out, f)
+
+# Force an OS exit here to avoid a bug in xrootd finalization
+os._exit(0)
+""")
 
     return name
+
+
+def wqex_create_task(itemid, item, wrapper, env_file, command_path, infile_function, tmpdir, extra_input_files):
+    import dill
+    from os.path import basename
+    import work_queue as wq
+
+    with open(os.path.join(tmpdir, 'item_{}.p'.format(itemid)), 'wb') as wf:
+        dill.dump(item, wf)
+
+    infile_item = os.path.join(tmpdir, 'item_{}.p'.format(itemid))
+    outfile = os.path.join(tmpdir, 'output_{}.p'.format(itemid))
+
+    # Base command just invokes python on the function and data.
+    command = 'python {} {} {} {}'.format(basename(command_path), basename(infile_function), basename(infile_item), basename(outfile))
+
+    # If wrapper and env provided, add that.
+    if wrapper and env_file:
+        command = './{} --environment {} --unpack-to "$WORK_QUEUE_SANDBOX"/{}-env {}'.format(basename(wrapper), basename(env_file), basename(env_file), command)
+
+    task = wq.Task(command)
+    task.specify_category('default')
+    task.specify_input_file(command_path, cache=True)
+    task.specify_input_file(infile_function, cache=False)
+    task.specify_input_file(infile_item, cache=False)
+
+    for f in extra_input_files:
+        task.specify_input_file(f, cache=True)
+
+    if wrapper and env_file:
+        task.specify_input_file(env_file, cache=True)
+        task.specify_input_file(wrapper, cache=True)
+
+    if re.search('://', item.filename):
+        # This looks like an URL. Not transfering file.
+        pass
+    else:
+        task.specify_input_file(item.filename, remote_name=item.filename, cache=True)
+
+    task.specify_output_file(outfile, cache=False)
+
+    # Put the item ID into the tag to associate upon completion.
+    task.specify_tag("{}".format(itemid))
+
+    return task
+
+
+def wqex_output_task(task, verbose_mode, resource_mode, output_mode):
+    if verbose_mode:
+        print('Task (id #{}) complete: {} (return code {})'.format(task.id, task.command, task.return_status))
+
+        print('Allocated cores: {}, memory: {} MB, disk: {} MB, gpus: {}'.format(
+            task.resources_allocated.cores,
+            task.resources_allocated.memory,
+            task.resources_allocated.disk,
+            task.resources_allocated.gpus))
+
+        if resource_mode:
+            print('Measured cores: {}, memory: {} MB, disk {} MB, gpus: {}, runtime {}'.format(
+                task.resources_measured.cores,
+                task.resources_measured.memory,
+                task.resources_measured.disk,
+                task.resources_measures.gpus,
+                task.resources_measured.wall_time / 1000000))
+
+    if output_mode and task.output:
+        print('Task id #{} output:\n{}'.format(task.id, task.output))
+
+    if task.result != 0:
+        print('Task id #{} failed with code: {}'.format(task.id, task.result))
 
 
 _wq_queue = None
@@ -267,41 +340,55 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             Set to ``None`` for no compression.
 
         # work queue specific options:
-        environment-file : str
-            Python environment to use. Required.
         cores : int
             Number of cores for work queue task. If unset, use a whole worker.
         memory : int
             Amount of memory (in MB) for work queue task. If unset, use a whole worker.
         disk : int
             Amount of disk space (in MB) for work queue task. If unset, use a whole worker.
+        gpus : int
+            Number of GPUs to allocate to each task.  If unset, use zero.
+
         resources-mode : one of 'fixed', or 'auto'. Default is 'fixed'.
             - 'fixed': allocate cores, memory, and disk specified for each task.
             - 'auto': use cores, memory, and disk as maximum values to allocate.
                       Useful when the resources used by a task are not known, as
                       it lets work queue find an efficient value for maximum
                       throughput.
-        debug-log : str
-            Filename for debug output
-        stats-log : str
-            Filename for tasks statistics output
-        transactions-log : str
-            Filename for tasks lifetime reports output
+        resource-monitor : bool
+            If true, (false is the default) turns on resource monitoring for Work Queue.
+
         master-name : str
             Name to refer to this work queue master.
             Sets port to 0 (any available port) if port not given.
         port : int
             Port number for work queue master program. Defaults to 9123 if
             master-name not given.
+        password-file: str
+            Location of a file containing a password used to authenticate workers.
+
+        extra-input-files: list
+            A list of files in the current working directory to send along with each task.
+            Useful for small custom libraries and configuration files needed by the processor.
+        environment-file : str
+            Python environment to use. Required.
         wrapper : str
             Wrapper script to run/open python environment tarball. Defaults to python_package_run found in PATH.
+
+        verbose : bool
+            If true, emit a message on each task submission and completion.
+            Default is false.
+        debug-log : str
+            Filename for debug output
+        stats-log : str
+            Filename for tasks statistics output
+        transactions-log : str
+            Filename for tasks lifetime reports output
         print-stdout : bool
             If true (default), print the standard output of work queue task on completion.
         queue-mode : one of 'persistent' or 'one-per-stage'. Default is 'persistent'.
             'persistent' - One queue is used for all stages of processing.
             'one-per-stage' - A new queue is used for each of the stages of processing.
-        resource-monitor : bool
-            If true, (false is the default) turns on resource monitoring for Work Queue.
     """
     try:
         import work_queue as wq
@@ -315,10 +402,32 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
     global _wq_queue
 
+    # Standard executor options:
+    unit = kwargs.pop('unit', 'items')
+    status = kwargs.pop('status', True)
+    desc = kwargs.pop('desc', 'Processing')
+    clevel = kwargs.pop('compression', 1)
+    filepath = kwargs.pop('filepath', '.')
+
+    if clevel is not None:
+        function = _compression_wrapper(clevel, function)
+
+    # Work Queue specific options:
+    verbose_mode = kwargs.pop('verbose', False)
     debug_log = kwargs.pop('debug-log', None)
     stats_log = kwargs.pop('stats-log', None)
     trans_log = kwargs.pop('transactions-log', None)
-
+    extra_input_files = kwargs.pop('extra-input-files', [])
+    output = kwargs.pop('print-stdout', False)
+    password_file = kwargs.pop('password-file', None)
+    env_file = kwargs.pop('environment-file', None)
+    wrapper = kwargs.pop('wrapper', shutil.which('python_package_run'))
+    resources_mode = kwargs.pop('resources-mode', 'fixed')
+    cores = kwargs.pop('cores', None)
+    memory = kwargs.pop('memory', None)
+    disk = kwargs.pop('disk', None)
+    gpus = kwargs.pop('gpus', None)
+    resource_monitor = kwargs.pop('resource-monitor', False)
     master_name = kwargs.pop('master-name', None)
     port = kwargs.pop('port', None)
     if port is None:
@@ -328,41 +437,13 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             port = 9123
 
     queue_mode = kwargs.pop('queue-mode', 'persistent')
-
     if _wq_queue is None or queue_mode == 'one-per-stage':
         _wq_queue = wq.WorkQueue(port, name=master_name, debug_log=debug_log, stats_log=stats_log, transactions_log=trans_log)
 
-    print('Listening for work queue workers on port {}...'.format(_wq_queue.port))
-
-    unit = kwargs.pop('unit', 'items')
-    status = kwargs.pop('status', True)
-    desc = kwargs.pop('desc', 'Processing')
-    clevel = kwargs.pop('compression', 1)
-    filepath = kwargs.pop('filepath', '.')
-    output = kwargs.pop('print-stdout', False)
-
-    if clevel is not None:
-        function = _compression_wrapper(clevel, function)
-
-    # work queue specific options:
-    env_file = kwargs.pop('environment-file', None)
-    wrapper = kwargs.pop('wrapper', shutil.which('python_package_run'))
-
-    if not env_file:
-        raise TypeError("environment-file argument missing. It should name a conda environment as a tar file.")
-    elif not os.path.exists(env_file):
-        raise ValueError("environment-file does not name an existing conda environment as a tar file.")
-
-    if not wrapper:
+    if env_file and not wrapper:
         raise ValueError("Location of python_package_run could not be determined automatically.\nUse 'wrapper' argument to the work_queue_executor.")
 
-    # fixed, or auto
-    resources_mode = kwargs.pop('resources-mode', 'fixed')
-    cores = kwargs.pop('cores', None)
-    memory = kwargs.pop('memory', None)
-    disk = kwargs.pop('disk', None)
-    resource_monitor = kwargs.pop('resource-monitor', False)
-
+    # If explicit resources are given, collect them into default_resources
     default_resources = {}
     if cores:
         default_resources['cores'] = cores
@@ -370,15 +451,20 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         default_resources['memory'] = memory
     if disk:
         default_resources['disk'] = disk
+    if gpus:
+        default_resources['gpus'] = gpus
 
+    # Working within a custom temporary directory:
     with tempfile.TemporaryDirectory(prefix="wq-executor-tmp-", dir=filepath) as tmpdir:
-        # Pickle function
+
+        # Save the executable function in a dilled file.
         with open(os.path.join(tmpdir, 'function.p'), 'wb') as wf:
             dill.dump(function, wf)
 
-        # Set up Work Queue
-        command_path = _coffea_fn_as_file_wrapper(tmpdir)
+        # Create a wrapper script to run the function.
+        command_path = wqex_create_function_wrapper(tmpdir)
 
+        # Enable monitoring and auto resource consumption, if desired:
         if resource_monitor:
             _wq_queue.enable_monitoring()
 
@@ -388,88 +474,79 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             _wq_queue.specify_category_max_resources('default', {})
             _wq_queue.specify_category_mode('default', wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT)
 
-        # Define function input here
+        # Make use of the stored password file, if enabled.
+        if password_file is not None:
+            _wq_queue.specify_password_file(password_file)
+
         infile_function = os.path.join(tmpdir, 'function.p')
 
-        # Dictionary to keep track of output file corresponding to task id
-        id_output = {}
-
-        # Iterative Executor Specifications
+        # Nothing to do?  Just return the accumulator.
         if len(items) == 0:
             return accumulator
 
         add_fn = _iadd
 
-        for i, item in tqdm(enumerate(items), disable=not status, unit=unit, total=len(items), desc=desc):
-            with open(os.path.join(tmpdir, 'item_{}.p'.format(i)), 'wb') as wf:
-                dill.dump(item, wf)
+        # Keep track of total tasks in each state.
+        tasks_submitted = 0
+        tasks_done = 0
+        tasks_total = len(items)
 
-            infile_item = os.path.join(tmpdir, 'item_{}.p'.format(i))
-            outfile = os.path.join(tmpdir, 'output_{}.p'.format(i))
+        print('Listening for work queue workers on port {}...'.format(_wq_queue.port))
 
-            coffea_command = 'python {} {} {} {}'.format(basename(command_path), basename(infile_function), basename(infile_item), basename(outfile))
-            wrapped_command = './{}'.format(basename(wrapper))
-            wrapped_command += ' --environment {}'.format(basename(env_file))
-            wrapped_command += ' --unpack-to "$WORK_QUEUE_SANDBOX"/{}-env {}'.format(basename(env_file), coffea_command)
+        # Create a dual progress bar to show submission and completion.
+        submit_bar = tqdm(total=tasks_total, position=0, disable=not status, unit=unit, desc="Submitted")
+        complete_bar = tqdm(total=tasks_total, position=1, disable=not status, unit=unit, desc=desc)
 
-            t = wq.Task(wrapped_command)
-            t.specify_category('default')
+        itemiter = iter(items)
 
-            t.specify_input_file(command_path, cache=True)
-            t.specify_input_file(infile_function, cache=False)
-            t.specify_input_file(infile_item, cache=False)
+        # Main loop of executor
+        while tasks_done < tasks_total:
 
-            # conda environment files
-            t.specify_input_file(env_file, cache=True)
-            t.specify_input_file(wrapper, cache=True)
+            # Submit tasks into the queue, but no more than 100 idle tasks
+            while tasks_submitted < tasks_total and _wq_queue.stats.tasks_waiting < 100:
+                item = next(itemiter)
+                task = wqex_create_task(tasks_submitted, item, wrapper, env_file, command_path, infile_function, tmpdir, extra_input_files)
+                task_id = _wq_queue.submit(task)
+                tasks_submitted += 1
 
-            if re.search('://', item.filename):
-                # This looks like an URL. Not transfering file.
-                pass
-            else:
-                t.specify_input_file(item.filename, remote_name=item.filename, cache=True)
+                if(verbose_mode):
+                    print('Submitted task (id #{}): {}'.format(task_id, task.command))
+                else:
+                    submit_bar.update(1)
+                    complete_bar.update(0)
 
-            t.specify_output_file(outfile, cache=False)
+            # When done submitting, look for completed tasks.
 
-            task_id = _wq_queue.submit(t)
-            # Add pair to dict
-            id_output['{}'.format(task_id)] = outfile
-
-            print('Submitted task (id #{}): {}'.format(task_id, wrapped_command))
-
-        print('Waiting for tasks to complete...')
-
-        while not _wq_queue.empty():
-            t = _wq_queue.wait(5)
-            if t:
-                print('Task (id #{}) complete: {} (return code {})'.format(t.id, t.command, t.return_status))
-
-                if output:
-                    print('Output:\n{}'.format(t.output))
-                    print('allocated cores: {}, memory: {} MB, disk: {} MB'.format(
-                        t.resources_allocated.cores,
-                        t.resources_allocated.memory,
-                        t.resources_allocated.disk))
-                    if resource_monitor:
-                        print('measured cores: {}, memory: {} MB, disk {} MB, runtime {}'.format(
-                            t.resources_measured.cores,
-                            t.resources_measured.memory,
-                            t.resources_measured.disk,
-                            t.resources_measured.wall_time / 1000000))
-
-                if t.result != 0:
-                    print('Task id #{} failed with code: {}'.format(t.id, t.result))
+            task = _wq_queue.wait(5)
+            if task:
+                # Display details of the completed task
+                wqex_output_task(task, verbose_mode, resource_monitor, output)
+                if task.result != 0:
                     print('Stopping execution')
                     break
 
-                # Unpickle output, add to accumulator
-                with open(id_output['{}'.format(t.id)], 'rb') as rf:
-                    unpickle_output = dill.load(rf)
+                # The task tag remembers the itemid for us.
+                itemid = task.tag
+                itemfile = os.path.join(tmpdir, 'item_{}.p'.format(itemid))
+                outfile = os.path.join(tmpdir, 'output_{}.p'.format(itemid))
 
+                # Accumulate results from the pickled output
+                with open(outfile, 'rb') as rf:
+                    unpickle_output = dill.load(rf)
                 add_fn(accumulator, unpickle_output)
 
-        if os.path.exists(command_path):
-            os.remove(command_path)
+                # Remove output files as we go to avoid unbounded disk
+                os.remove(itemfile)
+                os.remove(outfile)
+
+                tasks_done += 1
+
+                if(not verbose_mode):
+                    submit_bar.update(0)
+                    complete_bar.update(1)
+
+        submit_bar.close()
+        complete_bar.close()
 
         return accumulator
 
@@ -749,30 +826,6 @@ def parsl_executor(items, function, accumulator, **kwargs):
     return accumulator
 
 
-class Uproot3Context(object):
-    def __init__(self, filename, xrootdtimeout, mmap):
-        import uproot
-        xrootdsource = dict(uproot.source.xrootd.XRootDSource.defaults)
-        xrootdsource['timeout'] = xrootdtimeout
-        if mmap:
-            localsource = {}
-        else:
-            opts = dict(uproot.FileSource.defaults)
-            opts.update({'parallel': None})
-
-            def localsource(path):
-                return uproot.FileSource(path, **opts)
-
-        self._opener = lambda: uproot.open(filename, localsource=localsource, xrootdsource=xrootdsource)
-
-    def __enter__(self):
-        self._file = self._opener()
-        return self._file
-
-    def __exit__(self, *_):
-        self._file.source.close()
-
-
 def _get_cache(strategy):
     cache = None
     if strategy == 'dask-worker':
@@ -788,8 +841,8 @@ def _get_cache(strategy):
     return cache
 
 
-def _work_function(item, processor_instance, flatten=False, savemetrics=False,
-                   mmap=False, schema=None, cachestrategy=None, skipbadfiles=False,
+def _work_function(item, processor_instance, savemetrics=False,
+                   mmap=False, schema=schemas.BaseSchema, cachestrategy=None, skipbadfiles=False,
                    retries=0, xrootdtimeout=None, use_dataframes=False):
     if processor_instance == 'heavy':
         item, processor_instance = item
@@ -806,15 +859,11 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
     retry_count = 0
     while retry_count <= retries:
         try:
-            if schema is NanoEvents:
-                # this is the only uproot3-dependent option
-                filecontext = Uproot3Context(item.filename, xrootdtimeout, mmap)
-            else:
-                filecontext = uproot4.open(
-                    item.filename,
-                    timeout=xrootdtimeout,
-                    file_handler=uproot4.MemmapSource if mmap else uproot4.MultithreadedFileSource,
-                )
+            filecontext = uproot.open(
+                item.filename,
+                timeout=xrootdtimeout,
+                file_handler=uproot.MemmapSource if mmap else uproot.MultithreadedFileSource,
+            )
             metadata = {
                 'dataset': item.dataset,
                 'filename': item.filename,
@@ -827,48 +876,38 @@ def _work_function(item, processor_instance, flatten=False, savemetrics=False,
                 if schema is None:
                     # To deprecate
                     tree = file[item.treename]
-                    events = LazyDataFrame(tree, item.entrystart, item.entrystop, flatten=flatten)
-                    for key, value in metadata.items():
-                        events[key] = value
-                elif schema is NanoEvents:
-                    # To deprecate
-                    events = NanoEvents.from_file(
-                        file=file,
-                        treename=item.treename,
-                        entrystart=item.entrystart,
-                        entrystop=item.entrystop,
-                        metadata=metadata,
-                        cache=_get_cache(cachestrategy),
-                    )
+                    events = LazyDataFrame(tree, item.entrystart, item.entrystop, metadata=metadata)
                 elif issubclass(schema, schemas.BaseSchema):
                     materialized = []
-                    factory = NanoEventsFactory.from_file(
+                    factory = NanoEventsFactory.from_root(
                         file=file,
                         treepath=item.treename,
                         entry_start=item.entrystart,
                         entry_stop=item.entrystop,
-                        runtime_cache=_get_cache(cachestrategy),
+                        persistent_cache=_get_cache(cachestrategy),
                         schemaclass=schema,
                         metadata=metadata,
                         access_log=materialized,
                     )
                     events = factory.events()
                 else:
-                    raise ValueError("Expected schema to derive from BaseSchema or NanoEvents, instead got %r" % schema)
+                    raise ValueError("Expected schema to derive from nanoevents.BaseSchema, instead got %r" % schema)
                 tic = time.time()
                 try:
                     out = processor_instance.process(events)
                 except Exception as e:
                     raise Exception(f"Failed processing file: {item.filename} ({item.entrystart}-{item.entrystop})") from e
+                if out is None:
+                    raise ValueError("Output of process() should not be None. Make sure your processor's process() function returns an accumulator.")
                 toc = time.time()
                 if use_dataframes:
                     return out
                 else:
                     metrics = dict_accumulator()
                     if savemetrics:
-                        if isinstance(file, uproot4.ReadOnlyDirectory):
+                        if isinstance(file, uproot.ReadOnlyDirectory):
                             metrics['bytesread'] = value_accumulator(int, file.file.source.num_requested_bytes)
-                        if issubclass(schema, schemas.BaseSchema):
+                        if schema is not None and issubclass(schema, schemas.BaseSchema):
                             metrics['columns'] = set_accumulator(materialized)
                             metrics['entries'] = value_accumulator(int, len(events))
                         else:
@@ -938,7 +977,7 @@ def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None, align
     retry_count = 0
     while retry_count <= retries:
         try:
-            file = uproot4.open(item.filename, timeout=xrootdtimeout)
+            file = uproot.open(item.filename, timeout=xrootdtimeout)
             tree = file[item.treename]
             metadata = {'numentries': tree.num_entries, 'uuid': file.file.fUUID}
             if align_clusters:
@@ -1009,8 +1048,9 @@ def run_uproot_job(fileset,
             work function itself:
 
             - ``savemetrics`` saves some detailed metrics for xrootd processing (default False)
-            - ``schema`` builds the dataframe as a `NanoEvents` object rather than `LazyDataFrame`
-              (default ``None``); schema options include `NanoEvents`, `NanoAODSchema` and `TreeMakerSchema`
+            - ``schema`` builds the dataframe as a `nanoevents` object
+              (default ``BaseSchema``); schema options include `BaseSchema`, `NanoAODSchema`, and `TreeMakerSchema`.
+              If schema is None a `LazyDataFrame` is returned rather than NanoEvents, use for unruly ROOT files.
             - ``processor_compression`` sets the compression level used to send processor instance to workers (default 1)
             - ``skipbadfiles`` instead of failing on a bad file, skip it (default False)
             - ``retries`` optionally retry processing of a chunk on failure (default 0)
@@ -1123,18 +1163,16 @@ def run_uproot_job(fileset,
     # pop all _work_function args here
     savemetrics = executor_args.pop('savemetrics', False)
     if "flatten" in executor_args:
-        warnings.warn("Executor argument 'flatten' is deprecated, please refactor your processor to accept awkward arrays", DeprecationWarning)
-    flatten = executor_args.pop('flatten', False)
+        raise ValueError("Executor argument 'flatten' is deprecated, please refactor your processor to accept awkward arrays")
     mmap = executor_args.pop('mmap', False)
-    schema = executor_args.pop('schema', None)
-    nano = executor_args.pop('nano', False)
+    schema = executor_args.pop('schema', schemas.BaseSchema)
     use_dataframes = executor_args.pop('use_dataframes', False)
     if (executor is not dask_executor) and use_dataframes:
         warnings.warn("Only Dask executor supports DataFrame outputs! Resetting 'use_dataframes' argument to False.")
         use_dataframes = False
-    if nano:
-        warnings.warn("Please use 'schema': processor.NanoEvents rather than 'nano': True to enable awkward0 NanoEvents processing", DeprecationWarning)
-        schema = NanoEvents
+    if "nano" in executor_args:
+        raise ValueError("Awkward0 NanoEvents no longer supported.\n"
+                         "Please use 'schema': processor.NanoAODSchema to enable awkward NanoEvents processing.")
     cachestrategy = executor_args.pop('cachestrategy', None)
     pi_compression = executor_args.pop('processor_compression', 1)
     if pi_compression is None:
@@ -1143,7 +1181,6 @@ def run_uproot_job(fileset,
         pi_to_send = lz4f.compress(cloudpickle.dumps(processor_instance), compression_level=pi_compression)
     closure = partial(
         _work_function,
-        flatten=flatten,
         savemetrics=savemetrics,
         mmap=mmap,
         schema=schema,
@@ -1182,88 +1219,6 @@ def run_uproot_job(fileset,
     if savemetrics and not use_dataframes:
         return out, wrapped_out['metrics']
     return wrapped_out['out']
-
-
-def run_parsl_job(fileset, treename, processor_instance, executor, executor_args={}, chunksize=200000):
-    '''A wrapper to submit parsl jobs
-
-    .. note:: Deprecated in favor of `run_uproot_job` with the `parsl_executor`
-
-    Jobs are specified by a file set, which is a dictionary of
-    dataset: [file list] entries.  Supports only uproot reading,
-    via the LazyDataFrame class.  For more customized processing,
-    e.g. to read other objects from the files and pass them into data frames,
-    one can write a similar function in their user code.
-
-    Parameters
-    ----------
-        fileset : dict
-            dictionary {dataset: [file, file], }
-        treename : str
-            name of tree inside each root file
-        processor_instance : ProcessorABC
-            An instance of a class deriving from ProcessorABC
-        executor : coffea.processor.parsl.parsl_executor
-            Must be the parsl executor, or otherwise derive from
-            ``coffea.processor.parsl.ParslExecutor``
-        executor_args : dict
-            Extra arguments to pass to executor.  Special options
-            interpreted here: 'config' provides a parsl dataflow
-            configuration.
-        chunksize : int, optional
-            Number of entries to process at a time in the data frame
-
-    '''
-
-    try:
-        import parsl
-    except ImportError as e:
-        print('you must have parsl installed to call run_parsl_job()!', file=sys.stderr)
-        raise e
-
-    import warnings
-
-    warnings.warn("run_parsl_job is deprecated and will be removed in 0.7.0, replaced by run_uproot_job",
-                  DeprecationWarning)
-
-    from .parsl.parsl_executor import ParslExecutor
-    from .parsl.detail import _default_cfg
-
-    if not isinstance(fileset, Mapping):
-        raise ValueError("Expected fileset to be a mapping dataset: list(files)")
-    if not isinstance(processor_instance, ProcessorABC):
-        raise ValueError("Expected processor_instance to derive from ProcessorABC")
-    if isinstance(executor, ParslExecutor):
-        warnings.warn("ParslExecutor class is deprecated replacing with processor.parsl_executor",
-                      DeprecationWarning)
-        executor = parsl_executor
-    elif executor == parsl_executor:
-        pass
-    else:
-        raise ValueError("Expected executor to derive from ParslExecutor or be executor.parsl_executor")
-
-    executor_args.setdefault('config', _default_cfg)
-    executor_args.setdefault('timeout', 180)
-    executor_args.setdefault('chunking_timeout', 10)
-    executor_args.setdefault('flatten', False)
-    executor_args.setdefault('compression', 0)
-    executor_args.setdefault('skipbadfiles', False)
-    executor_args.setdefault('retries', 0)
-    executor_args.setdefault('xrootdtimeout', None)
-
-    try:
-        parsl.dfk()
-        executor_args.pop('config')
-    except RuntimeError:
-        pass
-
-    output = run_uproot_job(fileset,
-                            treename,
-                            processor_instance=processor_instance,
-                            executor=executor,
-                            executor_args=executor_args)
-
-    return output
 
 
 def run_spark_job(fileset, processor_instance, executor, executor_args={},
@@ -1334,7 +1289,6 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     executor_args.setdefault('file_type', 'parquet')
     executor_args.setdefault('laurelin_version', '1.1.1')
     executor_args.setdefault('treeName', 'Events')
-    executor_args.setdefault('flatten', False)
     executor_args.setdefault('schema', None)
     executor_args.setdefault('cache', True)
     executor_args.setdefault('skipbadfiles', False)
@@ -1342,12 +1296,12 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     executor_args.setdefault('xrootdtimeout', None)
     file_type = executor_args['file_type']
     treeName = executor_args['treeName']
-    flatten = executor_args['flatten']
     schema = executor_args['schema']
-    nano = executor_args.pop('nano', False)
-    if nano:
-        warnings.warn("Please use 'schema': processor.NanoEvents rather than 'nano': True to enable awkward0 NanoEvents processing", DeprecationWarning)
-        schema = NanoEvents
+    if "flatten" in executor_args:
+        raise ValueError("Executor argument 'flatten' is deprecated, please refactor your processor to accept awkward arrays")
+    if "nano" in executor_args:
+        raise ValueError("Awkward0 NanoEvents no longer supported.\n"
+                         "Please use 'schema': processor.NanoAODSchema to enable awkward NanoEvents processing.")
     use_cache = executor_args['cache']
 
     if executor_args['config'] is None:
@@ -1371,7 +1325,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
                                   thread_workers, file_type, treeName)
 
     output = processor_instance.accumulator.identity()
-    executor(spark, dfslist, processor_instance, output, thread_workers, use_cache, flatten, schema)
+    executor(spark, dfslist, processor_instance, output, thread_workers, use_cache, schema)
     processor_instance.postprocess(output)
 
     if killSpark:

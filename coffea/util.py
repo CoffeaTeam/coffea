@@ -2,17 +2,18 @@
 
 """
 import awkward
-import awkward1
 import hashlib
 import numpy
 import numba
+import coffea
 
-akd = awkward
+ak = awkward
 np = numpy
 nb = numba
 
 import lz4.frame
 import cloudpickle
+import warnings
 
 
 def load(filename):
@@ -55,20 +56,36 @@ def _hash(items):
 
 def _ensure_flat(array, allow_missing=False):
     """Normalize an array to a flat numpy array or raise ValueError"""
-    if isinstance(array, awkward.AwkwardArray):
-        array = awkward1.from_awkward0(array)
-    elif not isinstance(array, (awkward1.Array, numpy.ndarray)):
+    if not isinstance(array, (ak.Array, numpy.ndarray)):
         raise ValueError("Expected a numpy or awkward array, received: %r" % array)
 
-    aktype = awkward1.type(array)
-    if not isinstance(aktype, awkward1.types.ArrayType):
+    aktype = ak.type(array)
+    if not isinstance(aktype, ak.types.ArrayType):
         raise ValueError("Expected an array type, received: %r" % aktype)
-    isprimitive = isinstance(aktype.type, awkward1.types.PrimitiveType)
-    isoptionprimitive = isinstance(aktype.type, awkward1.types.OptionType) and isinstance(aktype.type.type, awkward1.types.PrimitiveType)
+    isprimitive = isinstance(aktype.type, ak.types.PrimitiveType)
+    isoptionprimitive = isinstance(aktype.type, ak.types.OptionType) and isinstance(aktype.type.type, ak.types.PrimitiveType)
     if allow_missing and not (isprimitive or isoptionprimitive):
         raise ValueError("Expected an array of type N * primitive or N * ?primitive, received: %r" % aktype)
     if not (allow_missing or isprimitive):
         raise ValueError("Expected an array of type N * primitive, received: %r" % aktype)
-    if isinstance(array, awkward1.Array):
-        array = awkward1.to_numpy(array, allow_missing=allow_missing)
+    if isinstance(array, ak.Array):
+        array = ak.to_numpy(array, allow_missing=allow_missing)
     return array
+
+
+# lifted from awkward - https://github.com/scikit-hep/awkward-1.0/blob/5fe31a916bf30df6c2ea10d4094f6f1aefcf3d0c/src/awkward/_util.py#L47-L61 # noqa
+# drive our deprecations-as-errors as with awkward
+def deprecate(exception, version, date=None):
+    if coffea.deprecations_as_errors:
+        raise exception
+    else:
+        if date is None:
+            date = ""
+        else:
+            date = " (target date: " + date + ")"
+        message = """In coffea version {0}{1}, this will be an error.
+(Set coffea.deprecations_as_errors = True to get a stack trace now.)
+{2}: {3}""".format(
+            version, date, type(exception).__name__, str(exception)
+        )
+        warnings.warn(message, FutureWarning)

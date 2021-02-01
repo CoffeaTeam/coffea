@@ -3,10 +3,10 @@ from __future__ import print_function, division
 import os
 from coffea import lookup_tools
 import uproot
-from coffea.util import awkward
+import awkward as ak
 from coffea.util import numpy as np
-from awkward import JaggedArray
-from coffea.nanoaod import NanoEvents
+from coffea.nanoevents import NanoEventsFactory
+import pytest
 
 from dummy_distributions import dummy_jagged_eta_pt
 
@@ -41,8 +41,8 @@ def test_evaluator_exceptions():
     extractor.add_weight_sets(["testSF2d scalefactors_Tight_Electron tests/samples/testSF2d.histo.root"])
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
-    test_eta_jagged = awkward.JaggedArray.fromcounts(counts, test_eta)
-    test_pt_jagged = awkward.JaggedArray.fromcounts(counts, test_pt)
+    test_eta_jagged = ak.unflatten(test_eta, counts)
+    test_pt_jagged = ak.unflatten(test_pt, counts)
 
     extractor.finalize()
     evaluator = extractor.make_evaluator()
@@ -50,9 +50,9 @@ def test_evaluator_exceptions():
     try:
         test_out = evaluator["testSF2d"](test_pt_jagged, test_eta)
     except Exception as e:
-        assert(e.args[0] == 'do not mix JaggedArrays and numpy arrays when calling a derived class of lookup_base')
+        assert(isinstance(e, TypeError))
 
-def test_evaluator_exceptions():
+def test_evaluate_noimpl():
     from coffea.lookup_tools.lookup_base import lookup_base
     try:
         lookup_base()._evaluate()
@@ -76,12 +76,12 @@ def test_root_scalefactors():
     print(evaluator["testSF2d"])
     
     # test structured eval
-    test_eta_jagged = awkward.JaggedArray.fromcounts(counts, test_eta)
-    test_pt_jagged = awkward.JaggedArray.fromcounts(counts, test_pt)
+    test_eta_jagged = ak.unflatten(test_eta, counts)
+    test_pt_jagged = ak.unflatten(test_pt, counts)
     test_out_jagged = evaluator["testSF2d"](test_eta_jagged, test_pt_jagged)
-
-    assert (test_out_jagged.counts==counts).all()
-    assert (test_out==test_out_jagged.flatten()).all()
+    
+    assert ak.all(ak.num(test_out_jagged)==counts)
+    assert ak.all(ak.flatten(test_out_jagged)==test_out)
 
     # From make_expected_lookup.py
     expected_output = np.array([
@@ -98,6 +98,8 @@ def test_root_scalefactors():
        0.80655736, 0.98976982, 0.97466666, 0.98199672, 0.86332178,
        1.03286386, 0.94072163, 1.03398061, 0.82857144, 0.80655736,
        1.00775194, 0.80655736])
+
+    print(test_out)
 
     diff = np.abs(test_out-expected_output)
     print("Max diff: %.16f" % diff.max())
@@ -165,24 +167,35 @@ def test_jec_txt_scalefactors():
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
     
+    # test structured eval
+    test_eta_jagged = ak.unflatten(test_eta, counts)
+    test_pt_jagged = ak.unflatten(test_pt, counts)
+    
     jec_out = evaluator['testJECFall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi'](test_eta,test_pt)
+    jec_out_jagged = evaluator['testJECFall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi'](test_eta_jagged,test_pt_jagged)
 
     print(evaluator['testJECFall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi'])
     
     jec_out = evaluator['Summer16_07Aug2017_V11_L1fix_MC_L2Relative_AK4PFchs'](test_eta,test_pt)
+    jec_out_jagged = evaluator['Summer16_07Aug2017_V11_L1fix_MC_L2Relative_AK4PFchs'](test_eta_jagged,test_pt_jagged)
     
     print(evaluator['Summer16_07Aug2017_V11_L1fix_MC_L2Relative_AK4PFchs'])
 
     jersf = evaluator['Spring16_25nsV10_MC_SF_AK4PFPuppi']
     
+    jersf_out = evaluator['Spring16_25nsV10_MC_SF_AK4PFPuppi'](test_eta,test_pt)
+    jersf_out_jagged = evaluator['Spring16_25nsV10_MC_SF_AK4PFPuppi'](test_eta_jagged,test_pt_jagged)
+    
     print(evaluator['Spring16_25nsV10_MC_SF_AK4PFPuppi'])
     
     junc_out = evaluator['Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi'](test_eta,test_pt)
+    junc_out_jagged = evaluator['Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi'](test_eta_jagged,test_pt_jagged)
 
     print(evaluator['Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi'])
     
     assert('Autumn18_V8_MC_UncertaintySources_AK4PFchs_AbsoluteScale' in evaluator.keys())
     junc_out = evaluator['Autumn18_V8_MC_UncertaintySources_AK4PFchs_AbsoluteScale'](test_eta,test_pt)
+    junc_out_jagged = evaluator['Autumn18_V8_MC_UncertaintySources_AK4PFchs_AbsoluteScale'](test_eta_jagged,test_pt_jagged)
     print(evaluator['Autumn18_V8_MC_UncertaintySources_AK4PFchs_AbsoluteScale'])
 
 def test_jec_txt_effareas():
@@ -217,45 +230,52 @@ def test_rochester():
     mc_rand = np.load('tests/samples/nano_dy_rochester_rand.npy')
 
     # test against nanoaod
-    events = NanoEvents.from_file(os.path.abspath('tests/samples/nano_dimuon.root'))
+    events = NanoEventsFactory \
+                .from_root(os.path.abspath('tests/samples/nano_dimuon.root')) \
+                .events()
 
     data_k = rochester.kScaleDT(events.Muon.charge, events.Muon.pt, events.Muon.eta, events.Muon.phi)
-    assert(all(np.isclose(data_k.flatten(), official_data_k)))
+    data_k = np.array(ak.flatten(data_k))
+    assert(all(np.isclose(data_k, official_data_k)))
     data_err = rochester.kScaleDTerror(events.Muon.charge, events.Muon.pt, events.Muon.eta, events.Muon.phi)
-    data_err = np.array(data_err.flatten(), dtype=float)
+    data_err = np.array(ak.flatten(data_err), dtype=float)
     assert(all(np.isclose(data_err, official_data_err, atol=1e-8)))
 
     # test against mc
-    events = NanoEvents.from_file(os.path.abspath('tests/samples/nano_dy.root'))
+    events = NanoEventsFactory \
+                .from_root(os.path.abspath('tests/samples/nano_dy.root')) \
+                .events()
 
-    hasgen = ~np.isnan(events.Muon.matched_gen.pt.fillna(np.nan))
-    mc_rand = JaggedArray.fromoffsets(hasgen.offsets, mc_rand)
-    mc_kspread = rochester.kSpreadMC(events.Muon.charge[hasgen], events.Muon.pt[hasgen], events.Muon.eta[hasgen], events.Muon.phi[hasgen],
+    hasgen = ~np.isnan(ak.fill_none(events.Muon.matched_gen.pt, np.nan))
+    mc_rand = ak.unflatten(mc_rand, ak.num(hasgen))
+    mc_kspread = rochester.kSpreadMC(events.Muon.charge[hasgen], events.Muon.pt[hasgen],
+                                     events.Muon.eta[hasgen], events.Muon.phi[hasgen],
                                      events.Muon.matched_gen.pt[hasgen])
-    mc_ksmear = rochester.kSmearMC(events.Muon.charge[~hasgen], events.Muon.pt[~hasgen], events.Muon.eta[~hasgen], events.Muon.phi[~hasgen],
+    mc_ksmear = rochester.kSmearMC(events.Muon.charge[~hasgen], events.Muon.pt[~hasgen],
+                                   events.Muon.eta[~hasgen], events.Muon.phi[~hasgen],
                                    events.Muon.nTrackerLayers[~hasgen], mc_rand[~hasgen])
-    mc_k = np.ones_like(events.Muon.pt.flatten())
-    mc_k[hasgen.flatten()] = mc_kspread.flatten()
-    mc_k[~hasgen.flatten()] = mc_ksmear.flatten()
+    mc_k = np.array(ak.flatten(ak.ones_like(events.Muon.pt)))
+    hasgen_flat = np.array(ak.flatten(hasgen))
+    mc_k[hasgen_flat] = np.array(ak.flatten(mc_kspread))
+    mc_k[~hasgen_flat] = np.array(ak.flatten(mc_ksmear))
     assert(all(np.isclose(mc_k, official_mc_k)))
 
     mc_errspread = rochester.kSpreadMCerror(events.Muon.charge[hasgen], events.Muon.pt[hasgen], events.Muon.eta[hasgen], events.Muon.phi[hasgen],
                                             events.Muon.matched_gen.pt[hasgen])
     mc_errsmear = rochester.kSmearMCerror(events.Muon.charge[~hasgen], events.Muon.pt[~hasgen], events.Muon.eta[~hasgen], events.Muon.phi[~hasgen],
                                           events.Muon.nTrackerLayers[~hasgen], mc_rand[~hasgen])
-    mc_err = np.ones_like(events.Muon.pt.flatten())
-    mc_err[hasgen.flatten()] = mc_errspread.flatten()
-    mc_err[~hasgen.flatten()] = mc_errsmear.flatten()
+    mc_err = np.array(ak.flatten(ak.ones_like(events.Muon.pt)))
+    mc_err[hasgen_flat] = np.array(ak.flatten(mc_errspread))
+    mc_err[~hasgen_flat] = np.array(ak.flatten(mc_errsmear))
     assert(all(np.isclose(mc_err, official_mc_err, atol=1e-8)))
 
 def test_dense_lookup():
     from coffea.lookup_tools.dense_lookup import dense_lookup
     import numpy
-    import awkward1
 
-    a = awkward1.Array([[.1, .2], [.3]])
+    a = ak.Array([[.1, .2], [.3]])
     lookup = dense_lookup(numpy.ones(shape=(3, 4)), (numpy.linspace(0, 1, 4), numpy.linspace(0, 1, 5)))
 
     assert lookup(.1, .3) == 1.
     assert numpy.all(lookup(.1, numpy.array([.3, .5])) == numpy.array([1., 1.]))
-    assert awkward1.to_list(lookup(a, a)) == [[1.0, 1.0], [1.0]]
+    assert ak.to_list(lookup(a, a)) == [[1.0, 1.0], [1.0]]

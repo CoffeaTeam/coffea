@@ -1,5 +1,6 @@
 from ..util import numpy as np
 import json
+import awkward as ak
 
 from ..util import numba
 from numba import types
@@ -117,6 +118,10 @@ class LumiMask(object):
                 An array of dtype `bool` where valid (run, lumi) tuples
                 will have their corresponding entry set ``True``.
         """
+        if isinstance(runs, ak.highlevel.Array):
+            runs = ak.to_numpy(runs)
+        if isinstance(lumis, ak.highlevel.Array):
+            lumis = ak.to_numpy(lumis)
         mask_out = np.zeros(dtype='bool', shape=runs.shape)
         LumiMask._apply_run_lumi_mask(self._masks, runs, lumis, mask_out)
         return mask_out

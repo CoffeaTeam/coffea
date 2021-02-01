@@ -3,7 +3,8 @@ from .JetResolution import JetResolution
 from .JetResolutionScaleFactor import JetResolutionScaleFactor
 from .JetCorrectionUncertainty import JetCorrectionUncertainty
 
-from ..analysis_objects.JaggedCandidateArray import JaggedCandidateArray
+from coffea.analysis_objects.JaggedCandidateArray import JaggedCandidateArray
+from coffea.util import deprecate_awkward0_util
 
 import numpy as np
 from uproot_methods.classes.TLorentzVector import (
@@ -76,6 +77,7 @@ class JetTransformer(object):
 
     """
     def __init__(self, jec=None, junc=None, jer=None, jersf=None):
+        deprecate_awkward0_util(type(self))
         if jec is None:
             raise Exception('JetTransformer must have "jec" specified as an argument!')
         if not isinstance(jec, FactorizedJetCorrector):

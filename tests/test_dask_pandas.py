@@ -12,11 +12,12 @@ import pytest
 def do_dask_pandas_job(client, filelist):
     treename='Events'
     from coffea.processor.test_items import NanoTestProcessorPandas
+    from coffea import nanoevents
     proc = NanoTestProcessorPandas()
 
     exe_args = {
         'client': client,
-        'schema': processor.NanoEvents,
+        'schema': nanoevents.NanoAODSchema,
         'use_dataframes': True
     }
 

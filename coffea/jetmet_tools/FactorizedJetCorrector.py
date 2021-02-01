@@ -1,9 +1,10 @@
 from ..lookup_tools.jme_standard_function import jme_standard_function
 import warnings
 import re
-from ..util import awkward
-from ..util import numpy as np
+import awkward
+import numpy
 from copy import deepcopy
+from functools import reduce
 
 
 def _checkConsistency(against, tocheck):
@@ -137,8 +138,23 @@ class FactorizedJetCorrector(object):
             jecs = corrector.getCorrection(JetProperty1=jet.property1,...)
 
         """
-        subCorrs = self.getSubCorrections(**kwargs)
-        return subCorrs[-1]
+        cache = kwargs.get('lazy_cache', None)
+        form = kwargs.get('form', None)
+        first_arg = kwargs[self.signature[0]]
+
+        def total_corr(jec, **kwargs):
+            corrs = jec.getSubCorrections(**kwargs)
+            return reduce(lambda x, y: y * x , corrs, 1.0)
+
+        out = None
+        if isinstance(first_arg, awkward.highlevel.Array):
+            out = awkward.virtual(total_corr, args=(self, ), kwargs=kwargs, length=len(first_arg), form=form, cache=cache)
+        elif isinstance(first_arg, numpy.ndarray):
+            out = total_corr(self, **kwargs)  # np is non-lazy
+        else:
+            raise Exception('Unknown array library for inputs.')
+
+        return out
 
     def getSubCorrections(self, **kwargs):
         """
@@ -150,39 +166,29 @@ class FactorizedJetCorrector(object):
             #'jecs' will be formatted like [[jec_jet1 jec_jet2 ...] ...]
 
         """
-        localargs = {}
-        localargs.update(kwargs)
-        corrVars = []
+        cache = kwargs.pop('lazy_cache', None)
+        form = kwargs.pop('form', None)
+        corrVars = {}
         if 'JetPt' in kwargs.keys():
-            corrVars.append('JetPt')
-            localargs['JetPt'] = kwargs['JetPt'].copy()
+            corrVars['JetPt'] = kwargs['JetPt']
+            kwargs.pop('JetPt')
         if 'JetE' in kwargs.keys():
-            corrVars.append('JetE')
-            localargs['JetE'] = kwargs['JetE'].copy()
+            corrVars['JetE'] = kwargs['JetE']
+            kwargs.pop('JetE')
         if len(corrVars) == 0:
             raise Exception('No variable to correct, need JetPt or JetE in inputs!')
-        firstarg = localargs[self._signature[0]]
-        cumulativeCorrection = 1.0
-        counts = None
-        if isinstance(firstarg, awkward.JaggedArray):
-            counts = firstarg.counts
-            cumulativeCorrection = firstarg.ones_like().flatten()
-            for key in localargs.keys():
-                localargs[key] = localargs[key].flatten().copy()
-        else:
-            cumulativeCorrection = np.ones_like(firstarg)
+
         corrections = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
-            args = []
-            for input in sig:
-                args.append(localargs[input])
-            corr = func(*tuple(args))
-            for var in corrVars:
-                localargs[var] *= corr
-            cumulativeCorrection *= corr
-            corrections.append(cumulativeCorrection)
-        if counts is not None:
-            for i in range(len(corrections)):
-                corrections[i] = awkward.JaggedArray.fromcounts(counts, corrections[i])
+            cumCorr = reduce(lambda x, y: y * x, corrections, 1.0)
+            fargs = tuple((cumCorr * corrVars[arg]) if arg in corrVars.keys() else kwargs[arg] for arg in sig)
+
+            if isinstance(fargs[0], awkward.highlevel.Array):
+                corrections.append(awkward.virtual(func, args=fargs, length=len(fargs[0]), form=form, cache=cache))
+            elif isinstance(fargs[0], numpy.ndarray):
+                corrections.append(func(*fargs))  # np is non-lazy
+            else:
+                raise Exception('Unknown array library for inputs.')
+
         return corrections

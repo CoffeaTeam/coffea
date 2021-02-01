@@ -1,127 +1,24 @@
-global coffea_udf, coffea_udf_flat, coffea_udf_nano
+global coffea_udf
 
 @fn.pandas_udf(BinaryType(), fn.PandasUDFType.SCALAR)
 def coffea_udf(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last }}{% endfor %}):
-    global processor_instance, lz4_clevel
+    global processor_instance, lz4_clevel, nano_schema
     
-    columns = [{% for col in cols %}{{col}}{{ "," if not loop.last }}{% endfor %}]
+    columns = [{% for col in cols %}awkward.Array({{col}}){{ "," if not loop.last }}{% endfor %}]
     names = [{% for col in cols %}{{"'"|safe+col+"'"|safe}}{{ "," if not loop.last }}{% endfor %}]
 
-    size = dataset.size
-    items = {}
+    size = len(dataset)
+    src = SimplePreloadedColumnSource(dict(zip(names, columns)), None, size, object_path='/Events')
 
-    offsets_store = {}
-
-    for i, col in enumerate(columns):
-        # numpy array
-        if columns[i].array[0].base is None:
-            items[names[i]] = columns[i].values
-        else:
-            prefix = names[i].split('_')[0] # this is specific to nanoaod, sadness            
-            if prefix not in offsets_store.keys():
-                counts = columns[i].str.len().values
-                offsets_store[prefix] = np.zeros(shape=(counts.size + 1, ), dtype=np.int64)
-                offsets_store[prefix][1:] = np.cumsum(counts)
-            offsets = offsets_store[prefix]
-            contents = np.squeeze(columns[i].array[0].base)
-            items[names[i]] = awkward.JaggedArray.fromoffsets(offsets, contents)
-
-    df = processor.PreloadedDataFrame(size=size, items=items)
-    df['dataset'] = dataset[0]
+    events = NanoEventsFactory \
+                .from_preloaded(src, metadata={'dataset': dataset[0]}, schemaclass=nano_schema) \
+                .events()
     
-    vals = processor_instance.process(df)
+    vals = processor_instance.process(events)
     
-    valsblob = lz4f.compress(pkl.dumps(vals), compression_level=lz4_clevel)
+    valsblob = lz4.frame.compress(pickle.dumps(vals), compression_level=lz4_clevel)
     
-    outs = np.full(shape=(size, ), fill_value=b'', dtype='O')
+    outs = numpy.full(shape=(size, ), fill_value=b'', dtype='O')
     outs[0] = valsblob
     
-    return pd.Series(outs)
-
-@fn.pandas_udf(BinaryType(), fn.PandasUDFType.SCALAR)
-def coffea_udf_nano(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last }}{% endfor %}):
-    global processor_instance, lz4_clevel
-    
-    columns = [{% for col in cols %}{{col}}{{ "," if not loop.last }}{% endfor %}]
-    names = [{% for col in cols %}{{"'"|safe+col+"'"|safe}}{{ "," if not loop.last }}{% endfor %}]
-
-    size = dataset.size
-    items = {}
-    vitems = {}
-
-    offsets_store = {}
-    cache = {}
-
-    def inarray_func(*args, **kwargs):
-        if kwargs['flatten']:
-            return items[args[0]].flatten()
-        return items[args[0]]
-
-    for i, col in enumerate(columns):
-        # numpy array
-        if columns[i].array[0].base is None:
-            item = columns[i].values
-            items[names[i]] = item
-            virtualtype = awkward.type.ArrayType(item.size, item.dtype)
-        else:
-            prefix = names[i].split('_')[0] # this is specific to nanoaod, sadness            
-            if prefix not in offsets_store.keys():
-                counts = columns[i].str.len().values
-                offsets_store[prefix] = np.zeros(shape=(counts.size + 1, ), dtype=np.int64)
-                offsets_store[prefix][1:] = np.cumsum(counts)
-            offsets = offsets_store[prefix]
-            contents = np.squeeze(columns[i].array[0].base)
-            items[names[i]] = awkward.JaggedArray.fromoffsets(offsets, contents)
-            virtualtype = awkward.type.ArrayType(float('inf'), contents.dtype)
-
-        array = awkward.VirtualArray(
-            partial(inarray_func, names[i]),
-            (),
-            {'flatten': True},
-            type=virtualtype,
-            persistentkey=';'.join(str(x) for x in (names[i], )),
-            cache=cache,
-        )
-        vitems[names[i]] = array
-
-    metadata = {'dataset': dataset[0]}
-    df = NanoEvents.from_arrays(arrays=vitems, metadata=metadata)
-    
-    vals = processor_instance.process(df)
-    
-    valsblob = lz4f.compress(pkl.dumps(vals), compression_level=lz4_clevel)
-    
-    outs = np.full(shape=(size, ), fill_value=b'', dtype='O')
-    outs[0] = valsblob
-    
-    return pd.Series(outs)
-
-
-@fn.pandas_udf(BinaryType(), fn.PandasUDFType.SCALAR)
-def coffea_udf_flat(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last }}{% endfor %}):
-    global processor_instance, lz4_clevel
-    
-    columns = [{% for col in cols %}{{col}}{{ "," if not loop.last }}{% endfor %}]
-    names = [{% for col in cols %}{{"'"|safe+col+"'"|safe}}{{ "," if not loop.last }}{% endfor %}]
-
-    size = dataset.size
-    items = {}
-
-    for i, col in enumerate(columns):
-        # numpy array
-        if columns[i].array[0].base is None:
-            items[names[i]] = columns[i].values
-        else:
-            items[names[i]] = np.squeeze(columns[i].array[0].base)
-
-    df = processor.PreloadedDataFrame(size=size, items=items)
-    df['dataset'] = dataset[0]
-    
-    vals = processor_instance.process(df)
-    
-    valsblob = lz4f.compress(pkl.dumps(vals), compression_level=lz4_clevel)
-    
-    outs = np.full(shape=(size, ), fill_value=b'', dtype='O')
-    outs[0] = valsblob
-    
-    return pd.Series(outs)
+    return pandas.Series(outs)

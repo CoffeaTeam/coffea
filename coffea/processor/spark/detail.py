@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 import pyspark.sql
 import pyspark.sql.functions as fn
-from pyarrow.compat import guid
+from pyarrow.util import guid
 
 try:
     from collections.abc import Sequence

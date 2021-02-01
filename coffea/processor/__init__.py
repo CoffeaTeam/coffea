@@ -5,7 +5,6 @@
 from .processor import ProcessorABC
 from .dataframe import (
     LazyDataFrame,
-    PreloadedDataFrame,
 )
 from .helpers import Weights, PackedSelection
 from .executor import (
@@ -15,7 +14,6 @@ from .executor import (
     parsl_executor,
     work_queue_executor,
     run_uproot_job,
-    run_parsl_job,
     run_spark_job
 )
 from .accumulator import (
@@ -31,14 +29,10 @@ from coffea.nanoevents.schemas import (
     NanoAODSchema,
     TreeMakerSchema,
 )
-from coffea.nanoaod.nanoevents import (
-    NanoEvents,
-)
 
 __all__ = [
     'ProcessorABC',
     'LazyDataFrame',
-    'PreloadedDataFrame',
     'Weights',
     'PackedSelection',
     'iterative_executor',
@@ -47,7 +41,6 @@ __all__ = [
     'parsl_executor',
     'work_queue_executor',
     'run_uproot_job',
-    'run_parsl_job',
     'run_spark_job',
     'AccumulatorABC',
     'value_accumulator',
@@ -58,5 +51,4 @@ __all__ = [
     'column_accumulator',
     'NanoAODSchema',
     'TreeMakerSchema',
-    'NanoEvents',
 ]

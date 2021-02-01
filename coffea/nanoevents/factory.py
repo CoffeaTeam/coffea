@@ -1,10 +1,22 @@
 import warnings
 import weakref
-import json
-import awkward1
-import uproot4 as uproot
+import awkward
+import uproot
+import pathlib
+import io
+import uuid
+from collections.abc import Mapping
+
 from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
-from coffea.nanoevents.mapping import TrivialOpener, UprootSourceMapping, CachedMapping
+from coffea.nanoevents.mapping import (
+    TrivialUprootOpener,
+    TrivialParquetOpener,
+    UprootSourceMapping,
+    ParquetSourceMapping,
+    PreloadedOpener,
+    PreloadedSourceMapping,
+    CachedMapping,
+)
 from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema
 
 
@@ -33,7 +45,7 @@ class NanoEventsFactory:
         self._events = lambda: None
 
     @classmethod
-    def from_file(
+    def from_root(
         cls,
         file,
         treepath="/Events",
@@ -46,7 +58,7 @@ class NanoEventsFactory:
         uproot_options={},
         access_log=None,
     ):
-        """Quickly build NanoEvents from a file
+        """Quickly build NanoEvents from a root file
 
         Parameters
         ----------
@@ -61,7 +73,7 @@ class NanoEventsFactory:
             runtime_cache : dict, optional
                 A dict-like interface to a cache object. This cache is expected to last the
                 duration of the program only, and will be used to hold references to materialized
-                awkward1 arrays, etc.
+                awkward arrays, etc.
             persistent_cache : dict, optional
                 A dict-like interface to a cache object. Only bare numpy arrays will be placed in this cache,
                 using globally-unique keys.
@@ -74,8 +86,6 @@ class NanoEventsFactory:
             access_log : list, optional
                 Pass a list instance to record which branches were lazily accessed by this instance
         """
-        if not issubclass(schemaclass, BaseSchema):
-            raise RuntimeError("Invalid schema type")
         if isinstance(file, str):
             tree = uproot.open(file, **uproot_options)[treepath]
         elif isinstance(file, uproot.reading.ReadOnlyDirectory):
@@ -87,84 +97,271 @@ class NanoEventsFactory:
             )
         else:
             raise TypeError("Invalid file type (%s)" % (str(type(file))))
+
         if entry_start is None or entry_start < 0:
             entry_start = 0
         if entry_stop is None or entry_stop > tree.num_entries:
             entry_stop = tree.num_entries
-        partition_tuple = (
+
+        partition_key = (
             str(tree.file.uuid),
             tree.object_path,
             "{0}-{1}".format(entry_start, entry_stop),
         )
-        uuidpfn = {partition_tuple[0]: tree.file.file_path}
+        uuidpfn = {partition_key[0]: tree.file.file_path}
         mapping = UprootSourceMapping(
-            TrivialOpener(uuidpfn, uproot_options), access_log=access_log
+            TrivialUprootOpener(uuidpfn, uproot_options), access_log=access_log
         )
-        mapping.preload_tree(partition_tuple[0], partition_tuple[1], tree)
+        mapping.preload_column_source(partition_key[0], partition_key[1], tree)
+
+        base_form = mapping._extract_base_form(tree)
+
+        return cls._from_mapping(
+            mapping,
+            partition_key,
+            base_form,
+            runtime_cache,
+            persistent_cache,
+            schemaclass,
+            metadata,
+        )
+
+    @classmethod
+    def from_parquet(
+        cls,
+        file,
+        treepath="/Events",
+        entry_start=None,
+        entry_stop=None,
+        runtime_cache=None,
+        persistent_cache=None,
+        schemaclass=NanoAODSchema,
+        metadata=None,
+        parquet_options={},
+        access_log=None,
+    ):
+        """Quickly build NanoEvents from a parquet file
+
+        Parameters
+        ----------
+            file : str, pathlib.Path, pyarrow.NativeFile, or python file-like
+                The filename or already opened file using e.g. ``uproot.open()``
+            treepath : str, optional
+                Name of the tree to read in the file
+            entry_start : int, optional
+                Start at this entry offset in the tree (default 0)
+            entry_stop : int, optional
+                Stop at this entry offset in the tree (default end of tree)
+            runtime_cache : dict, optional
+                A dict-like interface to a cache object. This cache is expected to last the
+                duration of the program only, and will be used to hold references to materialized
+                awkward arrays, etc.
+            persistent_cache : dict, optional
+                A dict-like interface to a cache object. Only bare numpy arrays will be placed in this cache,
+                using globally-unique keys.
+            schemaclass : BaseSchema
+                A schema class deriving from `BaseSchema` and implementing the desired view of the file
+            metadata : dict, optional
+                Arbitrary metadata to add to the `base.NanoEvents` object
+            parquet_options : dict, optional
+                Any options to pass to ``pyarrow.parquet.ParquetFile``
+            access_log : list, optional
+                Pass a list instance to record which branches were lazily accessed by this instance
+        """
+        import pyarrow
+        import pyarrow.parquet
+
+        ftypes = (
+            str,
+            pathlib.Path,
+            pyarrow.NativeFile,
+            io.TextIOBase,
+            io.BufferedIOBase,
+            io.RawIOBase,
+            io.IOBase,
+        )
+        if isinstance(file, ftypes):
+            table_file = pyarrow.parquet.ParquetFile(file, **parquet_options)
+        elif isinstance(file, pyarrow.parquet.ParquetFile):
+            table_file = file
+        else:
+            raise TypeError("Invalid file type (%s)" % (str(type(file))))
+
+        if entry_start is None or entry_start < 0:
+            entry_start = 0
+        if entry_stop is None or entry_stop > table_file.metadata.num_rows:
+            entry_stop = table_file.metadata.num_rows
+
+        pqmeta = table_file.schema_arrow.metadata
+        pquuid = None if pqmeta is None else pqmeta.get(b"uuid", None)
+        pqobj_path = None if pqmeta is None else pqmeta.get(b"object_path", None)
+
+        partition_key = (
+            str(None) if pquuid is None else pquuid.decode("ascii"),
+            str(None) if pqobj_path is None else pqobj_path.decode("ascii"),
+            "{0}-{1}".format(entry_start, entry_stop),
+        )
+        uuidpfn = {partition_key[0]: pqobj_path}
+        mapping = ParquetSourceMapping(
+            TrivialParquetOpener(uuidpfn, parquet_options), access_log=access_log
+        )
+        shim = TrivialParquetOpener.UprootLikeShim(table_file)
+        mapping.preload_column_source(partition_key[0], partition_key[1], shim)
+
+        base_form = mapping._extract_base_form(table_file.schema_arrow)
+
+        return cls._from_mapping(
+            mapping,
+            partition_key,
+            base_form,
+            runtime_cache,
+            persistent_cache,
+            schemaclass,
+            metadata,
+        )
+
+    @classmethod
+    def from_preloaded(
+        cls,
+        array_source,
+        entry_start=None,
+        entry_stop=None,
+        runtime_cache=None,
+        persistent_cache=None,
+        schemaclass=NanoAODSchema,
+        metadata=None,
+        access_log=None,
+    ):
+        """Quickly build NanoEvents from a pre-loaded array source
+
+        Parameters
+        ----------
+            array_source : Mapping[str, awkward.Array]
+                A mapping of names to awkward arrays, it must have a metadata attribute with uuid,
+                num_rows, and path sub-items.
+            entry_start : int, optional
+                Start at this entry offset in the tree (default 0)
+            entry_stop : int, optional
+                Stop at this entry offset in the tree (default end of tree)
+            runtime_cache : dict, optional
+                A dict-like interface to a cache object. This cache is expected to last the
+                duration of the program only, and will be used to hold references to materialized
+                awkward arrays, etc.
+            persistent_cache : dict, optional
+                A dict-like interface to a cache object. Only bare numpy arrays will be placed in this cache,
+                using globally-unique keys.
+            schemaclass : BaseSchema
+                A schema class deriving from `BaseSchema` and implementing the desired view of the file
+            metadata : dict, optional
+                Arbitrary metadata to add to the `base.NanoEvents` object
+            access_log : list, optional
+                Pass a list instance to record which branches were lazily accessed by this instance
+        """
+        if not isinstance(array_source, Mapping):
+            raise TypeError(
+                "Invalid array source type (%s)" % (str(type(array_source)))
+            )
+        if not hasattr(array_source, "metadata"):
+            raise TypeError(
+                "array_source must have 'metadata' with uuid, num_rows, and object_path"
+            )
+
+        if entry_start is None or entry_start < 0:
+            entry_start = 0
+        if entry_stop is None or entry_stop > array_source.metadata["num_rows"]:
+            entry_stop = array_source.metadata["num_rows"]
+
+        uuid = array_source.metadata["uuid"]
+        obj_path = array_source.metadata["object_path"]
+
+        partition_key = (
+            str(uuid),
+            obj_path,
+            "{0}-{1}".format(entry_start, entry_stop),
+        )
+        uuidpfn = {uuid: array_source}
+        mapping = PreloadedSourceMapping(
+            PreloadedOpener(uuidpfn), access_log=access_log
+        )
+        mapping.preload_column_source(partition_key[0], partition_key[1], array_source)
+
+        base_form = mapping._extract_base_form(array_source)
+
+        return cls._from_mapping(
+            mapping,
+            partition_key,
+            base_form,
+            runtime_cache,
+            persistent_cache,
+            schemaclass,
+            metadata,
+        )
+
+    @classmethod
+    def _from_mapping(
+        cls,
+        mapping,
+        partition_key,
+        base_form,
+        runtime_cache,
+        persistent_cache,
+        schemaclass,
+        metadata,
+    ):
+        """Quickly build NanoEvents from a root file
+
+        Parameters
+        ----------
+            mapping : Mapping
+                The mapping of a column_source to columns.
+            partition_key : tuple
+                Basic information about the column source, uuid, paths.
+            base_form : dict
+                The awkward form describing the nanoevents interpretation of the mapped file.
+            runtime_cache : dict
+                A dict-like interface to a cache object. This cache is expected to last the
+                duration of the program only, and will be used to hold references to materialized
+                awkward arrays, etc.
+            persistent_cache : dict
+                A dict-like interface to a cache object. Only bare numpy arrays will be placed in this cache,
+                using globally-unique keys.
+            schemaclass : BaseSchema
+                A schema class deriving from `BaseSchema` and implementing the desired view of the file
+            metadata : dict
+                Arbitrary metadata to add to the `base.NanoEvents` object
+
+        """
+        if not issubclass(schemaclass, BaseSchema):
+            raise RuntimeError("Invalid schema type")
         if persistent_cache is not None:
             mapping = CachedMapping(persistent_cache, mapping)
-        base_form = cls._extract_base_form(tree)
         if metadata is not None:
             base_form["parameters"]["metadata"] = metadata
         schema = schemaclass(base_form)
-        return cls(schema, mapping, tuple_to_key(partition_tuple), cache=runtime_cache)
+        return cls(schema, mapping, tuple_to_key(partition_key), cache=runtime_cache)
 
     def __len__(self):
         uuid, treepath, entryrange = key_to_tuple(self._partition_key)
         start, stop = (int(x) for x in entryrange.split("-"))
         return stop - start
 
-    @classmethod
-    def _extract_base_form(cls, tree):
-        branch_forms = {}
-        for key, branch in tree.iteritems():
-            if "," in key or "!" in key:
-                warnings.warn(
-                    f"Skipping {key} because it contains characters that NanoEvents cannot accept [,!]"
-                )
-                continue
-            if len(branch):
-                continue
-            form = branch.interpretation.awkward_form(None)
-            form = uproot._util.awkward_form_remove_uproot(awkward1, form)
-            form = json.loads(form.tojson())
-            if (
-                form["class"].startswith("ListOffset")
-                and form["content"]["class"] == "NumpyArray"  # noqa
-            ):
-                form["form_key"] = quote(f"{key},!load")
-                form["content"]["form_key"] = quote(f"{key},!load,!content")
-                form["content"]["parameters"] = {"__doc__": branch.title}
-            elif form["class"] == "NumpyArray":
-                form["form_key"] = quote(f"{key},!load")
-                form["parameters"] = {"__doc__": branch.title}
-            else:
-                warnings.warn(
-                    f"Skipping {key} as it is not interpretable by NanoEvents"
-                )
-                continue
-            branch_forms[key] = form
-
-        return {
-            "class": "RecordArray",
-            "contents": branch_forms,
-            "parameters": {"__doc__": tree.title},
-            "form_key": "",
-        }
-
     def events(self):
         """Build events"""
         events = self._events()
         if events is None:
+            prefix = self._partition_key
+
+            def key_formatter(partition, form_key, attribute):
+                return prefix + f"/{partition}/{form_key}/{attribute}"
+
             behavior = dict(self._schema.behavior)
             behavior["__events_factory__"] = self
-            events = awkward1.from_arrayset(
+            events = awkward.from_buffers(
                 self._schema.form,
+                len(self),
                 self._mapping,
-                prefix=self._partition_key,
-                sep="/",
+                key_format=key_formatter,
                 lazy=True,
-                lazy_lengths=len(self),
                 lazy_cache="new" if self._cache is None else self._cache,
                 behavior=behavior,
             )

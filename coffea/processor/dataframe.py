@@ -1,6 +1,6 @@
 from collections.abc import MutableMapping
-import awkward1
-import uproot4
+import awkward
+import uproot
 
 
 class LazyDataFrame(MutableMapping):
@@ -12,7 +12,7 @@ class LazyDataFrame(MutableMapping):
 
     Parameters
     ----------
-        tree : uproot4.TTree
+        tree : uproot.TTree
             Tree to read
         entrystart : int, optional
             First entry to read, default: 0
@@ -20,18 +20,15 @@ class LazyDataFrame(MutableMapping):
             Last entry to read, default None (read to end)
         preload_items : iterable
             Force preloading of a set of columns from the tree
-        flatten : bool
-            Remove jagged structure from columns read
+        metadata : Mapping
+            Additional metadata for the dataframe
     """
 
-    def __init__(
-        self, tree, entrystart=None, entrystop=None, preload_items=None, flatten=False
-    ):
+    def __init__(self, tree, entrystart=None, entrystop=None, preload_items=None, metadata=None):
         self._tree = tree
-        self._flatten = flatten
         self._branchargs = {
-            "decompression_executor": uproot4.source.futures.TrivialExecutor(),
-            "interpretation_executor": uproot4.source.futures.TrivialExecutor(),
+            "decompression_executor": uproot.source.futures.TrivialExecutor(),
+            "interpretation_executor": uproot.source.futures.TrivialExecutor(),
         }
         if entrystart is None or entrystart < 0:
             entrystart = 0
@@ -44,6 +41,7 @@ class LazyDataFrame(MutableMapping):
         self._materialized = set()
         if preload_items:
             self.preload(preload_items)
+        self._metadata = metadata
 
     def __delitem__(self, key):
         del self._dict[key]
@@ -54,9 +52,6 @@ class LazyDataFrame(MutableMapping):
         elif key in self._tree:
             self._materialized.add(key)
             array = self._tree[key].array(**self._branchargs)
-            if self._flatten and isinstance(awkward1.type(array).type, awkward1.types.ListType):
-                array = awkward1.flatten(array)
-            array = awkward1.to_awkward0(array)
             self._dict[key] = array
             return self._dict[key]
         else:
@@ -104,6 +99,10 @@ class LazyDataFrame(MutableMapping):
         """Length of column vector"""
         return self._branchargs["entry_stop"] - self._branchargs["entry_start"]
 
+    @property
+    def metadata(self):
+        return self._metadata
+
     def preload(self, columns):
         """Force loading of several columns
 
@@ -115,62 +114,3 @@ class LazyDataFrame(MutableMapping):
         for name in columns:
             if name in self._tree:
                 _ = self[name]
-
-
-class PreloadedDataFrame(MutableMapping):
-    """A dataframe for instances like spark where the columns are preloaded
-
-    Provides a unified interface, matching that of LazyDataFrame.
-
-    Parameters
-    ----------
-        size : int
-            Number of rows
-        items : dict
-            Mapping of column name to column array
-    """
-
-    def __init__(self, size, items):
-        self._size = size
-        self._dict = items
-        self._accessed = set()
-
-    def __delitem__(self, key):
-        del self._dict[key]
-
-    def __getitem__(self, key):
-        self._accessed.add(key)
-        return self._dict[key]
-
-    def __getattr__(self, key):
-        if key.startswith("_"):
-            raise AttributeError(key)
-        try:
-            return self.__getitem__(key)
-        except KeyError:
-            raise AttributeError(key)
-
-    def __iter__(self):
-        for key in self._dict:
-            yield key
-
-    def __len__(self):
-        return len(self._dict)
-
-    def __setitem__(self, key, value):
-        self._dict[key] = value
-
-    @property
-    def available(self):
-        """List of available columns"""
-        return self._dict.keys()
-
-    @property
-    def materialized(self):
-        """List of accessed columns"""
-        return self._accessed
-
-    @property
-    def size(self):
-        """Length of column vector"""
-        return self._size

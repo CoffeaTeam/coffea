@@ -1,5 +1,5 @@
-from ..util import awkward
-from ..util import numpy as np
+import awkward
+import numpy
 import os
 import sys
 import warnings
@@ -65,17 +65,17 @@ def _parse_jme_formatted_file(
     offset = 1
     for i in range(nBinnedVars):
         columns.extend(["%s%s" % (layout[i + offset], mm) for mm in minMax])
-        dtypes.extend(["<f8", "<f8"])
+        dtypes.extend(["<f4", "<f4"])
     columns.append("NVars")
     dtypes.append("<i8")
     offset += nBinnedVars + 1
     if not interpolatedFunc:
         for i in range(nEvalVars):
             columns.extend(["%s%s" % (layout[i + offset], mm) for mm in minMax])
-            dtypes.extend(["<f8", "<f8"])
+            dtypes.extend(["<f4", "<f4"])
     for i in range(nParms):
         columns.append("p%i" % i)
-        dtypes.append("<f8")
+        dtypes.append("<f4")
 
     for f in funcs_to_cap:
         formula = formula.replace(f, f.upper())
@@ -90,26 +90,25 @@ def _parse_jme_formatted_file(
         formula = formula.replace(f.upper(), f)
 
     if parmsFromColumns:
-        pars = np.genfromtxt(jme_f, encoding="ascii")
+        pars = numpy.genfromtxt(jme_f, encoding="ascii")
         if len(pars.shape) == 1:
-            pars = pars[np.newaxis, :]
+            pars = pars[numpy.newaxis, :]
         nParms = pars.shape[1] - len(columns)
         for i in range(nParms):
             columns.append("p%i" % i)
-            dtypes.append("<f8")
-        pars = np.core.records.fromarrays(
+            dtypes.append("<f4")
+        pars = numpy.core.records.fromarrays(
             pars.transpose(), names=columns, formats=dtypes
         )
     else:
-        pars = np.genfromtxt(
+        pars = numpy.genfromtxt(
             jme_f,
             dtype=tuple(dtypes),
             names=tuple(columns),
-            unpack=True,
             encoding="ascii",
         )
         if len(pars.shape) == 0:
-            pars = pars[np.newaxis]
+            pars = pars[numpy.newaxis]
 
     outs = [
         name,
@@ -150,42 +149,42 @@ def _build_standard_jme_lookup(
         binMins = None
         binMaxs = None
         if i == 0:
-            binMins = np.unique(pars[columns[0]])
-            binMaxs = np.unique(pars[columns[1]])
-            if np.all(binMins[1:] == binMaxs[:-1]):
-                bins[layout[i + offset_name]] = np.union1d(binMins, binMaxs)
+            binMins = numpy.unique(pars[columns[0]])
+            binMaxs = numpy.unique(pars[columns[1]])
+            if numpy.all(binMins[1:] == binMaxs[:-1]):
+                bins[layout[i + offset_name]] = numpy.union1d(binMins, binMaxs)
             else:
                 warnings.warn(
                     "binning for file for %s is malformed in variable %s"
                     % (name, layout[i + offset_name])
                 )
-                bins[layout[i + offset_name]] = np.union1d(binMins, binMaxs[-1:])
+                bins[layout[i + offset_name]] = numpy.union1d(binMins, binMaxs[-1:])
         else:
-            counts = np.zeros(0, dtype=np.int)
-            allBins = np.zeros(0, dtype=np.double)
+            counts = numpy.zeros(0, dtype=numpy.int)
+            allBins = numpy.zeros(0, dtype=numpy.double)
             for binMin in bins[bin_order[0]][:-1]:
-                binMins = np.unique(
-                    pars[np.where(pars[columns[0]] == binMin)][columns[i + offset_col]]
+                binMins = numpy.unique(
+                    pars[numpy.where(pars[columns[0]] == binMin)][
+                        columns[i + offset_col]
+                    ]
                 )
-                binMaxs = np.unique(
-                    pars[np.where(pars[columns[0]] == binMin)][
+                binMaxs = numpy.unique(
+                    pars[numpy.where(pars[columns[0]] == binMin)][
                         columns[i + offset_col + 1]
                     ]
                 )
                 theBins = None
-                if np.all(binMins[1:] == binMaxs[:-1]):
-                    theBins = np.union1d(binMins, binMaxs)
+                if numpy.all(binMins[1:] == binMaxs[:-1]):
+                    theBins = numpy.union1d(binMins, binMaxs)
                 else:
                     warnings.warn(
                         "binning for file for %s is malformed in variable %s"
                         % (name, layout[i + offset_name])
                     )
-                    theBins = np.union1d(binMins, binMaxs[-1:])
-                allBins = np.append(allBins, theBins)
-                counts = np.append(counts, theBins.size)
-            bins[layout[i + offset_name]] = awkward.JaggedArray.fromcounts(
-                counts, allBins
-            )
+                    theBins = numpy.union1d(binMins, binMaxs[-1:])
+                allBins = numpy.append(allBins, theBins)
+                counts = numpy.append(counts, theBins.size)
+            bins[layout[i + offset_name]] = awkward.unflatten(allBins, counts)
         bin_order.append(layout[i + offset_name])
         offset_col += 1
 
@@ -199,22 +198,22 @@ def _build_standard_jme_lookup(
     var_order = []
     offset_col = 2 * nBinnedVars + 1
     offset_name = nBinnedVars + 2
-    jagged_counts = np.ones(bins[bin_order[0]].size - 1, dtype=np.int)
+    jagged_counts = numpy.ones(bins[bin_order[0]].size - 1, dtype=numpy.int)
     if len(bin_order) > 1:
-        jagged_counts = np.maximum(
-            bins[bin_order[1]].counts - 1, 0
+        jagged_counts = numpy.maximum(
+            awkward.num(bins[bin_order[1]]) - 1, 0
         )  # need counts-1 since we only care about Nbins
     for i in range(nEvalVars):
         var_order.append(layout[i + offset_name])
         if not interpolatedFunc:
-            clamp_mins[layout[i + offset_name]] = awkward.JaggedArray.fromcounts(
-                jagged_counts, np.atleast_1d(pars[columns[i + offset_col]])
+            clamp_mins[layout[i + offset_name]] = awkward.unflatten(
+                numpy.atleast_1d(pars[columns[i + offset_col]]), jagged_counts
             )
-            clamp_maxs[layout[i + offset_name]] = awkward.JaggedArray.fromcounts(
-                jagged_counts, np.atleast_1d(pars[columns[i + offset_col + 1]])
+            clamp_maxs[layout[i + offset_name]] = awkward.unflatten(
+                numpy.atleast_1d(pars[columns[i + offset_col + 1]]), jagged_counts
             )
-            assert clamp_mins[layout[i + offset_name]].valid()
-            assert clamp_maxs[layout[i + offset_name]].valid()
+            assert awkward.is_valid(clamp_mins[layout[i + offset_name]])
+            assert awkward.is_valid(clamp_maxs[layout[i + offset_name]])
             offset_col += 1
 
     # now get the parameters, which we will look up with the clamped values
@@ -222,10 +221,8 @@ def _build_standard_jme_lookup(
     parm_order = []
     offset_col = 2 * nBinnedVars + 1 + int(not interpolatedFunc) * 2 * nEvalVars
     for i in range(nParms):
-        jag = awkward.JaggedArray.fromcounts(
-            jagged_counts, pars[columns[i + offset_col]]
-        )
-        assert jag.valid()
+        jag = awkward.unflatten(pars[columns[i + offset_col]], jagged_counts)
+        assert awkward.is_valid(jag)
         parms.append(jag)
         parm_order.append("p%i" % (i))
 
@@ -368,13 +365,15 @@ def convert_junc_txt_component(juncFilePath, uncFile):
         knots = vals[0 : len(vals) : 3]
         downs = vals[1 : len(vals) : 3]
         ups = vals[2 : len(vals) : 3]
-        downs = np.array([down.flatten() for down in downs])
-        ups = np.array([up.flatten() for up in ups])
+        downs = numpy.array([numpy.array(awkward.flatten(down)) for down in downs])
+        ups = numpy.array([numpy.array(awkward.flatten(up)) for up in ups])
         for knotv in knots:
-            knot = np.unique(knotv.flatten())
+            knot = numpy.unique(numpy.array(awkward.flatten(knotv)))
             if knot.size != 1:
                 raise Exception("Multiple bin low edges found")
-        knots = np.array([np.unique(k.flatten())[0] for k in knots])
+        knots = numpy.array(
+            [numpy.unique(numpy.array(awkward.flatten(k)))[0] for k in knots]
+        )
         vallist[2] = ({"knots": knots, "ups": ups.T, "downs": downs.T}, vallist[2][-1])
         vallist = vallist[:-1]
         wrapped_up[newkey] = tuple(vallist)
@@ -413,18 +412,17 @@ def convert_effective_area_file(eaFilePath):
     offset = 1
     for i in range(nBinnedVars):
         columns.extend(["%s%s" % (layout[i + offset], mm) for mm in minMax])
-        dtypes.extend(["<f8", "<f8"])
+        dtypes.extend(["<f4", "<f4"])
     offset += nBinnedVars + 1
     for i in range(nEvalVars):
         columns.append("%s" % (layout[i + offset]))
-        dtypes.append("<f8")
+        dtypes.append("<f4")
 
-    pars = np.genfromtxt(
+    pars = numpy.genfromtxt(
         eaFilePath,
         dtype=tuple(dtypes),
         names=tuple(columns),
         skip_header=1,
-        unpack=True,
         encoding="ascii",
     )
 
@@ -436,27 +434,27 @@ def convert_effective_area_file(eaFilePath):
         binMins = None
         binMaxs = None
         if i == 0:
-            binMins = np.unique(pars[columns[0]])
-            binMaxs = np.unique(pars[columns[1]])
-            bins[layout[i + offset_name]] = np.union1d(binMins, binMaxs)
+            binMins = numpy.unique(pars[columns[0]])
+            binMaxs = numpy.unique(pars[columns[1]])
+            bins[layout[i + offset_name]] = numpy.union1d(binMins, binMaxs)
         else:
-            counts = np.zeros(0, dtype=np.int)
-            allBins = np.zeros(0, dtype=np.double)
+            counts = numpy.zeros(0, dtype=numpy.int)
+            allBins = numpy.zeros(0, dtype=numpy.double)
             for binMin in bins[bin_order[0]][:-1]:
-                binMins = np.unique(
-                    pars[np.where(pars[columns[0]] == binMin)][columns[i + offset_col]]
+                binMins = numpy.unique(
+                    pars[numpy.where(pars[columns[0]] == binMin)][
+                        columns[i + offset_col]
+                    ]
                 )
-                binMaxs = np.unique(
-                    pars[np.where(pars[columns[0]] == binMin)][
+                binMaxs = numpy.unique(
+                    pars[numpy.where(pars[columns[0]] == binMin)][
                         columns[i + offset_col + 1]
                     ]
                 )
-                theBins = np.union1d(binMins, binMaxs)
-                allBins = np.append(allBins, theBins)
-                counts = np.append(counts, theBins.size)
-            bins[layout[i + offset_name]] = awkward.JaggedArray.fromcounts(
-                counts, allBins
-            )
+                theBins = numpy.union1d(binMins, binMaxs)
+                allBins = numpy.append(allBins, theBins)
+                counts = numpy.append(counts, theBins.size)
+            bins[layout[i + offset_name]] = awkward.unflatten(allBins, counts)
         bin_order.append(layout[i + offset_name])
         offset_col += 1
 
@@ -507,7 +505,7 @@ def convert_rochester_file(path, loaduncs=True):
             elif line.startswith("CPHI"):
                 nphi = int(line.split()[1])
                 phiedges = [
-                    float(x) * 2 * np.pi / nphi - np.pi for x in range(nphi + 1)
+                    float(x) * 2 * numpy.pi / nphi - numpy.pi for x in range(nphi + 1)
                 ]
             # number of eta bins and edges
             elif line.startswith("CETA"):
@@ -625,17 +623,17 @@ def convert_rochester_file(path, loaduncs=True):
 
     # now build the lookup tables
     # for data scale, simple, just M A in bins of eta,phi
-    _scaleedges = (np.array(etaedges), np.array(phiedges))
+    _scaleedges = (numpy.array(etaedges), numpy.array(phiedges))
     _Mvalues = {
         s: {
-            m: {t: np.array([M[s][m][t][b] for b in range(neta)]) for t in M[s][m]}
+            m: {t: numpy.array([M[s][m][t][b] for b in range(neta)]) for t in M[s][m]}
             for m in M[s]
         }
         for s in M
     }
     _Avalues = {
         s: {
-            m: {t: np.array([A[s][m][t][b] for b in range(neta)]) for t in A[s][m]}
+            m: {t: numpy.array([A[s][m][t][b] for b in range(neta)]) for t in A[s][m]}
             for m in A[s]
         }
         for s in A
@@ -644,19 +642,19 @@ def convert_rochester_file(path, loaduncs=True):
     # for mc scale, more complicated
     # version 1 if gen pt available
     # only requires the kRes lookup
-    _resedges = np.array(absetaedges)
+    _resedges = numpy.array(absetaedges)
     _kResvalues = {
-        s: {m: {t: np.array(kRes[s][m][t]) for t in kRes[s][m]} for m in kRes[s]}
+        s: {m: {t: numpy.array(kRes[s][m][t]) for t in kRes[s][m]} for m in kRes[s]}
         for s in kRes
     }
 
     # version 2 if gen pt not available
     trkedges = [0] + [nmin + x + 0.5 for x in range(ntrk)]
-    _cbedges = (np.array(absetaedges), np.array(trkedges))
+    _cbedges = (numpy.array(absetaedges), numpy.array(trkedges))
     _rsParsvalues = {
         s: {
             m: {
-                t: np.array([rsPars[s][m][t][b] for b in range(nabseta)])
+                t: numpy.array([rsPars[s][m][t][b] for b in range(nabseta)])
                 for t in rsPars[s][m]
             }
             for m in rsPars[s]
@@ -664,15 +662,15 @@ def convert_rochester_file(path, loaduncs=True):
         for s in rsPars
     }
     _cbSvalues = {
-        s: {m: np.array([cbS[s][m][b] for b in range(nabseta)]) for m in cbS[s]}
+        s: {m: numpy.array([cbS[s][m][b] for b in range(nabseta)]) for m in cbS[s]}
         for s in cbS
     }
     _cbAvalues = {
-        s: {m: np.array([cbA[s][m][b] for b in range(nabseta)]) for m in cbA[s]}
+        s: {m: numpy.array([cbA[s][m][b] for b in range(nabseta)]) for m in cbA[s]}
         for s in cbA
     }
     _cbNvalues = {
-        s: {m: np.array([cbN[s][m][b] for b in range(nabseta)]) for m in cbN[s]}
+        s: {m: numpy.array([cbN[s][m][b] for b in range(nabseta)]) for m in cbN[s]}
         for s in cbN
     }
 

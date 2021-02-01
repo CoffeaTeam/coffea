@@ -1,11 +1,9 @@
-from ..lookup_tools.jec_uncertainty_lookup import jec_uncertainty_lookup
+from coffea.lookup_tools.jec_uncertainty_lookup import jec_uncertainty_lookup
 import warnings
 import re
-from ..util import awkward
-from ..util import numpy as np
+import awkward
+import numpy
 from copy import deepcopy
-
-import re
 
 
 def _checkConsistency(against, tocheck):
@@ -22,7 +20,7 @@ def split_jec_name(name):
     info = name.split('_')
 
     # Check for the case of regrouped jes uncertainties
-    if "Regrouped" in info:
+    if "Regrouped" in info[0]:
         info.pop(0)
         if "UncertaintySources" in info:
             subinfo = info[info.index("UncertaintySources"):]
@@ -150,11 +148,17 @@ class JetCorrectionUncertainty(object):
             #in a zip iterator
 
         """
+        cache = kwargs.pop('lazy_cache', None)
         uncs = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
-            args = []
-            for input in sig:
-                args.append(kwargs[input])
-            uncs.append(func(*tuple(args)))
+            args = tuple(kwargs[input] for input in sig)
+
+            if isinstance(args[0], awkward.highlevel.Array):
+                uncs.append(awkward.virtual(func, args=args, length=len(args[0]), cache=cache))
+            elif isinstance(args[0], numpy.ndarray):
+                uncs.append(func(*args))  # np is non-lazy
+            else:
+                raise Exception('Unknown array library for inputs.')
+
         return zip(self._levels, uncs)
