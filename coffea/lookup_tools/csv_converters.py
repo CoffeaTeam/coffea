@@ -50,7 +50,6 @@ def convert_btag_csv_file(csvFilePath):
         },
         delimiter=",",
         skip_header=1,
-        unpack=True,
         encoding="ascii",
     )
 
