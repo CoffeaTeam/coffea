@@ -243,7 +243,7 @@ os._exit(0)
     return name
 
 
-def wqex_create_task(itemid, item, wrapper, env_file, command_path, infile_function, tmpdir):
+def wqex_create_task(itemid, item, wrapper, env_file, command_path, infile_function, tmpdir, extra_input_files):
     import dill
     from os.path import basename
     import work_queue as wq
@@ -267,6 +267,9 @@ def wqex_create_task(itemid, item, wrapper, env_file, command_path, infile_funct
     task.specify_input_file(infile_function, cache=False)
     task.specify_input_file(infile_item, cache=False)
 
+    for f in extra_input_files:
+        task.specify_input_file(f, cache=True)
+
     if wrapper and env_file:
         task.specify_input_file(env_file, cache=True)
         task.specify_input_file(wrapper, cache=True)
@@ -289,16 +292,18 @@ def wqex_output_task(task, verbose_mode, resource_mode, output_mode):
     if verbose_mode:
         print('Task (id #{}) complete: {} (return code {})'.format(task.id, task.command, task.return_status))
 
-        print('Allocated cores: {}, memory: {} MB, disk: {} MB'.format(
+        print('Allocated cores: {}, memory: {} MB, disk: {} MB, gpus: {}'.format(
             task.resources_allocated.cores,
             task.resources_allocated.memory,
-            task.resources_allocated.disk))
+            task.resources_allocated.disk,
+            task.resources_allocated.gpus))
 
         if resource_mode:
-            print('Measured cores: {}, memory: {} MB, disk {} MB, runtime {}'.format(
+            print('Measured cores: {}, memory: {} MB, disk {} MB, gpus: {}, runtime {}'.format(
                 task.resources_measured.cores,
                 task.resources_measured.memory,
                 task.resources_measured.disk,
+                task.resources_measures.gpus,
                 task.resources_measured.wall_time / 1000000))
 
     if output_mode and task.output:
@@ -341,6 +346,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             Amount of memory (in MB) for work queue task. If unset, use a whole worker.
         disk : int
             Amount of disk space (in MB) for work queue task. If unset, use a whole worker.
+        gpus : int
+            Number of GPUs to allocate to each task.  If unset, use zero.
 
         resources-mode : one of 'fixed', or 'auto'. Default is 'fixed'.
             - 'fixed': allocate cores, memory, and disk specified for each task.
@@ -360,6 +367,9 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         password-file: str
             Location of a file containing a password used to authenticate workers.
 
+        extra-input-files: list
+            A list of files in the current working directory to send along with each task.
+            Useful for small custom libraries and configuration files needed by the processor.
         environment-file : str
             Python environment to use. Required.
         wrapper : str
@@ -407,6 +417,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     debug_log = kwargs.pop('debug-log', None)
     stats_log = kwargs.pop('stats-log', None)
     trans_log = kwargs.pop('transactions-log', None)
+    extra_input_files = kwargs.pop('extra-input-files', [])
     output = kwargs.pop('print-stdout', False)
     password_file = kwargs.pop('password-file', None)
     env_file = kwargs.pop('environment-file', None)
@@ -415,6 +426,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     cores = kwargs.pop('cores', None)
     memory = kwargs.pop('memory', None)
     disk = kwargs.pop('disk', None)
+    gpus = kwargs.pop('gpus', None)
     resource_monitor = kwargs.pop('resource-monitor', False)
     master_name = kwargs.pop('master-name', None)
     port = kwargs.pop('port', None)
@@ -439,6 +451,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         default_resources['memory'] = memory
     if disk:
         default_resources['disk'] = disk
+    if gpus:
+        default_resources['gpus'] = gpus
 
     # Working within a custom temporary directory:
     with tempfile.TemporaryDirectory(prefix="wq-executor-tmp-", dir=filepath) as tmpdir:
@@ -491,7 +505,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             # Submit tasks into the queue, but no more than 100 idle tasks
             while tasks_submitted < tasks_total and _wq_queue.stats.tasks_waiting < 100:
                 item = next(itemiter)
-                task = wqex_create_task(tasks_submitted, item, wrapper, env_file, command_path, infile_function, tmpdir)
+                task = wqex_create_task(tasks_submitted, item, wrapper, env_file, command_path, infile_function, tmpdir, extra_input_files)
                 task_id = _wq_queue.submit(task)
                 tasks_submitted += 1
 
