@@ -898,7 +898,8 @@ def _work_function(item, processor_instance, savemetrics=False,
                 try:
                     out = processor_instance.process(events)
                 except Exception as e:
-                    raise Exception(f"Failed processing file: {item.filename} ({item.entrystart}-{item.entrystop})") from e
+                    file_trace = f"\n\nFailed processing file: {item.filename} ({item.entrystart}-{item.entrystop})"
+                    raise type(e)(str(e) + file_trace).with_traceback(sys.exc_info()[2]) from None
                 if out is None:
                     raise ValueError("Output of process() should not be None. Make sure your processor's process() function returns an accumulator.")
                 toc = time.time()
@@ -921,7 +922,7 @@ def _work_function(item, processor_instance, savemetrics=False,
         # catch xrootd errors and optionally skip
         # or retry to read the file
         except OSError as e:
-            if not skipbadfiles:
+            if not skipbadfiles or "Auth failed" in str(e):
                 raise e
             else:
                 w_str = 'Bad file source %s.' % item.filename
@@ -987,7 +988,7 @@ def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None, align
             out = set_accumulator([FileMeta(item.dataset, item.filename, item.treename, metadata)])
             break
         except OSError as e:
-            if not skipbadfiles:
+            if not skipbadfiles or "Auth failed" in str(e):
                 raise e
             else:
                 w_str = 'Bad file source %s.' % item.filename
