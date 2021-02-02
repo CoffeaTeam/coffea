@@ -1,0 +1,367 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>extractor &mdash; coffea 0.7.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="evaluator" href="coffea.lookup_tools.evaluator.html" />
+    <link rel="prev" title="coffea.lookup_tools" href="../modules/coffea.lookup_tools.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> coffea
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.7
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installing coffea</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Coffea by Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Coffea concepts</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../reference.html">API Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.analysis_tools.html">coffea.analysis_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.btag_tools.html">coffea.btag_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.hist.html">coffea.hist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.jetmet_tools.html">coffea.jetmet_tools</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../modules/coffea.lookup_tools.html">coffea.lookup_tools</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../modules/coffea.lookup_tools.html#classes">Classes</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">extractor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.lookup_tools.evaluator.html">evaluator</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.lookup_tools.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.lumi_tools.html">coffea.lumi_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.html">coffea.nanoevents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.base.html">coffea.nanoevents.methods.base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.candidate.html">coffea.nanoevents.methods.candidate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.nanoaod.html">coffea.nanoevents.methods.nanoaod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.vector.html">coffea.nanoevents.methods.vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.processor.html">coffea.processor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.util.html">coffea.util</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">coffea</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../reference.html">API Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../modules/coffea.lookup_tools.html">coffea.lookup_tools</a> &raquo;</li>
+        
+      <li>extractor</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/api/coffea.lookup_tools.extractor.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="extractor">
+<h1>extractor<a class="headerlink" href="#extractor" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="coffea.lookup_tools.extractor">
+<em class="property">class </em><code class="sig-prename descclassname">coffea.lookup_tools.</code><code class="sig-name descname">extractor</code><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/lookup_tools/extractor.py#L27"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.lookup_tools.extractor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>This class defines a common entry point for defining functions that extract
+the inputs to build lookup tables from various kinds of files.</p>
+<p>The files that can be converted are presently defined in the “file_converters” dict.</p>
+<dl class="simple">
+<dt>The file names are used to determine the converter that is used, i.e.:</dt><dd><p>something.TYPE.FORMAT will apply the TYPE extractor to a file of given FORMAT</p>
+</dd>
+</dl>
+<p>If there is no file type specifier the ‘default’ value is used.</p>
+<dl class="simple">
+<dt>The extractor class supports a number of useful file formats by default:</dt><dd><ul class="simple">
+<li><p><strong>.histo.root</strong> : 1,2, and 3 dimensional histograms in root files.</p></li>
+<li><p><strong>.histo.json</strong> : N-dimensional histograms stored in JSON format.</p></li>
+<li><p><strong>.btag.csv</strong>   : CMS BTV b-tagging weights in csv files.</p></li>
+<li><p><strong>.ea.txt</strong>     : CMS EGM effective area text files.</p></li>
+<li><p><strong>‘.[jec, jersf, jr, junc].txt’</strong> : CMS JME jet energy corrections and systematic error text files.</p></li>
+</ul>
+</dd>
+</dl>
+<p>It is possible to extend the functionality of lookup_tools.extractor by editing coffea.lookup_tools.file_converters to add new types and formats.</p>
+<dl class="simple">
+<dt>You can add sets of lookup tables / weights by calling:</dt><dd><p>extractor.add_weight_set(&lt;description&gt;)</p>
+</dd>
+<dt>&lt;description&gt; is formatted like ‘&lt;nickname&gt; &lt;name-in-file&gt; &lt;the file to extract&gt;’</dt><dd><p><code class="docutils literal notranslate"><span class="pre">*</span></code> can be used as a wildcard to import all available lookup tables in a file</p>
+</dd>
+</dl>
+<p class="rubric">Methods Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.lookup_tools.extractor.add_weight_set" title="coffea.lookup_tools.extractor.extractor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_weight_set</span></code></a>(local_name, thetype, weights)</p></td>
+<td><p>adds one extracted weight to the extractor</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.lookup_tools.extractor.add_weight_sets" title="coffea.lookup_tools.extractor.extractor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_weight_sets</span></code></a>(weightsdescs)</p></td>
+<td><p>expects a list of text lines to be formatted as ‘&lt;local name&gt; &lt;name&gt; &lt;weights file&gt;’ allows * * &lt;file&gt; and &lt;prefix&gt; * &lt;file&gt; to do easy imports of whole file</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.lookup_tools.extractor.extract_from_file" title="coffea.lookup_tools.extractor.extractor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extract_from_file</span></code></a>(thefile, name)</p></td>
+<td><p>import a file and then extract a lookup set</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.lookup_tools.extractor.finalize" title="coffea.lookup_tools.extractor.extractor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">finalize</span></code></a>([reduce_list])</p></td>
+<td><p>stop any further imports and if provided pare down the stored histograms to those specified in reduce_list</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.lookup_tools.extractor.import_file" title="coffea.lookup_tools.extractor.extractor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">import_file</span></code></a>(thefile)</p></td>
+<td><p>cache the whole contents of a file for later processing</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.lookup_tools.extractor.make_evaluator" title="coffea.lookup_tools.extractor.extractor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_evaluator</span></code></a>()</p></td>
+<td><p>produce an evaluator based on the finalized extractor</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt id="coffea.lookup_tools.extractor.add_weight_set">
+<code class="sig-name descname">add_weight_set</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">local_name</span></em>, <em class="sig-param"><span class="n">thetype</span></em>, <em class="sig-param"><span class="n">weights</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/lookup_tools/extractor.py#L62"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.lookup_tools.extractor.add_weight_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds one extracted weight to the extractor</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.lookup_tools.extractor.add_weight_sets">
+<code class="sig-name descname">add_weight_sets</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">weightsdescs</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/lookup_tools/extractor.py#L72"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.lookup_tools.extractor.add_weight_sets" title="Permalink to this definition">¶</a></dt>
+<dd><p>expects a list of text lines to be formatted as ‘&lt;local name&gt; &lt;name&gt; &lt;weights file&gt;’
+allows * * &lt;file&gt; and &lt;prefix&gt; * &lt;file&gt; to do easy imports of whole file</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.lookup_tools.extractor.extract_from_file">
+<code class="sig-name descname">extract_from_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">thefile</span></em>, <em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/lookup_tools/extractor.py#L116"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.lookup_tools.extractor.extract_from_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>import a file and then extract a lookup set</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.lookup_tools.extractor.finalize">
+<code class="sig-name descname">finalize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">reduce_list</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/lookup_tools/extractor.py#L125"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.lookup_tools.extractor.finalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>stop any further imports and if provided pare down
+the stored histograms to those specified in reduce_list</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.lookup_tools.extractor.import_file">
+<code class="sig-name descname">import_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">thefile</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/lookup_tools/extractor.py#L105"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.lookup_tools.extractor.import_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>cache the whole contents of a file for later processing</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.lookup_tools.extractor.make_evaluator">
+<code class="sig-name descname">make_evaluator</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/lookup_tools/extractor.py#L148"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.lookup_tools.extractor.make_evaluator" title="Permalink to this definition">¶</a></dt>
+<dd><p>produce an evaluator based on the finalized extractor</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="coffea.lookup_tools.evaluator.html" class="btn btn-neutral float-right" title="evaluator" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../modules/coffea.lookup_tools.html" class="btn btn-neutral float-left" title="coffea.lookup_tools" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2019, Fermi National Accelerator Laboratory.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

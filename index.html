@@ -1,0 +1,534 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>coffea - Columnar Object Framework For Effective Analysis &mdash; coffea 0.7.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installing coffea" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="#" class="icon icon-home"> coffea
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.7
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installing coffea</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Coffea by Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts.html">Coffea concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">API Reference Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">coffea</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>coffea - Columnar Object Framework For Effective Analysis</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="coffea-columnar-object-framework-for-effective-analysis">
+<h1>coffea - Columnar Object Framework For Effective Analysis<a class="headerlink" href="#coffea-columnar-object-framework-for-effective-analysis" title="Permalink to this headline">¶</a></h1>
+<a class="reference external image-reference" href="https://zenodo.org/badge/latestdoi/159673139"><img alt="https://zenodo.org/badge/159673139.svg" src="https://zenodo.org/badge/159673139.svg" /></a>
+<a class="reference external image-reference" href="https://github.com/CoffeaTeam/coffea/actions?query=workflow%3ACI%2FCD+event%3Aschedule+branch%3Amaster"><img alt="https://github.com/CoffeaTeam/coffea/workflows/CI%2FCD/badge.svg" src="https://github.com/CoffeaTeam/coffea/workflows/CI%2FCD/badge.svg" /></a>
+<a class="reference external image-reference" href="https://codecov.io/gh/CoffeaTeam/coffea"><img alt="https://codecov.io/gh/CoffeaTeam/coffea/branch/master/graph/badge.svg?event=schedule" src="https://codecov.io/gh/CoffeaTeam/coffea/branch/master/graph/badge.svg?event=schedule" /></a>
+<a class="reference external image-reference" href="https://badge.fury.io/py/coffea"><img alt="https://badge.fury.io/py/coffea.svg" src="https://badge.fury.io/py/coffea.svg" /></a>
+<a class="reference external image-reference" href="https://img.shields.io/pypi/dm/coffea"><img alt="https://img.shields.io/pypi/dm/coffea.svg" src="https://img.shields.io/pypi/dm/coffea.svg" /></a>
+<a class="reference external image-reference" href="https://anaconda.org/conda-forge/coffea"><img alt="https://img.shields.io/conda/vn/conda-forge/coffea.svg" src="https://img.shields.io/conda/vn/conda-forge/coffea.svg" /></a>
+<a class="reference external image-reference" href="https://gitter.im/coffea-hep"><img alt="https://badges.gitter.im/CoffeaTeam/coffea.svg" src="https://badges.gitter.im/CoffeaTeam/coffea.svg" /></a>
+<a class="reference external image-reference" href="https://mybinder.org/v2/gh/CoffeaTeam/coffea/master?filepath=binder/"><img alt="https://mybinder.org/badge_logo.svg" src="https://mybinder.org/badge_logo.svg" /></a>
+<p>Basic tools and wrappers for enabling not-too-alien syntax when running columnar Collider HEP analysis.</p>
+<p>coffea is a prototype package for pulling together all the typical needs
+of a high-energy collider physics (HEP) experiment analysis using the scientific
+python ecosystem. It makes use of <a class="reference external" href="https://github.com/scikit-hep/uproot">uproot</a>
+and <a class="reference external" href="https://github.com/scikit-hep/awkward-array">awkward-array</a> to provide an
+array-based syntax for manipulating HEP event data in an efficient and numpythonic
+way. There are sub-packages that implement histogramming, plotting, and look-up
+table functionalities that are needed to convey scientific insight, apply transformations
+to data, and correct for discrepancies in Monte Carlo simulations compared to data.</p>
+<p>coffea also supplies facilities for horizontally scaling an analysis in order to reduce
+time-to-insight in a way that is largely independent of the resource the analysis
+is being executed on. By making use of modern <em>big-data</em> technologies like
+<a class="reference external" href="https://spark.apache.org/">Apache Spark</a>,  <a class="reference external" href="https://github.com/Parsl/parsl">parsl</a>,
+<a class="reference external" href="https://dask.org">Dask</a> , and <a class="reference external" href="http://ccl.cse.nd.edu/software/workqueue">Work Queue</a>,
+it is possible with coffea to scale a HEP analysis from a testing
+on a laptop to: a large multi-core server, computing clusters, and super-computers without
+the need to alter or otherwise adapt the analysis code itself.</p>
+<p>coffea is a HEP community project collaborating with <a class="reference external" href="http://iris-hep.org/">iris-hep</a>
+and is currently a prototype. We welcome input to improve its quality as we progress towards
+a sensible refactorization into the scientific python ecosystem and a first release. Please
+feel free to contribute at our <a class="reference external" href="https://github.com/CoffeaTeam/coffea">github repo</a>!</p>
+</div>
+<div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>Install coffea like any other Python package:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install coffea
+</pre></div>
+</div>
+<p>or similar (use <code class="docutils literal notranslate"><span class="pre">sudo</span></code>, <code class="docutils literal notranslate"><span class="pre">--user</span></code>, <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code>, or pip-in-conda if you wish).
+For more details, see the <a class="reference external" href="https://coffeateam.github.io/coffea/installation.html">Installing coffea</a> section of the documentation.</p>
+</div>
+<div class="section" id="strict-dependencies">
+<h1>Strict dependencies<a class="headerlink" href="#strict-dependencies" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="http://docs.python-guide.org/en/latest/starting/installation/">Python</a> (3.6+)</p></li>
+</ul>
+<p>The following are installed automatically when you install coffea with pip:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://scipy.org/install.html">numpy</a> (1.15+);</p></li>
+<li><p><a class="reference external" href="https://github.com/scikit-hep/uproot">uproot</a> for interacting with ROOT files;</p></li>
+<li><p><a class="reference external" href="https://github.com/scikit-hep/uproot-methods">uproot-methods</a> to interpret columnar representations of ROOT objects transparently;</p></li>
+<li><p><a class="reference external" href="https://github.com/scikit-hep/awkward-array">awkward-array</a> to manipulate complex-structured columnar data, such as jagged arrays;</p></li>
+<li><p><a class="reference external" href="https://numba.pydata.org/">numba</a> just-in-time compilation of python functions;</p></li>
+<li><p><a class="reference external" href="https://scipy.org/scipylib/index.html">scipy</a> for many statistical functions;</p></li>
+<li><p><a class="reference external" href="https://matplotlib.org/">matplotlib</a> as a plotting backend;</p></li>
+<li><p>and other utility packages, as enumerated in <code class="docutils literal notranslate"><span class="pre">setup.py</span></code>.</p></li>
+</ul>
+</div>
+<div class="section" id="documentation">
+<h1>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h1>
+<p>All documentation is hosted at <a class="reference external" href="https://coffeateam.github.io/coffea/">https://coffeateam.github.io/coffea/</a></p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installing coffea</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#quick-start">Quick start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#platform-support">Platform support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#install-coffea">Install coffea</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#install-optional-dependencies">Install optional dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#install-via-cvmfs">Install via cvmfs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#creating-a-portable-virtual-environment">Creating a portable virtual environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#for-developers">For Developers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Coffea by Example</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/histograms.html">Coffea Histograms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/histograms.html#Filling">Filling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/histograms.html#Transformation">Transformation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/histograms.html#Plotting">Plotting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/histograms.html#Styling">Styling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/processor.html">Coffea Processors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/processor.html#Getting-fancy">Getting fancy</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/nanoevents.html">NanoEvents tutorial</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/nanoevents.html#Using-NanoEvents-with-a-processor">Using NanoEvents with a processor</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/applying_corrections.html">Applying corrections to columnar data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/applying_corrections.html#Opening-a-root-file-and-using-it-as-a-lookup-table">Opening a root file and using it as a lookup table</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/applying_corrections.html#Reading-a-CMS-b-tag-scale-factor-csv-file">Reading a CMS b-tag scale factor csv file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/applying_corrections.html#Importing-JSON-encoded-histograms">Importing JSON-encoded histograms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/applying_corrections.html#Import-CMS-Jet-Energy-Scales-and-Uncertainties">Import CMS Jet Energy Scales and Uncertainties</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/applying_corrections.html#Applying-energy-scale-transformations-to-Jets">Applying energy scale transformations to Jets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/applying_corrections.html#Applying-CMS-b-tagging-corrections">Applying CMS b-tagging corrections</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="concepts.html">Coffea concepts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="concepts.html#columnar-analysis">Columnar analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts.html#coffea-processor">Coffea processor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts.html#scale-out">Scale-out</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="concepts.html#local-executors">Local executors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="concepts.html#distributed-executors">Distributed executors</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">API Reference Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.analysis_tools.html">coffea.analysis_tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.analysis_tools.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.analysis_tools.PackedSelection.html">PackedSelection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.analysis_tools.WeightStatistics.html">WeightStatistics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.analysis_tools.Weights.html">Weights</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.analysis_tools.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.btag_tools.html">coffea.btag_tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.btag_tools.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.btag_tools.BTagScaleFactor.html">BTagScaleFactor</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.btag_tools.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.hist.html">coffea.hist</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.hist.html#functions">Functions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.hist.poisson_interval.html">poisson_interval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.hist.clopper_pearson_interval.html">clopper_pearson_interval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.hist.normal_interval.html">normal_interval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.hist.plot1d.html">plot1d</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.hist.plotratio.html">plotratio</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.hist.plot2d.html">plot2d</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.hist.plotgrid.html">plotgrid</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.hist.export1d.html">export1d</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.hist.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.hist.Hist.html">Hist</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.hist.Bin.html">Bin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.hist.Interval.html">Interval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.hist.Cat.html">Cat</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.hist.StringBin.html">StringBin</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.hist.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.jetmet_tools.html">coffea.jetmet_tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.jetmet_tools.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.jetmet_tools.FactorizedJetCorrector.html">FactorizedJetCorrector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.jetmet_tools.JetResolution.html">JetResolution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.jetmet_tools.JetResolutionScaleFactor.html">JetResolutionScaleFactor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.jetmet_tools.JetCorrectionUncertainty.html">JetCorrectionUncertainty</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.jetmet_tools.JECStack.html">JECStack</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.jetmet_tools.CorrectedJetsFactory.html">CorrectedJetsFactory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.jetmet_tools.CorrectedMETFactory.html">CorrectedMETFactory</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.jetmet_tools.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.lookup_tools.html">coffea.lookup_tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.lookup_tools.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.lookup_tools.extractor.html">extractor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.lookup_tools.evaluator.html">evaluator</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.lookup_tools.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.lumi_tools.html">coffea.lumi_tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.lumi_tools.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.lumi_tools.LumiData.html">LumiData</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.lumi_tools.LumiList.html">LumiList</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.lumi_tools.LumiMask.html">LumiMask</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.lumi_tools.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.nanoevents.html">coffea.nanoevents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.NanoEventsFactory.html">NanoEventsFactory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.BaseSchema.html">BaseSchema</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.NanoAODSchema.html">NanoAODSchema</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.TreeMakerSchema.html">TreeMakerSchema</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.nanoevents.methods.base.html">coffea.nanoevents.methods.base</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.methods.base.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.base.NanoCollection.html">NanoCollection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.base.NanoEvents.html">NanoEvents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.methods.base.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.nanoevents.methods.candidate.html">coffea.nanoevents.methods.candidate</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.methods.candidate.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.candidate.Candidate.html">Candidate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.candidate.PtEtaPhiMCandidate.html">PtEtaPhiMCandidate</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.methods.candidate.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.nanoevents.methods.nanoaod.html">coffea.nanoevents.methods.nanoaod</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.methods.nanoaod.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.PtEtaPhiMCollection.html">PtEtaPhiMCollection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.GenParticle.html">GenParticle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.GenVisTau.html">GenVisTau</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Electron.html">Electron</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Muon.html">Muon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Tau.html">Tau</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Photon.html">Photon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.FsrPhoton.html">FsrPhoton</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Jet.html">Jet</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.FatJet.html">FatJet</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.MissingET.html">MissingET</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.methods.nanoaod.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.nanoevents.methods.vector.html">coffea.nanoevents.methods.vector</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.methods.vector.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.TwoVector.html">TwoVector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.PolarTwoVector.html">PolarTwoVector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.ThreeVector.html">ThreeVector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.SphericalThreeVector.html">SphericalThreeVector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.LorentzVector.html">LorentzVector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector.html">PtEtaPhiMLorentzVector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.PtEtaPhiELorentzVector.html">PtEtaPhiELorentzVector</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.methods.vector.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.processor.html">coffea.processor</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.processor.html#functions">Functions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.iterative_executor.html">iterative_executor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.futures_executor.html">futures_executor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.dask_executor.html">dask_executor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.parsl_executor.html">parsl_executor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.work_queue_executor.html">work_queue_executor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.run_uproot_job.html">run_uproot_job</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.run_spark_job.html">run_spark_job</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.processor.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.ProcessorABC.html">ProcessorABC</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.LazyDataFrame.html">LazyDataFrame</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.Weights.html">Weights</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.PackedSelection.html">PackedSelection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.AccumulatorABC.html">AccumulatorABC</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.value_accumulator.html">value_accumulator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.list_accumulator.html">list_accumulator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.set_accumulator.html">set_accumulator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.dict_accumulator.html">dict_accumulator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.defaultdict_accumulator.html">defaultdict_accumulator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.column_accumulator.html">column_accumulator</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.processor.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.util.html">coffea.util</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.util.html#functions">Functions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.util.deprecate.html">deprecate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.util.load.html">load</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.util.save.html">save</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="installation.html" class="btn btn-neutral float-right" title="Installing coffea" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2019, Fermi National Accelerator Laboratory.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

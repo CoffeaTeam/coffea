@@ -1,0 +1,6 @@
+iterative_executor
+==================
+
+.. currentmodule:: coffea.processor
+
+.. autofunction:: iterative_executor

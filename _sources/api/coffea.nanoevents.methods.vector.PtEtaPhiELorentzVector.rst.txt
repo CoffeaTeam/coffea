@@ -1,0 +1,45 @@
+PtEtaPhiELorentzVector
+======================
+
+.. currentmodule:: coffea.nanoevents.methods.vector
+
+.. autoclass:: PtEtaPhiELorentzVector
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~PtEtaPhiELorentzVector.energy
+      ~PtEtaPhiELorentzVector.eta
+      ~PtEtaPhiELorentzVector.phi
+      ~PtEtaPhiELorentzVector.pt
+      ~PtEtaPhiELorentzVector.r
+      ~PtEtaPhiELorentzVector.rho
+      ~PtEtaPhiELorentzVector.rho2
+      ~PtEtaPhiELorentzVector.t
+      ~PtEtaPhiELorentzVector.theta
+      ~PtEtaPhiELorentzVector.z
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~PtEtaPhiELorentzVector.multiply
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: energy
+   .. autoattribute:: eta
+   .. autoattribute:: phi
+   .. autoattribute:: pt
+   .. autoattribute:: r
+   .. autoattribute:: rho
+   .. autoattribute:: rho2
+   .. autoattribute:: t
+   .. autoattribute:: theta
+   .. autoattribute:: z
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: multiply

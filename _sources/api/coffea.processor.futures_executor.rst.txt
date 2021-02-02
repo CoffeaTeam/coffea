@@ -1,0 +1,6 @@
+futures_executor
+================
+
+.. currentmodule:: coffea.processor
+
+.. autofunction:: futures_executor

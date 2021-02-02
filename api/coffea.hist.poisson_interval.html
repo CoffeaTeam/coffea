@@ -1,0 +1,300 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>poisson_interval &mdash; coffea 0.7.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="clopper_pearson_interval" href="coffea.hist.clopper_pearson_interval.html" />
+    <link rel="prev" title="coffea.hist" href="../modules/coffea.hist.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> coffea
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.7
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installing coffea</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Coffea by Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Coffea concepts</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../reference.html">API Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.analysis_tools.html">coffea.analysis_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.btag_tools.html">coffea.btag_tools</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../modules/coffea.hist.html">coffea.hist</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../modules/coffea.hist.html#functions">Functions</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">poisson_interval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.hist.clopper_pearson_interval.html">clopper_pearson_interval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.hist.normal_interval.html">normal_interval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.hist.plot1d.html">plot1d</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.hist.plotratio.html">plotratio</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.hist.plot2d.html">plot2d</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.hist.plotgrid.html">plotgrid</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.hist.export1d.html">export1d</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.hist.html#classes">Classes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.hist.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.jetmet_tools.html">coffea.jetmet_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.lookup_tools.html">coffea.lookup_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.lumi_tools.html">coffea.lumi_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.html">coffea.nanoevents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.base.html">coffea.nanoevents.methods.base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.candidate.html">coffea.nanoevents.methods.candidate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.nanoaod.html">coffea.nanoevents.methods.nanoaod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.vector.html">coffea.nanoevents.methods.vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.processor.html">coffea.processor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.util.html">coffea.util</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">coffea</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../reference.html">API Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../modules/coffea.hist.html">coffea.hist</a> &raquo;</li>
+        
+      <li>poisson_interval</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/api/coffea.hist.poisson_interval.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="poisson-interval">
+<h1>poisson_interval<a class="headerlink" href="#poisson-interval" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="coffea.hist.poisson_interval">
+<code class="sig-prename descclassname">coffea.hist.</code><code class="sig-name descname">poisson_interval</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sumw</span></em>, <em class="sig-param"><span class="n">sumw2</span></em>, <em class="sig-param"><span class="n">coverage</span><span class="o">=</span><span class="default_value">0.6826894921370859</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/plot.py#L17"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.poisson_interval" title="Permalink to this definition">¶</a></dt>
+<dd><p>Frequentist coverage interval for Poisson-distributed observations</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sumw</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.20)"><em>numpy.ndarray</em></a>) – Sum of weights vector</p></li>
+<li><p><strong>sumw2</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.20)"><em>numpy.ndarray</em></a>) – Sum weights squared vector</p></li>
+<li><p><strong>coverage</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a><em>, </em><em>optional</em>) – Central coverage interval, defaults to 68%</p></li>
+</ul>
+</dd>
+</dl>
+<p>Calculates the so-called ‘Garwood’ interval,
+c.f. <a class="reference external" href="https://www.ine.pt/revstat/pdf/rs120203.pdf">https://www.ine.pt/revstat/pdf/rs120203.pdf</a> or
+<a class="reference external" href="http://ms.mcmaster.ca/peter/s743/poissonalpha.html">http://ms.mcmaster.ca/peter/s743/poissonalpha.html</a>
+For weighted data, this approximates the observed count by <code class="docutils literal notranslate"><span class="pre">sumw**2/sumw2</span></code>, which
+effectively scales the unweighted poisson interval by the average weight.
+This may not be the optimal solution: see <a class="reference external" href="https://arxiv.org/pdf/1309.1287.pdf">https://arxiv.org/pdf/1309.1287.pdf</a> for a proper treatment.
+When a bin is zero, the scale of the nearest nonzero bin is substituted to scale the nominal upper bound.
+If all bins zero, a warning is generated and interval is set to <code class="docutils literal notranslate"><span class="pre">sumw</span></code>.</p>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="coffea.hist.clopper_pearson_interval.html" class="btn btn-neutral float-right" title="clopper_pearson_interval" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../modules/coffea.hist.html" class="btn btn-neutral float-left" title="coffea.hist" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2019, Fermi National Accelerator Laboratory.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

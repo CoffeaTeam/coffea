@@ -1,0 +1,10 @@
+<map id="inheritance19b58667f8" name="inheritance19b58667f8">
+<area shape="rect" id="node1" href="../api/coffea.nanoevents.methods.candidate.Candidate.html#coffea.nanoevents.methods.candidate.Candidate" target="_top" title="A Lorentz vector with charge" alt="" coords="479,5,554,26"/>
+<area shape="rect" id="node6" href="../api/coffea.nanoevents.methods.candidate.PtEtaPhiMCandidate.html#coffea.nanoevents.methods.candidate.PtEtaPhiMCandidate" target="_top" title="A Lorentz vector in eta, mass coordinates with charge" alt="" coords="633,26,763,48"/>
+<area shape="rect" id="node2" href="../api/coffea.nanoevents.methods.vector.LorentzVector.html#coffea.nanoevents.methods.vector.LorentzVector" target="_top" title="A cartesian Lorentz vector" alt="" coords="286,5,380,26"/>
+<area shape="rect" id="node7" href="../api/coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector.html#coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector" target="_top" title="A Lorentz vector using pseudorapidity and mass" alt="" coords="442,47,592,68"/>
+<area shape="rect" id="node3" href="../api/coffea.nanoevents.methods.vector.ThreeVector.html#coffea.nanoevents.methods.vector.ThreeVector" target="_top" title="A cartesian 3&#45;dimensional vector" alt="" coords="130,5,215,26"/>
+<area shape="rect" id="node8" href="../api/coffea.nanoevents.methods.vector.SphericalThreeVector.html#coffea.nanoevents.methods.vector.SphericalThreeVector" target="_top" title="A spherical coordinate 3&#45;dimensional vector" alt="" coords="265,47,401,68"/>
+<area shape="rect" id="node4" href="../api/coffea.nanoevents.methods.vector.PolarTwoVector.html#coffea.nanoevents.methods.vector.PolarTwoVector" target="_top" title="A polar coordinate 2&#45;dimensional vector" alt="" coords="120,47,224,68"/>
+<area shape="rect" id="node5" href="../api/coffea.nanoevents.methods.vector.TwoVector.html#coffea.nanoevents.methods.vector.TwoVector" target="_top" title="A cartesian 2&#45;dimensional vector" alt="" coords="5,26,80,48"/>
+</map>

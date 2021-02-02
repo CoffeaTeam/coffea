@@ -1,0 +1,6 @@
+run_uproot_job
+==============
+
+.. currentmodule:: coffea.processor
+
+.. autofunction:: run_uproot_job

@@ -1,0 +1,331 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>work_queue_executor &mdash; coffea 0.7.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="run_uproot_job" href="coffea.processor.run_uproot_job.html" />
+    <link rel="prev" title="parsl_executor" href="coffea.processor.parsl_executor.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> coffea
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.7
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installing coffea</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Coffea by Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Coffea concepts</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../reference.html">API Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.analysis_tools.html">coffea.analysis_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.btag_tools.html">coffea.btag_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.hist.html">coffea.hist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.jetmet_tools.html">coffea.jetmet_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.lookup_tools.html">coffea.lookup_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.lumi_tools.html">coffea.lumi_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.html">coffea.nanoevents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.base.html">coffea.nanoevents.methods.base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.candidate.html">coffea.nanoevents.methods.candidate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.nanoaod.html">coffea.nanoevents.methods.nanoaod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.vector.html">coffea.nanoevents.methods.vector</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../modules/coffea.processor.html">coffea.processor</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../modules/coffea.processor.html#functions">Functions</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.iterative_executor.html">iterative_executor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.futures_executor.html">futures_executor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.dask_executor.html">dask_executor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.parsl_executor.html">parsl_executor</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">work_queue_executor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.run_uproot_job.html">run_uproot_job</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.run_spark_job.html">run_spark_job</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.processor.html#classes">Classes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.processor.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.util.html">coffea.util</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">coffea</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../reference.html">API Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../modules/coffea.processor.html">coffea.processor</a> &raquo;</li>
+        
+      <li>work_queue_executor</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/api/coffea.processor.work_queue_executor.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="work-queue-executor">
+<h1>work_queue_executor<a class="headerlink" href="#work-queue-executor" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="coffea.processor.work_queue_executor">
+<code class="sig-prename descclassname">coffea.processor.</code><code class="sig-name descname">work_queue_executor</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">items</span></em>, <em class="sig-param"><span class="n">function</span></em>, <em class="sig-param"><span class="n">accumulator</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/processor/executor.py#L319"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.processor.work_queue_executor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute using Work Queue</p>
+<p>For more information, see <a class="reference internal" href="../wq.html#intro-coffea-wq"><span class="std std-ref">Work Queue Executor</span></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>items</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.9)"><em>list</em></a>) – List of input arguments</p></li>
+<li><p><strong>function</strong> (<em>callable</em>) – A function to be called on each input, which returns an accumulator instance</p></li>
+<li><p><strong>accumulator</strong> (<a class="reference internal" href="coffea.processor.AccumulatorABC.html#coffea.processor.AccumulatorABC" title="coffea.processor.AccumulatorABC"><em>AccumulatorABC</em></a>) – An accumulator to collect the output of the function</p></li>
+<li><p><strong>status</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – If true (default), enable progress bar</p></li>
+<li><p><strong>unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Label of progress bar unit</p></li>
+<li><p><strong>desc</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Label of progress bar description</p></li>
+<li><p><strong>compression</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a><em>, </em><em>optional</em>) – Compress accumulator outputs in flight with LZ4, at level specified (default 1)
+Set to <code class="docutils literal notranslate"><span class="pre">None</span></code> for no compression.</p></li>
+<li><p><strong>work queue specific options</strong> (<em>#</em>) – </p></li>
+<li><p><strong>cores</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – Number of cores for work queue task. If unset, use a whole worker.</p></li>
+<li><p><strong>memory</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – Amount of memory (in MB) for work queue task. If unset, use a whole worker.</p></li>
+<li><p><strong>disk</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – Amount of disk space (in MB) for work queue task. If unset, use a whole worker.</p></li>
+<li><p><strong>gpus</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – Number of GPUs to allocate to each task.  If unset, use zero.</p></li>
+<li><p><strong>resources-mode</strong> (<em>one of 'fixed'</em><em>, or </em><em>'auto'. Default is 'fixed'.</em>) – <ul>
+<li><p>‘fixed’: allocate cores, memory, and disk specified for each task.</p></li>
+<li><dl class="simple">
+<dt>’auto’: use cores, memory, and disk as maximum values to allocate.</dt><dd><p>Useful when the resources used by a task are not known, as
+it lets work queue find an efficient value for maximum
+throughput.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</p></li>
+<li><p><strong>resource-monitor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – If true, (false is the default) turns on resource monitoring for Work Queue.</p></li>
+<li><p><strong>master-name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Name to refer to this work queue master.
+Sets port to 0 (any available port) if port not given.</p></li>
+<li><p><strong>port</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – Port number for work queue master program. Defaults to 9123 if
+master-name not given.</p></li>
+<li><p><strong>password-file</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Location of a file containing a password used to authenticate workers.</p></li>
+<li><p><strong>extra-input-files</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.9)"><em>list</em></a>) – A list of files in the current working directory to send along with each task.
+Useful for small custom libraries and configuration files needed by the processor.</p></li>
+<li><p><strong>environment-file</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Python environment to use. Required.</p></li>
+<li><p><strong>wrapper</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Wrapper script to run/open python environment tarball. Defaults to python_package_run found in PATH.</p></li>
+<li><p><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – If true, emit a message on each task submission and completion.
+Default is false.</p></li>
+<li><p><strong>debug-log</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Filename for debug output</p></li>
+<li><p><strong>stats-log</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Filename for tasks statistics output</p></li>
+<li><p><strong>transactions-log</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Filename for tasks lifetime reports output</p></li>
+<li><p><strong>print-stdout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – If true (default), print the standard output of work queue task on completion.</p></li>
+<li><p><strong>queue-mode</strong> (<em>one of 'persistent'</em><em> or </em><em>'one-per-stage'. Default is 'persistent'.</em>) – ‘persistent’ - One queue is used for all stages of processing.
+‘one-per-stage’ - A new queue is used for each of the stages of processing.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="coffea.processor.run_uproot_job.html" class="btn btn-neutral float-right" title="run_uproot_job" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="coffea.processor.parsl_executor.html" class="btn btn-neutral float-left" title="parsl_executor" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2019, Fermi National Accelerator Laboratory.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

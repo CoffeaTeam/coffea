@@ -1,0 +1,6 @@
+dask_executor
+=============
+
+.. currentmodule:: coffea.processor
+
+.. autofunction:: dask_executor

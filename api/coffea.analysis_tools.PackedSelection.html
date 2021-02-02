@@ -1,0 +1,386 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>PackedSelection &mdash; coffea 0.7.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="WeightStatistics" href="coffea.analysis_tools.WeightStatistics.html" />
+    <link rel="prev" title="coffea.analysis_tools" href="../modules/coffea.analysis_tools.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> coffea
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.7
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installing coffea</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Coffea by Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Coffea concepts</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../reference.html">API Reference Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../modules/coffea.analysis_tools.html">coffea.analysis_tools</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../modules/coffea.analysis_tools.html#classes">Classes</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">PackedSelection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.analysis_tools.WeightStatistics.html">WeightStatistics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.analysis_tools.Weights.html">Weights</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.analysis_tools.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.btag_tools.html">coffea.btag_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.hist.html">coffea.hist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.jetmet_tools.html">coffea.jetmet_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.lookup_tools.html">coffea.lookup_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.lumi_tools.html">coffea.lumi_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.html">coffea.nanoevents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.base.html">coffea.nanoevents.methods.base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.candidate.html">coffea.nanoevents.methods.candidate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.nanoaod.html">coffea.nanoevents.methods.nanoaod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.vector.html">coffea.nanoevents.methods.vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.processor.html">coffea.processor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.util.html">coffea.util</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">coffea</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../reference.html">API Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../modules/coffea.analysis_tools.html">coffea.analysis_tools</a> &raquo;</li>
+        
+      <li>PackedSelection</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/api/coffea.analysis_tools.PackedSelection.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="packedselection">
+<h1>PackedSelection<a class="headerlink" href="#packedselection" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="coffea.analysis_tools.PackedSelection">
+<em class="property">class </em><code class="sig-prename descclassname">coffea.analysis_tools.</code><code class="sig-name descname">PackedSelection</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dtype</span><span class="o">=</span><span class="default_value">'uint32'</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/analysis_tools.py#L195"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.analysis_tools.PackedSelection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Store several boolean arrays in a compact manner</p>
+<p>This class can store several boolean arrays in a memory-efficient mannner
+and evaluate arbitrary combinations of boolean requirements in an CPU-efficient way.
+Supported inputs are 1D numpy or awkward arrays.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dtype</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v1.20)"><em>numpy.dtype</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – internal bitwidth of the packed array, which governs the maximum
+number of selections storable in this object. The default value
+is <code class="docutils literal notranslate"><span class="pre">uint32</span></code>, which allows up to 32 booleans to be stored, but
+if a smaller or larger number of selections needs to be stored,
+one can choose <code class="docutils literal notranslate"><span class="pre">uint16</span></code> or <code class="docutils literal notranslate"><span class="pre">uint64</span></code> instead.</p>
+</dd>
+</dl>
+<p class="rubric">Attributes Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.analysis_tools.PackedSelection.maxitems" title="coffea.analysis_tools.PackedSelection.maxitems"><code class="xref py py-obj docutils literal notranslate"><span class="pre">maxitems</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.analysis_tools.PackedSelection.names" title="coffea.analysis_tools.PackedSelection.names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">names</span></code></a></p></td>
+<td><p>Current list of mask names available</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.analysis_tools.PackedSelection.add" title="coffea.analysis_tools.PackedSelection.add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add</span></code></a>(name, selection[, fill_value])</p></td>
+<td><p>Add a new boolean array</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.analysis_tools.PackedSelection.all" title="coffea.analysis_tools.PackedSelection.all"><code class="xref py py-obj docutils literal notranslate"><span class="pre">all</span></code></a>(*names)</p></td>
+<td><p>Shorthand for <a class="reference internal" href="#coffea.analysis_tools.PackedSelection.require" title="coffea.analysis_tools.PackedSelection.require"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">require</span></code></a>, where all the values are True</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.analysis_tools.PackedSelection.require" title="coffea.analysis_tools.PackedSelection.require"><code class="xref py py-obj docutils literal notranslate"><span class="pre">require</span></code></a>(**names)</p></td>
+<td><p>Return a mask vector corresponding to specific requirements</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes Documentation</p>
+<dl class="py attribute">
+<dt id="coffea.analysis_tools.PackedSelection.maxitems">
+<code class="sig-name descname">maxitems</code><a class="headerlink" href="#coffea.analysis_tools.PackedSelection.maxitems" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="coffea.analysis_tools.PackedSelection.names">
+<code class="sig-name descname">names</code><a class="headerlink" href="#coffea.analysis_tools.PackedSelection.names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Current list of mask names available</p>
+</dd></dl>
+
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt id="coffea.analysis_tools.PackedSelection.add">
+<code class="sig-name descname">add</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">selection</span></em>, <em class="sig-param"><span class="n">fill_value</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/analysis_tools.py#L234"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.analysis_tools.PackedSelection.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a new boolean array</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – name of the selection</p></li>
+<li><p><strong>selection</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.20)"><em>numpy.ndarray</em></a><em> or </em><em>awkward.Array</em>) – a flat array of type <code class="docutils literal notranslate"><span class="pre">bool</span></code> or <code class="docutils literal notranslate"><span class="pre">?bool</span></code>.
+If this is not the first selection added, it must also have
+the same shape as previously added selections. If the array
+is option-type, null entries will be filled with <code class="docutils literal notranslate"><span class="pre">fill_value</span></code>.</p></li>
+<li><p><strong>fill_value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a><em>, </em><em>optional</em>) – All masked entries will be filled as specified (default: <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.analysis_tools.PackedSelection.all">
+<code class="sig-name descname">all</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">names</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/analysis_tools.py#L307"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.analysis_tools.PackedSelection.all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shorthand for <a class="reference internal" href="#coffea.analysis_tools.PackedSelection.require" title="coffea.analysis_tools.PackedSelection.require"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">require</span></code></a>, where all the values are True</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.analysis_tools.PackedSelection.require">
+<code class="sig-name descname">require</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">names</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/analysis_tools.py#L272"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.analysis_tools.PackedSelection.require" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a mask vector corresponding to specific requirements</p>
+<p>Specify an exact requirement on an arbitrary subset of the masks</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**names</strong> (<em>kwargs</em>) – Each argument to require specific value for, in form <code class="docutils literal notranslate"><span class="pre">arg=True</span></code>
+or <code class="docutils literal notranslate"><span class="pre">arg=False</span></code>.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>If</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">selection</span><span class="o">.</span><span class="n">names</span>
+<span class="go">[&#39;cut1&#39;, &#39;cut2&#39;, &#39;cut3&#39;]</span>
+</pre></div>
+</div>
+<p>then</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">selection</span><span class="o">.</span><span class="n">require</span><span class="p">(</span><span class="n">cut1</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cut2</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="go">array([True, False, True, ...])</span>
+</pre></div>
+</div>
+<p>returns a boolean array where an entry is True if the corresponding entries
+<code class="docutils literal notranslate"><span class="pre">cut1</span> <span class="pre">==</span> <span class="pre">True</span></code>, <code class="docutils literal notranslate"><span class="pre">cut2</span> <span class="pre">==</span> <span class="pre">False</span></code>, and <code class="docutils literal notranslate"><span class="pre">cut3</span></code> arbitrary.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="coffea.analysis_tools.WeightStatistics.html" class="btn btn-neutral float-right" title="WeightStatistics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../modules/coffea.analysis_tools.html" class="btn btn-neutral float-left" title="coffea.analysis_tools" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2019, Fermi National Accelerator Laboratory.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,334 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>run_uproot_job &mdash; coffea 0.7.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="run_spark_job" href="coffea.processor.run_spark_job.html" />
+    <link rel="prev" title="work_queue_executor" href="coffea.processor.work_queue_executor.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> coffea
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.7
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installing coffea</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Coffea by Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Coffea concepts</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../reference.html">API Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.analysis_tools.html">coffea.analysis_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.btag_tools.html">coffea.btag_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.hist.html">coffea.hist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.jetmet_tools.html">coffea.jetmet_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.lookup_tools.html">coffea.lookup_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.lumi_tools.html">coffea.lumi_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.html">coffea.nanoevents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.base.html">coffea.nanoevents.methods.base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.candidate.html">coffea.nanoevents.methods.candidate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.nanoaod.html">coffea.nanoevents.methods.nanoaod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.vector.html">coffea.nanoevents.methods.vector</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../modules/coffea.processor.html">coffea.processor</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../modules/coffea.processor.html#functions">Functions</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.iterative_executor.html">iterative_executor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.futures_executor.html">futures_executor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.dask_executor.html">dask_executor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.parsl_executor.html">parsl_executor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.work_queue_executor.html">work_queue_executor</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">run_uproot_job</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.run_spark_job.html">run_spark_job</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.processor.html#classes">Classes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.processor.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.util.html">coffea.util</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">coffea</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../reference.html">API Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../modules/coffea.processor.html">coffea.processor</a> &raquo;</li>
+        
+      <li>run_uproot_job</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/api/coffea.processor.run_uproot_job.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="run-uproot-job">
+<h1>run_uproot_job<a class="headerlink" href="#run-uproot-job" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="coffea.processor.run_uproot_job">
+<code class="sig-prename descclassname">coffea.processor.</code><code class="sig-name descname">run_uproot_job</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fileset</span></em>, <em class="sig-param"><span class="n">treename</span></em>, <em class="sig-param"><span class="n">processor_instance</span></em>, <em class="sig-param"><span class="n">executor</span></em>, <em class="sig-param"><span class="n">executor_args</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">pre_executor</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pre_args</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">chunksize</span><span class="o">=</span><span class="default_value">100000</span></em>, <em class="sig-param"><span class="n">maxchunks</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata_cache</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/processor/executor.py#L1010"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.processor.run_uproot_job" title="Permalink to this definition">¶</a></dt>
+<dd><p>A tool to run a processor using uproot for data delivery</p>
+<p>A convenience wrapper to submit jobs for a file set, which is a
+dictionary of dataset: [file list] entries.  Supports only uproot TTree
+reading, via NanoEvents or LazyDataFrame.  For more customized processing,
+e.g. to read other objects from the files and pass them into data frames,
+one can write a similar function in their user code.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fileset</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.9)"><em>dict</em></a>) – A dictionary <code class="docutils literal notranslate"><span class="pre">{dataset:</span> <span class="pre">[file,</span> <span class="pre">file],</span> <span class="pre">}</span></code>
+Optionally, if some files’ tree name differ, the dictionary can be specified:
+<code class="docutils literal notranslate"><span class="pre">{dataset:</span> <span class="pre">{'treename':</span> <span class="pre">'name',</span> <span class="pre">'files':</span> <span class="pre">[file,</span> <span class="pre">file]},</span> <span class="pre">}</span></code></p></li>
+<li><p><strong>treename</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – name of tree inside each root file, can be <code class="docutils literal notranslate"><span class="pre">None</span></code>;
+treename can also be defined in fileset, which will override the passed treename</p></li>
+<li><p><strong>processor_instance</strong> (<a class="reference internal" href="coffea.processor.ProcessorABC.html#coffea.processor.ProcessorABC" title="coffea.processor.ProcessorABC"><em>ProcessorABC</em></a>) – An instance of a class deriving from ProcessorABC</p></li>
+<li><p><strong>executor</strong> (<em>callable</em>) – A function that takes 3 arguments: items, function, accumulator
+and performs some action equivalent to:
+<code class="docutils literal notranslate"><span class="pre">for</span> <span class="pre">item</span> <span class="pre">in</span> <span class="pre">items:</span> <span class="pre">accumulator</span> <span class="pre">+=</span> <span class="pre">function(item)</span></code></p></li>
+<li><p><strong>executor_args</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.9)"><em>dict</em></a><em>, </em><em>optional</em>) – <p>Arguments to pass to executor.  See <a class="reference internal" href="coffea.processor.iterative_executor.html#coffea.processor.iterative_executor" title="coffea.processor.iterative_executor"><code class="xref any py py-func docutils literal notranslate"><span class="pre">iterative_executor</span></code></a>,
+<a class="reference internal" href="coffea.processor.futures_executor.html#coffea.processor.futures_executor" title="coffea.processor.futures_executor"><code class="xref any py py-func docutils literal notranslate"><span class="pre">futures_executor</span></code></a>, <a class="reference internal" href="coffea.processor.dask_executor.html#coffea.processor.dask_executor" title="coffea.processor.dask_executor"><code class="xref any py py-func docutils literal notranslate"><span class="pre">dask_executor</span></code></a>, or <a class="reference internal" href="coffea.processor.parsl_executor.html#coffea.processor.parsl_executor" title="coffea.processor.parsl_executor"><code class="xref any py py-func docutils literal notranslate"><span class="pre">parsl_executor</span></code></a> for available options.
+Some options are not passed to executors but rather and affect the behavior of the
+work function itself:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">savemetrics</span></code> saves some detailed metrics for xrootd processing (default False)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">schema</span></code> builds the dataframe as a <a class="reference internal" href="../modules/coffea.nanoevents.html#module-coffea.nanoevents" title="coffea.nanoevents"><code class="xref any py py-mod docutils literal notranslate"><span class="pre">nanoevents</span></code></a> object
+(default <code class="docutils literal notranslate"><span class="pre">BaseSchema</span></code>); schema options include <a class="reference internal" href="coffea.nanoevents.BaseSchema.html#coffea.nanoevents.BaseSchema" title="coffea.nanoevents.BaseSchema"><code class="xref any py py-class docutils literal notranslate"><span class="pre">BaseSchema</span></code></a>, <a class="reference internal" href="coffea.nanoevents.NanoAODSchema.html#coffea.nanoevents.NanoAODSchema" title="coffea.nanoevents.NanoAODSchema"><code class="xref any py py-class docutils literal notranslate"><span class="pre">NanoAODSchema</span></code></a>, and <a class="reference internal" href="coffea.nanoevents.TreeMakerSchema.html#coffea.nanoevents.TreeMakerSchema" title="coffea.nanoevents.TreeMakerSchema"><code class="xref any py py-class docutils literal notranslate"><span class="pre">TreeMakerSchema</span></code></a>.
+If schema is None a <a class="reference internal" href="coffea.processor.LazyDataFrame.html#coffea.processor.LazyDataFrame" title="coffea.processor.LazyDataFrame"><code class="xref any py py-class docutils literal notranslate"><span class="pre">LazyDataFrame</span></code></a> is returned rather than NanoEvents, use for unruly ROOT files.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">processor_compression</span></code> sets the compression level used to send processor instance to workers (default 1)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">skipbadfiles</span></code> instead of failing on a bad file, skip it (default False)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">retries</span></code> optionally retry processing of a chunk on failure (default 0)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">xrootdtimeout</span></code> timeout for xrootd read (seconds)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tailtimeout</span></code> timeout requirement on job tails (seconds)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">align_clusters</span></code> aligns the chunks to natural boundaries in the ROOT files (default False)</p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">use_dataframes</span></code> retrieve output as a distributed Dask DataFrame (default False).</dt><dd><p>Only works with <a class="reference internal" href="coffea.processor.dask_executor.html#coffea.processor.dask_executor" title="coffea.processor.dask_executor"><code class="xref any py py-func docutils literal notranslate"><span class="pre">dask_executor</span></code></a>; the processor output must be a Pandas DataFrame.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</p></li>
+<li><p><strong>pre_executor</strong> (<em>callable</em>) – A function like executor, used to calculate fileset metadata
+Defaults to executor</p></li>
+<li><p><strong>pre_args</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.9)"><em>dict</em></a><em>, </em><em>optional</em>) – Similar to executor_args, defaults to executor_args</p></li>
+<li><p><strong>chunksize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a><em>, </em><em>optional</em>) – Maximum number of entries to process at a time in the data frame, default: 100k</p></li>
+<li><p><strong>maxchunks</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a><em>, </em><em>optional</em>) – Maximum number of chunks to process per dataset
+Defaults to processing the whole dataset</p></li>
+<li><p><strong>metadata_cache</strong> (<em>mapping</em><em>, </em><em>optional</em>) – A dict-like object to use as a cache for (file, tree) metadata that is used to
+determine chunking.  Defaults to a in-memory LRU cache that holds 100k entries
+(about 1MB depending on the length of filenames, etc.)  If you edit an input file
+(please don’t) during a session, the session can be restarted to clear the cache.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="coffea.processor.run_spark_job.html" class="btn btn-neutral float-right" title="run_spark_job" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="coffea.processor.work_queue_executor.html" class="btn btn-neutral float-left" title="work_queue_executor" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2019, Fermi National Accelerator Laboratory.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

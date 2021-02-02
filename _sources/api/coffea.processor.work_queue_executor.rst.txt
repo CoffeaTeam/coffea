@@ -1,0 +1,6 @@
+work_queue_executor
+===================
+
+.. currentmodule:: coffea.processor
+
+.. autofunction:: work_queue_executor

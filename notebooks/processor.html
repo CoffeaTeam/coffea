@@ -1,0 +1,1110 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Coffea Processors &mdash; coffea 0.7.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="NanoEvents tutorial" href="nanoevents.html" />
+    <link rel="prev" title="Coffea Histograms" href="histograms.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> coffea
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.7
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installing coffea</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../examples.html">Coffea by Example</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="histograms.html">Coffea Histograms</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Coffea Processors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Getting-fancy">Getting fancy</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nanoevents.html">NanoEvents tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="applying_corrections.html">Applying corrections to columnar data</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Coffea concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">API Reference Guide</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">coffea</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../examples.html">Coffea by Example</a> &raquo;</li>
+        
+      <li>Coffea Processors</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/notebooks/processor.ipynb.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt *,
+div.nbinput.container div.input_area pre,
+div.nboutput.container div.output_area pre,
+div.nbinput.container div.input_area .highlight,
+div.nboutput.container div.output_area .highlight {
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+div.nbinput.container > div[class*=highlight],
+div.nboutput.container > div[class*=highlight] {
+    margin: 0;
+}
+
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt * {
+    background: none;
+}
+
+div.nboutput.container div.output_area .highlight,
+div.nboutput.container div.output_area pre {
+    background: unset;
+}
+
+div.nboutput.container div.output_area div.highlight {
+    color: unset;  /* override Pygments text color */
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    /*background: #f5f5f5;*/
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+    margin: 0;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="Coffea-Processors">
+<h1>Coffea Processors<a class="headerlink" href="#Coffea-Processors" title="Permalink to this headline">¶</a></h1>
+<p>This is a rendered copy of <a class="reference external" href="https://github.com/CoffeaTeam/coffea/blob/master/binder/processor.ipynb">processor.ipynb</a>. You can optionally run it interactively on <a class="reference external" href="https://mybinder.org/v2/gh/coffeateam/coffea/master?filepath=binder%2Fprocessor.ipynb">binder at this link</a></p>
+<p>Coffea relies mainly on <a class="reference external" href="https://github.com/scikit-hep/uproot">uproot</a> to provide access to ROOT files for analysis. As a usual analysis will involve processing tens to thousands of files, totalling gigabytes to terabytes of data, there is a certain amount of work to be done to build a parallelized framework to process the data in a reasonable amount of time. Of course, one can work directly within uproot to achieve this, as we’ll show in the beginning, but coffea provides the
+<code class="docutils literal notranslate"><span class="pre">coffea.processor</span></code> module, which allows users to worry just about the actual analysis code and not about how to implement efficient parallelization, assuming that the parallization is a trivial map-reduce operation (e.g. filling histograms and adding them together). The module provides the following key features:</p>
+<ul class="simple">
+<li><p>A <code class="docutils literal notranslate"><span class="pre">ProcessorABC</span></code> abstract base class that can be derived from to implement the analysis code;</p></li>
+<li><p>An interface to the arrays being read from the TTree, either <a class="reference external" href="https://coffeateam.github.io/coffea/api/coffea.processor.LazyDataFrame.html#coffea.processor.LazyDataFrame">DataFrame</a> or <a class="reference external" href="https://coffeateam.github.io/coffea/notebooks/nanoevents.html">NanoEvents</a>, to be used as inputs;</p></li>
+<li><p>A set of <a class="reference external" href="https://coffeateam.github.io/coffea/api/coffea.processor.AccumulatorABC.html#coffea.processor.AccumulatorABC">accumulator types</a>, such as <code class="docutils literal notranslate"><span class="pre">dict_accumulator</span></code> or <code class="docutils literal notranslate"><span class="pre">Hist</span></code> to be used as output; and</p></li>
+<li><p>A set of parallel executors to access multicore processing or distributed computing systems such as <a class="reference external" href="https://distributed.dask.org/en/latest/">Dask</a>, <a class="reference external" href="http://parsl-project.org/">Parsl</a>, <a class="reference external" href="https://spark.apache.org/">Spark</a>, and others.</p></li>
+</ul>
+<p>Let’s start by writing a simple processor class that reads some CMS open data and plots a dimuon mass spectrum. We’ll start by copying the <a class="reference external" href="https://coffeateam.github.io/coffea/api/coffea.processor.ProcessorABC.html#coffea.processor.ProcessorABC">ProcessorABC</a> skeleton and filling in some details:</p>
+<ul class="simple">
+<li><p>Remove <code class="docutils literal notranslate"><span class="pre">flag</span></code>, as we won’t use it</p></li>
+<li><p>Adding a new histogram for <span class="math notranslate nohighlight">\(m_{\mu \mu}\)</span></p></li>
+<li><p>Building a <a class="reference external" href="https://coffeateam.github.io/coffea/api/coffea.nanoevents.methods.candidate.PtEtaPhiMCandidate.html#coffea.nanoevents.methods.candidate.PtEtaPhiMCandidate">Candidate</a> record for muons</p></li>
+<li><p>Calculating the dimuon invariant mass</p></li>
+</ul>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">awkward</span> <span class="k">as</span> <span class="nn">ak</span>
+<span class="kn">from</span> <span class="nn">coffea</span> <span class="kn">import</span> <span class="n">hist</span><span class="p">,</span> <span class="n">processor</span>
+
+<span class="c1"># register our candidate behaviors</span>
+<span class="kn">from</span> <span class="nn">coffea.nanoevents.methods</span> <span class="kn">import</span> <span class="n">candidate</span>
+<span class="n">ak</span><span class="o">.</span><span class="n">behavior</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">behavior</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">MyProcessor</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">ProcessorABC</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_accumulator</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">dict_accumulator</span><span class="p">({</span>
+            <span class="s2">&quot;sumw&quot;</span><span class="p">:</span> <span class="n">processor</span><span class="o">.</span><span class="n">defaultdict_accumulator</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span>
+            <span class="s2">&quot;mass&quot;</span><span class="p">:</span> <span class="n">hist</span><span class="o">.</span><span class="n">Hist</span><span class="p">(</span>
+                <span class="s2">&quot;Events&quot;</span><span class="p">,</span>
+                <span class="n">hist</span><span class="o">.</span><span class="n">Cat</span><span class="p">(</span><span class="s2">&quot;dataset&quot;</span><span class="p">,</span> <span class="s2">&quot;Dataset&quot;</span><span class="p">),</span>
+                <span class="n">hist</span><span class="o">.</span><span class="n">Bin</span><span class="p">(</span><span class="s2">&quot;mass&quot;</span><span class="p">,</span> <span class="s2">&quot;$m_{\mu\mu}$ [GeV]&quot;</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">120</span><span class="p">),</span>
+            <span class="p">),</span>
+        <span class="p">})</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">accumulator</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_accumulator</span>
+
+    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">events</span><span class="p">):</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">accumulator</span><span class="o">.</span><span class="n">identity</span><span class="p">()</span>
+
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">events</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;dataset&#39;</span><span class="p">]</span>
+        <span class="n">muons</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">zip</span><span class="p">({</span>
+            <span class="s2">&quot;pt&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_pt</span><span class="p">,</span>
+            <span class="s2">&quot;eta&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_eta</span><span class="p">,</span>
+            <span class="s2">&quot;phi&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_phi</span><span class="p">,</span>
+            <span class="s2">&quot;mass&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_mass</span><span class="p">,</span>
+            <span class="s2">&quot;charge&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_charge</span><span class="p">,</span>
+        <span class="p">},</span> <span class="n">with_name</span><span class="o">=</span><span class="s2">&quot;PtEtaPhiMCandidate&quot;</span><span class="p">)</span>
+
+        <span class="n">cut</span> <span class="o">=</span> <span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">muons</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">muons</span><span class="o">.</span><span class="n">charge</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># add first and second muon in every event together</span>
+        <span class="n">dimuon</span> <span class="o">=</span> <span class="n">muons</span><span class="p">[</span><span class="n">cut</span><span class="p">][:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">muons</span><span class="p">[</span><span class="n">cut</span><span class="p">][:,</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">output</span><span class="p">[</span><span class="s2">&quot;sumw&quot;</span><span class="p">][</span><span class="n">dataset</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>
+        <span class="n">output</span><span class="p">[</span><span class="s2">&quot;mass&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">mass</span><span class="o">=</span><span class="n">dimuon</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">output</span>
+
+    <span class="k">def</span> <span class="nf">postprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accumulator</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">accumulator</span>
+</pre></div>
+</div>
+</div>
+<p>If we were to just use bare uproot to execute this processor, we could do that with the following example, which:</p>
+<ul class="simple">
+<li><p>Opens a CMS open data file</p></li>
+<li><p>Creates a NanoEvents object using <code class="docutils literal notranslate"><span class="pre">BaseSchema</span></code> (roughly equivalent to the output of <code class="docutils literal notranslate"><span class="pre">uproot.lazy</span></code>)</p></li>
+<li><p>Creates a <code class="docutils literal notranslate"><span class="pre">MyProcessor</span></code> instance</p></li>
+<li><p>Runs the <code class="docutils literal notranslate"><span class="pre">process()</span></code> function, which returns our accumulators</p></li>
+</ul>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">uproot</span>
+<span class="kn">from</span> <span class="nn">coffea.nanoevents</span> <span class="kn">import</span> <span class="n">NanoEventsFactory</span><span class="p">,</span> <span class="n">BaseSchema</span>
+
+<span class="c1"># https://github.com/scikit-hep/uproot4/issues/122</span>
+<span class="n">uproot</span><span class="o">.</span><span class="n">open</span><span class="o">.</span><span class="n">defaults</span><span class="p">[</span><span class="s2">&quot;xrootd_handler&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">uproot</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">xrootd</span><span class="o">.</span><span class="n">MultithreadedXRootDSource</span>
+
+<span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;root://eospublic.cern.ch//eos/root-eos/cms_opendata_2012_nanoaod/Run2012B_DoubleMuParked.root&quot;</span>
+<span class="n">file</span> <span class="o">=</span> <span class="n">uproot</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="n">events</span> <span class="o">=</span> <span class="n">NanoEventsFactory</span><span class="o">.</span><span class="n">from_root</span><span class="p">(</span>
+    <span class="n">file</span><span class="p">,</span>
+    <span class="n">entry_stop</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;dataset&quot;</span><span class="p">:</span> <span class="s2">&quot;DoubleMuon&quot;</span><span class="p">},</span>
+    <span class="n">schemaclass</span><span class="o">=</span><span class="n">BaseSchema</span><span class="p">,</span>
+<span class="p">)</span><span class="o">.</span><span class="n">events</span><span class="p">()</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">MyProcessor</span><span class="p">()</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>
+<span class="n">out</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;sumw&#39;: defaultdict_accumulator(float, {&#39;DoubleMuon&#39;: 10000.0}),
+ &#39;mass&#39;: &lt;Hist (dataset,mass) instance at 0x7fcc1e9f4b10&gt;}
+</pre></div></div>
+</div>
+<p>One could expand on this code to run over several chunks of the file, setting <code class="docutils literal notranslate"><span class="pre">entry_start</span></code> and <code class="docutils literal notranslate"><span class="pre">entry_stop</span></code> as appropriate. Then, several datasets could be processed by iterating over several files. However, <a class="reference external" href="https://coffeateam.github.io/coffea/api/coffea.processor.run_uproot_job.html#coffea.processor.run_uproot_job">run_uproot_job</a> can help with this. One lists the datasets and corresponding files, the processor they want to run, and which executor they want to use. Available executors
+are listed <a class="reference external" href="https://coffeateam.github.io/coffea/modules/coffea.processor.html#functions">here</a>. Since these files are very large, we limit to just reading the first few chunks of events from each dataset with <code class="docutils literal notranslate"><span class="pre">maxchunks</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">fileset</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;DoubleMuon&#39;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s1">&#39;root://eospublic.cern.ch//eos/root-eos/cms_opendata_2012_nanoaod/Run2012B_DoubleMuParked.root&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;root://eospublic.cern.ch//eos/root-eos/cms_opendata_2012_nanoaod/Run2012C_DoubleMuParked.root&#39;</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="s1">&#39;ZZ to 4mu&#39;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s1">&#39;root://eospublic.cern.ch//eos/root-eos/cms_opendata_2012_nanoaod/ZZTo4mu.root&#39;</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+
+<span class="n">out</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">run_uproot_job</span><span class="p">(</span>
+    <span class="n">fileset</span><span class="p">,</span>
+    <span class="n">treename</span><span class="o">=</span><span class="s2">&quot;Events&quot;</span><span class="p">,</span>
+    <span class="n">processor_instance</span><span class="o">=</span><span class="n">MyProcessor</span><span class="p">(),</span>
+    <span class="n">executor</span><span class="o">=</span><span class="n">processor</span><span class="o">.</span><span class="n">iterative_executor</span><span class="p">,</span>
+    <span class="n">executor_args</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;schema&quot;</span><span class="p">:</span> <span class="n">BaseSchema</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="n">maxchunks</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">out</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9c8a04343ede4324948f085a6bdce923", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;sumw&#39;: defaultdict_accumulator(float,
+                         {&#39;ZZ to 4mu&#39;: 399752.0, &#39;DoubleMuon&#39;: 400224.0}),
+ &#39;mass&#39;: &lt;Hist (dataset,mass) instance at 0x7fcc1ea3c190&gt;}
+</pre></div></div>
+</div>
+<p>Now, if we want to use more than a single core on our machine, we simply change <a class="reference external" href="https://coffeateam.github.io/coffea/api/coffea.processor.iterative_executor.html">iterative_executor</a> for <a class="reference external" href="https://coffeateam.github.io/coffea/api/coffea.processor.futures_executor.html">futures_executor</a>, which uses the python <a class="reference external" href="https://docs.python.org/3/library/concurrent.futures.html">concurrent.futures</a> standard library. Optional arguments to these executors can be provided via <code class="docutils literal notranslate"><span class="pre">executor_args</span></code>
+parameter of <code class="docutils literal notranslate"><span class="pre">run_uproot_job</span></code>, such as the number of cores to use (2):</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">out</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">run_uproot_job</span><span class="p">(</span>
+    <span class="n">fileset</span><span class="p">,</span>
+    <span class="n">treename</span><span class="o">=</span><span class="s2">&quot;Events&quot;</span><span class="p">,</span>
+    <span class="n">processor_instance</span><span class="o">=</span><span class="n">MyProcessor</span><span class="p">(),</span>
+    <span class="n">executor</span><span class="o">=</span><span class="n">processor</span><span class="o">.</span><span class="n">futures_executor</span><span class="p">,</span>
+    <span class="n">executor_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;schema&quot;</span><span class="p">:</span> <span class="n">BaseSchema</span><span class="p">,</span> <span class="s2">&quot;workers&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
+    <span class="n">maxchunks</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">out</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "a0c7504263344639bb6850f3d3300ecc", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;sumw&#39;: defaultdict_accumulator(float,
+                         {&#39;ZZ to 4mu&#39;: 399752.0, &#39;DoubleMuon&#39;: 400224.0}),
+ &#39;mass&#39;: &lt;Hist (dataset,mass) instance at 0x7fcc1ed73f10&gt;}
+</pre></div></div>
+</div>
+<p>Hopefully this ran faster than the previous cell, but that may depend on how many cores are available on the machine you are running this notebook.</p>
+<div class="section" id="Getting-fancy">
+<h2>Getting fancy<a class="headerlink" href="#Getting-fancy" title="Permalink to this headline">¶</a></h2>
+<p>Let’s flesh out this analysis into a 4-muon analysis, searching for diboson events:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">import</span> <span class="nn">numba</span>
+
+
+<span class="nd">@numba</span><span class="o">.</span><span class="n">njit</span>
+<span class="k">def</span> <span class="nf">find_4lep</span><span class="p">(</span><span class="n">events_leptons</span><span class="p">,</span> <span class="n">builder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Search for valid 4-lepton combinations from an array of events * leptons {charge, ...}</span>
+
+<span class="sd">    A valid candidate has two pairs of leptons that each have balanced charge</span>
+<span class="sd">    Outputs an array of events * candidates {indices 0..3} corresponding to all valid</span>
+<span class="sd">    permutations of all valid combinations of unique leptons in each event</span>
+<span class="sd">    (omitting permutations of the pairs)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">leptons</span> <span class="ow">in</span> <span class="n">events_leptons</span><span class="p">:</span>
+        <span class="n">builder</span><span class="o">.</span><span class="n">begin_list</span><span class="p">()</span>
+        <span class="n">nlep</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">leptons</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i0</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nlep</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i1</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i0</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">nlep</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">leptons</span><span class="p">[</span><span class="n">i0</span><span class="p">]</span><span class="o">.</span><span class="n">charge</span> <span class="o">+</span> <span class="n">leptons</span><span class="p">[</span><span class="n">i1</span><span class="p">]</span><span class="o">.</span><span class="n">charge</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">for</span> <span class="n">i2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nlep</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">i3</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">nlep</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">({</span><span class="n">i0</span><span class="p">,</span> <span class="n">i1</span><span class="p">,</span> <span class="n">i2</span><span class="p">,</span> <span class="n">i3</span><span class="p">})</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+                            <span class="k">continue</span>
+                        <span class="k">if</span> <span class="n">leptons</span><span class="p">[</span><span class="n">i2</span><span class="p">]</span><span class="o">.</span><span class="n">charge</span> <span class="o">+</span> <span class="n">leptons</span><span class="p">[</span><span class="n">i3</span><span class="p">]</span><span class="o">.</span><span class="n">charge</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="k">continue</span>
+                        <span class="n">builder</span><span class="o">.</span><span class="n">begin_tuple</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+                        <span class="n">builder</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">integer</span><span class="p">(</span><span class="n">i0</span><span class="p">)</span>
+                        <span class="n">builder</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">integer</span><span class="p">(</span><span class="n">i1</span><span class="p">)</span>
+                        <span class="n">builder</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">integer</span><span class="p">(</span><span class="n">i2</span><span class="p">)</span>
+                        <span class="n">builder</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">integer</span><span class="p">(</span><span class="n">i3</span><span class="p">)</span>
+                        <span class="n">builder</span><span class="o">.</span><span class="n">end_tuple</span><span class="p">()</span>
+        <span class="n">builder</span><span class="o">.</span><span class="n">end_list</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">builder</span>
+
+
+<span class="k">class</span> <span class="nc">FancyDimuonProcessor</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">ProcessorABC</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">dataset_axis</span> <span class="o">=</span> <span class="n">hist</span><span class="o">.</span><span class="n">Cat</span><span class="p">(</span><span class="s2">&quot;dataset&quot;</span><span class="p">,</span> <span class="s2">&quot;Primary dataset&quot;</span><span class="p">)</span>
+        <span class="n">mass_axis</span> <span class="o">=</span> <span class="n">hist</span><span class="o">.</span><span class="n">Bin</span><span class="p">(</span><span class="s2">&quot;mass&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;$m_{\mu\mu}$ [GeV]&quot;</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span>
+        <span class="n">pt_axis</span> <span class="o">=</span> <span class="n">hist</span><span class="o">.</span><span class="n">Bin</span><span class="p">(</span><span class="s2">&quot;pt&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;$p_{T,\mu}$ [GeV]&quot;</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_accumulator</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">dict_accumulator</span><span class="p">({</span>
+            <span class="s1">&#39;nMuons&#39;</span><span class="p">:</span> <span class="n">hist</span><span class="o">.</span><span class="n">Hist</span><span class="p">(</span>
+                <span class="s2">&quot;Counts&quot;</span><span class="p">,</span>
+                <span class="n">dataset_axis</span><span class="p">,</span>
+                <span class="n">hist</span><span class="o">.</span><span class="n">Bin</span><span class="p">(</span><span class="s2">&quot;nMuons&quot;</span><span class="p">,</span> <span class="s2">&quot;Number of good muons&quot;</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+            <span class="p">),</span>
+            <span class="s1">&#39;mass&#39;</span><span class="p">:</span> <span class="n">hist</span><span class="o">.</span><span class="n">Hist</span><span class="p">(</span><span class="s2">&quot;Counts&quot;</span><span class="p">,</span> <span class="n">dataset_axis</span><span class="p">,</span> <span class="n">mass_axis</span><span class="p">),</span>
+            <span class="s1">&#39;mass_z1&#39;</span><span class="p">:</span> <span class="n">hist</span><span class="o">.</span><span class="n">Hist</span><span class="p">(</span><span class="s2">&quot;Counts&quot;</span><span class="p">,</span> <span class="n">dataset_axis</span><span class="p">,</span> <span class="n">mass_axis</span><span class="p">),</span>
+            <span class="s1">&#39;mass_z2&#39;</span><span class="p">:</span> <span class="n">hist</span><span class="o">.</span><span class="n">Hist</span><span class="p">(</span><span class="s2">&quot;Counts&quot;</span><span class="p">,</span> <span class="n">dataset_axis</span><span class="p">,</span> <span class="n">mass_axis</span><span class="p">),</span>
+            <span class="s1">&#39;pt_z1_mu1&#39;</span><span class="p">:</span> <span class="n">hist</span><span class="o">.</span><span class="n">Hist</span><span class="p">(</span><span class="s2">&quot;Counts&quot;</span><span class="p">,</span> <span class="n">dataset_axis</span><span class="p">,</span> <span class="n">pt_axis</span><span class="p">),</span>
+            <span class="s1">&#39;pt_z1_mu2&#39;</span><span class="p">:</span> <span class="n">hist</span><span class="o">.</span><span class="n">Hist</span><span class="p">(</span><span class="s2">&quot;Counts&quot;</span><span class="p">,</span> <span class="n">dataset_axis</span><span class="p">,</span> <span class="n">pt_axis</span><span class="p">),</span>
+            <span class="s1">&#39;cutflow&#39;</span><span class="p">:</span> <span class="n">processor</span><span class="o">.</span><span class="n">defaultdict_accumulator</span><span class="p">(</span>
+                <span class="c1"># we don&#39;t use a lambda function to avoid pickle issues</span>
+                <span class="n">partial</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">defaultdict_accumulator</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+            <span class="p">),</span>
+        <span class="p">})</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">accumulator</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_accumulator</span>
+
+    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">events</span><span class="p">):</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">accumulator</span><span class="o">.</span><span class="n">identity</span><span class="p">()</span>
+
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">events</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;dataset&#39;</span><span class="p">]</span>
+        <span class="n">muons</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">zip</span><span class="p">({</span>
+            <span class="s2">&quot;pt&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_pt</span><span class="p">,</span>
+            <span class="s2">&quot;eta&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_eta</span><span class="p">,</span>
+            <span class="s2">&quot;phi&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_phi</span><span class="p">,</span>
+            <span class="s2">&quot;mass&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_mass</span><span class="p">,</span>
+            <span class="s2">&quot;charge&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_charge</span><span class="p">,</span>
+            <span class="s2">&quot;softId&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_softId</span><span class="p">,</span>
+            <span class="s2">&quot;isolation&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_pfRelIso03_all</span><span class="p">,</span>
+        <span class="p">},</span> <span class="n">with_name</span><span class="o">=</span><span class="s2">&quot;PtEtaPhiMCandidate&quot;</span><span class="p">)</span>
+
+        <span class="c1"># make sure they are sorted by transverse momentum</span>
+        <span class="n">muons</span> <span class="o">=</span> <span class="n">muons</span><span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">muons</span><span class="o">.</span><span class="n">pt</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)]</span>
+
+        <span class="n">output</span><span class="p">[</span><span class="s1">&#39;cutflow&#39;</span><span class="p">][</span><span class="n">dataset</span><span class="p">][</span><span class="s1">&#39;all events&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">muons</span><span class="p">)</span>
+
+        <span class="c1"># impose some quality and minimum pt cuts on the muons</span>
+        <span class="n">muons</span> <span class="o">=</span> <span class="n">muons</span><span class="p">[</span>
+            <span class="n">muons</span><span class="o">.</span><span class="n">softId</span>
+            <span class="o">&amp;</span> <span class="p">(</span><span class="n">muons</span><span class="o">.</span><span class="n">pt</span> <span class="o">&gt;</span> <span class="mi">5</span><span class="p">)</span>
+            <span class="o">&amp;</span> <span class="p">(</span><span class="n">muons</span><span class="o">.</span><span class="n">isolation</span> <span class="o">&lt;</span> <span class="mf">0.2</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">output</span><span class="p">[</span><span class="s1">&#39;cutflow&#39;</span><span class="p">][</span><span class="n">dataset</span><span class="p">][</span><span class="s1">&#39;at least 4 good muons&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">ak</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">muons</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="n">output</span><span class="p">[</span><span class="s1">&#39;nMuons&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span> <span class="n">nMuons</span><span class="o">=</span><span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">muons</span><span class="p">))</span>
+
+        <span class="c1"># reduce first axis: skip events without enough muons</span>
+        <span class="n">muons</span> <span class="o">=</span> <span class="n">muons</span><span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">muons</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">]</span>
+
+        <span class="c1"># find all candidates with helper function</span>
+        <span class="n">fourmuon</span> <span class="o">=</span> <span class="n">find_4lep</span><span class="p">(</span><span class="n">muons</span><span class="p">,</span> <span class="n">ak</span><span class="o">.</span><span class="n">ArrayBuilder</span><span class="p">())</span><span class="o">.</span><span class="n">snapshot</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">ak</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">fourmuon</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="c1"># skip processing as it is an EmptyArray</span>
+            <span class="k">return</span> <span class="n">output</span>
+        <span class="n">fourmuon</span> <span class="o">=</span> <span class="p">[</span><span class="n">muons</span><span class="p">[</span><span class="n">fourmuon</span><span class="p">[</span><span class="n">idx</span><span class="p">]]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="s2">&quot;0123&quot;</span><span class="p">]</span>
+        <span class="n">fourmuon</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">zip</span><span class="p">({</span>
+            <span class="s2">&quot;z1&quot;</span><span class="p">:</span> <span class="n">ak</span><span class="o">.</span><span class="n">zip</span><span class="p">({</span>
+                <span class="s2">&quot;lep1&quot;</span><span class="p">:</span> <span class="n">fourmuon</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="s2">&quot;lep2&quot;</span><span class="p">:</span> <span class="n">fourmuon</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                <span class="s2">&quot;p4&quot;</span><span class="p">:</span> <span class="n">fourmuon</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">fourmuon</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="p">}),</span>
+            <span class="s2">&quot;z2&quot;</span><span class="p">:</span> <span class="n">ak</span><span class="o">.</span><span class="n">zip</span><span class="p">({</span>
+                <span class="s2">&quot;lep1&quot;</span><span class="p">:</span> <span class="n">fourmuon</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                <span class="s2">&quot;lep2&quot;</span><span class="p">:</span> <span class="n">fourmuon</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+                <span class="s2">&quot;p4&quot;</span><span class="p">:</span> <span class="n">fourmuon</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">fourmuon</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+            <span class="p">}),</span>
+        <span class="p">})</span>
+
+        <span class="n">output</span><span class="p">[</span><span class="s1">&#39;cutflow&#39;</span><span class="p">][</span><span class="n">dataset</span><span class="p">][</span><span class="s1">&#39;at least one candidate&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">ak</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">fourmuon</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># require minimum dimuon mass</span>
+        <span class="n">fourmuon</span> <span class="o">=</span> <span class="n">fourmuon</span><span class="p">[(</span><span class="n">fourmuon</span><span class="o">.</span><span class="n">z1</span><span class="o">.</span><span class="n">p4</span><span class="o">.</span><span class="n">mass</span> <span class="o">&gt;</span> <span class="mf">60.</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">fourmuon</span><span class="o">.</span><span class="n">z2</span><span class="o">.</span><span class="n">p4</span><span class="o">.</span><span class="n">mass</span> <span class="o">&gt;</span> <span class="mf">20.</span><span class="p">)]</span>
+        <span class="n">output</span><span class="p">[</span><span class="s1">&#39;cutflow&#39;</span><span class="p">][</span><span class="n">dataset</span><span class="p">][</span><span class="s1">&#39;minimum dimuon mass&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">ak</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">fourmuon</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># choose permutation with z1 mass closest to nominal Z boson mass</span>
+        <span class="n">bestz1</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">singletons</span><span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">fourmuon</span><span class="o">.</span><span class="n">z1</span><span class="o">.</span><span class="n">p4</span><span class="o">.</span><span class="n">mass</span> <span class="o">-</span> <span class="mf">91.1876</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">fourmuon</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">fourmuon</span><span class="p">[</span><span class="n">bestz1</span><span class="p">])</span>
+
+        <span class="n">output</span><span class="p">[</span><span class="s1">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">mass</span><span class="o">=</span><span class="p">(</span><span class="n">fourmuon</span><span class="o">.</span><span class="n">z1</span><span class="o">.</span><span class="n">p4</span> <span class="o">+</span> <span class="n">fourmuon</span><span class="o">.</span><span class="n">z2</span><span class="o">.</span><span class="n">p4</span><span class="p">)</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">output</span><span class="p">[</span><span class="s1">&#39;mass_z1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">mass</span><span class="o">=</span><span class="n">fourmuon</span><span class="o">.</span><span class="n">z1</span><span class="o">.</span><span class="n">p4</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">output</span><span class="p">[</span><span class="s1">&#39;mass_z2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">mass</span><span class="o">=</span><span class="n">fourmuon</span><span class="o">.</span><span class="n">z2</span><span class="o">.</span><span class="n">p4</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">output</span><span class="p">[</span><span class="s1">&#39;pt_z1_mu1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">pt</span><span class="o">=</span><span class="n">fourmuon</span><span class="o">.</span><span class="n">z1</span><span class="o">.</span><span class="n">lep1</span><span class="o">.</span><span class="n">pt</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">output</span><span class="p">[</span><span class="s1">&#39;pt_z1_mu2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">pt</span><span class="o">=</span><span class="n">fourmuon</span><span class="o">.</span><span class="n">z1</span><span class="o">.</span><span class="n">lep2</span><span class="o">.</span><span class="n">pt</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">output</span>
+
+    <span class="k">def</span> <span class="nf">postprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accumulator</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">accumulator</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">time</span>
+
+<span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="n">fileset</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;DoubleMuon&#39;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s1">&#39;root://eospublic.cern.ch//eos/root-eos/cms_opendata_2012_nanoaod/Run2012B_DoubleMuParked.root&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;root://eospublic.cern.ch//eos/root-eos/cms_opendata_2012_nanoaod/Run2012C_DoubleMuParked.root&#39;</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="s1">&#39;ZZ to 4mu&#39;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s1">&#39;root://eospublic.cern.ch//eos/root-eos/cms_opendata_2012_nanoaod/ZZTo4mu.root&#39;</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+
+<span class="n">output</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">run_uproot_job</span><span class="p">(</span>
+    <span class="n">fileset</span><span class="p">,</span>
+    <span class="n">treename</span><span class="o">=</span><span class="s1">&#39;Events&#39;</span><span class="p">,</span>
+    <span class="n">processor_instance</span><span class="o">=</span><span class="n">FancyDimuonProcessor</span><span class="p">(),</span>
+    <span class="n">executor</span><span class="o">=</span><span class="n">processor</span><span class="o">.</span><span class="n">futures_executor</span><span class="p">,</span>
+    <span class="n">executor_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;schema&quot;</span><span class="p">:</span> <span class="n">BaseSchema</span><span class="p">,</span> <span class="s2">&quot;workers&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">},</span>
+    <span class="n">chunksize</span><span class="o">=</span><span class="mi">100000</span><span class="p">,</span>
+    <span class="n">maxchunks</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">elapsed</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">tstart</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d738e9f62b0f493c8542eebf35672bb1", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "ba8fa1b2851d481cbaa1747fd10f9b73", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/lagray/miniconda3/envs/coffea-work/lib/python3.7/site-packages/numba/core/dispatcher.py:238: UserWarning: Numba extension module &#39;awkward1._connect._numba&#39; failed to load due to &#39;ImportError(generic_type: type &#34;kernel_lib&#34; is already registered!)&#39;.
+  entrypoints.init_all()
+/Users/lagray/miniconda3/envs/coffea-work/lib/python3.7/site-packages/numba/core/dispatcher.py:238: UserWarning: Numba extension module &#39;awkward1._connect._numba&#39; failed to load due to &#39;ImportError(generic_type: type &#34;kernel_lib&#34; is already registered!)&#39;.
+  entrypoints.init_all()
+/Users/lagray/miniconda3/envs/coffea-work/lib/python3.7/site-packages/numba/core/dispatcher.py:238: UserWarning: Numba extension module &#39;awkward1._connect._numba&#39; failed to load due to &#39;ImportError(generic_type: type &#34;kernel_lib&#34; is already registered!)&#39;.
+  entrypoints.init_all()
+/Users/lagray/miniconda3/envs/coffea-work/lib/python3.7/site-packages/numba/core/dispatcher.py:238: UserWarning: Numba extension module &#39;awkward1._connect._numba&#39; failed to load due to &#39;ImportError(generic_type: type &#34;kernel_lib&#34; is already registered!)&#39;.
+  entrypoints.init_all()
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+{&#39;nMuons&#39;: &lt;Hist (dataset,nMuons) instance at 0x7fcc1f5331d0&gt;, &#39;mass&#39;: &lt;Hist (dataset,mass) instance at 0x7fcc1f533ed0&gt;, &#39;mass_z1&#39;: &lt;Hist (dataset,mass) instance at 0x7fcc1ea22490&gt;, &#39;mass_z2&#39;: &lt;Hist (dataset,mass) instance at 0x7fcc1ed6d150&gt;, &#39;pt_z1_mu1&#39;: &lt;Hist (dataset,pt) instance at 0x7fcc1eb59c90&gt;, &#39;pt_z1_mu2&#39;: &lt;Hist (dataset,pt) instance at 0x7fcc1eb59c50&gt;, &#39;cutflow&#39;: defaultdict_accumulator(..., {&#39;ZZ to 4mu&#39;: defaultdict_accumulator(&lt;class &#39;int&#39;&gt;, {&#39;all events&#39;: 1499064, &#39;at least 4 good muons&#39;: 143618, &#39;at least one candidate&#39;: 143055, &#39;minimum dimuon mass&#39;: 81867}), &#39;DoubleMuon&#39;: defaultdict_accumulator(&lt;class &#39;int&#39;&gt;, {&#39;all events&#39;: 66128870, &#39;at least 4 good muons&#39;: 8289, &#39;at least one candidate&#39;: 3849, &#39;minimum dimuon mass&#39;: 485})})}
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">nevt</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="s1">&#39;cutflow&#39;</span><span class="p">][</span><span class="s1">&#39;ZZ to 4mu&#39;</span><span class="p">][</span><span class="s1">&#39;all events&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">output</span><span class="p">[</span><span class="s1">&#39;cutflow&#39;</span><span class="p">][</span><span class="s1">&#39;DoubleMuon&#39;</span><span class="p">][</span><span class="s1">&#39;all events&#39;</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Events/s:&quot;</span><span class="p">,</span> <span class="n">nevt</span> <span class="o">/</span> <span class="n">elapsed</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Events/s: 29206.822973167524
+</pre></div></div>
+</div>
+<p>What follows is just us looking at the output, you can execute it if you wish</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># scale ZZ simulation to expected yield</span>
+<span class="n">lumi</span> <span class="o">=</span> <span class="mf">11.6</span>  <span class="c1"># 1/fb</span>
+<span class="n">zzxs</span> <span class="o">=</span> <span class="mi">7200</span> <span class="o">*</span> <span class="mf">0.0336</span><span class="o">**</span><span class="mi">2</span>  <span class="c1"># approximate 8 TeV ZZ(4mu)</span>
+<span class="n">nzz</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="s1">&#39;cutflow&#39;</span><span class="p">][</span><span class="s1">&#39;ZZ to 4mu&#39;</span><span class="p">][</span><span class="s1">&#39;all events&#39;</span><span class="p">]</span>
+
+<span class="n">scaled</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">hist</span><span class="o">.</span><span class="n">Hist</span><span class="p">):</span>
+        <span class="n">scaled</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">h</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">scaled</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">scale</span><span class="p">({</span><span class="s2">&quot;ZZ to 4mu&quot;</span><span class="p">:</span> <span class="n">lumi</span> <span class="o">*</span> <span class="n">zzxs</span> <span class="o">/</span> <span class="n">nzz</span><span class="p">},</span> <span class="s2">&quot;dataset&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">hist</span><span class="o">.</span><span class="n">plot1d</span><span class="p">(</span><span class="n">scaled</span><span class="p">[</span><span class="s1">&#39;nMuons&#39;</span><span class="p">],</span> <span class="n">overlay</span><span class="o">=</span><span class="s1">&#39;dataset&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_processor_15_0.png" src="../_images/notebooks_processor_15_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">ax</span> <span class="o">=</span> <span class="n">hist</span><span class="o">.</span><span class="n">plot1d</span><span class="p">(</span><span class="n">scaled</span><span class="p">[</span><span class="s1">&#39;mass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">rebin</span><span class="p">(</span><span class="s2">&quot;mass&quot;</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">overlay</span><span class="o">=</span><span class="s1">&#39;dataset&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_processor_16_0.png" src="../_images/notebooks_processor_16_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">ax</span> <span class="o">=</span> <span class="n">hist</span><span class="o">.</span><span class="n">plot1d</span><span class="p">(</span><span class="n">scaled</span><span class="p">[</span><span class="s1">&#39;mass_z1&#39;</span><span class="p">],</span> <span class="n">overlay</span><span class="o">=</span><span class="s1">&#39;dataset&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_processor_17_0.png" src="../_images/notebooks_processor_17_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">ax</span> <span class="o">=</span> <span class="n">hist</span><span class="o">.</span><span class="n">plot1d</span><span class="p">(</span><span class="n">scaled</span><span class="p">[</span><span class="s1">&#39;mass_z2&#39;</span><span class="p">],</span> <span class="n">overlay</span><span class="o">=</span><span class="s1">&#39;dataset&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span>
+<span class="c1"># ax.set_xscale(&#39;log&#39;)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(2.0, 300.0)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_processor_18_1.png" src="../_images/notebooks_processor_18_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">ax</span> <span class="o">=</span> <span class="n">hist</span><span class="o">.</span><span class="n">plot1d</span><span class="p">(</span><span class="n">scaled</span><span class="p">[</span><span class="s1">&#39;pt_z1_mu1&#39;</span><span class="p">],</span> <span class="n">overlay</span><span class="o">=</span><span class="s1">&#39;dataset&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_processor_19_0.png" src="../_images/notebooks_processor_19_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">ax</span> <span class="o">=</span> <span class="n">hist</span><span class="o">.</span><span class="n">plot1d</span><span class="p">(</span><span class="n">scaled</span><span class="p">[</span><span class="s1">&#39;pt_z1_mu2&#39;</span><span class="p">],</span> <span class="n">overlay</span><span class="o">=</span><span class="s1">&#39;dataset&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_processor_20_0.png" src="../_images/notebooks_processor_20_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="nanoevents.html" class="btn btn-neutral float-right" title="NanoEvents tutorial" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="histograms.html" class="btn btn-neutral float-left" title="Coffea Histograms" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2019, Fermi National Accelerator Laboratory.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

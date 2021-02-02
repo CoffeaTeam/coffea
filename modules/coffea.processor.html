@@ -1,0 +1,386 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>coffea.processor &mdash; coffea 0.7.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="iterative_executor" href="../api/coffea.processor.iterative_executor.html" />
+    <link rel="prev" title="PtEtaPhiELorentzVector" href="../api/coffea.nanoevents.methods.vector.PtEtaPhiELorentzVector.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> coffea
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.7
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installing coffea</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Coffea by Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Coffea concepts</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../reference.html">API Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="coffea.analysis_tools.html">coffea.analysis_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coffea.btag_tools.html">coffea.btag_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coffea.hist.html">coffea.hist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coffea.jetmet_tools.html">coffea.jetmet_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coffea.lookup_tools.html">coffea.lookup_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coffea.lumi_tools.html">coffea.lumi_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coffea.nanoevents.html">coffea.nanoevents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coffea.nanoevents.methods.base.html">coffea.nanoevents.methods.base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coffea.nanoevents.methods.candidate.html">coffea.nanoevents.methods.candidate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coffea.nanoevents.methods.nanoaod.html">coffea.nanoevents.methods.nanoaod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coffea.nanoevents.methods.vector.html">coffea.nanoevents.methods.vector</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">coffea.processor</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#functions">Functions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/coffea.processor.iterative_executor.html">iterative_executor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/coffea.processor.futures_executor.html">futures_executor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/coffea.processor.dask_executor.html">dask_executor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/coffea.processor.parsl_executor.html">parsl_executor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/coffea.processor.work_queue_executor.html">work_queue_executor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/coffea.processor.run_uproot_job.html">run_uproot_job</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/coffea.processor.run_spark_job.html">run_spark_job</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/coffea.processor.ProcessorABC.html">ProcessorABC</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/coffea.processor.LazyDataFrame.html">LazyDataFrame</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/coffea.processor.Weights.html">Weights</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/coffea.processor.PackedSelection.html">PackedSelection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/coffea.processor.AccumulatorABC.html">AccumulatorABC</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/coffea.processor.value_accumulator.html">value_accumulator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/coffea.processor.list_accumulator.html">list_accumulator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/coffea.processor.set_accumulator.html">set_accumulator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/coffea.processor.dict_accumulator.html">dict_accumulator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/coffea.processor.defaultdict_accumulator.html">defaultdict_accumulator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/coffea.processor.column_accumulator.html">column_accumulator</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="coffea.util.html">coffea.util</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">coffea</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../reference.html">API Reference Guide</a> &raquo;</li>
+        
+      <li>coffea.processor</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/modules/coffea.processor.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="module-coffea.processor">
+<span id="coffea-processor"></span><h1>coffea.processor<a class="headerlink" href="#module-coffea.processor" title="Permalink to this headline">¶</a></h1>
+<p>A framework for analysis scale-out</p>
+<div class="section" id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/coffea.processor.iterative_executor.html#coffea.processor.iterative_executor" title="coffea.processor.iterative_executor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">iterative_executor</span></code></a>(items, function, …)</p></td>
+<td><p>Execute in one thread iteratively</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/coffea.processor.futures_executor.html#coffea.processor.futures_executor" title="coffea.processor.futures_executor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">futures_executor</span></code></a>(items, function, …)</p></td>
+<td><p>Execute using multiple local cores using python futures</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/coffea.processor.dask_executor.html#coffea.processor.dask_executor" title="coffea.processor.dask_executor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dask_executor</span></code></a>(items, function, accumulator, …)</p></td>
+<td><p>Execute using dask futures</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/coffea.processor.parsl_executor.html#coffea.processor.parsl_executor" title="coffea.processor.parsl_executor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parsl_executor</span></code></a>(items, function, accumulator, …)</p></td>
+<td><p>Execute using parsl pyapp wrapper</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/coffea.processor.work_queue_executor.html#coffea.processor.work_queue_executor" title="coffea.processor.work_queue_executor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">work_queue_executor</span></code></a>(items, function, …)</p></td>
+<td><p>Execute using Work Queue</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/coffea.processor.run_uproot_job.html#coffea.processor.run_uproot_job" title="coffea.processor.run_uproot_job"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_uproot_job</span></code></a>(fileset, treename, …[, …])</p></td>
+<td><p>A tool to run a processor using uproot for data delivery</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/coffea.processor.run_spark_job.html#coffea.processor.run_spark_job" title="coffea.processor.run_spark_job"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_spark_job</span></code></a>(fileset, processor_instance, …)</p></td>
+<td><p>A wrapper to submit spark jobs</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/coffea.processor.ProcessorABC.html#coffea.processor.ProcessorABC" title="coffea.processor.ProcessorABC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ProcessorABC</span></code></a>()</p></td>
+<td><p>ABC for a generalized processor</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/coffea.processor.LazyDataFrame.html#coffea.processor.LazyDataFrame" title="coffea.processor.LazyDataFrame"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LazyDataFrame</span></code></a>(tree[, entrystart, entrystop, …])</p></td>
+<td><p>Simple delayed uproot reader (a la lazyarrays)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/coffea.processor.Weights.html#coffea.processor.Weights" title="coffea.processor.Weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Weights</span></code></a>(size[, storeIndividual])</p></td>
+<td><p>Container for event weights and associated systematic shifts</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/coffea.processor.PackedSelection.html#coffea.processor.PackedSelection" title="coffea.processor.PackedSelection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PackedSelection</span></code></a>([dtype])</p></td>
+<td><p>Store boolean mask vectors in a compact manner</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/coffea.processor.AccumulatorABC.html#coffea.processor.AccumulatorABC" title="coffea.processor.AccumulatorABC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AccumulatorABC</span></code></a>()</p></td>
+<td><p>Abstract base class for an accumulator</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/coffea.processor.value_accumulator.html#coffea.processor.value_accumulator" title="coffea.processor.value_accumulator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">value_accumulator</span></code></a>(default_factory[, initial])</p></td>
+<td><p>Holds a value of arbitrary type</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/coffea.processor.list_accumulator.html#coffea.processor.list_accumulator" title="coffea.processor.list_accumulator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_accumulator</span></code></a>([iterable])</p></td>
+<td><p>A list with accumulator semantics</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/coffea.processor.set_accumulator.html#coffea.processor.set_accumulator" title="coffea.processor.set_accumulator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_accumulator</span></code></a></p></td>
+<td><p>A set with accumulator semantics</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/coffea.processor.dict_accumulator.html#coffea.processor.dict_accumulator" title="coffea.processor.dict_accumulator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dict_accumulator</span></code></a></p></td>
+<td><p>A dictionary with accumulator semantics</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/coffea.processor.defaultdict_accumulator.html#coffea.processor.defaultdict_accumulator" title="coffea.processor.defaultdict_accumulator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">defaultdict_accumulator</span></code></a></p></td>
+<td><p>A defaultdict with accumulator semantics</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/coffea.processor.column_accumulator.html#coffea.processor.column_accumulator" title="coffea.processor.column_accumulator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">column_accumulator</span></code></a>(value)</p></td>
+<td><p>An appendable numpy ndarray</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">NanoAODSchema</span></code>(base_form[, version])</p></td>
+<td><p>NanoAOD schema builder</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">TreeMakerSchema</span></code>(base_form)</p></td>
+<td><p>TreeMaker schema builder</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="class-inheritance-diagram">
+<h2>Class Inheritance Diagram<a class="headerlink" href="#class-inheritance-diagram" title="Permalink to this headline">¶</a></h2>
+<div class="graphviz"><img src="../_images/inheritance-ed09a122e9c005ca66131bf7da2dffa6c64be7d0.png" alt="Inheritance diagram of coffea.processor.processor.ProcessorABC, coffea.processor.dataframe.LazyDataFrame, coffea.processor.helpers.Weights, coffea.processor.helpers.PackedSelection, coffea.processor.accumulator.AccumulatorABC, coffea.processor.accumulator.value_accumulator, coffea.processor.accumulator.list_accumulator, coffea.processor.accumulator.set_accumulator, coffea.processor.accumulator.dict_accumulator, coffea.processor.accumulator.defaultdict_accumulator, coffea.processor.accumulator.column_accumulator" usemap="#inheritancede8aeae539" class="inheritance graphviz" /></div>
+<map id="inheritancede8aeae539" name="inheritancede8aeae539">
+<area shape="rect" id="node1" href="../api/coffea.processor.AccumulatorABC.html#coffea.processor.AccumulatorABC" target="_top" title="Abstract base class for an accumulator" alt="" coords="5,388,124,411"/>
+<area shape="rect" id="node12" href="../api/coffea.processor.column_accumulator.html#coffea.processor.column_accumulator" target="_top" title="An appendable numpy ndarray" alt="" coords="177,320,322,343"/>
+<area shape="rect" id="node14" href="../api/coffea.processor.defaultdict_accumulator.html#coffea.processor.defaultdict_accumulator" target="_top" title="A defaultdict with accumulator semantics" alt="" coords="168,275,332,298"/>
+<area shape="rect" id="node15" href="../api/coffea.processor.dict_accumulator.html#coffea.processor.dict_accumulator" target="_top" title="A dictionary with accumulator semantics" alt="" coords="188,365,311,388"/>
+<area shape="rect" id="node16" href="../api/coffea.processor.list_accumulator.html#coffea.processor.list_accumulator" target="_top" title="A list with accumulator semantics" alt="" coords="190,410,309,433"/>
+<area shape="rect" id="node17" href="../api/coffea.processor.set_accumulator.html#coffea.processor.set_accumulator" target="_top" title="A set with accumulator semantics" alt="" coords="190,454,309,478"/>
+<area shape="rect" id="node18" href="../api/coffea.processor.value_accumulator.html#coffea.processor.value_accumulator" target="_top" title="Holds a value of arbitrary type" alt="" coords="183,499,317,523"/>
+<area shape="rect" id="node6" href="../api/coffea.processor.LazyDataFrame.html#coffea.processor.LazyDataFrame" target="_top" title="Simple delayed uproot reader (a la lazyarrays)" alt="" coords="651,185,763,208"/>
+<area shape="rect" id="node9" href="../api/coffea.processor.PackedSelection.html#coffea.processor.PackedSelection" target="_top" title="Store boolean mask vectors in a compact manner" alt="" coords="6,95,123,118"/>
+<area shape="rect" id="node10" href="../api/coffea.processor.ProcessorABC.html#coffea.processor.ProcessorABC" target="_top" title="ABC for a generalized processor" alt="" coords="13,50,115,73"/>
+<area shape="rect" id="node11" href="../api/coffea.processor.Weights.html#coffea.processor.Weights" target="_top" title="Container for event weights and associated systematic shifts" alt="" coords="30,5,98,28"/>
+</map></div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="../api/coffea.processor.iterative_executor.html" class="btn btn-neutral float-right" title="iterative_executor" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../api/coffea.nanoevents.methods.vector.PtEtaPhiELorentzVector.html" class="btn btn-neutral float-left" title="PtEtaPhiELorentzVector" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2019, Fermi National Accelerator Laboratory.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

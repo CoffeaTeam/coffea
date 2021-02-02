@@ -1,0 +1,407 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Weights &mdash; coffea 0.7.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="PackedSelection" href="coffea.processor.PackedSelection.html" />
+    <link rel="prev" title="LazyDataFrame" href="coffea.processor.LazyDataFrame.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> coffea
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.7
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installing coffea</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Coffea by Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Coffea concepts</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../reference.html">API Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.analysis_tools.html">coffea.analysis_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.btag_tools.html">coffea.btag_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.hist.html">coffea.hist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.jetmet_tools.html">coffea.jetmet_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.lookup_tools.html">coffea.lookup_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.lumi_tools.html">coffea.lumi_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.html">coffea.nanoevents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.base.html">coffea.nanoevents.methods.base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.candidate.html">coffea.nanoevents.methods.candidate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.nanoaod.html">coffea.nanoevents.methods.nanoaod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.vector.html">coffea.nanoevents.methods.vector</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../modules/coffea.processor.html">coffea.processor</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.processor.html#functions">Functions</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../modules/coffea.processor.html#classes">Classes</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.ProcessorABC.html">ProcessorABC</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.LazyDataFrame.html">LazyDataFrame</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Weights</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.PackedSelection.html">PackedSelection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.AccumulatorABC.html">AccumulatorABC</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.value_accumulator.html">value_accumulator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.list_accumulator.html">list_accumulator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.set_accumulator.html">set_accumulator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.dict_accumulator.html">dict_accumulator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.defaultdict_accumulator.html">defaultdict_accumulator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.processor.column_accumulator.html">column_accumulator</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.processor.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.util.html">coffea.util</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">coffea</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../reference.html">API Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../modules/coffea.processor.html">coffea.processor</a> &raquo;</li>
+        
+      <li>Weights</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/api/coffea.processor.Weights.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="weights">
+<h1>Weights<a class="headerlink" href="#weights" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="coffea.processor.Weights">
+<em class="property">class </em><code class="sig-prename descclassname">coffea.processor.</code><code class="sig-name descname">Weights</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">size</span></em>, <em class="sig-param"><span class="n">storeIndividual</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/processor/helpers.py#L5"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.processor.Weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Container for event weights and associated systematic shifts</p>
+<p>This container keeps track of correction factors and systematic
+effects that can be encoded as multiplicative modifiers to the event weight.
+All weights are stored in vector form.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – size of the weight arrays to be handled (i.e. the number of events / instances).</p></li>
+<li><p><strong>storeIndividual</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a><em>, </em><em>optional</em>) – store not only the total weight + variations, but also each individual weight.
+Default is false.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Attributes Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.processor.Weights.variations" title="coffea.processor.Weights.variations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">variations</span></code></a></p></td>
+<td><p>List of available modifiers</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.processor.Weights.add" title="coffea.processor.Weights.add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add</span></code></a>(name, weight[, weightUp, weightDown, shift])</p></td>
+<td><p>Add a new weight</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.processor.Weights.partial_weight" title="coffea.processor.Weights.partial_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partial_weight</span></code></a>([include, exclude])</p></td>
+<td><p>Partial event weight vector</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.processor.Weights.weight" title="coffea.processor.Weights.weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">weight</span></code></a>([modifier])</p></td>
+<td><p>Current event weight vector</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes Documentation</p>
+<dl class="py attribute">
+<dt id="coffea.processor.Weights.variations">
+<code class="sig-name descname">variations</code><a class="headerlink" href="#coffea.processor.Weights.variations" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of available modifiers</p>
+</dd></dl>
+
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt id="coffea.processor.Weights.add">
+<code class="sig-name descname">add</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">weight</span></em>, <em class="sig-param"><span class="n">weightUp</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">weightDown</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">shift</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/processor/helpers.py#L28"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.processor.Weights.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a new weight</p>
+<p>Adds a named correction to the event weight, and optionally also associated
+systematic uncertainties.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – name of correction</p></li>
+<li><p><strong>weight</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.20)"><em>numpy.ndarray</em></a>) – the nominal event weight associated with the correction</p></li>
+<li><p><strong>weightUp</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.20)"><em>numpy.ndarray</em></a><em>, </em><em>optional</em>) – weight with correction uncertainty shifted up (if available)</p></li>
+<li><p><strong>weightDown</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.20)"><em>numpy.ndarray</em></a><em>, </em><em>optional</em>) – weight with correction uncertainty shifted down. If <code class="docutils literal notranslate"><span class="pre">weightUp</span></code> is supplied, and
+the correction uncertainty is symmetric, this can be set to None to auto-calculate
+the down shift as <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">weightUp</span></code>.</p></li>
+<li><p><strong>shift</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a><em>, </em><em>optional</em>) – if True, interpret weightUp and weightDown as a realtive difference (additive) to the
+nominal value</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">weightUp</span></code> and <code class="docutils literal notranslate"><span class="pre">weightDown</span></code> are assumed to be rvalue-like and may be modified in-place by this function</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.processor.Weights.partial_weight">
+<code class="sig-name descname">partial_weight</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">include</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">exclude</span><span class="o">=</span><span class="default_value">[]</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/processor/helpers.py#L98"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.processor.Weights.partial_weight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Partial event weight vector</p>
+<p>Return a partial weight by multiplying a subset of all weights.
+Can be operated either by specifying weights to include or
+weights to exclude, but not both at the same time. The method
+can only be used if the individual weights are stored via the
+<code class="docutils literal notranslate"><span class="pre">storeIndividual</span></code> argument in the <a class="reference internal" href="#coffea.processor.Weights" title="coffea.processor.Weights"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Weights</span></code></a> initializer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>include</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.9)"><em>list</em></a>) – Weight names to include, defaults to []</p></li>
+<li><p><strong>exclude</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.9)"><em>list</em></a>) – Weight names to exclude, defaults to []</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>weight</strong> – The weight vector, corresponding to only the effect of the
+corrections specified.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.20)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.processor.Weights.weight">
+<code class="sig-name descname">weight</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">modifier</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/processor/helpers.py#L78"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.processor.Weights.weight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Current event weight vector</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>modifier</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a><em>, </em><em>optional</em>) – if supplied, provide event weight corresponding to a particular
+systematic uncertainty shift, of form <code class="docutils literal notranslate"><span class="pre">str(name</span> <span class="pre">+</span> <span class="pre">'Up')</span></code> or (Down)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>weight</strong> – The weight vector, possibly modified by the effect of a given systematic variation.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.20)">numpy.ndarray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="coffea.processor.PackedSelection.html" class="btn btn-neutral float-right" title="PackedSelection" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="coffea.processor.LazyDataFrame.html" class="btn btn-neutral float-left" title="LazyDataFrame" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2019, Fermi National Accelerator Laboratory.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

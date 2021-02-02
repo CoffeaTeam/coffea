@@ -1,0 +1,665 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Applying corrections to columnar data\n",
+    "\n",
+    "Here we will show how to use the `coffea.lookup_tools` package.\n",
+    "It is able to read in a variety of common correction file formats into a standardized lookup table format.\n",
+    "We also cover here some CMS-specific tools for jet corrections (`coffea.jetmet_tools`) and b-tagging efficiencies/uncertainties (`coffea.btag_tools`)."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**Test data**:\n",
+    "We'll use NanoEvents to construct some test data."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from coffea.nanoevents import NanoEventsFactory\n",
+    "\n",
+    "fname = \"https://github.com/CoffeaTeam/coffea/raw/master/tests/samples/nano_dy.root\"\n",
+    "events = NanoEventsFactory.from_root(fname).events()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The entrypoint for `coffea.lookup_tools` is the [extractor class](https://coffeateam.github.io/coffea/api/coffea.lookup_tools.extractor.html#coffea.lookup_tools.extractor)."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from coffea.lookup_tools import extractor"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "~/coffea/coffea/binder/data ~/coffea/coffea/binder\n",
+      "~/coffea/coffea/binder\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%bash\n",
+    "# download some sample correction sources\n",
+    "mkdir -p data\n",
+    "pushd data\n",
+    "PREFIX=https://raw.githubusercontent.com/CoffeaTeam/coffea/master/tests/samples\n",
+    "curl -Os $PREFIX/testSF2d.histo.root\n",
+    "curl -Os $PREFIX/testBTagSF.btag.csv\n",
+    "curl -Os $PREFIX/EIDISO_WH_out.histo.json\n",
+    "curl -Os $PREFIX/Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi.jec.txt\n",
+    "curl -Os $PREFIX/Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi.junc.txt\n",
+    "curl -Os $PREFIX/DeepCSV_102XSF_V1.btag.csv.gz\n",
+    "popd"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Opening a root file and using it as a lookup table\n",
+    "\n",
+    "In [tests/samples](https://github.com/CoffeaTeam/coffea/tree/master/tests/samples), there is an example file with a `TH2F` histogram named `scalefactors_Tight_Electron`. The following code reads that histogram into an [evaluator](https://coffeateam.github.io/coffea/api/coffea.lookup_tools.evaluator.html#coffea.lookup_tools.evaluator) instance, under the key `testSF2d` and applies it to some electrons."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "available evaluator keys:\n",
+      "\t testSF2d\n",
+      "testSF2d: 2 dimensional histogram with axes:\n",
+      "\t1: [-2.5   -2.    -1.566 -1.444 -0.8    0.     0.8    1.444  1.566  2.\n",
+      "  2.5  ]\n",
+      "\t2: [ 10.  20.  35.  50.  90. 150. 500.]\n",
+      "\n",
+      "type of testSF2d: <class 'coffea.lookup_tools.dense_lookup.dense_lookup'>\n"
+     ]
+    }
+   ],
+   "source": [
+    "ext = extractor()\n",
+    "# several histograms can be imported at once using wildcards (*)\n",
+    "ext.add_weight_sets([\"testSF2d scalefactors_Tight_Electron data/testSF2d.histo.root\"])\n",
+    "ext.finalize()\n",
+    "\n",
+    "evaluator = ext.make_evaluator()\n",
+    "\n",
+    "print(\"available evaluator keys:\")\n",
+    "for key in evaluator.keys():\n",
+    "    print(\"\\t\", key)\n",
+    "print(\"testSF2d:\", evaluator['testSF2d'])\n",
+    "print(\"type of testSF2d:\", type(evaluator['testSF2d']))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Electron eta: [[], [1.83], [-0.293, -0.904], [-2.19, 1.65], ... [-0.0595], [], [0.381], [], []]\n",
+      "Electron pt: [[], [29.6], [60.1, 51.7], [10.7, 8.6], [], ... [], [15.6], [], [7.68], [], []]\n",
+      "Scale factor: [[], [0.909], [0.953, 0.972], [0.807, 0.827], ... [0.941], [], [0.946], [], []]\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(\"Electron eta:\", events.Electron.eta)\n",
+    "print(\"Electron pt:\", events.Electron.pt)\n",
+    "print(\"Scale factor:\", evaluator[\"testSF2d\"](events.Electron.eta, events.Electron.pt))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Reading a CMS b-tag scale factor csv file\n",
+    "\n",
+    "These files have the following structure:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "CSVv2;OperatingPoint, measurementType, sysType, jetFlavor, etaMin, etaMax, ptMin, ptMax, discrMin, discrMax, formula \r\n",
+      "0, mujets, central, 1, -2.4, 2.4, 20, 1000, 0, 1, \"0.884016*((1.+(0.0331508*x))/(1.+(0.0285096*x)))\" \r\n",
+      "0, mujets, central, 0, -2.4, 2.4, 20, 1000, 0, 1, \"0.884016*((1.+(0.0331508*x))/(1.+(0.0285096*x)))\" \r\n",
+      "0, mujets, down, 1, -2.4, 2.4, 20, 30, 0, 1, \"(0.884016*((1.+(0.0331508*x))/(1.+(0.0285096*x))))-0.063606932759284973\" \r\n",
+      "0, mujets, down, 1, -2.4, 2.4, 30, 50, 0, 1, \"(0.884016*((1.+(0.0331508*x))/(1.+(0.0285096*x))))-0.034989029169082642\" \r\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%bash\n",
+    "head -5 data/testBTagSF.btag.csv"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The extractor assumes `*.csv` files have this structure and interprets them as so. The resulting scale factors can be used to calculate b-tagging corrections or uncertainties. **Note**: a high-level b-tagging correction class is also available, see the later sections of this guide."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/Users/lagray/coffea/coffea/binder/coffea/lookup_tools/csv_converters.py:13: FutureWarning: Auto-conversion of btag CSV files is deprecated. Try coffea.btag_tools.BTagScaleFactor!\n",
+      "  FutureWarning,\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "available evaluator keys:\n",
+      "\t testBTagCSVv2_0_comb_central_0\n",
+      "\t testBTagCSVv2_0_comb_central_1\n",
+      "\t testBTagCSVv2_0_comb_down_0\n",
+      "\t testBTagCSVv2_0_comb_down_1\n",
+      "\t testBTagCSVv2_0_comb_up_0\n",
+      "\t testBTagCSVv2_0_comb_up_1\n",
+      "\t testBTagCSVv2_0_incl_central_2\n",
+      "\t ...\n",
+      "testBTagCSVv2_1_comb_up_0: 3 dimensional histogram with axes:\n",
+      "\t1: [-2.4  2.4]\n",
+      "\t2: [  20.   30.   50.   70.  100.  140.  200.  300.  600. 1000.]\n",
+      "\t3: [0. 1.]\n",
+      "\n",
+      "type of testBTagCSVv2_1_comb_up_0: <class 'coffea.lookup_tools.dense_evaluated_lookup.dense_evaluated_lookup'>\n"
+     ]
+    }
+   ],
+   "source": [
+    "ext = extractor()\n",
+    "ext.add_weight_sets([\"testBTag * data/testBTagSF.btag.csv\"])\n",
+    "ext.finalize()\n",
+    "\n",
+    "evaluator = ext.make_evaluator()\n",
+    "\n",
+    "print(\"available evaluator keys:\")\n",
+    "for i, key in enumerate(evaluator.keys()):\n",
+    "    print(\"\\t\", key)\n",
+    "    if i > 5:\n",
+    "        print(\"\\t ...\")\n",
+    "        break\n",
+    "print(\"testBTagCSVv2_1_comb_up_0:\", evaluator['testBTagCSVv2_1_comb_up_0'])\n",
+    "print(\"type of testBTagCSVv2_1_comb_up_0:\", type(evaluator['testBTagCSVv2_1_comb_up_0']))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/Users/lagray/miniconda3/envs/coffea-work/lib/python3.7/site-packages/numba/core/dispatcher.py:238: UserWarning: Numba extension module 'awkward1._connect._numba' failed to load due to 'ImportError(generic_type: type \"kernel_lib\" is already registered!)'.\n",
+      "  entrypoints.init_all()\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[[0.979, 0.961, 0.966, 0.93, 0.918], [0.984, ... 0.945, 0.94, 0.918], [0.935, 0.933]]\n"
+     ]
+    }
+   ],
+   "source": [
+    "# note: in a real situation you would want to apply the SF on the appropriate jet flavor\n",
+    "scalefactor = evaluator['testBTagCSVv2_1_comb_up_0'](events.Jet.eta, events.Jet.pt, events.Jet.btagCSVV2)\n",
+    "print(scalefactor)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Importing JSON-encoded histograms\n",
+    "\n",
+    "Some corrections are provided in a json format, with a structure like\n",
+    "```\n",
+    "data[category][name][axis1 bin][axis2 bin][\"value\"]\n",
+    "```"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "{\n",
+      "\t\"EIDISO_WH\" : {\n",
+      "\t\t\"eta_pt_ratio\" : {\n",
+      "\t\t\t\"eta:[ 0.00, 0.80]\":{\n",
+      "\t\t\t\t\"pt:[25.00,27.00]\":{\n",
+      "\t\t\t\t\t\"value\":0.903,\n",
+      "\t\t\t\t\t\"error\":0.051\n",
+      "\t\t\t\t},\n",
+      "\t\t\t\t\"pt:[27.00,30.00]\":{\n",
+      "\t\t\t\t\t\"value\":0.921,\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%bash\n",
+    "head -10 data/EIDISO_WH_out.histo.json"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The extractor assumes `*.json` files follow this format."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "available evaluator keys:\n",
+      "\t EIDISO_WH/eta_pt_ratio_value\n",
+      "\t EIDISO_WH/eta_pt_ratio_error\n",
+      "EIDISO_WH/eta_pt_ratio_value: 2 dimensional histogram with axes:\n",
+      "\t1: [-2.5  -2.17 -1.8  -1.57 -1.44 -0.8   0.    0.8   1.44  1.57  1.8   2.17\n",
+      "  2.5 ]\n",
+      "\t2: [ 25.  27.  30.  32.  35.  40.  50. 200.]\n",
+      "\n",
+      "type of EIDISO_WH/eta_pt_ratio_value: <class 'coffea.lookup_tools.dense_lookup.dense_lookup'>\n"
+     ]
+    }
+   ],
+   "source": [
+    "ext = extractor()\n",
+    "ext.add_weight_sets([\"* * data/EIDISO_WH_out.histo.json\"])\n",
+    "ext.finalize()\n",
+    "    \n",
+    "evaluator = ext.make_evaluator()\n",
+    "\n",
+    "print(\"available evaluator keys:\")\n",
+    "for key in evaluator.keys():\n",
+    "    print(\"\\t\", key)\n",
+    "print(\"EIDISO_WH/eta_pt_ratio_value:\", evaluator['EIDISO_WH/eta_pt_ratio_value'])\n",
+    "print(\"type of EIDISO_WH/eta_pt_ratio_value:\", type(evaluator['EIDISO_WH/eta_pt_ratio_value']))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[[], [0.793], [0.904, 0.909], [0.788, 0.83], ... [], [0.862], [], [0.903], [], []]\n",
+      "[[], [0.061], [0.018, 0.023], [0.186, 0.035], ... [0.051], [], [0.051], [], []]\n"
+     ]
+    }
+   ],
+   "source": [
+    "sf_out = evaluator['EIDISO_WH/eta_pt_ratio_value'](events.Electron.eta, events.Electron.pt)\n",
+    "sf_err_out = evaluator['EIDISO_WH/eta_pt_ratio_error'](events.Electron.eta, events.Electron.pt)\n",
+    "print(sf_out)\n",
+    "print(sf_err_out)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Import CMS Jet Energy Scales and Uncertainties\n",
+    "In CMS, the jet energy scale and resolution corrections, as well as their uncertainties are available in a standalone text file format:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "{2 JetEta JetPt 1 JetPt max(0.0001,[0]+((x-[1])*([2]+((x-[1])*([3]+((x-[1])*[4])))))) Correction L2Relative}\n",
+      "  -5.191  -4.889     0.001   8.95328     7           8   8.9532766      2.638647259      7.816547526   -0.08418211224   -0.04894120539    0.03974185455\n",
+      "  -5.191  -4.889   8.95328   10.4135     7   8.9532766   10.413492      2.538089424      8.953276588   -0.04139022814    0.03931172893   -0.02027504013\n",
+      "  -5.191  -4.889   10.4135   12.1083     7   10.413492   12.108301      2.498345769        10.413492   -0.05627613174   -0.01124129111    0.00462608126\n",
+      "  -5.191  -4.889   12.1083   14.3796     7   12.108301   14.379634      2.393199605      12.10830116   -0.05451625473 -0.0004401913391   0.001090215218\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%bash\n",
+    "head -5 data/Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi.jec.txt"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "{1 JetEta 1 JetPt \"\" Correction Uncertainty}\n",
+      "-5.4 -5.0 150 9.0 0.1183 0.1183 11.0 0.1098 0.1098 13.5 0.1033 0.1033 16.5 0.0988 0.0988 19.5 0.0963 0.0963 22.5 0.0947 0.0947 26.0 0.0935 0.0935 30.0 0.0922 0.0922 34.5 0.0910 0.0910 40.0 0.0893 0.0893 46.0 0.0870 0.0870 52.5 0.0850 0.0850 60.0 0.0832 0.0832 69.0 0.0820 0.0820 79.0 0.0811 0.0811 90.5 0.0806 0.0806 105.5 0.0805 0.0805 123.5 0.0809 0.0809 143.0 0.0817 0.0817 163.5 0.0827 0.0827 185.0 0.0832 0.0832 208.0 0.0836 0.0836 232.5 0.0845 0.0845 258.5 0.0849 0.0849 286.0 0.0855 0.0855 331.0 0.0864 0.0864 396.0 0.0875 0.0875 468.5 0.0886 0.0886 549.5 0.0896 0.0896 639.0 0.0906 0.0906 738.0 0.0917 0.0917 847.5 0.0926 0.0926 968.5 0.0936 0.0936 1102.0 0.0945 0.0945 1249.5 0.0955 0.0955 1412.0 0.0964 0.0964 1590.5 0.0972 0.0972 1787.0 0.0981 0.0981 2003.0 0.0990 0.0990 2241.0 0.0998 0.0998 2503.0 0.1007 0.1007 2790.5 0.1015 0.1015 3107.0 0.1023 0.1023 3455.0 0.1031 0.1031 3837.0 0.1041 0.1041 4257.0 0.1051 0.1051 4719.0 0.1060 0.1060 5226.5 0.1069 0.1069 5784.0 0.1078 0.1078 6538.0 0.1089 0.1089 \n",
+      "-5.0 -4.4 150 9.0 0.1186 0.1186 11.0 0.1104 0.1104 13.5 0.1040 0.1040 16.5 0.0995 0.0995 19.5 0.0969 0.0969 22.5 0.0953 0.0953 26.0 0.0941 0.0941 30.0 0.0927 0.0927 34.5 0.0914 0.0914 40.0 0.0898 0.0898 46.0 0.0873 0.0873 52.5 0.0853 0.0853 60.0 0.0836 0.0836 69.0 0.0823 0.0823 79.0 0.0813 0.0813 90.5 0.0808 0.0808 105.5 0.0807 0.0807 123.5 0.0810 0.0810 143.0 0.0818 0.0818 163.5 0.0828 0.0828 185.0 0.0832 0.0832 208.0 0.0837 0.0837 232.5 0.0846 0.0846 258.5 0.0850 0.0850 286.0 0.0856 0.0856 331.0 0.0864 0.0864 396.0 0.0875 0.0875 468.5 0.0886 0.0886 549.5 0.0897 0.0897 639.0 0.0907 0.0907 738.0 0.0917 0.0917 847.5 0.0927 0.0927 968.5 0.0936 0.0936 1102.0 0.0946 0.0946 1249.5 0.0955 0.0955 1412.0 0.0964 0.0964 1590.5 0.0973 0.0973 1787.0 0.0981 0.0981 2003.0 0.0990 0.0990 2241.0 0.0998 0.0998 2503.0 0.1007 0.1007 2790.5 0.1015 0.1015 3107.0 0.1023 0.1023 3455.0 0.1032 0.1032 3837.0 0.1041 0.1041 4257.0 0.1051 0.1051 4719.0 0.1060 0.1060 5226.5 0.1069 0.1069 5784.0 0.1079 0.1079 6538.0 0.1089 0.1089 \n"
+     ]
+    }
+   ],
+   "source": [
+    "%%bash\n",
+    "head -3 data/Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi.junc.txt"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The extractor assumes files with `*.txt` are to be interpreted as such"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "available evaluator keys:\n",
+      "\t Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi\n",
+      "\t Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi\n",
+      "\n",
+      "Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi:\n",
+      "binned dims: ['JetEta', 'JetPt']\n",
+      "eval vars  : ['JetPt']\n",
+      "parameters : ['p0', 'p1', 'p2', 'p3', 'p4']\n",
+      "formula    : max(0.0001,p0+((JetPt-p1)*(p2+((JetPt-p1)*(p3+((JetPt-p1)*p4))))))\n",
+      "signature  : (JetEta,JetPt)\n",
+      "\n",
+      "type of Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi:\n",
+      "<class 'coffea.lookup_tools.jme_standard_function.jme_standard_function'>\n",
+      "\n",
+      "Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi:\n",
+      "binned dims   : ['JetEta']\n",
+      "eval vars     : ['JetPt']\n",
+      "signature     : (JetEta,JetPt)\n",
+      "\n",
+      "type of Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi:\n",
+      "<class 'coffea.lookup_tools.jec_uncertainty_lookup.jec_uncertainty_lookup'>\n"
+     ]
+    }
+   ],
+   "source": [
+    "ext = extractor()\n",
+    "ext.add_weight_sets([\n",
+    "    \"* * data/Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi.jec.txt\",\n",
+    "    \"* * data/Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi.junc.txt\",\n",
+    "])\n",
+    "ext.finalize()\n",
+    "\n",
+    "evaluator = ext.make_evaluator()\n",
+    "\n",
+    "print(\"available evaluator keys:\")\n",
+    "for key in evaluator.keys():\n",
+    "    print(\"\\t\", key)\n",
+    "\n",
+    "print()\n",
+    "print(\"Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi:\")\n",
+    "print(evaluator['Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi'])\n",
+    "print(\"type of Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi:\")\n",
+    "print(type(evaluator['Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi']))\n",
+    "print()\n",
+    "print(\"Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi:\")\n",
+    "print(evaluator['Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi'])\n",
+    "print(\"type of Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi:\")\n",
+    "print(type(evaluator['Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi']))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Correction factor: [[1.2, 1.27, 1.41, 1.98, 2], [1.09, 1.28, ... 1.67, 1.46, 1.37, 1.16], [1.36, 1.15]]\n",
+      "Uncertainty +: [[1.01, 1.05, 1.08, 1.14, 1.15], [1.01, ... 1.13, 1.04, 1.04, 1.04], [1.03, 1.03]]\n",
+      "Uncertainty -: [[0.989, 0.955, 0.924, 0.858, 0.848], ... 0.957, 0.961, 0.963], [0.969, 0.97]]\n"
+     ]
+    }
+   ],
+   "source": [
+    "jec_out = evaluator['Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi'](events.Jet.eta, events.Jet.pt)\n",
+    "junc_out = evaluator['Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi'](events.Jet.eta, events.Jet.pt)\n",
+    "print(\"Correction factor:\", jec_out)\n",
+    "# junc_out is a double-jagged array, with the last index being the up, down values\n",
+    "# they can be separated via indexing, e.g.:\n",
+    "print(\"Uncertainty +:\", junc_out[:, :, 0])\n",
+    "print(\"Uncertainty -:\", junc_out[:, :, 1])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Applying energy scale transformations to Jets\n",
+    "\n",
+    "The `coffea.jetmet_tools` package provides a convenience class [JetTransformer](https://coffeateam.github.io/coffea/api/coffea.jetmet_tools.JetTransformer.html#coffea.jetmet_tools.JetTransformer) which applies specified corrections and computes uncertainties in one call."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "['Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi', 'Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi']\n",
+      "\n",
+      "\n",
+      "starting columns: ['area', 'bRegCorr', 'bRegRes', 'btagCMVA', 'btagCSVV2', 'btagDeepB', 'btagDeepC', 'btagDeepFlavB', 'btagDeepFlavC', 'chEmEF', 'chHEF', 'cleanmask', 'electronIdx1', 'electronIdx1G', 'electronIdx2', 'electronIdx2G', 'electronIdxG', 'eta', 'genJetIdx', 'genJetIdxG', 'hadronFlavour', 'jercCHF', 'jercCHPUF', 'jetId', 'mass', 'muEF', 'muonIdx1', 'muonIdx1G', 'muonIdx2', 'muonIdx2G', 'muonIdxG', 'muonSubtrFactor', 'nConstituents', 'nElectrons', 'nMuons', 'neEmEF', 'neHEF', 'partonFlavour', 'phi', 'pt', 'puId', 'qgl', 'rawFactor', 'pt_raw', 'mass_raw', 'pt_gen', 'rho']\n",
+      "\n",
+      "untransformed pt ratios [[1.12, 1.09, 1.2, 1.35, 1.27], [1.03, ... 1.28, 1.1, 1.13, 0.989], [1.13, 0.978]]\n",
+      "untransformed mass ratios [[1.12, 1.09, 1.2, 1.35, 1.27], [1.03, ... 1.28, 1.1, 1.13, 0.989], [1.13, 0.978]]\n",
+      "transformed pt ratios [[1.2, 1.3, 1.46, 2.09, 2.1], [1.09, 1.29, ... 1.84, 1.47, 1.36, 1.16], [1.37, 1.15]]\n",
+      "transformed mass ratios [[1.2, 1.3, 1.46, 2.09, 2.1], [1.09, 1.29, ... 1.84, 1.47, 1.36, 1.16], [1.37, 1.15]]\n",
+      "\n",
+      "transformed columns: ['area', 'bRegCorr', 'bRegRes', 'btagCMVA', 'btagCSVV2', 'btagDeepB', 'btagDeepC', 'btagDeepFlavB', 'btagDeepFlavC', 'chEmEF', 'chHEF', 'cleanmask', 'electronIdx1', 'electronIdx1G', 'electronIdx2', 'electronIdx2G', 'electronIdxG', 'eta', 'genJetIdx', 'genJetIdxG', 'hadronFlavour', 'jercCHF', 'jercCHPUF', 'jetId', 'muEF', 'muonIdx1', 'muonIdx1G', 'muonIdx2', 'muonIdx2G', 'muonIdxG', 'muonSubtrFactor', 'nConstituents', 'nElectrons', 'nMuons', 'neEmEF', 'neHEF', 'partonFlavour', 'phi', 'puId', 'qgl', 'rawFactor', 'pt_raw', 'mass_raw', 'pt_gen', 'rho', 'pt_orig', 'mass_orig', 'jet_energy_correction', 'pt', 'mass', 'pt_jec', 'mass_jec', 'jet_energy_uncertainty_jes', 'JES_jes']\n",
+      "\n",
+      "JES UP pt ratio [[1.22, 1.35, 1.56, 2.34, 2.37], [1.1, ... 2.07, 1.52, 1.41, 1.2], [1.41, 1.17]]\n",
+      "JES DOWN pt ratio [[1.19, 1.25, 1.35, 1.83, 1.83], [1.08, ... 1.6, 1.41, 1.32, 1.13], [1.33, 1.12]]\n"
+     ]
+    }
+   ],
+   "source": [
+    "from coffea.jetmet_tools import FactorizedJetCorrector, JetCorrectionUncertainty\n",
+    "from coffea.jetmet_tools import JECStack, CorrectedJetsFactory\n",
+    "import awkward as ak\n",
+    "import numpy as np\n",
+    "\n",
+    "ext = extractor()\n",
+    "ext.add_weight_sets([\n",
+    "    \"* * data/Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi.jec.txt\",\n",
+    "    \"* * data/Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi.junc.txt\",\n",
+    "])\n",
+    "ext.finalize()\n",
+    "\n",
+    "jec_stack_names = [\"Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi\",\n",
+    "                   \"Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi\"]\n",
+    "\n",
+    "evaluator = ext.make_evaluator()\n",
+    "\n",
+    "jec_inputs = {name: evaluator[name] for name in jec_stack_names}\n",
+    "jec_stack = JECStack(jec_inputs)\n",
+    "### more possibilities are available if you send in more pieces of the JEC stack\n",
+    "# mc2016_ak8_jxform = JECStack([\"more\", \"names\", \"of\", \"JEC parts\"])\n",
+    "\n",
+    "print(dir(evaluator))\n",
+    "print()\n",
+    "\n",
+    "name_map = jec_stack.blank_name_map\n",
+    "name_map['JetPt'] = 'pt'\n",
+    "name_map['JetMass'] = 'mass'\n",
+    "name_map['JetEta'] = 'eta'\n",
+    "name_map['JetA'] = 'area'\n",
+    "\n",
+    "jets = events.Jet\n",
+    "    \n",
+    "jets['pt_raw'] = (1 - jets['rawFactor']) * jets['pt']\n",
+    "jets['mass_raw'] = (1 - jets['rawFactor']) * jets['mass']\n",
+    "jets['pt_gen'] = ak.values_astype(ak.fill_none(jets.matched_gen.pt, 0), np.float32)\n",
+    "jets['rho'] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]\n",
+    "name_map['ptGenJet'] = 'pt_gen'\n",
+    "name_map['ptRaw'] = 'pt_raw'\n",
+    "name_map['massRaw'] = 'mass_raw'\n",
+    "name_map['Rho'] = 'rho'\n",
+    "    \n",
+    "events_cache = events.caches[0]\n",
+    "corrector = FactorizedJetCorrector(\n",
+    "    Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi=evaluator['Fall17_17Nov2017_V32_MC_L2Relative_AK4PFPuppi'],\n",
+    ")\n",
+    "uncertainties = JetCorrectionUncertainty(\n",
+    "    Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi=evaluator['Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi']\n",
+    ")\n",
+    "\n",
+    "jet_factory = CorrectedJetsFactory(name_map, jec_stack)\n",
+    "corrected_jets = jet_factory.build(jets, lazy_cache=events_cache)\n",
+    "\n",
+    "\n",
+    "print()\n",
+    "print('starting columns:',ak.fields(jets))\n",
+    "print()\n",
+    "\n",
+    "print('untransformed pt ratios',jets.pt/jets.pt_raw)\n",
+    "print('untransformed mass ratios',jets.mass/jets.mass_raw)\n",
+    "\n",
+    "print('transformed pt ratios',corrected_jets.pt/corrected_jets.pt_raw)\n",
+    "print('transformed mass ratios',corrected_jets.mass/corrected_jets.mass_raw)\n",
+    "\n",
+    "print()\n",
+    "print('transformed columns:', ak.fields(corrected_jets))\n",
+    "print()\n",
+    "\n",
+    "print('JES UP pt ratio',corrected_jets.JES_jes.up.pt/corrected_jets.pt_raw)\n",
+    "print('JES DOWN pt ratio',corrected_jets.JES_jes.down.pt/corrected_jets.pt_raw)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Applying CMS b-tagging corrections\n",
+    "The `coffea.btag_tools` module provides the high-level utility [BTagScaleFactor](https://coffeateam.github.io/coffea/api/coffea.btag_tools.BTagScaleFactor.html#coffea.btag_tools.BTagScaleFactor) which calculates per-jet weights for b-tagging as well as light flavor mis-tagging efficiencies. Uncertainties can be calculated as well."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "SF: [[1.52, 1.56, 1.59, 1.6, 1.6], [0.969, 1.57, ... 1.59, 1.6, 1.6, 1.6], [1.6, 1.6]]\n",
+      "systematic +: [[1.72, 1.77, 1.79, 1.8, 1.8], [1.01, 1.78, ... 1.8, 1.8, 1.8, 1.8], [1.8, 1.8]]\n"
+     ]
+    }
+   ],
+   "source": [
+    "from coffea.btag_tools import BTagScaleFactor\n",
+    "\n",
+    "btag_sf = BTagScaleFactor(\"data/DeepCSV_102XSF_V1.btag.csv.gz\", \"medium\")\n",
+    "\n",
+    "print(\"SF:\", btag_sf.eval(\"central\", events.Jet.hadronFlavour, abs(events.Jet.eta), events.Jet.pt))\n",
+    "print(\"systematic +:\", btag_sf.eval(\"up\", events.Jet.hadronFlavour, abs(events.Jet.eta), events.Jet.pt))"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.7.9"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}

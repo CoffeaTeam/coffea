@@ -1,0 +1,713 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Hist &mdash; coffea 0.7.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Bin" href="coffea.hist.Bin.html" />
+    <link rel="prev" title="export1d" href="coffea.hist.export1d.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> coffea
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.7
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installing coffea</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Coffea by Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Coffea concepts</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../reference.html">API Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.analysis_tools.html">coffea.analysis_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.btag_tools.html">coffea.btag_tools</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../modules/coffea.hist.html">coffea.hist</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.hist.html#functions">Functions</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../modules/coffea.hist.html#classes">Classes</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Hist</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.hist.Bin.html">Bin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.hist.Interval.html">Interval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.hist.Cat.html">Cat</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.hist.StringBin.html">StringBin</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.hist.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.jetmet_tools.html">coffea.jetmet_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.lookup_tools.html">coffea.lookup_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.lumi_tools.html">coffea.lumi_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.html">coffea.nanoevents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.base.html">coffea.nanoevents.methods.base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.candidate.html">coffea.nanoevents.methods.candidate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.nanoaod.html">coffea.nanoevents.methods.nanoaod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.vector.html">coffea.nanoevents.methods.vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.processor.html">coffea.processor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.util.html">coffea.util</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">coffea</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../reference.html">API Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../modules/coffea.hist.html">coffea.hist</a> &raquo;</li>
+        
+      <li>Hist</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/api/coffea.hist.Hist.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="hist">
+<h1>Hist<a class="headerlink" href="#hist" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="coffea.hist.Hist">
+<em class="property">class </em><code class="sig-prename descclassname">coffea.hist.</code><code class="sig-name descname">Hist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">label</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">axes</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L679"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="coffea.processor.AccumulatorABC.html#coffea.processor.AccumulatorABC" title="coffea.processor.accumulator.AccumulatorABC"><code class="docutils literal notranslate"><span class="pre">coffea.processor.AccumulatorABC</span></code></a></p>
+<p>Specify a multidimensional histogram.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – A description of the meaning of the sum of weights</p></li>
+<li><p><strong>*axes</strong> – positional list of <a class="reference internal" href="coffea.hist.Cat.html#coffea.hist.Cat" title="coffea.hist.Cat"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Cat</span></code></a> or <a class="reference internal" href="coffea.hist.Bin.html#coffea.hist.Bin" title="coffea.hist.Bin"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Bin</span></code></a> objects, denoting the axes of the histogram</p></li>
+<li><p><strong>axes</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.9)"><em>collections.abc.Sequence</em></a>) – list of <a class="reference internal" href="coffea.hist.Cat.html#coffea.hist.Cat" title="coffea.hist.Cat"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Cat</span></code></a> or <a class="reference internal" href="coffea.hist.Bin.html#coffea.hist.Bin" title="coffea.hist.Bin"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Bin</span></code></a> objects, denoting the axes of the histogram (overridden by <code class="docutils literal notranslate"><span class="pre">*axes</span></code>)</p></li>
+<li><p><strong>dtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Underlying numpy dtype to use for storing sum of weights</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Creating a histogram with a sparse axis, and two dense axes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">h</span> <span class="o">=</span> <span class="n">coffea</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">Hist</span><span class="p">(</span><span class="s2">&quot;Observed bird count&quot;</span><span class="p">,</span>
+                     <span class="n">coffea</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">Cat</span><span class="p">(</span><span class="s2">&quot;species&quot;</span><span class="p">,</span> <span class="s2">&quot;Bird species&quot;</span><span class="p">),</span>
+                     <span class="n">coffea</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">Bin</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;x coordinate [m]&quot;</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+                     <span class="n">coffea</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">Bin</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="s2">&quot;y coordinate [m]&quot;</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+                     <span class="p">)</span>
+
+<span class="c1"># or</span>
+
+<span class="n">h</span> <span class="o">=</span> <span class="n">coffea</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">Hist</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Observed bird count&quot;</span><span class="p">,</span>
+                     <span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="n">coffea</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">Cat</span><span class="p">(</span><span class="s2">&quot;species&quot;</span><span class="p">,</span> <span class="s2">&quot;Bird species&quot;</span><span class="p">),</span>
+                           <span class="n">coffea</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">Bin</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;x coordinate [m]&quot;</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+                           <span class="n">coffea</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">Bin</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="s2">&quot;y coordinate [m]&quot;</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+                          <span class="p">)</span>
+                     <span class="p">)</span>
+
+<span class="c1"># or</span>
+
+<span class="n">h</span> <span class="o">=</span> <span class="n">coffea</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">Hist</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">coffea</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">Cat</span><span class="p">(</span><span class="s2">&quot;species&quot;</span><span class="p">,</span> <span class="s2">&quot;Bird species&quot;</span><span class="p">),</span>
+                           <span class="n">coffea</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">Bin</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;x coordinate [m]&quot;</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+                           <span class="n">coffea</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">Bin</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="s2">&quot;y coordinate [m]&quot;</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+                          <span class="p">],</span>
+                     <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Observed bird count&quot;</span><span class="p">,</span>
+                     <span class="p">)</span>
+</pre></div>
+</div>
+<p>which produces:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">h</span>
+<span class="go">&lt;Hist (species,x,y) instance at 0x10d84b550&gt;</span>
+</pre></div>
+</div>
+<p class="rubric">Attributes Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.hist.Hist.DEFAULT_DTYPE" title="coffea.hist.Hist.DEFAULT_DTYPE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DEFAULT_DTYPE</span></code></a></p></td>
+<td><p>Default numpy dtype to store sum of weights</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.hist.Hist.fields" title="coffea.hist.Hist.fields"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fields</span></code></a></p></td>
+<td><p>This is a stub for histbook compatibility</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.hist.Hist.label" title="coffea.hist.Hist.label"><code class="xref py py-obj docutils literal notranslate"><span class="pre">label</span></code></a></p></td>
+<td><p>A label describing the meaning of the sum of weights</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.hist.Hist.add" title="coffea.hist.Hist.add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add</span></code></a>(other)</p></td>
+<td><p>Add another histogram into this one, in-place</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.hist.Hist.axes" title="coffea.hist.Hist.axes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">axes</span></code></a>()</p></td>
+<td><p>Get all axes in this histogram</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.hist.Hist.axis" title="coffea.hist.Hist.axis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">axis</span></code></a>(axis_name)</p></td>
+<td><p>Get an <code class="docutils literal notranslate"><span class="pre">Axis</span></code> object</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.hist.Hist.clear" title="coffea.hist.Hist.clear"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clear</span></code></a>()</p></td>
+<td><p>Clear all content in this histogram</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.hist.Hist.compatible" title="coffea.hist.Hist.compatible"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compatible</span></code></a>(other)</p></td>
+<td><p>Checks if this histogram is compatible with another, i.e. they have identical binning.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.hist.Hist.copy" title="coffea.hist.Hist.copy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">copy</span></code></a>([content])</p></td>
+<td><p>Create a deep copy</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.hist.Hist.dense_axes" title="coffea.hist.Hist.dense_axes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dense_axes</span></code></a>()</p></td>
+<td><p>All dense axes</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.hist.Hist.dense_dim" title="coffea.hist.Hist.dense_dim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dense_dim</span></code></a>()</p></td>
+<td><p>Dense dimension of this histogram (number of non-sparse axes)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.hist.Hist.dim" title="coffea.hist.Hist.dim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dim</span></code></a>()</p></td>
+<td><p>Dimension of this histogram (number of axes)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.hist.Hist.fill" title="coffea.hist.Hist.fill"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fill</span></code></a>(**values)</p></td>
+<td><p>Fill sum of weights from columns</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.hist.Hist.group" title="coffea.hist.Hist.group"><code class="xref py py-obj docutils literal notranslate"><span class="pre">group</span></code></a>(old_axes, new_axis, mapping[, overflow])</p></td>
+<td><p>Group a set of slices on old axes into a single new axis</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.hist.Hist.identifiers" title="coffea.hist.Hist.identifiers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">identifiers</span></code></a>(axis[, overflow])</p></td>
+<td><p>Return a list of identifiers for an axis</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.hist.Hist.identity" title="coffea.hist.Hist.identity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">identity</span></code></a>()</p></td>
+<td><p>The identity (zero value) of this accumulator</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.hist.Hist.integrate" title="coffea.hist.Hist.integrate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">integrate</span></code></a>(axis_name[, int_range, overflow])</p></td>
+<td><p>Integrates current histogram along one dimension</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.hist.Hist.project" title="coffea.hist.Hist.project"><code class="xref py py-obj docutils literal notranslate"><span class="pre">project</span></code></a>(*axes, **kwargs)</p></td>
+<td><p>Project histogram onto a subset of its axes</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.hist.Hist.rebin" title="coffea.hist.Hist.rebin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rebin</span></code></a>(old_axis, new_axis)</p></td>
+<td><p>Rebin a dense axis</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.hist.Hist.remove" title="coffea.hist.Hist.remove"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove</span></code></a>(bins, axis)</p></td>
+<td><p>Remove bins from a sparse axis</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.hist.Hist.scale" title="coffea.hist.Hist.scale"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scale</span></code></a>(factor[, axis])</p></td>
+<td><p>Scale histogram in-place by factor</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.hist.Hist.sparse_axes" title="coffea.hist.Hist.sparse_axes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sparse_axes</span></code></a>()</p></td>
+<td><p>All sparse axes</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.hist.Hist.sparse_dim" title="coffea.hist.Hist.sparse_dim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sparse_dim</span></code></a>()</p></td>
+<td><p>Sparse dimension of this histogram (number of sparse axes)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.hist.Hist.sparse_nbins" title="coffea.hist.Hist.sparse_nbins"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sparse_nbins</span></code></a>()</p></td>
+<td><p>Total number of sparse bins</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.hist.Hist.sum" title="coffea.hist.Hist.sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sum</span></code></a>(*axes, **kwargs)</p></td>
+<td><p>Integrates out a set of axes, producing a new histogram</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.hist.Hist.values" title="coffea.hist.Hist.values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">values</span></code></a>([sumw2, overflow])</p></td>
+<td><p>Extract the sum of weights arrays from this histogram</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes Documentation</p>
+<dl class="py attribute">
+<dt id="coffea.hist.Hist.DEFAULT_DTYPE">
+<code class="sig-name descname">DEFAULT_DTYPE</code><em class="property"> = 'd'</em><a class="headerlink" href="#coffea.hist.Hist.DEFAULT_DTYPE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default numpy dtype to store sum of weights</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="coffea.hist.Hist.fields">
+<code class="sig-name descname">fields</code><a class="headerlink" href="#coffea.hist.Hist.fields" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a stub for histbook compatibility</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="coffea.hist.Hist.label">
+<code class="sig-name descname">label</code><a class="headerlink" href="#coffea.hist.Hist.label" title="Permalink to this definition">¶</a></dt>
+<dd><p>A label describing the meaning of the sum of weights</p>
+</dd></dl>
+
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt id="coffea.hist.Hist.add">
+<code class="sig-name descname">add</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L856"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add another histogram into this one, in-place</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.axes">
+<code class="sig-name descname">axes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L802"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.axes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all axes in this histogram</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.axis">
+<code class="sig-name descname">axis</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis_name</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L796"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.axis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an <code class="docutils literal notranslate"><span class="pre">Axis</span></code> object</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.clear">
+<code class="sig-name descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L791"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear all content in this histogram</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.compatible">
+<code class="sig-name descname">compatible</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L846"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.compatible" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if this histogram is compatible with another, i.e. they have identical binning</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.copy">
+<code class="sig-name descname">copy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">content</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L770"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a deep copy</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>content</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – If set false, only the histogram definition is copied, resetting
+the sum of weights to zero</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.dense_axes">
+<code class="sig-name descname">dense_axes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L823"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.dense_axes" title="Permalink to this definition">¶</a></dt>
+<dd><p>All dense axes</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.dense_dim">
+<code class="sig-name descname">dense_dim</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L815"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.dense_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dense dimension of this histogram (number of non-sparse axes)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.dim">
+<code class="sig-name descname">dim</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L811"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dimension of this histogram (number of axes)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.fill">
+<code class="sig-name descname">fill</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">values</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L928"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.fill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fill sum of weights from columns</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**values</strong> – Keyword arguments, one for each axis name, of either flat numpy arrays
+(for dense dimensions) or literals (for sparse dimensions) which will
+be used to fill bins at the corresponding indices.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The reserved keyword <code class="docutils literal notranslate"><span class="pre">weight</span></code>, if specified, will increment sum of weights
+by the given column values, which must be broadcastable to the same dimension as all other
+columns.  Upon first use, this will trigger the storage of the sum of squared weights.</p>
+</div>
+<p class="rubric">Examples</p>
+<p>Filling the histogram from the <a class="reference internal" href="#coffea.hist.Hist" title="coffea.hist.Hist"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Hist</span></code></a> example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">h</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">species</span><span class="o">=</span><span class="s1">&#39;ducks&#39;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span> <span class="n">y</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span> <span class="n">weight</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="o">*</span> <span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.group">
+<code class="sig-name descname">group</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">old_axes</span></em>, <em class="sig-param"><span class="n">new_axis</span></em>, <em class="sig-param"><span class="n">mapping</span></em>, <em class="sig-param"><span class="n">overflow</span><span class="o">=</span><span class="default_value">'none'</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L1116"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.group" title="Permalink to this definition">¶</a></dt>
+<dd><p>Group a set of slices on old axes into a single new axis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>old_axes</strong> – Axis or tuple of axes which are being grouped</p></li>
+<li><p><strong>new_axis</strong> – A new sparse dimension definition, e.g. a <a class="reference internal" href="coffea.hist.Cat.html#coffea.hist.Cat" title="coffea.hist.Cat"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Cat</span></code></a> instance</p></li>
+<li><p><strong>mapping</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.9)"><em>dict</em></a>) – A mapping <code class="docutils literal notranslate"><span class="pre">{'new_bin':</span> <span class="pre">(slice,</span> <span class="pre">...),</span> <span class="pre">...}</span></code> where each
+slice is on the axes being re-binned.  In the case of
+a single axis for <code class="docutils literal notranslate"><span class="pre">old_axes</span></code>, <code class="docutils literal notranslate"><span class="pre">{'new_bin':</span> <span class="pre">slice,</span> <span class="pre">...}</span></code>
+is admissible.</p></li>
+<li><p><strong>overflow</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – See <a class="reference internal" href="#coffea.hist.Hist.sum" title="coffea.hist.Hist.sum"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">sum</span></code></a> description for meaning of allowed values
+Default is to <em>not include</em> overflow bins</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns a new histogram object</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.identifiers">
+<code class="sig-name descname">identifiers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis</span></em>, <em class="sig-param"><span class="n">overflow</span><span class="o">=</span><span class="default_value">'none'</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L1298"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.identifiers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of identifiers for an axis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>axis</strong> – Axis name or Axis object</p></li>
+<li><p><strong>overflow</strong> – See <a class="reference internal" href="#coffea.hist.Hist.sum" title="coffea.hist.Hist.sum"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">sum</span></code></a> description for meaning of allowed values</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.identity">
+<code class="sig-name descname">identity</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L787"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.identity" title="Permalink to this definition">¶</a></dt>
+<dd><p>The identity (zero value) of this accumulator</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.integrate">
+<code class="sig-name descname">integrate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis_name</span></em>, <em class="sig-param"><span class="n">int_range</span><span class="o">=</span><span class="default_value">slice(None, None, None)</span></em>, <em class="sig-param"><span class="n">overflow</span><span class="o">=</span><span class="default_value">'none'</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L1069"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.integrate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Integrates current histogram along one dimension</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>axis_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a><em> or </em><em>Axis</em>) – Which dimension to reduce on</p></li>
+<li><p><strong>int_range</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#slice" title="(in Python v3.9)"><em>slice</em></a>) – Any slice, list, string, or other object that the axis will understand
+Default is to integrate over the whole range</p></li>
+<li><p><strong>overflow</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – See <a class="reference internal" href="#coffea.hist.Hist.sum" title="coffea.hist.Hist.sum"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">sum</span></code></a> description for meaning of allowed values
+Default is to <em>not include</em> overflow bins</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.project">
+<code class="sig-name descname">project</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">axes</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L1052"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.project" title="Permalink to this definition">¶</a></dt>
+<dd><p>Project histogram onto a subset of its axes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*axes</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a><em> or </em><em>Axis</em>) – Positional list of axes to project on to</p></li>
+<li><p><strong>overflow</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – Controls behavior of integration over remaining axes.
+See <a class="reference internal" href="#coffea.hist.Hist.sum" title="coffea.hist.Hist.sum"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">sum</span></code></a> description for meaning of allowed values
+Default is to <em>not include</em> overflow bins</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.rebin">
+<code class="sig-name descname">rebin</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">old_axis</span></em>, <em class="sig-param"><span class="n">new_axis</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L1167"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.rebin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rebin a dense axis</p>
+<p>This function will construct the mapping from old to new axis, and
+constructs a new histogram, rebinning the sum of weights along that dimension.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>No interpolation is performed, so the user must be sure the old
+and new axes have compatible bin boundaries, e.g. that they evenly
+divide each other.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>old_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a><em> or </em><em>Axis</em>) – Axis to rebin</p></li>
+<li><p><strong>new_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a><em> or </em><em>Axis</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><em>int</em></a>) – A DenseAxis object defining the new axis (e.g. a <a class="reference internal" href="coffea.hist.Bin.html#coffea.hist.Bin" title="coffea.hist.Bin"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Bin</span></code></a> instance).
+If a number N is supplied, the old axis edges are downsampled by N,
+resulting in a histogram with <code class="docutils literal notranslate"><span class="pre">old_nbins</span> <span class="pre">//</span> <span class="pre">N</span></code> bins.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns a new <a class="reference internal" href="#coffea.hist.Hist" title="coffea.hist.Hist"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Hist</span></code></a> object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.remove">
+<code class="sig-name descname">remove</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">bins</span></em>, <em class="sig-param"><span class="n">axis</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L1096"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove bins from a sparse axis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bins</strong> (<em>iterable</em>) – A list of bin identifiers to remove</p></li>
+<li><p><strong>axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a><em> or </em><em>Axis</em>) – Axis name or SparseAxis instance</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns a <em>copy</em> of the histogram with specified bins removed, not an in-place operation</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.scale">
+<code class="sig-name descname">scale</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">factor</span></em>, <em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L1253"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.scale" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scale histogram in-place by factor</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.9)"><em>dict</em></a>) – A number or mapping of identifier to number</p></li>
+<li><p><strong>axis</strong> (<em>optional</em>) – Which (sparse) axis the dict applies to, may be a tuples of axes.
+The dict keys must follow the same structure.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>This function is useful to quickly reweight according to some
+weight mapping along a sparse axis, such as the <code class="docutils literal notranslate"><span class="pre">species</span></code> axis
+in the <a class="reference internal" href="#coffea.hist.Hist" title="coffea.hist.Hist"><code class="xref any py py-class docutils literal notranslate"><span class="pre">Hist</span></code></a> example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">h</span><span class="o">.</span><span class="n">scale</span><span class="p">({</span><span class="s1">&#39;ducks&#39;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span> <span class="s1">&#39;geese&#39;</span><span class="p">:</span> <span class="mf">1.2</span><span class="p">},</span> <span class="n">axis</span><span class="o">=</span><span class="s1">&#39;species&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">h</span><span class="o">.</span><span class="n">scale</span><span class="p">({(</span><span class="s1">&#39;ducks&#39;</span><span class="p">,):</span> <span class="mf">0.5</span><span class="p">},</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;species&#39;</span><span class="p">,))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">h</span><span class="o">.</span><span class="n">scale</span><span class="p">({(</span><span class="s1">&#39;geese&#39;</span><span class="p">,</span> <span class="s1">&#39;honk&#39;</span><span class="p">):</span> <span class="mf">5.0</span><span class="p">},</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;species&#39;</span><span class="p">,</span> <span class="s1">&#39;vocalization&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.sparse_axes">
+<code class="sig-name descname">sparse_axes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L827"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.sparse_axes" title="Permalink to this definition">¶</a></dt>
+<dd><p>All sparse axes</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.sparse_dim">
+<code class="sig-name descname">sparse_dim</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L819"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.sparse_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sparse dimension of this histogram (number of sparse axes)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.sparse_nbins">
+<code class="sig-name descname">sparse_nbins</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L831"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.sparse_nbins" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total number of sparse bins</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.sum">
+<code class="sig-name descname">sum</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">axes</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L1001"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.sum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Integrates out a set of axes, producing a new histogram</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*axes</strong> – Positional list of axes to integrate out (either a string or an Axis object)</p></li>
+<li><p><strong>overflow</strong> (<em>{'none'</em><em>, </em><em>'under'</em><em>, </em><em>'over'</em><em>, </em><em>'all'</em><em>, </em><em>'allnan'}</em><em>, </em><em>optional</em>) – How to treat the overflow bins in the sum.  Only applies to dense axes.
+‘all’ includes both under- and over-flow but not nan-flow bins.
+Default is ‘none’.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="coffea.hist.Hist.values">
+<code class="sig-name descname">values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sumw2</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">overflow</span><span class="o">=</span><span class="default_value">'none'</span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/hist/hist_tools.py#L1219"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.hist.Hist.values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract the sum of weights arrays from this histogram</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sumw2</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – If True, frequencies is a tuple of arrays (sum weights, sum squared weights)</p></li>
+<li><p><strong>overflow</strong> – See <a class="reference internal" href="#coffea.hist.Hist.sum" title="coffea.hist.Hist.sum"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">sum</span></code></a> description for meaning of allowed values</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns a mapping <code class="docutils literal notranslate"><span class="pre">{(sparse</span> <span class="pre">identifier,</span> <span class="pre">...):</span> <span class="pre">numpy.array(...),</span> <span class="pre">...}</span></code>
+where each array has dimension <a class="reference internal" href="#coffea.hist.Hist.dense_dim" title="coffea.hist.Hist.dense_dim"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">dense_dim</span></code></a> and shape matching
+the number of bins per axis, plus 0-3 overflow bins depending
+on the <code class="docutils literal notranslate"><span class="pre">overflow</span></code> argument.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="coffea.hist.Bin.html" class="btn btn-neutral float-right" title="Bin" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="coffea.hist.export1d.html" class="btn btn-neutral float-left" title="export1d" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2019, Fermi National Accelerator Laboratory.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

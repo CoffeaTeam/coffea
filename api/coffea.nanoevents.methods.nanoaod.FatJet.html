@@ -1,0 +1,358 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>FatJet &mdash; coffea 0.7.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="MissingET" href="coffea.nanoevents.methods.nanoaod.MissingET.html" />
+    <link rel="prev" title="Jet" href="coffea.nanoevents.methods.nanoaod.Jet.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> coffea
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.7
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installing coffea</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Coffea by Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Coffea concepts</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../reference.html">API Reference Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.analysis_tools.html">coffea.analysis_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.btag_tools.html">coffea.btag_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.hist.html">coffea.hist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.jetmet_tools.html">coffea.jetmet_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.lookup_tools.html">coffea.lookup_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.lumi_tools.html">coffea.lumi_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.html">coffea.nanoevents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.base.html">coffea.nanoevents.methods.base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.candidate.html">coffea.nanoevents.methods.candidate</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../modules/coffea.nanoevents.methods.nanoaod.html">coffea.nanoevents.methods.nanoaod</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../modules/coffea.nanoevents.methods.nanoaod.html#classes">Classes</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="coffea.nanoevents.methods.nanoaod.PtEtaPhiMCollection.html">PtEtaPhiMCollection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.nanoevents.methods.nanoaod.GenParticle.html">GenParticle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.nanoevents.methods.nanoaod.GenVisTau.html">GenVisTau</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.nanoevents.methods.nanoaod.Electron.html">Electron</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.nanoevents.methods.nanoaod.Muon.html">Muon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.nanoevents.methods.nanoaod.Tau.html">Tau</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.nanoevents.methods.nanoaod.Photon.html">Photon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.nanoevents.methods.nanoaod.FsrPhoton.html">FsrPhoton</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.nanoevents.methods.nanoaod.Jet.html">Jet</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">FatJet</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.nanoevents.methods.nanoaod.MissingET.html">MissingET</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.nanoevents.methods.nanoaod.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.vector.html">coffea.nanoevents.methods.vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.processor.html">coffea.processor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.util.html">coffea.util</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">coffea</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../reference.html">API Reference Guide</a> &raquo;</li>
+        
+          <li><a href="../modules/coffea.nanoevents.methods.nanoaod.html">coffea.nanoevents.methods.nanoaod</a> &raquo;</li>
+        
+      <li>FatJet</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/api/coffea.nanoevents.methods.nanoaod.FatJet.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="fatjet">
+<h1>FatJet<a class="headerlink" href="#fatjet" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="coffea.nanoevents.methods.nanoaod.FatJet">
+<em class="property">class </em><code class="sig-prename descclassname">coffea.nanoevents.methods.nanoaod.</code><code class="sig-name descname">FatJet</code><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/7bc67ce1551962cc468c1ba08913097bdcf6ac64/coffea/nanoevents/methods/nanoaod.py#L306"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#coffea.nanoevents.methods.nanoaod.FatJet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector.html#coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector" title="coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector"><code class="xref py py-class docutils literal notranslate"><span class="pre">coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector</span></code></a>, <a class="reference internal" href="coffea.nanoevents.methods.base.NanoCollection.html#coffea.nanoevents.methods.base.NanoCollection" title="coffea.nanoevents.methods.base.NanoCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">coffea.nanoevents.methods.base.NanoCollection</span></code></a></p>
+<p>NanoAOD large radius jet object</p>
+<p class="rubric">Attributes Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.nanoevents.methods.nanoaod.FatJet.LOOSE" title="coffea.nanoevents.methods.nanoaod.FatJet.LOOSE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LOOSE</span></code></a></p></td>
+<td><p>jetId bit position</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.nanoevents.methods.nanoaod.FatJet.TIGHT" title="coffea.nanoevents.methods.nanoaod.FatJet.TIGHT"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TIGHT</span></code></a></p></td>
+<td><p>jetId bit position</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.nanoevents.methods.nanoaod.FatJet.TIGHTLEPVETO" title="coffea.nanoevents.methods.nanoaod.FatJet.TIGHTLEPVETO"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TIGHTLEPVETO</span></code></a></p></td>
+<td><p>jetId bit position</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.nanoevents.methods.nanoaod.FatJet.isLoose" title="coffea.nanoevents.methods.nanoaod.FatJet.isLoose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">isLoose</span></code></a></p></td>
+<td><p>Returns a boolean array marking loose jets according to jetId index</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.nanoevents.methods.nanoaod.FatJet.isTight" title="coffea.nanoevents.methods.nanoaod.FatJet.isTight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">isTight</span></code></a></p></td>
+<td><p>Returns a boolean array marking tight jets according to jetId index</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.nanoevents.methods.nanoaod.FatJet.isTightLeptonVeto" title="coffea.nanoevents.methods.nanoaod.FatJet.isTightLeptonVeto"><code class="xref py py-obj docutils literal notranslate"><span class="pre">isTightLeptonVeto</span></code></a></p></td>
+<td><p>Returns a boolean array marking tight jets with explicit lepton veto according to jetId index</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.nanoevents.methods.nanoaod.FatJet.subjets" title="coffea.nanoevents.methods.nanoaod.FatJet.subjets"><code class="xref py py-obj docutils literal notranslate"><span class="pre">subjets</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes Documentation</p>
+<dl class="py attribute">
+<dt id="coffea.nanoevents.methods.nanoaod.FatJet.LOOSE">
+<code class="sig-name descname">LOOSE</code><em class="property"> = 0</em><a class="headerlink" href="#coffea.nanoevents.methods.nanoaod.FatJet.LOOSE" title="Permalink to this definition">¶</a></dt>
+<dd><p>jetId bit position</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="coffea.nanoevents.methods.nanoaod.FatJet.TIGHT">
+<code class="sig-name descname">TIGHT</code><em class="property"> = 1</em><a class="headerlink" href="#coffea.nanoevents.methods.nanoaod.FatJet.TIGHT" title="Permalink to this definition">¶</a></dt>
+<dd><p>jetId bit position</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="coffea.nanoevents.methods.nanoaod.FatJet.TIGHTLEPVETO">
+<code class="sig-name descname">TIGHTLEPVETO</code><em class="property"> = 2</em><a class="headerlink" href="#coffea.nanoevents.methods.nanoaod.FatJet.TIGHTLEPVETO" title="Permalink to this definition">¶</a></dt>
+<dd><p>jetId bit position</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="coffea.nanoevents.methods.nanoaod.FatJet.isLoose">
+<code class="sig-name descname">isLoose</code><a class="headerlink" href="#coffea.nanoevents.methods.nanoaod.FatJet.isLoose" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a boolean array marking loose jets according to jetId index</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="coffea.nanoevents.methods.nanoaod.FatJet.isTight">
+<code class="sig-name descname">isTight</code><a class="headerlink" href="#coffea.nanoevents.methods.nanoaod.FatJet.isTight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a boolean array marking tight jets according to jetId index</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="coffea.nanoevents.methods.nanoaod.FatJet.isTightLeptonVeto">
+<code class="sig-name descname">isTightLeptonVeto</code><a class="headerlink" href="#coffea.nanoevents.methods.nanoaod.FatJet.isTightLeptonVeto" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a boolean array marking tight jets with explicit lepton veto according to jetId index</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="coffea.nanoevents.methods.nanoaod.FatJet.subjets">
+<code class="sig-name descname">subjets</code><a class="headerlink" href="#coffea.nanoevents.methods.nanoaod.FatJet.subjets" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="coffea.nanoevents.methods.nanoaod.MissingET.html" class="btn btn-neutral float-right" title="MissingET" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="coffea.nanoevents.methods.nanoaod.Jet.html" class="btn btn-neutral float-left" title="Jet" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2019, Fermi National Accelerator Laboratory.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
