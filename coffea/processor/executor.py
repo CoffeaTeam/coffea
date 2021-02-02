@@ -182,6 +182,8 @@ def _futures_handler(futures_set, output, status, unit, desc, add_fn, tailtimeou
         with tqdm(disable=not status, unit=unit, total=len(futures_set), desc=desc) as pbar:
             while len(futures_set) > 0:
                 finished = set(job for job in futures_set if job.done())
+                if len(finished) == len(futures_set):
+                    pbar.set_description(desc="Adding", refresh=True)
                 futures_set.difference_update(finished)
                 while finished:
                     add_fn(output, finished.pop().result())
