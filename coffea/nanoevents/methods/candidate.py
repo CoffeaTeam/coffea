@@ -51,7 +51,7 @@ class Candidate(vector.LorentzVector):
 class PtEtaPhiMCandidate(Candidate, vector.PtEtaPhiMLorentzVector):
     """A Lorentz vector in eta, mass coordinates with charge
 
-    This mixin class requires the parent class to provide items `x`, `y`, `z`, `t`, and `charge`.
+    This mixin class requires the parent class to provide items `pt`, `eta`, `phi`, `mass`, and `charge`.
     """
 
     pass
