@@ -57,4 +57,14 @@ class PtEtaPhiMCandidate(Candidate, vector.PtEtaPhiMLorentzVector):
     pass
 
 
-__all__ = ["Candidate", "PtEtaPhiMCandidate"]
+@awkward.mixin_class(behavior)
+class PtEtaPhiECandidate(Candidate, vector.PtEtaPhiELorentzVector):
+    """A Lorentz vector in eta, energy coordinates with charge
+
+    This mixin class requires the parent class to provide items `pt`, `eta`, `phi`, `energy`, and `charge`.
+    """
+
+    pass
+
+
+__all__ = ["Candidate", "PtEtaPhiMCandidate", "PtEtaPhiECandidate"]
