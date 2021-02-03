@@ -105,7 +105,6 @@ def _parse_jme_formatted_file(
             jme_f,
             dtype=tuple(dtypes),
             names=tuple(columns),
-            unpack=True,
             encoding="ascii",
         )
         if len(pars.shape) == 0:
@@ -424,7 +423,6 @@ def convert_effective_area_file(eaFilePath):
         dtype=tuple(dtypes),
         names=tuple(columns),
         skip_header=1,
-        unpack=True,
         encoding="ascii",
     )
 
