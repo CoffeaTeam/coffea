@@ -160,8 +160,7 @@ def test_hist():
     assert h_less.sum("vocalization", "height", "mass", "animal").values()[()] == 1004.
 
 def test_export1d():
-    with pytest.warns(FutureWarning):
-        import uproot3
+    import uproot3
     import os
     from coffea.hist.export import export1d
 
