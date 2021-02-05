@@ -584,7 +584,7 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
     def multiply(self, other):
         """Multiply this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components
 
-        In reality, this multiplies `pt` and `mass` by the scalar quanitity for performance
+        In reality, this multiplies `pt` and `mass` by the scalar quantity for performance
         """
         return awkward.zip(
             {
@@ -680,7 +680,7 @@ class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
     def multiply(self, other):
         """Multiply this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components
 
-        In reality, this multiplies `pt` and `energy` by the scalar quanitity for performance
+        In reality, this multiplies `pt` and `energy` by the scalar quantity for performance
         """
         return awkward.zip(
             {
