@@ -182,6 +182,8 @@ def _futures_handler(futures_set, output, status, unit, desc, add_fn, tailtimeou
         with tqdm(disable=not status, unit=unit, total=len(futures_set), desc=desc) as pbar:
             while len(futures_set) > 0:
                 finished = set(job for job in futures_set if job.done())
+                if len(finished) == len(futures_set):
+                    pbar.set_description(desc="Adding", refresh=True)
                 futures_set.difference_update(finished)
                 while finished:
                     add_fn(output, finished.pop().result())
@@ -896,7 +898,8 @@ def _work_function(item, processor_instance, savemetrics=False,
                 try:
                     out = processor_instance.process(events)
                 except Exception as e:
-                    raise Exception(f"Failed processing file: {item.filename} ({item.entrystart}-{item.entrystop})") from e
+                    file_trace = f"\n\nFailed processing file: {item.filename} ({item.entrystart}-{item.entrystop})"
+                    raise type(e)(str(e) + file_trace).with_traceback(sys.exc_info()[2]) from None
                 if out is None:
                     raise ValueError("Output of process() should not be None. Make sure your processor's process() function returns an accumulator.")
                 toc = time.time()
@@ -919,7 +922,7 @@ def _work_function(item, processor_instance, savemetrics=False,
         # catch xrootd errors and optionally skip
         # or retry to read the file
         except OSError as e:
-            if not skipbadfiles:
+            if not skipbadfiles or "Auth failed" in str(e):
                 raise e
             else:
                 w_str = 'Bad file source %s.' % item.filename
@@ -985,7 +988,7 @@ def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None, align
             out = set_accumulator([FileMeta(item.dataset, item.filename, item.treename, metadata)])
             break
         except OSError as e:
-            if not skipbadfiles:
+            if not skipbadfiles or "Auth failed" in str(e):
                 raise e
             else:
                 w_str = 'Bad file source %s.' % item.filename
