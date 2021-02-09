@@ -523,8 +523,9 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                 # Display details of the completed task
                 wqex_output_task(task, verbose_mode, resource_monitor, output)
                 if task.result != 0:
-                    print('Stopping execution')
-                    break
+                    # Note that WQ already retries internal failures.
+                    # If we get to this point, it's a badly formed task.
+                    raise RuntimeError("Task {} item {} failed with output:\n{}".format(task.id, task.tag, task.output))
 
                 # The task tag remembers the itemid for us.
                 itemid = task.tag
