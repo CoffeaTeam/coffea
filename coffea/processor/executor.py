@@ -315,7 +315,7 @@ def wqex_output_task(task, verbose_mode, resource_mode, output_mode):
         print('Task id #{} failed with code: {}'.format(task.id, task.result))
 
 
-# The Work Queue object is global b/c we want to 
+# The Work Queue object is global b/c we want to
 # retain state between runs of the executor, such
 # as connections to workers, cached data, etc.
 _wq_queue = None
