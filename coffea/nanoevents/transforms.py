@@ -4,6 +4,7 @@ import numba
 import awkward
 from coffea.nanoevents.util import concat
 
+
 def to_layout(array):
     if isinstance(array, awkward.layout.Content):
         return array
