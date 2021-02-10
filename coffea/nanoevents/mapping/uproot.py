@@ -31,9 +31,9 @@ class UprootSourceMapping(BaseSourceMapping):
         super(UprootSourceMapping, self).__init__(fileopener, cache, access_log)
 
     @classmethod
-    def _extract_base_form(cls, tree):
+    def _extract_base_form(cls, tree, **kwargs):
         branch_forms = {}
-        for key, branch in tree.iteritems():
+        for key, branch in tree.iteritems(**kwargs):
             if "," in key or "!" in key:
                 warnings.warn(
                     f"Skipping {key} because it contains characters that NanoEvents cannot accept [,!]"
@@ -50,6 +50,14 @@ class UprootSourceMapping(BaseSourceMapping):
             ):
                 form["form_key"] = quote(f"{key},!load")
                 form["content"]["form_key"] = quote(f"{key},!load,!content")
+                form["content"]["parameters"] = {"__doc__": branch.title}
+            elif (
+                    form["class"].startswith("ListOffset")
+                    and form["content"]["class"].startswith("ListOffset")
+                    and form["content"]["content"]["class"] in ["NumpyArray", "RecordArray"]
+            ):
+                form["form_key"] = quote(f"{key},!load")
+                form["content"]["form_key"] = quote(f"{key},!load,!content,!content")
                 form["content"]["parameters"] = {"__doc__": branch.title}
             elif form["class"] == "NumpyArray":
                 form["form_key"] = quote(f"{key},!load")
