@@ -4,6 +4,11 @@ import numba
 import awkward
 from coffea.nanoevents.util import concat
 
+def to_layout(array):
+    if isinstance(array, awkward.layout.Content):
+        return array
+    return array.layout
+
 
 def data(stack):
     """Extract content from array
@@ -19,7 +24,7 @@ def offsets(stack):
 
     Signature: array,!offsets
     """
-    stack.append(stack.pop().layout.offsets)
+    stack.append(to_layout(stack.pop()).offsets)
 
 
 def mask(stack):
@@ -27,7 +32,7 @@ def mask(stack):
 
     Signature: array,!mask
     """
-    stack.append(stack.pop().layout.mask)
+    stack.append(to_layout(stack.pop()).mask)
 
 
 def index(stack):
@@ -35,7 +40,7 @@ def index(stack):
 
     Signature: array,!index
     """
-    stack.append(stack.pop().layout.index)
+    stack.append(to_layout(stack.pop()).index)
 
 
 def starts(stack):
@@ -43,7 +48,7 @@ def starts(stack):
 
     Signature: array,!offsets
     """
-    stack.append(stack.pop().layout.starts)
+    stack.append(to_layout(stack.pop()).starts)
 
 
 def stops(stack):
@@ -51,7 +56,7 @@ def stops(stack):
 
     Signature: array,!stops
     """
-    stack.append(stack.pop().layout.stops)
+    stack.append(to_layout(stack.pop()).stops)
 
 
 def tags(stack):
@@ -59,7 +64,7 @@ def tags(stack):
 
     Signature: array,!tags
     """
-    stack.append(stack.pop().layout.tags)
+    stack.append(to_layout(stack.pop()).tags)
 
 
 def content(stack):
@@ -67,7 +72,7 @@ def content(stack):
 
     Signature: array,!content
     """
-    stack.append(stack.pop().layout.content)
+    stack.append(to_layout(stack.pop()).content)
 
 
 def counts2offsets_form(counts_form):
@@ -287,3 +292,7 @@ def nestedindex(stack):
         )
     )
     stack.append(out)
+
+
+def item(stack, field):
+    stack.append(stack.pop()[field])
