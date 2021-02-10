@@ -205,7 +205,17 @@ class NanoEventsFactory:
         mapping = ParquetSourceMapping(
             TrivialParquetOpener(uuidpfn, parquet_options), access_log=access_log
         )
-        shim = TrivialParquetOpener.UprootLikeShim(file, table_file.schema_arrow, metadata['extras']['ceph_config_path'])
+
+        shim_metadata = {}
+        if metadata['extras']['is_rados_parquet']:
+            shim_metadata['schema_arrow'] = table_file.schema_arrow
+            shim_metadata['ceph_config_path'] = metadata['extras']['ceph_config_path']
+            shim_metadata['format'] = 'rados-parquet'
+        else:
+            shim_metadata['schema_arrow'] = table_file.schema_arrow
+            shim_metadata['format'] = 'parquet'
+
+        shim = TrivialParquetOpener.UprootLikeShim(file, shim_metadata)
         mapping.preload_column_source(partition_key[0], partition_key[1], shim)
 
         base_form = mapping._extract_base_form(table_file.schema_arrow)

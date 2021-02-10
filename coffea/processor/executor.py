@@ -1381,7 +1381,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     return output
 
 
-def run_rados_parquet_job(basedir,
+def run_parquet_job(basedir,
                    treename,
                    processor_instance,
                    executor,
@@ -1407,10 +1407,11 @@ def run_rados_parquet_job(basedir,
     xrootdtimeout = executor_args.pop('xrootdtimeout', None)
     align_clusters = executor_args.pop('align_clusters', False)
     ceph_config_path = executor_args.pop('ceph_config_path', '/etc/ceph/ceph.conf')
+    is_rados_parquet = executor_args.pop('is_rados_parquet', False)
 
     chunks = []
     for filename in dataset.files:
-        chunks.append(WorkItem('dataset', filename, treename, 0, 0, '', {'ceph_config_path': ceph_config_path}))
+        chunks.append(WorkItem('dataset', filename, treename, 0, 0, '', {'ceph_config_path': ceph_config_path, 'is_rados_parquet': is_rados_parquet}))
 
     # pop all _work_function args here
     savemetrics = executor_args.pop('savemetrics', False)
