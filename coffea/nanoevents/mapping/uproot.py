@@ -31,9 +31,9 @@ class UprootSourceMapping(BaseSourceMapping):
         super(UprootSourceMapping, self).__init__(fileopener, cache, access_log)
 
     @classmethod
-    def _extract_base_form(cls, tree, **kwargs):
+    def _extract_base_form(cls, tree, iteritems_options={}):
         branch_forms = {}
-        for key, branch in tree.iteritems(**kwargs):
+        for key, branch in tree.iteritems(**iteritems_options):
             if "," in key or "!" in key:
                 warnings.warn(
                     f"Skipping {key} because it contains characters that NanoEvents cannot accept [,!]"
