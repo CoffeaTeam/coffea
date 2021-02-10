@@ -1,4 +1,4 @@
-FROM jcnitdgp25/skyhookdm-arrow:latest
+FROM jcnitdgp25/skyhookdm-arrow:stable-0.1
 
 RUN yum -y update && \
     yum -y install python3 \
