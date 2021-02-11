@@ -173,7 +173,7 @@ class TwoVector:
 
     @property
     def unit(self):
-        """Unit vector, a vector of length 1 pointing the same direction"""
+        """Unit vector, a vector of length 1 pointing in the same direction"""
         return self / self.r
 
 
@@ -381,7 +381,7 @@ class ThreeVector(TwoVector):
 
     @property
     def unit(self):
-        """Unit vector, a vector of length 1 pointing the same direction"""
+        """Unit vector, a vector of length 1 pointing in the same direction"""
         return self / self.rho
 
 
