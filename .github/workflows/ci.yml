@@ -43,6 +43,9 @@ jobs:
         os: [ubuntu-latest, macOS-latest, windows-latest]
         java-version: [1.8]
         python-version: [3.6, 3.7, 3.8]
+        exclude:
+          - os: macOS-latest
+            python-version: 3.6
     name: test coffea (${{ matrix.os }}) - python ${{ matrix.python-version }}, JDK${{ matrix.java-version }}
 
     steps:
