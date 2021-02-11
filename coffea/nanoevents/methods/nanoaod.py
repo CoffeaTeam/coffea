@@ -336,6 +336,7 @@ class FatJet(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     def matched_gen(self):
         return self._events().GenJet._apply_global_index(self.genJetAK8IdxG)
 
+
 _set_repr_name("FatJet")
 
 
