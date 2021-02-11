@@ -1,6 +1,6 @@
 # Reading Nanoevents from Parquet files stored in CephFS through the Arrow Datasets API by pushing down Scan operations and processing with Coffea
 
-We added a new executor API called the [`run_parquet_job`](https://github.com/uccross/coffea/blob/use-dataset-api/coffea/processor/executor.py#L1384) that allows reading columns in parallel using Dask out of  Parquet files stored in CephFS by pushing down projection operations into the Ceph OSDs to minimize the overhead of moving data through the network.
+We added a new executor API called the [`run_rados_parquet_job`](https://github.com/uccross/coffea/blob/use-dataset-api/coffea/processor/executor.py#L1384) that allows reading columns in parallel using Dask out of  Parquet files stored in CephFS by pushing down projection operations into the Ceph OSDs to minimize the overhead of moving data through the network.
 
 # Getting Started
 

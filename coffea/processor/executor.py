@@ -97,16 +97,16 @@ class FileMeta(object):
 
 class WorkItem(object):
     __slots__ = [
-        'dataset', 
-        'filename', 
-        'treename', 
-        'entrystart', 
-        'entrystop', 
+        'dataset',
+        'filename',
+        'treename',
+        'entrystart',
+        'entrystop',
         'fileuuid',
         'extras'
     ]
 
-    def __init__(self, dataset, filename, treename, entrystart, entrystop, fileuuid, extras):
+    def __init__(self, dataset, filename, treename, entrystart, entrystop, fileuuid, extras={}):
         self.dataset = dataset
         self.filename = filename
         self.treename = treename
@@ -852,15 +852,15 @@ def _get_cache(strategy):
     return cache
 
 
-class RadosParquetFile(): 
+class ParquetFileContext():
     def __init__(self, filename):
-        self.filename = filename 
-          
-    def __enter__(self): 
+        self.filename = filename
+
+    def __enter__(self):
         return self
-      
-    def __exit__(self, exc_type, exc_value, exc_traceback): 
-        pass   
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        pass
 
 
 def _work_function(item, processor_instance, savemetrics=False,
@@ -887,25 +887,17 @@ def _work_function(item, processor_instance, savemetrics=False,
                     timeout=xrootdtimeout,
                     file_handler=uproot.MemmapSource if mmap else uproot.MultithreadedFileSource,
                 )
-                metadata = {
-                    'dataset': item.dataset,
-                    'filename': item.filename,
-                    'treename': item.treename,
-                    'entrystart': item.entrystart,
-                    'entrystop': item.entrystop,
-                    'fileuuid': str(uuid.UUID(bytes=item.fileuuid))
-                }
-            elif format == "parquet":
-                filecontext = RadosParquetFile(item.filename)
-                metadata = {
-                    'dataset': item.dataset,
-                    'filename': item.filename,
-                    'treename': item.treename,
-                    'entrystart': item.entrystart,
-                    'entrystop': item.entrystop,
-                    'fileuuid': item.fileuuid,
-                    'extras': item.extras
-                }
+            elif format == "rados-parquet":
+                filecontext = ParquetFileContext(item.filename)
+
+            metadata = {
+                'dataset': item.dataset,
+                'filename': item.filename,
+                'treename': item.treename,
+                'entrystart': item.entrystart,
+                'entrystop': item.entrystop,
+                'fileuuid': str(uuid.UUID(bytes=item.fileuuid)) if len(item.fileuuid) > 0 else ''
+            }
 
             with filecontext as file:
                 if schema is None:
@@ -927,11 +919,12 @@ def _work_function(item, processor_instance, savemetrics=False,
                             access_log=materialized,
                         )
                         events = factory.events()
-                    elif format == "parquet":
+                    elif format == "rados-parquet":
                         factory = NanoEventsFactory.from_parquet(
                             file=item.filename,
-                            treepath=item.treename, 
+                            treepath=item.treename,
                             metadata=metadata,
+                            rados_parquet_options=item.extras
                         )
                         events = factory.events()
                 else:
@@ -1381,12 +1374,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     return output
 
 
-def run_parquet_job(basedir,
-                   treename,
-                   processor_instance,
-                   executor,
-                   executor_args={},
-                   ):
+def run_rados_parquet_job(basedir, treename, processor_instance, executor, executor_args={}):
     import warnings
     if not isinstance(processor_instance, ProcessorABC):
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
@@ -1405,9 +1393,8 @@ def run_parquet_job(basedir,
     else:
         retries = executor_args.pop('retries', 0)
     xrootdtimeout = executor_args.pop('xrootdtimeout', None)
-    align_clusters = executor_args.pop('align_clusters', False)
     ceph_config_path = executor_args.pop('ceph_config_path', '/etc/ceph/ceph.conf')
-    is_rados_parquet = executor_args.pop('is_rados_parquet', False)
+    is_rados_parquet = True
 
     chunks = []
     for filename in dataset.files:
@@ -1442,7 +1429,7 @@ def run_parquet_job(basedir,
         retries=retries,
         xrootdtimeout=xrootdtimeout,
         use_dataframes=use_dataframes,
-        format="parquet"
+        format="rados-parquet"
     )
     # hack around dask/dask#5503 which is really a silly request but here we are
     if executor is dask_executor:
