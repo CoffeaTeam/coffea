@@ -154,11 +154,10 @@ class TwoVector:
 
     @awkward.mixin_class_method(numpy.divide, {numbers.Number})
     def divide(self, other):
-        """Divide this vector by a scalar elementwise using `x` and `y` components"""
-        return awkward.zip(
-            {"x": self.x / other, "y": self.y / other},
-            with_name="TwoVector",
-        )
+        """Divide this vector by a scalar elementwise using its cartesian components
+
+        This is realized by using the multiplication functionality"""
+        return self.multiply(1 / other)
 
     def delta_phi(self, other):
         """Compute difference in angle between two vectors
@@ -232,20 +231,6 @@ class PolarTwoVector(TwoVector):
             {
                 "r": self.r * abs(other),
                 "phi": self.phi % (2 * numpy.pi) - (numpy.pi * (other < 0))
-            },
-            with_name="PolarTwoVector",
-        )
-
-    @awkward.mixin_class_method(numpy.divide, {numbers.Number})
-    def divide(self, other):
-        """Divide this vector by a scalar elementwise using using `x` and `y` components
-
-        In reality, this directly adjusts `r` and `phi` for performance
-        """
-        return awkward.zip(
-            {
-                "r": self.r / abs(other),
-                "phi": self.phi % (2 * numpy.pi) + (numpy.pi * (other < 0))
             },
             with_name="PolarTwoVector",
         )
@@ -356,14 +341,6 @@ class ThreeVector(TwoVector):
             with_name="ThreeVector",
         )
 
-    @awkward.mixin_class_method(numpy.divide, {numbers.Number})
-    def divide(self, other):
-        """Divide this vector by a scalar elementwise using `x`, `y`, and `z` components"""
-        return awkward.zip(
-            {"x": self.x / other, "y": self.y / other, "z": self.z / other},
-            with_name="ThreeVector",
-        )
-
     def dot(self, other):
         """Compute the dot product of two vectors"""
         return self.x * other.x + self.y * other.y + self.z * other.z
@@ -444,21 +421,6 @@ class SphericalThreeVector(ThreeVector, PolarTwoVector):
         return awkward.zip(
             {
                 "rho": self.rho * abs(other),
-                "theta": (numpy.sign(other) * self.theta + numpy.pi) % numpy.pi,
-                "phi": self.phi % (2 * numpy.pi) - numpy.pi * (other < 0)
-            },
-            with_name="SphericalThreeVector",
-        )
-
-    @awkward.mixin_class_method(numpy.divide, {numbers.Number})
-    def divide(self, other):
-        """Divide this vector by a scalar elementwise using `x`, `y`, and `z` components
-
-        In reality, this directly adjusts `r`, `theta` `phi` for performance
-        """
-        return awkward.zip(
-            {
-                "rho": self.rho / other,
                 "theta": (numpy.sign(other) * self.theta + numpy.pi) % numpy.pi,
                 "phi": self.phi % (2 * numpy.pi) - numpy.pi * (other < 0)
             },
@@ -574,19 +536,6 @@ class LorentzVector(ThreeVector):
             with_name="LorentzVector",
         )
 
-    @awkward.mixin_class_method(numpy.divide, {numbers.Number})
-    def divide(self, other):
-        """Divide this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components"""
-        return awkward.zip(
-            {
-                "x": self.x / other,
-                "y": self.y / other,
-                "z": self.z / other,
-                "t": self.t / other,
-            },
-            with_name="LorentzVector",
-        )
-
     def delta_r2(self, other):
         """Squared `delta_r`"""
         return (self.eta - other.eta) ** 2 + self.delta_phi(other) ** 2
@@ -627,19 +576,18 @@ class LorentzVector(ThreeVector):
     def boostvec(self):
         """The `x`, `y` and `z` compontents divided by `t` as a `ThreeVector`
 
-        This can be used for boosting.
+        This can be used for boosting. For cases where `|t| <= rho`, this
+        returns the unit vector.
         """
-        pvec = self.pvec
-        # Allow self to be a zero vector by using awkward.where
-        mask = self.t == 0
-        t = awkward.where(mask, 1, self.t)
-        out = awkward.where(
-            mask,
-            awkward.zeros_like(pvec),
-            self.pvec / t,
-            highlevel=False
-        )
-        return awkward.Array(out, behavior=self.behavior)
+        rho = self.rho
+        t = self.t
+        with numpy.errstate(divide="ignore"):
+            out = self.pvec * awkward.where(
+                rho == 0,
+                0,
+                awkward.where(abs(t) <= rho, 1 / rho, 1 / t)
+            )
+        return out
 
     def boost(self, other):
         """Apply a Lorentz boost given by the `ThreeVector` `other` and return it
@@ -654,14 +602,15 @@ class LorentzVector(ThreeVector):
         gamma2 = awkward.where(mask, 0, (gamma - 1) / b2)
 
         bp = self.dot(other)
-        v = gamma2 * bp * other + self.t * gamma * other
+        t = self.t
+        v = gamma2 * bp * other + t * gamma * other
 
         out = awkward.zip(
             {
                 "x": self.x + v.x,
                 "y": self.y + v.y,
                 "z": self.z + v.z,
-                "t": gamma * (self.t + bp)
+                "t": gamma * (t + bp)
             },
             with_name="LorentzVector"
         )
@@ -836,28 +785,13 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
 
         In reality, this directly adjusts `pt`, `eta`, `phi` and `mass` for performance
         """
+        absother = abs(other)
         return awkward.zip(
             {
-                "pt": self.pt * abs(other),
+                "pt": self.pt * absother,
                 "eta": self.eta * numpy.sign(other),
                 "phi": self.phi % (2 * numpy.pi) - (numpy.pi * (other < 0)),
-                "mass": self.mass * abs(other),
-            },
-            with_name="PtEtaPhiMLorentzVector",
-        )
-
-    @awkward.mixin_class_method(numpy.divide, {numbers.Number})
-    def divide(self, other):
-        """Divides this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components
-
-        In reality, this directly adjusts `pt`, `eta`, `phi` and `mass` for performance
-        """
-        return awkward.zip(
-            {
-                "pt": self.pt / abs(other),
-                "eta": self.eta * numpy.sign(other),
-                "phi": self.phi % (2 * numpy.pi) - (numpy.pi * (other < 0)),
-                "mass": self.mass / abs(other),
+                "mass": self.mass * absother,
             },
             with_name="PtEtaPhiMLorentzVector",
         )
@@ -967,22 +901,6 @@ class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
                 "eta": self.eta * numpy.sign(other),
                 "phi": self.phi % (2 * numpy.pi) - (numpy.pi * (other < 0)),
                 "energy": self.energy * other,
-            },
-            with_name="PtEtaPhiELorentzVector",
-        )
-
-    @awkward.mixin_class_method(numpy.divide, {numbers.Number})
-    def divide(self, other):
-        """Divides this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components
-
-        In reality, this directly adjusts `pt`, `eta`, `phi` and `energy` for performance
-        """
-        return awkward.zip(
-            {
-                "pt": self.pt / abs(other),
-                "eta": self.eta * numpy.sign(other),
-                "phi": self.phi % (2 * numpy.pi) - (numpy.pi * (other < 0)),
-                "energy": self.energy / other,
             },
             with_name="PtEtaPhiELorentzVector",
         )
