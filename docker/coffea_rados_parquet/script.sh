@@ -44,6 +44,7 @@ EOF
     touch ${MON_DATA}/keyring
     cp ${MON_DATA}/keyring /etc/ceph/keyring
     ceph-mon --id 0
+    sleep 5
 
     # start a OSD daemon
     OSD_DATA=${test_dir}/osd
@@ -57,13 +58,14 @@ osd data = ${OSD_DATA}
 osd journal = ${OSD_DATA}.journal
 osd journal size = 100
 osd objectstore = memstore
-osd class load list = lock log numops refcount replica_log statelog timeindex user version arrow
+osd class load list = *
 EOF
 
     OSD_ID=$(ceph osd create)
     ceph osd crush add osd.${OSD_ID} 1 root=default host=localhost
     ceph-osd --id ${OSD_ID} --mkjournal --mkfs
     ceph-osd --id ${OSD_ID}
+    sleep 5
 
     # start a MDS daemon
     MDS_DATA=${TEST_DIR}/mds
@@ -71,6 +73,8 @@ EOF
 
     ceph osd pool create cephfs_data 64
     ceph osd pool create cephfs_metadata 64
+    sleep 2
+
     ceph fs new cephfs cephfs_metadata cephfs_data
 
     ceph-mds --id a
@@ -78,6 +82,7 @@ EOF
 
     # start a MGR daemon
     ceph-mgr --id 0
+    sleep 5
 
     export CEPH_CONF="/etc/ceph/ceph.conf"
 
@@ -95,11 +100,17 @@ EOF
 
 popd
 
+pip3 install dask[distributed] nbconvert
+pip3 install 'fsspec>=0.3.3'
 pip3 install --upgrade . # install coffea
 pip3 install --upgrade /pyarrow-*.whl # update the PyArrow with Rados parquet extensions
 
-# start the notebook
-jupyter notebook --allow-root --no-browser  --ip 0.0.0.0
+if [ ! -z "$IS_CI" ]; then
+    python3 tests/test_rados_parquet_job.py
+else
+    # start the notebook
+    jupyter notebook --allow-root --no-browser  --ip 0.0.0.0
+fi
 
 # unmount cephfs
 umount /mnt/cephfs
