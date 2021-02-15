@@ -1374,13 +1374,17 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     return output
 
 
-def run_rados_parquet_job(basedir, treename, processor_instance, executor, executor_args={}):
+def run_rados_parquet_job(fileset, treename, processor_instance, executor, executor_args={}):
     import warnings
+    import pyarrow.dataset as ds
+
     if not isinstance(processor_instance, ProcessorABC):
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
 
-    import pyarrow.dataset as ds
-    dataset = ds.dataset(basedir, format="parquet")
+    dataset_filelist_map = {}
+    for dataset, basedir in fileset.items():
+        ds_ = ds.dataset(basedir, format="parquet")
+        dataset_filelist_map[dataset] = ds_.files
 
     # make a copy since we modify in-place
     executor_args = dict(executor_args)
@@ -1397,8 +1401,9 @@ def run_rados_parquet_job(basedir, treename, processor_instance, executor, execu
     is_rados_parquet = True
 
     chunks = []
-    for filename in dataset.files:
-        chunks.append(WorkItem('dataset', filename, treename, 0, 0, '', {'ceph_config_path': ceph_config_path, 'is_rados_parquet': is_rados_parquet}))
+    for dataset, filelist in dataset_filelist_map.items():
+        for filename in filelist:
+            chunks.append(WorkItem(dataset, filename, treename, 0, 0, '', {'ceph_config_path': ceph_config_path, 'is_rados_parquet': is_rados_parquet}))
 
     # pop all _work_function args here
     savemetrics = executor_args.pop('savemetrics', False)
