@@ -131,7 +131,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@master
-    - name: Run the Coffea run_rados_parquet_job example
+    - name: Run the Coffea run_parquet_job example
       shell: bash -l {0}
       run: |
         docker build -t coffea-rados-parquet-test \

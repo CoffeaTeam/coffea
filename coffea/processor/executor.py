@@ -1374,7 +1374,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
     return output
 
 
-def run_rados_parquet_job(fileset, treename, processor_instance, executor, executor_args={}):
+def run_parquet_job(fileset, treename, processor_instance, executor, executor_args={}):
     import warnings
     import pyarrow.dataset as ds
 
@@ -1397,8 +1397,10 @@ def run_rados_parquet_job(fileset, treename, processor_instance, executor, execu
     else:
         retries = executor_args.pop('retries', 0)
     xrootdtimeout = executor_args.pop('xrootdtimeout', None)
-    ceph_config_path = executor_args.pop('ceph_config_path', '/etc/ceph/ceph.conf')
-    is_rados_parquet = True
+    ceph_config_path = executor_args.pop('ceph_config_path', None)
+    is_rados_parquet = False
+    if ceph_config_path:
+        is_rados_parquet = True
 
     chunks = []
     for dataset, filelist in dataset_filelist_map.items():

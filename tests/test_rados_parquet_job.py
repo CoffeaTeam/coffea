@@ -41,7 +41,7 @@ if __name__ == "__main__":
         "ceph_config_path": "/etc/ceph/ceph.conf"
     }
 
-    hists = processor.run_rados_parquet_job({
+    hists = processor.run_parquet_job({
             "ZJets": "/mnt/cephfs/nanoevents/ZJets",
             "Data": "/mnt/cephfs/nanoevents/Data"
         },
