@@ -20,13 +20,13 @@
 # Sample processor class given in the Coffea manual.
 ###############################################################
 
-import uproot4
+import uproot
 from coffea.nanoevents import NanoEventsFactory, BaseSchema
 
 # https://github.com/scikit-hep/uproot4/issues/122
-uproot4.open.defaults["xrootd_handler"] = uproot4.source.xrootd.MultithreadedXRootDSource
+uproot.open.defaults["xrootd_handler"] = uproot.source.xrootd.MultithreadedXRootDSource
 
-import awkward1 as ak
+import awkward as ak
 from coffea import hist, processor
 
 # register our candidate behaviors
@@ -49,6 +49,11 @@ class MyProcessor(processor.ProcessorABC):
         return self._accumulator
 
     def process(self, events):
+
+        # Note: This is required to ensure that behaviors are registered
+        # when running this code in a remote task.        
+        ak.behavior.update(candidate.behavior)
+
         output = self.accumulator.identity()
 
         dataset = events.metadata['dataset']
@@ -117,9 +122,7 @@ fileset = {
 work_queue_executor_args = {
 
     # Options are common to all executors:
-    'flatten': True,
     'compression': 1,
-    'nano' : False,
     'schema' : BaseSchema,
     'skipbadfiles': False,      # Note that maxchunks only works if this is false.
  

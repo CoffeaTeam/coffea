@@ -46,7 +46,7 @@ def work_queue_example(environment_file):
         'Data': ['./samples/nano_dimuon.root']
     }
 
-    workers = wq.Factory(batch_type='local', master_host_port='localhost:{}'.format(work_queue_port))
+    workers = wq.Factory(batch_type='local', manager_host_port='localhost:{}'.format(work_queue_port))
     workers.max_workers = 1
     workers.min_workers = 1
     workers.cores  = 4

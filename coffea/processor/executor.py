@@ -182,6 +182,8 @@ def _futures_handler(futures_set, output, status, unit, desc, add_fn, tailtimeou
         with tqdm(disable=not status, unit=unit, total=len(futures_set), desc=desc) as pbar:
             while len(futures_set) > 0:
                 finished = set(job for job in futures_set if job.done())
+                if len(finished) == len(futures_set):
+                    pbar.set_description(desc="Adding", refresh=True)
                 futures_set.difference_update(finished)
                 while finished:
                     add_fn(output, finished.pop().result())
@@ -313,6 +315,9 @@ def wqex_output_task(task, verbose_mode, resource_mode, output_mode):
         print('Task id #{} failed with code: {}'.format(task.id, task.result))
 
 
+# The Work Queue object is global b/c we want to
+# retain state between runs of the executor, such
+# as connections to workers, cached data, etc.
 _wq_queue = None
 
 
@@ -386,9 +391,6 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             Filename for tasks lifetime reports output
         print-stdout : bool
             If true (default), print the standard output of work queue task on completion.
-        queue-mode : one of 'persistent' or 'one-per-stage'. Default is 'persistent'.
-            'persistent' - One queue is used for all stages of processing.
-            'one-per-stage' - A new queue is used for each of the stages of processing.
     """
     try:
         import work_queue as wq
@@ -436,8 +438,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         else:
             port = 9123
 
-    queue_mode = kwargs.pop('queue-mode', 'persistent')
-    if _wq_queue is None or queue_mode == 'one-per-stage':
+    if _wq_queue is None:
         _wq_queue = wq.WorkQueue(port, name=master_name, debug_log=debug_log, stats_log=stats_log, transactions_log=trans_log)
 
     if env_file and not wrapper:
@@ -522,8 +523,9 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                 # Display details of the completed task
                 wqex_output_task(task, verbose_mode, resource_monitor, output)
                 if task.result != 0:
-                    print('Stopping execution')
-                    break
+                    # Note that WQ already retries internal failures.
+                    # If we get to this point, it's a badly formed task.
+                    raise RuntimeError("Task {} item {} failed with output:\n{}".format(task.id, task.tag, task.output))
 
                 # The task tag remembers the itemid for us.
                 itemid = task.tag
@@ -896,7 +898,8 @@ def _work_function(item, processor_instance, savemetrics=False,
                 try:
                     out = processor_instance.process(events)
                 except Exception as e:
-                    raise Exception(f"Failed processing file: {item.filename} ({item.entrystart}-{item.entrystop})") from e
+                    file_trace = f"\n\nFailed processing file: {item.filename} ({item.entrystart}-{item.entrystop})"
+                    raise type(e)(str(e) + file_trace).with_traceback(sys.exc_info()[2]) from None
                 if out is None:
                     raise ValueError("Output of process() should not be None. Make sure your processor's process() function returns an accumulator.")
                 toc = time.time()
@@ -919,7 +922,7 @@ def _work_function(item, processor_instance, savemetrics=False,
         # catch xrootd errors and optionally skip
         # or retry to read the file
         except OSError as e:
-            if not skipbadfiles:
+            if not skipbadfiles or "Auth failed" in str(e):
                 raise e
             else:
                 w_str = 'Bad file source %s.' % item.filename
@@ -985,7 +988,7 @@ def _get_metadata(item, skipbadfiles=False, retries=0, xrootdtimeout=None, align
             out = set_accumulator([FileMeta(item.dataset, item.filename, item.treename, metadata)])
             break
         except OSError as e:
-            if not skipbadfiles:
+            if not skipbadfiles or "Auth failed" in str(e):
                 raise e
             else:
                 w_str = 'Bad file source %s.' % item.filename
