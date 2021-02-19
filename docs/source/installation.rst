@@ -34,9 +34,9 @@ To install coffea, there are several mostly-equivalent options:
 
    - install coffea system-wide using ``pip install coffea``; 
    - if you do not have administrator permissions, install as local user with ``pip install --user coffea``;
-   - if you prefer to not place coffea in your global environment, you can set up a `virtual environment <https://docs.python.org/3/library/venv.html>`_, and use the venv-provided pip;
-   - if you use `Conda <https://docs.conda.io/projects/conda/en/latest/index.html>`_,  simply activate the environment you wish to use and install via the conda-provided pip.
-   - or, if you are using a machine that has cvmfs available, see `Install via cvmfs`_ below.
+   - if you prefer to not place coffea in your global environment, you can set up a `Virtual environment`_;
+   - if you use `Conda <https://docs.conda.io/projects/conda/en/latest/index.html>`_,  simply ``conda install coffea``;
+   - or, if you like to use containers, see `Pre-built images`_ below.
 
 To update a previously installed coffea to a newer version, use: ``pip install --upgrade coffea``
 Although not required, it is recommended to also `install Jupyter <https://jupyter.org/install>`_, as it provides a more interactive development environment.
@@ -57,20 +57,56 @@ The necessary dependencies can be installed easily via ``pip`` using the setupto
 
 Multiple extras can be installed together via, e.g. ``pip install coffea[dask,spark]``
 
+Virtual environment
+-------------------
+Virtual environments are a good way to isolate python environments, and ensure no hidden dependencies.
+You can find more information at https://docs.python.org/3/library/venv.html
+
+.. code-block:: bash
+
+   python -m venv my_env
+   source my_env/bin/activate
+   pip install coffea
+
+Pre-built images
+----------------
+A complete coffea + scientific python environment is available as a docker image:
+
+.. code-block:: bash
+
+   docker run -it --name docker-coffea-base coffeateam/coffea-base
+
+More information is available at https://github.com/CoffeaTeam/docker-coffea-base#readme
+Additionally there is an image with dask dependencies (including dask-jobqueue):
+
+.. code-block:: bash
+
+   docker run -it --name docker-coffea-dask coffeateam/coffea-dask
+
+With corresponding repo at https://github.com/CoffeaTeam/docker-coffea-dask#readme
+
+If you use singularity, there are preconverted images available via the unpacked.cern.ch service. For example, you can start a shell with:
+
+.. code-block:: bash
+
+   singularity shell -B ${PWD}:/work /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest
+
 Install via cvmfs
 -----------------
 Although the local installation can work anywhere, if the base environment does not already have most of the coffea dependencies, then the user-local package directory can become quite bloated.
 An option to avoid this bloat is to use a base python environment provided via `CERN LCG <https://ep-dep-sft.web.cern.ch/document/lcg-releases>`_, which is available on any system that has the `cvmfs <https://cernvm.cern.ch/portal/filesystem>`_ directory ``/cvmfs/sft.cern.ch/`` mounted.
-Simply source a LCG release (shown here: 96python3) and install:
+Simply source a LCG release (shown here: 98python3) and install:
 
 .. code-block:: bash
 
   # check your platform: CC7 shown below, for SL6 it would be "x86_64-slc6-gcc8-opt"
-  source /cvmfs/sft.cern.ch/lcg/views/LCG_96python3/x86_64-centos7-gcc8-opt/setup.sh  # or .csh, etc.
+  source /cvmfs/sft.cern.ch/lcg/views/LCG_98python3/x86_64-centos7-gcc9-opt/setup.sh  # or .csh, etc.
   pip install --user coffea
 
-Creating a portable virtual environment
----------------------------------------
+This method can be fragile, since the LCG-distributed packages may conflict with the coffea dependencies. In general it is better to define your own environment or use an image.
+
+Creating a cvmfs-based portable virtual environment
+---------------------------------------------------
 In some instances, it may be useful to have a self-contained environment that can be relocated.
 One use case is for users of coffea that do not have access to a distributed compute cluster that is compatible with
 one of the coffea distributed executors. Here, a fallback solution can be found by creating traditional batch jobs (e.g. condor)
@@ -91,7 +127,7 @@ with the caveat that cvmfs must be visible from batch workers:
   # following https://aarongorka.com/blog/portable-virtualenv/, an alternative is https://github.com/pantsbuild/pex
   python -m venv --copies $NAME
   source $NAME/bin/activate
-  LOCALPATH=$(python -c 'import sys; print(f"{sys.prefix}/lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages")')
+  LOCALPATH=$NAME$(python -c 'import sys; print(f"/lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages")')
   export PYTHONPATH=${LOCALPATH}:$PYTHONPATH
   python -m pip install setuptools pip wheel --upgrade
   python -m pip install coffea
@@ -113,6 +149,7 @@ An example batch job wrapper script is:
   echo "Running command:" $@
   time $@ || exit $?
   
+Note that this environment only functions from the working directory of the wrapper script due to having relative paths.
 Unless you install jupyter into this environment (which may bloat the tarball--LCG98 jupyter is reasonably recent), it is not visible inside the LCG jupyter server. From a shell with the virtual environment activated, you can execute::
 
   python -m ipykernel install --user --name=coffeaenv
