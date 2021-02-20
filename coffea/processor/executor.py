@@ -919,7 +919,7 @@ def _work_function(item, processor_instance, savemetrics=False,
                         events = factory.events()
                     elif format == "parquet":
                         rados_parquet_options = {}
-                        if ':' in filename:
+                        if ':' in item.filename:
                             ceph_config_path, item.filename = item.filename.split(":")
                             rados_parquet_options['ceph_config_path'] = ceph_config_path
 
@@ -1401,9 +1401,6 @@ def run_parquet_job(fileset, treename, processor_instance, executor, executor_ar
         retries = executor_args.pop('retries', 0)
     xrootdtimeout = executor_args.pop('xrootdtimeout', None)
     ceph_config_path = executor_args.pop('ceph_config_path', None)
-    is_rados_parquet = False
-    if ceph_config_path:
-        is_rados_parquet = True
 
     chunks = []
     for dataset, filelist in dataset_filelist_map.items():
