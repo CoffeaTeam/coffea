@@ -13,22 +13,13 @@ import pyarrow.dataset as ds
 #              Later we should use the ParquetFile common_metadata to populate.
 class TrivialParquetOpener(UUIDOpener):
     class UprootLikeShim:
-        def __init__(self, file, shim_options):
+        def __init__(self, file, dataset):
             self.file = file
-            self.shim_options = shim_options
-            self.schema = shim_options['schema_arrow']
-            self.format = shim_options['format']
+            self.dataset = dataset
 
         def read(self, column_name):
             # make sure uproot is single-core since our calling context might not be
-            if self.format == 'rados-parquet':
-                return ds.dataset(
-                    self.file, schema=self.schema, format=ds.RadosParquetFileFormat(self.shim_options['ceph_config_path'].encode())
-                ).to_table(use_threads=False, columns=[column_name])
-            else:
-                return ds.dataset(
-                    self.file, schema=self.schema, format='parquet'
-                ).to_table(use_threads=False, columns=[column_name])
+            self.dataset.to_table(use_threads=False, columns=[column_name])
 
         # for right now spoof the notion of directories in files
         # parquet can do it but we've gotta convince people to

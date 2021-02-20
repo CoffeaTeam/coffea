@@ -171,6 +171,7 @@ class NanoEventsFactory:
         """
         import pyarrow
         import pyarrow.parquet
+        import pyarrow.dataset as ds
 
         ftypes = (
             str,
@@ -207,15 +208,15 @@ class NanoEventsFactory:
             TrivialParquetOpener(uuidpfn, parquet_options), access_log=access_log
         )
 
-        shim_options = {}
-        shim_options['schema_arrow'] = table_file.schema_arrow
-        shim_options['format'] = 'parquet'
+        # TODO: no need for an extra is_rados_parquet
+        format_ = 'parquet'
         if 'is_rados_parquet' in rados_parquet_options:
             if rados_parquet_options['is_rados_parquet']:
-                shim_options['ceph_config_path'] = rados_parquet_options['ceph_config_path']
-                shim_options['format'] = 'rados-parquet'
+                format_ = ds.RadosParquetFileFormat(rados_parquet_options['ceph_config_path'])
 
-        shim = TrivialParquetOpener.UprootLikeShim(file, shim_options)
+        dataset = ds.dataset(file, schema=table_file.schema_arrow, format=format_)
+
+        shim = TrivialParquetOpener.UprootLikeShim(file, dataset)
         mapping.preload_column_source(partition_key[0], partition_key[1], shim)
 
         base_form = mapping._extract_base_form(table_file.schema_arrow)
