@@ -208,11 +208,9 @@ class NanoEventsFactory:
             TrivialParquetOpener(uuidpfn, parquet_options), access_log=access_log
         )
 
-        # TODO: no need for an extra is_rados_parquet
         format_ = 'parquet'
-        if 'is_rados_parquet' in rados_parquet_options:
-            if rados_parquet_options['is_rados_parquet']:
-                format_ = ds.RadosParquetFileFormat(rados_parquet_options['ceph_config_path'])
+        if 'ceph_config_path' in rados_parquet_options:
+            format_ = ds.RadosParquetFileFormat(rados_parquet_options['ceph_config_path'])
 
         dataset = ds.dataset(file, schema=table_file.schema_arrow, format=format_)
 

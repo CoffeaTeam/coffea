@@ -103,17 +103,15 @@ class WorkItem(object):
         'entrystart',
         'entrystop',
         'fileuuid',
-        'extras'
     ]
 
-    def __init__(self, dataset, filename, treename, entrystart, entrystop, fileuuid, extras={}):
+    def __init__(self, dataset, filename, treename, entrystart, entrystop, fileuuid):
         self.dataset = dataset
         self.filename = filename
         self.treename = treename
         self.entrystart = entrystart
         self.entrystop = entrystop
         self.fileuuid = fileuuid
-        self.extras = extras
 
 
 class _compression_wrapper(object):
@@ -887,7 +885,7 @@ def _work_function(item, processor_instance, savemetrics=False,
                     timeout=xrootdtimeout,
                     file_handler=uproot.MemmapSource if mmap else uproot.MultithreadedFileSource,
                 )
-            elif format == "rados-parquet":
+            elif format == "parquet":
                 filecontext = ParquetFileContext(item.filename)
 
             metadata = {
@@ -919,12 +917,17 @@ def _work_function(item, processor_instance, savemetrics=False,
                             access_log=materialized,
                         )
                         events = factory.events()
-                    elif format == "rados-parquet":
+                    elif format == "parquet":
+                        rados_parquet_options = {}
+                        if ':' in filename:
+                            ceph_config_path, item.filename = item.filename.split(":")
+                            rados_parquet_options['ceph_config_path'] = ceph_config_path
+
                         factory = NanoEventsFactory.from_parquet(
                             file=item.filename,
                             treepath=item.treename,
                             metadata=metadata,
-                            rados_parquet_options=item.extras
+                            rados_parquet_options=rados_parquet_options
                         )
                         events = factory.events()
                 else:
@@ -1405,8 +1408,8 @@ def run_parquet_job(fileset, treename, processor_instance, executor, executor_ar
     chunks = []
     for dataset, filelist in dataset_filelist_map.items():
         for filename in filelist:
-            filename = f"rados://{ceph_config_path}:{filename}"
-            chunks.append(WorkItem(dataset, filename, treename, 0, 0, '', {'ceph_config_path': ceph_config_path, 'is_rados_parquet': is_rados_parquet}))
+            filename = f"{ceph_config_path}:{filename}"
+            chunks.append(WorkItem(dataset, filename, treename, 0, 0, ''))
 
     # pop all _work_function args here
     savemetrics = executor_args.pop('savemetrics', False)
@@ -1437,7 +1440,7 @@ def run_parquet_job(fileset, treename, processor_instance, executor, executor_ar
         retries=retries,
         xrootdtimeout=xrootdtimeout,
         use_dataframes=use_dataframes,
-        format="rados-parquet"
+        format="parquet"
     )
     # hack around dask/dask#5503 which is really a silly request but here we are
     if executor is dask_executor:
