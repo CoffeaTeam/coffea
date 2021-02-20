@@ -210,7 +210,7 @@ class NanoEventsFactory:
 
         format_ = 'parquet'
         if 'ceph_config_path' in rados_parquet_options:
-            format_ = ds.RadosParquetFileFormat(rados_parquet_options['ceph_config_path'])
+            format_ = ds.RadosParquetFileFormat(rados_parquet_options['ceph_config_path'].encode())
 
         dataset = ds.dataset(file, schema=table_file.schema_arrow, format=format_)
 
