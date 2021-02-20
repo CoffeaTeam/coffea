@@ -19,7 +19,7 @@ class TrivialParquetOpener(UUIDOpener):
 
         def read(self, column_name):
             # make sure uproot is single-core since our calling context might not be
-            self.dataset.to_table(use_threads=False, columns=[column_name])
+            return self.dataset.to_table(use_threads=False, columns=[column_name])
 
         # for right now spoof the notion of directories in files
         # parquet can do it but we've gotta convince people to

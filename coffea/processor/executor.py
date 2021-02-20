@@ -1405,6 +1405,7 @@ def run_parquet_job(fileset, treename, processor_instance, executor, executor_ar
     chunks = []
     for dataset, filelist in dataset_filelist_map.items():
         for filename in filelist:
+            filename = f"rados://{ceph_config_path}:{filename}"
             chunks.append(WorkItem(dataset, filename, treename, 0, 0, '', {'ceph_config_path': ceph_config_path, 'is_rados_parquet': is_rados_parquet}))
 
     # pop all _work_function args here
