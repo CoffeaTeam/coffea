@@ -36,9 +36,30 @@ if __name__ == "__main__":
     cluster = LocalCluster(processes=True, threads_per_worker=1)
     client = Client(cluster)
 
+    # run on parquet files in cephfs (with pushdown)
     executor_args = {
         "client": client, 
         "ceph_config_path": "/etc/ceph/ceph.conf"
+    }
+
+    hists = processor.run_parquet_job({
+            "ZJets": "/mnt/cephfs/nanoevents/ZJets",
+            "Data": "/mnt/cephfs/nanoevents/Data"
+        },
+        "Events",
+        processor_instance=NanoEventsProcessor(),
+        executor=processor.dask_executor,
+        executor_args=executor_args
+    )
+
+    assert( hists['cutflow']['ZJets_pt'] == 108 )
+    assert( hists['cutflow']['ZJets_mass'] == 36 )
+    assert( hists['cutflow']['Data_pt'] == 504 )
+    assert( hists['cutflow']['Data_mass'] == 396 )
+    
+    # now run again on local parquet files (without any pushdown)
+    executor_args = {
+        "client": client
     }
 
     hists = processor.run_parquet_job({

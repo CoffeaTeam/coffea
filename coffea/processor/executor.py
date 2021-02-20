@@ -1405,7 +1405,9 @@ def run_parquet_job(fileset, treename, processor_instance, executor, executor_ar
     chunks = []
     for dataset, filelist in dataset_filelist_map.items():
         for filename in filelist:
-            filename = f"{ceph_config_path}:{filename}"
+            # if in cephfs, encode the ceph config path in the filename
+            if ceph_config_path:
+                filename = f"{ceph_config_path}:{filename}"
             chunks.append(WorkItem(dataset, filename, treename, 0, 0, ''))
 
     # pop all _work_function args here
