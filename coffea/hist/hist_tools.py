@@ -1328,7 +1328,7 @@ class Hist(AccumulatorABC):
         newaxes = []
         for axis in self.axes():
             metadata = {"name": axis.name, "label": axis.label}
-            if isinstance(axis, hist.Bin) and axis._uniform:
+            if isinstance(axis, Bin) and axis._uniform:
                 newaxes.append(
                     boost_histogram.axis.Regular(
                         axis._bins,
@@ -1339,7 +1339,7 @@ class Hist(AccumulatorABC):
                         metadata=metadata,
                     )
                 )
-            elif isinstance(axis, hist.Bin) and not axis._uniform:
+            elif isinstance(axis, Bin) and not axis._uniform:
                 newaxes.append(
                     boost_histogram.axis.Variable(
                         axis.edges(),
@@ -1348,7 +1348,7 @@ class Hist(AccumulatorABC):
                         metadata=metadata,
                     )
                 )
-            elif isinstance(axis, hist.Cat):
+            elif isinstance(axis, Cat):
                 identifiers = self.identifiers(axis)
                 newaxes.append(
                     boost_histogram.axis.StrCategory(
