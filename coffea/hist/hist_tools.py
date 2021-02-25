@@ -1327,45 +1327,43 @@ class Hist(AccumulatorABC):
 
         newaxes = []
         for axis in self.axes():
-            metadata = {"name": axis.name, "label": axis.label}
             if isinstance(axis, Bin) and axis._uniform:
-                newaxes.append(
-                    boost_histogram.axis.Regular(
-                        axis._bins,
-                        axis._lo,
-                        axis._hi,
-                        underflow=True,
-                        overflow=True,
-                        metadata=metadata,
-                    )
+                newaxis = boost_histogram.axis.Regular(
+                    axis._bins,
+                    axis._lo,
+                    axis._hi,
+                    underflow=True,
+                    overflow=True,
                 )
+                newaxis.name = axis.name
+                newaxis.label = axis.label
+                newaxes.append(newaxis)
             elif isinstance(axis, Bin) and not axis._uniform:
-                newaxes.append(
-                    boost_histogram.axis.Variable(
-                        axis.edges(),
-                        underflow=True,
-                        overflow=True,
-                        metadata=metadata,
-                    )
+                newaxis = boost_histogram.axis.Variable(
+                    axis.edges(),
+                    underflow=True,
+                    overflow=True,
                 )
+                newaxis.name = axis.name
+                newaxis.label = axis.label
+                newaxes.append(newaxis)
             elif isinstance(axis, Cat):
                 identifiers = self.identifiers(axis)
-                newaxes.append(
-                    boost_histogram.axis.StrCategory(
-                        [x.name for x in identifiers],
-                        metadata=dict(
-                            bin_labels=[x.label for x in identifiers],
-                            **metadata
-                        ),
-                    )
+                newaxis = boost_histogram.axis.StrCategory(
+                    [x.name for x in identifiers],
                 )
+                newaxis.name = axis.name
+                newaxis.label = axis.label
+                newaxis.bin_labels = [x.label for x in identifiers]
+                newaxes.append(newaxis)
 
         if self._sumw2 is None:
             storage = boost_histogram.storage.Double()
         else:
             storage = boost_histogram.storage.Weight()
 
-        out = boost_histogram.Histogram(*newaxes, storage=storage, metadata={"label": self.label})
+        out = boost_histogram.Histogram(*newaxes, storage=storage)
+        out.label = self.label
 
         def expandkey(key):
             kiter = iter(key)
