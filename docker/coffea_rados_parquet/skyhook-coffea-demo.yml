@@ -1,7 +1,7 @@
 steps:
 - id: notebook
-  uses: ./
-  runs: [./script.sh] 
+  uses: ./docker/coffea_rados_parquet
+  runs: [./docker/coffea_rados_parquet/script.sh] 
   options: 
     privileged: true
     ports:
