@@ -21,6 +21,7 @@ curl -sSfL https://raw.githubusercontent.com/getpopper/popper/master/install.sh 
 2. Run a single step workflow. Running the workflow will create a single-node Ceph cluster in a Docker container, mount CephFS, and will open up a Jupyter environment.
 
 ```bash
+cd docker/coffea_rados_parquet/
 popper run -f skyhook-coffea-demo.yml -w ../../
 ```
 
