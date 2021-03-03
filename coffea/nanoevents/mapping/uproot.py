@@ -38,6 +38,7 @@ class UprootSourceMapping(BaseSourceMapping):
                 warnings.warn(
                     f"Found duplicate branch {key} in {tree}, taking first instance"
                 )
+                continue
             if "," in key or "!" in key:
                 warnings.warn(
                     f"Skipping {key} because it contains characters that NanoEvents cannot accept [,!]"
