@@ -112,7 +112,7 @@ class TwoVector:
     def negative(self):
         """Returns the negative of the vector"""
         return awkward.zip(
-            {"x": - self.x, "y": - self.y},
+            {"x": -self.x, "y": -self.y},
             with_name="TwoVector",
         )
 
@@ -230,7 +230,7 @@ class PolarTwoVector(TwoVector):
         return awkward.zip(
             {
                 "r": self.r * abs(other),
-                "phi": self.phi % (2 * numpy.pi) - (numpy.pi * (other < 0))
+                "phi": self.phi % (2 * numpy.pi) - (numpy.pi * (other < 0)),
             },
             with_name="PolarTwoVector",
         )
@@ -300,7 +300,7 @@ class ThreeVector(TwoVector):
     def negative(self):
         """Returns the negative of the vector"""
         return awkward.zip(
-            {"x": - self.x, "y": - self.y, "z": - self.z},
+            {"x": -self.x, "y": -self.y, "z": -self.z},
             with_name="ThreeVector",
         )
 
@@ -351,9 +351,9 @@ class ThreeVector(TwoVector):
             {
                 "x": self.y * other.z - self.z * other.y,
                 "y": self.z * other.x - self.x * other.z,
-                "z": self.x * other.y - self.y * other.x
+                "z": self.x * other.y - self.y * other.x,
             },
-            with_name="ThreeVector"
+            with_name="ThreeVector",
         )
 
     @property
@@ -422,7 +422,7 @@ class SphericalThreeVector(ThreeVector, PolarTwoVector):
             {
                 "rho": self.rho * abs(other),
                 "theta": (numpy.sign(other) * self.theta + numpy.pi) % numpy.pi,
-                "phi": self.phi % (2 * numpy.pi) - numpy.pi * (other < 0)
+                "phi": self.phi % (2 * numpy.pi) - numpy.pi * (other < 0),
             },
             with_name="SphericalThreeVector",
         )
@@ -433,8 +433,8 @@ class SphericalThreeVector(ThreeVector, PolarTwoVector):
         return awkward.zip(
             {
                 "rho": self.rho,
-                "theta": (- self.theta + numpy.pi) % numpy.pi,
-                "phi": self.phi % (2 * numpy.pi) - numpy.pi
+                "theta": (-self.theta + numpy.pi) % numpy.pi,
+                "phi": self.phi % (2 * numpy.pi) - numpy.pi,
             },
             with_name="SphericalThreeVector",
         )
@@ -551,12 +551,7 @@ class LorentzVector(ThreeVector):
     def negative(self):
         """Returns the negative of the vector"""
         return awkward.zip(
-            {
-                "x": - self.x,
-                "y": - self.y,
-                "z": - self.z,
-                "t": - self.t
-            },
+            {"x": -self.x, "y": -self.y, "z": -self.z, "t": -self.t},
             with_name="LorentzVector",
         )
 
@@ -564,12 +559,7 @@ class LorentzVector(ThreeVector):
     def pvec(self):
         """The `x`, `y` and `z` compontents as a `ThreeVector`"""
         return awkward.zip(
-            {
-                "x": self.x,
-                "y": self.y,
-                "z": self.z
-            },
-            with_name="ThreeVector"
+            {"x": self.x, "y": self.y, "z": self.z}, with_name="ThreeVector"
         )
 
     @property
@@ -583,9 +573,7 @@ class LorentzVector(ThreeVector):
         t = self.t
         with numpy.errstate(divide="ignore"):
             out = self.pvec * awkward.where(
-                rho == 0,
-                0,
-                awkward.where(abs(t) <= rho, 1 / rho, 1 / t)
+                rho == 0, 0, awkward.where(abs(t) <= rho, 1 / rho, 1 / t)
             )
         return out
 
@@ -610,9 +598,9 @@ class LorentzVector(ThreeVector):
                 "x": self.x + v.x,
                 "y": self.y + v.y,
                 "z": self.z + v.z,
-                "t": gamma * (t + bp)
+                "t": gamma * (t + bp),
             },
-            with_name="LorentzVector"
+            with_name="LorentzVector",
         )
         return out
 
