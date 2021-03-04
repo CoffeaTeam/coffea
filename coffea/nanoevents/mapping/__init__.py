@@ -15,5 +15,5 @@ __all__ = [
     "SimplePreloadedColumnSource",
     "PreloadedOpener",
     "PreloadedSourceMapping",
-    "CachedMapping"
+    "CachedMapping",
 ]
