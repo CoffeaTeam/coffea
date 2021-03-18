@@ -116,37 +116,36 @@ def test_packed_selection():
 
     sel = PackedSelection()
 
-    counts, test_eta, test_pt = dummy_jagged_eta_pt()
 
-    all_true = np.full(shape=counts.shape, fill_value=True, dtype=np.bool)
-    all_false = np.full(shape=counts.shape, fill_value=False, dtype=np.bool)
-    ones = np.ones(shape=counts.shape, dtype=np.uint64)
-    wrong_shape = ones = np.ones(shape=(counts.shape[0] - 5,), dtype=np.bool)
+    shape = (10,)
+    all_true = np.full(shape=shape, fill_value=True, dtype=np.bool)
+    all_false = np.full(shape=shape, fill_value=False, dtype=np.bool)
+    fizz = np.arange(shape[0]) % 3 == 0
+    buzz = np.arange(shape[0]) % 5 == 0
+    ones = np.ones(shape=shape, dtype=np.uint64)
+    wrong_shape = ones = np.ones(shape=(shape[0] - 5,), dtype=np.bool)
 
     sel.add("all_true", all_true)
     sel.add("all_false", all_false)
+    sel.add("fizz", fizz)
+    sel.add("buzz", buzz)
 
     assert np.all(sel.require(all_true=True, all_false=False) == all_true)
+    # allow truthy values
+    assert np.all(sel.require(all_true=1, all_false=0) == all_true)
     assert np.all(sel.all("all_true", "all_false") == all_false)
+    assert np.all(sel.any("all_true", "all_false") == all_true)
+    assert np.all(sel.all("fizz", "buzz") == np.array([True, False, False, False, False, False, False, False, False, False]))
+    assert np.all(sel.any("fizz", "buzz") == np.array([True, False, False, True, False, True, True, False, False, True]))
 
-    try:
-        sel.require(all_true=1, all_false=0)
-    except ValueError:
-        pass
-
-    try:
+    with pytest.raises(ValueError):
         sel.add("wrong_shape", wrong_shape)
-    except ValueError:
-        pass
 
-    try:
+    with pytest.raises(ValueError):
         sel.add("ones", ones)
-    except ValueError:
-        pass
 
-    try:
+    with pytest.raises(RuntimeError):
         overpack = PackedSelection()
         for i in range(65):
             overpack.add("sel_%d", all_true)
-    except RuntimeError:
-        pass
+

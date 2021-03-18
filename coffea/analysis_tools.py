@@ -307,3 +307,32 @@ class PackedSelection:
     def all(self, *names):
         """Shorthand for `require`, where all the values are True"""
         return self.require(**{name: True for name in names})
+
+    def any(self, *names):
+        """Return a mask vector corresponding to an inclusive OR of requirements
+
+        Parameters
+        ----------
+            ``*names`` : args
+                The named selections to allow
+
+        Examples
+        --------
+        If
+
+        >>> selection.names
+        ['cut1', 'cut2', 'cut3']
+
+        then
+
+        >>> selection.any("cut1", "cut2")
+        array([True, False, True, ...])
+
+        returns a boolean array where an entry is True if the corresponding entries
+        ``cut1 == True`` or ``cut2 == False``, and ``cut3`` arbitrary.
+        """
+        consider = 0
+        for name in names:
+            idx = self._names.index(name)
+            consider |= 1 << idx
+        return (self._data & consider) != 0
