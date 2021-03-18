@@ -138,6 +138,7 @@ class NanoEventsFactory:
         schemaclass=NanoAODSchema,
         metadata=None,
         parquet_options={},
+        rados_parquet_options={},
         access_log=None,
     ):
         """Quickly build NanoEvents from a parquet file
@@ -170,6 +171,7 @@ class NanoEventsFactory:
         """
         import pyarrow
         import pyarrow.parquet
+        import pyarrow.dataset as ds
 
         ftypes = (
             str,
@@ -205,7 +207,14 @@ class NanoEventsFactory:
         mapping = ParquetSourceMapping(
             TrivialParquetOpener(uuidpfn, parquet_options), access_log=access_log
         )
-        shim = TrivialParquetOpener.UprootLikeShim(table_file)
+
+        format_ = 'parquet'
+        if 'ceph_config_path' in rados_parquet_options:
+            format_ = ds.RadosParquetFileFormat(rados_parquet_options['ceph_config_path'].encode())
+
+        dataset = ds.dataset(file, schema=table_file.schema_arrow, format=format_)
+
+        shim = TrivialParquetOpener.UprootLikeShim(file, dataset)
         mapping.preload_column_source(partition_key[0], partition_key[1], shim)
 
         base_form = mapping._extract_base_form(table_file.schema_arrow)
