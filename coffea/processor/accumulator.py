@@ -1,11 +1,16 @@
-from abc import ABCMeta, abstractmethod
-from collections.abc import MutableSet, MutableMapping
-from collections import defaultdict
 import copy
 import operator
-from typing import Union, Optional, Protocol, TypeVar, Iterable
-import numpy
+from abc import ABCMeta, abstractmethod
+from collections import defaultdict
+from collections.abc import MutableMapping, MutableSet
+from typing import Iterable, Optional, TypeVar, Union
 
+try:
+    from typing import Protocol  # type: ignore
+except ImportError:
+    from typing_extensions import Protocol
+
+import numpy
 
 T = TypeVar("T")
 
