@@ -1,7 +1,6 @@
 from __future__ import division
 from collections import namedtuple
 import numpy
-from coffea.processor.accumulator import AccumulatorABC
 import copy
 import functools
 import math
@@ -676,7 +675,7 @@ class Bin(DenseAxis):
         return self._intervals[overflow_behavior(overflow)]
 
 
-class Hist(AccumulatorABC):
+class Hist:
     """
     Specify a multidimensional histogram.
 
@@ -878,6 +877,16 @@ class Hist(AccumulatorABC):
         else:
             add_dict(self._sumw2, other._sumw2)
         add_dict(self._sumw, other._sumw)
+        return self
+
+    def __add__(self, other):
+        ret = self.identity()
+        ret.add(self)
+        ret.add(other)
+        return ret
+
+    def __iadd__(self, other):
+        self.add(other)
         return self
 
     def __getitem__(self, keys):

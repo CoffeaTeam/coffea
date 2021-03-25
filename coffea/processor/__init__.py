@@ -18,6 +18,8 @@ from .executor import (
     run_spark_job
 )
 from .accumulator import (
+    accumulate,
+    Accumulatable,
     AccumulatorABC,
     value_accumulator,
     list_accumulator,
@@ -44,6 +46,8 @@ __all__ = [
     'run_uproot_job',
     'run_parquet_job',
     'run_spark_job',
+    'accumulate',
+    'Accumulatable',
     'AccumulatorABC',
     'value_accumulator',
     'list_accumulator',

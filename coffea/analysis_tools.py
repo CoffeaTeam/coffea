@@ -3,13 +3,13 @@
 These helper classes were previously part of ``coffea.processor``
 but have been migrated and updated to be compatible with awkward-array 1.0
 """
+from collections import defaultdict
 import numpy
 import coffea.util
-import coffea.processor
 
 
-class WeightStatistics(coffea.processor.AccumulatorABC):
-    def __init__(self, sumw, sumw2, minw, maxw, n):
+class WeightStatistics:
+    def __init__(self, sumw=0., sumw2=0., minw=numpy.inf, maxw=-numpy.inf, n=0):
         self.sumw = sumw
         self.sumw2 = sumw2
         self.minw = minw
@@ -19,10 +19,7 @@ class WeightStatistics(coffea.processor.AccumulatorABC):
     def __repr__(self):
         return f"WeightStatistics(sumw={self.sumw}, sumw2={self.sumw2}, minw={self.minw}, maxw={self.maxw}, n={self.n})"
 
-    def identity(self):
-        return WeightStatistics(0.0, 0.0, numpy.inf, -numpy.inf, 0)
-
-    def add(self, other):
+    def __add__(self, other):
         return WeightStatistics(
             self.sumw + other.sumw,
             self.sumw2 + other.sumw2,
@@ -52,7 +49,7 @@ class Weights:
         self._weight = numpy.ones(size)
         self._weights = {}
         self._modifiers = {}
-        self._weightStats = coffea.processor.dict_accumulator()
+        self._weightStats = defaultdict(WeightStatistics)
         self._storeIndividual = storeIndividual
 
     @property
@@ -112,7 +109,7 @@ class Weights:
                 weightDown = weight - weightDown
             weightDown[weight != 0.0] /= weight[weight != 0.0]
             self._modifiers[name + "Down"] = weightDown
-        self._weightStats[name] = WeightStatistics(
+        self._weightStats[name] += WeightStatistics(
             weight.sum(),
             (weight ** 2).sum(),
             weight.min(),

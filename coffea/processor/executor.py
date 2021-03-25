@@ -21,7 +21,8 @@ from cachetools import LRUCache
 import lz4.frame as lz4f
 from .processor import ProcessorABC
 from .accumulator import (
-    AccumulatorABC,
+    accumulate,
+    Accumulatable,
     value_accumulator,
     set_accumulator,
     dict_accumulator,
@@ -138,19 +139,16 @@ class _compression_wrapper(object):
 
 
 def _maybe_decompress(item):
-    if isinstance(item, AccumulatorABC):
-        return item
-    try:
-        item = pickle.loads(lz4f.decompress(item))
-        if isinstance(item, AccumulatorABC):
-            return item
-        raise RuntimeError
-    except (RuntimeError, pickle.UnpicklingError):
-        raise ValueError("Executors can only reduce accumulators or LZ4-compressed pickled accumulators")
+    if isinstance(item, bytes):
+        try:
+            item = pickle.loads(lz4f.decompress(item))
+        except pickle.UnpicklingError:
+            raise ValueError("Executors can only reduce accumulators or LZ4-compressed pickled accumulators")
+    return item
 
 
 def _iadd(output, result):
-    output += _maybe_decompress(result)
+    accumulate([_maybe_decompress(result)], output)
 
 
 class _reduce(object):
@@ -164,13 +162,12 @@ class _reduce(object):
         if len(items) == 0:
             raise ValueError("Empty list provided to reduction")
         out = items.pop()
-        if isinstance(out, AccumulatorABC):
+        if isinstance(out, bytes):
+            out = _maybe_decompress(out)
+        else:
             # if dask has a cached result, we cannot alter it, so make a copy
             out = copy.deepcopy(out)
-        else:
-            out = _maybe_decompress(out)
-        while items:
-            out += _maybe_decompress(items.pop())
+        accumulate(map(_maybe_decompress, items), out)
         return out
 
 
@@ -339,7 +336,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             List of input arguments
         function : callable
             A function to be called on each input, which returns an accumulator instance
-        accumulator : AccumulatorABC
+        accumulator : Accumulatable
             An accumulator to collect the output of the function
         status : bool
             If true (default), enable progress bar
@@ -569,7 +566,7 @@ def iterative_executor(items, function, accumulator, **kwargs):
             List of input arguments
         function : callable
             A function to be called on each input, which returns an accumulator instance
-        accumulator : AccumulatorABC
+        accumulator : Accumulatable
             An accumulator to collect the output of the function
         status : bool
             If true (default), enable progress bar
@@ -604,7 +601,7 @@ def futures_executor(items, function, accumulator, **kwargs):
             List of input arguments
         function : callable
             A function to be called on each input, which returns an accumulator instance
-        accumulator : AccumulatorABC
+        accumulator : Accumulatable
             An accumulator to collect the output of the function
         pool : concurrent.futures.Executor class or instance, optional
             The type of futures executor to use, defaults to ProcessPoolExecutor.
@@ -656,7 +653,7 @@ def dask_executor(items, function, accumulator, **kwargs):
             List of input arguments
         function : callable
             A function to be called on each input, which returns an accumulator instance
-        accumulator : AccumulatorABC
+        accumulator : Accumulatable
             An accumulator to collect the output of the function
         client : distributed.client.Client
             A dask distributed client instance
@@ -755,7 +752,7 @@ def dask_executor(items, function, accumulator, **kwargs):
             from distributed import progress
             # FIXME: fancy widget doesn't appear, have to live with boring pbar
             progress(work, multi=True, notebook=False)
-        accumulator += _maybe_decompress(work.result())
+        accumulate([_maybe_decompress(work.result())], accumulator)
         return accumulator
     else:
         if status:
@@ -775,7 +772,7 @@ def parsl_executor(items, function, accumulator, **kwargs):
             List of input arguments
         function : callable
             A function to be called on each input, which returns an accumulator instance
-        accumulator : AccumulatorABC
+        accumulator : Accumulatable
             An accumulator to collect the output of the function
         config : parsl.config.Config, optional
             A parsl DataFlow configuration object. Necessary if there is no active kernel
