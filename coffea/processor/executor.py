@@ -32,14 +32,11 @@ from .dataframe import (
 from ..nanoevents import NanoEventsFactory, schemas
 from ..util import _hash
 
-try:
-    from collections.abc import Mapping, Sequence
-except ImportError:
-    from collections import Mapping, Sequence
+from collections.abc import Mapping, MutableMapping, Sequence
 
 
 _PICKLE_PROTOCOL = pickle.HIGHEST_PROTOCOL
-DEFAULT_METADATA_CACHE = LRUCache(100000)
+DEFAULT_METADATA_CACHE:MutableMapping = LRUCache(100000)
 
 
 class FileMeta(object):

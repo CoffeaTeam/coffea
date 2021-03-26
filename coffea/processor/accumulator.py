@@ -3,7 +3,7 @@ import operator
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from collections.abc import MutableMapping, MutableSet
-from typing import Iterable, Optional, TypeVar, Union
+from typing import Dict, Iterable, Optional, Set, TypeVar, Union
 
 try:
     from typing import Protocol  # type: ignore
@@ -20,7 +20,7 @@ class Addable(Protocol):
         ...
 
 
-Accumulatable = Union[MutableSet, MutableMapping, Addable]
+Accumulatable = Union[Set, Dict, Addable]
 
 
 def add(a: Accumulatable, b: Accumulatable) -> Accumulatable:
