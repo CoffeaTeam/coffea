@@ -65,7 +65,9 @@ EOF
 
     OSD_ID=$(ceph osd create)
     ceph osd crush add osd.${OSD_ID} 1 root=default host=localhost
+    sleep 5
     ceph-osd --id ${OSD_ID} --mkjournal --mkfs
+    sleep 5
     ceph-osd --id ${OSD_ID}
     sleep 5
 
