@@ -23,13 +23,11 @@ class WeightStatistics(coffea.processor.AccumulatorABC):
         return WeightStatistics()
 
     def add(self, other):
-        return WeightStatistics(
-            self.sumw + other.sumw,
-            self.sumw2 + other.sumw2,
-            min(self.minw, other.minw),
-            max(self.maxw, other.maxw),
-            self.n + other.n,
-        )
+        self.sumw += other.sumw
+        self.sumw2 += other.sumw2
+        self.minw = min(self.minw, other.minw)
+        self.maxw = max(self.maxw, other.maxw)
+        self.n += other.n
 
 
 class Weights:
