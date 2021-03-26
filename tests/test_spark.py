@@ -111,6 +111,6 @@ def test_spark_hist_adders():
     df = pd.DataFrame({'histos': harray2})
 
     # correctness of these functions is checked in test_spark_executor
-    agg1 = agg_histos_raw(series1, proc, 1)
-    agg2 = agg_histos_raw(series2, proc, 1)
-    red = reduce_histos_raw(df, proc, 1)
+    agg1 = agg_histos_raw(series1, 1)
+    agg2 = agg_histos_raw(series2, 1)
+    red = reduce_histos_raw(df, 1)

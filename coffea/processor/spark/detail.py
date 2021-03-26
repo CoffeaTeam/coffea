@@ -1,4 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 
 from tqdm import tqdm
 import pyspark.sql
@@ -10,7 +10,7 @@ try:
 except ImportError:
     from collections import Sequence
 
-from ..executor import _futures_handler
+from coffea.processor.executor import _futures_handler
 
 # this is a reasonable local spark configuration
 _default_config = pyspark.sql.SparkSession.builder \
@@ -89,16 +89,19 @@ def _spark_make_dfs(spark, fileset, partitionsize, columns, thread_workers, file
     dfs = {}
     ana_cols = set(columns)
 
-    def dfs_accumulator(total, result):
-        df, ds, count = result
-        total[ds] = (df, count)
-
     with ThreadPoolExecutor(max_workers=thread_workers) as executor:
         futures = set(executor.submit(_read_df, spark, ds, files,
                                       ana_cols, partitionsize, file_type,
                                       treeName) for ds, files in fileset.items())
 
-        _futures_handler(futures, dfs, status, 'datasets', 'loading', dfs_accumulator, None)
+        for df, ds, count in tqdm(
+            _futures_handler(futures, timeout=None),
+            disable=not status,
+            unit="dataset",
+            total=len(fileset),
+            desc="loading",
+        ):
+            dfs[ds] = (df, count)
 
     return dfs
 

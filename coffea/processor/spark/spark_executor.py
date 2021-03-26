@@ -1,6 +1,6 @@
 from coffea import hist, processor
 from copy import deepcopy
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 
 from tqdm import tqdm
 import pickle
@@ -10,7 +10,8 @@ import pandas
 import awkward
 from functools import partial
 
-from ..executor import _futures_handler
+from coffea.processor.executor import _futures_handler, _decompress, _reduce
+from coffea.processor.accumulator import accumulate
 from coffea.nanoevents import NanoEventsFactory, schemas
 from coffea.nanoevents.mapping import SimplePreloadedColumnSource
 
@@ -26,35 +27,42 @@ lz4_clevel = 1
 
 # this is a UDF that takes care of summing histograms across
 # various spark results where the outputs are histogram blobs
-def agg_histos_raw(series, processor_instance, lz4_clevel):
+def agg_histos_raw(series, lz4_clevel):
     goodlines = series[series.str.len() > 0]
     if goodlines.size == 1:  # short-circuit trivial aggregations
         return goodlines[0]
-    outhist = processor_instance.accumulator.identity()
-    for line in goodlines:
-        outhist.add(pickle.loads(lz4.frame.decompress(line)))
-    return lz4.frame.compress(pickle.dumps(outhist), compression_level=lz4_clevel)
+    return _reduce(lz4_clevel)(goodlines)
 
 
 @fn.pandas_udf(BinaryType(), fn.PandasUDFType.GROUPED_AGG)
 def agg_histos(series):
-    global processor_instance, lz4_clevel
-    return agg_histos_raw(series, processor_instance, lz4_clevel)
+    global lz4_clevel
+    return agg_histos_raw(series, lz4_clevel)
 
 
-def reduce_histos_raw(df, processor_instance, lz4_clevel):
+def reduce_histos_raw(df, lz4_clevel):
     histos = df['histos']
-    mask = (histos.str.len() > 0)
-    outhist = processor_instance.accumulator.identity()
-    for line in histos[mask]:
-        outhist.add(pickle.loads(lz4.frame.decompress(line)))
-    return pandas.DataFrame(data={'histos': numpy.array([lz4.frame.compress(pickle.dumps(outhist), compression_level=lz4_clevel)], dtype='O')})
+    outhist = _reduce(lz4_clevel)(histos[histos.str.len() > 0])
+    return pandas.DataFrame(data={'histos': numpy.array([outhist], dtype='O')})
 
 
 @fn.pandas_udf(StructType([StructField('histos', BinaryType(), True)]), fn.PandasUDFType.GROUPED_MAP)
 def reduce_histos(df):
-    global processor_instance, lz4_clevel
-    return reduce_histos_raw(df, processor_instance, lz4_clevel)
+    global lz4_clevel
+    return reduce_histos_raw(df, lz4_clevel)
+
+
+def _get_ds_bistream(item):
+    global lz4_clevel
+    ds, bitstream = item
+    if bitstream is None:
+        raise Exception('No pandas dataframe returned from spark in dataset: %s, something went wrong!' % ds)
+    if bitstream.empty:
+        raise Exception('The histogram list returned from spark is empty in dataset: %s, something went wrong!' % ds)
+    out = bitstream[bitstream.columns[0]][0]
+    if lz4_clevel is not None:
+        return _decompress(out)
+    return out
 
 
 class SparkExecutor(object):
@@ -62,7 +70,6 @@ class SparkExecutor(object):
 
     def __init__(self):
         self._cacheddfs = None
-        self._rawresults = None
         self._counts = None
         self._env = Environment(loader=PackageLoader('coffea.processor',
                                                      'templates'),
@@ -98,10 +105,6 @@ class SparkExecutor(object):
             for ds, (df, counts) in dfslist.items():
                 self._counts[ds] = counts
 
-        def spex_accumulator(total, result):
-            ds, df = result
-            total[ds] = df
-
         if self._cacheddfs is None:
             self._cacheddfs = {}
             cachedesc = 'caching' if use_df_cache else 'pruning'
@@ -109,24 +112,40 @@ class SparkExecutor(object):
                 futures = set()
                 for ds, (df, counts) in dfslist.items():
                     futures.add(executor.submit(self._pruneandcache_data, ds, df, cols_w_ds, use_df_cache))
-                _futures_handler(futures, self._cacheddfs, status, unit, cachedesc, spex_accumulator, None)
+                gen = _futures_handler(futures, timeout=None)
+                try:
+                    for ds, df in tqdm(
+                        gen,
+                        disable=not status,
+                        unit=unit,
+                        total=len(dfslist),
+                        desc=cachedesc,
+                    ):
+                        self._cacheddfs[ds] = df
+                finally:
+                    gen.close()
 
         with ThreadPoolExecutor(max_workers=thread_workers) as executor:
             futures = set()
             for ds, df in self._cacheddfs.items():
                 co_udf = coffea_udf
                 futures.add(executor.submit(self._launch_analysis, ds, df, co_udf, cols_w_ds))
-            # wait for the spark jobs to come in
-            self._rawresults = {}
-            _futures_handler(futures, self._rawresults, status, unit, desc, spex_accumulator, None)
+            gen = _futures_handler(futures, timeout=None)
+            try:
+                output = accumulate(
+                    tqdm(
+                        map(_get_ds_bistream, gen),
+                        disable=not status,
+                        unit=unit,
+                        total=len(self._cacheddfs),
+                        desc=desc,
+                    ),
+                    output,
+                )
+            finally:
+                gen.close()
 
-        for ds, bitstream in self._rawresults.items():
-            if bitstream is None:
-                raise Exception('No pandas dataframe returned from spark in dataset: %s, something went wrong!' % ds)
-            if bitstream.empty:
-                raise Exception('The histogram list returned from spark is empty in dataset: %s, something went wrong!' % ds)
-            bits = bitstream[bitstream.columns[0]][0]
-            output.add(pickle.loads(lz4.frame.decompress(bits)))
+        return output
 
     def _pruneandcache_data(self, ds, df, columns, cacheit):
         if cacheit:

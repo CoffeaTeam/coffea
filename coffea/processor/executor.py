@@ -153,6 +153,7 @@ class _reduce:
         return "reduce"
 
     def __call__(self, items):
+        items = list(items)
         if len(items) == 0:
             raise ValueError("Empty list provided to reduction")
         if self.clevel is not None:
@@ -1151,7 +1152,7 @@ def run_uproot_job(fileset,
                 'worker_affinity': False,
             }
             pre_args.update(pre_arg_override)
-            pre_executor(to_get, metadata_fetcher, out, **pre_args)
+            out = pre_executor(to_get, metadata_fetcher, out, **pre_args)
             while out:
                 item = out.pop()
                 metadata_cache[item] = item.metadata
@@ -1336,8 +1337,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
         dfslist = _spark_make_dfs(spark, fileset, partitionsize, processor_instance.columns,
                                   thread_workers, file_type, treeName)
 
-    output = None
-    executor(spark, dfslist, processor_instance, output, thread_workers, use_cache, schema)
+    output = executor(spark, dfslist, processor_instance, None, thread_workers, use_cache, schema)
     processor_instance.postprocess(output)
 
     if killSpark:
