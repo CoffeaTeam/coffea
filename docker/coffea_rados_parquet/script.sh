@@ -10,6 +10,8 @@ pushd ${build_dir}
     pkill ceph-mon || true
     pkill ceph-osd || true
     rm -fr ${test_dir}
+    rm -rf /etc/ceph/ceph.conf
+    rm -rf /etc/ceph/keyring
 
     # cluster wide parameters
     mkdir -p ${test_dir}/log
