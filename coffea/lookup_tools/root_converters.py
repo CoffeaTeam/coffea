@@ -19,8 +19,8 @@ def convert_histo_root_file(file):
     for path, item in fin.iteritems(recursive=True):
         nicepath = killcycle(path, cycle)
         rootclass = item.classname
-        edges = tuple(ax.edges() for ax in item.axes)
         if rootclass in histTypes:
+            edges = tuple(ax.edges() for ax in item.axes)
             converted_file[(nicepath, "dense_lookup")] = item.values(), edges
             if hasattr(item, "variances"):
                 converted_file[(nicepath + "_error", "dense_lookup")] = (

@@ -280,3 +280,35 @@ def test_fill_none():
 
     # allow fill when masked type but no Nones remain
     dummy.fill(x=ak.Array([0.1, None, 0.3])[[True, False, True]])
+
+def test_boost_conversion():
+    import boost_histogram as bh
+    dummy = hist.Hist("Dummy" , hist.Cat("sample", "sample"), hist.Bin("dummy", "Number of events", 1, 0, 1))
+    dummy.fill(sample="test", dummy=1, weight=0.5)
+    dummy.fill(sample="test", dummy=0.1)
+    dummy.fill(sample="test2", dummy=-0.1)
+    dummy.fill(sample="test3", dummy=0.5, weight=0.1)
+    dummy.fill(sample="test3", dummy=0.5, weight=0.9)
+
+    h = dummy.to_boost()
+    assert len(h.axes) == 2
+    assert h[bh.loc("test"), bh.loc(1)].value == 0.5
+    assert h[bh.loc("test"), bh.loc(100)].value == 0.5
+    assert h[bh.loc("test"), bh.loc(1)].variance == 0.25
+    assert h[0, 0].value == 1.0
+    assert h[0, 0].variance == 1.0
+    assert h[1, 0].value == 0.
+    assert h[bh.loc("test2"), 0].value == 0.
+    assert h[1, bh.underflow].value == 1.
+    assert h[bh.loc("test3"), bh.loc(0.5)].value == 1.
+    assert h[bh.loc("test3"), bh.loc(0.5)].variance == 0.1*0.1 + 0.9*0.9
+
+    dummy = hist.Hist("Dummy" , hist.Cat("sample", "sample"), hist.Bin("dummy", "Number of events", 1, 0, 1))
+    dummy.fill(sample="test", dummy=0.1)
+    dummy.fill(sample="test", dummy=0.2)
+    dummy.fill(sample="test2", dummy=0.2)
+    # No sumw2 -> simple bh storage
+    h = dummy.to_boost()
+    assert len(h.axes) == 2
+    assert h[0, 0] == 2.
+    assert h[1, 0] == 1.

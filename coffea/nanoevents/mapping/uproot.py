@@ -34,6 +34,11 @@ class UprootSourceMapping(BaseSourceMapping):
     def _extract_base_form(cls, tree):
         branch_forms = {}
         for key, branch in tree.iteritems():
+            if key in branch_forms:
+                warnings.warn(
+                    f"Found duplicate branch {key} in {tree}, taking first instance"
+                )
+                continue
             if "," in key or "!" in key:
                 warnings.warn(
                     f"Skipping {key} because it contains characters that NanoEvents cannot accept [,!]"
