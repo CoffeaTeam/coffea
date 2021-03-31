@@ -1,113 +1,119 @@
-#!/bin/bash
-set -ex
+#
+#    Copyright (C) 2013,2014 Loic Dachary <loic@dachary.org>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+set -e
+set -x
+set -u
 
-build_dir=/tmp
-test_dir=${build_dir}/test-cluster
+DIR=${1}
 
-pushd ${build_dir}
+# reset
+pkill ceph || true
+rm -rf ${DIR}/*
+LOG_DIR=${DIR}/log
+MON_DATA=${DIR}/mon
+MDS_DATA=${DIR}/mds
+MOUNTPT=${MDS_DATA}/mnt
+OSD_DATA=${DIR}/osd
+mkdir ${LOG_DIR} ${MON_DATA} ${OSD_DATA} ${MDS_DATA} ${MOUNTPT}
+MDS_NAME="Z"
+MON_NAME="a"
+MGR_NAME="x"
 
-    # get rid of process and directories leftovers
-    pkill ceph-mon || true
-    pkill ceph-osd || true
-    rm -fr ${test_dir}
-    rm -rf /etc/ceph/ceph.conf
-    rm -rf /etc/ceph/keyring
-
-    # cluster wide parameters
-    mkdir -p ${test_dir}/log
-    cat >> /etc/ceph/ceph.conf <<EOF
+# cluster wide parameters
+cat >> ${DIR}/ceph.conf <<EOF
 [global]
 fsid = $(uuidgen)
 osd crush chooseleaf type = 0
-run dir = ${test_dir}/run
+run dir = ${DIR}/run
 auth cluster required = none
 auth service required = none
 auth client required = none
 osd pool default size = 1
-EOF
-    export CEPH_ARGS="--conf /etc/ceph/ceph.conf"
-
-    # start a MON daemon
-    MON_DATA=${test_dir}/mon
-    mkdir -p $MON_DATA
-
-    cat >> /etc/ceph/ceph.conf <<EOF
-[mon.0]
-log file = ${test_dir}/log/mon.log
+[mds.${MDS_NAME}]
+host = localhost
+[mon.${MON_NAME}]
+log file = ${LOG_DIR}/mon.log
 chdir = ""
-mon cluster log file = ${test_dir}/log/mon-cluster.log
+mon cluster log file = ${LOG_DIR}/mon-cluster.log
 mon data = ${MON_DATA}
+mon data avail crit = 0
 mon addr = 127.0.0.1
-# this was added to enable pool deletion within method delete_one_pool_pp()
-mon_allow_pool_delete = true
-EOF
-
-    ceph-mon --id 0 --mkfs --keyring /dev/null
-    touch ${MON_DATA}/keyring
-    cp ${MON_DATA}/keyring /etc/ceph/keyring
-    ceph-mon --id 0
-    sleep 5
-
-    # start a OSD daemon
-    OSD_DATA=${test_dir}/osd
-    mkdir ${OSD_DATA}
-
-    cat >> /etc/ceph/ceph.conf <<EOF
+mon allow pool delete = true
 [osd.0]
-log file = ${test_dir}/log/osd.log
+log file = ${LOG_DIR}/osd.log
 chdir = ""
 osd data = ${OSD_DATA}
 osd journal = ${OSD_DATA}.journal
 osd journal size = 100
 osd objectstore = memstore
 osd class load list = *
+osd class default list = *
 EOF
 
-    OSD_ID=$(ceph osd create)
-    ceph osd crush add osd.${OSD_ID} 1 root=default host=localhost
-    sleep 5
-    ceph-osd --id ${OSD_ID} --mkjournal --mkfs
-    sleep 5
-    ceph-osd --id ${OSD_ID}
-    sleep 5
+export CEPH_CONF=${DIR}/ceph.conf
 
-    # start a MDS daemon
-    MDS_DATA=${TEST_DIR}/mds
-    mkdir -p $MDS_DATA
+# start an osd
+ceph-mon --id ${MON_NAME} --mkfs --keyring /dev/null
+touch ${MON_DATA}/keyring
+ceph-mon --id ${MON_NAME}
 
-    ceph osd pool create cephfs_data 64
-    ceph osd pool create cephfs_metadata 64
-    sleep 2
+# start an osd
+OSD_ID=$(ceph osd create)
+ceph osd crush add osd.${OSD_ID} 1 root=default host=localhost
+ceph-osd --id ${OSD_ID} --mkjournal --mkfs
+sleep 5 # this is an attempt to fix CI issue #423, remove if it has no effect
+ceph-osd --id ${OSD_ID}
 
-    ceph fs new cephfs cephfs_metadata cephfs_data
+# start an mds for cephfs
+ceph auth get-or-create mds.${MDS_NAME} mon 'profile mds' mgr 'profile mds' mds 'allow *' osd 'allow *' > ${MDS_DATA}/keyring
+ceph osd pool create cephfs_data 8
+ceph osd pool create cephfs_metadata 8
+ceph fs new cephfs cephfs_metadata cephfs_data
+ceph fs ls
+ceph-mds -i ${MDS_NAME}
+ceph status
+while [[ ! $(ceph mds stat | grep "up:active") ]]; do sleep 1; done
 
-    ceph-mds --id a
-    while [[ ! $(ceph mds stat | grep "up:active") ]]; do sleep 1; done
 
-    # start a MGR daemon
-    ceph-mgr --id 0
-    sleep 5
+# start a manager
+ceph-mgr --id ${MGR_NAME}
 
-    export CEPH_CONF="/etc/ceph/ceph.conf"
+# test the setup
+ceph --version
+ceph status
 
-    # mount a ceph filesystem to /mnt/cephfs in the user-space using ceph-fuse
-    mkdir -p /mnt/cephfs
-    ceph-fuse --id client.admin -m 127.0.0.1:6789  --client_fs cephfs /mnt/cephfs
-    sleep 5
+# mount cephfs
+mkdir -p /mnt/cephfs
+ceph-fuse --id client.admin -m 127.0.0.1:6789  --client_fs cephfs /mnt/cephfs
+sleep 5
 
-    # download an example dataset and copy into the mounted dir
-    rm -rf nyc*
-    wget https://raw.githubusercontent.com/JayjeetAtGithub/zips/main/nyc.zip # try to get this dataset into the source tree
-    unzip nyc.zip
-    cp -r nyc /mnt/cephfs/
-    sleep 15
+# download an example dataset and copy into the mounted dir
+rm -rf nyc*
+wget https://raw.githubusercontent.com/JayjeetAtGithub/zips/main/nyc.zip # try to get this dataset into the source tree
+unzip nyc.zip
+cp -r nyc /mnt/cephfs/
+sleep 15
 
-popd
-
+# install required dependencies
 pip3 install dask[distributed] nbconvert
 pip3 install 'fsspec>=0.3.3'
 pip3 install --upgrade . # install coffea
 pip3 install --upgrade /pyarrow-*.whl # update the PyArrow with Rados parquet extensions
+
 
 if [ ! -z "$IS_CI" ]; then
     python3 tests/test_rados_parquet_job.py
