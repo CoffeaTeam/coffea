@@ -15,16 +15,16 @@ import subprocess
 import re
 import os
 import uuid
+import warnings
 from tqdm.auto import tqdm
 from collections import defaultdict
 from cachetools import LRUCache
 import lz4.frame as lz4f
 from .processor import ProcessorABC
 from .accumulator import (
-    AccumulatorABC,
-    value_accumulator,
+    accumulate,
+    Accumulatable,
     set_accumulator,
-    dict_accumulator,
 )
 from .dataframe import (
     LazyDataFrame,
@@ -32,14 +32,11 @@ from .dataframe import (
 from ..nanoevents import NanoEventsFactory, schemas
 from ..util import _hash
 
-try:
-    from collections.abc import Mapping, Sequence
-except ImportError:
-    from collections import Mapping, Sequence
+from collections.abc import Mapping, MutableMapping, Sequence
 
 
 _PICKLE_PROTOCOL = pickle.HIGHEST_PROTOCOL
-DEFAULT_METADATA_CACHE = LRUCache(100000)
+DEFAULT_METADATA_CACHE: MutableMapping = LRUCache(100000)
 
 
 class FileMeta(object):
@@ -114,6 +111,14 @@ class WorkItem(object):
         self.fileuuid = fileuuid
 
 
+def _compress(item, clevel):
+    return lz4f.compress(pickle.dumps(item, protocol=_PICKLE_PROTOCOL), compression_level=clevel)
+
+
+def _decompress(item):
+    return pickle.loads(lz4f.decompress(item))
+
+
 class _compression_wrapper(object):
     def __init__(self, level, function, name=None):
         self.level = level
@@ -134,44 +139,25 @@ class _compression_wrapper(object):
     # no @wraps due to pickle
     def __call__(self, *args, **kwargs):
         out = self.function(*args, **kwargs)
-        return lz4f.compress(pickle.dumps(out, protocol=_PICKLE_PROTOCOL), compression_level=self.level)
+        return _compress(out, self.level)
 
 
-def _maybe_decompress(item):
-    if isinstance(item, AccumulatorABC):
-        return item
-    try:
-        item = pickle.loads(lz4f.decompress(item))
-        if isinstance(item, AccumulatorABC):
-            return item
-        raise RuntimeError
-    except (RuntimeError, pickle.UnpicklingError):
-        raise ValueError("Executors can only reduce accumulators or LZ4-compressed pickled accumulators")
-
-
-def _iadd(output, result):
-    output += _maybe_decompress(result)
-
-
-class _reduce(object):
-    def __init__(self):
-        pass
+class _reduce:
+    def __init__(self, clevel):
+        self.clevel = clevel
 
     def __str__(self):
         return "reduce"
 
     def __call__(self, items):
+        items = list(items)
         if len(items) == 0:
             raise ValueError("Empty list provided to reduction")
-        out = items.pop()
-        if isinstance(out, AccumulatorABC):
-            # if dask has a cached result, we cannot alter it, so make a copy
-            out = copy.deepcopy(out)
-        else:
-            out = _maybe_decompress(out)
-        while items:
-            out += _maybe_decompress(items.pop())
-        return out
+        if self.clevel is not None:
+            out = _decompress(items.pop())
+            out = accumulate(map(_decompress, items), out)
+            return _compress(out, self.clevel)
+        return accumulate(items)
 
 
 def _cancel(job):
@@ -182,39 +168,35 @@ def _cancel(job):
         pass
 
 
-def _futures_handler(futures_set, output, status, unit, desc, add_fn, tailtimeout):
-    start = time.time()
-    last_job = start
+def _futures_handler(futures, timeout):
+    """Essentially the same as concurrent.futures.as_completed
+    but makes sure not to hold references to futures any longer than strictly necessary,
+    which is important if the future holds a large result.
+    """
+    futures = set(futures)
     try:
-        with tqdm(disable=not status, unit=unit, total=len(futures_set), desc=desc) as pbar:
-            while len(futures_set) > 0:
-                finished = set(job for job in futures_set if job.done())
-                if len(finished) == len(futures_set):
-                    pbar.set_description(desc="Adding", refresh=True)
-                futures_set.difference_update(finished)
-                while finished:
-                    add_fn(output, finished.pop().result())
-                    pbar.update(1)
-                    last_job = time.time()
-                time.sleep(0.5)
-                if tailtimeout is not None and (time.time() - last_job) > tailtimeout and (last_job - start) > 0:
-                    njobs = len(futures_set)
-                    for job in futures_set:
-                        _cancel(job)
-                        pbar.update(1)
-                    import warnings
-                    warnings.warn('Stopped {} jobs early due to tailtimeout = {}'.format(njobs, tailtimeout))
+        while futures:
+            try:
+                done, futures = concurrent.futures.wait(futures, timeout=timeout, return_when=concurrent.futures.FIRST_COMPLETED)
+                if len(done) == 0:
+                    warnings.warn(f"No finished jobs after {timeout}s, stopping remaining {len(futures)} jobs early")
                     break
-    except KeyboardInterrupt:
-        for job in futures_set:
-            _cancel(job)
-        if status:
-            print("Received SIGINT, killed pending jobs.  Running jobs will continue to completion.", file=sys.stderr)
-            print("Running jobs:", sum(1 for j in futures_set if j.running()), file=sys.stderr)
-    except Exception:
-        for job in futures_set:
-            _cancel(job)
-        raise
+                while done:
+                    try:
+                        yield done.pop().result()
+                    except concurrent.futures.CancelledError:
+                        pass
+            except KeyboardInterrupt:
+                for job in futures:
+                    _cancel(job)
+                running = sum(job.running() for job in futures)
+                warnings.warn(f"Early stop: cancelled {len(futures) - running} jobs, will wait for {running} running jobs to complete")
+    finally:
+        running = sum(job.running() for job in futures)
+        if running:
+            warnings.warn(f"Cancelling {running} running jobs (likely due to an exception)")
+        while futures:
+            _cancel(futures.pop())
 
 
 def wqex_create_function_wrapper(tmpdir):
@@ -339,7 +321,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             List of input arguments
         function : callable
             A function to be called on each input, which returns an accumulator instance
-        accumulator : AccumulatorABC
+        accumulator : Accumulatable
             An accumulator to collect the output of the function
         status : bool
             If true (default), enable progress bar
@@ -492,8 +474,6 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         if len(items) == 0:
             return accumulator
 
-        add_fn = _iadd
-
         # Keep track of total tasks in each state.
         tasks_submitted = 0
         tasks_done = 0
@@ -542,7 +522,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                 # Accumulate results from the pickled output
                 with open(outfile, 'rb') as rf:
                     unpickle_output = dill.load(rf)
-                add_fn(accumulator, unpickle_output)
+                accumulator = accumulate([unpickle_output if clevel is None else _decompress(unpickle_output)], accumulator)
 
                 # Remove output files as we go to avoid unbounded disk
                 os.remove(itemfile)
@@ -569,7 +549,7 @@ def iterative_executor(items, function, accumulator, **kwargs):
             List of input arguments
         function : callable
             A function to be called on each input, which returns an accumulator instance
-        accumulator : AccumulatorABC
+        accumulator : Accumulatable
             An accumulator to collect the output of the function
         status : bool
             If true (default), enable progress bar
@@ -578,21 +558,16 @@ def iterative_executor(items, function, accumulator, **kwargs):
         desc : str
             Label of progress bar description
         compression : int, optional
-            Compress accumulator outputs in flight with LZ4, at level specified (default 1)
-            Set to ``None`` for no compression.
+            Ignored for iterative executor
     """
     if len(items) == 0:
         return accumulator
     status = kwargs.pop('status', True)
     unit = kwargs.pop('unit', 'items')
     desc = kwargs.pop('desc', 'Processing')
-    clevel = kwargs.pop('compression', 1)
-    if clevel is not None:
-        function = _compression_wrapper(clevel, function)
-    add_fn = _iadd
-    for i, item in tqdm(enumerate(items), disable=not status, unit=unit, total=len(items), desc=desc):
-        add_fn(accumulator, function(item))
-    return accumulator
+    gen = tqdm(items, disable=not status, unit=unit, total=len(items), desc=desc)
+    gen = map(function, gen)
+    return accumulate(gen, accumulator)
 
 
 def futures_executor(items, function, accumulator, **kwargs):
@@ -604,7 +579,7 @@ def futures_executor(items, function, accumulator, **kwargs):
             List of input arguments
         function : callable
             A function to be called on each input, which returns an accumulator instance
-        accumulator : AccumulatorABC
+        accumulator : Accumulatable
             An accumulator to collect the output of the function
         pool : concurrent.futures.Executor class or instance, optional
             The type of futures executor to use, defaults to ProcessPoolExecutor.
@@ -635,16 +610,29 @@ def futures_executor(items, function, accumulator, **kwargs):
     tailtimeout = kwargs.pop('tailtimeout', None)
     if clevel is not None:
         function = _compression_wrapper(clevel, function)
-    add_fn = _iadd
+
+    def processwith(pool):
+        gen = _futures_handler({pool.submit(function, item) for item in items}, tailtimeout)
+        try:
+            return accumulate(
+                tqdm(
+                    gen if clevel is None else map(_decompress, gen),
+                    disable=not status,
+                    unit=unit,
+                    total=len(items),
+                    desc=desc,
+                ),
+                accumulator
+            )
+        finally:
+            gen.close()
+
     if isinstance(pool, concurrent.futures.Executor):
-        futures = set(pool.submit(function, item) for item in items)
-        _futures_handler(futures, accumulator, status, unit, desc, add_fn, tailtimeout)
+        return processwith(pool)
     else:
         # assume its a class then
-        with pool(max_workers=workers) as executor:
-            futures = set(executor.submit(function, item) for item in items)
-            _futures_handler(futures, accumulator, status, unit, desc, add_fn, tailtimeout)
-    return accumulator
+        with pool(max_workers=workers) as poolinstance:
+            return processwith(poolinstance)
 
 
 def dask_executor(items, function, accumulator, **kwargs):
@@ -656,7 +644,7 @@ def dask_executor(items, function, accumulator, **kwargs):
             List of input arguments
         function : callable
             A function to be called on each input, which returns an accumulator instance
-        accumulator : AccumulatorABC
+        accumulator : Accumulatable
             An accumulator to collect the output of the function
         client : distributed.client.Client
             A dask distributed client instance
@@ -696,7 +684,6 @@ def dask_executor(items, function, accumulator, **kwargs):
     retries = kwargs.pop('retries', 3)
     heavy_input = kwargs.pop('heavy_input', None)
     function_name = kwargs.pop('function_name', None)
-    reducer = _reduce()
     # secret options
     direct_heavy = kwargs.pop('direct_heavy', None)
     worker_affinity = kwargs.pop('worker_affinity', False)
@@ -705,9 +692,9 @@ def dask_executor(items, function, accumulator, **kwargs):
     if use_dataframes:
         clevel = None
 
+    reducer = _reduce(clevel)
     if clevel is not None:
         function = _compression_wrapper(clevel, function, name=function_name)
-        reducer = _compression_wrapper(clevel, reducer)
 
     if heavy_input is not None:
         heavy_token = client.scatter(heavy_input, broadcast=True, hash=False, direct=direct_heavy)
@@ -755,15 +742,12 @@ def dask_executor(items, function, accumulator, **kwargs):
             from distributed import progress
             # FIXME: fancy widget doesn't appear, have to live with boring pbar
             progress(work, multi=True, notebook=False)
-        accumulator += _maybe_decompress(work.result())
-        return accumulator
+        return accumulate([work.result() if clevel is None else _decompress(work.result())], accumulator)
     else:
         if status:
             from distributed import progress
             progress(work, multi=True, notebook=False)
-        df = dd.from_delayed(work)
-        accumulator['out'] = df
-        return accumulator
+        return {"out": dd.from_delayed(work)}
 
 
 def parsl_executor(items, function, accumulator, **kwargs):
@@ -775,7 +759,7 @@ def parsl_executor(items, function, accumulator, **kwargs):
             List of input arguments
         function : callable
             A function to be called on each input, which returns an accumulator instance
-        accumulator : AccumulatorABC
+        accumulator : Accumulatable
             An accumulator to collect the output of the function
         config : parsl.config.Config, optional
             A parsl DataFlow configuration object. Necessary if there is no active kernel
@@ -806,7 +790,6 @@ def parsl_executor(items, function, accumulator, **kwargs):
     tailtimeout = kwargs.pop('tailtimeout', None)
     if clevel is not None:
         function = _compression_wrapper(clevel, function)
-    add_fn = _iadd
 
     cleanup = False
     config = kwargs.pop('config', None)
@@ -825,8 +808,20 @@ def parsl_executor(items, function, accumulator, **kwargs):
 
     app = timeout(python_app(function))
 
-    futures = set(app(item) for item in items)
-    _futures_handler(futures, accumulator, status, unit, desc, add_fn, tailtimeout)
+    gen = _futures_handler(map(app, items), tailtimeout)
+    try:
+        accumulator = accumulate(
+            tqdm(
+                gen if clevel is None else map(_decompress, gen),
+                disable=not status,
+                unit=unit,
+                total=len(items),
+                desc=desc,
+            ),
+            accumulator
+        )
+    finally:
+        gen.close()
 
     if cleanup:
         parsl.dfk().cleanup()
@@ -869,13 +864,6 @@ def _work_function(item, processor_instance, savemetrics=False,
     if not isinstance(processor_instance, ProcessorABC):
         processor_instance = cloudpickle.loads(lz4f.decompress(processor_instance))
 
-    import warnings
-    if use_dataframes:
-        import pandas as pd
-        import dask.dataframe as dd
-        out = dd.from_pandas(pd.DataFrame(), npartitions=1)
-    else:
-        out = processor_instance.accumulator.identity()
     retry_count = 0
     while retry_count <= retries:
         try:
@@ -944,18 +932,19 @@ def _work_function(item, processor_instance, savemetrics=False,
                 if use_dataframes:
                     return out
                 else:
-                    metrics = dict_accumulator()
                     if savemetrics:
+                        metrics = {}
                         if isinstance(file, uproot.ReadOnlyDirectory):
-                            metrics['bytesread'] = value_accumulator(int, file.file.source.num_requested_bytes)
+                            metrics['bytesread'] = file.file.source.num_requested_bytes
                         if schema is not None and issubclass(schema, schemas.BaseSchema):
-                            metrics['columns'] = set_accumulator(materialized)
-                            metrics['entries'] = value_accumulator(int, len(events))
+                            metrics['columns'] = set(materialized)
+                            metrics['entries'] = len(events)
                         else:
-                            metrics['columns'] = set_accumulator(events.materialized)
-                            metrics['entries'] = value_accumulator(int, events.size)
-                        metrics['processtime'] = value_accumulator(float, toc - tic)
-                    return dict_accumulator({'out': out, 'metrics': metrics})
+                            metrics['columns'] = set(events.materialized)
+                            metrics['entries'] = events.size
+                        metrics['processtime'] = toc - tic
+                        return {'out': out, 'metrics': metrics}
+                    return {"out": out}
             break
         # catch xrootd errors and optionally skip
         # or retry to read the file
@@ -974,24 +963,13 @@ def _work_function(item, processor_instance, savemetrics=False,
                     w_str += ' Skipping.'
                 warnings.warn(w_str)
             if not use_dataframes:
-                metrics = dict_accumulator()
-                if savemetrics:
-                    metrics['bytesread'] = value_accumulator(int, 0)
-                    metrics['dataservers'] = set_accumulator({})
-                    metrics['columns'] = set_accumulator({})
-                    metrics['entries'] = value_accumulator(int, 0)
-                    metrics['processtime'] = value_accumulator(float, 0)
-                wrapped_out = dict_accumulator({'out': out, 'metrics': metrics})
+                return {"out": out}
         except Exception as e:
             if retries == retry_count:
                 raise e
             w_str = 'Attempt %d of %d. Will retry.' % (retry_count + 1, retries + 1)
             warnings.warn(w_str)
         retry_count += 1
-    if use_dataframes:
-        return out
-    else:
-        return wrapped_out
 
 
 def _normalize_fileset(fileset, treename):
@@ -1171,7 +1149,7 @@ def run_uproot_job(fileset,
                 'worker_affinity': False,
             }
             pre_args.update(pre_arg_override)
-            pre_executor(to_get, metadata_fetcher, out, **pre_args)
+            out = pre_executor(to_get, metadata_fetcher, out, **pre_args)
             while out:
                 item = out.pop()
                 metadata_cache[item] = item.metadata
@@ -1238,28 +1216,19 @@ def run_uproot_job(fileset,
     else:
         closure = partial(closure, processor_instance=pi_to_send)
 
-    if use_dataframes:
-        import pandas as pd
-        import dask.dataframe as dd
-        out = dd.from_pandas(pd.DataFrame(), npartitions=1)
-        wrapped_out = dict_accumulator({'out': out})
-    else:
-        out = processor_instance.accumulator.identity()
-        wrapped_out = dict_accumulator({'out': out, 'metrics': dict_accumulator()})
     exe_args = {
         'unit': 'chunk',
         'function_name': type(processor_instance).__name__,
         'use_dataframes': use_dataframes
     }
     exe_args.update(executor_args)
-    executor(chunks, closure, wrapped_out, **exe_args)
+    wrapped_out = executor(chunks, closure, None, **exe_args)
 
-    if not use_dataframes:
-        wrapped_out['metrics']['chunks'] = value_accumulator(int, len(chunks))
-    processor_instance.postprocess(out)
+    processor_instance.postprocess(wrapped_out["out"])
     if savemetrics and not use_dataframes:
-        return out, wrapped_out['metrics']
-    return wrapped_out['out']
+        wrapped_out['metrics']['chunks'] = len(chunks)
+        return wrapped_out["out"], wrapped_out['metrics']
+    return wrapped_out["out"]
 
 
 def run_spark_job(fileset, processor_instance, executor, executor_args={},
@@ -1365,8 +1334,7 @@ def run_spark_job(fileset, processor_instance, executor, executor_args={},
         dfslist = _spark_make_dfs(spark, fileset, partitionsize, processor_instance.columns,
                                   thread_workers, file_type, treeName)
 
-    output = processor_instance.accumulator.identity()
-    executor(spark, dfslist, processor_instance, output, thread_workers, use_cache, schema)
+    output = executor(spark, dfslist, processor_instance, None, thread_workers, use_cache, schema)
     processor_instance.postprocess(output)
 
     if killSpark:
@@ -1448,25 +1416,16 @@ def run_parquet_job(fileset, treename, processor_instance, executor, executor_ar
     else:
         closure = partial(closure, processor_instance=pi_to_send)
 
-    if use_dataframes:
-        import pandas as pd
-        import dask.dataframe as dd
-        out = dd.from_pandas(pd.DataFrame(), npartitions=1)
-        wrapped_out = dict_accumulator({'out': out})
-    else:
-        out = processor_instance.accumulator.identity()
-        wrapped_out = dict_accumulator({'out': out, 'metrics': dict_accumulator()})
     exe_args = {
         'unit': 'chunk',
         'function_name': type(processor_instance).__name__,
         'use_dataframes': use_dataframes
     }
     exe_args.update(executor_args)
-    executor(chunks, closure, wrapped_out, **exe_args)
+    wrapped_out = executor(chunks, closure, None, **exe_args)
 
-    if not use_dataframes:
-        wrapped_out['metrics']['chunks'] = value_accumulator(int, len(chunks))
-    processor_instance.postprocess(out)
+    processor_instance.postprocess(wrapped_out["out"])
     if savemetrics and not use_dataframes:
-        return out, wrapped_out['metrics']
+        wrapped_out['metrics']['chunks'] = len(chunks)
+        return wrapped_out["out"], wrapped_out['metrics']
     return wrapped_out['out']

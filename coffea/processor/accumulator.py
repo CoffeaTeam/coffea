@@ -1,11 +1,104 @@
+import copy
+import operator
 from abc import ABCMeta, abstractmethod
-from collections.abc import Set, Mapping
 from collections import defaultdict
+from collections.abc import MutableMapping, MutableSet
+from typing import Iterable, Optional, TypeVar, Union
+
+try:
+    from typing import Protocol, runtime_checkable  # type: ignore
+except ImportError:
+    from typing_extensions import Protocol, runtime_checkable  # type: ignore
+
 import numpy
+
+T = TypeVar("T")
+
+
+@runtime_checkable
+class Addable(Protocol):
+    def __add__(self: T, other: T) -> T:
+        ...
+
+
+Accumulatable = Union[Addable, MutableSet, MutableMapping]
+
+
+def add(a: Accumulatable, b: Accumulatable) -> Accumulatable:
+    """Add two accumulatables together, without altering inputs
+
+    This may make copies in certain situations
+    """
+    if isinstance(a, Addable) and isinstance(b, Addable):
+        return operator.add(a, b)
+    if isinstance(a, MutableSet) and isinstance(b, MutableSet):
+        return operator.or_(a, b)
+    elif isinstance(a, MutableMapping) and isinstance(b, MutableMapping):
+        # capture type(X) by shallow copy and clear
+        # since we don't know the signature of type(X).__init__
+        if isinstance(b, type(a)):
+            out = copy.copy(a)
+        elif isinstance(a, type(b)):
+            out = copy.copy(b)
+        else:
+            raise ValueError(
+                f"Cannot add two mappings of incompatible type ({type(a)} vs. {type(b)})"
+            )
+        out.clear()
+        lhs, rhs = set(a), set(b)
+        for key in lhs & rhs:
+            out[key] = add(a[key], b[key])
+        for key in lhs - rhs:
+            out[key] = copy.deepcopy(a[key])
+        for key in rhs - lhs:
+            out[key] = copy.deepcopy(b[key])
+        return out
+    raise ValueError(
+        f"Cannot add accumulators of incompatible type ({type(a)} vs. {type(b)})"
+    )
+
+
+def iadd(a: Accumulatable, b: Accumulatable) -> Accumulatable:
+    """Add two accumulatables together, assuming the first is mutable"""
+    if isinstance(a, Addable) and isinstance(b, Addable):
+        return operator.iadd(a, b)
+    elif isinstance(a, MutableSet) and isinstance(b, MutableSet):
+        return operator.ior(a, b)
+    elif isinstance(a, MutableMapping) and isinstance(b, MutableMapping):
+        if not isinstance(b, type(a)):
+            raise ValueError(
+                f"Cannot add two mappings of incompatible type ({type(a)} vs. {type(b)})"
+            )
+        lhs, rhs = set(a), set(b)
+        for key in lhs & rhs:
+            a[key] = iadd(a[key], b[key])
+        for key in rhs - lhs:
+            a[key] = copy.deepcopy(b[key])
+        return a
+    raise ValueError(
+        f"Cannot add accumulators of incompatible type ({type(a)} vs. {type(b)})"
+    )
+
+
+def accumulate(
+    items: Iterable[Optional[Accumulatable]], accum: Optional[Accumulatable] = None
+) -> Optional[Accumulatable]:
+    gen = (x for x in items if x is not None)
+    try:
+        if accum is None:
+            accum = next(gen)
+            # we want to produce a new object so that the input is not mutated
+            accum = add(accum, next(gen))
+        while True:
+            # subsequent additions can happen in-place, which may be more performant
+            accum = iadd(accum, next(gen))
+    except StopIteration:
+        pass
+    return accum
 
 
 class AccumulatorABC(metaclass=ABCMeta):
-    '''Abstract base class for an accumulator
+    """Abstract base class for an accumulator
 
     Accumulators are abstract objects that enable the reduce stage of the typical map-reduce
     scaleout that we do in Coffea. One concrete example is a histogram. The idea is that an
@@ -53,19 +146,20 @@ class AccumulatorABC(metaclass=ABCMeta):
         - ``add(other)``: adds an object of same type as self to self
 
     Concrete implementations are then provided for ``__add__``, ``__radd__``, and ``__iadd__``.
-    '''
+    """
+
     @abstractmethod
     def identity(self):
-        '''Identity of the accumulator
+        """Identity of the accumulator
 
         A value such that any other value added to it will return
         the other value
-        '''
+        """
         pass
 
     @abstractmethod
     def add(self, other):
-        '''Add another accumulator to this one in-place'''
+        """Add another accumulator to this one in-place"""
         pass
 
     def __add__(self, other):
@@ -86,7 +180,7 @@ class AccumulatorABC(metaclass=ABCMeta):
 
 
 class value_accumulator(AccumulatorABC):
-    '''Holds a value of arbitrary type
+    """Holds a value of arbitrary type
 
     Parameters
     ----------
@@ -94,7 +188,8 @@ class value_accumulator(AccumulatorABC):
             a function that returns an instance of the desired identity value
         initial : bool, optional
             an initial value, if the identity is not the desired initial value
-    '''
+    """
+
     def __init__(self, default_factory, initial=None):
         self.value = default_factory() if initial is None else initial
         self.default_factory = default_factory
@@ -117,15 +212,16 @@ class value_accumulator(AccumulatorABC):
 
 
 class list_accumulator(list, AccumulatorABC):
-    '''A list with accumulator semantics
+    """A list with accumulator semantics
 
     See `list` for further info
-    '''
+    """
+
     def identity(self):
         return list()
 
     def add(self, other):
-        '''Add another accumulator to this one in-place'''
+        """Add another accumulator to this one in-place"""
         if isinstance(other, list):
             list.extend(self, other)
         else:
@@ -133,33 +229,35 @@ class list_accumulator(list, AccumulatorABC):
 
 
 class set_accumulator(set, AccumulatorABC):
-    '''A set with accumulator semantics
+    """A set with accumulator semantics
 
     See `set` for further info
-    '''
+    """
+
     def identity(self):
         return set_accumulator()
 
     def add(self, other):
-        '''Add another accumulator to this one in-place
+        """Add another accumulator to this one in-place
 
         Note
         ----
         This replaces `set.add` behavior, unfortunately.
         A workaround is to use `set.update`, e.g. ``a.update({'val'})``
-        '''
-        if isinstance(other, Set):
+        """
+        if isinstance(other, MutableSet):
             set.update(self, other)
         else:
             set.add(self, other)
 
 
 class dict_accumulator(dict, AccumulatorABC):
-    '''A dictionary with accumulator semantics
+    """A dictionary with accumulator semantics
 
     See `dict` for further info.
     It is assumed that the contents of the dict have accumulator semantics.
-    '''
+    """
+
     def identity(self):
         ret = dict_accumulator()
         for key, value in self.items():
@@ -167,7 +265,7 @@ class dict_accumulator(dict, AccumulatorABC):
         return ret
 
     def add(self, other):
-        if isinstance(other, Mapping):
+        if isinstance(other, MutableMapping):
             for key, value in other.items():
                 if key not in self:
                     if isinstance(value, AccumulatorABC):
@@ -180,11 +278,12 @@ class dict_accumulator(dict, AccumulatorABC):
 
 
 class defaultdict_accumulator(defaultdict, AccumulatorABC):
-    '''A defaultdict with accumulator semantics
+    """A defaultdict with accumulator semantics
 
     See `collections.defaultdict` for further info.
     It is assumed that the contents of the dict have accumulator semantics
-    '''
+    """
+
     def identity(self):
         return defaultdict_accumulator(self.default_factory)
 
@@ -194,7 +293,7 @@ class defaultdict_accumulator(defaultdict, AccumulatorABC):
 
 
 class column_accumulator(AccumulatorABC):
-    '''An appendable numpy ndarray
+    """An appendable numpy ndarray
 
     Parameters
     ----------
@@ -217,7 +316,8 @@ class column_accumulator(AccumulatorABC):
     column_accumulator(array([1., 2., 3.]))
     >>> c + b + a
     column_accumulator(array([4., 5., 6., 1., 2., 3.]))
-    '''
+    """
+
     def __init__(self, value):
         if not isinstance(value, numpy.ndarray):
             raise ValueError("column_accumulator only works with numpy arrays")
@@ -234,14 +334,16 @@ class column_accumulator(AccumulatorABC):
         if not isinstance(other, column_accumulator):
             raise ValueError("column_accumulator cannot be added to %r" % type(other))
         if other._empty.shape != self._empty.shape:
-            raise ValueError("Cannot add two column_accumulator objects of dissimilar shape (%r vs %r)"
-                             % (self._empty.shape, other._empty.shape))
+            raise ValueError(
+                "Cannot add two column_accumulator objects of dissimilar shape (%r vs %r)"
+                % (self._empty.shape, other._empty.shape)
+            )
         self._value = numpy.concatenate((self._value, other._value))
 
     @property
     def value(self):
-        '''The current value of the column
+        """The current value of the column
 
         Returns a numpy array where the first dimension is the column dimension
-        '''
+        """
         return self._value
