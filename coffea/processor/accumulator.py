@@ -3,7 +3,7 @@ import operator
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from collections.abc import MutableMapping, MutableSet
-from typing import Dict, Iterable, Optional, Set, TypeVar, Union
+from typing import Iterable, Optional, TypeVar, Union
 
 try:
     from typing import Protocol  # type: ignore
@@ -20,7 +20,7 @@ class Addable(Protocol):
         ...
 
 
-Accumulatable = Union[Set, Dict, Addable]
+Accumulatable = Union[MutableSet, MutableMapping, Addable]
 
 
 def add(a: Accumulatable, b: Accumulatable) -> Accumulatable:
@@ -29,15 +29,25 @@ def add(a: Accumulatable, b: Accumulatable) -> Accumulatable:
     This may make copies in certain situations
     """
     if isinstance(a, MutableSet) and isinstance(b, MutableSet):
-        return a | b
+        return operator.or_(a, b)
     elif isinstance(a, MutableMapping) and isinstance(b, MutableMapping):
-        out = copy.copy(a)
+        # capture type(X) by shallow copy and clear
+        # since we don't know the signature of type(X).__init__
+        if isinstance(b, type(a)):
+            out = copy.copy(a)
+        elif isinstance(a, type(b)):
+            out = copy.copy(b)
+        else:
+            raise ValueError(
+                f"Cannot add two mappings of incompatible type ({type(a)} vs. {type(b)})"
+            )
         out.clear()
-        for key in set(a) & set(b):
+        lhs, rhs = set(a), set(b)
+        for key in lhs & rhs:
             out[key] = add(a[key], b[key])
-        for key in set(a) - set(b):
+        for key in lhs - rhs:
             out[key] = copy.deepcopy(a[key])
-        for key in set(b) - set(a):
+        for key in rhs - lhs:
             out[key] = copy.deepcopy(b[key])
         return out
     else:
@@ -49,9 +59,14 @@ def iadd(a: Accumulatable, b: Accumulatable) -> Accumulatable:
     if isinstance(a, MutableSet) and isinstance(b, MutableSet):
         return operator.ior(a, b)
     elif isinstance(a, MutableMapping) and isinstance(b, MutableMapping):
-        for key in set(a) & set(b):
+        if not isinstance(b, type(a)):
+            raise ValueError(
+                f"Cannot add two mappings of incompatible type ({type(a)} vs. {type(b)})"
+            )
+        lhs, rhs = set(a), set(b)
+        for key in lhs & rhs:
             a[key] = iadd(a[key], b[key])
-        for key in set(b) - set(a):
+        for key in rhs - lhs:
             a[key] = copy.deepcopy(b[key])
         return a
     else:

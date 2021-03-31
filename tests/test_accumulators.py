@@ -1,3 +1,4 @@
+import pytest
 from collections import defaultdict
 from coffea import processor
 from functools import partial
@@ -106,18 +107,20 @@ def test_new_accumulators():
     assert d['x'] == 9.
     assert d['y'] == 5.
     assert d['z'] == 4.
-    assert d['w'] == 0.
+    # this is different than old style!
+    with pytest.raises(KeyError):
+        d['w']
 
     e = processor.accumulate((d, c))
 
-    # this is different than old style!
     f = processor.accumulate((
         defaultdict(lambda: 2.),
-        {"x": 4.},
+        defaultdict(lambda: 2, {"x": 4.}),
     ))
     assert f['x'] == 4.
     assert f['y'] == 2.
 
+    # this is different than old style!
     f = processor.accumulate([f], f)
     assert f['x'] == 8.
     assert f['y'] == 4.
@@ -128,3 +131,32 @@ def test_new_accumulators():
         processor.column_accumulator(np.arange(12).reshape(4,3)),
     ))
     assert a.value.sum() == 81
+
+
+def test_accumulator_types():
+    class MyDict(dict):
+        pass
+
+    out = processor.accumulate((
+        {"x": 2},
+        MyDict({"x": 3}),
+    ))
+    assert type(out) is dict
+
+    with pytest.raises(ValueError):
+        processor.accumulate((
+            defaultdict(lambda: 2),
+            MyDict({"x": 3}),
+        ))
+
+    out = processor.accumulate((
+        MyDict({"x": 3}),
+        {"x": 2},
+    ))
+    assert type(out) is dict
+
+    with pytest.raises(ValueError):
+        processor.accumulate((
+            MyDict({"x": 3}),
+            defaultdict(lambda: 2),
+        ))
