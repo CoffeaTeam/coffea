@@ -1,7 +1,5 @@
 #!/bin/bash
-set -e
-set -x
-set -u
+set -eux
 
 DIR=/tmp/test-cluster
 
