@@ -92,7 +92,7 @@ def test_lazy_dataframe_getattr():
 
 
 def test_processor_newaccumulator():
-    from coffea.processor import ProcessorABC, iterative_executor, dict_accumulator
+    from coffea.processor import ProcessorABC, iterative_executor, defaultdict_accumulator
 
     class Test(ProcessorABC):
         def process(self, item):
@@ -113,10 +113,12 @@ def test_processor_newaccumulator():
     class TestOldStyle(ProcessorABC):
         @property
         def accumulator(self):
-            return dict_accumulator()
+            return defaultdict_accumulator(int)
 
         def process(self, item):
-            return dict_accumulator({"itemsum": item})
+            out = self.accumulator.identity()
+            out["itemsum"] += item
+            return out
     
         def postprocess(self, accumulator):
             pass
@@ -128,4 +130,4 @@ def test_processor_newaccumulator():
         proc.process,
         proc.accumulator,
     )
-    assert out == {"itemsum": 45}
+    assert out["itemsum"] == 45
