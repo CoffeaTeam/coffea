@@ -99,6 +99,7 @@ pip3 install --upgrade /pyarrow-*.whl # update the PyArrow with Rados parquet ex
 
 
 if [ ! -z "$IS_CI" ]; then
+    # just run the unit tests
     python3 tests/test_rados_parquet_job.py
 else
     # start the notebook
