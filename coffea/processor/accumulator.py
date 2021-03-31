@@ -6,21 +6,22 @@ from collections.abc import MutableMapping, MutableSet
 from typing import Iterable, Optional, TypeVar, Union
 
 try:
-    from typing import Protocol  # type: ignore
+    from typing import Protocol, runtime_checkable  # type: ignore
 except ImportError:
-    from typing_extensions import Protocol  # type: ignore
+    from typing_extensions import Protocol, runtime_checkable  # type: ignore
 
 import numpy
 
 T = TypeVar("T")
 
 
+@runtime_checkable
 class Addable(Protocol):
     def __add__(self: T, other: T) -> T:
         ...
 
 
-Accumulatable = Union[MutableSet, MutableMapping, Addable]
+Accumulatable = Union[Addable, MutableSet, MutableMapping]
 
 
 def add(a: Accumulatable, b: Accumulatable) -> Accumulatable:
@@ -28,6 +29,8 @@ def add(a: Accumulatable, b: Accumulatable) -> Accumulatable:
 
     This may make copies in certain situations
     """
+    if isinstance(a, Addable) and isinstance(b, Addable):
+        return operator.add(a, b)
     if isinstance(a, MutableSet) and isinstance(b, MutableSet):
         return operator.or_(a, b)
     elif isinstance(a, MutableMapping) and isinstance(b, MutableMapping):
@@ -50,13 +53,16 @@ def add(a: Accumulatable, b: Accumulatable) -> Accumulatable:
         for key in rhs - lhs:
             out[key] = copy.deepcopy(b[key])
         return out
-    else:
-        return operator.add(a, b)
+    raise ValueError(
+        f"Cannot add accumulators of incompatible type ({type(a)} vs. {type(b)})"
+    )
 
 
 def iadd(a: Accumulatable, b: Accumulatable) -> Accumulatable:
     """Add two accumulatables together, assuming the first is mutable"""
-    if isinstance(a, MutableSet) and isinstance(b, MutableSet):
+    if isinstance(a, Addable) and isinstance(b, Addable):
+        return operator.iadd(a, b)
+    elif isinstance(a, MutableSet) and isinstance(b, MutableSet):
         return operator.ior(a, b)
     elif isinstance(a, MutableMapping) and isinstance(b, MutableMapping):
         if not isinstance(b, type(a)):
@@ -69,8 +75,9 @@ def iadd(a: Accumulatable, b: Accumulatable) -> Accumulatable:
         for key in rhs - lhs:
             a[key] = copy.deepcopy(b[key])
         return a
-    else:
-        return operator.iadd(a, b)
+    raise ValueError(
+        f"Cannot add accumulators of incompatible type ({type(a)} vs. {type(b)})"
+    )
 
 
 def accumulate(
