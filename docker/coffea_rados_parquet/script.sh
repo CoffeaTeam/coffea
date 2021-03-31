@@ -11,7 +11,7 @@ MON_DATA=${DIR}/mon
 MDS_DATA=${DIR}/mds
 MOUNTPT=${MDS_DATA}/mnt
 OSD_DATA=${DIR}/osd
-mkdir ${LOG_DIR} ${MON_DATA} ${OSD_DATA} ${MDS_DATA} ${MOUNTPT}
+mkdir -p ${LOG_DIR} ${MON_DATA} ${OSD_DATA} ${MDS_DATA} ${MOUNTPT}
 MDS_NAME="Z"
 MON_NAME="a"
 MGR_NAME="x"
