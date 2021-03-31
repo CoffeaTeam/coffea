@@ -18,7 +18,7 @@ set -e
 set -x
 set -u
 
-DIR=${1}
+DIR=/tmp/test-cluster
 
 # reset
 pkill ceph || true
