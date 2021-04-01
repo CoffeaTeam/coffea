@@ -986,6 +986,8 @@ def _normalize_fileset(fileset, treename):
         if isinstance(filelist, dict):
             if set(filelist.keys()) - {"treename", "files"}:
                 raise ValueError(f"Extraneous arguments in fileset dictionary, expected treename, files but got {set(filelist.keys())}")
+            if "treename" not in filelist and treename is None:
+                raise ValueError('treename must be specified if the fileset does not contain tree names')
             local_treename = filelist['treename'] if 'treename' in filelist else treename
             filelist = filelist['files']
         elif isinstance(filelist, list):
