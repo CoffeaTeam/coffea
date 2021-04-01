@@ -27,10 +27,10 @@ class NanoAODSchema(BaseSchema):
 
     There is a class-level variable ``warn_missing_crossrefs`` which will alter the behavior of
     NanoAODSchema. If warn_missing_crossrefs is true then when a missing global index cross-ref
-    target is encountered a warning will be issued instead of an exception. (Default: False)
+    target is encountered a warning will be issued. Regardless, the cross-reference is dropped.
     """
 
-    warn_missing_crossrefs = False
+    warn_missing_crossrefs = True
 
     mixins = {
         "CaloMET": "MissingET",
