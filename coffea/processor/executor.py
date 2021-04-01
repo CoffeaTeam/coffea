@@ -980,8 +980,12 @@ def _normalize_fileset(fileset, treename):
     if isinstance(fileset, str):
         with open(fileset) as fin:
             fileset = json.load(fin)
+    elif not isinstance(fileset, Mapping):
+        raise ValueError("Expected fileset to be a path string or mapping")
     for dataset, filelist in fileset.items():
         if isinstance(filelist, dict):
+            if set(filelist.keys()) - {"treename", "files"}:
+                raise ValueError(f"Extraneous arguments in fileset dictionary, expected treename, files but got {set(filelist.keys())}")
             local_treename = filelist['treename'] if 'treename' in filelist else treename
             filelist = filelist['files']
         elif isinstance(filelist, list):
