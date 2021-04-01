@@ -34,16 +34,6 @@ class BaseSourceMapping(Mapping):
     def _extract_base_form(cls, source):
         pass
 
-    def __getstate__(self):
-        return {
-            "fileopener": self._fileopener,
-        }
-
-    def __setstate__(self, state):
-        self._fileopener = state["fileopener"]
-        self._cache = None
-        self.setup()
-
     def _column_source(self, uuid, path_in_source):
         key = self.key_root() + tuple_to_key((uuid, path_in_source))
         try:

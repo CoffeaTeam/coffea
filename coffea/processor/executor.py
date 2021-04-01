@@ -684,10 +684,9 @@ def dask_executor(items, function, accumulator, **kwargs):
     retries = kwargs.pop('retries', 3)
     heavy_input = kwargs.pop('heavy_input', None)
     function_name = kwargs.pop('function_name', None)
-    # secret options
-    direct_heavy = kwargs.pop('direct_heavy', None)
-    worker_affinity = kwargs.pop('worker_affinity', False)
     use_dataframes = kwargs.pop('use_dataframes', False)
+    # secret options
+    worker_affinity = kwargs.pop('worker_affinity', False)
 
     if use_dataframes:
         clevel = None
@@ -697,8 +696,11 @@ def dask_executor(items, function, accumulator, **kwargs):
         function = _compression_wrapper(clevel, function, name=function_name)
 
     if heavy_input is not None:
-        heavy_token = client.scatter(heavy_input, broadcast=True, hash=False, direct=direct_heavy)
-        items = list(zip(items, repeat(heavy_token)))
+        # client.scatter is not robust against adaptive clusters
+        # https://github.com/CoffeaTeam/coffea/issues/465
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", "Large object of size")
+            items = list(zip(items, repeat(client.submit(lambda x: x, heavy_input))))
 
     work = []
     if worker_affinity:
@@ -841,6 +843,8 @@ def _get_cache(strategy):
         except KeyError:
             # emit warning if not found?
             pass
+    elif callable(strategy):
+        cache = strategy()
 
     return cache
 
@@ -976,8 +980,14 @@ def _normalize_fileset(fileset, treename):
     if isinstance(fileset, str):
         with open(fileset) as fin:
             fileset = json.load(fin)
+    elif not isinstance(fileset, Mapping):
+        raise ValueError("Expected fileset to be a path string or mapping")
     for dataset, filelist in fileset.items():
         if isinstance(filelist, dict):
+            if set(filelist.keys()) - {"treename", "files"}:
+                raise ValueError(f"Extraneous arguments in fileset dictionary, expected treename, files but got {set(filelist.keys())}")
+            if "treename" not in filelist and treename is None:
+                raise ValueError('treename must be specified if the fileset does not contain tree names')
             local_treename = filelist['treename'] if 'treename' in filelist else treename
             filelist = filelist['files']
         elif isinstance(filelist, list):

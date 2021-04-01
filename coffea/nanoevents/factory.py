@@ -110,7 +110,7 @@ class NanoEventsFactory:
         )
         uuidpfn = {partition_key[0]: tree.file.file_path}
         mapping = UprootSourceMapping(
-            TrivialUprootOpener(uuidpfn, uproot_options), access_log=access_log
+            TrivialUprootOpener(uuidpfn, uproot_options), cache={}, access_log=access_log
         )
         mapping.preload_column_source(partition_key[0], partition_key[1], tree)
 
