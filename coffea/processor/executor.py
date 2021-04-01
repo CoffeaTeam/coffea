@@ -843,6 +843,8 @@ def _get_cache(strategy):
         except KeyError:
             # emit warning if not found?
             pass
+    elif callable(strategy):
+        cache = strategy()
 
     return cache
 
