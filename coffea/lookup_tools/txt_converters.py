@@ -160,7 +160,7 @@ def _build_standard_jme_lookup(
                 )
                 bins[layout[i + offset_name]] = numpy.union1d(binMins, binMaxs[-1:])
         else:
-            counts = numpy.zeros(0, dtype=numpy.int)
+            counts = numpy.zeros(0, dtype=numpy.int64)
             allBins = numpy.zeros(0, dtype=numpy.double)
             for binMin in bins[bin_order[0]][:-1]:
                 binMins = numpy.unique(
@@ -198,7 +198,7 @@ def _build_standard_jme_lookup(
     var_order = []
     offset_col = 2 * nBinnedVars + 1
     offset_name = nBinnedVars + 2
-    jagged_counts = numpy.ones(bins[bin_order[0]].size - 1, dtype=numpy.int)
+    jagged_counts = numpy.ones(bins[bin_order[0]].size - 1, dtype=numpy.int64)
     if len(bin_order) > 1:
         jagged_counts = numpy.maximum(
             awkward.num(bins[bin_order[1]]) - 1, 0
