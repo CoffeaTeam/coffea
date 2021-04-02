@@ -153,14 +153,21 @@ class NanoAODSchema(BaseSchema):
 
     @classmethod
     def v7(cls, base_form):
+        """Build the NanoEvents assuming NanoAODv7
+
+        For example, one can use ``NanoEventsFactory.from_root("file.root", schemaclass=NanoAODSchema.v7)``
+        to ensure NanoAODv7 compatibility.
+        """
         return cls(base_form, version="7")
 
     @classmethod
     def v6(cls, base_form):
+        """Build the NanoEvents assuming NanoAODv6"""
         return cls(base_form, version="6")
 
     @classmethod
     def v5(cls, base_form):
+        """Build the NanoEvents assuming NanoAODv5"""
         return cls(base_form, version="5")
 
     def _build_collections(self, branch_forms):
