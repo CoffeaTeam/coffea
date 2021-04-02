@@ -128,7 +128,7 @@ def test_factorized_jet_corrector():
     # Check that the corrections can be chained together
     corrs_L1L2L3_jag_ref = ak.unflatten(np.array([1.37038741364, 1.37710384514, 1.65148641108, 1.46840446827,
                                                   1.1328319784, 1., 1.50762056349, 1.48719866989]), counts)
-    corrector = FactorizedJetCorrector(**{name: evaluator[name] for name in jec_names[0:3]})
+    corrector = FactorizedJetCorrector(**{name: evaluator[name] for name in (jec_names[0:2] + jec_names[3:])})
     corrs_L1L2L3_jag = corrector.getCorrection(JetEta=test_eta_jag, Rho=test_Rho_jag, JetPt=test_pt_jag, JetA=test_A_jag)
     print("Reference L1L2L3 corrections:", corrs_L1L2L3_jag_ref)
     print("Calculated L1L2L3 corrections:", corrs_L1L2L3_jag)
@@ -173,8 +173,9 @@ def test_jet_resolution():
     resos_jag = reso.getResolution(JetEta=test_eta_jag, Rho=test_Rho_jag, JetPt=test_pt_jag)
     print("Reference Resolution (jagged):", resos_jag_ref)
     print("Resolution (jagged):", resos_jag)
-    print(np.abs(ak.flatten(resos_jag_ref) - ak.flatten(resos_jag)))
-    assert(ak.all(np.abs(ak.flatten(resos_jag_ref) - ak.flatten(resos_jag)) < 1e-6))
+    # NB: 5e-4 tolerance was agreed upon by lgray and aperloff, if the differences get bigger over time
+    #     we need to agree upon how these numbers are evaluated (double/float conversion is kinda random)
+    assert(ak.all(np.abs(ak.flatten(resos_jag_ref) - ak.flatten(resos_jag)) < 5e-4))
 
 
 def test_jet_correction_uncertainty():

@@ -146,7 +146,6 @@ class jme_standard_function(lookup_base):
         )
         overflows = ((bin_vals[dim1_name] > numpy.amax(self._bins[dim1_name])) |
                      (bin_vals[dim1_name] < numpy.amin(self._bins[dim1_name])))
-        print('dim1 overflows ->', overflows)
         bin_indices = [dim1_indices]
         for binname in self._dim_order[1:]:
             dimN_indices, dimN_overflows = masked_bin_eval(bin_indices[0],
@@ -158,7 +157,6 @@ class jme_standard_function(lookup_base):
             overflows |= dimN_overflows
 
         bin_tuple = tuple(bin_indices)
-        print('overflows ->', overflows)
 
         # get clamp values and clip the inputs
         eval_values = []
@@ -183,7 +181,6 @@ class jme_standard_function(lookup_base):
             parm_values = [numpy.array(parm[bin_tuple]).squeeze() for parm in self._parms]
 
         raw_eval = self._formula(*tuple(parm_values + eval_values))
-        print(overflows.shape, raw_eval.shape)
         return numpy.where(overflows, numpy.ones_like(raw_eval), raw_eval)
 
     @property
