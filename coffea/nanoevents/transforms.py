@@ -125,6 +125,43 @@ def local2global(stack):
     stack.append(out)
 
 
+def counts2nestedindex_form(local_counts, target_offsets):
+    if not local_counts["class"].startswith("ListOffset"):
+        raise RuntimeError
+    if not target_offsets["class"] == "NumpyArray":
+        raise RuntimeError
+    form = {
+        "class": "ListOffsetArray64",
+        "offsets": "i64",
+        "content": copy.deepcopy(local_counts),
+    }
+    form["content"]["content"]["itemsize"] = 8
+    form["content"]["content"]["primitive"] = "int64"
+    form["content"]["content"]["parameters"] = {}
+    key = concat(
+        local_counts["form_key"], target_offsets["form_key"], "!counts2nestedindex"
+    )
+    form["form_key"] = local_counts["form_key"]
+    form["content"]["form_key"] = key
+    form["content"]["content"]["form_key"] = concat(key, "!content")
+    return form
+
+
+def counts2nestedindex(stack):
+    """Turn jagged local counts into doubly-kagged global index into a target
+
+    Signature: local_counts,target_offsets,!counts2nestedindex
+    Outputs a jagged array with same axis-0 shape as counts axis-1
+    """
+    target_offsets = stack.pop()
+    local_counts = stack.pop()
+    out = awkward.unflatten(
+        numpy.arange(target_offsets[-1], dtype=numpy.int64),
+        awkward.flatten(local_counts),
+    )
+    stack.append(out)
+
+
 @numba.njit
 def _distinctParent_kernel(allpart_parent, allpart_pdg):
     out = numpy.empty(len(allpart_pdg), dtype=numpy.int64)
