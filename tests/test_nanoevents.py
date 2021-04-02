@@ -1,6 +1,6 @@
 import os
 import awkward as ak
-from coffea.nanoevents import NanoEventsFactory
+from coffea.nanoevents import NanoEventsFactory, NanoAODSchema
 import pytest
 
 
@@ -28,7 +28,9 @@ suffixes = ['root', 'parquet']
 @pytest.mark.parametrize("suffix", suffixes)
 def test_read_nanomc(suffix):
     path = os.path.abspath(f'tests/samples/nano_dy.{suffix}')
-    factory = getattr(NanoEventsFactory, f'from_{suffix}')(path)
+    # parquet files were converted from even older nanoaod
+    nanoversion = NanoAODSchema.v6 if suffix == "root" else NanoAODSchema.v5
+    factory = getattr(NanoEventsFactory, f'from_{suffix}')(path, schemaclass=nanoversion)
     events = factory.events()
 
     # test after views first
@@ -59,7 +61,9 @@ def test_read_nanomc(suffix):
 @pytest.mark.parametrize("suffix", suffixes)
 def test_read_nanodata(suffix):
     path = os.path.abspath(f'tests/samples/nano_dimuon.{suffix}')
-    factory =getattr(NanoEventsFactory, f'from_{suffix}')(path)
+    # parquet files were converted from even older nanoaod
+    nanoversion = NanoAODSchema.v6 if suffix == "root" else NanoAODSchema.v5
+    factory =getattr(NanoEventsFactory, f'from_{suffix}')(path, schemaclass=nanoversion)
     events = factory.events()
 
     crossref(events)

@@ -67,23 +67,12 @@ class NanoAODSchema(BaseSchema):
         "GenPart": "GenParticle",
         "PV": "Vertex",
         "SV": "SecondaryVertex",
-        # PFNano extensions
-        "JetSVs": "AssociatedSV",
-        "FatJetSVs": "AssociatedSV",
-        "GenJetSVs": "AssociatedSV",
-        "GenFatJetSVs": "AssociatedSV",
-        "JetPFCands": "AssociatedPFCand",
-        "FatJetPFCands": "AssociatedPFCand",
-        "GenJetCands": "AssociatedPFCand",
-        "GenFatJetCands": "AssociatedPFCand",
-        "PFCands": "PFCand",
-        "GenCands": "PFCand",
     }
     """Default configuration for mixin types, based on the collection name.
 
     The types are implemented in the `coffea.nanoevents.methods.nanoaod` module.
     """
-    cross_references = {
+    all_cross_references = {
         "Electron_genPartIdx": "GenPart",
         "Electron_jetIdx": "Jet",
         "Electron_photonIdx": "Photon",
@@ -106,26 +95,6 @@ class NanoAODSchema(BaseSchema):
         "Photon_jetIdx": "Jet",
         "Tau_genPartIdx": "GenPart",
         "Tau_jetIdx": "Jet",
-        # PFNano extensions
-        "FatJetPFCands_jetIdx": "FatJet",  # breaks pattern
-        "FatJetPFCands_pFCandsIdx": "PFCands",
-        "FatJetSVs_jetIdx": "FatJet",  # breaks pattern
-        "FatJetSVs_sVIdx": "SV",
-        "FatJet_electronIdx3SJ": "Electron",
-        "FatJet_muonIdx3SJ": "Muon",
-        "GenFatJetCands_jetIdx": "GenJetAK8",  # breaks pattern
-        "GenFatJetCands_pFCandsIdx": "GenCands",  # breaks pattern
-        "GenFatJetSVs_jetIdx": "GenJetAK8",  # breaks pattern
-        "GenFatJetSVs_sVIdx": "SV",
-        "GenJetCands_jetIdx": "GenJet",  # breaks pattern
-        "GenJetCands_pFCandsIdx": "GenCands",  # breaks pattern
-        "GenJetSVs_jetIdx": "GenJet",  # breaks pattern
-        "GenJetSVs_sVIdx": "SV",
-        "JetPFCands_jetIdx": "Jet",
-        "JetPFCands_pFCandsIdx": "PFCands",
-        "JetSVs_jetIdx": "Jet",
-        "JetSVs_sVIdx": "SV",
-        "SubJet_subGenJetAK8Idx": "SubGenJetAK8",
     }
     """Cross-references, where an index is to be interpreted with respect to another collection
 
@@ -167,11 +136,32 @@ class NanoAODSchema(BaseSchema):
     }
     """Special arrays, where the callable and input arrays are specified in the value"""
 
-    def __init__(self, base_form, version="6"):
-        self._version = version
+    def __init__(self, base_form, version="latest"):
         super().__init__(base_form)
+        self._version = version
+        self.cross_references = dict(self.all_cross_references)
+        if version == "latest":
+            pass
+        else:
+            if int(version) < 7:
+                del self.cross_references["FatJet_genJetAK8Idx"]
+            if int(version) < 6:
+                del self.cross_references["FsrPhoton_muonIdx"]
+                del self.cross_references["Muon_fsrPhotonIdx"]
         self._form["contents"] = self._build_collections(self._form["contents"])
         self._form["parameters"]["metadata"]["version"] = self._version
+
+    @classmethod
+    def v7(cls, base_form):
+        return cls(base_form, version="7")
+
+    @classmethod
+    def v6(cls, base_form):
+        return cls(base_form, version="6")
+
+    @classmethod
+    def v5(cls, base_form):
+        return cls(base_form, version="5")
 
     def _build_collections(self, branch_forms):
         # parse into high-level records (collections, list collections, and singletons)
@@ -179,6 +169,7 @@ class NanoAODSchema(BaseSchema):
         collections -= set(
             k for k in collections if k.startswith("n") and k[1:] in collections
         )
+        isData = "GenPart" not in collections
 
         # Create offsets virtual arrays
         for name in collections:
@@ -189,6 +180,8 @@ class NanoAODSchema(BaseSchema):
 
         # Create global index virtual arrays for indirection
         for indexer, target in self.cross_references.items():
+            if target.startswith("Gen") and isData:
+                continue
             if indexer not in branch_forms:
                 if self.warn_missing_crossrefs:
                     warnings.warn(
@@ -276,3 +269,47 @@ class NanoAODSchema(BaseSchema):
         from coffea.nanoevents.methods import nanoaod
 
         return nanoaod.behavior
+
+
+class PFNanoAODSchema(NanoAODSchema):
+    """PFNano schema builder
+
+    PFNano is an extended NanoAOD format that includes PF candidates and secondary vertices
+    More info at https://github.com/cms-jet/PFNano
+    """
+
+    mixins = {
+        **NanoAODSchema.mixins,
+        "JetSVs": "AssociatedSV",
+        "FatJetSVs": "AssociatedSV",
+        "GenJetSVs": "AssociatedSV",
+        "GenFatJetSVs": "AssociatedSV",
+        "JetPFCands": "AssociatedPFCand",
+        "FatJetPFCands": "AssociatedPFCand",
+        "GenJetCands": "AssociatedPFCand",
+        "GenFatJetCands": "AssociatedPFCand",
+        "PFCands": "PFCand",
+        "GenCands": "PFCand",
+    }
+    all_cross_references = {
+        **NanoAODSchema.all_cross_references,
+        "FatJetPFCands_jetIdx": "FatJet",  # breaks pattern
+        "FatJetPFCands_pFCandsIdx": "PFCands",
+        "FatJetSVs_jetIdx": "FatJet",  # breaks pattern
+        "FatJetSVs_sVIdx": "SV",
+        "FatJet_electronIdx3SJ": "Electron",
+        "FatJet_muonIdx3SJ": "Muon",
+        "GenFatJetCands_jetIdx": "GenJetAK8",  # breaks pattern
+        "GenFatJetCands_pFCandsIdx": "GenCands",  # breaks pattern
+        "GenFatJetSVs_jetIdx": "GenJetAK8",  # breaks pattern
+        "GenFatJetSVs_sVIdx": "SV",
+        "GenJetCands_jetIdx": "GenJet",  # breaks pattern
+        "GenJetCands_pFCandsIdx": "GenCands",  # breaks pattern
+        "GenJetSVs_jetIdx": "GenJet",  # breaks pattern
+        "GenJetSVs_sVIdx": "SV",
+        "JetPFCands_jetIdx": "Jet",
+        "JetPFCands_pFCandsIdx": "PFCands",
+        "JetSVs_jetIdx": "Jet",
+        "JetSVs_sVIdx": "SV",
+        "SubJet_subGenJetAK8Idx": "SubGenJetAK8",
+    }
