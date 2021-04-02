@@ -29,6 +29,7 @@ def wrap_formula(fstr, varlist):
 
 def masked_bin_eval(dim1_indices, dimN_bins, dimN_vals):
     dimN_indices = numpy.empty_like(dim1_indices)
+    dimN_overflows = numpy.empty_like(dim1_indices, dtype=bool)
     for i in numpy.unique(dim1_indices):
         idx = numpy.where(dim1_indices == i)
         dimN_indices[idx] = numpy.clip(
@@ -36,7 +37,9 @@ def masked_bin_eval(dim1_indices, dimN_bins, dimN_vals):
             0,
             len(dimN_bins[i]) - 2,
         )
-    return dimN_indices
+        dimN_overflows[idx] = ((dimN_vals[idx] > numpy.amax(dimN_bins[i])) |
+                               (dimN_vals[idx] < numpy.amin(dimN_bins[i])))
+    return dimN_indices, dimN_overflows
 
 
 # idx_in is a tuple of indices in increasing jaggedness
@@ -141,13 +144,21 @@ class jme_standard_function(lookup_base):
             0,
             self._bins[dim1_name].size - 2,
         )
+        overflows = ((bin_vals[dim1_name] > numpy.amax(self._bins[dim1_name])) |
+                     (bin_vals[dim1_name] < numpy.amin(self._bins[dim1_name])))
+        print('dim1 overflows ->', overflows)
         bin_indices = [dim1_indices]
         for binname in self._dim_order[1:]:
+            dimN_indices, dimN_overflows = masked_bin_eval(bin_indices[0],
+                                                           self._bins[binname],
+                                                           bin_vals[binname])
             bin_indices.append(
-                masked_bin_eval(bin_indices[0], self._bins[binname], bin_vals[binname])
+                dimN_indices
             )
+            overflows |= dimN_overflows
 
         bin_tuple = tuple(bin_indices)
+        print('overflows ->', overflows)
 
         # get clamp values and clip the inputs
         eval_values = []
@@ -171,7 +182,9 @@ class jme_standard_function(lookup_base):
         if len(self._parms) > 0:
             parm_values = [numpy.array(parm[bin_tuple]).squeeze() for parm in self._parms]
 
-        return self._formula(*tuple(parm_values + eval_values))
+        raw_eval = self._formula(*tuple(parm_values + eval_values))
+        print(overflows.shape, raw_eval.shape)
+        return numpy.where(overflows, numpy.ones_like(raw_eval), raw_eval)
 
     @property
     def signature(self):

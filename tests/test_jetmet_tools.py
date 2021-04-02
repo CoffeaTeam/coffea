@@ -173,6 +173,7 @@ def test_jet_resolution():
     resos_jag = reso.getResolution(JetEta=test_eta_jag, Rho=test_Rho_jag, JetPt=test_pt_jag)
     print("Reference Resolution (jagged):", resos_jag_ref)
     print("Resolution (jagged):", resos_jag)
+    print(np.abs(ak.flatten(resos_jag_ref) - ak.flatten(resos_jag)))
     assert(ak.all(np.abs(ak.flatten(resos_jag_ref) - ak.flatten(resos_jag)) < 1e-6))
 
 
