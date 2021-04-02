@@ -110,7 +110,9 @@ class NanoEventsFactory:
         )
         uuidpfn = {partition_key[0]: tree.file.file_path}
         mapping = UprootSourceMapping(
-            TrivialUprootOpener(uuidpfn, uproot_options), cache={}, access_log=access_log
+            TrivialUprootOpener(uuidpfn, uproot_options),
+            cache={},
+            access_log=access_log,
         )
         mapping.preload_column_source(partition_key[0], partition_key[1], tree)
 
@@ -208,9 +210,11 @@ class NanoEventsFactory:
             TrivialParquetOpener(uuidpfn, parquet_options), access_log=access_log
         )
 
-        format_ = 'parquet'
-        if 'ceph_config_path' in rados_parquet_options:
-            format_ = ds.RadosParquetFileFormat(rados_parquet_options['ceph_config_path'].encode())
+        format_ = "parquet"
+        if "ceph_config_path" in rados_parquet_options:
+            format_ = ds.RadosParquetFileFormat(
+                rados_parquet_options["ceph_config_path"].encode()
+            )
 
         dataset = ds.dataset(file, schema=table_file.schema_arrow, format=format_)
 
@@ -340,13 +344,15 @@ class NanoEventsFactory:
                 Arbitrary metadata to add to the `base.NanoEvents` object
 
         """
-        if not issubclass(schemaclass, BaseSchema):
-            raise RuntimeError("Invalid schema type")
         if persistent_cache is not None:
             mapping = CachedMapping(persistent_cache, mapping)
         if metadata is not None:
             base_form["parameters"]["metadata"] = metadata
+        if not callable(schemaclass):
+            raise ValueError("Invalid schemaclass type")
         schema = schemaclass(base_form)
+        if not isinstance(schema, BaseSchema):
+            raise RuntimeError("Invalid schema type")
         return cls(schema, mapping, tuple_to_key(partition_key), cache=runtime_cache)
 
     def __len__(self):
