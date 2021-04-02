@@ -137,13 +137,7 @@ jobs:
         docker build -t coffea-rados-parquet-test \
           --file docker/coffea_rados_parquet/Dockerfile \
           .
-        docker run \
-        -v $(pwd):/w \
-        -w /w \
-        -e IS_CI=true \
-        --privileged \
-        coffea-rados-parquet-test \
-        ./docker/coffea_rados_parquet/script.sh
+        ./docker/coffea_rados_parquet/run.sh
 
   release:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
