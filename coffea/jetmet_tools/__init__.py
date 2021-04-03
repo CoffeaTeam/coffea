@@ -13,11 +13,11 @@ from .CorrectedJetsFactory import CorrectedJetsFactory
 from .CorrectedMETFactory import CorrectedMETFactory
 
 __all__ = [
-    'FactorizedJetCorrector',
-    'JetResolution',
-    'JetResolutionScaleFactor',
-    'JetCorrectionUncertainty',
-    'JECStack',
-    'CorrectedJetsFactory',
-    'CorrectedMETFactory'
+    "FactorizedJetCorrector",
+    "JetResolution",
+    "JetResolutionScaleFactor",
+    "JetCorrectionUncertainty",
+    "JECStack",
+    "CorrectedJetsFactory",
+    "CorrectedMETFactory",
 ]

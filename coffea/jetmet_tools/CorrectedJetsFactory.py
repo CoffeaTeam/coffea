@@ -285,7 +285,9 @@ class CorrectedJetsFactory(object):
                 ),
                 cache=lazy_cache,
             )
-            out_dict[self.name_map["JetPt"]] = init_pt_jer(length=len(out), form=scalar_form)
+            out_dict[self.name_map["JetPt"]] = init_pt_jer(
+                length=len(out), form=scalar_form
+            )
             out_dict[self.name_map["JetMass"]] = init_mass_jer(
                 length=len(out), form=scalar_form
             )
@@ -396,13 +398,17 @@ class CorrectedJetsFactory(object):
             else:
                 juncnames["JetPt"] = juncnames["JetPt"] + "_jec"
                 juncnames["JetMass"] = juncnames["JetMass"] + "_jec"
-            juncargs = {k: out_dict[juncnames[k]] for k in self.jec_stack.junc.signature}
+            juncargs = {
+                k: out_dict[juncnames[k]] for k in self.jec_stack.junc.signature
+            }
             juncs = self.jec_stack.junc.getUncertainty(**juncargs)
-            
+
             def junc_smeared_val(uncvals, up_down, variable):
                 return uncvals[:, up_down] * variable
-            
-            def build_variation(injets, unc, jetpt, jetpt_orig, jetmass, jetmass_orig, updown):
+
+            def build_variation(
+                injets, unc, jetpt, jetpt_orig, jetmass, jetmass_orig, updown
+            ):
                 variation = awkward.flatten(injets)
                 variation[jetpt] = awkward.virtual(
                     junc_smeared_val,
@@ -427,59 +433,47 @@ class CorrectedJetsFactory(object):
                     cache=lazy_cache,
                 )
                 return variation
-            
+
             def build_variant(injets, unc, jetpt, jetpt_orig, jetmass, jetmass_orig):
                 up = awkward.virtual(
                     build_variation,
-                    args=(
-                    injets,
-                    unc,
-                    jetpt,
-                    jetpt_orig,
-                    jetmass,
-                    jetmass_orig,
-                    0
-                    ),
+                    args=(injets, unc, jetpt, jetpt_orig, jetmass, jetmass_orig, 0),
                     length=len(out),
                     cache=lazy_cache,
                 )
                 down = awkward.virtual(
                     build_variation,
-                    args=(
-                    injets,
-                    unc,
-                    jetpt,
-                    jetpt_orig,
-                    jetmass,
-                    jetmass_orig,
-                    1
-                    ),
+                    args=(injets, unc, jetpt, jetpt_orig, jetmass, jetmass_orig, 1),
                     length=len(out),
                     cache=lazy_cache,
                 )
-                return awkward.zip({"up": up, "down": down}, depth_limit=1, with_name="JetSystematic")
-            
+                return awkward.zip(
+                    {"up": up, "down": down}, depth_limit=1, with_name="JetSystematic"
+                )
+
             for name, func in juncs:
-                #out[f"jet_energy_uncertainty_{name}"]
+                # out[f"jet_energy_uncertainty_{name}"]
                 out_dict[f"jet_energy_uncertainty_{name}"] = func
-                
-                #out[f"JES_{name}"]
+
+                # out[f"JES_{name}"]
                 out_dict[f"JES_{name}"] = awkward.virtual(
                     build_variant,
                     args=(
-                    jets,
-                    out_dict[f"jet_energy_uncertainty_{name}"],
-                    self.name_map["JetPt"],
-                    out_dict[juncnames["JetPt"]],
-                    self.name_map["JetMass"],
-                    out_dict[juncnames["JetMass"]],
+                        jets,
+                        out_dict[f"jet_energy_uncertainty_{name}"],
+                        self.name_map["JetPt"],
+                        out_dict[juncnames["JetPt"]],
+                        self.name_map["JetMass"],
+                        out_dict[juncnames["JetMass"]],
                     ),
                     length=len(out),
                     cache=lazy_cache,
                 )
 
         out_parms = out.layout.parameters
-        out_parms['corrected'] = True
-        out = awkward.zip(out_dict, depth_limit=1, parameters=out_parms, behavior=out.behavior)
+        out_parms["corrected"] = True
+        out = awkward.zip(
+            out_dict, depth_limit=1, parameters=out_parms, behavior=out.behavior
+        )
 
         return wrap(out)

@@ -11,22 +11,24 @@ def _checkConsistency(against, tocheck):
         against = tocheck
     else:
         if against != tocheck:
-            raise Exception('Corrector for {} is mixed'
-                            'with correctors for {}!'.format(tocheck, against))
+            raise Exception(
+                "Corrector for {} is mixed"
+                "with correctors for {}!".format(tocheck, against)
+            )
     return tocheck
 
 
-_levelre = re.compile('SF+')
+_levelre = re.compile("SF+")
 
 
 def _getLevel(levelName):
     matches = _levelre.findall(levelName)
     if len(matches) > 1:
-        raise Exception('Malformed JERSF level name: {}'.format(levelName))
+        raise Exception("Malformed JERSF level name: {}".format(levelName))
     return matches[0]
 
 
-_level_order = ['SF']
+_level_order = ["SF"]
 
 
 class JetResolutionScaleFactor(object):
@@ -45,6 +47,7 @@ class JetResolutionScaleFactor(object):
         jetResSF = jersf(JetParameter1=jet.parameter1,...)
 
     """
+
     def __init__(self, **kwargs):
         """
         You construct a JetResolutionScaleFactor by passing in a dict of names and functions.
@@ -58,10 +61,12 @@ class JetResolutionScaleFactor(object):
         dataera = None
         for name, func in kwargs.items():
             if not isinstance(func, jersf_lookup):
-                raise Exception('{} is a {} and not a jersf_lookup!'.format(name, type(func)))
-            info = name.split('_')
+                raise Exception(
+                    "{} is a {} and not a jersf_lookup!".format(name, type(func))
+                )
+            info = name.split("_")
             if len(info) != 5:
-                raise Exception('Corrector name is not properly formatted!')
+                raise Exception("Corrector name is not properly formatted!")
 
             campaign = _checkConsistency(campaign, info[0])
             dataera = _checkConsistency(dataera, info[1])
@@ -71,28 +76,28 @@ class JetResolutionScaleFactor(object):
             jettype = _checkConsistency(jettype, info[4])
 
         if campaign is None:
-            raise Exception('Unable to determine production campaign of JECs!')
+            raise Exception("Unable to determine production campaign of JECs!")
         else:
             self._campaign = campaign
 
         if dataera is None:
-            raise Exception('Unable to determine data era of JECs!')
+            raise Exception("Unable to determine data era of JECs!")
         else:
             self._dataera = dataera
 
         if datatype is None:
-            raise Exception('Unable to determine if JECs are for MC or Data!')
+            raise Exception("Unable to determine if JECs are for MC or Data!")
         else:
             self._datatype = datatype
 
         if len(levels) == 0:
-            raise Exception('No levels provided?')
+            raise Exception("No levels provided?")
         else:
             self._levels = levels
             self._funcs = funcs
 
         if jettype is None:
-            raise Exception('Unable to determine type of jet to correct!')
+            raise Exception("Unable to determine type of jet to correct!")
         else:
             self._jettype = jettype
 
@@ -100,8 +105,14 @@ class JetResolutionScaleFactor(object):
             this_level = _getLevel(level)
             ord_idx = _level_order.index(this_level)
             if i != this_level:
-                self._levels[i], self._levels[ord_idx] = self._levels[ord_idx], self._levels[i]
-                self._funcs[i], self._funcs[ord_idx] = self._funcs[ord_idx], self._funcs[i]
+                self._levels[i], self._levels[ord_idx] = (
+                    self._levels[ord_idx],
+                    self._levels[i],
+                )
+                self._funcs[i], self._funcs[ord_idx] = (
+                    self._funcs[ord_idx],
+                    self._funcs[i],
+                )
 
         # now we setup the call signature for this factorized JEC
         self._signature = []
@@ -117,12 +128,12 @@ class JetResolutionScaleFactor(object):
         return self._signature
 
     def __repr__(self):
-        out = 'campaign   : %s\n' % (self._campaign)
-        out += 'data era   : %s\n' % (self._dataera)
-        out += 'data type  : %s\n' % (self._datatype)
-        out += 'jet type   : %s\n' % (self._jettype)
-        out += 'levels     : %s\n' % (','.join(self._levels))
-        out += 'signature  : (%s)\n' % (','.join(self._signature))
+        out = "campaign   : %s\n" % (self._campaign)
+        out += "data era   : %s\n" % (self._dataera)
+        out += "data type  : %s\n" % (self._datatype)
+        out += "jet type   : %s\n" % (self._jettype)
+        out += "levels     : %s\n" % (",".join(self._levels))
+        out += "signature  : (%s)\n" % (",".join(self._signature))
         return out
 
     def getScaleFactor(self, **kwargs):
@@ -134,18 +145,22 @@ class JetResolutionScaleFactor(object):
             jersfs = jersf.getScaleFactor(JetProperty1=jet.property1,...)
 
         """
-        cache = kwargs.pop('lazy_cache', None)
-        form = kwargs.pop('form', None)
+        cache = kwargs.pop("lazy_cache", None)
+        form = kwargs.pop("form", None)
         sfs = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
             args = tuple(kwargs[input] for input in sig)
 
             if isinstance(args[0], awkward.highlevel.Array):
-                sfs.append(awkward.virtual(func, args=args, length=len(args[0]), form=form, cache=cache))
+                sfs.append(
+                    awkward.virtual(
+                        func, args=args, length=len(args[0]), form=form, cache=cache
+                    )
+                )
             elif isinstance(args[0], numpy.ndarray):
                 sfs.append(func(*args))  # np is non-lazy
             else:
-                raise Exception('Unknown array library for inputs.')
+                raise Exception("Unknown array library for inputs.")
 
         return sfs[-1]
