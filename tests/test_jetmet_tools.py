@@ -391,7 +391,6 @@ def test_corrected_jets_factory():
     from coffea.jetmet_tools import CorrectedJetsFactory, CorrectedMETFactory, JECStack
 
     events = None
-    cache = {}
     from coffea.nanoevents import NanoEventsFactory
     factory = NanoEventsFactory.from_root(os.path.abspath('tests/samples/nano_dy.root'))
     events = factory.events()
@@ -537,3 +536,73 @@ def test_corrected_jets_factory():
     toc = time.time()
 
     print('build all met variations =', toc-tic)
+
+
+def test_factory_lifecycle():
+    import os
+    from coffea.jetmet_tools import CorrectedJetsFactory, CorrectedMETFactory, JECStack
+    from coffea.nanoevents import NanoEventsFactory
+
+    jec_stack_names = ['Summer16_23Sep2016V3_MC_L1FastJet_AK4PFPuppi',
+                       'Summer16_23Sep2016V3_MC_L2Relative_AK4PFPuppi',
+                       'Summer16_23Sep2016V3_MC_L2L3Residual_AK4PFPuppi',
+                       'Summer16_23Sep2016V3_MC_L3Absolute_AK4PFPuppi',
+                       'Spring16_25nsV10_MC_PtResolution_AK4PFPuppi',
+                       'Spring16_25nsV10_MC_SF_AK4PFPuppi']
+    # for key in evaluator.keys():
+    #     if 'Summer16_23Sep2016V3_MC_UncertaintySources_AK4PFPuppi' in key:
+    #         jec_stack_names.append(key)
+
+    jec_stack = JECStack({name: evaluator[name] for name in jec_stack_names})
+    name_map = jec_stack.blank_name_map
+    name_map['JetPt'] = 'pt'
+    name_map['JetMass'] = 'mass'
+    name_map['JetEta'] = 'eta'
+    name_map['JetA'] = 'area'
+    name_map['ptGenJet'] = 'pt_gen'
+    name_map['ptRaw'] = 'pt_raw'
+    name_map['massRaw'] = 'mass_raw'
+    name_map['Rho'] = 'rho'
+    name_map['METpt'] = 'pt'
+    name_map['METphi'] = 'phi'
+    name_map['JetPhi'] = 'phi'
+    name_map['UnClusteredEnergyDeltaX'] = 'MetUnclustEnUpDeltaX'
+    name_map['UnClusteredEnergyDeltaY'] = 'MetUnclustEnUpDeltaY'
+    jet_factory = CorrectedJetsFactory(name_map, jec_stack)
+    met_factory = CorrectedMETFactory(name_map)
+
+
+    from coffea.nanoevents.mapping import ArrayLifecycleMapping
+    array_log = ArrayLifecycleMapping()
+
+    def run():
+        events = NanoEventsFactory.from_root(
+            os.path.abspath('tests/samples/nano_dy.root'),
+            persistent_cache=array_log,
+        ).events()
+        jets = events.Jet
+        met = events.MET
+        jets['pt_raw'] = (1 - jets['rawFactor']) * jets['pt']
+        jets['mass_raw'] = (1 - jets['rawFactor']) * jets['mass']
+        jets['pt_gen'] = ak.values_astype(ak.fill_none(jets.matched_gen.pt, 0.), np.float32)
+        jets['rho'] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
+        jec_cache = ak._util.MappingProxy.maybe_wrap({})
+        corrected_jets = jet_factory.build(jets, lazy_cache=jec_cache)
+        x = corrected_jets.pt
+        corrected_met = met_factory.build(met, corrected_jets, lazy_cache=jec_cache)
+        print(corrected_met.pt_orig)
+        print(corrected_met.pt)
+        for unc in (jet_factory.uncertainties() + met_factory.uncertainties()):
+            print(unc, corrected_met[unc].up.pt)
+            print(unc, corrected_met[unc].down.pt)
+        print("Finalized:", array_log.finalized)
+
+    run()
+    import gc
+    for _ in range(3):
+        gc.collect()
+    print("Accessed:", array_log.accessed)
+    print("Finalized:", array_log.finalized)
+    diff = set(array_log.accessed) - set(array_log.finalized)
+    print("Diff:", diff)
+    assert len(diff) == 0

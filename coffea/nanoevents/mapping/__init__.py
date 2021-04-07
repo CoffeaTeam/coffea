@@ -5,7 +5,7 @@ from .preloaded import (
     PreloadedOpener,
     PreloadedSourceMapping,
 )
-from .cached import CachedMapping
+from .util import CachedMapping, ArrayLifecycleMapping
 
 __all__ = [
     "TrivialUprootOpener",
@@ -16,4 +16,5 @@ __all__ = [
     "PreloadedOpener",
     "PreloadedSourceMapping",
     "CachedMapping",
+    "ArrayLifecycleMapping",
 ]
