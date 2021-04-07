@@ -4,8 +4,9 @@ from coffea import processor
 import multiprocessing
 import sys
 import pytest
+from packaging import version
 
-if sys.version_info.major == 3 and sys.version_info.minor >= 8 and sys.platform.startswith("darwin"):
+if if version.parse(sys.version.split()[0]) >= version.parse('3.8') and sys.platform.startswith("darwin"):
     pytest.skip("parsl not yet functional in python 3.8+ on macs", allow_module_level=True)
 
 def test_parsl_start_stop():
