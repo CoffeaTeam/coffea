@@ -5,6 +5,7 @@ import uproot
 import pathlib
 import io
 import uuid
+from functools import partial
 from collections.abc import Mapping
 
 from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
@@ -18,6 +19,10 @@ from coffea.nanoevents.mapping import (
     CachedMapping,
 )
 from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema
+
+
+def _key_formatter(prefix, partition, form_key, attribute):
+    return prefix + f"/{partition}/{form_key}/{attribute}"
 
 
 class NanoEventsFactory:
@@ -364,18 +369,13 @@ class NanoEventsFactory:
         """Build events"""
         events = self._events()
         if events is None:
-            prefix = self._partition_key
-
-            def key_formatter(partition, form_key, attribute):
-                return prefix + f"/{partition}/{form_key}/{attribute}"
-
             behavior = dict(self._schema.behavior)
             behavior["__events_factory__"] = self
             events = awkward.from_buffers(
                 self._schema.form,
                 len(self),
                 self._mapping,
-                key_format=key_formatter,
+                key_format=partial(_key_formatter, self._partition_key),
                 lazy=True,
                 lazy_cache="new" if self._cache is None else self._cache,
                 behavior=behavior,
