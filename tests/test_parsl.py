@@ -6,7 +6,7 @@ import sys
 import pytest
 from packaging import version
 
-if if version.parse(sys.version.split()[0]) >= version.parse('3.8') and sys.platform.startswith("darwin"):
+if version.parse(sys.version.split()[0]) >= version.parse('3.8') and sys.platform.startswith("darwin"):
     pytest.skip("parsl not yet functional in python 3.8+ on macs", allow_module_level=True)
 
 def test_parsl_start_stop():
