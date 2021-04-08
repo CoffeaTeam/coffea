@@ -35,13 +35,13 @@ def awkward_rewrap(arr, like_what, gfunc):
     return awkward._util.wrap(newlayout, behavior=behavior)
 
 
-def rand_gauss(item):
+def rand_gauss(item, randomstate):
     def getfunction(layout, depth):
         if isinstance(layout, awkward.layout.NumpyArray) or not isinstance(
             layout, (awkward.layout.Content, awkward.partition.PartitionedArray)
         ):
             return lambda: awkward.layout.NumpyArray(
-                numpy.random.normal(size=len(layout)).astype(numpy.float32)
+                randomstate.normal(size=len(layout)).astype(numpy.float32)
             )
         return None
 
@@ -240,9 +240,14 @@ class CorrectedJetsFactory(object):
                 **jersfargs, form=_JERSF_FORM, lazy_cache=lazy_cache
             )
 
+            seeds = numpy.array(out_dict[self.name_map["JetPt"] + "_orig"])[[0, -1]]
+            seeds = numpy.frombuffer(seeds.tostring(), dtype=numpy.int32)
             out_dict["jet_resolution_rand_gauss"] = awkward.virtual(
                 rand_gauss,
-                args=(out_dict[self.name_map["JetPt"] + "_orig"],),
+                args=(
+                    out_dict[self.name_map["JetPt"] + "_orig"],
+                    numpy.random.RandomState(seeds),
+                ),
                 cache=lazy_cache,
                 length=len(out),
                 form=scalar_form,
