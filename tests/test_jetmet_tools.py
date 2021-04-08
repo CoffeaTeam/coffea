@@ -8,7 +8,7 @@ from coffea.util import numpy as np
 
 import pytest
 import time
-# import pyinstrument
+import pyinstrument
 
 from dummy_distributions import dummy_jagged_eta_pt, dummy_four_momenta
 
@@ -436,15 +436,15 @@ def test_corrected_jets_factory():
     print('setup corrected jets time =', toc-tic)
 
     tic = time.time()
-    # prof = pyinstrument.Profiler()
-    # prof.start()
+    prof = pyinstrument.Profiler()
+    prof.start()
     corrected_jets = jet_factory.build(jets, lazy_cache=events_cache)
-    # prof.stop()
+    prof.stop()
     toc = time.time()
 
     print('corrected_jets build time =', toc-tic)
 
-    # sprint(prof.output_text(unicode=True, color=True, show_all=True))
+    print(prof.output_text(unicode=True, color=True, show_all=True))
 
     tic = time.time()
     print("Generated jet pt:", corrected_jets.pt_gen)
@@ -529,14 +529,18 @@ def test_corrected_jets_factory():
     tic = time.time()
     print(corrected_met.pt_orig)
     print(corrected_met.pt)
+    prof = pyinstrument.Profiler()
+    prof.start()
     for unc in (jet_factory.uncertainties() + met_factory.uncertainties()):
         print(unc)
         print(corrected_met[unc].up.pt)
         print(corrected_met[unc].down.pt)
+    prof.stop()
     toc = time.time()
 
     print('build all met variations =', toc-tic)
 
+    print(prof.output_text(unicode=True, color=True, show_all=True))
 
 def test_factory_lifecycle():
     import os

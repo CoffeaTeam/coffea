@@ -81,6 +81,28 @@ class CorrectedMETFactory(object):
             )
             return variant
 
+        def lazy_variant(unc, metpt, metphi, jetpt, jetphi, jetptraw):
+            return awkward.zip(
+                {
+                    "up": make_variant(
+                        MET[metpt],
+                        MET[metphi],
+                        corrected_jets[unc].up[jetpt],
+                        corrected_jets[unc].up[jetphi],
+                        corrected_jets[unc].up[jetptraw],
+                    ),
+                    "down": make_variant(
+                        MET[metpt],
+                        MET[metphi],
+                        corrected_jets[unc].down[jetpt],
+                        corrected_jets[unc].down[jetphi],
+                        corrected_jets[unc].down[jetptraw],
+                    ),
+                },
+                depth_limit=1,
+                with_name="METSystematic",
+            )
+
         out = make_variant(
             MET[self.name_map["METpt"]],
             MET[self.name_map["METphi"]],
@@ -91,7 +113,9 @@ class CorrectedMETFactory(object):
         out[self.name_map["METpt"] + "_orig"] = MET[self.name_map["METpt"]]
         out[self.name_map["METphi"] + "_orig"] = MET[self.name_map["METphi"]]
 
-        out["MET_UnclusteredEnergy"] = awkward.zip(
+        out_dict = {field: out[field] for field in awkward.fields(out)}
+
+        out_dict["MET_UnclusteredEnergy"] = awkward.zip(
             {
                 "up": make_variant(
                     MET[self.name_map["METpt"]],
@@ -125,26 +149,24 @@ class CorrectedMETFactory(object):
         for unc in filter(
             lambda x: x.startswith(("JER", "JES")), awkward.fields(corrected_jets)
         ):
-            out[unc] = awkward.zip(
-                {
-                    "up": make_variant(
-                        MET[self.name_map["METpt"]],
-                        MET[self.name_map["METphi"]],
-                        corrected_jets[unc].up[self.name_map["JetPt"]],
-                        corrected_jets[unc].up[self.name_map["JetPhi"]],
-                        corrected_jets[unc].up[self.name_map["ptRaw"]],
-                    ),
-                    "down": make_variant(
-                        MET[self.name_map["METpt"]],
-                        MET[self.name_map["METphi"]],
-                        corrected_jets[unc].down[self.name_map["JetPt"]],
-                        corrected_jets[unc].down[self.name_map["JetPhi"]],
-                        corrected_jets[unc].down[self.name_map["ptRaw"]],
-                    ),
-                },
-                depth_limit=1,
-                with_name="METSystematic",
+            out_dict[unc] = awkward.virtual(
+                lazy_variant,
+                args=(
+                    unc,
+                    self.name_map["METpt"],
+                    self.name_map["METphi"],
+                    self.name_map["JetPt"],
+                    self.name_map["JetPhi"],
+                    self.name_map["ptRaw"],
+                ),
+                length=length,
+                cache={},
             )
+
+        out_parms = out.layout.parameters
+        out = awkward.zip(
+            out_dict, depth_limit=1, parameters=out_parms, behavior=out.behavior
+        )
 
         return out
 

@@ -167,7 +167,7 @@ class jme_standard_function(lookup_base):
             else:
                 clamp_mins = numpy.array(
                     self._eval_clamp_mins[eval_name][bin_tuple]
-                ).squeeze()
+                ).flatten()
 
             clamp_maxs = None
             if len(awkward.flatten(self._eval_clamp_maxs[eval_name])) == 1:
@@ -175,7 +175,7 @@ class jme_standard_function(lookup_base):
             else:
                 clamp_maxs = numpy.array(
                     self._eval_clamp_maxs[eval_name][bin_tuple]
-                ).squeeze()
+                ).flatten()
 
             eval_values.append(numpy.clip(eval_vals[eval_name], clamp_mins, clamp_maxs))
 
@@ -183,7 +183,7 @@ class jme_standard_function(lookup_base):
         parm_values = []
         if len(self._parms) > 0:
             parm_values = [
-                numpy.array(parm[bin_tuple]).squeeze() for parm in self._parms
+                numpy.array(parm[bin_tuple]).flatten() for parm in self._parms
             ]
 
         raw_eval = self._formula(*tuple(parm_values + eval_values))
