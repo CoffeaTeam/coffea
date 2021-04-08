@@ -1,6 +1,5 @@
-from coffea import hist, processor
+from coffea import processor
 import awkward as ak
-import numpy as np
 import pandas as pd
 
 

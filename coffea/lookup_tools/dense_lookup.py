@@ -1,6 +1,5 @@
 from coffea.lookup_tools.lookup_base import lookup_base
 
-import awkward
 import numpy
 from copy import deepcopy
 

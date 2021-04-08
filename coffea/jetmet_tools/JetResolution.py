@@ -1,9 +1,7 @@
 from coffea.lookup_tools.jme_standard_function import jme_standard_function
-import warnings
 import re
 import awkward
 import numpy
-from copy import deepcopy
 
 
 def _checkConsistency(against, tocheck):

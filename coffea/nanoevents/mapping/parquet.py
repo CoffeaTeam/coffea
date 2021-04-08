@@ -1,12 +1,9 @@
 import warnings
-from cachetools import LRUCache
-from collections.abc import Mapping
 import awkward
 import numpy
 import json
 from coffea.nanoevents.mapping.base import UUIDOpener, BaseSourceMapping
-from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
-import pyarrow.dataset as ds
+from coffea.nanoevents.util import quote, tuple_to_key
 
 
 # IMPORTANT -> For now the uuid is just the uuid of the pfn.

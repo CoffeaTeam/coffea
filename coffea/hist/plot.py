@@ -2,10 +2,9 @@
 from __future__ import division
 import numpy
 import scipy.stats
-import copy
 import warnings
 import numbers
-from .hist_tools import SparseAxis, DenseAxis, overflow_behavior, Interval, StringBin
+from .hist_tools import SparseAxis, DenseAxis, overflow_behavior, Interval
 
 # Plotting is always terrible
 # Let's try our best to follow matplotlib idioms
@@ -325,7 +324,6 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
         ax : matplotlib.axes.Axes
             A matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ object
     """
-    import mplhep as hep
     import matplotlib.pyplot as plt
     if ax is None:
         fig, ax = plt.subplots(1, 1)
@@ -430,7 +428,6 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
         ax : matplotlib.axes.Axes
             A matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ object
     """
-    import mplhep as hep
     import matplotlib.pyplot as plt
     if ax is None:
         fig, ax = plt.subplots(1, 1)
@@ -534,7 +531,6 @@ def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='non
         axes : numpy.ndarray
             An array of matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ objects
     """
-    import mplhep as hep
     import matplotlib.pyplot as plt
     haxes = set(ax.name for ax in h.axes())
     nrow, ncol = 1, 1
@@ -622,14 +618,13 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
     if not isnotebook():
         raise NotImplementedError("Only usable in jupyter notebook")
     import bokeh.plotting.figure as bk_figure
-    from bokeh.io import curdoc, show
+    from bokeh.io import show
     from bokeh import palettes
-    from bokeh.layouts import row, widgetbox, column
+    from bokeh.layouts import row, column
     from bokeh.models import ColumnDataSource
     from bokeh.models.widgets import RadioButtonGroup, CheckboxButtonGroup
     from bokeh.models.widgets import RangeSlider, Div
     from bokeh.io import output_notebook  # enables plot interface in J notebook
-    import numpy as np
     # init bokeh
 
     from bokeh.application import Application
@@ -780,8 +775,7 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
         w.on_change('active', update_data)
 
     from bokeh.models.widgets import Panel, Tabs
-    from bokeh.io import output_file, show
-    from bokeh.plotting import figure
+    from bokeh.io import show
 
     layout = row(fig, column(Div(text="<b>Overlay Axis:</b>", style={'font-size': '100%', 'color': 'black'}),
                              wi_sparse_select,

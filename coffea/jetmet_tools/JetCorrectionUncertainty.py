@@ -1,9 +1,7 @@
 from coffea.lookup_tools.jec_uncertainty_lookup import jec_uncertainty_lookup
-import warnings
 import re
 import awkward
 import numpy
-from copy import deepcopy
 
 
 def _checkConsistency(against, tocheck):

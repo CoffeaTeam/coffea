@@ -88,18 +88,6 @@ def test_parsl_htex_executor():
     do_parsl_job(filelist)
 
 
-def test_parsl_deprecated():
-    parsl = pytest.importorskip("parsl", minversion="0.7.2")
-    
-    from coffea.processor.parsl.parsl_executor import coffea_pyapp_func, parsl_executor
-
-    with pytest.raises(RuntimeError):
-        coffea_pyapp_func(None, None, None, None, None, None)
-
-    with pytest.raises(RuntimeError):
-        parsl_executor(None, None, None, None)
-
-
 @pytest.mark.skipif(sys.platform.startswith('win'), reason='signals are different on windows')
 def test_timeout():
     from coffea.processor.parsl.timeout import timeout

@@ -1,26 +1,24 @@
-from coffea import hist, processor
-from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor
 
 from tqdm import tqdm
-import pickle
-import lz4.frame
-import numpy
-import pandas
-import awkward
-from functools import partial
 
 from coffea.processor.executor import _futures_handler, _decompress, _reduce
 from coffea.processor.accumulator import accumulate
-from coffea.nanoevents import NanoEventsFactory, schemas
-from coffea.nanoevents.mapping import SimplePreloadedColumnSource
 
-import pyspark
 import pyspark.sql.functions as fn
-from pyspark.sql.types import BinaryType, StringType, StructType, StructField
 
 from jinja2 import Environment, PackageLoader, select_autoescape
-from coffea.util import awkward
+
+# must preload these for exec calls
+import numpy  # noqa: F401
+import pandas  # noqa: F401
+import awkward  # noqa: F401
+from pyspark.sql.types import BinaryType, StringType, StructType, StructField  # noqa: F401
+from coffea.nanoevents import NanoEventsFactory, schemas  # noqa: F401
+from coffea.nanoevents.mapping import SimplePreloadedColumnSource  # noqa: F401
+import pickle  # noqa: F401
+import lz4.frame  # noqa: F401
+
 
 lz4_clevel = 1
 

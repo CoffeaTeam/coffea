@@ -1,8 +1,3 @@
-from concurrent.futures import as_completed
-import multiprocessing
-
-from tqdm import tqdm
-
 import parsl
 
 from parsl.app.app import python_app
@@ -15,10 +10,6 @@ from parsl.executors import HighThroughputExecutor
 from ..executor import _futures_handler
 from .timeout import timeout
 
-try:
-    from collections.abc import Sequence
-except ImportError:
-    from collections import Sequence
 
 _default_cfg = Config(
     executors=[

@@ -1,14 +1,12 @@
-import warnings
 import weakref
 import awkward
 import uproot
 import pathlib
 import io
-import uuid
 from functools import partial
 from collections.abc import Mapping
 
-from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
+from coffea.nanoevents.util import key_to_tuple, tuple_to_key
 from coffea.nanoevents.mapping import (
     TrivialUprootOpener,
     TrivialParquetOpener,

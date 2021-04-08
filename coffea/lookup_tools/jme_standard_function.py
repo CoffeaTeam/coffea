@@ -4,11 +4,12 @@ import numpy
 import awkward
 from copy import deepcopy
 
-from scipy.special import erf
-from numpy import sqrt, log, log10, exp, abs
-from numpy import maximum as max
-from numpy import minimum as min
-from numpy import power as pow
+# we need to import these ahead of time for function parsing
+from scipy.special import erf  # noqa: F401
+from numpy import sqrt, log, log10, exp, abs  # noqa: F401
+from numpy import maximum as max  # noqa: F401
+from numpy import minimum as min  # noqa: F401
+from numpy import power as pow  # noqa: F401
 
 
 def wrap_formula(fstr, varlist):

@@ -1,16 +1,15 @@
-from .lookup_base import lookup_base
+from coffea.lookup_tools.lookup_base import lookup_base
 
-from ..util import awkward
-from ..util import numpy as np
+import numpy
 from copy import deepcopy
 
 
 def masked_bin_eval(dim1_indices, dimN_bins, dimN_vals):
-    dimN_indices = np.empty_like(dim1_indices)
-    for i in np.unique(dim1_indices):
-        idx = np.where(dim1_indices == i)
-        dimN_indices[idx] = np.clip(
-            np.searchsorted(dimN_bins[i], dimN_vals[idx], side="right") - 1,
+    dimN_indices = numpy.empty_like(dim1_indices)
+    for i in numpy.unique(dim1_indices):
+        idx = numpy.where(dim1_indices == i)
+        dimN_indices[idx] = numpy.clip(
+            numpy.searchsorted(dimN_bins[i], dimN_vals[idx], side="right") - 1,
             0,
             len(dimN_bins[i]) - 2,
         )
@@ -47,12 +46,12 @@ class jersf_lookup(lookup_base):
 
         for binname in self._dim_order[1:]:
             binsaslists = self._bins[binname].tolist()
-            self._bins[binname] = [np.array(bins) for bins in binsaslists]
+            self._bins[binname] = [numpy.array(bins) for bins in binsaslists]
 
         # get the jit to compile if we've got more than one bin dim
         if len(self._dim_order) > 1:
             masked_bin_eval(
-                np.array([0]), self._bins[self._dim_order[1]], np.array([0.0])
+                numpy.array([0]), self._bins[self._dim_order[1]], numpy.array([0.0])
             )
 
         self._signature = deepcopy(self._dim_order)
@@ -77,8 +76,8 @@ class jersf_lookup(lookup_base):
 
         # lookup the bins that we care about
         dim1_name = self._dim_order[0]
-        dim1_indices = np.clip(
-            np.searchsorted(self._bins[dim1_name], bin_vals[dim1_name], side="right")
+        dim1_indices = numpy.clip(
+            numpy.searchsorted(self._bins[dim1_name], bin_vals[dim1_name], side="right")
             - 1,
             0,
             self._bins[dim1_name].size - 2,
@@ -95,13 +94,13 @@ class jersf_lookup(lookup_base):
         for eval_name in self._eval_vars:
             clamp_mins = self._eval_clamp_mins[eval_name][bin_tuple]
             clamp_maxs = self._eval_clamp_maxs[eval_name][bin_tuple]
-            eval_values.append(np.clip(eval_vals[eval_name], clamp_mins, clamp_maxs))
+            eval_values.append(numpy.clip(eval_vals[eval_name], clamp_mins, clamp_maxs))
 
         # get parameter values
-        parm_values_central = np.array(self._parms[0][bin_tuple]).squeeze()
-        parm_values_up = np.array(self._parms[1][bin_tuple]).squeeze()
-        parm_values_down = np.array(self._parms[2][bin_tuple]).squeeze()
-        parm_values = np.stack(
+        parm_values_central = numpy.array(self._parms[0][bin_tuple]).squeeze()
+        parm_values_up = numpy.array(self._parms[1][bin_tuple]).squeeze()
+        parm_values_down = numpy.array(self._parms[2][bin_tuple]).squeeze()
+        parm_values = numpy.stack(
             [parm_values_central, parm_values_up, parm_values_down], axis=1
         )
         return parm_values

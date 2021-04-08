@@ -1,18 +1,17 @@
-from .lookup_base import lookup_base
+from coffea.lookup_tools.lookup_base import lookup_base
 
-from ..util import awkward
-from ..util import numpy as np
+import numpy
 from copy import deepcopy
 
 from scipy.interpolate import interp1d
 
 
 def masked_bin_eval(dim1_indices, dimN_bins, dimN_vals):
-    dimN_indices = np.empty_like(dim1_indices)
-    for i in np.unique(dim1_indices):
-        idx = np.where(dim1_indices == i)
-        dimN_indices[idx] = np.clip(
-            np.searchsorted(dimN_bins[i], dimN_vals[idx], side="right") - 1,
+    dimN_indices = numpy.empty_like(dim1_indices)
+    for i in numpy.unique(dim1_indices):
+        idx = numpy.where(dim1_indices == i)
+        dimN_indices[idx] = numpy.clip(
+            numpy.searchsorted(dimN_bins[i], dimN_vals[idx], side="right") - 1,
             0,
             len(dimN_bins[i]) - 2,
         )
@@ -51,7 +50,7 @@ class jec_uncertainty_lookup(lookup_base):
 
         for binname in self._dim_order[1:]:
             binsaslists = self._bins[binname].tolist()
-            self._bins[binname] = [np.array(bins) for bins in binsaslists]
+            self._bins[binname] = [numpy.array(bins) for bins in binsaslists]
 
         # convert downs and ups into interp1ds
         # (yes this only works for one binning dimension right now, fight me)
@@ -66,7 +65,7 @@ class jec_uncertainty_lookup(lookup_base):
         # get the jit to compile if we've got more than one bin dim
         if len(self._dim_order) > 1:
             masked_bin_eval(
-                np.array([0]), self._bins[self._dim_order[1]], np.array([0.0])
+                numpy.array([0]), self._bins[self._dim_order[1]], numpy.array([0.0])
             )
 
         self._signature = deepcopy(self._dim_order)
@@ -91,18 +90,18 @@ class jec_uncertainty_lookup(lookup_base):
 
         # lookup the bins that we care about
         dim1_name = self._dim_order[0]
-        dim1_indices = np.clip(
-            np.searchsorted(self._bins[dim1_name], bin_vals[dim1_name], side="right")
+        dim1_indices = numpy.clip(
+            numpy.searchsorted(self._bins[dim1_name], bin_vals[dim1_name], side="right")
             - 1,
             0,
             self._bins[dim1_name].size - 2,
         )
 
         # get clamp values and clip the inputs
-        outs = np.ones(shape=(args[0].size, 2), dtype=np.float32)
-        for i in np.unique(dim1_indices):
-            mask = np.where(dim1_indices == i)
-            vals = np.clip(
+        outs = numpy.ones(shape=(args[0].size, 2), dtype=numpy.float32)
+        for i in numpy.unique(dim1_indices):
+            mask = numpy.where(dim1_indices == i)
+            vals = numpy.clip(
                 eval_vals[self._eval_vars[0]][mask],
                 self._eval_knots[0],
                 self._eval_knots[-1],

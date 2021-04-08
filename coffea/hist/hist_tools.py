@@ -4,7 +4,6 @@ import numpy
 from coffea.processor.accumulator import AccumulatorABC
 import copy
 import functools
-import math
 import numbers
 import re
 import warnings
