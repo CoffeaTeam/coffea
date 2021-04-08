@@ -81,22 +81,22 @@ class CorrectedMETFactory(object):
             )
             return variant
 
-        def lazy_variant(unc, metpt, metphi, jetpt, jetphi, jetptraw, met, cjets):
+        def lazy_variant(unc, metpt, metphi, jetpt, jetphi, jetptraw):
             return awkward.zip(
                 {
                     "up": make_variant(
-                        met[metpt],
-                        met[metphi],
-                        cjets[unc].up[jetpt],
-                        cjets[unc].up[jetphi],
-                        cjets[unc].up[jetptraw],
+                        MET[metpt],
+                        MET[metphi],
+                        corrected_jets[unc].up[jetpt],
+                        corrected_jets[unc].up[jetphi],
+                        corrected_jets[unc].up[jetptraw],
                     ),
                     "down": make_variant(
-                        met[metpt],
-                        met[metphi],
-                        cjets[unc].down[jetpt],
-                        cjets[unc].down[jetphi],
-                        cjets[unc].down[jetptraw],
+                        MET[metpt],
+                        MET[metphi],
+                        corrected_jets[unc].down[jetpt],
+                        corrected_jets[unc].down[jetphi],
+                        corrected_jets[unc].down[jetptraw],
                     ),
                 },
                 depth_limit=1,
@@ -158,10 +158,9 @@ class CorrectedMETFactory(object):
                     self.name_map["JetPt"],
                     self.name_map["JetPhi"],
                     self.name_map["ptRaw"],
-                    MET,
-                    corrected_jets,
                 ),
                 length=length,
+                cache={},
             )
 
         out_parms = out.layout.parameters

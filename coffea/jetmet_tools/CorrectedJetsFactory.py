@@ -473,7 +473,7 @@ class CorrectedJetsFactory(object):
                         out_dict[juncnames["JetMass"]],
                     ),
                     length=len(out),
-                    cache=lazy_cache,
+                    cache={},
                 )
 
         out_parms = out.layout.parameters
