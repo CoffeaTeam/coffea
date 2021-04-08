@@ -240,13 +240,12 @@ class CorrectedJetsFactory(object):
                 **jersfargs, form=_JERSF_FORM, lazy_cache=lazy_cache
             )
 
-            seeds = numpy.array(out_dict[self.name_map["JetPt"] + "_orig"])[[0, -1]]
-            seeds = numpy.frombuffer(seeds.tostring(), dtype=numpy.int32)
+            seeds = numpy.array(out_dict[self.name_map["JetPt"] + "_orig"])[[0, -1]].view("i4")
             out_dict["jet_resolution_rand_gauss"] = awkward.virtual(
                 rand_gauss,
                 args=(
                     out_dict[self.name_map["JetPt"] + "_orig"],
-                    numpy.random.RandomState(seeds),
+                    numpy.random.Generator(numpy.random.PCG64(seeds)),
                 ),
                 cache=lazy_cache,
                 length=len(out),
