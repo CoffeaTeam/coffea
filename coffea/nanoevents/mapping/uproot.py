@@ -41,7 +41,21 @@ class UprootSourceMapping(BaseSourceMapping):
                 continue
             if len(branch):
                 continue
-            form = branch.interpretation.awkward_form(None)
+            if isinstance(
+                    branch.interpretation,
+                    uproot.interpretation.identify.UnknownInterpretation
+            ):
+                warnings.warn(
+                    f"Skipping {key} as it is not interpretable by Uproot"
+                )
+                continue
+            try:
+                form = branch.interpretation.awkward_form(None)
+            except uproot.interpretation.objects.CannotBeAwkward:
+                warnings.warn(
+                    f"Skipping {key} as it is it cannot be represented as an Awkward array"
+                )
+                continue
             form = uproot._util.awkward_form_remove_uproot(awkward, form)
             form = json.loads(form.tojson())
             if (
