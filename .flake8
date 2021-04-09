@@ -14,6 +14,6 @@
 # W504: Raised by flake8 even when it is followed
 # E203: is not PEP 8 compliant https://github.com/psf/black/issues/315
 # W503: black doesn't care
-ignore = E124, E126, F401, F403, F405, F811, E402, E129, W605, W504, E203, W503
+ignore = E124, E126, F403, F405, F811, E402, E129, W605, W504, E203, W503
 max-line-length = 160
 exclude = fnal_column_analysis_tools/processor/templates

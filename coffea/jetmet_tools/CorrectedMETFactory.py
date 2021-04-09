@@ -1,7 +1,5 @@
-from coffea.jetmet_tools.JECStack import JECStack
 import awkward
 import numpy
-import warnings
 from copy import copy
 
 

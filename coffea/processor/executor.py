@@ -6,12 +6,10 @@ import time
 import pickle
 import sys
 import math
-import copy
 import shutil
 import json
 import cloudpickle
 import uproot
-import subprocess
 import re
 import os
 import uuid
@@ -23,7 +21,6 @@ import lz4.frame as lz4f
 from .processor import ProcessorABC
 from .accumulator import (
     accumulate,
-    Accumulatable,
     set_accumulator,
 )
 from .dataframe import (
@@ -32,7 +29,7 @@ from .dataframe import (
 from ..nanoevents import NanoEventsFactory, schemas
 from ..util import _hash
 
-from collections.abc import Mapping, MutableMapping, Sequence
+from collections.abc import Mapping, MutableMapping
 
 
 _PICKLE_PROTOCOL = pickle.HIGHEST_PROTOCOL
@@ -386,7 +383,6 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         import tempfile
         import dill
         import os
-        from os.path import basename
     except ImportError as e:
         print('You must have Work Queue and dill installed to use work_queue_executor!')
         raise e
@@ -670,9 +666,7 @@ def dask_executor(items, function, accumulator, **kwargs):
 
             .. note:: If ``heavy_input`` is set, ``function`` is assumed to be pure.
     """
-    import pandas as pd
     import dask.dataframe as dd
-    from dask.delayed import delayed
 
     if len(items) == 0:
         return accumulator

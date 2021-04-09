@@ -1,10 +1,9 @@
 from abc import abstractmethod
-import warnings
 from cachetools import LRUCache
 from collections.abc import Mapping
 import numpy
 from coffea.nanoevents import transforms
-from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
+from coffea.nanoevents.util import key_to_tuple, tuple_to_key
 
 
 class UUIDOpener:

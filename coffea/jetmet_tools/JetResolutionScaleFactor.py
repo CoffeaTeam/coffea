@@ -1,9 +1,7 @@
-from ..lookup_tools.jersf_lookup import jersf_lookup
-import warnings
+from coffea.lookup_tools.jersf_lookup import jersf_lookup
 import re
 import awkward
 import numpy
-from copy import deepcopy
 
 
 def _checkConsistency(against, tocheck):

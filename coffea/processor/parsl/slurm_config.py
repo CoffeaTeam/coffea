@@ -1,9 +1,6 @@
-import parsl
 import os
 import shutil
 import os.path as osp
-from parsl.app.app import python_app, bash_app
-from parsl.configs.local_threads import config
 
 from parsl.providers import SlurmProvider
 from parsl.channels import LocalChannel

@@ -1,10 +1,9 @@
-import os
 import numpy
 
 # crystalball is single sided, local reimplementation of double-sided here until
 # the PR can be merged
 # from scipy.stats import crystalball
-from .doublecrystalball import doublecrystalball
+from coffea.lookup_tools.doublecrystalball import doublecrystalball
 import awkward
 from coffea.lookup_tools.dense_lookup import dense_lookup
 

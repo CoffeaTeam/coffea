@@ -1,13 +1,12 @@
 from __future__ import print_function
 import os
 
-from ..util import numpy as np
-from .evaluator import evaluator
+from coffea.lookup_tools.evaluator import evaluator
 
-from .root_converters import convert_histo_root_file
-from .csv_converters import convert_btag_csv_file
-from .json_converters import convert_histo_json_file
-from .txt_converters import *
+from coffea.lookup_tools.root_converters import convert_histo_root_file
+from coffea.lookup_tools.csv_converters import convert_btag_csv_file
+from coffea.lookup_tools.json_converters import convert_histo_json_file
+from coffea.lookup_tools.txt_converters import *
 
 file_converters = {
     "root": {"default": convert_histo_root_file, "histo": convert_histo_root_file},

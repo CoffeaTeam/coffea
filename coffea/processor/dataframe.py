@@ -1,5 +1,4 @@
 from collections.abc import MutableMapping
-import awkward
 import uproot
 
 

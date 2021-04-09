@@ -1,8 +1,5 @@
-import parsl
 import os
 import os.path as osp
-from parsl.app.app import python_app, bash_app
-from parsl.configs.local_threads import config
 
 from parsl.providers import CondorProvider
 from parsl.channels import LocalChannel

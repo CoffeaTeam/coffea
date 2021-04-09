@@ -1,6 +1,4 @@
-from coffea.nanoevents import transforms
-from coffea.nanoevents.util import quote, concat
-from .base import BaseSchema, listarray_form, zip_forms, nest_jagged_forms
+from coffea.nanoevents.schemas.base import BaseSchema, zip_forms, nest_jagged_forms
 
 
 class TreeMakerSchema(BaseSchema):

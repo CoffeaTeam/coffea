@@ -1,5 +1,4 @@
 import warnings
-from .hist_tools import SparseAxis, DenseAxis
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
