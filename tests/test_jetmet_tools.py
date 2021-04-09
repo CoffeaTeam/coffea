@@ -1,6 +1,7 @@
 from __future__ import print_function
 import sys
 
+import cachetools
 from coffea import lookup_tools
 import uproot
 import awkward as ak
@@ -425,7 +426,7 @@ def test_corrected_jets_factory():
     name_map['massRaw'] = 'mass_raw'
     name_map['Rho'] = 'rho'
 
-    jec_cache = {}
+    jec_cache = cachetools.Cache(np.inf)
 
     print(name_map)
 
@@ -590,7 +591,7 @@ def test_factory_lifecycle():
         jets['mass_raw'] = (1 - jets['rawFactor']) * jets['mass']
         jets['pt_gen'] = ak.values_astype(ak.fill_none(jets.matched_gen.pt, 0.), np.float32)
         jets['rho'] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
-        jec_cache = {}
+        jec_cache = cachetools.Cache(np.inf)
         corrected_jets = jet_factory.build(jets, lazy_cache=jec_cache)
         corrected_met = met_factory.build(met, corrected_jets, lazy_cache=jec_cache)
         print(corrected_met.pt_orig)

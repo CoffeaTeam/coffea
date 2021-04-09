@@ -73,6 +73,7 @@ INSTALL_REQUIRES = ['awkward>=1.0.1',
                     'pandas',
                     'hist>=2',
                     'typing-extensions;python_version<"3.8"',
+                    'cachetools',
                     ]
 EXTRAS_REQUIRE = {}
 EXTRAS_REQUIRE['spark'] = ['pyspark>=2.4.1,<3.0.0', 'jinja2']
