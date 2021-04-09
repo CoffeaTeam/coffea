@@ -425,7 +425,7 @@ def test_corrected_jets_factory():
     name_map['massRaw'] = 'mass_raw'
     name_map['Rho'] = 'rho'
 
-    events_cache = events.caches[0]
+    jec_cache = {}
 
     print(name_map)
 
@@ -438,7 +438,7 @@ def test_corrected_jets_factory():
     tic = time.time()
     prof = pyinstrument.Profiler()
     prof.start()
-    corrected_jets = jet_factory.build(jets, lazy_cache=events_cache)
+    corrected_jets = jet_factory.build(jets, lazy_cache=jec_cache)
     prof.stop()
     toc = time.time()
 
@@ -469,9 +469,9 @@ def test_corrected_jets_factory():
     corrector = FactorizedJetCorrector(**{name: evaluator[name] for name in jec_stack_names[0:4]})
     corrs = corrector.getCorrection(JetEta=jets['eta'], Rho=jets['rho'], JetPt=jets['pt_raw'], JetA=jets['area'])
     reso = JetResolution(**{name: evaluator[name] for name in jec_stack_names[4:5]})
-    jets["jet_energy_resolution"] = reso.getResolution(JetEta=jets['eta'], Rho=jets['rho'], JetPt=jets['pt_raw'], form=scalar_form, lazy_cache=events_cache)
+    jets["jet_energy_resolution"] = reso.getResolution(JetEta=jets['eta'], Rho=jets['rho'], JetPt=jets['pt_raw'], form=scalar_form, lazy_cache=jec_cache)
     resosf = JetResolutionScaleFactor(**{name: evaluator[name] for name in jec_stack_names[5:6]})
-    jets["jet_energy_resolution_scale_factor"] = resosf.getScaleFactor(JetEta=jets['eta'], lazy_cache=events_cache)
+    jets["jet_energy_resolution_scale_factor"] = resosf.getScaleFactor(JetEta=jets['eta'], lazy_cache=jec_cache)
 
     # Filter out the non-deterministic (no gen pt) jets
     def smear_factor(jetPt, pt_gen, jersf):
@@ -518,7 +518,7 @@ def test_corrected_jets_factory():
     tic = time.time()
     # prof = pyinstrument.Profiler()
     # prof.start()
-    corrected_met = met_factory.build(met, corrected_jets, lazy_cache=events_cache)
+    corrected_met = met_factory.build(met, corrected_jets, lazy_cache=jec_cache)
     # prof.stop()
     toc = time.time()
 
@@ -590,15 +590,16 @@ def test_factory_lifecycle():
         jets['mass_raw'] = (1 - jets['rawFactor']) * jets['mass']
         jets['pt_gen'] = ak.values_astype(ak.fill_none(jets.matched_gen.pt, 0.), np.float32)
         jets['rho'] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
-        jec_cache = ak._util.MappingProxy.maybe_wrap({})
+        jec_cache = {}
         corrected_jets = jet_factory.build(jets, lazy_cache=jec_cache)
-        x = corrected_jets.pt
         corrected_met = met_factory.build(met, corrected_jets, lazy_cache=jec_cache)
         print(corrected_met.pt_orig)
         print(corrected_met.pt)
         for unc in (jet_factory.uncertainties() + met_factory.uncertainties()):
             print(unc, corrected_met[unc].up.pt)
             print(unc, corrected_met[unc].down.pt)
+        for unc in jet_factory.uncertainties():
+            print(unc, corrected_jets[unc].up.pt)
         print("Finalized:", array_log.finalized)
 
     run()

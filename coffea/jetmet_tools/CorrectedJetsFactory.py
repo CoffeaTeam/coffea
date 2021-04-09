@@ -152,6 +152,7 @@ class CorrectedJetsFactory(object):
             raise Exception(
                 "CorrectedJetsFactory requires a awkward-array cache to function correctly."
             )
+        lazy_cache = awkward._util.MappingProxy.maybe_wrap(lazy_cache)
         if not isinstance(jets, awkward.highlevel.Array):
             raise Exception("'jets' must be an awkward > 1.0.0 array of some kind!")
         fields = awkward.fields(jets)
@@ -408,7 +409,7 @@ class CorrectedJetsFactory(object):
             juncs = self.jec_stack.junc.getUncertainty(**juncargs)
 
             def junc_smeared_val(uncvals, up_down, variable):
-                return uncvals[:, up_down] * variable
+                return awkward.materialized(uncvals[:, up_down] * variable)
 
             def build_variation(
                 injets, unc, jetpt, jetpt_orig, jetmass, jetmass_orig, updown
@@ -456,10 +457,7 @@ class CorrectedJetsFactory(object):
                 )
 
             for name, func in juncs:
-                # out[f"jet_energy_uncertainty_{name}"]
                 out_dict[f"jet_energy_uncertainty_{name}"] = func
-
-                # out[f"JES_{name}"]
                 out_dict[f"JES_{name}"] = awkward.virtual(
                     build_variant,
                     args=(
@@ -471,7 +469,6 @@ class CorrectedJetsFactory(object):
                         out_dict[juncnames["JetMass"]],
                     ),
                     length=len(out),
-                    cache={},
                 )
 
         out_parms = out.layout.parameters
