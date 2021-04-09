@@ -11,7 +11,7 @@ from .lumi_tools import (
 )
 
 __all__ = [
-    'LumiData',
-    'LumiList',
-    'LumiMask',
+    "LumiData",
+    "LumiList",
+    "LumiMask",
 ]

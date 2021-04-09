@@ -40,16 +40,21 @@ def poisson_interval(sumw, sumw2, coverage=_coverage1sd):
         missing = numpy.where(sumw == 0)
         available = numpy.nonzero(sumw)
         if len(available[0]) == 0:
-            warnings.warn("All sumw are zero!  Cannot compute meaningful error bars", RuntimeWarning)
+            warnings.warn(
+                "All sumw are zero!  Cannot compute meaningful error bars",
+                RuntimeWarning,
+            )
             return numpy.vstack([sumw, sumw])
-        nearest = sum([numpy.subtract.outer(d, d0)**2 for d, d0 in zip(available, missing)]).argmin(axis=0)
+        nearest = sum(
+            [numpy.subtract.outer(d, d0) ** 2 for d, d0 in zip(available, missing)]
+        ).argmin(axis=0)
         argnearest = tuple(dim[nearest] for dim in available)
         scale[missing] = scale[argnearest]
     counts = sumw / scale
-    lo = scale * scipy.stats.chi2.ppf((1 - coverage) / 2, 2 * counts) / 2.
-    hi = scale * scipy.stats.chi2.ppf((1 + coverage) / 2, 2 * (counts + 1)) / 2.
+    lo = scale * scipy.stats.chi2.ppf((1 - coverage) / 2, 2 * counts) / 2.0
+    hi = scale * scipy.stats.chi2.ppf((1 + coverage) / 2, 2 * (counts + 1)) / 2.0
     interval = numpy.array([lo, hi])
-    interval[interval == numpy.nan] = 0.  # chi2.ppf produces nan for counts=0
+    interval[interval == numpy.nan] = 0.0  # chi2.ppf produces nan for counts=0
     return interval
 
 
@@ -68,37 +73,39 @@ def clopper_pearson_interval(num, denom, coverage=_coverage1sd):
     c.f. http://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval
     """
     if numpy.any(num > denom):
-        raise ValueError("Found numerator larger than denominator while calculating binomial uncertainty")
+        raise ValueError(
+            "Found numerator larger than denominator while calculating binomial uncertainty"
+        )
     lo = scipy.stats.beta.ppf((1 - coverage) / 2, num, denom - num + 1)
     hi = scipy.stats.beta.ppf((1 + coverage) / 2, num + 1, denom - num)
     interval = numpy.array([lo, hi])
-    interval[:, num == 0.] = 0.
-    interval[1, num == denom] = 1.
+    interval[:, num == 0.0] = 0.0
+    interval[1, num == denom] = 1.0
     return interval
 
 
 def normal_interval(pw, tw, pw2, tw2, coverage=_coverage1sd):
     """Compute errors based on the expansion of pass/(pass + fail), possibly weighted
 
-        Parameters
-        ----------
-        pw : numpy.ndarray
-            Numerator, or number of (weighted) successes, vectorized
-        tw : numpy.ndarray
-            Denominator or number of (weighted) trials, vectorized
-        pw2 : numpy.ndarray
-            Numerator sum of weights squared, vectorized
-        tw2 : numpy.ndarray
-            Denominator sum of weights squared, vectorized
-        coverage : float, optional
-            Central coverage interval, defaults to 68%
+    Parameters
+    ----------
+    pw : numpy.ndarray
+        Numerator, or number of (weighted) successes, vectorized
+    tw : numpy.ndarray
+        Denominator or number of (weighted) trials, vectorized
+    pw2 : numpy.ndarray
+        Numerator sum of weights squared, vectorized
+    tw2 : numpy.ndarray
+        Denominator sum of weights squared, vectorized
+    coverage : float, optional
+        Central coverage interval, defaults to 68%
 
-        c.f. https://root.cern.ch/doc/master/TEfficiency_8cxx_source.html#l02515
+    c.f. https://root.cern.ch/doc/master/TEfficiency_8cxx_source.html#l02515
     """
 
     eff = pw / tw
 
-    variance = (pw2 * (1 - 2 * eff) + tw2 * eff**2) / (tw**2)
+    variance = (pw2 * (1 - 2 * eff) + tw2 * eff ** 2) / (tw ** 2)
     sigma = numpy.sqrt(variance)
 
     prob = 0.5 * (1 - coverage)
@@ -111,9 +118,22 @@ def normal_interval(pw, tw, pw2, tw2, coverage=_coverage1sd):
     return numpy.array([lo, hi])
 
 
-def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none', line_opts=None,
-           fill_opts=None, error_opts=None, legend_opts={}, overlay_overflow='none',
-           density=False, binwnorm=None, order=None):
+def plot1d(
+    hist,
+    ax=None,
+    clear=True,
+    overlay=None,
+    stack=False,
+    overflow="none",
+    line_opts=None,
+    fill_opts=None,
+    error_opts=None,
+    legend_opts={},
+    overlay_overflow="none",
+    density=False,
+    binwnorm=None,
+    order=None,
+):
     """Create a 1D plot from a 1D or 2D `Hist` object
 
     Parameters
@@ -169,6 +189,7 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
     """
     import mplhep as hep
     import matplotlib.pyplot as plt
+
     if ax is None:
         ax = plt.gca()
     else:
@@ -177,16 +198,22 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         if clear:
             ax.clear()
     if hist.dim() > 2:
-        raise ValueError("plot1d() can only support up to two dimensions (one for axis, one to stack or overlay)")
+        raise ValueError(
+            "plot1d() can only support up to two dimensions (one for axis, one to stack or overlay)"
+        )
     if overlay is None and hist.sparse_dim() == 1 and hist.dense_dim() == 1:
         overlay = hist.sparse_axes()[0].name
     elif overlay is None and hist.dim() > 1:
-        raise ValueError("plot1d() can only support one dimension without an overlay axis chosen")
+        raise ValueError(
+            "plot1d() can only support one dimension without an overlay axis chosen"
+        )
     if density and binwnorm is not None:
         raise ValueError("Cannot use density and binwnorm at the same time!")
     if binwnorm is not None:
         if not isinstance(binwnorm, numbers.Number):
-            raise ValueError("Bin width normalization not a number, but a %r" % binwnorm.__class__)
+            raise ValueError(
+                "Bin width normalization not a number, but a %r" % binwnorm.__class__
+            )
     if line_opts is None and fill_opts is None and error_opts is None:
         if stack:
             fill_opts = {}
@@ -206,29 +233,38 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         ax.set_ylabel(hist.label)
         edges = axis.edges(overflow=overflow)
         if order is None:
-            identifiers = hist.identifiers(overlay, overflow=overlay_overflow) if overlay is not None else [None]
+            identifiers = (
+                hist.identifiers(overlay, overflow=overlay_overflow)
+                if overlay is not None
+                else [None]
+            )
         else:
             identifiers = order
         plot_info = {
-            'identifier': identifiers,
-            'label': list(map(str, identifiers)),
-            'sumw': [],
-            'sumw2': []
+            "identifier": identifiers,
+            "label": list(map(str, identifiers)),
+            "sumw": [],
+            "sumw2": [],
         }
         for i, identifier in enumerate(identifiers):
             if identifier is None:
                 sumw, sumw2 = hist.values(sumw2=True, overflow=overflow)[()]
             elif isinstance(overlay, SparseAxis):
-                sumw, sumw2 = hist.integrate(overlay, identifier).values(sumw2=True, overflow=overflow)[()]
+                sumw, sumw2 = hist.integrate(overlay, identifier).values(
+                    sumw2=True, overflow=overflow
+                )[()]
             else:
-                sumw, sumw2 = hist.values(sumw2=True, overflow='allnan')[()]
-                the_slice = (i if overflow_behavior(overlay_overflow).start is None else i + 1, overflow_behavior(overflow))
+                sumw, sumw2 = hist.values(sumw2=True, overflow="allnan")[()]
+                the_slice = (
+                    i if overflow_behavior(overlay_overflow).start is None else i + 1,
+                    overflow_behavior(overflow),
+                )
                 if hist._idense(overlay) == 1:
                     the_slice = (the_slice[1], the_slice[0])
                 sumw = sumw[the_slice]
                 sumw2 = sumw2[the_slice]
-            plot_info['sumw'].append(sumw)
-            plot_info['sumw2'].append(sumw2)
+            plot_info["sumw"].append(sumw)
+            plot_info["sumw2"].append(sumw2)
 
         def w2err(sumw, sumw2):
             err = []
@@ -240,48 +276,77 @@ def plot1d(hist, ax=None, clear=True, overlay=None, stack=False, overflow='none'
         if line_opts is not None and error_opts is None:
             _error = None
         else:
-            _error = w2err(plot_info['sumw'], plot_info['sumw2'])
+            _error = w2err(plot_info["sumw"], plot_info["sumw2"])
         if fill_opts is not None:
-            histtype = 'fill'
+            histtype = "fill"
             kwargs = fill_opts
         elif error_opts is not None and line_opts is None:
-            histtype = 'errorbar'
+            histtype = "errorbar"
             kwargs = error_opts
         else:
-            histtype = 'step'
+            histtype = "step"
             kwargs = line_opts
         if kwargs is None:
             kwargs = {}
 
-        hep.histplot(plot_info['sumw'], edges, label=plot_info['label'],
-                     yerr=_error, histtype=histtype, ax=ax,
-                     density=density, binwnorm=binwnorm, stack=stack,
-                     **kwargs)
+        hep.histplot(
+            plot_info["sumw"],
+            edges,
+            label=plot_info["label"],
+            yerr=_error,
+            histtype=histtype,
+            ax=ax,
+            density=density,
+            binwnorm=binwnorm,
+            stack=stack,
+            **kwargs
+        )
 
         if stack and error_opts is not None:
-            stack_sumw = numpy.sum(plot_info['sumw'], axis=0)
-            stack_sumw2 = numpy.sum(plot_info['sumw2'], axis=0)
+            stack_sumw = numpy.sum(plot_info["sumw"], axis=0)
+            stack_sumw2 = numpy.sum(plot_info["sumw2"], axis=0)
             err = poisson_interval(stack_sumw, stack_sumw2)
             if binwnorm is not None:
                 err *= binwnorm / numpy.diff(edges)[None, :]
-            opts = {'step': 'post', 'label': 'Sum unc.', 'hatch': '///',
-                    'facecolor': 'none', 'edgecolor': (0, 0, 0, .5), 'linewidth': 0}
+            opts = {
+                "step": "post",
+                "label": "Sum unc.",
+                "hatch": "///",
+                "facecolor": "none",
+                "edgecolor": (0, 0, 0, 0.5),
+                "linewidth": 0,
+            }
             opts.update(error_opts)
-            ax.fill_between(x=edges, y1=numpy.r_[err[0, :], err[0, -1]],
-                            y2=numpy.r_[err[1, :], err[1, -1]], **opts)
+            ax.fill_between(
+                x=edges,
+                y1=numpy.r_[err[0, :], err[0, -1]],
+                y2=numpy.r_[err[1, :], err[1, -1]],
+                **opts
+            )
 
         if legend_opts is not None:
             _label = overlay.label if overlay is not None else ""
             ax.legend(title=_label, **legend_opts)
         else:
             ax.legend(title=_label)
-        ax.autoscale(axis='x', tight=True)
+        ax.autoscale(axis="x", tight=True)
         ax.set_ylim(0, None)
 
     return ax
 
 
-def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None, denom_fill_opts=None, guide_opts=None, unc='clopper-pearson', label=None):
+def plotratio(
+    num,
+    denom,
+    ax=None,
+    clear=True,
+    overflow="none",
+    error_opts=None,
+    denom_fill_opts=None,
+    guide_opts=None,
+    unc="clopper-pearson",
+    label=None,
+):
     """Create a ratio plot, dividing two compatible histograms
 
     Parameters
@@ -325,6 +390,7 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
             A matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ object
     """
     import matplotlib.pyplot as plt
+
     if ax is None:
         fig, ax = plt.subplots(1, 1)
     else:
@@ -333,7 +399,9 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
         if clear:
             ax.clear()
     if not num.compatible(denom):
-        raise ValueError("numerator and denominator histograms have incompatible axis definitions")
+        raise ValueError(
+            "numerator and denominator histograms have incompatible axis definitions"
+        )
     if num.dim() > 1:
         raise ValueError("plotratio() can only support one-dimensional histograms")
     if error_opts is None and denom_fill_opts is None and guide_opts is None:
@@ -353,43 +421,67 @@ def plotratio(num, denom, ax=None, clear=True, overflow='none', error_opts=None,
         sumw_denom, sumw2_denom = denom.values(sumw2=True, overflow=overflow)[()]
 
         rsumw = sumw_num / sumw_denom
-        if unc == 'clopper-pearson':
-            rsumw_err = numpy.abs(clopper_pearson_interval(sumw_num, sumw_denom) - rsumw)
-        elif unc == 'poisson-ratio':
+        if unc == "clopper-pearson":
+            rsumw_err = numpy.abs(
+                clopper_pearson_interval(sumw_num, sumw_denom) - rsumw
+            )
+        elif unc == "poisson-ratio":
             # poisson ratio n/m is equivalent to binomial n/(n+m)
-            rsumw_err = numpy.abs(clopper_pearson_interval(sumw_num, sumw_num + sumw_denom) - rsumw)
-        elif unc == 'num':
-            rsumw_err = numpy.abs(poisson_interval(rsumw, sumw2_num / sumw_denom**2) - rsumw)
+            rsumw_err = numpy.abs(
+                clopper_pearson_interval(sumw_num, sumw_num + sumw_denom) - rsumw
+            )
+        elif unc == "num":
+            rsumw_err = numpy.abs(
+                poisson_interval(rsumw, sumw2_num / sumw_denom ** 2) - rsumw
+            )
         elif unc == "normal":
-            rsumw_err = numpy.abs(normal_interval(sumw_num, sumw_denom, sumw2_num, sumw2_denom))
+            rsumw_err = numpy.abs(
+                normal_interval(sumw_num, sumw_denom, sumw2_num, sumw2_denom)
+            )
         else:
             raise ValueError("Unrecognized uncertainty option: %r" % unc)
 
         if error_opts is not None:
-            opts = {'label': label, 'linestyle': 'none'}
+            opts = {"label": label, "linestyle": "none"}
             opts.update(error_opts)
-            emarker = opts.pop('emarker', '')
+            emarker = opts.pop("emarker", "")
             errbar = ax.errorbar(x=centers, y=rsumw, yerr=rsumw_err, **opts)
-            plt.setp(errbar[1], 'marker', emarker)
+            plt.setp(errbar[1], "marker", emarker)
         if denom_fill_opts is not None:
             unity = numpy.ones_like(sumw_denom)
-            denom_unc = poisson_interval(unity, sumw2_denom / sumw_denom**2)
-            opts = {'step': 'post', 'facecolor': (0, 0, 0, 0.3), 'linewidth': 0}
+            denom_unc = poisson_interval(unity, sumw2_denom / sumw_denom ** 2)
+            opts = {"step": "post", "facecolor": (0, 0, 0, 0.3), "linewidth": 0}
             opts.update(denom_fill_opts)
-            ax.fill_between(edges, numpy.r_[denom_unc[0], denom_unc[0, -1]], numpy.r_[denom_unc[1], denom_unc[1, -1]], **opts)
+            ax.fill_between(
+                edges,
+                numpy.r_[denom_unc[0], denom_unc[0, -1]],
+                numpy.r_[denom_unc[1], denom_unc[1, -1]],
+                **opts
+            )
         if guide_opts is not None:
-            opts = {'linestyle': '--', 'color': (0, 0, 0, 0.5), 'linewidth': 1}
+            opts = {"linestyle": "--", "color": (0, 0, 0, 0.5), "linewidth": 1}
             opts.update(guide_opts)
-            ax.axhline(1., **opts)
+            ax.axhline(1.0, **opts)
 
     if clear:
-        ax.autoscale(axis='x', tight=True)
+        ax.autoscale(axis="x", tight=True)
         ax.set_ylim(0, None)
 
     return ax
 
 
-def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none', patch_opts=None, text_opts=None, density=False, binwnorm=None):
+def plot2d(
+    hist,
+    xaxis,
+    ax=None,
+    clear=True,
+    xoverflow="none",
+    yoverflow="none",
+    patch_opts=None,
+    text_opts=None,
+    density=False,
+    binwnorm=None,
+):
     """Create a 2D plot from a 2D `Hist` object
 
     Parameters
@@ -429,6 +521,7 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
             A matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ object
     """
     import matplotlib.pyplot as plt
+
     if ax is None:
         fig, ax = plt.subplots(1, 1)
     else:
@@ -443,7 +536,9 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
         raise ValueError("Cannot use density and binwnorm at the same time!")
     if binwnorm is not None:
         if not isinstance(binwnorm, numbers.Number):
-            raise ValueError("Bin width normalization not a number, but a %r" % binwnorm.__class__)
+            raise ValueError(
+                "Bin width normalization not a number, but a %r" % binwnorm.__class__
+            )
     if patch_opts is None and text_opts is None:
         patch_opts = {}
 
@@ -458,7 +553,7 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
     else:
         xedges = xaxis.edges(overflow=xoverflow)
         yedges = yaxis.edges(overflow=yoverflow)
-        sumw, sumw2 = hist.values(sumw2=True, overflow='allnan')[()]
+        sumw, sumw2 = hist.values(sumw2=True, overflow="allnan")[()]
         if transpose:
             sumw = sumw.T
             sumw2 = sumw2.T
@@ -466,14 +561,14 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
         sumw = sumw[overflow_behavior(xoverflow), overflow_behavior(yoverflow)]
         sumw2 = sumw2[overflow_behavior(xoverflow), overflow_behavior(yoverflow)]
         if (density or binwnorm is not None) and numpy.sum(sumw) > 0:
-            overallnorm = numpy.sum(sumw) * binwnorm if binwnorm is not None else 1.
+            overallnorm = numpy.sum(sumw) * binwnorm if binwnorm is not None else 1.0
             areas = numpy.multiply.outer(numpy.diff(xedges), numpy.diff(yedges))
             binnorms = overallnorm / (areas * numpy.sum(sumw))
             sumw = sumw * binnorms
-            sumw2 = sumw2 * binnorms**2
+            sumw2 = sumw2 * binnorms ** 2
 
         if patch_opts is not None:
-            opts = {'cmap': 'viridis'}
+            opts = {"cmap": "viridis"}
             opts.update(patch_opts)
             pc = ax.pcolormesh(xedges, yedges, sumw.T, **opts)
             ax.add_collection(pc)
@@ -483,13 +578,15 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
             for ix, xcenter in enumerate(xaxis.centers()):
                 for iy, ycenter in enumerate(yaxis.centers()):
                     opts = {
-                        'horizontalalignment': 'center',
-                        'verticalalignment': 'center',
+                        "horizontalalignment": "center",
+                        "verticalalignment": "center",
                     }
                     if patch_opts is not None:
-                        opts['color'] = 'black' if pc.norm(sumw[ix, iy]) > 0.5 else 'lightgrey'
+                        opts["color"] = (
+                            "black" if pc.norm(sumw[ix, iy]) > 0.5 else "lightgrey"
+                        )
                     opts.update(text_opts)
-                    txtformat = opts.pop('format', r'%.2g')
+                    txtformat = opts.pop("format", r"%.2g")
                     ax.text(xcenter, ycenter, txtformat % sumw[ix, iy], **opts)
 
     if clear:
@@ -501,7 +598,16 @@ def plot2d(hist, xaxis, ax=None, clear=True, xoverflow='none', yoverflow='none',
     return ax
 
 
-def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='none', col_overflow='none', **plot_opts):
+def plotgrid(
+    h,
+    figure=None,
+    row=None,
+    col=None,
+    overlay=None,
+    row_overflow="none",
+    col_overflow="none",
+    **plot_opts
+):
     """Create a grid of plots, enumerating identifiers on up to 3 axes
 
     Parameters
@@ -532,6 +638,7 @@ def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='non
             An array of matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ objects
     """
     import matplotlib.pyplot as plt
+
     haxes = set(ax.name for ax in h.axes())
     nrow, ncol = 1, 1
     if row:
@@ -545,14 +652,18 @@ def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='non
     if overlay:
         haxes.remove(overlay)
     if len(haxes) > 1:
-        raise ValueError("More than one dimension left: %s" % (",".join(ax for ax in haxes),))
+        raise ValueError(
+            "More than one dimension left: %s" % (",".join(ax for ax in haxes),)
+        )
     elif len(haxes) == 0:
         raise ValueError("Not enough dimensions available in %r" % h)
 
-    figsize = plt.rcParams['figure.figsize']
+    figsize = plt.rcParams["figure.figsize"]
     figsize = figsize[0] * max(ncol, 1), figsize[1] * max(nrow, 1)
     if figure is None:
-        fig, axes = plt.subplots(nrow, ncol, figsize=figsize, squeeze=False, sharex=True, sharey=True)
+        fig, axes = plt.subplots(
+            nrow, ncol, figsize=figsize, squeeze=False, sharex=True, sharey=True
+        )
     else:
         fig = figure
         shape = (0, 0)
@@ -595,7 +706,7 @@ def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='non
                 ax.set_title(coltitle)
 
     for ax in axes.flatten():
-        ax.autoscale(axis='y')
+        ax.autoscale(axis="y")
         ax.set_ylim(0, None)
 
     return axes
@@ -604,9 +715,9 @@ def plotgrid(h, figure=None, row=None, col=None, overlay=None, row_overflow='non
 def isnotebook():
     try:
         shell = get_ipython().__class__.__name__
-        if shell == 'ZMQInteractiveShell':
-            return True   # Jupyter notebook or qtconsole
-        elif shell == 'TerminalInteractiveShell':
+        if shell == "ZMQInteractiveShell":
+            return True  # Jupyter notebook or qtconsole
+        elif shell == "TerminalInteractiveShell":
             return False  # Terminal running IPython
         else:
             return False  # Other type (?)
@@ -625,6 +736,7 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
     from bokeh.models.widgets import RadioButtonGroup, CheckboxButtonGroup
     from bokeh.models.widgets import RangeSlider, Div
     from bokeh.io import output_notebook  # enables plot interface in J notebook
+
     # init bokeh
 
     from bokeh.application import Application
@@ -632,6 +744,7 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
 
     from bokeh.core.validation import silence
     from bokeh.core.validation.warnings import EMPTY_LAYOUT
+
     silence(EMPTY_LAYOUT, True)
 
     output_notebook()
@@ -639,34 +752,53 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
     # Set up widgets
     cfg_labels = ["Ghost"]
     wi_config = CheckboxButtonGroup(labels=cfg_labels, active=[0])
-    wi_dense_select = RadioButtonGroup(labels=[ax.name for ax in histo.dense_axes()], active=0)
-    wi_sparse_select = RadioButtonGroup(labels=[ax.name for ax in histo.sparse_axes()], active=0)
+    wi_dense_select = RadioButtonGroup(
+        labels=[ax.name for ax in histo.dense_axes()], active=0
+    )
+    wi_sparse_select = RadioButtonGroup(
+        labels=[ax.name for ax in histo.sparse_axes()], active=0
+    )
 
     # Dense widgets
     sliders = {}
     for ax in histo.dense_axes():
         edge_vals = (histo.axis(ax.name).edges()[0], histo.axis(ax.name).edges()[-1])
         _smallest_bin = numpy.min(numpy.diff(histo.axis(ax.name).edges()))
-        sliders[ax.name] = RangeSlider(title=ax.name, value=edge_vals, start=edge_vals[0], end=edge_vals[1],
-                                       step=_smallest_bin, name=ax.name)
+        sliders[ax.name] = RangeSlider(
+            title=ax.name,
+            value=edge_vals,
+            start=edge_vals[0],
+            end=edge_vals[1],
+            step=_smallest_bin,
+            name=ax.name,
+        )
 
     # Cat widgets
     togglers = {}
     for ax in histo.sparse_axes():
-        togglers[ax.name] = CheckboxButtonGroup(labels=[i.name for i in ax.identifiers()], active=[0],
-                                                name=ax.name)
+        togglers[ax.name] = CheckboxButtonGroup(
+            labels=[i.name for i in ax.identifiers()], active=[0], name=ax.name
+        )
 
     # Toggles for all widgets
     configers = {}
     for ax in histo.sparse_axes():
-        configers[ax.name] = CheckboxButtonGroup(labels=["Display", "Ghost"], active=[0, 1], name=ax.name)
+        configers[ax.name] = CheckboxButtonGroup(
+            labels=["Display", "Ghost"], active=[0, 1], name=ax.name
+        )
     for ax in histo.dense_axes():
-        configers[ax.name] = CheckboxButtonGroup(labels=["Display"], active=[0], name=ax.name)
+        configers[ax.name] = CheckboxButtonGroup(
+            labels=["Display"], active=[0], name=ax.name
+        )
 
     # Figure
     fig = bk_figure(
-        title="1D Projection", plot_width=500, plot_height=500,
-        min_border=20, toolbar_location=None)
+        title="1D Projection",
+        plot_width=500,
+        plot_height=500,
+        min_border=20,
+        toolbar_location=None,
+    )
     fig.yaxis.axis_label = "N"
     fig.xaxis.axis_label = "Quantity"
 
@@ -680,7 +812,9 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
     sources_ghost = []
     for i in range(_max_idents):
         sources.append(ColumnDataSource(dict(left=[], top=[], right=[], bottom=[])))
-        sources_ghost.append(ColumnDataSource(dict(left=[], top=[], right=[], bottom=[])))
+        sources_ghost.append(
+            ColumnDataSource(dict(left=[], top=[], right=[], bottom=[]))
+        )
 
     # Hist list
     hists = []
@@ -690,10 +824,28 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
             _color = palettes.Category10[min(max(3, _max_idents), 10)][i]
         else:
             _color = palettes.magma(_max_idents)[i]
-        hists.append(fig.quad(left="left", right="right", top="top", bottom="bottom",
-                              source=sources[i], alpha=0.9, color=_color))
-        hists_ghost.append(fig.quad(left="left", right="right", top="top", bottom="bottom",
-                                    source=sources_ghost[i], alpha=0.05, color=_color))
+        hists.append(
+            fig.quad(
+                left="left",
+                right="right",
+                top="top",
+                bottom="bottom",
+                source=sources[i],
+                alpha=0.9,
+                color=_color,
+            )
+        )
+        hists_ghost.append(
+            fig.quad(
+                left="left",
+                right="right",
+                top="top",
+                bottom="bottom",
+                source=sources_ghost[i],
+                alpha=0.05,
+                color=_color,
+            )
+        )
 
     def update_data(attrname, old, new):
         sparse_active = wi_sparse_select.active
@@ -710,12 +862,16 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
             _idents = histo.axis(proj_ax).identifiers()
             _labels = [ident.name for ident in _idents]
             if 0 in configers[proj_ax].active:
-                _h = _h.integrate(proj_ax, [_labels[i] for i in togglers[proj_ax].active])
+                _h = _h.integrate(
+                    proj_ax, [_labels[i] for i in togglers[proj_ax].active]
+                )
             else:
                 _h = _h.integrate(proj_ax)
 
         for proj_ax in dense_other:
-            _h = _h.integrate(proj_ax, slice(sliders[proj_ax].value[0], sliders[proj_ax].value[1]))
+            _h = _h.integrate(
+                proj_ax, slice(sliders[proj_ax].value[0], sliders[proj_ax].value[1])
+            )
 
         for cat_ix in range(_max_idents):
             # Update histo for each toggled overlay
@@ -736,7 +892,12 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
                     bin_ixs = numpy.searchsorted(bins, new_bins)[:-1]
                     h = h[bin_ixs]
 
-                    sources[cat_ix].data = dict(left=new_bins[:-1], right=new_bins[1:], top=h, bottom=numpy.zeros_like(h))
+                    sources[cat_ix].data = dict(
+                        left=new_bins[:-1],
+                        right=new_bins[1:],
+                        top=h,
+                        bottom=numpy.zeros_like(h),
+                    )
                 else:
                     sources[cat_ix].data = dict(left=[], right=[], top=[], bottom=[])
 
@@ -747,16 +908,25 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
                         _idents = histo.axis(proj_ax).identifiers()
                         _labels = [ident.name for ident in _idents]
                         if 1 not in configers[proj_ax].active:
-                            h1d = h1d.integrate(proj_ax, [_labels[i] for i in togglers[proj_ax].active])
+                            h1d = h1d.integrate(
+                                proj_ax, [_labels[i] for i in togglers[proj_ax].active]
+                            )
                         else:
                             h1d = h1d.integrate(proj_ax)
                     values = h1d.project(dense_name).values()
                     if values != {}:
                         h = h1d.project(dense_name).values()[()]
                         bins = h1d.axis(dense_name).edges()
-                        sources_ghost[cat_ix].data = dict(left=bins[:-1], right=bins[1:], top=h, bottom=numpy.zeros_like(h))
+                        sources_ghost[cat_ix].data = dict(
+                            left=bins[:-1],
+                            right=bins[1:],
+                            top=h,
+                            bottom=numpy.zeros_like(h),
+                        )
                     else:
-                        sources_ghost[cat_ix].data = dict(left=[], right=[], top=[], bottom=[])
+                        sources_ghost[cat_ix].data = dict(
+                            left=[], right=[], top=[], bottom=[]
+                        )
             else:
                 sources[cat_ix].data = dict(left=[], right=[], top=[], bottom=[])
                 sources_ghost[cat_ix].data = dict(left=[], right=[], top=[], bottom=[])
@@ -765,43 +935,72 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
         fig.xaxis.axis_label = dense_name
 
     for name, slider in sliders.items():
-        slider.on_change('value', update_data)
+        slider.on_change("value", update_data)
     for name, toggler in togglers.items():
-        toggler.on_change('active', update_data)
+        toggler.on_change("active", update_data)
     for name, configer in configers.items():
-        configer.on_change('active', update_data)
+        configer.on_change("active", update_data)
     # Button
     for w in [wi_dense_select, wi_sparse_select, wi_config]:
-        w.on_change('active', update_data)
+        w.on_change("active", update_data)
 
     from bokeh.models.widgets import Panel, Tabs
     from bokeh.io import show
 
-    layout = row(fig, column(Div(text="<b>Overlay Axis:</b>", style={'font-size': '100%', 'color': 'black'}),
-                             wi_sparse_select,
-                             Div(text="<b>Plot Axis:</b>", style={'font-size': '100%', 'color': 'black'}),
-                             wi_dense_select,
-                             Div(text="<b>Categorical Cuts:</b>", style={'font-size': '100%', 'color': 'black'}),
-                             *[toggler for name, toggler in togglers.items()],
-                             Div(text="<b>Dense Cuts:</b>", style={'font-size': '100%', 'color': 'black'}),
-                             *[slider for name, slider in sliders.items()]))
+    layout = row(
+        fig,
+        column(
+            Div(
+                text="<b>Overlay Axis:</b>",
+                style={"font-size": "100%", "color": "black"},
+            ),
+            wi_sparse_select,
+            Div(
+                text="<b>Plot Axis:</b>", style={"font-size": "100%", "color": "black"}
+            ),
+            wi_dense_select,
+            Div(
+                text="<b>Categorical Cuts:</b>",
+                style={"font-size": "100%", "color": "black"},
+            ),
+            *[toggler for name, toggler in togglers.items()],
+            Div(
+                text="<b>Dense Cuts:</b>", style={"font-size": "100%", "color": "black"}
+            ),
+            *[slider for name, slider in sliders.items()]
+        ),
+    )
 
     # Config prep
     incl_lists = [[], [], []]
     for i, key in enumerate(list(configers.keys())):
         incl_lists[i // max(5, len(list(configers.keys())) / 3)].append(
-            Div(text="<b>{}:</b>".format(key), style={'font-size': '70%', 'color': 'black'}))
+            Div(
+                text="<b>{}:</b>".format(key),
+                style={"font-size": "70%", "color": "black"},
+            )
+        )
         incl_lists[i // max(5, len(list(configers.keys())) / 3)].append(configers[key])
 
-    layout_cfgs = column(row(column(Div(text="<b>Configs:</b>", style={'font-size': '100%', 'color': 'black'}),
-                                    wi_config)),
-                         Div(text="<b>Axis togglers:</b>", style={'font-size': '100%', 'color': 'black'}),
-                         row(
-                            column(incl_lists[0]),
-                            column(incl_lists[1]),
-                            column(incl_lists[2]),
-                         )
-                        )
+    layout_cfgs = column(
+        row(
+            column(
+                Div(
+                    text="<b>Configs:</b>",
+                    style={"font-size": "100%", "color": "black"},
+                ),
+                wi_config,
+            )
+        ),
+        Div(
+            text="<b>Axis togglers:</b>", style={"font-size": "100%", "color": "black"}
+        ),
+        row(
+            column(incl_lists[0]),
+            column(incl_lists[1]),
+            column(incl_lists[2]),
+        ),
+    )
 
     # Update active buttons
     def update_layout(attrname, old, new):
@@ -816,7 +1015,7 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
                 child.visible = True
 
     for name, configer in configers.items():
-        configer.on_change('active', update_layout)
+        configer.on_change("active", update_layout)
 
     tab1 = Panel(child=layout, title="Projection")
     tab2 = Panel(child=layout_cfgs, title="Configs")

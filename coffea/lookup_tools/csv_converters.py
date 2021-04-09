@@ -62,8 +62,12 @@ def convert_btag_csv_file(csvFilePath):
         ptMins = numpy.unique(corrections[numpy.where(all_names == label)][columns[6]])
         ptMaxs = numpy.unique(corrections[numpy.where(all_names == label)][columns[7]])
         ptBins = numpy.union1d(ptMins, ptMaxs).astype(numpy.double)
-        discrMins = numpy.unique(corrections[numpy.where(all_names == label)][columns[8]])
-        discrMaxs = numpy.unique(corrections[numpy.where(all_names == label)][columns[9]])
+        discrMins = numpy.unique(
+            corrections[numpy.where(all_names == label)][columns[8]]
+        )
+        discrMaxs = numpy.unique(
+            corrections[numpy.where(all_names == label)][columns[9]]
+        )
         discrBins = numpy.union1d(discrMins, discrMaxs).astype(numpy.double)
         vals = numpy.zeros(
             shape=(len(discrBins) - 1, len(ptBins) - 1, len(etaBins) - 1),

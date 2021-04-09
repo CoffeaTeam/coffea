@@ -9,7 +9,7 @@ import coffea.processor
 
 
 class WeightStatistics(coffea.processor.AccumulatorABC):
-    def __init__(self, sumw=0., sumw2=0., minw=numpy.inf, maxw=-numpy.inf, n=0):
+    def __init__(self, sumw=0.0, sumw2=0.0, minw=numpy.inf, maxw=-numpy.inf, n=0):
         self.sumw = sumw
         self.sumw2 = sumw2
         self.minw = minw
