@@ -28,17 +28,20 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from . import version
+
 __version__ = version.__version__
 
 import sys
+
 if sys.version_info.major < 3:
     import warnings
-    warnings.warn('coffea only supports python3 as of 1 January 2020!')
-    warnings.warn('If you are using python2 and run into problems please submit a pull request to fix the issue!')
+
+    warnings.warn("coffea only supports python3 as of 1 January 2020!")
+    warnings.warn(
+        "If you are using python2 and run into problems please submit a pull request to fix the issue!"
+    )
 
 # control severity for utils.deprecate
 deprecations_as_errors = False
 
-__all__ = [
-    'deprecations_as_errors'
-]
+__all__ = ["deprecations_as_errors"]

@@ -17,8 +17,12 @@ class Weights(object):
             store not only the total weight + variations, but also each individual weight.
             Default is false.
     """
+
     def __init__(self, size, storeIndividual=False):
-        deprecate("This utility has moved to the `coffea.analysis_tools` subpackage and has new features, check it out!", 0.8)
+        deprecate(
+            "This utility has moved to the `coffea.analysis_tools` subpackage and has new features, check it out!",
+            0.8,
+        )
         self._weight = numpy.ones(size)
         self._weights = {}
         self._modifiers = {}
@@ -49,8 +53,10 @@ class Weights(object):
 
         .. note:: ``weightUp`` and ``weightDown`` are assumed to be rvalue-like and may be modified in-place by this function
         """
-        if name.endswith('Up') or name.endswith('Down'):
-            raise ValueError("Avoid using 'Up' and 'Down' in weight names, instead pass appropriate shifts to add() call")
+        if name.endswith("Up") or name.endswith("Down"):
+            raise ValueError(
+                "Avoid using 'Up' and 'Down' in weight names, instead pass appropriate shifts to add() call"
+            )
         weight = numpy.array(weight)
         self._weight = self._weight * weight
         if self._storeIndividual:
@@ -59,20 +65,20 @@ class Weights(object):
             weightUp = numpy.array(weightUp)
             if shift:
                 weightUp += weight
-            weightUp[weight != 0.] /= weight[weight != 0.]
-            self._modifiers[name + 'Up'] = weightUp
+            weightUp[weight != 0.0] /= weight[weight != 0.0]
+            self._modifiers[name + "Up"] = weightUp
         if weightDown is not None:
             weightDown = numpy.array(weightDown)
             if shift:
                 weightDown = weight - weightDown
-            weightDown[weight != 0.] /= weight[weight != 0.]
-            self._modifiers[name + 'Down'] = weightDown
+            weightDown[weight != 0.0] /= weight[weight != 0.0]
+            self._modifiers[name + "Down"] = weightDown
         self._weightStats[name] = {
-            'sumw': weight.sum(),
-            'sumw2': (weight**2).sum(),
-            'min': weight.min(),
-            'max': weight.max(),
-            'n': weight.size,
+            "sumw": weight.sum(),
+            "sumw2": (weight ** 2).sum(),
+            "min": weight.min(),
+            "max": weight.max(),
+            "n": weight.size,
         }
 
     def weight(self, modifier=None):
@@ -91,8 +97,8 @@ class Weights(object):
         """
         if modifier is None:
             return self._weight
-        elif 'Down' in modifier and modifier not in self._modifiers:
-            return self._weight / self._modifiers[modifier.replace('Down', 'Up')]
+        elif "Down" in modifier and modifier not in self._modifiers:
+            return self._weight / self._modifiers[modifier.replace("Down", "Up")]
         return self._weight * self._modifiers[modifier]
 
     def partial_weight(self, include=[], exclude=[]):
@@ -117,9 +123,13 @@ class Weights(object):
                 corrections specified.
         """
         if not self._storeIndividual:
-            raise ValueError("To be able to request weight exclusion, use storeIndividual=True when creating Weights object.")
+            raise ValueError(
+                "To be able to request weight exclusion, use storeIndividual=True when creating Weights object."
+            )
         if (include and exclude) or not (include or exclude):
-            raise ValueError("Need to specify exactly one of the 'exclude' or 'include' arguments.")
+            raise ValueError(
+                "Need to specify exactly one of the 'exclude' or 'include' arguments."
+            )
 
         names = set(self._weights.keys())
         if include:
@@ -139,7 +149,7 @@ class Weights(object):
         keys = set(self._modifiers.keys())
         # add any missing 'Down' variation
         for k in self._modifiers.keys():
-            keys.add(k.replace('Up', 'Down'))
+            keys.add(k.replace("Up", "Down"))
         return keys
 
 
@@ -157,11 +167,15 @@ class PackedSelection(object):
             By default, up to 64 masks can be stored, but smaller values
             for the `numpy.dtype` may be more efficient.
     """
-    def __init__(self, dtype='uint64'):
+
+    def __init__(self, dtype="uint64"):
         """
         TODO: extend to multi-column for arbitrary bit depth
         """
-        deprecate("This utility has moved to the `coffea.analysis_tools` subpackage and has new features, check it out!", 0.8)
+        deprecate(
+            "This utility has moved to the `coffea.analysis_tools` subpackage and has new features, check it out!",
+            0.8,
+        )
         self._dtype = numpy.dtype(dtype)
         self._names = []
         self._mask = None
@@ -183,17 +197,28 @@ class PackedSelection(object):
                 If not the first mask added, it must also have
                 the same shape as previously added masks.
         """
-        if isinstance(selection, numpy.ndarray) and selection.dtype == numpy.dtype('bool'):
+        if isinstance(selection, numpy.ndarray) and selection.dtype == numpy.dtype(
+            "bool"
+        ):
             if len(self._names) == 0:
                 self._mask = numpy.zeros(shape=selection.shape, dtype=self._dtype)
             elif len(self._names) == 64:
-                raise RuntimeError("Exhausted all slots for %r, consider a larger dtype or fewer selections" % self._dtype)
+                raise RuntimeError(
+                    "Exhausted all slots for %r, consider a larger dtype or fewer selections"
+                    % self._dtype
+                )
             elif self._mask.shape != selection.shape:
-                raise ValueError("New selection '%s' has different shape than existing ones (%r vs. %r)" % (name, selection.shape, self._mask.shape))
+                raise ValueError(
+                    "New selection '%s' has different shape than existing ones (%r vs. %r)"
+                    % (name, selection.shape, self._mask.shape)
+                )
             self._mask |= selection.astype(self._dtype) << len(self._names)
             self._names.append(name)
         else:
-            raise ValueError("PackedSelection only understands numpy boolean arrays, got %r" % selection)
+            raise ValueError(
+                "PackedSelection only understands numpy boolean arrays, got %r"
+                % selection
+            )
 
     def require(self, **names):
         """Return a mask vector corresponding to specific requirements
@@ -225,13 +250,15 @@ class PackedSelection(object):
         require = 0
         for name, val in names.items():
             if not isinstance(val, bool):
-                raise ValueError("Please use only booleans in PackedSelection.require(), received %r for %s" % (val, name))
+                raise ValueError(
+                    "Please use only booleans in PackedSelection.require(), received %r for %s"
+                    % (val, name)
+                )
             idx = self._names.index(name)
             mask |= 1 << idx
             require |= int(val) << idx
         return (self._mask & mask) == require
 
     def all(self, *names):
-        """Shorthand for `require`, where all the values are True
-        """
+        """Shorthand for `require`, where all the values are True"""
         return self.require(**{name: True for name in names})

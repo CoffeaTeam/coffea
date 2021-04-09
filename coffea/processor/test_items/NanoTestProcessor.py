@@ -33,11 +33,15 @@ class NanoTestProcessor(processor.ProcessorABC):
 
         dataset = df.metadata["dataset"]
 
-        muon = ak.zip({'pt': df.Muon_pt,
-                       'eta': df.Muon_eta,
-                       'phi': df.Muon_phi,
-                       'mass': df.Muon_mass},
-                      with_name="PtEtaPhiMLorentzVector")
+        muon = ak.zip(
+            {
+                "pt": df.Muon_pt,
+                "eta": df.Muon_eta,
+                "phi": df.Muon_phi,
+                "mass": df.Muon_mass,
+            },
+            with_name="PtEtaPhiMLorentzVector",
+        )
 
         dimuon = ak.combinations(muon, 2)
         dimuon = dimuon["0"] + dimuon["1"]

@@ -7,7 +7,7 @@ from zict import Buffer, Func, LRU, File
 
 
 class ColumnCache(WorkerPlugin, MutableMapping):
-    name = 'columncache'
+    name = "columncache"
 
     def __init__(self, maxmem=5e8, maxcompressed=2e9, maxdisk=1e10):
         self._maxmem = maxmem
@@ -24,7 +24,7 @@ class ColumnCache(WorkerPlugin, MutableMapping):
                     fast={},
                     slow=LRU(
                         n=self._maxdisk,
-                        d=File(os.path.join(worker.local_directory, 'cache')),
+                        d=File(os.path.join(worker.local_directory, "cache")),
                         weight=lambda k, v: len(v),
                     ),
                     n=self._maxcompressed,

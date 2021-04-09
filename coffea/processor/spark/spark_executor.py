@@ -13,7 +13,12 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 import numpy  # noqa: F401
 import pandas  # noqa: F401
 import awkward  # noqa: F401
-from pyspark.sql.types import BinaryType, StringType, StructType, StructField  # noqa: F401
+from pyspark.sql.types import (  # noqa: F401
+    BinaryType,
+    StringType,
+    StructType,
+    StructField,
+)
 from coffea.nanoevents import NanoEventsFactory, schemas  # noqa: F401
 from coffea.nanoevents.mapping import SimplePreloadedColumnSource  # noqa: F401
 import pickle  # noqa: F401
@@ -39,12 +44,15 @@ def agg_histos(series):
 
 
 def reduce_histos_raw(df, lz4_clevel):
-    histos = df['histos']
+    histos = df["histos"]
     outhist = _reduce(lz4_clevel)(histos[histos.str.len() > 0])
-    return pandas.DataFrame(data={'histos': numpy.array([outhist], dtype='O')})
+    return pandas.DataFrame(data={"histos": numpy.array([outhist], dtype="O")})
 
 
-@fn.pandas_udf(StructType([StructField('histos', BinaryType(), True)]), fn.PandasUDFType.GROUPED_MAP)
+@fn.pandas_udf(
+    StructType([StructField("histos", BinaryType(), True)]),
+    fn.PandasUDFType.GROUPED_MAP,
+)
 def reduce_histos(df):
     global lz4_clevel
     return reduce_histos_raw(df, lz4_clevel)
@@ -54,9 +62,15 @@ def _get_ds_bistream(item):
     global lz4_clevel
     ds, bitstream = item
     if bitstream is None:
-        raise Exception('No pandas dataframe returned from spark in dataset: %s, something went wrong!' % ds)
+        raise Exception(
+            "No pandas dataframe returned from spark in dataset: %s, something went wrong!"
+            % ds
+        )
     if bitstream.empty:
-        raise Exception('The histogram list returned from spark is empty in dataset: %s, something went wrong!' % ds)
+        raise Exception(
+            "The histogram list returned from spark is empty in dataset: %s, something went wrong!"
+            % ds
+        )
     out = bitstream[bitstream.columns[0]][0]
     if lz4_clevel is not None:
         return _decompress(out)
@@ -64,33 +78,47 @@ def _get_ds_bistream(item):
 
 
 class SparkExecutor(object):
-    _template_name = 'spark.py.tmpl'
+    _template_name = "spark.py.tmpl"
 
     def __init__(self):
         self._cacheddfs = None
         self._counts = None
-        self._env = Environment(loader=PackageLoader('coffea.processor',
-                                                     'templates'),
-                                autoescape=select_autoescape(['py'])
-                                )
+        self._env = Environment(
+            loader=PackageLoader("coffea.processor", "templates"),
+            autoescape=select_autoescape(["py"]),
+        )
 
     @property
     def counts(self):
         return self._counts
 
-    def __call__(self, spark, dfslist, theprocessor, output, thread_workers,
-                 use_df_cache, schema, status=True, unit='datasets', desc='Processing'):
+    def __call__(
+        self,
+        spark,
+        dfslist,
+        theprocessor,
+        output,
+        thread_workers,
+        use_df_cache,
+        schema,
+        status=True,
+        unit="datasets",
+        desc="Processing",
+    ):
         # processor needs to be a global
         global processor_instance, coffea_udf, nano_schema
         processor_instance = theprocessor
         if schema is None:
             schema = schemas.BaseSchema
         if not issubclass(schema, schemas.BaseSchema):
-            raise ValueError("Expected schema to derive from BaseSchema (%s)" % (str(schema.__name__)))
+            raise ValueError(
+                "Expected schema to derive from BaseSchema (%s)"
+                % (str(schema.__name__))
+            )
         nano_schema = schema
         # get columns from processor
         columns = processor_instance.columns
-        cols_w_ds = ['dataset'] + columns
+        cols_w_ds = ["dataset"] + columns
         # make our udf
         tmpl = self._env.get_template(self._template_name)
         render = tmpl.render(cols=columns)
@@ -105,11 +133,15 @@ class SparkExecutor(object):
 
         if self._cacheddfs is None:
             self._cacheddfs = {}
-            cachedesc = 'caching' if use_df_cache else 'pruning'
+            cachedesc = "caching" if use_df_cache else "pruning"
             with ThreadPoolExecutor(max_workers=thread_workers) as executor:
                 futures = set()
                 for ds, (df, counts) in dfslist.items():
-                    futures.add(executor.submit(self._pruneandcache_data, ds, df, cols_w_ds, use_df_cache))
+                    futures.add(
+                        executor.submit(
+                            self._pruneandcache_data, ds, df, cols_w_ds, use_df_cache
+                        )
+                    )
                 gen = _futures_handler(futures, timeout=None)
                 try:
                     for ds, df in tqdm(
@@ -127,7 +159,9 @@ class SparkExecutor(object):
             futures = set()
             for ds, df in self._cacheddfs.items():
                 co_udf = coffea_udf
-                futures.add(executor.submit(self._launch_analysis, ds, df, co_udf, cols_w_ds))
+                futures.add(
+                    executor.submit(self._launch_analysis, ds, df, co_udf, cols_w_ds)
+                )
             gen = _futures_handler(futures, timeout=None)
             try:
                 output = accumulate(
@@ -152,12 +186,17 @@ class SparkExecutor(object):
 
     def _launch_analysis(self, ds, df, udf, columns):
         histo_map_parts = (df.rdd.getNumPartitions() // 20) + 1
-        return ds, df.select(udf(*columns).alias('histos')) \
-                     .withColumn('hpid', fn.spark_partition_id() % histo_map_parts) \
-                     .repartition(histo_map_parts, 'hpid') \
-                     .groupBy('hpid').apply(reduce_histos) \
-                     .groupBy().agg(agg_histos('histos')) \
-                     .toPandas()
+        return (
+            ds,
+            df.select(udf(*columns).alias("histos"))
+            .withColumn("hpid", fn.spark_partition_id() % histo_map_parts)
+            .repartition(histo_map_parts, "hpid")
+            .groupBy("hpid")
+            .apply(reduce_histos)
+            .groupBy()
+            .agg(agg_histos("histos"))
+            .toPandas(),
+        )
 
 
 spark_executor = SparkExecutor()

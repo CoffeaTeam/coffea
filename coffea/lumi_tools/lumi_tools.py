@@ -21,14 +21,21 @@ class LumiData(object):
                  -b "STABLE BEAMS" --normtag=/cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_PHYSICS.json \
                  -u /pb --byls --output-style csv -i Cert_294927-306462_13TeV_PromptReco_Collisions17_JSON.txt > lumi2017.csv
     """
+
     def __init__(self, lumi_csv):
-        self._lumidata = np.loadtxt(lumi_csv, delimiter=',', usecols=(0, 1, 6, 7), converters={
-            0: lambda s: s.split(b':')[0],
-            1: lambda s: s.split(b':')[0],  # not sure what lumi:0 means, appears to be always zero (DAQ off before beam dump?)
-        })
+        self._lumidata = np.loadtxt(
+            lumi_csv,
+            delimiter=",",
+            usecols=(0, 1, 6, 7),
+            converters={
+                0: lambda s: s.split(b":")[0],
+                1: lambda s: s.split(b":")[
+                    0
+                ],  # not sure what lumi:0 means, appears to be always zero (DAQ off before beam dump?)
+            },
+        )
         self.index = Dict.empty(
-            key_type=types.Tuple([types.uint32, types.uint32]),
-            value_type=types.float64
+            key_type=types.Tuple([types.uint32, types.uint32]), value_type=types.float64
         )
         self.build_lumi_table()
 
@@ -38,8 +45,8 @@ class LumiData(object):
         This needs to be executed upon unpickling, it should be part of
         a custom deserialize function.
         """
-        runs = self._lumidata[:, 0].astype('u4')
-        lumis = self._lumidata[:, 1].astype('u4')
+        runs = self._lumidata[:, 0].astype("u4")
+        lumis = self._lumidata[:, 1].astype("u4")
         LumiData._build_lumi_table_kernel(runs, lumis, self._lumidata, self.index)
 
     @staticmethod
@@ -61,7 +68,7 @@ class LumiData(object):
         """
         if isinstance(runlumis, LumiList):
             runlumis = runlumis.array
-        tot_lumi = np.zeros((1, ), dtype=np.float64)
+        tot_lumi = np.zeros((1,), dtype=np.float64)
         LumiData._get_lumi_kernel(runlumis[:, 0], runlumis[:, 1], self.index, tot_lumi)
         return tot_lumi[0]
 
@@ -88,14 +95,12 @@ class LumiMask(object):
 
     This class parses a CMS lumi json into an efficient valid lumiSection lookup table
     """
+
     def __init__(self, jsonfile):
         with open(jsonfile) as fin:
             goldenjson = json.load(fin)
 
-        self._masks = Dict.empty(
-            key_type=types.uint32,
-            value_type=types.uint32[:]
-        )
+        self._masks = Dict.empty(key_type=types.uint32, value_type=types.uint32[:])
 
         for run, lumilist in goldenjson.items():
             mask = np.array(lumilist, dtype=np.uint32).flatten()
@@ -122,7 +127,7 @@ class LumiMask(object):
             runs = ak.to_numpy(runs)
         if isinstance(lumis, ak.highlevel.Array):
             lumis = ak.to_numpy(lumis)
-        mask_out = np.zeros(dtype='bool', shape=runs.shape)
+        mask_out = np.zeros(dtype="bool", shape=runs.shape)
         LumiMask._apply_run_lumi_mask(self._masks, runs, lumis, mask_out)
         return mask_out
 
@@ -157,6 +162,7 @@ class LumiList(object):
         lumis : numpy.ndarray
             Vectorized list of lumiSection values
     """
+
     def __init__(self, runs=None, lumis=None):
         self.array = np.zeros(shape=(0, 2))
         if runs is not None:

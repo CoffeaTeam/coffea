@@ -29,17 +29,17 @@ from .plot import (
 from .export import export1d
 
 __all__ = [
-    'Hist',
-    'Bin',
-    'Interval',
-    'Cat',
-    'StringBin',
-    'poisson_interval',
-    'clopper_pearson_interval',
-    'normal_interval',
-    'plot1d',
-    'plotratio',
-    'plot2d',
-    'plotgrid',
-    'export1d'
+    "Hist",
+    "Bin",
+    "Interval",
+    "Cat",
+    "StringBin",
+    "poisson_interval",
+    "clopper_pearson_interval",
+    "normal_interval",
+    "plot1d",
+    "plotratio",
+    "plot2d",
+    "plotgrid",
+    "export1d",
 ]

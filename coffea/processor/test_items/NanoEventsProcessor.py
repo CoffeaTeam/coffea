@@ -41,8 +41,9 @@ class NanoEventsProcessor(processor.ProcessorABC):
             if has_canaries:
                 try:
                     from distributed import get_worker
+
                     worker = get_worker()
-                    output['worker'].add(worker.name)
+                    output["worker"].add(worker.name)
                 except ValueError:
                     pass
 

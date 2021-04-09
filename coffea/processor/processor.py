@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 
 
 class ProcessorABC(metaclass=ABCMeta):
-    '''ABC for a generalized processor
+    """ABC for a generalized processor
 
     The various data delivery mechanisms (spark, striped, uproot, uproot+futures, condor, ...)
     receive such an object and the appropriate metadata to deliver dataframes to it.
@@ -37,19 +37,20 @@ class ProcessorABC(metaclass=ABCMeta):
 
         p = MyProcessor()
 
-    '''
+    """
+
     @abstractmethod
     def process(self, df):
-        '''Processes a single DataFrame
+        """Processes a single DataFrame
 
         Returns a filled accumulator object which can be initialized via self.accumulator.identity()
-        '''
+        """
         pass
 
     @abstractmethod
     def postprocess(self, accumulator):
-        '''Final processing on aggregated accumulator
+        """Final processing on aggregated accumulator
 
         Do any final processing on the resulting accumulator object, and return it
-        '''
+        """
         pass
