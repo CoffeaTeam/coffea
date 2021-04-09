@@ -41,6 +41,7 @@ class CorrectedMETFactory(object):
             raise Exception(
                 "CorrectedMETFactory requires a awkward-array cache to function correctly."
             )
+        lazy_cache = awkward._util.MappingProxy.maybe_wrap(lazy_cache)
         if not isinstance(MET, awkward.highlevel.Array) or not isinstance(
             corrected_jets, awkward.highlevel.Array
         ):
