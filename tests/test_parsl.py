@@ -57,7 +57,7 @@ def test_parsl_htex_executor():
         executors=[
             HighThroughputExecutor(
                 label="coffea_parsl_default",
-                address=address_by_hostname(),
+                address='127.0.0.1',
                 cores_per_worker=max(multiprocessing.cpu_count()//2, 1),
                 max_workers=1,
                 provider=LocalProvider(
