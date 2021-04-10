@@ -42,6 +42,8 @@ def test_spark_executor():
         .appName('spark-executor-test-%s' % guid()) \
         .master('local[*]') \
         .config('spark.sql.execution.arrow.enabled','true') \
+        .config('spark.driver.host', '127.0.0.1') \
+        .config('spark.driver.bindAddress', '127.0.0.1') \
         .config('spark.executor.x509proxyname','x509_u12409') \
         .config('spark.sql.execution.arrow.maxRecordsPerBatch', 200000)
 
