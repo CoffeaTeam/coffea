@@ -92,6 +92,8 @@ EXTRAS_REQUIRE["dev"] = [
     "pytest",
     "pytest-cov",
     "pytest-mpl",
+    "pytest-asyncio",
+    "pytest-mock",
     "sphinx",
     "nbsphinx",
     "sphinx-rtd-theme",
