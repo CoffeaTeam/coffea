@@ -22,7 +22,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: [3.7]
-    name: linter - flake8 - python ${{ matrix.python-version }}
+    name: linter - flake8/black - python ${{ matrix.python-version }}
 
     steps:
     - uses: actions/checkout@master
@@ -30,7 +30,7 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Lint with flake8
+    - name: Lint with flake8 and black
       run: |
         python -m pip install -q flake8 black
         flake8 coffea setup.py
