@@ -56,7 +56,7 @@ def get_description():
 
 
 INSTALL_REQUIRES = [
-    "awkward>=1.0.1",
+    "awkward>=1.3.0rc3",
     "uproot>=4.0.6",
     "uproot3-methods>=0.10.0",
     "uproot3>=3.14.1",
@@ -78,7 +78,7 @@ INSTALL_REQUIRES = [
 ]
 EXTRAS_REQUIRE = {}
 EXTRAS_REQUIRE["spark"] = ["pyspark>=2.4.1,<3.0.0", "jinja2"]
-EXTRAS_REQUIRE["parsl"] = ["parsl>=1.0.0"]
+EXTRAS_REQUIRE["parsl"] = ["parsl>=1.1.0a0"]
 EXTRAS_REQUIRE["dask"] = [
     "dask[dataframe]>=2.6.0",
     "distributed>=2.6.0",
@@ -87,6 +87,7 @@ EXTRAS_REQUIRE["dask"] = [
 ]
 EXTRAS_REQUIRE["dev"] = [
     "flake8",
+    "black",
     "pytest",
     "pytest-cov",
     "pytest-mpl",
