@@ -38,26 +38,36 @@ class TestDataSource:
         query = mocker.MagicMock(FuncAdlDataset)
         query.value = mocker.Mock(return_value="select * from events")
 
-        dataset = MockDatset(urls=['http://foo.bar.com/yyy.ROOT', 'http://baz.bar.com/xxx.ROOT'])
+        dataset = MockDatset(
+            urls=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"]
+        )
         data_source = DataSource(query=query, metadata={}, datasets=[dataset])
 
         url_stream = [url async for url in data_source.stream_result_file_urls()]
-        assert url_stream == ['http://foo.bar.com/yyy.ROOT', 'http://baz.bar.com/xxx.ROOT']
+        assert url_stream == [
+            "http://foo.bar.com/yyy.ROOT",
+            "http://baz.bar.com/xxx.ROOT",
+        ]
         assert dataset.num_calls == 1
-        assert dataset.called_query == 'select * from events'
+        assert dataset.called_query == "select * from events"
 
     @pytest.mark.asyncio
     async def test_stream_result_files(self, mocker):
         query = mocker.MagicMock(FuncAdlDataset)
         query.value = mocker.Mock(return_value="select * from events")
 
-        dataset = MockDatset(files=['http://foo.bar.com/yyy.ROOT', 'http://baz.bar.com/xxx.ROOT'])
+        dataset = MockDatset(
+            files=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"]
+        )
         data_source = DataSource(query=query, metadata={}, datasets=[dataset])
 
         file_stream = [f async for f in data_source.stream_result_files()]
-        assert file_stream == ['http://foo.bar.com/yyy.ROOT', 'http://baz.bar.com/xxx.ROOT']
+        assert file_stream == [
+            "http://foo.bar.com/yyy.ROOT",
+            "http://baz.bar.com/xxx.ROOT",
+        ]
         assert dataset.num_calls == 1
-        assert dataset.called_query == 'select * from events'
+        assert dataset.called_query == "select * from events"
 
 
 class MockDatset:

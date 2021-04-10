@@ -39,9 +39,14 @@ from servicex import StreamInfoUrl
 
 
 class Executor(ABC):
-
     @abstractmethod
-    def run_async_analysis(self, file_url: str, tree_name: str, accumulator: Accumulator, process_func: Callable):
+    def run_async_analysis(
+        self,
+        file_url: str,
+        tree_name: str,
+        accumulator: Accumulator,
+        process_func: Callable,
+    ):
         raise NotImplementedError
 
     def get_result_file_stream(self, datasource):
@@ -61,19 +66,17 @@ class Executor(ABC):
         result_file_stream = self.get_result_file_stream(datasource)
 
         # Launch a task against this file
-        func_results = self.launch_analysis_tasks_from_stream(result_file_stream,
-                                                              analysis.accumulator,
-                                                              analysis.process)
+        func_results = self.launch_analysis_tasks_from_stream(
+            result_file_stream, analysis.accumulator, analysis.process
+        )
 
         # Wait for all the data to show up
         async def inline_wait(r):
-            'This could be inline, but python 3.6'
+            "This could be inline, but python 3.6"
             x = await r
             return x
 
-        finished_events = aiostream.stream.map(func_results,
-                                               inline_wait,
-                                               ordered=False)
+        finished_events = aiostream.stream.map(func_results, inline_wait, ordered=False)
         # Finally, accumulate!
         # There is an accumulate pattern in the aiostream lib
         output = analysis.accumulator.identity()
@@ -82,10 +85,12 @@ class Executor(ABC):
                 output.add(results)
                 yield output
 
-    async def launch_analysis_tasks_from_stream(self,
-                                                result_file_stream: AsyncGenerator[StreamInfoUrl, None],
-                                                accumulator: Accumulator,
-                                                process_func: Callable) -> AsyncGenerator[Any, None]:
+    async def launch_analysis_tasks_from_stream(
+        self,
+        result_file_stream: AsyncGenerator[StreamInfoUrl, None],
+        accumulator: Accumulator,
+        process_func: Callable,
+    ) -> AsyncGenerator[Any, None]:
         """
         Invoke the implementation's task runner on each file from the serviceX stream.
         We don't know the file's tree name in advance, so grab a sample the first time
@@ -104,7 +109,7 @@ class Executor(ABC):
             # in uproot4 that means `file://` isn't parsed correctly on windows.
             # TODO: Remove this hack when `uproot4` has been updated.
             p = urlparse(file_url)
-            if p.scheme == 'file':
+            if p.scheme == "file":
                 file_url = url2pathname(unquote(p.path))
 
             # Determine the tree name if we've not gotten it already
@@ -117,14 +122,15 @@ class Executor(ABC):
                 file_url=file_url,
                 tree_name=tree_name,
                 accumulator=accumulator,
-                process_func=process_func)
+                process_func=process_func,
+            )
 
             # Pass this down to the next item in the stream.
             yield data_result
 
-    async def accumulate(self,
-                         analysis: Analysis,
-                         hist_stream: AsyncGenerator[Accumulator, None]) -> AsyncGenerator[Accumulator, None]:
+    async def accumulate(
+        self, analysis: Analysis, hist_stream: AsyncGenerator[Accumulator, None]
+    ) -> AsyncGenerator[Accumulator, None]:
         """
         Stream processor to accumulate histograms from each process task and yield the
         up-to-date accumulated histograms
@@ -143,10 +149,9 @@ class Executor(ABC):
                 yield output
 
 
-def run_coffea_processor(events_url: str, tree_name: str,
-                         accumulator,
-                         proc,
-                         explicit_func_pickle=False):
+def run_coffea_processor(
+    events_url: str, tree_name: str, accumulator, proc, explicit_func_pickle=False
+):
     """
     Process a single file from a tree via a coffea processor on the remote node
     :param events_url:
@@ -172,22 +177,21 @@ def run_coffea_processor(events_url: str, tree_name: str,
     # And must be done in here as this function is shipped off to the funcx processor
     # on a remote machine/remote python environment.
     from coffea.nanoevents.methods import candidate
+
     ak.behavior.update(candidate.behavior)
 
     # Use NanoEvents to build a 4-vector
     events = NanoEventsFactory.from_root(
         file=str(events_url),
-        treepath=f'/{tree_name}',
+        treepath=f"/{tree_name}",
         schemaclass=auto_schema,
-        metadata={
-            'dataset': 'mc15x',
-            'filename': str(events_url)
-        }
+        metadata={"dataset": "mc15x", "filename": str(events_url)},
     ).events()
 
     output = accumulator.identity()
     if explicit_func_pickle:
         import dill as pickle
+
         f = pickle.loads(proc)
         return f(output, events)
     else:

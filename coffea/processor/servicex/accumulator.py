@@ -35,6 +35,7 @@ class Accumulator(dict_accumulator):
     """
     Simplified interface to Coffea accumulator. Sets up the most basic form automatically
     """
+
     def __init__(self, cats: Dict[str, Any]):
         full_cats = copy.copy(cats)
         full_cats["sumw"] = defaultdict_accumulator(float)

@@ -41,8 +41,13 @@ class TestableExecutor(Executor):
     def __init__(self):
         self.tree_name = None
 
-    async def run_async_analysis(self, file_url: str, tree_name: str,
-                                 accumulator: Accumulator, process_func: Callable):
+    async def run_async_analysis(
+        self,
+        file_url: str,
+        tree_name: str,
+        accumulator: Accumulator,
+        process_func: Callable,
+    ):
         # Create an async task that will tell us the file we were processing for
         # this analysis
         async def foo(payload):
@@ -74,18 +79,21 @@ class TestExecutor:
         analysis.accumulator.identity = mocker.Mock(return_value=mock_histogram)
 
         mock_root_context = mocker.Mock()
-        mock_uproot_open = \
-            mocker.patch('coffea.processor.servicex.executor.uproot.open',
-                         return_value=mock_root_context)
+        mock_uproot_open = mocker.patch(
+            "coffea.processor.servicex.executor.uproot.open",
+            return_value=mock_root_context,
+        )
         mock_uproot_file = mocker.Mock()
-        mock_uproot_file.keys = mocker.Mock(return_value=['myTree', 'yourTree'])
+        mock_uproot_file.keys = mocker.Mock(return_value=["myTree", "yourTree"])
         mock_root_context.__enter__ = mocker.Mock(return_value=mock_uproot_file)
         mock_root_context.__exit__ = mocker.Mock()
 
-        datasource = MockDataSource(urls=[
-            StreamInfoUrl("foo", "http://foo.bar/foo", "bucket"),
-            StreamInfoUrl("foo", "http://foo.bar/foo1", "bucket")
-        ])
+        datasource = MockDataSource(
+            urls=[
+                StreamInfoUrl("foo", "http://foo.bar/foo", "bucket"),
+                StreamInfoUrl("foo", "http://foo.bar/foo1", "bucket"),
+            ]
+        )
 
         hist_stream = [f async for f in executor.execute(analysis, datasource)]
 
@@ -99,7 +107,7 @@ class TestExecutor:
 
         # The histogram grows by executor calling add with each result returned
         histograms = [r[0][0].result() for r in mock_histogram.add.call_args_list]
-        assert histograms == ['http://foo.bar/foo', 'http://foo.bar/foo1']
+        assert histograms == ["http://foo.bar/foo", "http://foo.bar/foo1"]
 
     @pytest.mark.asyncio
     async def test_execute_with_file_url(self, mocker):
@@ -110,18 +118,21 @@ class TestExecutor:
         analysis.accumulator.identity = mocker.Mock(return_value=mock_histogram)
 
         mock_root_context = mocker.Mock()
-        mock_uproot_open = \
-            mocker.patch('coffea.processor.servicex.executor.uproot.open',
-                         return_value=mock_root_context)
+        mock_uproot_open = mocker.patch(
+            "coffea.processor.servicex.executor.uproot.open",
+            return_value=mock_root_context,
+        )
         mock_uproot_file = mocker.Mock()
-        mock_uproot_file.keys = mocker.Mock(return_value=['myTree', 'yourTree'])
+        mock_uproot_file.keys = mocker.Mock(return_value=["myTree", "yourTree"])
         mock_root_context.__enter__ = mocker.Mock(return_value=mock_uproot_file)
         mock_root_context.__exit__ = mocker.Mock()
 
-        datsource = MockDataSource(urls=[
-            StreamInfoPath("root1.ROOT", Path("/home/test/root1.ROOT")),
-            StreamInfoPath("root2.ROOT", Path("/home/test2/root2.ROOT"))
-        ])
+        datsource = MockDataSource(
+            urls=[
+                StreamInfoPath("root1.ROOT", Path("/home/test/root1.ROOT")),
+                StreamInfoPath("root2.ROOT", Path("/home/test2/root2.ROOT")),
+            ]
+        )
 
         hist_stream = [f async for f in executor.execute(analysis, datsource)]
 
@@ -133,4 +144,4 @@ class TestExecutor:
 
         # The histogram grows by executor calling add with each result returned
         histograms = [r[0][0].result() for r in mock_histogram.add.call_args_list]
-        assert histograms == ['/home/test/root1.ROOT', '/home/test2/root2.ROOT']
+        assert histograms == ["/home/test/root1.ROOT", "/home/test2/root2.ROOT"]

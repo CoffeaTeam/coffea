@@ -14,27 +14,28 @@ from servicex import ServiceXDataset
 
 
 class FuncAdlDataset(EventDataset):
-    'func_adl data source that will return `qastle` string for the query, providing low level access.'
+    "func_adl data source that will return `qastle` string for the query, providing low level access."
+
     def __init__(self):
         super().__init__()
 
     async def execute_result_async(self, a: ast.AST):
-        '''We will use generate the query.
+        """We will use generate the query.
         WARNING: this code is fragile - the ast above must end with an invocation of AsROOTTTree!!
         WARNING: Really will only work for xAOD backend due to separate logic required for each backend.
 
         This code was stolen from the `ServiceX.py` file located in `func_adl_servicex`
-        '''
+        """
         source = a
-        if cast(ast.Name, a.func).id != 'ResultTTree':
-            raise Exception('Must be a call to AsROOTTtree at end of query for now')
+        if cast(ast.Name, a.func).id != "ResultTTree":
+            raise Exception("Must be a call to AsROOTTtree at end of query for now")
 
         # Get the qastle we are going to use!
         return python_ast_to_text_ast(source)
 
 
 def sx_event_stream(did: str, query: ObjectStream):
-    '''Fetch the data from the queue and return an async stream
+    """Fetch the data from the queue and return an async stream
     of the results (minio urls)
 
     Args:
@@ -44,6 +45,6 @@ def sx_event_stream(did: str, query: ObjectStream):
     Returns:
         An async generator that can be processed with the `aiostream` library
         or an `async for` python pattern.
-    '''
-    sx = ServiceXDataset(did, backend_type='xaod')
+    """
+    sx = ServiceXDataset(did, backend_type="xaod")
     return sx.get_data_rootfiles_minio_async(query.value())

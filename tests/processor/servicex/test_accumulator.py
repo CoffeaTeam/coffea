@@ -31,13 +31,15 @@ from coffea.processor.servicex import Accumulator
 
 class TestAccumulator:
     def test_constructor(self):
-        accumulator = Accumulator({
-            "mass": hist.Hist(
-                "Events",
-                hist.Cat("dataset", "Dataset"),
-                hist.Bin("mass", "$Z_{ee}$ [GeV]", 60, 60, 120),
-            ),
-        })
+        accumulator = Accumulator(
+            {
+                "mass": hist.Hist(
+                    "Events",
+                    hist.Cat("dataset", "Dataset"),
+                    hist.Bin("mass", "$Z_{ee}$ [GeV]", 60, 60, 120),
+                ),
+            }
+        )
 
-        assert accumulator['mass'].axes()[0].name == 'dataset'
-        assert accumulator['mass'].axes()[1].name == 'mass'
+        assert accumulator["mass"].axes()[0].name == "dataset"
+        assert accumulator["mass"].axes()[1].name == "mass"

@@ -40,8 +40,7 @@ class Analysis(ABC):
 
     @staticmethod
     @abstractmethod
-    def process(output: dict_accumulator,
-                events: NanoEvents) -> dict_accumulator:
+    def process(output: dict_accumulator, events: NanoEvents) -> dict_accumulator:
         """
         Implement this abstract method to perform the actual analysis operations. The
         executor will wrap this in code to construct a NanoEvents instance and will pass
