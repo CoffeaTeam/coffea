@@ -26,6 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import asyncio
+import os
 from pathlib import Path
 from typing import Callable
 
@@ -55,8 +56,8 @@ class TestableExecutor(Executor):
 
         # Record the tree name so we can verify it later
         self.tree_name = tree_name
-
-        return asyncio.create_task(foo(file_url))
+        loop = asyncio.get_event_loop()
+        return loop.create_task(foo(file_url))
 
 
 class MockDataSource:
@@ -127,16 +128,29 @@ class TestExecutor:
         mock_root_context.__enter__ = mocker.Mock(return_value=mock_uproot_file)
         mock_root_context.__exit__ = mocker.Mock()
 
+        file_path = (
+            os.path.join(os.sep, "foo")
+            if os.name != "nt"
+            else os.path.join("c:", os.sep, "foo")
+        )
+
         datsource = MockDataSource(
             urls=[
-                StreamInfoPath("root1.ROOT", Path("/home/test/root1.ROOT")),
-                StreamInfoPath("root2.ROOT", Path("/home/test2/root2.ROOT")),
+                StreamInfoPath(
+                    "root1.ROOT", Path(os.path.join(file_path, "root1.ROOT"))
+                ),
+                StreamInfoPath(
+                    "root2.ROOT", Path(os.path.join(file_path, "root2.ROOT"))
+                ),
             ]
         )
 
         hist_stream = [f async for f in executor.execute(analysis, datsource)]
 
-        mock_uproot_open.assert_called_with("/home/test/root1.ROOT")
+        if os.name != "nt":
+            mock_uproot_open.assert_called_with("/foo/root1.ROOT")
+        else:
+            mock_uproot_open.assert_called_with("C:\\foo\\root1.ROOT")
 
         # Each result from the execution stream should be a growing histogram from
         # the analysis object
@@ -144,4 +158,8 @@ class TestExecutor:
 
         # The histogram grows by executor calling add with each result returned
         histograms = [r[0][0].result() for r in mock_histogram.add.call_args_list]
-        assert histograms == ["/home/test/root1.ROOT", "/home/test2/root2.ROOT"]
+
+        if os.name != "nt":
+            assert histograms == ["/foo/root1.ROOT", "/foo/root2.ROOT"]
+        else:
+            assert histograms == ["C:\\foo\\root1.ROOT", "C:\\foo\\root2.ROOT"]
