@@ -41,6 +41,15 @@ def _spark_initialize(config=_default_config, **kwargs):
         "spark.jars.packages", "edu.vanderbilt.accre:laurelin:%s" % laurelin
     )
 
+    kwargs.setdefault("bindAddress", None)
+    if kwargs["bindAddress"] is not None:
+        cfg_actual = cfg_actual.config(
+            "spark.driver.bindAddress", kwargs["bindAddress"]
+        )
+    kwargs.setdefault("host", None)
+    if kwargs["host"] is not None:
+        cfg_actual = cfg_actual.config("spark.driver.host", kwargs["host"])
+
     session = cfg_actual.getOrCreate()
     sc = session.sparkContext
 
