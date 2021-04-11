@@ -20,7 +20,7 @@ def test_spark_imports():
                                                _spark_make_dfs,
                                                _spark_stop)
 
-    spark = _spark_initialize()
+    spark = _spark_initialize(bindAddress='127.0.0.1', host='127.0.0.1')
     _spark_stop(spark)
 
 
