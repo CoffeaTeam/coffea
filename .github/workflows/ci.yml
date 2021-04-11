@@ -34,7 +34,7 @@ jobs:
       run: |
         python -m pip install -q flake8 black
         flake8 coffea setup.py
-        black --check coffea setup.py
+        black --check --diff coffea setup.py
 
   test:
     runs-on: ${{ matrix.os }}
