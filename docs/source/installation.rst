@@ -181,6 +181,7 @@ For Developers
   .. code-block:: bash
 
     flake8 coffea
+    black coffea
     pytest tests
     pushd docs && make html && popd
 
