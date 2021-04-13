@@ -242,7 +242,7 @@ class rochester_lookup:
             ),
             x,
         )
-        result = awkward.where(x > -1, 1.0 / (1.0 + x[x > -1]), awkward.ones_like(kpt))
+        result = awkward.where(x > -1, 1.0 / (1.0 + x), awkward.ones_like(kpt))
         if isinstance(kpt, numpy.ndarray):
             result = numpy.array(result)
         return result
