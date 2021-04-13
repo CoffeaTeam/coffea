@@ -13,7 +13,6 @@ def do_dask_job(client, filelist, compression=0):
     treename='Events'
     from coffea.processor.test_items import NanoTestProcessor
     proc = NanoTestProcessor()
-    
     exe_args = {
         'client': client,
         'compression': compression,
@@ -73,8 +72,10 @@ def test_dask_job():
     do_dask_job(client, filelist, compression=2)
 
     filelist = {
-        'ZJets': {'treename': 'Events', 'files': [osp.join(os.getcwd(),'tests/samples/nano_dy.root')]},
-        'Data' : {'treename': 'Events', 'files': [osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')]}
+        'ZJets': {'treename': 'Events', 'files': [osp.join(os.getcwd(),'tests/samples/nano_dy.root')],
+                  'checkusermeta': True, 'someusermeta': 'hello'},
+        'Data' : {'treename': 'Events', 'files': [osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')],
+                  'checkusermeta': True, 'someusermeta2': 'world'}
     }
 
     do_dask_job(client, filelist)
@@ -101,8 +102,10 @@ def test_dask_cached():
     assert workers1 == workers2
 
     filelist = {
-        'ZJets': {'treename': 'Events', 'files': [osp.join(os.getcwd(),'tests/samples/nano_dy.root')]},
-        'Data' : {'treename': 'Events', 'files': [osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')]}
+        'ZJets': {'treename': 'Events', 'files': [osp.join(os.getcwd(),'tests/samples/nano_dy.root')],
+                  'checkusermeta': True, 'someusermeta': 'hello'},
+        'Data' : {'treename': 'Events', 'files': [osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')],
+                  'checkusermeta': True, 'someusermeta2': 'world'}
     }
 
     do_dask_cached(client, filelist)
