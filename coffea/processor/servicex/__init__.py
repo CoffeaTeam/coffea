@@ -33,10 +33,10 @@ from .accumulator import *
 from .local_executor import *
 
 __all__ = [
-    DataSource,
-    FuncAdlDataset,
-    sx_event_stream,
-    Analysis,
-    Accumulator,
-    LocalExecutor,
+    "DataSource",
+    "FuncAdlDataset",
+    "sx_event_stream",
+    "Analysis",
+    "Accumulator",
+    "LocalExecutor",
 ]
