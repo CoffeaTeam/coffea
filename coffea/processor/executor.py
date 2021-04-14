@@ -348,7 +348,7 @@ def wqex_output_task(task, verbose_mode, resource_mode, output_mode):
                     task.resources_measured.cores,
                     task.resources_measured.memory,
                     task.resources_measured.disk,
-                    task.resources_measures.gpus,
+                    task.resources_measured.gpus,
                     task.resources_measured.wall_time / 1000000,
                 )
             )
