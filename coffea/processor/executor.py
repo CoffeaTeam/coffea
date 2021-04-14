@@ -310,8 +310,9 @@ def wqex_create_task(
         task.specify_input_file(env_file, cache=True)
         task.specify_input_file(wrapper, cache=True)
 
-    if re.search("://", item.filename):
-        # This looks like an URL. Not transfering file.
+    if re.search("://", item.filename) or os.path.isabs(item.filename):
+        # This looks like an URL or an absolute path (assuming shared
+        # filesystem). Not transfering file.
         pass
     else:
         task.specify_input_file(item.filename, remote_name=item.filename, cache=True)
