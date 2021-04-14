@@ -36,6 +36,8 @@ from .accumulator import Accumulator
 from .analysis import Analysis
 from servicex import StreamInfoUrl
 
+from .. import accumulate
+
 
 class Executor(ABC):
     @abstractmethod
@@ -78,10 +80,11 @@ class Executor(ABC):
         finished_events = aiostream.stream.map(func_results, inline_wait, ordered=False)
         # Finally, accumulate!
         # There is an accumulate pattern in the aiostream lib
-        output = analysis.accumulator.identity()
+        output = None
         async with finished_events.stream() as streamer:
             async for results in streamer:
-                output.add(results)
+                output = accumulate([results], output)
+                print("Output ", output)
                 yield output
 
     async def launch_analysis_tasks_from_stream(
@@ -170,7 +173,7 @@ def run_coffea_processor(
     # Since we execute remotely, explicitly include everything we need.
     import awkward as ak
     from coffea.nanoevents import NanoEventsFactory
-    from coffea.processor.servicex.schema import auto_schema
+    from coffea.nanoevents.schemas.schema import auto_schema
 
     # This in is amazingly important - the invar mass will fail silently without it.
     # And must be done in here as this function is shipped off to the funcx processor
@@ -187,11 +190,10 @@ def run_coffea_processor(
         metadata={"dataset": "mc15x", "filename": str(events_url)},
     ).events()
 
-    output = accumulator.identity()
     if explicit_func_pickle:
         import dill as pickle
 
         f = pickle.loads(proc)
-        return f(output, events)
+        return f(events)
     else:
-        return proc(output, events)
+        return proc(events)

@@ -26,9 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from abc import ABC, abstractmethod
-
 from coffea.nanoevents.methods.base import NanoEvents
-from coffea.processor.accumulator import dict_accumulator
 
 
 class Analysis(ABC):
@@ -40,13 +38,11 @@ class Analysis(ABC):
 
     @staticmethod
     @abstractmethod
-    def process(output: dict_accumulator, events: NanoEvents) -> dict_accumulator:
+    def process(events: NanoEvents) -> dict:
         """
         Implement this abstract method to perform the actual analysis operations. The
         executor will wrap this in code to construct a NanoEvents instance and will pass
         in the analysis instance's accumulator.
-        :param output: dict_accumulator
-            An empty accumulator ready to pile data into
         :param events: NanoEvents
         :return: dict_accumulator
             Filled with the results from this analysis
