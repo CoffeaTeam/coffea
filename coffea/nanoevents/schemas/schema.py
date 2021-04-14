@@ -1,5 +1,5 @@
 from typing import Any, Dict
-from coffea.nanoevents.schemas import BaseSchema
+from . import BaseSchema
 import urllib.parse
 
 
