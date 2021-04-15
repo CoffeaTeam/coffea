@@ -29,7 +29,6 @@
 from .data_source import *
 from .sx_qastle import *
 from .analysis import *
-from .accumulator import *
 from .local_executor import *
 
 __all__ = [
@@ -37,6 +36,5 @@ __all__ = [
     "FuncAdlDataset",
     "sx_event_stream",
     "Analysis",
-    "Accumulator",
     "LocalExecutor",
 ]

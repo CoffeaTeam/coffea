@@ -30,12 +30,6 @@ from coffea.nanoevents.methods.base import NanoEvents
 
 
 class Analysis(ABC):
-    def __init__(self):
-        """
-        Concrete subclasses of this should construct the accumulator
-        """
-        self.accumulator = None
-
     @staticmethod
     @abstractmethod
     def process(events: NanoEvents) -> dict:
@@ -44,7 +38,7 @@ class Analysis(ABC):
         executor will wrap this in code to construct a NanoEvents instance and will pass
         in the analysis instance's accumulator.
         :param events: NanoEvents
-        :return: dict_accumulator
+        :return: dict[str, Accumulatable]
             Filled with the results from this analysis
         """
         raise NotImplementedError

@@ -25,7 +25,6 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import asyncio
 import os
 from pathlib import Path
 from typing import Callable
@@ -34,7 +33,7 @@ import pytest
 from servicex import StreamInfoUrl
 from servicex.servicex import StreamInfoPath
 
-from coffea.processor.servicex import Accumulator, Analysis
+from coffea.processor.servicex import Analysis
 from coffea.processor.servicex.executor import Executor
 
 
@@ -46,18 +45,12 @@ class TestableExecutor(Executor):
         self,
         file_url: str,
         tree_name: str,
-        accumulator: Accumulator,
         process_func: Callable,
     ):
-        # Create an async task that will tell us the file we were processing for
-        # this analysis
-        async def foo(payload):
-            return payload
 
         # Record the tree name so we can verify it later
         self.tree_name = tree_name
-        loop = asyncio.get_event_loop()
-        return loop.create_task(foo(file_url))
+        return {file_url: 1}
 
 
 class MockDataSource:
@@ -69,21 +62,22 @@ class MockDataSource:
             yield url
 
 
+async def mock_async_generator(list):
+    for x in list:
+        yield x
+
+
 class TestExecutor:
     @pytest.mark.asyncio
     async def test_execute(self, mocker):
         executor = TestableExecutor()
         analysis = mocker.MagicMock(Analysis)
-
-        analysis.accumulator = mocker.Mock()
-        mock_histogram = mocker.Mock()
-        analysis.accumulator.identity = mocker.Mock(return_value=mock_histogram)
-
         mock_root_context = mocker.Mock()
         mock_uproot_open = mocker.patch(
             "coffea.processor.servicex.executor.uproot.open",
             return_value=mock_root_context,
         )
+
         mock_uproot_file = mocker.Mock()
         mock_uproot_file.keys = mocker.Mock(return_value=["myTree", "yourTree"])
         mock_root_context.__enter__ = mocker.Mock(return_value=mock_uproot_file)
@@ -97,18 +91,9 @@ class TestExecutor:
         )
 
         hist_stream = [f async for f in executor.execute(analysis, datasource)]
-
+        assert len(hist_stream) == 2
         mock_uproot_open.assert_called_with("http://foo.bar/foo")
-
         assert executor.tree_name == "myTree"
-
-        # Each result from the execution stream should be a growing histogram from
-        # the analysis object
-        assert all([returned_hist == mock_histogram for returned_hist in hist_stream])
-
-        # The histogram grows by executor calling add with each result returned
-        histograms = [r[0][0].result() for r in mock_histogram.add.call_args_list]
-        assert histograms == ["http://foo.bar/foo", "http://foo.bar/foo1"]
 
     @pytest.mark.asyncio
     async def test_execute_with_file_url(self, mocker):
@@ -152,14 +137,4 @@ class TestExecutor:
         else:
             mock_uproot_open.assert_called_with("C:\\foo\\root1.ROOT")
 
-        # Each result from the execution stream should be a growing histogram from
-        # the analysis object
-        assert all([returned_hist == mock_histogram for returned_hist in hist_stream])
-
-        # The histogram grows by executor calling add with each result returned
-        histograms = [r[0][0].result() for r in mock_histogram.add.call_args_list]
-
-        if os.name != "nt":
-            assert histograms == ["/foo/root1.ROOT", "/foo/root2.ROOT"]
-        else:
-            assert histograms == ["C:\\foo\\root1.ROOT", "C:\\foo\\root2.ROOT"]
+        assert len(hist_stream) == 2

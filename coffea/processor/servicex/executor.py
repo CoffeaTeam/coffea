@@ -32,11 +32,8 @@ from urllib.request import url2pathname
 
 import aiostream
 import uproot
-from .accumulator import Accumulator
-from .analysis import Analysis
 from servicex import StreamInfoUrl
-
-from .. import accumulate
+from ..accumulator import async_accumulate
 
 
 class Executor(ABC):
@@ -45,7 +42,6 @@ class Executor(ABC):
         self,
         file_url: str,
         tree_name: str,
-        accumulator: Accumulator,
         process_func: Callable,
     ):
         raise NotImplementedError
@@ -68,7 +64,7 @@ class Executor(ABC):
 
         # Launch a task against this file
         func_results = self.launch_analysis_tasks_from_stream(
-            result_file_stream, analysis.accumulator, analysis.process
+            result_file_stream, analysis.process
         )
 
         # Wait for all the data to show up
@@ -80,17 +76,13 @@ class Executor(ABC):
         finished_events = aiostream.stream.map(func_results, inline_wait, ordered=False)
         # Finally, accumulate!
         # There is an accumulate pattern in the aiostream lib
-        output = None
         async with finished_events.stream() as streamer:
-            async for results in streamer:
-                output = accumulate([results], output)
-                print("Output ", output)
-                yield output
+            async for results in async_accumulate(streamer):
+                yield results
 
     async def launch_analysis_tasks_from_stream(
         self,
         result_file_stream: AsyncGenerator[StreamInfoUrl, None],
-        accumulator: Accumulator,
         process_func: Callable,
     ) -> AsyncGenerator[Any, None]:
         """
@@ -123,36 +115,15 @@ class Executor(ABC):
             data_result = self.run_async_analysis(
                 file_url=file_url,
                 tree_name=tree_name,
-                accumulator=accumulator,
                 process_func=process_func,
             )
 
             # Pass this down to the next item in the stream.
             yield data_result
 
-    async def accumulate(
-        self, analysis: Analysis, hist_stream: AsyncGenerator[Accumulator, None]
-    ) -> AsyncGenerator[Accumulator, None]:
-        """
-        Stream processor to accumulate histograms from each process task and yield the
-        up-to-date accumulated histograms
-        :param analysis: Analysis
-            The analysis instance being accumulated
-        :param hist_stream:  AsyncGenerator[Accumulator]
-            Stream of histograms from each process task
-        :return:
-        """
-        # There is an accumulate pattern in the aiostream lib
-        output = analysis.accumulator.identity()
-        async with hist_stream.stream() as streamer:
-            async for results in streamer:
-                print("$$$ ", results)
-                output.add(results)
-                yield output
-
 
 def run_coffea_processor(
-    events_url: str, tree_name: str, accumulator, proc, explicit_func_pickle=False
+    events_url: str, tree_name: str, proc, explicit_func_pickle=False
 ):
     """
     Process a single file from a tree via a coffea processor on the remote node
