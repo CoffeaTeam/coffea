@@ -76,3 +76,13 @@ class auto_schema(BaseSchema):
             output[c_name] = record
 
         self._form["contents"] = output
+
+    @property
+    def behavior(self):
+        """Behaviors necessary to implement this schema"""
+        from coffea.nanoevents.methods import base, candidate
+
+        behavior = {}
+        behavior.update(base.behavior)
+        behavior.update(candidate.behavior)
+        return behavior

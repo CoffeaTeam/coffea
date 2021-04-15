@@ -142,16 +142,8 @@ def run_coffea_processor(
         Populated accumulator
     """
     # Since we execute remotely, explicitly include everything we need.
-    import awkward as ak
     from coffea.nanoevents import NanoEventsFactory
     from coffea.nanoevents.schemas.schema import auto_schema
-
-    # This in is amazingly important - the invar mass will fail silently without it.
-    # And must be done in here as this function is shipped off to the funcx processor
-    # on a remote machine/remote python environment.
-    from coffea.nanoevents.methods import candidate
-
-    ak.behavior.update(candidate.behavior)
 
     # Use NanoEvents to build a 4-vector
     events = NanoEventsFactory.from_root(
