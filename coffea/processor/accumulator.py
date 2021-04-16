@@ -97,6 +97,16 @@ def accumulate(
     return accum
 
 
+async def async_accumulate(result_stream):
+    output = None
+    async for results in result_stream:
+        if output:
+            output = iadd(output, results)
+        else:
+            output = results
+        yield output
+
+
 class AccumulatorABC(metaclass=ABCMeta):
     """Abstract base class for an accumulator
 
