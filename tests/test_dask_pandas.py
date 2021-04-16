@@ -52,8 +52,7 @@ def do_dask_pandas_job(client, filelist):
 
 def test_dask_pandas_job():
     distributed = pytest.importorskip("distributed", minversion="2.6.0")
-
-    client = distributed.Client(processes=False, dashboard_address=None)
+    client = distributed.Client(dashboard_address=None)
 
     import os
     import os.path as osp
