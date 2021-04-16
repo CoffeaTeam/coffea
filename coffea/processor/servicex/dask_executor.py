@@ -58,6 +58,5 @@ class DaskExecutor(Executor):
             tree_name=tree_name,
             proc=process_func,
         )
-        print("Data Result ", data_result)
 
         return data_result
