@@ -58,8 +58,7 @@ def do_dask_cached(client, filelist, cachestrategy=None):
 
 def test_dask_job():
     distributed = pytest.importorskip("distributed", minversion="2.6.0")
-    # `python setup.py pytest` doesn't seem to play nicely with separate processses
-    client = distributed.Client(processes=False, dashboard_address=None)
+    client = distributed.Client(dashboard_address=None)
 
     import os
     import os.path as osp
@@ -83,8 +82,7 @@ def test_dask_job():
 
 def test_dask_cached():
     distributed = pytest.importorskip("distributed", minversion="2.6.0")
-    # `python setup.py pytest` doesn't seem to play nicely with separate processses
-    client = distributed.Client(processes=False, dashboard_address=None)
+    client = distributed.Client(dashboard_address=None)
 
     import os
     import os.path as osp
