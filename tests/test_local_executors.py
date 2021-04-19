@@ -19,9 +19,9 @@ def test_nanoevents_analysis(executor, compression, maxchunks):
     filelist = {
         "DummyBad": {"treename": "Events", "files": [osp.abspath("tests/samples/non_existent.root")]},
         "ZJets": {"treename": "Events", "files": [osp.abspath("tests/samples/nano_dy.root")],
-                  "checkusermeta": True, "someusermeta": "hello"},
+                  "metadata": {"checkusermeta": True, "someusermeta": "hello"} },
         "Data" : {"treename": "Events", "files": [osp.abspath("tests/samples/nano_dimuon.root")],
-                  "checkusermeta": True, "someusermeta2": "world"}
+                  "metadata": {"checkusermeta": True, "someusermeta2": "world"} }
     }
     treename = "Events"
 

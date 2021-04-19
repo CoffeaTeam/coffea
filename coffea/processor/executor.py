@@ -35,6 +35,19 @@ from collections.abc import Mapping, MutableMapping
 _PICKLE_PROTOCOL = pickle.HIGHEST_PROTOCOL
 DEFAULT_METADATA_CACHE: MutableMapping = LRUCache(100000)
 
+_PROTECTED_NAMES = {
+    "dataset",
+    "filename",
+    "treename",
+    "metadata",
+    "entrystart",
+    "entrystop",
+    "fileuuid",
+    "numentries",
+    "uuid",
+    "clusters",
+}
+
 
 class FileMeta(object):
     __slots__ = ["dataset", "filename", "treename", "metadata"]
@@ -74,7 +87,7 @@ class FileMeta(object):
     def chunks(self, target_chunksize, align_clusters):
         if not self.populated(clusters=align_clusters):
             raise RuntimeError
-        user_keys = set(self.metadata.keys()) - {"numentries", "uuid"}
+        user_keys = set(self.metadata.keys()) - _PROTECTED_NAMES
         user_meta = {k: self.metadata[k] for k in user_keys}
         if align_clusters:
             chunks = [0]
@@ -1132,15 +1145,14 @@ def _normalize_fileset(fileset, treename):
             fileset = json.load(fin)
     elif not isinstance(fileset, Mapping):
         raise ValueError("Expected fileset to be a path string or mapping")
-    reserved_metakeys = ["numentries", "uuid", "clusters"]
+    reserved_metakeys = _PROTECTED_NAMES
     for dataset, filelist in fileset.items():
         user_meta = None
         if isinstance(filelist, dict):
-            user_keys = set(filelist.keys()) - {"treename", "files"}
-            if user_keys:
-                user_meta = {k: filelist[k] for k in user_keys}
+            user_meta = filelist["metadata"] if "metadata" in filelist else None
+            if user_meta is not None:
                 for rkey in reserved_metakeys:
-                    if rkey in user_keys:
+                    if rkey in user_meta.keys():
                         raise ValueError(
                             f'Reserved word "{rkey}" in fileset dictionary, please rename this entry!'
                         )
