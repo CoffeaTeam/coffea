@@ -17,9 +17,11 @@ def test_nanoevents_analysis(executor, compression, maxchunks):
     from coffea.processor.test_items import NanoEventsProcessor
 
     filelist = {
-        "DummyBad": [osp.abspath("tests/samples/non_existent.root")],
-        "ZJets": [osp.abspath("tests/samples/nano_dy.root")],
-        "Data": [osp.abspath("tests/samples/nano_dimuon.root")],
+        "DummyBad": {"treename": "Events", "files": [osp.abspath("tests/samples/non_existent.root")]},
+        "ZJets": {"treename": "Events", "files": [osp.abspath("tests/samples/nano_dy.root")],
+                  "metadata": {"checkusermeta": True, "someusermeta": "hello"} },
+        "Data" : {"treename": "Events", "files": [osp.abspath("tests/samples/nano_dimuon.root")],
+                  "metadata": {"checkusermeta": True, "someusermeta2": "world"} }
     }
     treename = "Events"
 

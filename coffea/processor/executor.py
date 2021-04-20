@@ -35,6 +35,19 @@ from collections.abc import Mapping, MutableMapping
 _PICKLE_PROTOCOL = pickle.HIGHEST_PROTOCOL
 DEFAULT_METADATA_CACHE: MutableMapping = LRUCache(100000)
 
+_PROTECTED_NAMES = {
+    "dataset",
+    "filename",
+    "treename",
+    "metadata",
+    "entrystart",
+    "entrystop",
+    "fileuuid",
+    "numentries",
+    "uuid",
+    "clusters",
+}
+
 
 class FileMeta(object):
     __slots__ = ["dataset", "filename", "treename", "metadata"]
@@ -65,6 +78,8 @@ class FileMeta(object):
         """
         if self.metadata is None:
             return False
+        elif "numentries" not in self.metadata or "uuid" not in self.metadata:
+            return False
         elif clusters and "clusters" not in self.metadata:
             return False
         return True
@@ -72,6 +87,8 @@ class FileMeta(object):
     def chunks(self, target_chunksize, align_clusters):
         if not self.populated(clusters=align_clusters):
             raise RuntimeError
+        user_keys = set(self.metadata.keys()) - _PROTECTED_NAMES
+        user_meta = {k: self.metadata[k] for k in user_keys}
         if align_clusters:
             chunks = [0]
             for c in self.metadata["clusters"]:
@@ -87,6 +104,7 @@ class FileMeta(object):
                     start,
                     stop,
                     self.metadata["uuid"],
+                    user_meta,
                 )
         else:
             n = max(round(self.metadata["numentries"] / target_chunksize), 1)
@@ -102,6 +120,7 @@ class FileMeta(object):
                     start,
                     stop,
                     self.metadata["uuid"],
+                    user_meta,
                 )
 
 
@@ -113,15 +132,26 @@ class WorkItem(object):
         "entrystart",
         "entrystop",
         "fileuuid",
+        "usermeta",
     ]
 
-    def __init__(self, dataset, filename, treename, entrystart, entrystop, fileuuid):
+    def __init__(
+        self,
+        dataset,
+        filename,
+        treename,
+        entrystart,
+        entrystop,
+        fileuuid,
+        usermeta=None,
+    ):
         self.dataset = dataset
         self.filename = filename
         self.treename = treename
         self.entrystart = entrystart
         self.entrystop = entrystop
         self.fileuuid = fileuuid
+        self.usermeta = usermeta
 
 
 def _compress(item, clevel):
@@ -1008,6 +1038,8 @@ def _work_function(
                 if len(item.fileuuid) > 0
                 else "",
             }
+            if item.usermeta is not None:
+                metadata.update(item.usermeta)
 
             with filecontext as file:
                 if schema is None:
@@ -1113,12 +1145,17 @@ def _normalize_fileset(fileset, treename):
             fileset = json.load(fin)
     elif not isinstance(fileset, Mapping):
         raise ValueError("Expected fileset to be a path string or mapping")
+    reserved_metakeys = _PROTECTED_NAMES
     for dataset, filelist in fileset.items():
+        user_meta = None
         if isinstance(filelist, dict):
-            if set(filelist.keys()) - {"treename", "files"}:
-                raise ValueError(
-                    f"Extraneous arguments in fileset dictionary, expected treename, files but got {set(filelist.keys())}"
-                )
+            user_meta = filelist["metadata"] if "metadata" in filelist else None
+            if user_meta is not None:
+                for rkey in reserved_metakeys:
+                    if rkey in user_meta.keys():
+                        raise ValueError(
+                            f'Reserved word "{rkey}" in metadata section of fileset dictionary, please rename this entry!'
+                        )
             if "treename" not in filelist and treename is None:
                 raise ValueError(
                     "treename must be specified if the fileset does not contain tree names"
@@ -1136,7 +1173,7 @@ def _normalize_fileset(fileset, treename):
         else:
             raise ValueError("list of filenames in fileset must be a list or a dict")
         for filename in filelist:
-            yield FileMeta(dataset, filename, local_treename)
+            yield FileMeta(dataset, filename, local_treename, user_meta)
 
 
 def _get_metadata(
@@ -1150,7 +1187,10 @@ def _get_metadata(
         try:
             file = uproot.open(item.filename, timeout=xrootdtimeout)
             tree = file[item.treename]
-            metadata = {"numentries": tree.num_entries, "uuid": file.file.fUUID}
+            metadata = {}
+            if item.metadata:
+                metadata.update(item.metadata)
+            metadata.update({"numentries": tree.num_entries, "uuid": file.file.fUUID})
             if align_clusters:
                 metadata["clusters"] = tree.common_entry_offsets()
             out = set_accumulator(
