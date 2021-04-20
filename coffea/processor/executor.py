@@ -1154,7 +1154,7 @@ def _normalize_fileset(fileset, treename):
                 for rkey in reserved_metakeys:
                     if rkey in user_meta.keys():
                         raise ValueError(
-                            f'Reserved word "{rkey}" in fileset dictionary, please rename this entry!'
+                            f'Reserved word "{rkey}" in metadata section of fileset dictionary, please rename this entry!'
                         )
             if "treename" not in filelist and treename is None:
                 raise ValueError(
