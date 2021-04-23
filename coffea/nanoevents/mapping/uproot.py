@@ -28,9 +28,9 @@ class UprootSourceMapping(BaseSourceMapping):
         super(UprootSourceMapping, self).__init__(fileopener, cache, access_log)
 
     @classmethod
-    def _extract_base_form(cls, tree):
+    def _extract_base_form(cls, tree, iteritems_options={}):
         branch_forms = {}
-        for key, branch in tree.iteritems():
+        for key, branch in tree.iteritems(**iteritems_options):
             if key in branch_forms:
                 warnings.warn(
                     f"Found duplicate branch {key} in {tree}, taking first instance"
@@ -43,7 +43,19 @@ class UprootSourceMapping(BaseSourceMapping):
                 continue
             if len(branch):
                 continue
-            form = branch.interpretation.awkward_form(None)
+            if isinstance(
+                branch.interpretation,
+                uproot.interpretation.identify.UnknownInterpretation,
+            ):
+                warnings.warn(f"Skipping {key} as it is not interpretable by Uproot")
+                continue
+            try:
+                form = branch.interpretation.awkward_form(None)
+            except uproot.interpretation.objects.CannotBeAwkward:
+                warnings.warn(
+                    f"Skipping {key} as it is it cannot be represented as an Awkward array"
+                )
+                continue
             form = uproot._util.awkward_form_remove_uproot(awkward, form)
             form = json.loads(form.tojson())
             if (
@@ -53,6 +65,23 @@ class UprootSourceMapping(BaseSourceMapping):
                 form["form_key"] = quote(f"{key},!load")
                 form["content"]["form_key"] = quote(f"{key},!load,!content")
                 form["content"]["parameters"] = {"__doc__": branch.title}
+            elif (
+                form["class"].startswith("ListOffset")
+                and form["content"]["class"].startswith("ListOffset")
+                and form["content"]["content"]["class"] in ["NumpyArray", "RecordArray"]
+            ):
+                form["form_key"] = quote(f"{key},!load")
+                form["content"]["form_key"] = quote(f"{key},!load,!content")
+                form["content"]["parameters"] = {"__doc__": branch.title}
+                if form["content"]["content"]["class"] == "NumpyArray":
+                    form["content"]["content"]["form_key"] = quote(
+                        f"{key},!load,!content,!content"
+                    )
+                else:
+                    for field in form["content"]["content"]["contents"]:
+                        form["content"]["content"]["contents"][field][
+                            "form_key"
+                        ] = quote(f"{key},!load,!content,!content,!item'{field}'")
             elif form["class"] == "NumpyArray":
                 form["form_key"] = quote(f"{key},!load")
                 form["parameters"] = {"__doc__": branch.title}

@@ -60,6 +60,7 @@ class NanoEventsFactory:
         metadata=None,
         uproot_options={},
         access_log=None,
+        iteritems_options={},
     ):
         """Quickly build NanoEvents from a root file
 
@@ -119,7 +120,9 @@ class NanoEventsFactory:
         )
         mapping.preload_column_source(partition_key[0], partition_key[1], tree)
 
-        base_form = mapping._extract_base_form(tree)
+        base_form = mapping._extract_base_form(
+            tree, iteritems_options=iteritems_options
+        )
 
         return cls._from_mapping(
             mapping,

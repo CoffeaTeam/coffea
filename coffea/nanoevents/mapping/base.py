@@ -88,6 +88,8 @@ class BaseSourceMapping(Mapping):
                     self._column_source(uuid, treepath), handle_name
                 )
                 stack.append(self.extract_column(handle, start, stop))
+            elif node.startswith("!item"):
+                transforms.item(stack, node.split("'")[1])
             elif node.startswith("!"):
                 tname = node[1:]
                 if not hasattr(transforms, tname):
