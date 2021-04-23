@@ -1,6 +1,5 @@
-from coffea import hist, processor
+from coffea import processor
 import awkward as ak
-import numpy as np
 import pandas as pd
 
 
@@ -21,12 +20,12 @@ class NanoTestProcessorPandas(processor.ProcessorABC):
 
         events = events[ak.any(events.Muon.pt > 20, axis=-1)]
 
-        output['run'] = ak.to_numpy(events.run)
-        output['event'] = ak.to_numpy(events.event)
-        output['dataset'] = events.metadata['dataset']
+        output["run"] = ak.to_numpy(events.run)
+        output["event"] = ak.to_numpy(events.event)
+        output["dataset"] = events.metadata["dataset"]
 
-        output['mu1_pt'] = -999.0
-        output['mu2_pt'] = -999.0
+        output["mu1_pt"] = -999.0
+        output["mu2_pt"] = -999.0
 
         muons = events.Muon[events.Muon.pt > 20]
 
@@ -34,8 +33,8 @@ class NanoTestProcessorPandas(processor.ProcessorABC):
         one_muon = ak.to_numpy(counts > 0)
         two_muons = ak.to_numpy(counts > 1)
 
-        output.loc[one_muon, 'mu1_pt'] = ak.to_numpy(muons[one_muon][:, 0].pt)
-        output.loc[two_muons, 'mu2_pt'] = ak.to_numpy(muons[two_muons][:, 1].pt)
+        output.loc[one_muon, "mu1_pt"] = ak.to_numpy(muons[one_muon][:, 0].pt)
+        output.loc[two_muons, "mu2_pt"] = ak.to_numpy(muons[two_muons][:, 1].pt)
         return output
 
     def postprocess(self, accumulator):

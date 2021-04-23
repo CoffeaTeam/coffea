@@ -11,6 +11,11 @@ class NanoEventsProcessor(processor.ProcessorABC):
         mass_axis = hist.Bin("mass", r"$m_{\mu\mu}$ [GeV]", 30000, 0.25, 300)
         pt_axis = hist.Bin("pt", r"$p_{T}$ [GeV]", 30000, 0.25, 300)
 
+        self.expected_usermeta = {
+            "ZJets": ("someusermeta", "hello"),
+            "Data": ("someusermeta2", "world"),
+        }
+
         self._accumulator = processor.dict_accumulator(
             {
                 "mass": hist.Hist("Counts", dataset_axis, mass_axis),
@@ -32,6 +37,10 @@ class NanoEventsProcessor(processor.ProcessorABC):
         output = self.accumulator.identity()
 
         dataset = events.metadata["dataset"]
+        print(events.metadata)
+        if "checkusermeta" in events.metadata:
+            metaname, metavalue = self.expected_usermeta[dataset]
+            assert metavalue == events.metadata[metaname]
 
         mapping = events.behavior["__events_factory__"]._mapping
         muon_pt = events.Muon.pt
@@ -41,8 +50,9 @@ class NanoEventsProcessor(processor.ProcessorABC):
             if has_canaries:
                 try:
                     from distributed import get_worker
+
                     worker = get_worker()
-                    output['worker'].add(worker.name)
+                    output["worker"].add(worker.name)
                 except ValueError:
                     pass
 

@@ -1,10 +1,9 @@
 from abc import abstractmethod
-import warnings
 from cachetools import LRUCache
 from collections.abc import Mapping
 import numpy
 from coffea.nanoevents import transforms
-from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
+from coffea.nanoevents.util import key_to_tuple, tuple_to_key
 
 
 class UUIDOpener:
@@ -33,16 +32,6 @@ class BaseSourceMapping(Mapping):
     @abstractmethod
     def _extract_base_form(cls, source):
         pass
-
-    def __getstate__(self):
-        return {
-            "fileopener": self._fileopener,
-        }
-
-    def __setstate__(self, state):
-        self._fileopener = state["fileopener"]
-        self._cache = None
-        self.setup()
 
     def _column_source(self, uuid, path_in_source):
         key = self.key_root() + tuple_to_key((uuid, path_in_source))

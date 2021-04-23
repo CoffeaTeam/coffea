@@ -1,9 +1,7 @@
 from ..lookup_tools.jme_standard_function import jme_standard_function
-import warnings
 import re
 import awkward
 import numpy
-from copy import deepcopy
 from functools import reduce
 
 
@@ -12,22 +10,24 @@ def _checkConsistency(against, tocheck):
         against = tocheck
     else:
         if against != tocheck:
-            raise Exception('Corrector for {} is mixed'
-                            'with correctors for {}!'.format(tocheck, against))
+            raise Exception(
+                "Corrector for {} is mixed"
+                "with correctors for {}!".format(tocheck, against)
+            )
     return tocheck
 
 
-_levelre = re.compile('[L1-7]+')
+_levelre = re.compile("[L1-7]+")
 
 
 def _getLevel(levelName):
     matches = _levelre.findall(levelName)
     if len(matches) > 1:
-        raise Exception('Malformed JEC level name: {}'.format(levelName))
+        raise Exception("Malformed JEC level name: {}".format(levelName))
     return matches[0]
 
 
-_level_order = ['L1', 'L2', 'L3', 'L2L3']
+_level_order = ["L1", "L2", "L3", "L2L3"]
 
 
 class FactorizedJetCorrector(object):
@@ -46,6 +46,7 @@ class FactorizedJetCorrector(object):
         jetCorrs = fjc(JetParameter1=jet.parameter1,...)
 
     """
+
     def __init__(self, **kwargs):
         """
         You construct a FactorizedJetCorrector by passing in a dict of names and functions.
@@ -59,11 +60,14 @@ class FactorizedJetCorrector(object):
         dataera = None
         for name, func in kwargs.items():
             if not isinstance(func, jme_standard_function):
-                raise Exception('{} is a {} and not a jme_standard_function!'.format(name,
-                                                                                     type(func)))
-            info = name.split('_')
+                raise Exception(
+                    "{} is a {} and not a jme_standard_function!".format(
+                        name, type(func)
+                    )
+                )
+            info = name.split("_")
             if len(info) > 6 or len(info) < 5:
-                raise Exception('Corrector name is not properly formatted!')
+                raise Exception("Corrector name is not properly formatted!")
             offset = len(info) - 5
 
             campaign = _checkConsistency(campaign, info[0])
@@ -74,28 +78,28 @@ class FactorizedJetCorrector(object):
             jettype = _checkConsistency(jettype, info[4 + offset])
 
         if campaign is None:
-            raise Exception('Unable to determine production campaign of JECs!')
+            raise Exception("Unable to determine production campaign of JECs!")
         else:
             self._campaign = campaign
 
         if dataera is None:
-            raise Exception('Unable to determine data era of JECs!')
+            raise Exception("Unable to determine data era of JECs!")
         else:
             self._dataera = dataera
 
         if datatype is None:
-            raise Exception('Unable to determine if JECs are for MC or Data!')
+            raise Exception("Unable to determine if JECs are for MC or Data!")
         else:
             self._datatype = datatype
 
         if len(levels) == 0:
-            raise Exception('No levels provided?')
+            raise Exception("No levels provided?")
         else:
             self._levels = levels
             self._funcs = funcs
 
         if jettype is None:
-            raise Exception('Unable to determine type of jet to correct!')
+            raise Exception("Unable to determine type of jet to correct!")
         else:
             self._jettype = jettype
 
@@ -104,8 +108,14 @@ class FactorizedJetCorrector(object):
             this_level = _getLevel(level)
             ord_idx = _level_order.index(this_level)
             if i != this_level and n_levels > 1:
-                self._levels[i], self._levels[ord_idx] = self._levels[ord_idx], self._levels[i]
-                self._funcs[i], self._funcs[ord_idx] = self._funcs[ord_idx], self._funcs[i]
+                self._levels[i], self._levels[ord_idx] = (
+                    self._levels[ord_idx],
+                    self._levels[i],
+                )
+                self._funcs[i], self._funcs[ord_idx] = (
+                    self._funcs[ord_idx],
+                    self._funcs[i],
+                )
 
         # now we setup the call signature for this factorized JEC
         self._signature = []
@@ -121,12 +131,12 @@ class FactorizedJetCorrector(object):
         return self._signature
 
     def __repr__(self):
-        out = 'campaign   : %s\n' % (self._campaign)
-        out += 'data era   : %s\n' % (self._dataera)
-        out += 'data type  : %s\n' % (self._datatype)
-        out += 'jet type   : %s\n' % (self._jettype)
-        out += 'levels     : %s\n' % (','.join(self._levels))
-        out += 'signature  : (%s)\n' % (','.join(self._signature))
+        out = "campaign   : %s\n" % (self._campaign)
+        out += "data era   : %s\n" % (self._dataera)
+        out += "data type  : %s\n" % (self._datatype)
+        out += "jet type   : %s\n" % (self._jettype)
+        out += "levels     : %s\n" % (",".join(self._levels))
+        out += "signature  : (%s)\n" % (",".join(self._signature))
         return out
 
     def getCorrection(self, **kwargs):
@@ -138,21 +148,28 @@ class FactorizedJetCorrector(object):
             jecs = corrector.getCorrection(JetProperty1=jet.property1,...)
 
         """
-        cache = kwargs.get('lazy_cache', None)
-        form = kwargs.get('form', None)
+        cache = kwargs.get("lazy_cache", None)
+        form = kwargs.get("form", None)
         first_arg = kwargs[self.signature[0]]
 
         def total_corr(jec, **kwargs):
             corrs = jec.getSubCorrections(**kwargs)
-            return reduce(lambda x, y: y * x , corrs, 1.0)
+            return reduce(lambda x, y: y * x, corrs, 1.0)
 
         out = None
         if isinstance(first_arg, awkward.highlevel.Array):
-            out = awkward.virtual(total_corr, args=(self, ), kwargs=kwargs, length=len(first_arg), form=form, cache=cache)
+            out = awkward.virtual(
+                total_corr,
+                args=(self,),
+                kwargs=kwargs,
+                length=len(first_arg),
+                form=form,
+                cache=cache,
+            )
         elif isinstance(first_arg, numpy.ndarray):
             out = total_corr(self, **kwargs)  # np is non-lazy
         else:
-            raise Exception('Unknown array library for inputs.')
+            raise Exception("Unknown array library for inputs.")
 
         return out
 
@@ -166,29 +183,36 @@ class FactorizedJetCorrector(object):
             #'jecs' will be formatted like [[jec_jet1 jec_jet2 ...] ...]
 
         """
-        cache = kwargs.pop('lazy_cache', None)
-        form = kwargs.pop('form', None)
+        cache = kwargs.pop("lazy_cache", None)
+        form = kwargs.pop("form", None)
         corrVars = {}
-        if 'JetPt' in kwargs.keys():
-            corrVars['JetPt'] = kwargs['JetPt']
-            kwargs.pop('JetPt')
-        if 'JetE' in kwargs.keys():
-            corrVars['JetE'] = kwargs['JetE']
-            kwargs.pop('JetE')
+        if "JetPt" in kwargs.keys():
+            corrVars["JetPt"] = kwargs["JetPt"]
+            kwargs.pop("JetPt")
+        if "JetE" in kwargs.keys():
+            corrVars["JetE"] = kwargs["JetE"]
+            kwargs.pop("JetE")
         if len(corrVars) == 0:
-            raise Exception('No variable to correct, need JetPt or JetE in inputs!')
+            raise Exception("No variable to correct, need JetPt or JetE in inputs!")
 
         corrections = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
             cumCorr = reduce(lambda x, y: y * x, corrections, 1.0)
-            fargs = tuple((cumCorr * corrVars[arg]) if arg in corrVars.keys() else kwargs[arg] for arg in sig)
+            fargs = tuple(
+                (cumCorr * corrVars[arg]) if arg in corrVars.keys() else kwargs[arg]
+                for arg in sig
+            )
 
             if isinstance(fargs[0], awkward.highlevel.Array):
-                corrections.append(awkward.virtual(func, args=fargs, length=len(fargs[0]), form=form, cache=cache))
+                corrections.append(
+                    awkward.virtual(
+                        func, args=fargs, length=len(fargs[0]), form=form, cache=cache
+                    )
+                )
             elif isinstance(fargs[0], numpy.ndarray):
                 corrections.append(func(*fargs))  # np is non-lazy
             else:
-                raise Exception('Unknown array library for inputs.')
+                raise Exception("Unknown array library for inputs.")
 
         return corrections

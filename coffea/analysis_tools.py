@@ -9,7 +9,7 @@ import coffea.processor
 
 
 class WeightStatistics(coffea.processor.AccumulatorABC):
-    def __init__(self, sumw, sumw2, minw, maxw, n):
+    def __init__(self, sumw=0.0, sumw2=0.0, minw=numpy.inf, maxw=-numpy.inf, n=0):
         self.sumw = sumw
         self.sumw2 = sumw2
         self.minw = minw
@@ -20,16 +20,14 @@ class WeightStatistics(coffea.processor.AccumulatorABC):
         return f"WeightStatistics(sumw={self.sumw}, sumw2={self.sumw2}, minw={self.minw}, maxw={self.maxw}, n={self.n})"
 
     def identity(self):
-        return WeightStatistics(0.0, 0.0, numpy.inf, -numpy.inf, 0)
+        return WeightStatistics()
 
     def add(self, other):
-        return WeightStatistics(
-            self.sumw + other.sumw,
-            self.sumw2 + other.sumw2,
-            min(self.minw, other.minw),
-            max(self.maxw, other.maxw),
-            self.n + other.n,
-        )
+        self.sumw += other.sumw
+        self.sumw2 += other.sumw2
+        self.minw = min(self.minw, other.minw)
+        self.maxw = max(self.maxw, other.maxw)
+        self.n += other.n
 
 
 class Weights:
@@ -307,3 +305,32 @@ class PackedSelection:
     def all(self, *names):
         """Shorthand for `require`, where all the values are True"""
         return self.require(**{name: True for name in names})
+
+    def any(self, *names):
+        """Return a mask vector corresponding to an inclusive OR of requirements
+
+        Parameters
+        ----------
+            ``*names`` : args
+                The named selections to allow
+
+        Examples
+        --------
+        If
+
+        >>> selection.names
+        ['cut1', 'cut2', 'cut3']
+
+        then
+
+        >>> selection.any("cut1", "cut2")
+        array([True, False, True, ...])
+
+        returns a boolean array where an entry is True if the corresponding entries
+        ``cut1 == True`` or ``cut2 == False``, and ``cut3`` arbitrary.
+        """
+        consider = 0
+        for name in names:
+            idx = self._names.index(name)
+            consider |= 1 << idx
+        return (self._data & consider) != 0

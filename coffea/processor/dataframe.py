@@ -1,5 +1,4 @@
 from collections.abc import MutableMapping
-import awkward
 import uproot
 
 
@@ -24,7 +23,9 @@ class LazyDataFrame(MutableMapping):
             Additional metadata for the dataframe
     """
 
-    def __init__(self, tree, entrystart=None, entrystop=None, preload_items=None, metadata=None):
+    def __init__(
+        self, tree, entrystart=None, entrystop=None, preload_items=None, metadata=None
+    ):
         self._tree = tree
         self._branchargs = {
             "decompression_executor": uproot.source.futures.TrivialExecutor(),

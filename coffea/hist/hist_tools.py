@@ -4,7 +4,6 @@ import numpy
 from coffea.processor.accumulator import AccumulatorABC
 import copy
 import functools
-import math
 import numbers
 import re
 import warnings
@@ -22,16 +21,16 @@ try:
 except ImportError:
     from collections import Sequence
 
-MaybeSumSlice = namedtuple('MaybeSumSlice', ['start', 'stop', 'sum'])
+MaybeSumSlice = namedtuple("MaybeSumSlice", ["start", "stop", "sum"])
 
 
 def assemble_blocks(array, ndslice, depth=0):
     """
-        Turns an n-dimensional slice of array (tuple of slices)
-         into a nested list of numpy arrays that can be passed to numpy.block()
+    Turns an n-dimensional slice of array (tuple of slices)
+     into a nested list of numpy arrays that can be passed to numpy.block()
 
-        Under the assumption that index 0 of any dimension is underflow, -2 overflow, -1 nanflow,
-         this function will add the range not in the slice to the appropriate (over/under)flow bins
+    Under the assumption that index 0 of any dimension is underflow, -2 overflow, -1 nanflow,
+     this function will add the range not in the slice to the appropriate (over/under)flow bins
     """
     if depth == 0:
         ndslice = [MaybeSumSlice(s.start, s.stop, False) for s in ndslice]
@@ -55,17 +54,17 @@ def assemble_blocks(array, ndslice, depth=0):
 
 
 def overflow_behavior(overflow):
-    if overflow == 'none':
+    if overflow == "none":
         return slice(1, -2)
-    elif overflow == 'under':
+    elif overflow == "under":
         return slice(None, -2)
-    elif overflow == 'over':
+    elif overflow == "over":
         return slice(1, -1)
-    elif overflow == 'all':
+    elif overflow == "all":
         return slice(None, -1)
-    elif overflow == 'allnan':
+    elif overflow == "allnan":
         return slice(None)
-    elif overflow == 'justnan':
+    elif overflow == "justnan":
         return slice(-1, None)
     else:
         raise ValueError("Unrecognized overflow behavior: %s" % overflow)
@@ -86,13 +85,18 @@ class Interval(object):
         hi : float
             Bin upper bound, exclusive
     """
+
     def __init__(self, lo, hi, label=None):
         self._lo = float(lo)
         self._hi = float(hi)
         self._label = label
 
     def __repr__(self):
-        return "<%s (%s) instance at 0x%0x>" % (self.__class__.__name__, str(self), id(self))
+        return "<%s (%s) instance at 0x%0x>" % (
+            self.__class__.__name__,
+            str(self),
+            id(self),
+        )
 
     def __str__(self):
         if self._label is not None:
@@ -101,7 +105,11 @@ class Interval(object):
             return "(nanflow)"
         # string representation of floats is apparently a touchy subject.. further reading:
         # https://stackoverflow.com/questions/25898733/why-does-strfloat-return-more-digits-in-python-3-than-python-2
-        return "%s%.12g, %.12g)" % ("(" if self._lo == -numpy.inf else "[", self._lo, self._hi)
+        return "%s%.12g, %.12g)" % (
+            "(" if self._lo == -numpy.inf else "[",
+            self._lo,
+            self._hi,
+        )
 
     def __hash__(self):
         return hash((self._lo, self._hi))
@@ -113,7 +121,10 @@ class Interval(object):
             return False
         elif self._lo < other._lo:
             if self._hi > other._lo:
-                raise ValueError("Intervals %r and %r intersect! What are you doing?!" % (self, other))
+                raise ValueError(
+                    "Intervals %r and %r intersect! What are you doing?!"
+                    % (self, other)
+                )
             return True
         return False
 
@@ -169,16 +180,25 @@ class StringBin(object):
             a custom label, which will be used preferentially in legends
             produced by `hist.plot1d`, etc.
     """
+
     def __init__(self, name, label=None):
         if not isinstance(name, basestring):
-            raise TypeError("StringBin only supports string categories, received a %r" % name)
-        elif '*' in name:
-            raise ValueError("StringBin does not support character '*' as it conflicts with wildcard mapping.")
+            raise TypeError(
+                "StringBin only supports string categories, received a %r" % name
+            )
+        elif "*" in name:
+            raise ValueError(
+                "StringBin does not support character '*' as it conflicts with wildcard mapping."
+            )
         self._name = name
         self._label = label
 
     def __repr__(self):
-        return "<%s (%s) instance at 0x%0x>" % (self.__class__.__name__, self.name, id(self))
+        return "<%s (%s) instance at 0x%0x>" % (
+            self.__class__.__name__,
+            self.name,
+            id(self),
+        )
 
     def __str__(self):
         if self._label is not None:
@@ -216,14 +236,21 @@ class Axis(object):
     Axis: Base class for any type of axis
     Derived classes should implement, at least, an equality override
     """
+
     def __init__(self, name, label):
         if name == "weight":
-            raise ValueError("Cannot create axis: 'weight' is a reserved keyword for Hist.fill()")
+            raise ValueError(
+                "Cannot create axis: 'weight' is a reserved keyword for Hist.fill()"
+            )
         self._name = name
         self._label = label
 
     def __repr__(self):
-        return "<%s (name=%s) instance at 0x%0x>" % (self.__class__.__name__, self._name, id(self))
+        return "<%s (name=%s) instance at 0x%0x>" % (
+            self.__class__.__name__,
+            self._name,
+            id(self),
+        )
 
     @property
     def name(self):
@@ -270,6 +297,7 @@ class SparseAxis(Axis):
     may be useful if the size of the tuple of identifiers in a
     sparse-binned histogram becomes too large
     """
+
     pass
 
 
@@ -290,7 +318,8 @@ class Cat(SparseAxis):
     The number of categories is arbitrary, and can be filled sparsely
     Identifiers are strings
     """
-    def __init__(self, name, label, sorting='identifier'):
+
+    def __init__(self, name, label, sorting="identifier"):
         super(Cat, self).__init__(name, label)
         # In all cases key == value.name
         self._bins = {}
@@ -316,7 +345,7 @@ class Cat(SparseAxis):
         if index.name not in self._bins:
             self._bins[index.name] = index
             self._sorted.append(index.name)
-            if self._sorting == 'identifier':
+            if self._sorting == "identifier":
                 self._sorted.sort()
         return self._bins[index.name]
 
@@ -339,12 +368,14 @@ class Cat(SparseAxis):
         elif isinstance(the_slice, _regex_pattern):
             out = [k for k in self._sorted if the_slice.match(k)]
         elif isinstance(the_slice, basestring):
-            pattern = "^" + re.escape(the_slice).replace(r'\*', '.*') + "$"
+            pattern = "^" + re.escape(the_slice).replace(r"\*", ".*") + "$"
             m = re.compile(pattern)
             out = [k for k in self._sorted if m.match(k)]
         elif isinstance(the_slice, list):
             if not all(k in self._sorted for k in the_slice):
-                warnings.warn("Not all requested indices present in %r" % self, RuntimeWarning)
+                warnings.warn(
+                    "Not all requested indices present in %r" % self, RuntimeWarning
+                )
             out = [k for k in self._sorted if k in the_slice]
         elif isinstance(the_slice, slice):
             if the_slice.step is not None:
@@ -360,7 +391,9 @@ class Cat(SparseAxis):
                 stop = the_slice.stop
             out = self._sorted[start:stop]
         else:
-            raise IndexError("Cannot understand slice %r on axis %r" % (the_slice, self))
+            raise IndexError(
+                "Cannot understand slice %r on axis %r" % (the_slice, self)
+            )
         return [self._bins[k] for k in out]
 
     @property
@@ -378,12 +411,12 @@ class Cat(SparseAxis):
 
     @sorting.setter
     def sorting(self, newsorting):
-        if newsorting == 'placement':
+        if newsorting == "placement":
             # not much we can do about already inserted values
             pass
-        elif newsorting == 'identifier':
+        elif newsorting == "identifier":
             self._sorted.sort()
-        elif newsorting == 'integral':
+        elif newsorting == "integral":
             # this will be checked in any Hist.identifiers() call accessing this axis
             pass
         else:
@@ -413,6 +446,7 @@ class DenseAxis(Axis):
     TODO: hasoverflow(), not all dense axes might have an overflow concept,
     currently it is implicitly assumed they do (as the only dense type is a numeric axis)
     """
+
     pass
 
 
@@ -437,12 +471,13 @@ class Bin(DenseAxis):
     ``0 = underflow, n+1 = overflow, n+2 = nanflow``
     Bin boundaries are [lo, hi)
     """
+
     def __init__(self, name, label, n_or_arr, lo=None, hi=None):
         super(Bin, self).__init__(name, label)
         self._lazy_intervals = None
         if isinstance(n_or_arr, (list, numpy.ndarray)):
             self._uniform = False
-            self._bins = numpy.array(n_or_arr, dtype='d')
+            self._bins = numpy.array(n_or_arr, dtype="d")
             if not all(numpy.sort(self._bins) == self._bins):
                 raise ValueError("Binning not sorted!")
             self._lo = self._bins[0]
@@ -453,38 +488,54 @@ class Bin(DenseAxis):
             self._bin_names = numpy.full(self._interval_bins[:-1].size, None)
         elif isinstance(n_or_arr, numbers.Integral):
             if lo is None or hi is None:
-                raise TypeError("Interpreting n_or_arr as uniform binning, please specify lo and hi values")
+                raise TypeError(
+                    "Interpreting n_or_arr as uniform binning, please specify lo and hi values"
+                )
             self._uniform = True
             self._lo = lo
             self._hi = hi
             self._bins = n_or_arr
-            self._interval_bins = numpy.r_[-numpy.inf, numpy.linspace(self._lo, self._hi, self._bins + 1), numpy.inf, numpy.nan]
+            self._interval_bins = numpy.r_[
+                -numpy.inf,
+                numpy.linspace(self._lo, self._hi, self._bins + 1),
+                numpy.inf,
+                numpy.nan,
+            ]
             self._bin_names = numpy.full(self._interval_bins[:-1].size, None)
         else:
-            raise TypeError("Cannot understand n_or_arr (nbins or binning array) type %r" % n_or_arr)
+            raise TypeError(
+                "Cannot understand n_or_arr (nbins or binning array) type %r" % n_or_arr
+            )
 
     @property
     def _intervals(self):
-        if not hasattr(self, '_lazy_intervals') or self._lazy_intervals is None:
-            self._lazy_intervals = [Interval(low, high, bin) for low, high, bin in zip(self._interval_bins[:-1],
-                                                                                       self._interval_bins[1:],
-                                                                                       self._bin_names)]
+        if not hasattr(self, "_lazy_intervals") or self._lazy_intervals is None:
+            self._lazy_intervals = [
+                Interval(low, high, bin)
+                for low, high, bin in zip(
+                    self._interval_bins[:-1], self._interval_bins[1:], self._bin_names
+                )
+            ]
         return self._lazy_intervals
 
     def __getstate__(self):
-        if hasattr(self, '_lazy_intervals') and self._lazy_intervals is not None:
-            self._bin_names = numpy.array([interval.label for interval in self._lazy_intervals])
-        self.__dict__.pop('_lazy_intervals', None)
+        if hasattr(self, "_lazy_intervals") and self._lazy_intervals is not None:
+            self._bin_names = numpy.array(
+                [interval.label for interval in self._lazy_intervals]
+            )
+        self.__dict__.pop("_lazy_intervals", None)
         return self.__dict__
 
     def __setstate__(self, d):
-        if '_intervals' in d:  # convert old hists to new serialization format
-            _old_intervals = d.pop('_intervals')
+        if "_intervals" in d:  # convert old hists to new serialization format
+            _old_intervals = d.pop("_intervals")
             interval_bins = [i._lo for i in _old_intervals] + [_old_intervals[-1]._hi]
-            d['_interval_bins'] = numpy.array(interval_bins)
-            d['_bin_names'] = numpy.array([interval._label for interval in _old_intervals])
-        if '_interval_bins' in d and '_bin_names' not in d:
-            d['_bin_names'] = numpy.full(d['_interval_bins'][:-1].size, None)
+            d["_interval_bins"] = numpy.array(interval_bins)
+            d["_bin_names"] = numpy.array(
+                [interval._label for interval in _old_intervals]
+            )
+        if "_interval_bins" in d and "_bin_names" not in d:
+            d["_bin_names"] = numpy.full(d["_interval_bins"][:-1].size, None)
         self.__dict__ = d
 
     def index(self, identifier):
@@ -504,7 +555,16 @@ class Bin(DenseAxis):
             if isarray:
                 identifier = numpy.asarray(identifier)
             if self._uniform:
-                idx = numpy.clip(numpy.floor((identifier - self._lo) * float(self._bins) / (self._hi - self._lo)) + 1, 0, self._bins + 1)
+                idx = numpy.clip(
+                    numpy.floor(
+                        (identifier - self._lo)
+                        * float(self._bins)
+                        / (self._hi - self._lo)
+                    )
+                    + 1,
+                    0,
+                    self._bins + 1,
+                )
                 if isinstance(idx, numpy.ndarray):
                     idx[numpy.isnan(idx)] = self.size - 1
                     idx = idx.astype(int)
@@ -514,14 +574,17 @@ class Bin(DenseAxis):
                     idx = int(idx)
                 return idx
             else:
-                return numpy.searchsorted(self._bins, identifier, side='right')
+                return numpy.searchsorted(self._bins, identifier, side="right")
         elif isinstance(identifier, Interval):
             if identifier.nan():
                 return self.size - 1
             for idx, interval in enumerate(self._intervals):
                 if interval._lo <= identifier._lo and interval._hi >= identifier._hi:
                     return idx
-            raise ValueError("Axis %r has no interval that fully contains identifier %r" % (self, identifier))
+            raise ValueError(
+                "Axis %r has no interval that fully contains identifier %r"
+                % (self, identifier)
+            )
         raise TypeError("Request bin indices with a identifier or 1-D array only")
 
     def __eq__(self, other):
@@ -553,45 +616,69 @@ class Bin(DenseAxis):
             blo, bhi = None, None
             if the_slice.start is not None:
                 if the_slice.start < self._lo:
-                    raise ValueError("Reducing along axis %r: requested start %r exceeds bin boundaries (use open slicing, e.g. x[:stop])" % (self,
-                                                                                                                                              the_slice.start))
+                    raise ValueError(
+                        "Reducing along axis %r: requested start %r exceeds bin boundaries (use open slicing, e.g. x[:stop])"
+                        % (self, the_slice.start)
+                    )
                 if self._uniform:
-                    blo_real = (the_slice.start - self._lo) * self._bins / (self._hi - self._lo) + 1
-                    blo = numpy.clip(numpy.round(blo_real).astype(int), 0, self._bins + 1)
-                    if abs(blo - blo_real) > 1.e-14:
-                        warnings.warn("Reducing along axis %r: requested start %r between bin boundaries, no interpolation is performed" % (self,
-                                                                                                                                            the_slice.start),
-                                      RuntimeWarning)
+                    blo_real = (the_slice.start - self._lo) * self._bins / (
+                        self._hi - self._lo
+                    ) + 1
+                    blo = numpy.clip(
+                        numpy.round(blo_real).astype(int), 0, self._bins + 1
+                    )
+                    if abs(blo - blo_real) > 1.0e-14:
+                        warnings.warn(
+                            "Reducing along axis %r: requested start %r between bin boundaries, no interpolation is performed"
+                            % (self, the_slice.start),
+                            RuntimeWarning,
+                        )
                 else:
                     if the_slice.start not in self._bins:
-                        warnings.warn("Reducing along axis %r: requested start %r between bin boundaries, no interpolation is performed" % (self,
-                                                                                                                                            the_slice.start),
-                                      RuntimeWarning)
+                        warnings.warn(
+                            "Reducing along axis %r: requested start %r between bin boundaries, no interpolation is performed"
+                            % (self, the_slice.start),
+                            RuntimeWarning,
+                        )
                     blo = self.index(the_slice.start)
             if the_slice.stop is not None:
                 if the_slice.stop > self._hi:
-                    raise ValueError("Reducing along axis %r: requested stop %r exceeds bin boundaries (use open slicing, e.g. x[start:])" % (self,
-                                                                                                                                              the_slice.stop))
+                    raise ValueError(
+                        "Reducing along axis %r: requested stop %r exceeds bin boundaries (use open slicing, e.g. x[start:])"
+                        % (self, the_slice.stop)
+                    )
                 if self._uniform:
-                    bhi_real = (the_slice.stop - self._lo) * self._bins / (self._hi - self._lo) + 1
-                    bhi = numpy.clip(numpy.round(bhi_real).astype(int), 0, self._bins + 1)
-                    if abs(bhi - bhi_real) > 1.e-14:
-                        warnings.warn("Reducing along axis %r: requested stop %r between bin boundaries, no interpolation is performed" % (self,
-                                                                                                                                           the_slice.stop),
-                                      RuntimeWarning)
+                    bhi_real = (the_slice.stop - self._lo) * self._bins / (
+                        self._hi - self._lo
+                    ) + 1
+                    bhi = numpy.clip(
+                        numpy.round(bhi_real).astype(int), 0, self._bins + 1
+                    )
+                    if abs(bhi - bhi_real) > 1.0e-14:
+                        warnings.warn(
+                            "Reducing along axis %r: requested stop %r between bin boundaries, no interpolation is performed"
+                            % (self, the_slice.stop),
+                            RuntimeWarning,
+                        )
                 else:
                     if the_slice.stop not in self._bins:
-                        warnings.warn("Reducing along axis %r: requested stop %r between bin boundaries, no interpolation is performed" % (self,
-                                                                                                                                           the_slice.stop),
-                                      RuntimeWarning)
+                        warnings.warn(
+                            "Reducing along axis %r: requested stop %r between bin boundaries, no interpolation is performed"
+                            % (self, the_slice.stop),
+                            RuntimeWarning,
+                        )
                     bhi = self.index(the_slice.stop)
                 # Assume null ranges (start==stop) mean we want the bin containing the value
                 if blo is not None and blo == bhi:
                     bhi += 1
             if the_slice.step is not None:
-                raise NotImplementedError("Step slicing can be interpreted as a rebin factor")
+                raise NotImplementedError(
+                    "Step slicing can be interpreted as a rebin factor"
+                )
             return slice(blo, bhi, the_slice.step)
-        elif isinstance(the_slice, list) and all(isinstance(v, Interval) for v in the_slice):
+        elif isinstance(the_slice, list) and all(
+            isinstance(v, Interval) for v in the_slice
+        ):
             raise NotImplementedError("Slice histogram from list of intervals")
         raise IndexError("Cannot understand slice %r on axis %r" % (the_slice, self))
 
@@ -608,7 +695,9 @@ class Bin(DenseAxis):
                 This slice is usually as returned from ``Bin._ireduce``
         """
         if islice.step is not None:
-            raise NotImplementedError("Step slicing can be interpreted as a rebin factor")
+            raise NotImplementedError(
+                "Step slicing can be interpreted as a rebin factor"
+            )
         if islice.start is None and islice.stop is None:
             return self
         if self._uniform:
@@ -643,7 +732,7 @@ class Bin(DenseAxis):
         # (inf added at constructor)
         return len(self._bins) + 1
 
-    def edges(self, overflow='none'):
+    def edges(self, overflow="none"):
         """Bin boundaries
 
         Parameters
@@ -656,10 +745,12 @@ class Bin(DenseAxis):
             out = numpy.linspace(self._lo, self._hi, self._bins + 1)
         else:
             out = self._bins[:-1].copy()
-        out = numpy.r_[2 * out[0] - out[1], out, 2 * out[-1] - out[-2], 3 * out[-1] - 2 * out[-2]]
+        out = numpy.r_[
+            2 * out[0] - out[1], out, 2 * out[-1] - out[-2], 3 * out[-1] - 2 * out[-2]
+        ]
         return out[overflow_behavior(overflow)]
 
-    def centers(self, overflow='none'):
+    def centers(self, overflow="none"):
         """Bin centers
 
         Parameters
@@ -671,7 +762,7 @@ class Bin(DenseAxis):
         edges = self.edges(overflow)
         return (edges[:-1] + edges[1:]) / 2
 
-    def identifiers(self, overflow='none'):
+    def identifiers(self, overflow="none"):
         """List of `Interval` identifiers"""
         return self._intervals[overflow_behavior(overflow)]
 
@@ -728,27 +819,33 @@ class Hist(AccumulatorABC):
     """
 
     #: Default numpy dtype to store sum of weights
-    DEFAULT_DTYPE = 'd'
+    DEFAULT_DTYPE = "d"
 
     def __init__(self, label, *axes, **kwargs):
         if not isinstance(label, basestring):
             raise TypeError("label must be a string")
         self._label = label
-        self._dtype = kwargs.pop('dtype', Hist.DEFAULT_DTYPE)  # Much nicer in python3 :(
+        self._dtype = kwargs.pop(
+            "dtype", Hist.DEFAULT_DTYPE
+        )  # Much nicer in python3 :(
         self._axes = axes
-        if len(axes) == 0 and 'axes' in kwargs:
-            if not isinstance(kwargs['axes'], Sequence):
-                raise TypeError('axes must be a sequence type! (tuple, list, etc.)')
-            self._axes = tuple(kwargs['axes'])
-        elif len(axes) != 0 and 'axes' in kwargs:
-            warnings.warn('axes defined by both positional arguments and keyword argument, using positional arguments')
+        if len(axes) == 0 and "axes" in kwargs:
+            if not isinstance(kwargs["axes"], Sequence):
+                raise TypeError("axes must be a sequence type! (tuple, list, etc.)")
+            self._axes = tuple(kwargs["axes"])
+        elif len(axes) != 0 and "axes" in kwargs:
+            warnings.warn(
+                "axes defined by both positional arguments and keyword argument, using positional arguments"
+            )
 
         if not all(isinstance(ax, Axis) for ax in self._axes):
             del self._axes
             raise TypeError("All axes must be derived from Axis class")
         # if we stably partition axes to sparse, then dense, some things simplify
         # ..but then the user would then see the order change under them
-        self._dense_shape = tuple([ax.size for ax in self._axes if isinstance(ax, DenseAxis)])
+        self._dense_shape = tuple(
+            [ax.size for ax in self._axes if isinstance(ax, DenseAxis)]
+        )
         if numpy.prod(self._dense_shape) > 10000000:
             warnings.warn("Allocating a large (>10M bin) histogram!", RuntimeWarning)
         self._sumw = {}
@@ -756,7 +853,11 @@ class Hist(AccumulatorABC):
         self._sumw2 = None
 
     def __repr__(self):
-        return "<%s (%s) instance at 0x%0x>" % (self.__class__.__name__, ",".join(d.name for d in self.axes()), id(self))
+        return "<%s (%s) instance at 0x%0x>" % (
+            self.__class__.__name__,
+            ",".join(d.name for d in self.axes()),
+            id(self),
+        )
 
     @property
     def label(self):
@@ -847,7 +948,9 @@ class Hist(AccumulatorABC):
         """Checks if this histogram is compatible with another, i.e. they have identical binning"""
         if self.dim() != other.dim():
             return False
-        if set(d.name for d in self.sparse_axes()) != set(d.name for d in other.sparse_axes()):
+        if set(d.name for d in self.sparse_axes()) != set(
+            d.name for d in other.sparse_axes()
+        ):
             return False
         if not all(d1 == d2 for d1, d2 in zip(self.dense_axes(), other.dense_axes())):
             return False
@@ -856,13 +959,18 @@ class Hist(AccumulatorABC):
     def add(self, other):
         """Add another histogram into this one, in-place"""
         if not self.compatible(other):
-            raise ValueError("Cannot add this histogram with histogram %r of dissimilar dimensions" % other)
+            raise ValueError(
+                "Cannot add this histogram with histogram %r of dissimilar dimensions"
+                % other
+            )
 
         raxes = other.sparse_axes()
 
         def add_dict(left, right):
             for rkey in right.keys():
-                lkey = tuple(self.axis(rax).index(rax[ridx]) for rax, ridx in zip(raxes, rkey))
+                lkey = tuple(
+                    self.axis(rax).index(rax[ridx]) for rax, ridx in zip(raxes, rkey)
+                )
                 if lkey in left:
                     left[lkey] += right[rkey]
                 else:
@@ -889,7 +997,7 @@ class Hist(AccumulatorABC):
             if Ellipsis in keys:
                 idx = keys.index(Ellipsis)
                 slices = (slice(None),) * (self.dim() - len(keys) + 1)
-                keys = keys[:idx] + slices + keys[idx + 1:]
+                keys = keys[:idx] + slices + keys[idx + 1 :]
             else:
                 slices = (slice(None),) * (self.dim() - len(keys))
                 keys += slices
@@ -957,29 +1065,43 @@ class Hist(AccumulatorABC):
             weight = numpy.atleast_1d(weight)
         if not all(d.name in values for d in self._axes):
             missing = ", ".join(d.name for d in self._axes if d.name not in values)
-            raise ValueError("Not all axes specified for %r.  Missing: %s" % (self, missing))
+            raise ValueError(
+                "Not all axes specified for %r.  Missing: %s" % (self, missing)
+            )
         if not all(name in self._axes for name in values):
             extra = ", ".join(name for name in values if name not in self._axes)
-            raise ValueError("Unrecognized axes specified for %r.  Extraneous: %s" % (self, extra))
+            raise ValueError(
+                "Unrecognized axes specified for %r.  Extraneous: %s" % (self, extra)
+            )
 
         if weight is not None and self._sumw2 is None:
             self._init_sumw2()
 
         sparse_key = tuple(d.index(values[d.name]) for d in self.sparse_axes())
         if sparse_key not in self._sumw:
-            self._sumw[sparse_key] = numpy.zeros(shape=self._dense_shape, dtype=self._dtype)
+            self._sumw[sparse_key] = numpy.zeros(
+                shape=self._dense_shape, dtype=self._dtype
+            )
             if self._sumw2 is not None:
-                self._sumw2[sparse_key] = numpy.zeros(shape=self._dense_shape, dtype=self._dtype)
+                self._sumw2[sparse_key] = numpy.zeros(
+                    shape=self._dense_shape, dtype=self._dtype
+                )
 
         if self.dense_dim() > 0:
-            dense_indices = tuple(d.index(values[d.name]) for d in self._axes if isinstance(d, DenseAxis))
-            xy = numpy.atleast_1d(numpy.ravel_multi_index(dense_indices, self._dense_shape))
+            dense_indices = tuple(
+                d.index(values[d.name]) for d in self._axes if isinstance(d, DenseAxis)
+            )
+            xy = numpy.atleast_1d(
+                numpy.ravel_multi_index(dense_indices, self._dense_shape)
+            )
             if weight is not None:
                 self._sumw[sparse_key][:] += numpy.bincount(
                     xy, weights=weight, minlength=numpy.array(self._dense_shape).prod()
                 ).reshape(self._dense_shape)
                 self._sumw2[sparse_key][:] += numpy.bincount(
-                    xy, weights=weight ** 2, minlength=numpy.array(self._dense_shape).prod()
+                    xy,
+                    weights=weight ** 2,
+                    minlength=numpy.array(self._dense_shape).prod(),
                 ).reshape(self._dense_shape)
             else:
                 self._sumw[sparse_key][:] += numpy.bincount(
@@ -987,16 +1109,18 @@ class Hist(AccumulatorABC):
                 ).reshape(self._dense_shape)
                 if self._sumw2 is not None:
                     self._sumw2[sparse_key][:] += numpy.bincount(
-                        xy, weights=None, minlength=numpy.array(self._dense_shape).prod()
+                        xy,
+                        weights=None,
+                        minlength=numpy.array(self._dense_shape).prod(),
                     ).reshape(self._dense_shape)
         else:
             if weight is not None:
                 self._sumw[sparse_key] += numpy.sum(weight)
-                self._sumw2[sparse_key] += numpy.sum(weight**2)
+                self._sumw2[sparse_key] += numpy.sum(weight ** 2)
             else:
-                self._sumw[sparse_key] += 1.
+                self._sumw[sparse_key] += 1.0
                 if self._sumw2 is not None:
-                    self._sumw2[sparse_key] += 1.
+                    self._sumw2[sparse_key] += 1.0
 
     def sum(self, *axes, **kwargs):
         """Integrates out a set of axes, producing a new histogram
@@ -1011,7 +1135,7 @@ class Hist(AccumulatorABC):
                 'all' includes both under- and over-flow but not nan-flow bins.
                 Default is 'none'.
         """
-        overflow = kwargs.pop('overflow', 'none')
+        overflow = kwargs.pop("overflow", "none")
         axes = [self.axis(ax) for ax in axes]
         reduced_dims = [ax for ax in self._axes if ax not in axes]
         out = Hist(self._label, *reduced_dims, dtype=self._dtype)
@@ -1061,12 +1185,12 @@ class Hist(AccumulatorABC):
                 See `sum` description for meaning of allowed values
                 Default is to *not include* overflow bins
         """
-        overflow = kwargs.pop('overflow', 'none')
+        overflow = kwargs.pop("overflow", "none")
         axes = [self.axis(ax) for ax in axes]
         toremove = [ax for ax in self.axes() if ax not in axes]
         return self.sum(*toremove, overflow=overflow)
 
-    def integrate(self, axis_name, int_range=slice(None), overflow='none'):
+    def integrate(self, axis_name, int_range=slice(None), overflow="none"):
         """Integrates current histogram along one dimension
 
         Parameters
@@ -1082,16 +1206,20 @@ class Hist(AccumulatorABC):
 
         """
         axis = self.axis(axis_name)
-        full_slice = tuple(slice(None) if ax != axis else int_range for ax in self._axes)
+        full_slice = tuple(
+            slice(None) if ax != axis else int_range for ax in self._axes
+        )
         if isinstance(int_range, Interval):
             # Handle overflow intervals nicely
             if int_range.nan():
-                overflow = 'justnan'
+                overflow = "justnan"
             elif int_range.lo == -numpy.inf:
-                overflow = 'under'
+                overflow = "under"
             elif int_range.hi == numpy.inf:
-                overflow = 'over'
-        return self[full_slice].sum(axis.name, overflow=overflow)  # slice may make new axis, use name
+                overflow = "over"
+        return self[full_slice].sum(
+            axis.name, overflow=overflow
+        )  # slice may make new axis, use name
 
     def remove(self, bins, axis):
         """Remove bins from a sparse axis
@@ -1107,13 +1235,15 @@ class Hist(AccumulatorABC):
         """
         axis = self.axis(axis)
         if not isinstance(axis, SparseAxis):
-            raise NotImplementedError("Hist.remove() only supports removing items from a sparse axis.")
+            raise NotImplementedError(
+                "Hist.remove() only supports removing items from a sparse axis."
+            )
         bins = [axis.index(binid) for binid in bins]
         keep = [binid.name for binid in self.identifiers(axis) if binid not in bins]
         full_slice = tuple(slice(None) if ax != axis else keep for ax in self._axes)
         return self[full_slice]
 
-    def group(self, old_axes, new_axis, mapping, overflow='none'):
+    def group(self, old_axes, new_axis, mapping, overflow="none"):
         """Group a set of slices on old axes into a single new axis
 
         Parameters
@@ -1134,9 +1264,13 @@ class Hist(AccumulatorABC):
         Returns a new histogram object
         """
         if not isinstance(new_axis, SparseAxis):
-            raise TypeError("New axis must be a sparse axis.  Note: Hist.group() signature has changed to group(old_axes, new_axis, ...)!")
+            raise TypeError(
+                "New axis must be a sparse axis.  Note: Hist.group() signature has changed to group(old_axes, new_axis, ...)!"
+            )
         if new_axis in self.axes() and self.axis(new_axis) is new_axis:
-            raise RuntimeError("new_axis is already in the list of axes.  Note: Hist.group() signature has changed to group(old_axes, new_axis, ...)!")
+            raise RuntimeError(
+                "new_axis is already in the list of axes.  Note: Hist.group() signature has changed to group(old_axes, new_axis, ...)!"
+            )
         if not isinstance(old_axes, tuple):
             old_axes = (old_axes,)
         old_axes = [self.axis(ax) for ax in old_axes]
@@ -1155,7 +1289,9 @@ class Hist(AccumulatorABC):
             for idx, s in zip(old_indices, the_slice):
                 full_slice[idx] = s
             full_slice = tuple(full_slice)
-            reduced_hist = self[full_slice].sum(*tuple(ax.name for ax in old_axes), overflow=overflow)  # slice may change old axis binning
+            reduced_hist = self[full_slice].sum(
+                *tuple(ax.name for ax in old_axes), overflow=overflow
+            )  # slice may change old axis binning
             new_idx = new_axis.index(new_cat)
             for key in reduced_hist._sumw:
                 new_key = (new_idx,) + key
@@ -1202,7 +1338,8 @@ class Hist(AccumulatorABC):
             fullindex = [slice(None)] * self.dense_dim()
             fullindex[idense] = idx
             return tuple(fullindex)
-        binmap = [new_axis.index(i) for i in old_axis.identifiers(overflow='allnan')]
+
+        binmap = [new_axis.index(i) for i in old_axis.identifiers(overflow="allnan")]
 
         def dense_op(array):
             anew = numpy.zeros(out._dense_shape, dtype=out._dtype)
@@ -1216,7 +1353,7 @@ class Hist(AccumulatorABC):
                 out._sumw2[key] = dense_op(self._sumw2[key])
         return out
 
-    def values(self, sumw2=False, overflow='none'):
+    def values(self, sumw2=False, overflow="none"):
         """Extract the sum of weights arrays from this histogram
 
         Parameters
@@ -1231,11 +1368,14 @@ class Hist(AccumulatorABC):
         the number of bins per axis, plus 0-3 overflow bins depending
         on the ``overflow`` argument.
         """
+
         def view_dim(arr):
             if self.dense_dim() == 0:
                 return arr
             else:
-                return arr[tuple(overflow_behavior(overflow) for _ in range(self.dense_dim()))]
+                return arr[
+                    tuple(overflow_behavior(overflow) for _ in range(self.dense_dim()))
+                ]
 
         out = {}
         for sparse_key in self._sumw.keys():
@@ -1276,26 +1416,28 @@ class Hist(AccumulatorABC):
         if isinstance(factor, numbers.Number) and axis is None:
             for key in self._sumw.keys():
                 self._sumw[key] *= factor
-                self._sumw2[key] *= factor**2
+                self._sumw2[key] *= factor ** 2
         elif isinstance(factor, dict):
             if not isinstance(axis, tuple):
                 axis = (axis,)
                 factor = {(k,): v for k, v in factor.items()}
             axis = tuple(map(self.axis, axis))
             isparse = list(map(self._isparse, axis))
-            factor = {tuple(a.index(e) for a, e in zip(axis, k)): v for k, v in factor.items()}
+            factor = {
+                tuple(a.index(e) for a, e in zip(axis, k)): v for k, v in factor.items()
+            }
             for key in self._sumw.keys():
                 factor_key = tuple(key[i] for i in isparse)
                 if factor_key in factor:
                     self._sumw[key] *= factor[factor_key]
-                    self._sumw2[key] *= factor[factor_key]**2
+                    self._sumw2[key] *= factor[factor_key] ** 2
         elif isinstance(factor, numpy.ndarray):
             axis = self.axis(axis)
             raise NotImplementedError("Scale dense dimension by a factor")
         else:
             raise TypeError("Could not interpret scale factor")
 
-    def identifiers(self, axis, overflow='none'):
+    def identifiers(self, axis, overflow="none"):
         """Return a list of identifiers for an axis
 
         Parameters
@@ -1312,9 +1454,86 @@ class Hist(AccumulatorABC):
             for identifier in axis.identifiers():
                 if any(k[isparse] == axis.index(identifier) for k in self._sumw.keys()):
                     out.append(identifier)
-            if axis.sorting == 'integral':
-                hproj = {key[0]: integral for key, integral in self.project(axis).values().items()}
+            if axis.sorting == "integral":
+                hproj = {
+                    key[0]: integral
+                    for key, integral in self.project(axis).values().items()
+                }
                 out.sort(key=lambda k: hproj[k.name])
             return out
         elif isinstance(axis, DenseAxis):
             return axis.identifiers(overflow=overflow)
+
+    def to_boost(self):
+        """Convert this coffea Hist object to a boost_histogram obbject"""
+        import boost_histogram
+
+        newaxes = []
+        for axis in self.axes():
+            if isinstance(axis, Bin) and axis._uniform:
+                newaxis = boost_histogram.axis.Regular(
+                    axis._bins,
+                    axis._lo,
+                    axis._hi,
+                    underflow=True,
+                    overflow=True,
+                )
+                newaxis.name = axis.name
+                newaxis.label = axis.label
+                newaxes.append(newaxis)
+            elif isinstance(axis, Bin) and not axis._uniform:
+                newaxis = boost_histogram.axis.Variable(
+                    axis.edges(),
+                    underflow=True,
+                    overflow=True,
+                )
+                newaxis.name = axis.name
+                newaxis.label = axis.label
+                newaxes.append(newaxis)
+            elif isinstance(axis, Cat):
+                identifiers = self.identifiers(axis)
+                newaxis = boost_histogram.axis.StrCategory(
+                    [x.name for x in identifiers],
+                )
+                newaxis.name = axis.name
+                newaxis.label = axis.label
+                newaxis.bin_labels = [x.label for x in identifiers]
+                newaxes.append(newaxis)
+
+        if self._sumw2 is None:
+            storage = boost_histogram.storage.Double()
+        else:
+            storage = boost_histogram.storage.Weight()
+
+        out = boost_histogram.Histogram(*newaxes, storage=storage)
+        out.label = self.label
+
+        def expandkey(key):
+            kiter = iter(key)
+            for ax in newaxes:
+                if isinstance(ax, boost_histogram.axis.StrCategory):
+                    yield ax.index(next(kiter))
+                else:
+                    yield slice(None)
+
+        if self._sumw2 is None:
+            values = self.values(overflow="all")
+            for sparse_key, sumw in values.items():
+                index = tuple(expandkey(sparse_key))
+                view = out.view(flow=True)
+                view[index] = sumw
+        else:
+            values = self.values(sumw2=True, overflow="all")
+            for sparse_key, (sumw, sumw2) in values.items():
+                index = tuple(expandkey(sparse_key))
+                view = out.view(flow=True)
+                view[index].value = sumw
+                view[index].variance = sumw2
+
+        return out
+
+    def to_hist(self):
+        """Convert this coffea.hist histogram to a hist object"""
+        import hist
+
+        return hist.Hist(self.to_boost())

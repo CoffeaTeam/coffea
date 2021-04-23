@@ -1,5 +1,4 @@
 import warnings
-from .hist_tools import SparseAxis, DenseAxis
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
@@ -50,8 +49,8 @@ def export1d(hist):
         raise ValueError("export1d() expects zero sparse dimensions")
 
     axis = hist.axes()[0]
-    sumw, sumw2 = hist.values(sumw2=True, overflow='all')[()]
-    edges = axis.edges(overflow='none')
+    sumw, sumw2 = hist.values(sumw2=True, overflow="all")[()]
+    edges = axis.edges(overflow="none")
 
     out = TH1.__new__(TH1)
     out._fXaxis = TAxis(len(edges) - 1, edges[0], edges[-1])
@@ -63,7 +62,7 @@ def export1d(hist):
     centers = (edges[:-1] + edges[1:]) / 2.0
     out._fEntries = out._fTsumw = out._fTsumw2 = sumw[1:-1].sum()
     out._fTsumwx = (sumw[1:-1] * centers).sum()
-    out._fTsumwx2 = (sumw[1:-1] * centers**2).sum()
+    out._fTsumwx2 = (sumw[1:-1] * centers ** 2).sum()
 
     out._fName = "histogram"
     out._fTitle = hist.label

@@ -1,9 +1,6 @@
-import parsl
 import os
 import shutil
 import os.path as osp
-from parsl.app.app import python_app, bash_app
-from parsl.configs.local_threads import config
 
 from parsl.providers import SlurmProvider
 from parsl.channels import LocalChannel
@@ -13,29 +10,38 @@ from parsl.executors import HighThroughputExecutor
 
 from parsl.addresses import address_by_hostname
 
-x509_proxy = 'x509up_u%s' % (os.getuid())
+x509_proxy = "x509up_u%s" % (os.getuid())
 
 
-def slurm_config(cores_per_job=16, mem_per_core=2048,
-                 jobs_per_worker=1,
-                 initial_workers=4, max_workers=8,
-                 work_dir='./',
-                 grid_proxy_dir='/tmp',
-                 partition='',
-                 walltime='02:00:00',
-                 htex_label='coffea_parsl_slurm_htex'):
+def slurm_config(
+    cores_per_job=16,
+    mem_per_core=2048,
+    jobs_per_worker=1,
+    initial_workers=4,
+    max_workers=8,
+    work_dir="./",
+    grid_proxy_dir="/tmp",
+    partition="",
+    walltime="02:00:00",
+    htex_label="coffea_parsl_slurm_htex",
+):
 
     shutil.copy2(osp.join(grid_proxy_dir, x509_proxy), osp.join(work_dir, x509_proxy))
 
-    wrk_init = '''
+    wrk_init = """
     export XRD_RUNFORKHANDLER=1
     export X509_USER_PROXY=%s
-    ''' % (osp.join(work_dir, x509_proxy))
+    """ % (
+        osp.join(work_dir, x509_proxy)
+    )
 
-    sched_opts = '''
+    sched_opts = """
     #SBATCH --cpus-per-task=%d
     #SBATCH --mem-per-cpu=%d
-    ''' % (cores_per_job, mem_per_core, )
+    """ % (
+        cores_per_job,
+        mem_per_core,
+    )
 
     slurm_htex = Config(
         executors=[
@@ -51,9 +57,9 @@ def slurm_config(cores_per_job=16, mem_per_core=2048,
                     max_blocks=max_workers,
                     nodes_per_block=jobs_per_worker,
                     partition=partition,
-                    scheduler_options=sched_opts,   # Enter scheduler_options if needed
-                    worker_init=wrk_init,         # Enter worker_init if needed
-                    walltime=walltime
+                    scheduler_options=sched_opts,  # Enter scheduler_options if needed
+                    worker_init=wrk_init,  # Enter worker_init if needed
+                    walltime=walltime,
                 ),
             )
         ],

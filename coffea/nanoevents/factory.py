@@ -1,13 +1,12 @@
-import warnings
 import weakref
 import awkward
 import uproot
 import pathlib
 import io
-import uuid
+from functools import partial
 from collections.abc import Mapping
 
-from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
+from coffea.nanoevents.util import key_to_tuple, tuple_to_key
 from coffea.nanoevents.mapping import (
     TrivialUprootOpener,
     TrivialParquetOpener,
@@ -18,6 +17,10 @@ from coffea.nanoevents.mapping import (
     CachedMapping,
 )
 from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema
+
+
+def _key_formatter(prefix, partition, form_key, attribute):
+    return prefix + f"/{partition}/{form_key}/{attribute}"
 
 
 class NanoEventsFactory:
@@ -111,7 +114,9 @@ class NanoEventsFactory:
         )
         uuidpfn = {partition_key[0]: tree.file.file_path}
         mapping = UprootSourceMapping(
-            TrivialUprootOpener(uuidpfn, uproot_options), access_log=access_log
+            TrivialUprootOpener(uuidpfn, uproot_options),
+            cache={},
+            access_log=access_log,
         )
         mapping.preload_column_source(partition_key[0], partition_key[1], tree)
 
@@ -141,6 +146,7 @@ class NanoEventsFactory:
         schemaclass=NanoAODSchema,
         metadata=None,
         parquet_options={},
+        rados_parquet_options={},
         access_log=None,
     ):
         """Quickly build NanoEvents from a parquet file
@@ -173,6 +179,7 @@ class NanoEventsFactory:
         """
         import pyarrow
         import pyarrow.parquet
+        import pyarrow.dataset as ds
 
         ftypes = (
             str,
@@ -208,7 +215,16 @@ class NanoEventsFactory:
         mapping = ParquetSourceMapping(
             TrivialParquetOpener(uuidpfn, parquet_options), access_log=access_log
         )
-        shim = TrivialParquetOpener.UprootLikeShim(table_file)
+
+        format_ = "parquet"
+        if "ceph_config_path" in rados_parquet_options:
+            format_ = ds.RadosParquetFileFormat(
+                rados_parquet_options["ceph_config_path"].encode()
+            )
+
+        dataset = ds.dataset(file, schema=table_file.schema_arrow, format=format_)
+
+        shim = TrivialParquetOpener.UprootLikeShim(file, dataset)
         mapping.preload_column_source(partition_key[0], partition_key[1], shim)
 
         base_form = mapping._extract_base_form(table_file.schema_arrow)
@@ -334,13 +350,15 @@ class NanoEventsFactory:
                 Arbitrary metadata to add to the `base.NanoEvents` object
 
         """
-        if not issubclass(schemaclass, BaseSchema):
-            raise RuntimeError("Invalid schema type")
         if persistent_cache is not None:
             mapping = CachedMapping(persistent_cache, mapping)
         if metadata is not None:
             base_form["parameters"]["metadata"] = metadata
+        if not callable(schemaclass):
+            raise ValueError("Invalid schemaclass type")
         schema = schemaclass(base_form)
+        if not isinstance(schema, BaseSchema):
+            raise RuntimeError("Invalid schema type")
         return cls(schema, mapping, tuple_to_key(partition_key), cache=runtime_cache)
 
     def __len__(self):
@@ -352,18 +370,13 @@ class NanoEventsFactory:
         """Build events"""
         events = self._events()
         if events is None:
-            prefix = self._partition_key
-
-            def key_formatter(partition, form_key, attribute):
-                return prefix + f"/{partition}/{form_key}/{attribute}"
-
             behavior = dict(self._schema.behavior)
             behavior["__events_factory__"] = self
             events = awkward.from_buffers(
                 self._schema.form,
                 len(self),
                 self._mapping,
-                key_format=key_formatter,
+                key_format=partial(_key_formatter, self._partition_key),
                 lazy=True,
                 lazy_cache="new" if self._cache is None else self._cache,
                 behavior=behavior,

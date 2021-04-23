@@ -4,7 +4,6 @@ from scipy.stats._continuous_distns import (
     _norm_pdf_C,
     _norm_cdf,
     _norm_ppf,
-    sc,
     _lazywhere,
 )
 

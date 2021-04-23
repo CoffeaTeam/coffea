@@ -1,10 +1,9 @@
-import os
 import numpy
 
 # crystalball is single sided, local reimplementation of double-sided here until
 # the PR can be merged
 # from scipy.stats import crystalball
-from .doublecrystalball import doublecrystalball
+from coffea.lookup_tools.doublecrystalball import doublecrystalball
 import awkward
 from coffea.lookup_tools.dense_lookup import dense_lookup
 
@@ -243,7 +242,7 @@ class rochester_lookup:
             ),
             x,
         )
-        result = awkward.where(x > -1, 1.0 / (1.0 + x[x > -1]), awkward.ones_like(kpt))
+        result = awkward.where(x > -1, 1.0 / (1.0 + x), awkward.ones_like(kpt))
         if isinstance(kpt, numpy.ndarray):
             result = numpy.array(result)
         return result

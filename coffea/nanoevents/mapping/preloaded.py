@@ -1,12 +1,7 @@
 import warnings
-from cachetools import LRUCache
-from collections.abc import Mapping
-import uproot
-import awkward
-import numpy
 import json
 from coffea.nanoevents.mapping.base import UUIDOpener, BaseSourceMapping
-from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
+from coffea.nanoevents.util import quote, tuple_to_key
 
 
 class SimplePreloadedColumnSource(dict):

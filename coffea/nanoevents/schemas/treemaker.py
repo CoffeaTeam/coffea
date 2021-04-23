@@ -1,18 +1,37 @@
-from coffea.nanoevents import transforms
-from coffea.nanoevents.util import quote, concat
-from .base import BaseSchema, listarray_form, zip_forms, nest_jagged_forms
+from coffea.nanoevents.schemas.base import BaseSchema, zip_forms, nest_jagged_forms
 
 
 class TreeMakerSchema(BaseSchema):
     """TreeMaker schema builder
 
-    The TreeMaker schema is built from all branches found in the supplied file, based on
-    the naming pattern of the branches. From those arrays, TreeMaker collections are formed
-    as collections of branches grouped by name, where:
+    The TreeMaker schema is built from all branches found in the supplied file,
+    based on the naming pattern of the branches. There are two steps of to the
+    generation of array collections:
 
-    FIX ME
+    - Objects with vector-like quantities (momentum, coordinate points) in the
+      TreeMaker ntuples are stored using ROOT PtEtaPhiEVectors and XYZPoint
+      classes with maximum TTree splitting. These variable branches are grouped
+      into a single collection with the original object name, with the
+      corresponding coordinate variables names mapped to the standard variable
+      names for coffea.nanoevents.methods.vector behaviors. For example:
+      - The "Jets" branch in a TreeMaker Ntuple branch stores 'PtEtaPhiEVector's
+        corresponding to the momentum of AK4 jets. The resulting collection after
+        this first step would contain the vector variables in the form of
+        Jets.pt, Jets.eta, Jets.phi, Jets.energy, and addition vector quantities
+        (px) can be accessed via the usual vector behavior methods.
+      - The "PrimaryVertices" branch in a TreeMaker Ntuple branch stores
+        'XYZPoint's corresponding to the coordinates of the primary vertices, The
+        resulting collection after this first step wold contain the coordinate
+        variables in the form of PrimaryVertices.x, PrimaryVertices.y,
+        PrimaryVertices.z.
 
-    All collections are then zipped into one `base.NanoEvents` record and returned.
+    - Extended quantities of physic objects are stored in the format
+      <Object>_<variable>, such as "Jets_jecFactor". Such variables will be
+      merged into the collection <Object>, so the branch "Jets_jetFactor" will be
+      access to in the array format as "Jets.jecFactor". An exception to the
+
+    All collections are then zipped into one `base.NanoEvents` record and
+    returned.
     """
 
     def __init__(self, base_form):
@@ -51,7 +70,6 @@ class TreeMakerSchema(BaseSchema):
                     objname,
                     "PtEtaPhiELorentzVector",
                 )
-                print("PtEtaPhiELorentzVector:", objname)
                 branch_forms[objname] = form
             elif components == {
                 "fCoordinates.fX",
@@ -67,33 +85,23 @@ class TreeMakerSchema(BaseSchema):
                     objname,
                     "Point",
                 )
-                print("Point:", objname)
                 branch_forms[objname] = form
             else:
                 raise ValueError(
                     f"Unrecognized class with split branches: {components}"
                 )
 
-        collections = [
-            "Electrons",
-            "GenElectrons",
-            "GenJets",
-            "GenJetsAK8",
-            "GenMuons",
-            "GenParticles",
-            "GenTaus",
-            "GenVertices",
-            "Jets",
-            "JetsAK8",
-            "JetsAK8_subjets",
-            "JetsAK15",
-            "Muons",
-            "PrimaryVertices",
-            "TAPElectronTracks",
-            "TAPMuonTracks",
-            "TAPPionTracks",
-            "Tracks",
-        ]
+        # Generating collection from branch name
+        collections = [k for k in branch_forms if "_" in k]
+        collections = set(
+            [
+                "_".join(k.split("_")[:-1])
+                for k in collections
+                if k.split("_")[-1] != "AK8"
+                # Excluding per-event variables with AK8 variants like Mjj and MT
+            ]
+        )
+
         for cname in collections:
             items = sorted(k for k in branch_forms if k.startswith(cname + "_"))
             if len(items) == 0:

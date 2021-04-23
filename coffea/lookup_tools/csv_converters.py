@@ -1,5 +1,4 @@
-from ..util import awkward
-from ..util import numpy as np
+import numpy
 import sys
 import warnings
 
@@ -39,7 +38,7 @@ def convert_btag_csv_file(csvFilePath):
         columns = nameandcols[0].strip()
     columns = [column.strip() for column in columns.split(",")]
 
-    corrections = np.genfromtxt(
+    corrections = numpy.genfromtxt(
         csvFilePath,
         dtype=None,
         names=tuple(columns),
@@ -54,26 +53,30 @@ def convert_btag_csv_file(csvFilePath):
     )
 
     all_names = corrections[[columns[i] for i in range(4)]]
-    labels = np.unique(corrections[[columns[i] for i in range(4)]])
+    labels = numpy.unique(corrections[[columns[i] for i in range(4)]])
     wrapped_up = {}
     for label in labels:
-        etaMins = np.unique(corrections[np.where(all_names == label)][columns[4]])
-        etaMaxs = np.unique(corrections[np.where(all_names == label)][columns[5]])
-        etaBins = np.union1d(etaMins, etaMaxs).astype(np.double)
-        ptMins = np.unique(corrections[np.where(all_names == label)][columns[6]])
-        ptMaxs = np.unique(corrections[np.where(all_names == label)][columns[7]])
-        ptBins = np.union1d(ptMins, ptMaxs).astype(np.double)
-        discrMins = np.unique(corrections[np.where(all_names == label)][columns[8]])
-        discrMaxs = np.unique(corrections[np.where(all_names == label)][columns[9]])
-        discrBins = np.union1d(discrMins, discrMaxs).astype(np.double)
-        vals = np.zeros(
+        etaMins = numpy.unique(corrections[numpy.where(all_names == label)][columns[4]])
+        etaMaxs = numpy.unique(corrections[numpy.where(all_names == label)][columns[5]])
+        etaBins = numpy.union1d(etaMins, etaMaxs).astype(numpy.double)
+        ptMins = numpy.unique(corrections[numpy.where(all_names == label)][columns[6]])
+        ptMaxs = numpy.unique(corrections[numpy.where(all_names == label)][columns[7]])
+        ptBins = numpy.union1d(ptMins, ptMaxs).astype(numpy.double)
+        discrMins = numpy.unique(
+            corrections[numpy.where(all_names == label)][columns[8]]
+        )
+        discrMaxs = numpy.unique(
+            corrections[numpy.where(all_names == label)][columns[9]]
+        )
+        discrBins = numpy.union1d(discrMins, discrMaxs).astype(numpy.double)
+        vals = numpy.zeros(
             shape=(len(discrBins) - 1, len(ptBins) - 1, len(etaBins) - 1),
             dtype=corrections.dtype[10],
         )
         for i, eta_bin in enumerate(etaBins[:-1]):
             for j, pt_bin in enumerate(ptBins[:-1]):
                 for k, discr_bin in enumerate(discrBins[:-1]):
-                    this_bin = np.where(
+                    this_bin = numpy.where(
                         (all_names == label)
                         & (corrections[columns[4]] == eta_bin)
                         & (corrections[columns[6]] == pt_bin)

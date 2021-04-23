@@ -1,8 +1,3 @@
-from concurrent.futures import as_completed
-import multiprocessing
-
-from tqdm import tqdm
-
 import parsl
 
 from parsl.app.app import python_app
@@ -15,10 +10,6 @@ from parsl.executors import HighThroughputExecutor
 from ..executor import _futures_handler
 from .timeout import timeout
 
-try:
-    from collections.abc import Sequence
-except ImportError:
-    from collections import Sequence
 
 _default_cfg = Config(
     executors=[
@@ -64,17 +55,27 @@ def derive_chunks(filename, treename, chunksize, ds, timeout=10):
             if name in afile:
                 tree = afile[name]
     else:
-        raise Exception('treename must be a str or Sequence but is a %s!' % repr(type(treename)))
+        raise Exception(
+            "treename must be a str or Sequence but is a %s!" % repr(type(treename))
+        )
 
     if tree is None:
-        raise Exception('No tree found, out of possible tree names: %s' % repr(treename))
+        raise Exception(
+            "No tree found, out of possible tree names: %s" % repr(treename)
+        )
 
     nentries = tree.numentries
-    return ds, treename, [(filename, chunksize, index) for index in range(nentries // chunksize + 1)]
+    return (
+        ds,
+        treename,
+        [(filename, chunksize, index) for index in range(nentries // chunksize + 1)],
+    )
 
 
 def _parsl_get_chunking(filelist, chunksize, status=True, timeout=10):
-    futures = set(derive_chunks(fn, tn, chunksize, ds, timeout=timeout) for ds, fn, tn in filelist)
+    futures = set(
+        derive_chunks(fn, tn, chunksize, ds, timeout=timeout) for ds, fn, tn in filelist
+    )
 
     items = []
 
@@ -83,6 +84,8 @@ def _parsl_get_chunking(filelist, chunksize, status=True, timeout=10):
         for chunk in chunks:
             total.append((ds, chunk[0], treename, chunk[1], chunk[2]))
 
-    _futures_handler(futures, items, status, 'files', 'Preprocessing', chunk_accumulator, None)
+    _futures_handler(
+        futures, items, status, "files", "Preprocessing", chunk_accumulator, None
+    )
 
     return items

@@ -1,12 +1,9 @@
 import warnings
-from cachetools import LRUCache
-from collections.abc import Mapping
 import uproot
 import awkward
-import numpy
 import json
 from coffea.nanoevents.mapping.base import UUIDOpener, BaseSourceMapping
-from coffea.nanoevents.util import quote, key_to_tuple, tuple_to_key
+from coffea.nanoevents.util import quote, tuple_to_key
 
 
 class TrivialUprootOpener(UUIDOpener):
@@ -34,6 +31,11 @@ class UprootSourceMapping(BaseSourceMapping):
     def _extract_base_form(cls, tree, iteritems_options={}):
         branch_forms = {}
         for key, branch in tree.iteritems(**iteritems_options):
+            if key in branch_forms:
+                warnings.warn(
+                    f"Found duplicate branch {key} in {tree}, taking first instance"
+                )
+                continue
             if "," in key or "!" in key:
                 warnings.warn(
                     f"Skipping {key} because it contains characters that NanoEvents cannot accept [,!]"

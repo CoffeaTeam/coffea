@@ -298,6 +298,12 @@ class Jet(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     def matched_gen(self):
         return self._events().GenJet._apply_global_index(self.genJetIdxG)
 
+    @property
+    def constituents(self):
+        if "pFCandsIdxG" not in self.fields:
+            raise RuntimeError("PF candidates are only available for PFNano")
+        return self._events().JetPFCands._apply_global_index(self.pFCandsIdxG)
+
 
 _set_repr_name("Jet")
 
@@ -334,7 +340,13 @@ class FatJet(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
 
     @property
     def matched_gen(self):
-        return self._events().GenJet._apply_global_index(self.genJetAK8IdxG)
+        return self._events().GenJetAK8._apply_global_index(self.genJetAK8IdxG)
+
+    @property
+    def constituents(self):
+        if "pFCandsIdxG" not in self.fields:
+            raise RuntimeError("PF candidates are only available for PFNano")
+        return self._events().FatJetPFCands._apply_global_index(self.pFCandsIdxG)
 
 
 _set_repr_name("FatJet")
@@ -351,6 +363,99 @@ class MissingET(vector.PolarTwoVector, base.NanoCollection):
 
 _set_repr_name("MissingET")
 
+
+@awkward.mixin_class(behavior)
+class Vertex(vector.ThreeVector, base.NanoCollection):
+    """NanoAOD vertex object"""
+
+    pass
+
+
+_set_repr_name("Vertex")
+
+
+@awkward.mixin_class(behavior)
+class SecondaryVertex(Vertex):
+    """NanoAOD secondary vertex object"""
+
+    @property
+    def p4(self):
+        """4-momentum vector of tracks associated to this SV"""
+        return awkward.zip(
+            {
+                "pt": self["pt"],
+                "eta": self["eta"],
+                "phi": self["phi"],
+                "mass": self["mass"],
+            },
+            with_name="PtEtaPhiMLorentzVector",
+        )
+
+
+_set_repr_name("SecondaryVertex")
+
+
+@awkward.mixin_class(behavior)
+class AssociatedPFCand(base.NanoCollection):
+    """PFNano PF candidate to jet association object"""
+
+    collection_map = {
+        "JetPFCands": ("Jet", "PFCands"),
+        "FatJetPFCands": ("FatJet", "PFCands"),
+        "GenJetCands": ("GenJet", "GenCands"),
+        "GenFatJetCands": ("GenJetAK8", "GenCands"),
+    }
+
+    @property
+    def jet(self):
+        collection = self._events()[self.collection_map[self._collection_name()][0]]
+        return collection._apply_global_index(self.jetIdxG)
+
+    @property
+    def pf(self):
+        collection = self._events()[self.collection_map[self._collection_name()][1]]
+        return collection._apply_global_index(self.pFCandsIdxG)
+
+
+_set_repr_name("AssociatedPFCand")
+
+
+@awkward.mixin_class(behavior)
+class AssociatedSV(base.NanoCollection):
+    """PFNano secondary vertex to jet association object"""
+
+    collection_map = {
+        "JetSVs": ("Jet", "SV"),
+        "FatJetSVs": ("FatJet", "SV"),
+        # these two are unclear
+        "GenJetSVs": ("GenJet", "SV"),
+        "GenFatJetSVs": ("GenJetAK8", "SV"),
+    }
+
+    @property
+    def jet(self):
+        collection = self._events()[self.collection_map[self._collection_name()][0]]
+        return collection._apply_global_index(self.jetIdxG)
+
+    @property
+    def sv(self):
+        collection = self._events()[self.collection_map[self._collection_name()][1]]
+        return collection._apply_global_index(self.sVIdxG)
+
+
+_set_repr_name("AssociatedSV")
+
+
+@awkward.mixin_class(behavior)
+class PFCand(candidate.PtEtaPhiMCandidate, base.NanoCollection):
+    """PFNano particle flow candidate object"""
+
+    pass
+
+
+_set_repr_name("PFCand")
+
+
 __all__ = [
     "PtEtaPhiMCollection",
     "GenParticle",
@@ -363,4 +468,9 @@ __all__ = [
     "Jet",
     "FatJet",
     "MissingET",
+    "Vertex",
+    "SecondaryVertex",
+    "AssociatedPFCand",
+    "AssociatedSV",
+    "PFCand",
 ]
