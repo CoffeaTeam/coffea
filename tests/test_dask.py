@@ -120,14 +120,12 @@ def test_dask_cached():
         "ZJets": {
             "treename": "Events",
             "files": [osp.join(os.getcwd(), "tests/samples/nano_dy.root")],
-            "checkusermeta": True,
-            "someusermeta": "hello",
+            "metadata": {"checkusermeta": True, "someusermeta": "hello"},
         },
         "Data": {
             "treename": "Events",
             "files": [osp.join(os.getcwd(), "tests/samples/nano_dimuon.root")],
-            "checkusermeta": True,
-            "someusermeta2": "world",
+            "metadata": {"checkusermeta": True, "someusermeta2": "world"},
         },
     }
 
