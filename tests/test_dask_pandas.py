@@ -1,32 +1,29 @@
 from __future__ import print_function, division
 from coffea import processor
 
-import warnings
-
-import numpy as np
-
-import sys
 import pytest
 
 
 def do_dask_pandas_job(client, filelist):
-    treename='Events'
+    treename = "Events"
     from coffea.processor.test_items import NanoTestProcessorPandas
     from coffea import nanoevents
+
     proc = NanoTestProcessorPandas()
 
     exe_args = {
-        'client': client,
-        'schema': nanoevents.NanoAODSchema,
-        'use_dataframes': True
+        "client": client,
+        "schema": nanoevents.NanoAODSchema,
+        "use_dataframes": True,
     }
 
-    output = processor.run_uproot_job(filelist,
-                                     treename,
-                                     processor_instance=proc,
-                                     executor=processor.dask_executor,
-                                     executor_args=exe_args)
-
+    output = processor.run_uproot_job(
+        filelist,
+        treename,
+        processor_instance=proc,
+        executor=processor.dask_executor,
+        executor_args=exe_args,
+    )
 
     # Can save to Parquet straight from distributed DataFrame without explicitly collecting the outputs:
     #
@@ -40,15 +37,15 @@ def do_dask_pandas_job(client, filelist):
     # dd.to_parquet(df=output[output.dataset=='ZJets'], path=/output/path/ZJets/)
     # dd.to_parquet(df=output[output.dataset=='Data'], path=/output/path/Data/)
 
-
     # Alternatively, can continue working with output.
     # Convert from Dask DataFrame back to Pandas:
     output = output.compute()
 
-    assert( output[output.dataset=='ZJets'].shape[0] == 6 )
-    assert( output[output.dataset=='Data'].shape[0] == 18 )
+    assert output[output.dataset == "ZJets"].shape[0] == 6
+    assert output[output.dataset == "Data"].shape[0] == 18
 
     # print(output)
+
 
 def test_dask_pandas_job():
     distributed = pytest.importorskip("distributed", minversion="2.6.0")
@@ -58,8 +55,8 @@ def test_dask_pandas_job():
     import os.path as osp
 
     filelist = {
-        'ZJets': [osp.join(os.getcwd(),'tests/samples/nano_dy.root')],
-        'Data' : [osp.join(os.getcwd(),'tests/samples/nano_dimuon.root')]
+        "ZJets": [osp.join(os.getcwd(), "tests/samples/nano_dy.root")],
+        "Data": [osp.join(os.getcwd(), "tests/samples/nano_dimuon.root")],
     }
 
     do_dask_pandas_job(client, filelist)
