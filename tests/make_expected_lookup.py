@@ -12,16 +12,16 @@ xmin, xmax = sf.GetXaxis().GetXmin(), sf.GetXaxis().GetXmax()
 ymin, ymax = sf.GetYaxis().GetXmin(), sf.GetYaxis().GetXmax()
 
 test_out = np.empty_like(test_in1)
-for i, (eta,pt) in enumerate(zip(test_in1, test_in2)):
+for i, (eta, pt) in enumerate(zip(test_in1, test_in2)):
     if xmax <= eta:
-        eta = xmax-1.e-5
+        eta = xmax - 1.0e-5
     elif eta < xmin:
         eta = xmin
     if ymax <= pt:
-        pt = ymax-1.e-5
+        pt = ymax - 1.0e-5
     elif pt < ymin:
         pt = ymin
     ib = sf.FindBin(eta, pt)
     test_out[i] = sf.GetBinContent(ib)
 
-print repr(test_out)
+print(repr(test_out))

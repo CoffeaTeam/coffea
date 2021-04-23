@@ -1,7 +1,7 @@
 import sys
 import os.path as osp
 import pytest
-from coffea import hist, processor
+from coffea import processor
 from coffea.nanoevents import schemas
 
 if sys.platform.startswith("win"):
@@ -17,24 +17,37 @@ def test_nanoevents_analysis(executor, compression, maxchunks):
     from coffea.processor.test_items import NanoEventsProcessor
 
     filelist = {
-        "DummyBad": {"treename": "Events", "files": [osp.abspath("tests/samples/non_existent.root")]},
-        "ZJets": {"treename": "Events", "files": [osp.abspath("tests/samples/nano_dy.root")],
-                  "metadata": {"checkusermeta": True, "someusermeta": "hello"} },
-        "Data" : {"treename": "Events", "files": [osp.abspath("tests/samples/nano_dimuon.root")],
-                  "metadata": {"checkusermeta": True, "someusermeta2": "world"} }
+        "DummyBad": {
+            "treename": "Events",
+            "files": [osp.abspath("tests/samples/non_existent.root")],
+        },
+        "ZJets": {
+            "treename": "Events",
+            "files": [osp.abspath("tests/samples/nano_dy.root")],
+            "metadata": {"checkusermeta": True, "someusermeta": "hello"},
+        },
+        "Data": {
+            "treename": "Events",
+            "files": [osp.abspath("tests/samples/nano_dimuon.root")],
+            "metadata": {"checkusermeta": True, "someusermeta2": "world"},
+        },
     }
     treename = "Events"
 
     exe_args = {
         "workers": 1,
-        "skipbadfiles":True, 
+        "skipbadfiles": True,
         "schema": processor.NanoAODSchema,
         "compression": compression,
     }
 
     hists = processor.run_uproot_job(
-        filelist, treename, NanoEventsProcessor(), executor, executor_args=exe_args,
-        maxchunks=maxchunks
+        filelist,
+        treename,
+        NanoEventsProcessor(),
+        executor,
+        executor_args=exe_args,
+        maxchunks=maxchunks,
     )
 
     assert hists["cutflow"]["ZJets_pt"] == 18
@@ -44,9 +57,7 @@ def test_nanoevents_analysis(executor, compression, maxchunks):
 
 
 @pytest.mark.parametrize("chunksize", [100000, 5])
-@pytest.mark.parametrize(
-    "schema", [None, schemas.BaseSchema]
-)
+@pytest.mark.parametrize("schema", [None, schemas.BaseSchema])
 @pytest.mark.parametrize(
     "executor", [processor.iterative_executor, processor.futures_executor]
 )
@@ -59,13 +70,15 @@ def test_dataframe_analysis(executor, schema, chunksize):
     }
     treename = "Events"
 
-    exe_args = {
-        "workers": 1,
-        "schema": schema
-    }
+    exe_args = {"workers": 1, "schema": schema}
 
     hists = processor.run_uproot_job(
-        filelist, treename, NanoTestProcessor(), executor, executor_args=exe_args, chunksize=chunksize
+        filelist,
+        treename,
+        NanoTestProcessor(),
+        executor,
+        executor_args=exe_args,
+        chunksize=chunksize,
     )
 
     assert hists["cutflow"]["ZJets_pt"] == 18

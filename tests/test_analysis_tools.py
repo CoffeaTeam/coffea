@@ -116,7 +116,6 @@ def test_packed_selection():
 
     sel = PackedSelection()
 
-
     shape = (10,)
     all_true = np.full(shape=shape, fill_value=True, dtype=np.bool)
     all_false = np.full(shape=shape, fill_value=False, dtype=np.bool)
@@ -135,8 +134,16 @@ def test_packed_selection():
     assert np.all(sel.require(all_true=1, all_false=0) == all_true)
     assert np.all(sel.all("all_true", "all_false") == all_false)
     assert np.all(sel.any("all_true", "all_false") == all_true)
-    assert np.all(sel.all("fizz", "buzz") == np.array([True, False, False, False, False, False, False, False, False, False]))
-    assert np.all(sel.any("fizz", "buzz") == np.array([True, False, False, True, False, True, True, False, False, True]))
+    assert np.all(
+        sel.all("fizz", "buzz")
+        == np.array(
+            [True, False, False, False, False, False, False, False, False, False]
+        )
+    )
+    assert np.all(
+        sel.any("fizz", "buzz")
+        == np.array([True, False, False, True, False, True, True, False, False, True])
+    )
 
     with pytest.raises(ValueError):
         sel.add("wrong_shape", wrong_shape)
@@ -148,4 +155,3 @@ def test_packed_selection():
         overpack = PackedSelection()
         for i in range(65):
             overpack.add("sel_%d", all_true)
-

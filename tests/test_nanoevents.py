@@ -7,30 +7,48 @@ import pytest
 def genroundtrips(genpart):
     # check genpart roundtrip
     assert ak.all(genpart.children.parent.pdgId == genpart.pdgId)
-    assert ak.all(ak.any(genpart.parent.children.pdgId == genpart.pdgId, axis=-1, mask_identity=True))
+    assert ak.all(
+        ak.any(
+            genpart.parent.children.pdgId == genpart.pdgId, axis=-1, mask_identity=True
+        )
+    )
     # distinctParent should be distinct and it should have a relevant child
     assert ak.all(genpart.distinctParent.pdgId != genpart.pdgId)
-    assert ak.all(ak.any(genpart.distinctParent.children.pdgId == genpart.pdgId, axis=-1, mask_identity=True))
+    assert ak.all(
+        ak.any(
+            genpart.distinctParent.children.pdgId == genpart.pdgId,
+            axis=-1,
+            mask_identity=True,
+        )
+    )
     # exercise hasFlags
-    genpart.hasFlags(['isHardProcess'])
-    genpart.hasFlags(['isHardProcess', 'isDecayedLeptonHadron'])
+    genpart.hasFlags(["isHardProcess"])
+    genpart.hasFlags(["isHardProcess", "isDecayedLeptonHadron"])
 
 
 def crossref(events):
     # check some cross-ref roundtrips (some may not be true always but they are for the test file)
     assert ak.all(events.Jet.matched_muons.matched_jet.pt == events.Jet.pt)
-    assert ak.all(events.Electron.matched_photon.matched_electron.r9 == events.Electron.r9)
+    assert ak.all(
+        events.Electron.matched_photon.matched_electron.r9 == events.Electron.r9
+    )
     # exercise LorentzVector.nearest
-    assert ak.all(events.Muon.matched_jet.delta_r(events.Muon.nearest(events.Jet)) == 0.)
+    assert ak.all(
+        events.Muon.matched_jet.delta_r(events.Muon.nearest(events.Jet)) == 0.0
+    )
 
-suffixes = ['root', 'parquet']
+
+suffixes = ["root", "parquet"]
+
 
 @pytest.mark.parametrize("suffix", suffixes)
 def test_read_nanomc(suffix):
-    path = os.path.abspath(f'tests/samples/nano_dy.{suffix}')
+    path = os.path.abspath(f"tests/samples/nano_dy.{suffix}")
     # parquet files were converted from even older nanoaod
     nanoversion = NanoAODSchema.v6 if suffix == "root" else NanoAODSchema.v5
-    factory = getattr(NanoEventsFactory, f'from_{suffix}')(path, schemaclass=nanoversion)
+    factory = getattr(NanoEventsFactory, f"from_{suffix}")(
+        path, schemaclass=nanoversion
+    )
     events = factory.events()
 
     # test after views first
@@ -42,7 +60,10 @@ def test_read_nanomc(suffix):
     genroundtrips(events[ak.any(events.Electron.pt > 50, axis=1)].GenPart)
 
     # sane gen matching (note for electrons gen match may be photon(22))
-    assert ak.all((abs(events.Electron.matched_gen.pdgId) == 11) | (events.Electron.matched_gen.pdgId == 22))
+    assert ak.all(
+        (abs(events.Electron.matched_gen.pdgId) == 11)
+        | (events.Electron.matched_gen.pdgId == 22)
+    )
     assert ak.all(abs(events.Muon.matched_gen.pdgId) == 13)
 
     genroundtrips(events.Electron.matched_gen)
@@ -53,17 +74,40 @@ def test_read_nanomc(suffix):
     # test issue 409
     assert ak.to_list(events[[]].Photon.mass) == []
 
-    if suffix == 'root':
-        assert ak.any(events.Photon.isTight, axis=1).tolist()[:9] == [False, True, True, True, False, False, False, False, False]
-    if suffix == 'parquet':
-        assert ak.any(events.Photon.isTight, axis=1).tolist()[:9] == [False, True, False, True, False, False, False, False, True]
+    if suffix == "root":
+        assert ak.any(events.Photon.isTight, axis=1).tolist()[:9] == [
+            False,
+            True,
+            True,
+            True,
+            False,
+            False,
+            False,
+            False,
+            False,
+        ]
+    if suffix == "parquet":
+        assert ak.any(events.Photon.isTight, axis=1).tolist()[:9] == [
+            False,
+            True,
+            False,
+            True,
+            False,
+            False,
+            False,
+            False,
+            True,
+        ]
+
 
 @pytest.mark.parametrize("suffix", suffixes)
 def test_read_nanodata(suffix):
-    path = os.path.abspath(f'tests/samples/nano_dimuon.{suffix}')
+    path = os.path.abspath(f"tests/samples/nano_dimuon.{suffix}")
     # parquet files were converted from even older nanoaod
     nanoversion = NanoAODSchema.v6 if suffix == "root" else NanoAODSchema.v5
-    factory =getattr(NanoEventsFactory, f'from_{suffix}')(path, schemaclass=nanoversion)
+    factory = getattr(NanoEventsFactory, f"from_{suffix}")(
+        path, schemaclass=nanoversion
+    )
     events = factory.events()
 
     crossref(events)
