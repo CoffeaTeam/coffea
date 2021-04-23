@@ -44,12 +44,10 @@ class UprootSourceMapping(BaseSourceMapping):
             if len(branch):
                 continue
             if isinstance(
-                    branch.interpretation,
-                    uproot.interpretation.identify.UnknownInterpretation
+                branch.interpretation,
+                uproot.interpretation.identify.UnknownInterpretation,
             ):
-                warnings.warn(
-                    f"Skipping {key} as it is not interpretable by Uproot"
-                )
+                warnings.warn(f"Skipping {key} as it is not interpretable by Uproot")
                 continue
             try:
                 form = branch.interpretation.awkward_form(None)
@@ -68,9 +66,9 @@ class UprootSourceMapping(BaseSourceMapping):
                 form["content"]["form_key"] = quote(f"{key},!load,!content")
                 form["content"]["parameters"] = {"__doc__": branch.title}
             elif (
-                    form["class"].startswith("ListOffset")
-                    and form["content"]["class"].startswith("ListOffset")
-                    and form["content"]["content"]["class"] in ["NumpyArray", "RecordArray"]
+                form["class"].startswith("ListOffset")
+                and form["content"]["class"].startswith("ListOffset")
+                and form["content"]["content"]["class"] in ["NumpyArray", "RecordArray"]
             ):
                 form["form_key"] = quote(f"{key},!load")
                 form["content"]["form_key"] = quote(f"{key},!load,!content")
@@ -79,9 +77,9 @@ class UprootSourceMapping(BaseSourceMapping):
                     form["content"]["content"]["form_key"] = quote(f"{key},!load,!content,!content")
                 else:
                     for field in form["content"]["content"]["contents"]:
-                        form["content"]["content"]["contents"][field]["form_key"] = (
-                            quote(f"{key},!load,!content,!content,!item'{field}'")
-                        )
+                        form["content"]["content"]["contents"][field][
+                            "form_key"
+                        ] = (quote(f"{key},!load,!content,!content,!item'{field}'"))
             elif form["class"] == "NumpyArray":
                 form["form_key"] = quote(f"{key},!load")
                 form["parameters"] = {"__doc__": branch.title}
