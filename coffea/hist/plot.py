@@ -945,7 +945,6 @@ def bokeh_plot(histo, jup_url="http://127.0.0.1:8889"):
         w.on_change("active", update_data)
 
     from bokeh.models.widgets import Panel, Tabs
-    from bokeh.io import show
 
     layout = row(
         fig,
