@@ -124,7 +124,7 @@ class JetResolution(object):
 
     @property
     def signature(self):
-        """ list the necessary jet properties that must be input to this function """
+        """list the necessary jet properties that must be input to this function"""
         return self._signature
 
     def __repr__(self):

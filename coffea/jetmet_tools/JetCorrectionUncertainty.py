@@ -126,12 +126,12 @@ class JetCorrectionUncertainty(object):
 
     @property
     def signature(self):
-        """ list the necessary jet properties that must be input to this function """
+        """list the necessary jet properties that must be input to this function"""
         return self._signature
 
     @property
     def levels(self):
-        """ list the different sources of uncertainty """
+        """list the different sources of uncertainty"""
         return self._levels
 
     def __repr__(self):

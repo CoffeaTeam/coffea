@@ -65,7 +65,7 @@ def work_queue_example(environment_file):
 
 
 def create_conda_environment(env_file, py_version):
-    """ Generate a conda environment file 'env_file' to send along the tasks. """
+    """Generate a conda environment file 'env_file' to send along the tasks."""
 
     if os.path.exists(env_file):
         print(

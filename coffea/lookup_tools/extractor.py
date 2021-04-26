@@ -59,7 +59,7 @@ class extractor(object):
         self._finalized = False
 
     def add_weight_set(self, local_name, thetype, weights):
-        """ adds one extracted weight to the extractor """
+        """adds one extracted weight to the extractor"""
         if self._finalized:
             raise Exception("extractor is finalized cannot add new weights!")
         if local_name in self._names.keys():
@@ -102,7 +102,7 @@ class extractor(object):
                 self.add_weight_set(local_name, thetype, weights)
 
     def import_file(self, thefile):
-        """ cache the whole contents of a file for later processing """
+        """cache the whole contents of a file for later processing"""
         if thefile not in self._filecache.keys():
             drop_gz = thefile.replace(".gz", "")
             file_dots = os.path.basename(drop_gz).split(".")
@@ -113,7 +113,7 @@ class extractor(object):
             self._filecache[thefile] = file_converters[theformat][thetype](thefile)
 
     def extract_from_file(self, thefile, name):
-        """ import a file and then extract a lookup set """
+        """import a file and then extract a lookup set"""
         self.import_file(thefile)
         weights = self._filecache[thefile]
         names = {key[0]: key[1] for key in weights.keys()}
@@ -145,7 +145,7 @@ class extractor(object):
         self._finalized = True
 
     def make_evaluator(self):
-        """ produce an evaluator based on the finalized extractor """
+        """produce an evaluator based on the finalized extractor"""
         if self._finalized:
             return evaluator(self._names, self._types, self._weights)
         else:

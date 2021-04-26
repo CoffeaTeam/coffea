@@ -130,7 +130,7 @@ class jme_standard_function(lookup_base):
                 self._eval_args[argname] = self._dim_args[argname]
 
     def _evaluate(self, *args):
-        """ jec/jer = f(args) """
+        """jec/jer = f(args)"""
         bin_vals = {
             argname: args[self._dim_args[argname]] for argname in self._dim_order
         }
@@ -192,7 +192,7 @@ class jme_standard_function(lookup_base):
 
     @property
     def signature(self):
-        """ the list of all needed jet properties to be passed as kwargs to this lookup """
+        """the list of all needed jet properties to be passed as kwargs to this lookup"""
         return self._signature
 
     def __repr__(self):
