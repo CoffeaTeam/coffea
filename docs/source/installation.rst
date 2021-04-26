@@ -180,8 +180,8 @@ For Developers
 
   .. code-block:: bash
 
-    flake8 coffea
-    black coffea
+    flake8 coffea tests setup.py
+    black coffea tests setup.py
     pytest tests
     pushd docs && make html && popd
 
