@@ -1068,7 +1068,7 @@ def _work_function(
                         if ":" in item.filename:
                             ceph_config_path, item.filename = item.filename.split(":")
                             rados_parquet_options["ceph_config_path"] = ceph_config_path
-                            filter = item.usermeta["filter"]
+                        filter = item.usermeta["filter"]
 
                         factory = NanoEventsFactory.from_parquet(
                             file=item.filename,
