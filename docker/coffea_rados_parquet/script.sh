@@ -102,7 +102,7 @@ popd
 
 pip3 install dask[distributed] nbconvert
 pip3 install 'fsspec>=0.3.3'
-pip3 install --upgrade . # install coffea
+pip3 install --upgrade . pyarrow<4# install coffea
 pip3 install --upgrade /pyarrow-*.whl # update the PyArrow with Rados parquet extensions
 
 if [ ! -z "$IS_CI" ]; then
