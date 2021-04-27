@@ -1075,7 +1075,7 @@ def _work_function(
                             treepath=item.treename,
                             metadata=metadata,
                             rados_parquet_options=rados_parquet_options,
-                            filter=filter
+                            filter=filter,
                         )
                         events = factory.events()
                 else:
@@ -1618,9 +1618,9 @@ def run_parquet_job(fileset, treename, processor_instance, executor, executor_ar
             # if in cephfs, encode the ceph config path in the filename
             if ceph_config_path:
                 filename = f"{ceph_config_path}:{filename}"
-            chunks.append(WorkItem(dataset, filename, treename, 0, 0, "", {
-                'filter': filter
-            }))
+            chunks.append(
+                WorkItem(dataset, filename, treename, 0, 0, "", {"filter": filter})
+            )
 
     # pop all _work_function args here
     savemetrics = executor_args.pop("savemetrics", False)

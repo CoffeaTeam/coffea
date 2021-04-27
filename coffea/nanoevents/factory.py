@@ -148,7 +148,7 @@ class NanoEventsFactory:
         parquet_options={},
         rados_parquet_options={},
         access_log=None,
-        filter=None
+        filter=None,
     ):
         """Quickly build NanoEvents from a parquet file
 
