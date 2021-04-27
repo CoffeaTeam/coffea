@@ -148,6 +148,7 @@ class NanoEventsFactory:
         parquet_options={},
         rados_parquet_options={},
         access_log=None,
+        filter=None
     ):
         """Quickly build NanoEvents from a parquet file
 
@@ -224,7 +225,7 @@ class NanoEventsFactory:
 
         dataset = ds.dataset(file, schema=table_file.schema_arrow, format=format_)
 
-        shim = TrivialParquetOpener.UprootLikeShim(file, dataset)
+        shim = TrivialParquetOpener.UprootLikeShim(file, dataset, filter)
         mapping.preload_column_source(partition_key[0], partition_key[1], shim)
 
         base_form = mapping._extract_base_form(table_file.schema_arrow)

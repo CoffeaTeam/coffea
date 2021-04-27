@@ -1068,12 +1068,14 @@ def _work_function(
                         if ":" in item.filename:
                             ceph_config_path, item.filename = item.filename.split(":")
                             rados_parquet_options["ceph_config_path"] = ceph_config_path
+                            filter = item.usermeta["filter"]
 
                         factory = NanoEventsFactory.from_parquet(
                             file=item.filename,
                             treepath=item.treename,
                             metadata=metadata,
                             rados_parquet_options=rados_parquet_options,
+                            filter=filter
                         )
                         events = factory.events()
                 else:
@@ -1608,6 +1610,7 @@ def run_parquet_job(fileset, treename, processor_instance, executor, executor_ar
         retries = executor_args.pop("retries", 0)
     xrootdtimeout = executor_args.pop("xrootdtimeout", None)
     ceph_config_path = executor_args.pop("ceph_config_path", None)
+    filter = executor_args.pop("filter", None)
 
     chunks = []
     for dataset, filelist in dataset_filelist_map.items():
@@ -1615,7 +1618,9 @@ def run_parquet_job(fileset, treename, processor_instance, executor, executor_ar
             # if in cephfs, encode the ceph config path in the filename
             if ceph_config_path:
                 filename = f"{ceph_config_path}:{filename}"
-            chunks.append(WorkItem(dataset, filename, treename, 0, 0, ""))
+            chunks.append(WorkItem(dataset, filename, treename, 0, 0, "", {
+                'filter': filter
+            }))
 
     # pop all _work_function args here
     savemetrics = executor_args.pop("savemetrics", False)
