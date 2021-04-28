@@ -263,6 +263,10 @@ def wqex_create_function_wrapper(tmpdir, x509_proxy=None):
 
     name = os.path.join(tmpdir, "fn_as_file")
 
+    proxy_basename = ""
+    if x509_proxy:
+        proxy_basename = os.path.basename(x509_proxy)
+
     with open(name, mode="w") as f:
         f.write(
             """
@@ -272,10 +276,8 @@ import sys
 import dill
 import coffea
 
-x509_proxy = "{proxy}"
-
-if x509_proxy:
-    os.environ['X509_USER_PROXY'] = x509_proxy
+if "{proxy}":
+    os.environ['X509_USER_PROXY'] = "{proxy}"
 
 (fn, arg, out) = sys.argv[1], sys.argv[2], sys.argv[3]
 
@@ -291,7 +293,7 @@ with open(out, "wb") as f:
 # Force an OS exit here to avoid a bug in xrootd finalization
 os._exit(0)
 """.format(
-                proxy=x509_proxy
+                proxy=proxy_basename
             )
         )
 
@@ -573,9 +575,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             dill.dump(function, wf)
 
         # Create a wrapper script to run the function.
-        command_path = wqex_create_function_wrapper(
-            tmpdir, os.path.basename(x509_proxy)
-        )
+        command_path = wqex_create_function_wrapper(tmpdir, x509_proxy)
 
         # Enable monitoring and auto resource consumption, if desired:
         if resource_monitor:
