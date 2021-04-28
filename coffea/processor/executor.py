@@ -290,7 +290,10 @@ with open(out, "wb") as f:
 
 # Force an OS exit here to avoid a bug in xrootd finalization
 os._exit(0)
-""".format(proxy=x509_proxy))
+""".format(
+                proxy=x509_proxy
+            )
+        )
 
     return name
 
@@ -304,7 +307,7 @@ def wqex_create_task(
     infile_function,
     tmpdir,
     extra_input_files,
-    x509_proxy
+    x509_proxy,
 ):
     import dill
     from os.path import basename
@@ -555,10 +558,10 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     # if x509_proxy was not provided, then try to get it from env variable or
     # default location.
     if x509_proxy is None:
-        if os.environ.get('X509_USER_PROXY', None):
-            x509_proxy = os.environ['X509_USER_PROXY']
+        if os.environ.get("X509_USER_PROXY", None):
+            x509_proxy = os.environ["X509_USER_PROXY"]
         else:
-            x509_proxy_default = os.path.join('/tmp', "x509up_u{}".format(os.getuid()))
+            x509_proxy_default = os.path.join("/tmp", "x509up_u{}".format(os.getuid()))
             if os.path.exists(x509_proxy_default):
                 x509_proxy = x509_proxy_default
 
@@ -570,7 +573,9 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             dill.dump(function, wf)
 
         # Create a wrapper script to run the function.
-        command_path = wqex_create_function_wrapper(tmpdir, os.path.basename(x509_proxy))
+        command_path = wqex_create_function_wrapper(
+            tmpdir, os.path.basename(x509_proxy)
+        )
 
         # Enable monitoring and auto resource consumption, if desired:
         if resource_monitor:
