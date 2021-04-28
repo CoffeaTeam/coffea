@@ -254,7 +254,7 @@ def _futures_handler(futures, timeout):
             _cancel(futures.pop())
 
 
-def wqex_create_function_wrapper(tmpdir):
+def wqex_create_function_wrapper(tmpdir, x509_proxy=None):
     """Writes a wrapper script to run dilled python functions and arguments.
     The wrapper takes as arguments the name of three files: function, argument, and output.
     The files function and argument have the dilled function and argument, respectively.
@@ -272,6 +272,11 @@ import sys
 import dill
 import coffea
 
+x509_proxy = "{proxy}"
+
+if x509_proxy:
+    os.environ['X509_USER_PROXY'] = x509_proxy
+
 (fn, arg, out) = sys.argv[1], sys.argv[2], sys.argv[3]
 
 with open(fn, "rb") as f:
@@ -285,8 +290,7 @@ with open(out, "wb") as f:
 
 # Force an OS exit here to avoid a bug in xrootd finalization
 os._exit(0)
-"""
-        )
+""".format(proxy=x509_proxy))
 
     return name
 
@@ -300,6 +304,7 @@ def wqex_create_task(
     infile_function,
     tmpdir,
     extra_input_files,
+    x509_proxy
 ):
     import dill
     from os.path import basename
@@ -335,6 +340,9 @@ def wqex_create_task(
 
     for f in extra_input_files:
         task.specify_input_file(f, cache=True)
+
+    if x509_proxy:
+        task.specify_input_file(x509_proxy, cache=True)
 
     if wrapper and env_file:
         task.specify_input_file(env_file, cache=True)
@@ -450,6 +458,11 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         extra-input-files: list
             A list of files in the current working directory to send along with each task.
             Useful for small custom libraries and configuration files needed by the processor.
+        x509_proxy : str
+            Path to the X509 user proxy. If None (the default), use the value of the
+            environment variable X509_USER_PROXY, or fallback to the file /tmp/x509up_u${UID} if
+            exists.  If False, disables the default behavior and no proxy is sent.
+
         environment-file : str
             Python environment to use. Required.
         wrapper : str
@@ -506,6 +519,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     resource_monitor = kwargs.pop("resource-monitor", False)
     master_name = kwargs.pop("master-name", None)
     port = kwargs.pop("port", None)
+    x509_proxy = kwargs.pop("x509_proxy", None)
+
     if port is None:
         if master_name:
             port = 0
@@ -537,6 +552,16 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     if gpus:
         default_resources["gpus"] = gpus
 
+    # if x509_proxy was not provided, then try to get it from env variable or
+    # default location.
+    if x509_proxy is None:
+        if os.environ.get('X509_USER_PROXY', None):
+            x509_proxy = os.environ['X509_USER_PROXY']
+        else:
+            x509_proxy_default = os.path.join('/tmp', "x509up_u{}".format(os.getuid()))
+            if os.path.exists(x509_proxy_default):
+                x509_proxy = x509_proxy_default
+
     # Working within a custom temporary directory:
     with tempfile.TemporaryDirectory(prefix="wq-executor-tmp-", dir=filepath) as tmpdir:
 
@@ -545,7 +570,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             dill.dump(function, wf)
 
         # Create a wrapper script to run the function.
-        command_path = wqex_create_function_wrapper(tmpdir)
+        command_path = wqex_create_function_wrapper(tmpdir, os.path.basename(x509_proxy))
 
         # Enable monitoring and auto resource consumption, if desired:
         if resource_monitor:
@@ -605,6 +630,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                     infile_function,
                     tmpdir,
                     extra_input_files,
+                    x509_proxy,
                 )
                 task_id = _wq_queue.submit(task)
                 tasks_submitted += 1
