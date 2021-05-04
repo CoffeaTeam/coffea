@@ -254,6 +254,39 @@ def _futures_handler(futures, timeout):
             _cancel(futures.pop())
 
 
+class FuturesHolder:
+    def __init__(self, futures, refresh=2):
+        self.futures = set(futures)
+        self.merges = set()
+        self.completed = set()
+        self.done = {'futures': 0, 'merges': 0}
+        self.total = {'futures': len(futures), 'merges': 0}
+        self.refresh = refresh
+
+    def update(self):
+        if self.futures:
+            completed, self.futures = concurrent.futures.wait(
+                self.futures,
+                timeout=self.refresh,
+                return_when=concurrent.futures.FIRST_COMPLETED,
+            )
+            self.completed.update(completed)
+            self.done['futures'] += len(completed)
+
+        if self.merges:
+            completed, self.merges = concurrent.futures.wait(
+                self.merges,
+                timeout=self.refresh,
+                return_when=concurrent.futures.FIRST_COMPLETED,
+            )
+            self.completed.update(completed)
+            self.done['merges'] += len(completed)
+
+    def fetch(self, N):
+        return set(self.completed.pop().result() for _ in range(N)
+                   if len(self.completed) > 0)
+
+
 def wqex_create_function_wrapper(tmpdir, x509_proxy=None):
     """Writes a wrapper script to run dilled python functions and arguments.
     The wrapper takes as arguments the name of three files: function, argument, and output.
@@ -761,27 +794,36 @@ def futures_executor(items, function, accumulator, **kwargs):
     unit = kwargs.pop("unit", "items")
     desc = kwargs.pop("desc", "Processing")
     clevel = kwargs.pop("compression", 1)
-    tailtimeout = kwargs.pop("tailtimeout", None)
+    tailtimeout = kwargs.pop("tailtimeout", 2)
     if clevel is not None:
         function = _compression_wrapper(clevel, function)
 
     def processwith(pool):
-        gen = _futures_handler(
-            {pool.submit(function, item) for item in items}, tailtimeout
-        )
-        try:
-            return accumulate(
-                tqdm(
-                    gen if clevel is None else map(_decompress, gen),
-                    disable=not status,
-                    unit=unit,
-                    total=len(items),
-                    desc=desc,
-                ),
-                accumulator,
-            )
-        finally:
-            gen.close()
+        FH = FuturesHolder(set(pool.submit(function, item) for item in items), refresh=tailtimeout)
+        nparts, minred, maxred = 5, 4, 100  # Merge job chunking
+
+        reducer = _reduce(clevel)
+
+        with tqdm(disable=not status, unit=unit, total=len(items), desc=desc, position=0) as pbar:
+            with tqdm(disable=not status, total=1, desc="Merging", position=1) as mbar:
+                while len(FH.futures) + len(FH.merges) > 0:
+                    FH.update()
+                    reduce = min(maxred, max(len(FH.completed) // nparts + 1, minred))
+
+                    pbar.update(FH.done['futures'] - pbar.n)
+                    mbar.update(FH.done['merges'] - mbar.n)
+                    pbar.refresh()
+                    mbar.refresh()
+                    while len(FH.completed) > 1:
+                        batch = [b for b in FH.fetch(reduce)]
+                        FH.merges.add(pool.submit(reducer, batch))
+                        mbar.total += 1
+                        mbar.refresh()
+                mbar.update(1)
+                mbar.refresh()
+
+        last_out = FH.completed.pop().result()
+        return accumulate([last_out if clevel is None else _decompress(last_out)], accumulator)
 
     if isinstance(pool, concurrent.futures.Executor):
         return processwith(pool)
@@ -953,7 +995,7 @@ def parsl_executor(items, function, accumulator, **kwargs):
     unit = kwargs.pop("unit", "items")
     desc = kwargs.pop("desc", "Processing")
     clevel = kwargs.pop("compression", 1)
-    tailtimeout = kwargs.pop("tailtimeout", None)
+    tailtimeout = kwargs.pop("tailtimeout", 2)
     if clevel is not None:
         function = _compression_wrapper(clevel, function)
 
@@ -976,20 +1018,31 @@ def parsl_executor(items, function, accumulator, **kwargs):
 
     app = timeout(python_app(function))
 
-    gen = _futures_handler(map(app, items), tailtimeout)
-    try:
-        accumulator = accumulate(
-            tqdm(
-                gen if clevel is None else map(_decompress, gen),
-                disable=not status,
-                unit=unit,
-                total=len(items),
-                desc=desc,
-            ),
-            accumulator,
-        )
-    finally:
-        gen.close()
+    FH = FuturesHolder(set(map(app, items)), refresh=tailtimeout)
+    nparts, minred, maxred = 5, 4, 100  # Merge job chunking
+    reducer = python_app(_reduce(clevel))
+
+    with tqdm(disable=not status, unit=unit, total=len(items), desc=desc, position=0) as pbar:
+        with tqdm(disable=not status, total=1, desc="Merging", position=1) as mbar:
+            while len(FH.futures) + len(FH.merges) > 0:
+                FH.update()
+                reduce = min(maxred, max(len(FH.completed) // nparts + 1, minred))
+
+                pbar.update(FH.done['futures'] - pbar.n)
+                mbar.update(FH.done['merges'] - mbar.n)
+                pbar.refresh()
+                mbar.refresh()
+                while len(FH.completed) > 1:
+                    batch = [b for b in FH.fetch(reduce)]
+                    FH.merges.add(reducer(batch))
+                    mbar.total += 1
+                    mbar.refresh()
+            mbar.update(1)
+            mbar.refresh()
+
+    last_out = FH.completed.pop().result()
+    accu = [last_out if clevel is None else _decompress(last_out)]
+    accumulator = accumulate(accu, accumulator)
 
     if cleanup:
         parsl.dfk().cleanup()
@@ -1377,7 +1430,7 @@ def run_uproot_job(
                 "function_name": "get_metadata",
                 "desc": "Preprocessing",
                 "unit": "file",
-                "compression": None,
+                "compression": 1,
                 "tailtimeout": None,
                 "worker_affinity": False,
             }
