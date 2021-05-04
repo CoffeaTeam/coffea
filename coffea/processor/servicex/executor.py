@@ -97,7 +97,6 @@ class Executor(ABC):
         tree_name = None
         async for sx_data in result_file_stream:
             file_url = sx_data.url
-            print("----", file_url)
 
             # Parse the absolute path out if this is a file:// uri. THis is due to a bug
             # in uproot4 that means `file://` isn't parsed correctly on windows.
