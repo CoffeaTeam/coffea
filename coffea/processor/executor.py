@@ -259,8 +259,8 @@ class FuturesHolder:
         self.futures = set(futures)
         self.merges = set()
         self.completed = set()
-        self.done = {'futures': 0, 'merges': 0}
-        self.total = {'futures': len(futures), 'merges': 0}
+        self.done = {"futures": 0, "merges": 0}
+        self.total = {"futures": len(futures), "merges": 0}
         self.refresh = refresh
 
     def update(self):
@@ -271,7 +271,7 @@ class FuturesHolder:
                 return_when=concurrent.futures.FIRST_COMPLETED,
             )
             self.completed.update(completed)
-            self.done['futures'] += len(completed)
+            self.done["futures"] += len(completed)
 
         if self.merges:
             completed, self.merges = concurrent.futures.wait(
@@ -280,11 +280,12 @@ class FuturesHolder:
                 return_when=concurrent.futures.FIRST_COMPLETED,
             )
             self.completed.update(completed)
-            self.done['merges'] += len(completed)
+            self.done["merges"] += len(completed)
 
     def fetch(self, N):
-        return set(self.completed.pop().result() for _ in range(N)
-                   if len(self.completed) > 0)
+        return set(
+            self.completed.pop().result() for _ in range(N) if len(self.completed) > 0
+        )
 
 
 def wqex_create_function_wrapper(tmpdir, x509_proxy=None):
@@ -799,19 +800,23 @@ def futures_executor(items, function, accumulator, **kwargs):
         function = _compression_wrapper(clevel, function)
 
     def processwith(pool):
-        FH = FuturesHolder(set(pool.submit(function, item) for item in items), refresh=tailtimeout)
+        FH = FuturesHolder(
+            set(pool.submit(function, item) for item in items), refresh=tailtimeout
+        )
         nparts, minred, maxred = 5, 4, 100  # Merge job chunking
 
         reducer = _reduce(clevel)
 
-        with tqdm(disable=not status, unit=unit, total=len(items), desc=desc, position=0) as pbar:
+        with tqdm(
+            disable=not status, unit=unit, total=len(items), desc=desc, position=0
+        ) as pbar:
             with tqdm(disable=not status, total=1, desc="Merging", position=1) as mbar:
                 while len(FH.futures) + len(FH.merges) > 0:
                     FH.update()
                     reduce = min(maxred, max(len(FH.completed) // nparts + 1, minred))
 
-                    pbar.update(FH.done['futures'] - pbar.n)
-                    mbar.update(FH.done['merges'] - mbar.n)
+                    pbar.update(FH.done["futures"] - pbar.n)
+                    mbar.update(FH.done["merges"] - mbar.n)
                     pbar.refresh()
                     mbar.refresh()
                     while len(FH.completed) > 1:
@@ -823,7 +828,9 @@ def futures_executor(items, function, accumulator, **kwargs):
                 mbar.refresh()
 
         last_out = FH.completed.pop().result()
-        return accumulate([last_out if clevel is None else _decompress(last_out)], accumulator)
+        return accumulate(
+            [last_out if clevel is None else _decompress(last_out)], accumulator
+        )
 
     if isinstance(pool, concurrent.futures.Executor):
         return processwith(pool)
@@ -1022,14 +1029,16 @@ def parsl_executor(items, function, accumulator, **kwargs):
     nparts, minred, maxred = 5, 4, 100  # Merge job chunking
     reducer = python_app(_reduce(clevel))
 
-    with tqdm(disable=not status, unit=unit, total=len(items), desc=desc, position=0) as pbar:
+    with tqdm(
+        disable=not status, unit=unit, total=len(items), desc=desc, position=0
+    ) as pbar:
         with tqdm(disable=not status, total=1, desc="Merging", position=1) as mbar:
             while len(FH.futures) + len(FH.merges) > 0:
                 FH.update()
                 reduce = min(maxred, max(len(FH.completed) // nparts + 1, minred))
 
-                pbar.update(FH.done['futures'] - pbar.n)
-                mbar.update(FH.done['merges'] - mbar.n)
+                pbar.update(FH.done["futures"] - pbar.n)
+                mbar.update(FH.done["merges"] - mbar.n)
                 pbar.refresh()
                 mbar.refresh()
                 while len(FH.completed) > 1:
