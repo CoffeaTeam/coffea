@@ -5,9 +5,6 @@ from collections import defaultdict
 from collections.abc import MutableMapping, MutableSet
 from typing import Iterable, Optional, TypeVar, Union
 
-import pickle
-import warnings
-
 try:
     from typing import Protocol, runtime_checkable  # type: ignore
 except ImportError:
@@ -95,9 +92,6 @@ def accumulate(
         while True:
             # subsequent additions can happen in-place, which may be more performant
             accum = iadd(accum, next(gen))
-            _size = len(pickle.dumps(accum)) / (1024 * 1024)
-            if _size > 4000:  # 2 GB
-                warnings.warn("Accumulator memory size > 4GB. Might cause hangups.")
     except StopIteration:
         pass
     return accum
