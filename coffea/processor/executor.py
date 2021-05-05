@@ -260,7 +260,6 @@ class FuturesHolder:
         self.merges = set()
         self.completed = set()
         self.done = {"futures": 0, "merges": 0}
-        self.total = {"futures": len(futures), "merges": 0}
         self.refresh = refresh
 
     def update(self):
@@ -283,9 +282,9 @@ class FuturesHolder:
             self.done["merges"] += len(completed)
 
     def fetch(self, N):
-        return set(
+        return [
             self.completed.pop().result() for _ in range(N) if len(self.completed) > 0
-        )
+        ]
 
 
 def wqex_create_function_wrapper(tmpdir, x509_proxy=None):
@@ -1439,7 +1438,7 @@ def run_uproot_job(
                 "function_name": "get_metadata",
                 "desc": "Preprocessing",
                 "unit": "file",
-                "compression": 1,
+                "compression": None,
                 "tailtimeout": None,
                 "worker_affinity": False,
             }
