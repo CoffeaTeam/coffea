@@ -78,7 +78,7 @@ INSTALL_REQUIRES = [
 ]
 EXTRAS_REQUIRE = {}
 EXTRAS_REQUIRE["spark"] = ["pyspark>=2.4.1,<3.0.0", "jinja2"]
-EXTRAS_REQUIRE["parsl"] = ["parsl>=1.0"]
+EXTRAS_REQUIRE["parsl"] = ["parsl>=1.1"]
 EXTRAS_REQUIRE["dask"] = [
     "dask[dataframe]>=2.6.0",
     "distributed>=2.6.0",
