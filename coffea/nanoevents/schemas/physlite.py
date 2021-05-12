@@ -36,7 +36,7 @@ class PHYSLITESchema(BaseSchema):
                 contents[objname] = zip_forms(
                     {sub_key: branch_forms[key] for key, sub_key in keys},
                     objname,
-                    self.mixins.get(objname, None)
+                    self.mixins.get(objname, None),
                 )
             except NotImplementedError:
                 warnings.warn(f"Can't zip collection {objname}")
