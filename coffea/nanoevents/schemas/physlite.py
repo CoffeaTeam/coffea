@@ -13,7 +13,7 @@ class PHYSLITESchema(BaseSchema):
     def _build_collections(self, branch_forms):
         zip_groups = defaultdict(list)
         for key, ak_form in branch_forms.items():
-            key_fields = key.split(".")
+            key_fields = key.split("/")[-1].split(".")
             top_key = key_fields[0]
             sub_key = ".".join(key_fields[1:])
             objname = top_key.replace("Analysis", "").replace("AuxDyn", "")
