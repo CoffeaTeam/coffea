@@ -81,7 +81,7 @@ class UprootSourceMapping(BaseSourceMapping):
                     for field in form["content"]["content"]["contents"]:
                         form["content"]["content"]["contents"][field][
                             "form_key"
-                        ] = quote(f"{key},!load,!content,!content,!item'{field}'")
+                        ] = quote(f"{key},!load,!content,!content,{field},!item")
             elif form["class"] == "NumpyArray":
                 form["form_key"] = quote(f"{key},!load")
                 form["parameters"] = {"__doc__": branch.title}
