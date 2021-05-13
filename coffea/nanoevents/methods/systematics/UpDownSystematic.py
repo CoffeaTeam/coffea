@@ -1,4 +1,5 @@
 import awkward
+import numpy
 from copy import copy
 from coffea.nanoevents.methods.base import behavior, Systematic
 
@@ -10,8 +11,8 @@ class UpDownSystematic(Systematic):
     _udmap = {"up": 0, "down": 1}
 
     def _build_variations(self, name, what, varying_function, *args, **kwargs):
-        whatarray = self[what]
-
+        whatarray = self[what] if what != "weight" else self["__systematics__", "__ones__"]
+        
         self["__systematics__", f"__{name}__"] = awkward.virtual(
             varying_function,
             args=(whatarray, *args),
@@ -20,7 +21,7 @@ class UpDownSystematic(Systematic):
         )
 
     def describe_variations(self):
-        return ["up", "down"]
+        return list(self._udmap.keys())
 
     def get_variation(self, name, what, astype, updown):
         fields = awkward.fields(self)
@@ -31,8 +32,14 @@ class UpDownSystematic(Systematic):
         params = copy(self.layout.parameters)
         params["variation"] = f"{name}-{what}-{updown}"
 
+        out = {field: self[field] for field in fields}
+        if what == "weight":
+            out[f"weight_{name}"] = varied
+        else:
+            out[what] = varied
+        
         return awkward.zip(
-            {field: self[field] if field != what else varied for field in fields},
+            out,
             depth_limit=1,
             parameters=params,
             behavior=self.behavior,
@@ -44,7 +51,7 @@ class UpDownSystematic(Systematic):
             self.get_variation,
             args=(name, what, astype, "up"),
             length=len(self),
-            parameters=self[what].layout.parameters,
+            parameters=self[what].layout.parameters if what != "weight" else None,
         )
 
     def down(self, name, what, astype):
@@ -52,7 +59,7 @@ class UpDownSystematic(Systematic):
             self.get_variation,
             args=(name, what, astype, "down"),
             length=len(self),
-            parameters=self[what].layout.parameters,
+            parameters=self[what].layout.parameters if what != "weight" else None,
         )
 
 
