@@ -20,13 +20,11 @@ class UpDownSystematic(Systematic):
         )
 
     def describe_variations(self):
-        return "Muon", ["up", "down"]
+        return ["up", "down"]
 
-    def get_variation(self, name, what, updown):
+    def get_variation(self, name, what, astype, updown):
         fields = awkward.fields(self)
         fields.remove("__systematics__")
-
-        the_type, variations = self.describe_variations()
 
         varied = self["__systematics__", f"__{name}__", :, self._udmap[updown]]
 
@@ -38,25 +36,24 @@ class UpDownSystematic(Systematic):
             depth_limit=1,
             parameters=params,
             behavior=self.behavior,
-            with_name=the_type,
+            with_name=astype,
         )
 
-    def up(self, name, what):
+    def up(self, name, what, astype):
         return awkward.virtual(
             self.get_variation,
-            args=(name, what, "up"),
+            args=(name, what, astype, "up"),
             length=len(self),
             parameters=self[what].layout.parameters,
         )
 
-    def down(self, name, what):
+    def down(self, name, what, astype):
         return awkward.virtual(
             self.get_variation,
-            args=(name, what, "down"),
+            args=(name, what, astype, "down"),
             length=len(self),
             parameters=self[what].layout.parameters,
         )
 
 
 behavior[("__typestr__", "UpDownSystematic")] = "UpDownSystematic"
-Systematic.add_kind("UpDownSystematic")

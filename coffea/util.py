@@ -14,6 +14,7 @@ nb = numba
 import lz4.frame
 import cloudpickle
 import warnings
+from functools import partial
 
 
 def load(filename):

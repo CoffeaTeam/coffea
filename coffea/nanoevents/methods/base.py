@@ -129,6 +129,7 @@ class Systematic:
 
     @abstractmethod
     def describe_variations(self):
+        """returns a list of variation names"""
         pass
 
     def add_systematic(self, name, kind, what, varying_function, *args, **kwargs):
@@ -155,12 +156,16 @@ class Systematic:
                 f"{kind} is not an available systematics type, please add it and try again!"
             )
 
+        rendered_type = flat.layout.parameters["__record__"]
         as_syst_type = awkward.with_name(flat, kind)
         as_syst_type._build_variations(name, what, varying_function, *args, **kwargs)
-        _, variations = as_syst_type.describe_variations()
+        variations = as_syst_type.describe_variations()
 
         flat["__systematics__", name] = awkward.zip(
-            {v: getattr(as_syst_type, v)(name, what) for v in variations},
+            {
+                v: getattr(as_syst_type, v)(name, what, rendered_type)
+                for v in variations
+            },
             depth_limit=1,
             with_name=f"{name}Systematics",
         )
@@ -172,6 +177,9 @@ class Systematic:
 behavior[("__typestr__", "Systematic")] = "Systematic"
 
 # initialize all systematic variation types
-import coffea.nanoevents.methods.systematics
+from coffea.nanoevents.methods import systematics
 
-__all__ = ["NanoCollection", "NanoEvents", "Systematics"]
+for kind in systematics.__all__:
+    Systematic.add_kind(kind)
+
+__all__ = ["NanoCollection", "NanoEvents", "Systematic"]
