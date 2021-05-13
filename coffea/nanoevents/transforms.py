@@ -332,5 +332,6 @@ def nestedindex(stack):
     stack.append(out)
 
 
-def item(stack, field):
+def item(stack):
+    field = stack.pop()
     stack.append(stack.pop()[field])
