@@ -125,7 +125,7 @@ def local2global(stack):
     index = stack.pop()
     index = index.mask[index >= 0] + target_offsets[:-1]
     index = index.mask[index < target_offsets[1:]]
-    out = numpy.array(awkward.flatten(awkward.fill_none(index, -1)))
+    out = numpy.array(awkward.flatten(awkward.fill_none(index, -1), axis=None))
     if out.dtype != numpy.int64:
         raise RuntimeError
     stack.append(out)
@@ -335,3 +335,7 @@ def nestedindex(stack):
 def item(stack):
     field = stack.pop()
     stack.append(stack.pop()[field])
+
+
+def to_numpy(stack):
+    stack.append(numpy.asarray(stack.pop()))

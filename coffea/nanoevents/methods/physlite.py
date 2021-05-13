@@ -1,21 +1,22 @@
 import awkward
 import numpy
-from coffea.nanoevents.methods import vector
+from coffea.nanoevents.methods import base, vector
 
 
 behavior = {}
+behavior.update(base.behavior)
 behavior.update(vector.behavior)
 
 
 @awkward.mixin_class(behavior)
-class xAODParticle(vector.PtEtaPhiMLorentzVector):
+class xAODParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     @property
     def mass(self):
         return self.m
 
 
 @awkward.mixin_class(behavior)
-class xAODTrackParticle(vector.LorentzVector):
+class xAODTrackParticle(vector.LorentzVector, base.NanoCollection):
     "see https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODTracking/Root/TrackParticle_v1.cxx#L82"
 
     @property
