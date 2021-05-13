@@ -19,6 +19,7 @@ class PHYSLITESchema(BaseSchema):
     }
 
     # create global indices for single-jagged arrays after cross referencing
+    # for the target collection an arbitrary column (e.g z0) has to be chosen to extract the offsets
     cross_reference_indices = {
         (
             "Muons",
@@ -26,7 +27,7 @@ class PHYSLITESchema(BaseSchema):
         ): "CombinedMuonTrackParticlesAuxDyn.z0",
     }
     # create global indices for double-jagged arrays after cross referencing
-    # here we need to resolve ".m_persIndex" since these branches are not split
+    # here we will resolve ".m_persIndex" since these branches are not split
     cross_reference_elementlinks = {
         ("Electrons", "trackParticleLinks"): "GSFTrackParticlesAuxDyn.z0",
     }
@@ -38,28 +39,25 @@ class PHYSLITESchema(BaseSchema):
     def _build_collections(self, branch_forms):
         zip_groups = defaultdict(list)
         for key, ak_form in branch_forms.items():
+            # Normal fields
             key_fields = key.split("/")[-1].split(".")
             top_key = key_fields[0]
             sub_key = ".".join(key_fields[1:])
             objname = top_key.replace("Analysis", "").replace("AuxDyn", "")
             zip_groups[objname].append(((key, sub_key), ak_form))
+
+            # Global indices
             for cross_references in [
                 self.cross_reference_indices,
                 self.cross_reference_elementlinks,
             ]:
                 if (objname, sub_key) in cross_references:
                     linkto_key = cross_references[(objname, sub_key)]
-                    form = dict(ak_form)
                     if cross_references is self.cross_reference_indices:
-                        form["content"]["form_key"] = quote(
-                            f"{key},!load,{linkto_key},!load,!offsets,!to_numpy,!local2global"
-                        )
+                        form = self._create_global_index_form(ak_form, key, linkto_key)
                     elif cross_references is self.cross_reference_elementlinks:
-                        form["content"]["content"] = form["content"]["content"][
-                            "contents"
-                        ]["m_persIndex"]
-                        form["content"]["content"]["form_key"] = quote(
-                            f"{key},!load,m_persIndex,!item,{linkto_key},!load,!offsets,!to_numpy,!local2global"
+                        form = self._create_global_index_form_elementlink(
+                            ak_form, key, linkto_key
                         )
                     zip_groups[objname].append(((key, sub_key + "G"), form))
 
@@ -74,6 +72,24 @@ class PHYSLITESchema(BaseSchema):
             except NotImplementedError:
                 warnings.warn(f"Can't zip collection {objname}")
         return contents
+
+    @staticmethod
+    def _create_global_index_form(base_form, key, linkto_key):
+        form = dict(base_form)
+        form["content"]["form_key"] = quote(
+            f"{key},!load,{linkto_key},!load,!offsets,!to_numpy,!local2global"
+        )
+        return form
+
+    @staticmethod
+    def _create_global_index_form_elementlink(base_form, key, linkto_key):
+        form = dict(base_form)
+        record = form["content"]["content"]["contents"]
+        form["content"]["content"] = record["m_persIndex"]
+        form["content"]["content"]["form_key"] = quote(
+            f"{key},!load,m_persIndex,!item,{linkto_key},!load,!offsets,!to_numpy,!local2global"
+        )
+        return form
 
     @property
     def behavior(self):
