@@ -1,5 +1,6 @@
 import warnings
 from collections import defaultdict
+import copy
 from coffea.nanoevents.schemas.base import BaseSchema, zip_forms
 from coffea.nanoevents.util import quote
 
@@ -75,20 +76,28 @@ class PHYSLITESchema(BaseSchema):
 
     @staticmethod
     def _create_global_index_form(base_form, key, linkto_key):
-        form = dict(base_form)
+        form = copy.deepcopy(base_form)
         form["content"]["form_key"] = quote(
             f"{key},!load,{linkto_key},!load,!offsets,!to_numpy,!local2global"
         )
+        form["content"]["itemsize"] = 8
+        form["content"]["primitive"] = "int64"
         return form
 
     @staticmethod
     def _create_global_index_form_elementlink(base_form, key, linkto_key):
-        form = dict(base_form)
+        form = copy.deepcopy(base_form)
         record = form["content"]["content"]["contents"]
         form["content"]["content"] = record["m_persIndex"]
         form["content"]["content"]["form_key"] = quote(
             f"{key},!load,m_persIndex,!item,{linkto_key},!load,!offsets,!to_numpy,!local2global"
         )
+        form["content"]["form_key"] = quote(
+            # the !data is a hack to avoid having the same key as the actual elementlink
+            f"{key},!load,!content,!data"
+        )
+        form["content"]["content"]["itemsize"] = 8
+        form["content"]["content"]["primitive"] = "int64"
         return form
 
     @property
