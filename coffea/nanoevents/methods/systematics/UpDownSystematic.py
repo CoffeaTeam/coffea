@@ -1,5 +1,4 @@
 import awkward
-import numpy
 from copy import copy
 from coffea.nanoevents.methods.base import behavior, Systematic
 
@@ -11,8 +10,10 @@ class UpDownSystematic(Systematic):
     _udmap = {"up": 0, "down": 1}
 
     def _build_variations(self, name, what, varying_function, *args, **kwargs):
-        whatarray = self[what] if what != "weight" else self["__systematics__", "__ones__"]
-        
+        whatarray = (
+            self[what] if what != "weight" else self["__systematics__", "__ones__"]
+        )
+
         self["__systematics__", f"__{name}__"] = awkward.virtual(
             varying_function,
             args=(whatarray, *args),
@@ -37,7 +38,7 @@ class UpDownSystematic(Systematic):
             out[f"weight_{name}"] = varied
         else:
             out[what] = varied
-        
+
         return awkward.zip(
             out,
             depth_limit=1,

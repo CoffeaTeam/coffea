@@ -78,10 +78,18 @@ class Systematic:
         wrap = partial(
             awkward_rewrap, like_what=self["__systematics__"], gfunc=rewrap_recordarray
         )
-        flat = self if isinstance(self, coffea.nanoevents.methods.base.NanoEvents) else awkward.flatten(self)
+        flat = (
+            self
+            if isinstance(self, coffea.nanoevents.methods.base.NanoEvents)
+            else awkward.flatten(self)
+        )
 
-        if what == "weight" and "__ones__" not in awkward.fields(flat["__systematics__"]):
-            flat["__systematics__", "__ones__"] = numpy.ones(len(flat), dtype=numpy.float32)
+        if what == "weight" and "__ones__" not in awkward.fields(
+            flat["__systematics__"]
+        ):
+            flat["__systematics__", "__ones__"] = numpy.ones(
+                len(flat), dtype=numpy.float32
+            )
 
         rendered_type = flat.layout.parameters["__record__"]
         as_syst_type = awkward.with_name(flat, kind)
@@ -105,6 +113,7 @@ behavior[("__typestr__", "Systematic")] = "Systematic"
 
 # initialize all systematic variation types
 from coffea.nanoevents.methods import systematics
+
 for kind in systematics.__all__:
     Systematic.add_kind(kind)
 
