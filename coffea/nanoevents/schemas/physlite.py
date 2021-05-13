@@ -8,8 +8,8 @@ from coffea.nanoevents.util import quote
 class PHYSLITESchema(BaseSchema):
 
     mixins = {
-        "Electrons": "xAODParticle",
-        "Muons": "xAODParticle",
+        "Electrons": "xAODElectron",
+        "Muons": "xAODMuon",
         "Jets": "xAODParticle",
         "TauJets": "xAODParticle",
         "CombinedMuonTrackParticles": "xAODTrackParticle",

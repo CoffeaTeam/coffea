@@ -46,3 +46,29 @@ class xAODTrackParticle(vector.LorentzVector, base.NanoCollection):
     @property
     def t(self):
         return numpy.sqrt(139.570 ** 2 + self.x ** 2 + self.y ** 2 + self.z ** 2)
+
+
+@awkward.mixin_class(behavior)
+class xAODMuon(xAODParticle):
+    @property
+    def trackParticle(self):
+        global_index = self["combinedTrackParticleLink.m_persIndexG"]
+        key = self["combinedTrackParticleLink.m_persKey"]
+        global_index = awkward.where(key != 0, global_index, -1)
+        return self._events().CombinedMuonTrackParticles._apply_global_index(
+            global_index
+        )
+
+
+@awkward.mixin_class(behavior)
+class xAODElectron(xAODParticle):
+    @property
+    def trackParticles(self):
+        global_index = self.trackParticleLinksG
+        key = self.trackParticleLinks.m_persKey
+        global_index = awkward.where(key != 0, global_index, -1)
+        return self._events().GSFTrackParticles._apply_global_index(global_index)
+
+    @property
+    def trackParticle(self):
+        return self.trackParticles[:, :, 0]
