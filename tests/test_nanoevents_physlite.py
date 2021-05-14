@@ -1,10 +1,9 @@
-import awkward as ak
 import os
 from coffea.nanoevents import NanoEventsFactory, PHYSLITESchema
 
 
 def test_electron_track_links():
-    path = os.path.abspath(f"tests/samples/DAOD_PHYSLITE_21.2.108.0.art.pool.root")
+    path = os.path.abspath("tests/samples/DAOD_PHYSLITE_21.2.108.0.art.pool.root")
     factory = NanoEventsFactory.from_root(
         path, treepath="CollectionTree", schemaclass=PHYSLITESchema
     )
