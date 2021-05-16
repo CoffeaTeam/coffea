@@ -78,4 +78,7 @@ class xAODElectron(xAODParticle):
 
     @property
     def trackParticle(self):
-        return self.trackParticles[:, :, 0]
+        trackParticles = self.trackParticles
+        return self.trackParticles[
+            tuple([slice(None) for i in range(trackParticles.ndim - 1)] + [0])
+        ]
