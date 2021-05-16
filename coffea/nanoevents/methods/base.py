@@ -70,7 +70,7 @@ class Systematic:
         if name in awkward.fields(self["__systematics__"]):
             raise ValueError(f"{name} already exists as a systematic for this object!")
 
-        if kind not in self.__class__._systematic_kinds:
+        if kind not in self._systematic_kinds:
             raise ValueError(
                 f"{kind} is not an available systematics type, please add it and try again!"
             )
