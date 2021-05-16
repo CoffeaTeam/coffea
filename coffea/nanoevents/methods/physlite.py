@@ -8,6 +8,11 @@ behavior.update(base.behavior)
 behavior.update(vector.behavior)
 
 
+def _element_link(target_collection, global_index, key):
+    global_index = awkward.where(key != 0, global_index, -1)
+    return target_collection._apply_global_index(global_index)
+
+
 @awkward.mixin_class(behavior)
 class xAODParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     @property
@@ -52,11 +57,12 @@ class xAODTrackParticle(vector.LorentzVector, base.NanoCollection):
 class xAODMuon(xAODParticle):
     @property
     def trackParticle(self):
-        global_index = self["combinedTrackParticleLink.m_persIndexG"]
-        key = self["combinedTrackParticleLink.m_persKey"]
-        global_index = awkward.where(key != 0, global_index, -1)
-        return self._events().CombinedMuonTrackParticles._apply_global_index(
-            global_index
+        return _element_link(
+            self._events().CombinedMuonTrackParticles,
+            self[
+                "combinedTrackParticleLink.m_persIndex__G__CombinedMuonTrackParticles"
+            ],
+            self["combinedTrackParticleLink.m_persKey"],
         )
 
 
@@ -64,10 +70,11 @@ class xAODMuon(xAODParticle):
 class xAODElectron(xAODParticle):
     @property
     def trackParticles(self):
-        global_index = self.trackParticleLinksG
-        key = self.trackParticleLinks.m_persKey
-        global_index = awkward.where(key != 0, global_index, -1)
-        return self._events().GSFTrackParticles._apply_global_index(global_index)
+        return _element_link(
+            self._events().GSFTrackParticles,
+            self.trackParticleLinks__G__GSFTrackParticles,
+            self.trackParticleLinks.m_persKey,
+        )
 
     @property
     def trackParticle(self):
