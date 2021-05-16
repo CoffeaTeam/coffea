@@ -19,6 +19,13 @@ class PHYSLITESchema(BaseSchema):
         "GSFTrackParticles": "xAODTrackParticle",
         "InDetTrackParticles": "xAODTrackParticle",
         "MuonSpectrometerTrackParticles": "xAODTrackParticle",
+        "TruthPhotons": "xAODTruthParticle",
+        "TruthMuons": "xAODTruthParticle",
+        "TruthNeutrinos": "xAODTruthParticle",
+        "TruthTaus": "xAODTruthParticle",
+        "TruthElectrons": "xAODTruthParticle",
+        "TruthBoson": "xAODTruthParticle",
+        "TruthBottom": "xAODTruthParticle",
     }
 
     # create global indices for single-jagged arrays after cross referencing
@@ -32,6 +39,15 @@ class PHYSLITESchema(BaseSchema):
     cross_reference_elementlinks = {
         ("Electrons", "trackParticleLinks"): ["GSFTrackParticles"],
         ("HLT_e7_lhmedium_nod0_mu24", "TrigMatchedObjects"): ["Electrons", "Muons"],
+        ("TruthBoson", "childLinks"): [
+            "TruthPhotons",
+            "TruthMuons",
+            "TruthNeutrinos",
+            "TruthTaus",
+            "TruthElectrons",
+            "TruthBoson",
+            "TruthBottom",
+        ],
     }
 
     # for the target collections an arbitrary column (e.g z0) has to be chosen to extract the offsets
@@ -40,6 +56,13 @@ class PHYSLITESchema(BaseSchema):
         "GSFTrackParticles": "GSFTrackParticlesAuxDyn.z0",
         "Electrons": "AnalysisElectronsAuxDyn.pt",
         "Muons": "AnalysisMuonsAuxDyn.pt",
+        "TruthPhotons": "TruthPhotonsAuxDyn.px",
+        "TruthMuons": "TruthMuonsAuxDyn.px",
+        "TruthNeutrinos": "TruthNeutrinosAuxDyn.px",
+        "TruthTaus": "TruthTausAuxDyn.px",
+        "TruthElectrons": "TruthElectronsAuxDyn.px",
+        "TruthBoson": "TruthBosonAuxDyn.px",
+        "TruthBottom": "TruthBottomAuxDyn.px",
     }
 
     def __init__(self, base_form):

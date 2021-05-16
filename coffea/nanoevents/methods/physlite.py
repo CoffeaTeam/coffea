@@ -7,10 +7,38 @@ behavior = {}
 behavior.update(base.behavior)
 behavior.update(vector.behavior)
 
+# from MetaData/EventFormat
+_hash_to_target_name = {
+    13267281: "TruthPhotons",
+    342174277: "TruthMuons",
+    368360608: "TruthNeutrinos",
+    375408000: "TruthTaus",
+    394100163: "TruthElectrons",
+    614719239: "TruthBoson",
+    660928181: "TruthTop",
+    779635413: "TruthBottom",
+}
+
 
 def _element_link(target_collection, global_index, key):
     global_index = awkward.where(key != 0, global_index, -1)
     return target_collection._apply_global_index(global_index)
+
+
+def _element_link_multiple(events, obj, link_field):
+    key = obj[link_field].m_persKey
+    unique_keys = numpy.unique(awkward.to_numpy(awkward.flatten(key, axis=None)))
+
+    def where(unique_keys):
+        target_name = _hash_to_target_name[unique_keys[0]]
+        links = events[target_name]._apply_global_index(
+            obj[f"{link_field}__G__{target_name}"]
+        )
+        if len(unique_keys) == 1:
+            return links
+        return awkward.where(key == unique_keys[0], links, where(unique_keys[1:]))
+
+    return where(unique_keys)
 
 
 @awkward.mixin_class(behavior)
@@ -82,3 +110,10 @@ class xAODElectron(xAODParticle):
         return self.trackParticles[
             tuple([slice(None) for i in range(trackParticles.ndim - 1)] + [0])
         ]
+
+
+@awkward.mixin_class(behavior)
+class xAODTruthParticle(base.NanoCollection):
+    @property
+    def children(self):
+        return _element_link_multiple(self._events(), self, "childLinks")
