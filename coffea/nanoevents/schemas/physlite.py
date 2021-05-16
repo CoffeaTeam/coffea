@@ -7,6 +7,8 @@ from coffea.nanoevents.util import quote
 
 class PHYSLITESchema(BaseSchema):
 
+    _hack_for_elementlink_int64 = True
+
     mixins = {
         "Electrons": "xAODElectron",
         "Muons": "xAODMuon",
@@ -55,13 +57,14 @@ class PHYSLITESchema(BaseSchema):
 
             # temporary hack to have the correct type for the ElementLinks
             # (uproot loses the type information somewhere on the way and they end up int64)
-            try:
-                for k in ["m_persIndex", "m_persKey"]:
-                    form = ak_form["content"]["content"]["contents"][k]
-                    form["itemsize"] = 8
-                    form["primitive"] = "int64"
-            except KeyError:
-                pass
+            if self._hack_for_elementlink_int64:
+                try:
+                    for k in ["m_persIndex", "m_persKey"]:
+                        form = ak_form["content"]["content"]["contents"][k]
+                        form["itemsize"] = 8
+                        form["primitive"] = "int64"
+                except KeyError:
+                    pass
 
             zip_groups[objname].append(((key, sub_key), ak_form))
 
