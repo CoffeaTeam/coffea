@@ -27,7 +27,11 @@ def _element_link(target_collection, global_index, key):
 
 def _element_link_multiple(events, obj, link_field):
     key = obj[link_field].m_persKey
-    unique_keys = numpy.unique(awkward.to_numpy(awkward.flatten(key, axis=None)))
+    unique_keys = [
+        i
+        for i in numpy.unique(awkward.to_numpy(awkward.flatten(key, axis=None)))
+        if i != 0
+    ]
 
     def where(unique_keys):
         target_name = _hash_to_target_name[unique_keys[0]]
@@ -38,7 +42,7 @@ def _element_link_multiple(events, obj, link_field):
             return links
         return awkward.where(key == unique_keys[0], links, where(unique_keys[1:]))
 
-    return where(unique_keys)
+    return where(unique_keys).mask[key != 0]
 
 
 @awkward.mixin_class(behavior)
