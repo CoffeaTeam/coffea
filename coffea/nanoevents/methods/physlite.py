@@ -117,3 +117,7 @@ class xAODTruthParticle(base.NanoCollection):
     @property
     def children(self):
         return _element_link_multiple(self._events(), self, "childLinks")
+
+    @property
+    def parents(self):
+        return _element_link_multiple(self._events(), self, "parentLinks")

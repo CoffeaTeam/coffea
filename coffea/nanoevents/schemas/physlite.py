@@ -9,6 +9,17 @@ class PHYSLITESchema(BaseSchema):
 
     _hack_for_elementlink_int64 = True
 
+    truth_collections = [
+        "TruthPhotons",
+        "TruthMuons",
+        "TruthNeutrinos",
+        "TruthTaus",
+        "TruthElectrons",
+        "TruthBoson",
+        "TruthBottom",
+        "TruthTop",
+    ]
+
     mixins = {
         "Electrons": "xAODElectron",
         "Muons": "xAODMuon",
@@ -19,14 +30,9 @@ class PHYSLITESchema(BaseSchema):
         "GSFTrackParticles": "xAODTrackParticle",
         "InDetTrackParticles": "xAODTrackParticle",
         "MuonSpectrometerTrackParticles": "xAODTrackParticle",
-        "TruthPhotons": "xAODTruthParticle",
-        "TruthMuons": "xAODTruthParticle",
-        "TruthNeutrinos": "xAODTruthParticle",
-        "TruthTaus": "xAODTruthParticle",
-        "TruthElectrons": "xAODTruthParticle",
-        "TruthBoson": "xAODTruthParticle",
-        "TruthBottom": "xAODTruthParticle",
     }
+    for k in truth_collections:
+        mixins[k] = "xAODTruthParticle"
 
     # create global indices for single-jagged arrays after cross referencing
     cross_reference_indices = {
@@ -39,16 +45,10 @@ class PHYSLITESchema(BaseSchema):
     cross_reference_elementlinks = {
         ("Electrons", "trackParticleLinks"): ["GSFTrackParticles"],
         ("HLT_e7_lhmedium_nod0_mu24", "TrigMatchedObjects"): ["Electrons", "Muons"],
-        ("TruthBoson", "childLinks"): [
-            "TruthPhotons",
-            "TruthMuons",
-            "TruthNeutrinos",
-            "TruthTaus",
-            "TruthElectrons",
-            "TruthBoson",
-            "TruthBottom",
-        ],
     }
+    for k in truth_collections:
+        cross_reference_elementlinks[(k, "childLinks")] = truth_collections
+        cross_reference_elementlinks[(k, "parentLinks")] = truth_collections
 
     # for the target collections an arbitrary column (e.g z0) has to be chosen to extract the offsets
     link_load_columns = {
@@ -56,14 +56,9 @@ class PHYSLITESchema(BaseSchema):
         "GSFTrackParticles": "GSFTrackParticlesAuxDyn.z0",
         "Electrons": "AnalysisElectronsAuxDyn.pt",
         "Muons": "AnalysisMuonsAuxDyn.pt",
-        "TruthPhotons": "TruthPhotonsAuxDyn.px",
-        "TruthMuons": "TruthMuonsAuxDyn.px",
-        "TruthNeutrinos": "TruthNeutrinosAuxDyn.px",
-        "TruthTaus": "TruthTausAuxDyn.px",
-        "TruthElectrons": "TruthElectronsAuxDyn.px",
-        "TruthBoson": "TruthBosonAuxDyn.px",
-        "TruthBottom": "TruthBottomAuxDyn.px",
     }
+    for k in truth_collections:
+        link_load_columns[k] = f"{k}AuxDyn.px"
 
     def __init__(self, base_form):
         super().__init__(base_form)
