@@ -140,7 +140,27 @@ _set_repr_name("xAODElectron")
 
 
 @awkward.mixin_class(behavior)
-class xAODTruthParticle(base.NanoCollection):
+class xAODTruthParticle(vector.LorentzVector, base.NanoCollection):
+    @property
+    def x(self):
+        return self["px"]
+
+    @property
+    def y(self):
+        return self["py"]
+
+    @property
+    def z(self):
+        return self["pz"]
+
+    @property
+    def t(self):
+        return self["e"]
+
+    @property
+    def mass(self):
+        return self["m"]
+
     @property
     def children(self):
         return _element_link_multiple(self._events(), self, "childLinks")
