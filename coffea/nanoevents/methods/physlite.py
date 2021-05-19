@@ -36,7 +36,7 @@ def _element_link(target_collection, global_index, key):
     return target_collection._apply_global_index(global_index)
 
 
-def _element_link_multiple(events, obj, link_field):
+def _element_link_multiple(events, obj, link_field, with_name=None):
     key = obj[link_field].m_persKey
     unique_keys = [
         i
@@ -53,7 +53,10 @@ def _element_link_multiple(events, obj, link_field):
             return links
         return awkward.where(key == unique_keys[0], links, where(unique_keys[1:]))
 
-    return where(unique_keys).mask[key != 0]
+    out = where(unique_keys).mask[key != 0]
+    if with_name is not None:
+        out = awkward.with_parameter(out, "__record__", with_name)
+    return out
 
 
 @awkward.mixin_class(behavior)
@@ -163,11 +166,15 @@ class xAODTruthParticle(vector.LorentzVector, base.NanoCollection):
 
     @property
     def children(self):
-        return _element_link_multiple(self._events(), self, "childLinks")
+        return _element_link_multiple(
+            self._events(), self, "childLinks", with_name="xAODTruthParticle"
+        )
 
     @property
     def parents(self):
-        return _element_link_multiple(self._events(), self, "parentLinks")
+        return _element_link_multiple(
+            self._events(), self, "parentLinks", with_name="xAODTruthParticle"
+        )
 
 
 _set_repr_name("xAODTruthParticle")
