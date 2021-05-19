@@ -21,18 +21,18 @@ class PHYSLITESchema(BaseSchema):
     ]
 
     mixins = {
-        "Electrons": "xAODElectron",
-        "Muons": "xAODMuon",
-        "Jets": "xAODParticle",
-        "TauJets": "xAODParticle",
-        "CombinedMuonTrackParticles": "xAODTrackParticle",
-        "ExtrapolatedMuonTrackParticles": "xAODTrackParticle",
-        "GSFTrackParticles": "xAODTrackParticle",
-        "InDetTrackParticles": "xAODTrackParticle",
-        "MuonSpectrometerTrackParticles": "xAODTrackParticle",
+        "Electrons": "Electron",
+        "Muons": "Muon",
+        "Jets": "Particle",
+        "TauJets": "Particle",
+        "CombinedMuonTrackParticles": "TrackParticle",
+        "ExtrapolatedMuonTrackParticles": "TrackParticle",
+        "GSFTrackParticles": "TrackParticle",
+        "InDetTrackParticles": "TrackParticle",
+        "MuonSpectrometerTrackParticles": "TrackParticle",
     }
     for k in truth_collections:
-        mixins[k] = "xAODTruthParticle"
+        mixins[k] = "TruthParticle"
 
     # create global indices for single-jagged arrays after cross referencing
     cross_reference_indices = {

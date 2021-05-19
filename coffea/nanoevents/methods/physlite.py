@@ -9,12 +9,10 @@ behavior.update(vector.behavior)
 
 
 def _set_repr_name(classname):
-    repr_name = classname.replace("xAOD", "")
-
     def namefcn(self):
-        return repr_name
+        return classname
 
-    behavior[("__typestr__", classname)] = repr_name[0].lower() + repr_name[1:]
+    behavior[("__typestr__", classname)] = classname[0].lower() + classname[1:]
     behavior[classname].__repr__ = namefcn
 
 
@@ -60,17 +58,17 @@ def _element_link_multiple(events, obj, link_field, with_name=None):
 
 
 @awkward.mixin_class(behavior)
-class xAODParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
+class Particle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     @property
     def mass(self):
         return self.m
 
 
-_set_repr_name("xAODParticle")
+_set_repr_name("Particle")
 
 
 @awkward.mixin_class(behavior)
-class xAODTrackParticle(vector.LorentzVector, base.NanoCollection):
+class TrackParticle(vector.LorentzVector, base.NanoCollection):
     "see https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODTracking/Root/TrackParticle_v1.cxx#L82"
 
     @property
@@ -102,11 +100,11 @@ class xAODTrackParticle(vector.LorentzVector, base.NanoCollection):
         return numpy.sqrt(139.570 ** 2 + self.x ** 2 + self.y ** 2 + self.z ** 2)
 
 
-_set_repr_name("xAODTrackParticle")
+_set_repr_name("TrackParticle")
 
 
 @awkward.mixin_class(behavior)
-class xAODMuon(xAODParticle):
+class Muon(Particle):
     @property
     def trackParticle(self):
         return _element_link(
@@ -118,11 +116,11 @@ class xAODMuon(xAODParticle):
         )
 
 
-_set_repr_name("xAODMuon")
+_set_repr_name("Muon")
 
 
 @awkward.mixin_class(behavior)
-class xAODElectron(xAODParticle):
+class Electron(Particle):
     @property
     def trackParticles(self):
         return _element_link(
@@ -139,11 +137,11 @@ class xAODElectron(xAODParticle):
         ]
 
 
-_set_repr_name("xAODElectron")
+_set_repr_name("Electron")
 
 
 @awkward.mixin_class(behavior)
-class xAODTruthParticle(vector.LorentzVector, base.NanoCollection):
+class TruthParticle(vector.LorentzVector, base.NanoCollection):
     @property
     def x(self):
         return self["px"]
@@ -167,14 +165,14 @@ class xAODTruthParticle(vector.LorentzVector, base.NanoCollection):
     @property
     def children(self):
         return _element_link_multiple(
-            self._events(), self, "childLinks", with_name="xAODTruthParticle"
+            self._events(), self, "childLinks", with_name="TruthParticle"
         )
 
     @property
     def parents(self):
         return _element_link_multiple(
-            self._events(), self, "parentLinks", with_name="xAODTruthParticle"
+            self._events(), self, "parentLinks", with_name="TruthParticle"
         )
 
 
-_set_repr_name("xAODTruthParticle")
+_set_repr_name("TruthParticle")
