@@ -7,6 +7,17 @@ behavior = {}
 behavior.update(base.behavior)
 behavior.update(vector.behavior)
 
+
+def _set_repr_name(classname):
+    repr_name = classname.replace("xAOD", "")
+
+    def namefcn(self):
+        return repr_name
+
+    behavior[("__typestr__", classname)] = repr_name[0].lower() + repr_name[1:]
+    behavior[classname].__repr__ = namefcn
+
+
 # from MetaData/EventFormat
 _hash_to_target_name = {
     13267281: "TruthPhotons",
@@ -52,6 +63,9 @@ class xAODParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
         return self.m
 
 
+_set_repr_name("xAODParticle")
+
+
 @awkward.mixin_class(behavior)
 class xAODTrackParticle(vector.LorentzVector, base.NanoCollection):
     "see https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODTracking/Root/TrackParticle_v1.cxx#L82"
@@ -85,6 +99,9 @@ class xAODTrackParticle(vector.LorentzVector, base.NanoCollection):
         return numpy.sqrt(139.570 ** 2 + self.x ** 2 + self.y ** 2 + self.z ** 2)
 
 
+_set_repr_name("xAODTrackParticle")
+
+
 @awkward.mixin_class(behavior)
 class xAODMuon(xAODParticle):
     @property
@@ -96,6 +113,9 @@ class xAODMuon(xAODParticle):
             ],
             self["combinedTrackParticleLink.m_persKey"],
         )
+
+
+_set_repr_name("xAODMuon")
 
 
 @awkward.mixin_class(behavior)
@@ -116,6 +136,9 @@ class xAODElectron(xAODParticle):
         ]
 
 
+_set_repr_name("xAODElectron")
+
+
 @awkward.mixin_class(behavior)
 class xAODTruthParticle(base.NanoCollection):
     @property
@@ -125,3 +148,6 @@ class xAODTruthParticle(base.NanoCollection):
     @property
     def parents(self):
         return _element_link_multiple(self._events(), self, "parentLinks")
+
+
+_set_repr_name("xAODTruthParticle")

@@ -114,6 +114,10 @@ class PHYSLITESchema(BaseSchema):
                     objname,
                     self.mixins.get(objname, None),
                 )
+                content = contents[objname]["content"]
+                content["parameters"] = dict(
+                    content.get("parameters", {}), collection_name=objname
+                )
             except NotImplementedError:
                 warnings.warn(f"Can't zip collection {objname}")
         return contents
