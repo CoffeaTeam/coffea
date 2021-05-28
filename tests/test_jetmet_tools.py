@@ -749,7 +749,8 @@ def test_factory_lifecycle():
     met_factory = CorrectedMETFactory(name_map)
 
     from coffea.nanoevents.mapping import ArrayLifecycleMapping
-    import weakref, threading
+    import weakref
+    import threading
 
     array_log = ArrayLifecycleMapping()
     jec_finalized = threading.Event()  # just using this as a flag object
