@@ -751,8 +751,10 @@ def test_factory_lifecycle():
     met_factory = CorrectedMETFactory(name_map)
 
     from coffea.nanoevents.mapping import ArrayLifecycleMapping
+    import weakref, threading
 
     array_log = ArrayLifecycleMapping()
+    jec_finalized = threading.Event()  # just using this as a flag object
 
     def run():
         events = NanoEventsFactory.from_root(
@@ -768,6 +770,7 @@ def test_factory_lifecycle():
         )
         jets["rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
         jec_cache = cachetools.Cache(np.inf)
+        weakref.finalize(jec_cache, jec_finalized.set)
         corrected_jets = jet_factory.build(jets, lazy_cache=jec_cache)
         corrected_met = met_factory.build(met, corrected_jets, lazy_cache=jec_cache)
         print(corrected_met.pt_orig)
@@ -789,3 +792,4 @@ def test_factory_lifecycle():
     diff = set(array_log.accessed) - set(array_log.finalized)
     print("Diff:", diff)
     assert len(diff) == 0
+    assert jec_finalized.is_set()
