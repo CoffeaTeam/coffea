@@ -727,10 +727,8 @@ def test_factory_lifecycle():
         "Summer16_23Sep2016V3_MC_L3Absolute_AK4PFPuppi",
         "Spring16_25nsV10_MC_PtResolution_AK4PFPuppi",
         "Spring16_25nsV10_MC_SF_AK4PFPuppi",
+        "Summer16_23Sep2016V3_MC_UncertaintySources_AK4PFPuppi_AbsoluteStat",
     ]
-    # for key in evaluator.keys():
-    #     if 'Summer16_23Sep2016V3_MC_UncertaintySources_AK4PFPuppi' in key:
-    #         jec_stack_names.append(key)
 
     jec_stack = JECStack({name: evaluator[name] for name in jec_stack_names})
     name_map = jec_stack.blank_name_map
