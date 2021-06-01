@@ -125,7 +125,7 @@ jobs:
         cd tests
         python wq.py
 
- testradosparquetjob:
+  testradosparquetjob:
     runs-on: ubuntu-latest
     needs: linter
     name: test coffea-rados-parquet-job
