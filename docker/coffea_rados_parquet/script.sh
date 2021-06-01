@@ -1,7 +1,8 @@
 #!/bin/bash
 set -eux
 
-DIR=/tmp
+DIR=/tmp/testradosparquetjob
+mkdir -p $DIR
 
 # reset
 pkill ceph || true
