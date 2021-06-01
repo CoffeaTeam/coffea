@@ -235,11 +235,7 @@ class rochester_lookup:
 
         x = awkward.where(
             mask,
-            (
-                numpy.sqrt(kData[mask] * kData[mask] - kMC[mask] * kMC[mask])
-                * sigma[mask]
-                * invcdf[mask]
-            ),
+            (numpy.sqrt(kData * kData - kMC * kMC) * sigma * invcdf),
             x,
         )
         result = awkward.where(x > -1, 1.0 / (1.0 + x), awkward.ones_like(kpt))
