@@ -8,7 +8,7 @@ We added a new executor API called the [`run_parquet_job`](../../coffea/processo
 
 1. Clone the repository.
 ```bash
-git clone --branch use-dataset-api https://github.com/uccross/coffea
+git clone https://github.com/CoffeaTeam/coffea
 cd coffea/
 ```
 

@@ -3,6 +3,7 @@ set -eux
 
 DIR=/tmp/testradosparquetjob
 mkdir -p $DIR
+IS_CI=${IS_CI:-false}
 
 # reset
 pkill ceph || true
@@ -81,16 +82,25 @@ ceph-mgr --id ${MGR_NAME}
 ceph --version
 ceph status
 
-yum update
-yum install -y ceph-fuse
-
 # install dask, coffea, and updated PyArrow
 pip3 install dask[distributed] nbconvert
 pip3 install 'fsspec>=0.3.3'
 pip3 install --upgrade .
 pip3 install --upgrade /pyarrow-*.whl
 
-if [ ! -z "$IS_CI" ]; then
+# mount a ceph filesystem to /mnt/cephfs in the user-space using ceph-fuse
+mkdir -p /mnt/cephfs
+ceph-fuse /mnt/cephfs
+sleep 5
+
+# download a sample dataset
+rm -rf nyc*
+wget https://raw.githubusercontent.com/JayjeetAtGithub/zips/main/nyc.zip
+unzip nyc.zip
+cp -r nyc /mnt/cephfs/
+sleep 15
+
+if [[ "${IS_CI}" == "true" ]]; then
     python3 tests/test_rados_parquet_job.py
 else
     # start the notebook

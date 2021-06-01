@@ -4,4 +4,5 @@ RUN yum -y update && \
     yum -y install python3 \
                    python3-devel \
                    python3-pip \
-                   llvm-devel
+                   llvm-devel && \
+    pip3 install pip --upgrade

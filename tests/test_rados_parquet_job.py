@@ -40,7 +40,10 @@ if __name__ == "__main__":
     client = Client(cluster)
 
     # run on parquet files in cephfs (with pushdown)
-    executor_args = {"client": client, "ceph_config_path": "/tmp/testradosparquetjob/ceph.conf"}
+    executor_args = {
+        "client": client,
+        "ceph_config_path": "/tmp/testradosparquetjob/ceph.conf",
+    }
 
     hists = processor.run_parquet_job(
         {
@@ -58,7 +61,7 @@ if __name__ == "__main__":
     assert hists["cutflow"]["Data_pt"] == 504
     assert hists["cutflow"]["Data_mass"] == 396
 
-    # now run again on local parquet files (without any pushdown)
+    # now run again on parquet files in cephfs (without any pushdown)
     executor_args = {"client": client}
 
     hists = processor.run_parquet_job(
