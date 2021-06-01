@@ -40,7 +40,7 @@ if __name__ == "__main__":
     client = Client(cluster)
 
     # run on parquet files in cephfs (with pushdown)
-    executor_args = {"client": client, "ceph_config_path": "/etc/ceph/ceph.conf"}
+    executor_args = {"client": client, "ceph_config_path": "/tmp/testradosparquetjob/ceph.conf"}
 
     hists = processor.run_parquet_job(
         {
