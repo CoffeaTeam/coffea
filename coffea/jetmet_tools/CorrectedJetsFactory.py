@@ -158,7 +158,7 @@ class CorrectedJetsFactory(object):
         fields = awkward.fields(jets)
         if len(fields) == 0:
             raise Exception(
-                "Detected awkward: 'jets' must have attributes specified by keys!"
+                "Empty record, please pass a jet object with at least {self.real_sig} defined!"
             )
         out = awkward.flatten(jets)
         wrap = partial(awkward_rewrap, like_what=jets, gfunc=rewrap_recordarray)
@@ -166,56 +166,57 @@ class CorrectedJetsFactory(object):
             out[self.name_map["ptRaw"]]
         ).layout.form
 
-        if len(fields) == 0:
-            raise Exception(
-                "Empty record, please pass a jet object with at least {self.real_sig} defined!"
-            )
+        in_dict = {field: out[field] for field in fields}
+        out_dict = dict(in_dict)
 
         # take care of nominal JEC (no JER if available)
-        out[self.name_map["JetPt"] + "_orig"] = out[self.name_map["JetPt"]]
-        out[self.name_map["JetMass"] + "_orig"] = out[self.name_map["JetMass"]]
+        out_dict[self.name_map["JetPt"] + "_orig"] = out_dict[self.name_map["JetPt"]]
+        out_dict[self.name_map["JetMass"] + "_orig"] = out_dict[
+            self.name_map["JetMass"]
+        ]
         if self.treat_pt_as_raw:
-            out[self.name_map["ptRaw"]] = out[self.name_map["JetPt"]]
-            out[self.name_map["massRaw"]] = out[self.name_map["JetMass"]]
+            out_dict[self.name_map["ptRaw"]] = out_dict[self.name_map["JetPt"]]
+            out_dict[self.name_map["massRaw"]] = out_dict[self.name_map["JetMass"]]
 
         jec_name_map = dict(self.name_map)
         jec_name_map["JetPt"] = jec_name_map["ptRaw"]
         jec_name_map["JetMass"] = jec_name_map["massRaw"]
         if self.jec_stack.jec is not None:
-            jec_args = {k: out[jec_name_map[k]] for k in self.jec_stack.jec.signature}
-            out["jet_energy_correction"] = self.jec_stack.jec.getCorrection(
+            jec_args = {
+                k: out_dict[jec_name_map[k]] for k in self.jec_stack.jec.signature
+            }
+            out_dict["jet_energy_correction"] = self.jec_stack.jec.getCorrection(
                 **jec_args, form=scalar_form, lazy_cache=lazy_cache
             )
         else:
-            out["jet_energy_correction"] = awkward.without_parameters(
-                awkward.ones_like(out[self.name_map["JetPt"]])
+            out_dict["jet_energy_correction"] = awkward.without_parameters(
+                awkward.ones_like(out_dict[self.name_map["JetPt"]])
             )
 
         # finally the lazy binding to the JEC
         init_pt = partial(
             awkward.virtual,
             operator.mul,
-            args=(out["jet_energy_correction"], out[self.name_map["ptRaw"]]),
+            args=(out_dict["jet_energy_correction"], out_dict[self.name_map["ptRaw"]]),
             cache=lazy_cache,
         )
         init_mass = partial(
             awkward.virtual,
             operator.mul,
-            args=(out["jet_energy_correction"], out[self.name_map["massRaw"]]),
+            args=(
+                out_dict["jet_energy_correction"],
+                out_dict[self.name_map["massRaw"]],
+            ),
             cache=lazy_cache,
         )
 
-        out[self.name_map["JetPt"]] = init_pt(length=len(out), form=scalar_form)
-        out[self.name_map["JetMass"]] = init_mass(length=len(out), form=scalar_form)
-
-        out[self.name_map["JetPt"] + "_jec"] = init_pt(
-            length=len(out), form=scalar_form
-        )
-        out[self.name_map["JetMass"] + "_jec"] = init_mass(
+        out_dict[self.name_map["JetPt"]] = init_pt(length=len(out), form=scalar_form)
+        out_dict[self.name_map["JetMass"]] = init_mass(
             length=len(out), form=scalar_form
         )
 
-        out_dict = {field: out[field] for field in awkward.fields(out)}
+        out_dict[self.name_map["JetPt"] + "_jec"] = out_dict[self.name_map["JetPt"]]
+        out_dict[self.name_map["JetMass"] + "_jec"] = out_dict[self.name_map["JetMass"]]
 
         # in jer we need to have a stash for the intermediate JEC products
         has_jer = False
@@ -225,13 +226,15 @@ class CorrectedJetsFactory(object):
             jer_name_map["JetPt"] = jer_name_map["JetPt"] + "_jec"
             jer_name_map["JetMass"] = jer_name_map["JetMass"] + "_jec"
 
-            jerargs = {k: out[jer_name_map[k]] for k in self.jec_stack.jer.signature}
+            jerargs = {
+                k: out_dict[jer_name_map[k]] for k in self.jec_stack.jer.signature
+            }
             out_dict["jet_energy_resolution"] = self.jec_stack.jer.getResolution(
                 **jerargs, form=scalar_form, lazy_cache=lazy_cache
             )
 
             jersfargs = {
-                k: out[jer_name_map[k]] for k in self.jec_stack.jersf.signature
+                k: out_dict[jer_name_map[k]] for k in self.jec_stack.jersf.signature
             }
             out_dict[
                 "jet_energy_resolution_scale_factor"
@@ -297,12 +300,10 @@ class CorrectedJetsFactory(object):
                 length=len(out), form=scalar_form
             )
 
-            out_dict[self.name_map["JetPt"] + "_jer"] = init_pt_jer(
-                length=len(out), form=scalar_form
-            )
-            out_dict[self.name_map["JetMass"] + "_jer"] = init_mass_jer(
-                length=len(out), form=scalar_form
-            )
+            out_dict[self.name_map["JetPt"] + "_jer"] = out_dict[self.name_map["JetPt"]]
+            out_dict[self.name_map["JetMass"] + "_jer"] = out_dict[
+                self.name_map["JetMass"]
+            ]
 
             # JER systematics
             jerc_up = partial(
@@ -411,11 +412,9 @@ class CorrectedJetsFactory(object):
             def junc_smeared_val(uncvals, up_down, variable):
                 return awkward.materialized(uncvals[:, up_down] * variable)
 
-            def build_variation(
-                injets, unc, jetpt, jetpt_orig, jetmass, jetmass_orig, updown
-            ):
-                variation = awkward.flatten(injets)
-                variation[jetpt] = awkward.virtual(
+            def build_variation(unc, jetpt, jetpt_orig, jetmass, jetmass_orig, updown):
+                var_dict = dict(in_dict)
+                var_dict[jetpt] = awkward.virtual(
                     junc_smeared_val,
                     args=(
                         unc,
@@ -426,7 +425,7 @@ class CorrectedJetsFactory(object):
                     form=scalar_form,
                     cache=lazy_cache,
                 )
-                variation[jetmass] = awkward.virtual(
+                var_dict[jetmass] = awkward.virtual(
                     junc_smeared_val,
                     args=(
                         unc,
@@ -437,38 +436,28 @@ class CorrectedJetsFactory(object):
                     form=scalar_form,
                     cache=lazy_cache,
                 )
-                return variation
+                return awkward.zip(
+                    var_dict,
+                    depth_limit=1,
+                    parameters=out.layout.parameters,
+                    behavior=out.behavior,
+                )
 
-            def build_variant(injets, unc, jetpt, jetpt_orig, jetmass, jetmass_orig):
-                up = awkward.virtual(
-                    build_variation,
-                    args=(injets, unc, jetpt, jetpt_orig, jetmass, jetmass_orig, 0),
-                    length=len(out),
-                    cache=lazy_cache,
-                )
-                down = awkward.virtual(
-                    build_variation,
-                    args=(injets, unc, jetpt, jetpt_orig, jetmass, jetmass_orig, 1),
-                    length=len(out),
-                    cache=lazy_cache,
-                )
+            def build_variant(unc, jetpt, jetpt_orig, jetmass, jetmass_orig):
+                up = build_variation(unc, jetpt, jetpt_orig, jetmass, jetmass_orig, 0)
+                down = build_variation(unc, jetpt, jetpt_orig, jetmass, jetmass_orig, 1)
                 return awkward.zip(
                     {"up": up, "down": down}, depth_limit=1, with_name="JetSystematic"
                 )
 
             for name, func in juncs:
                 out_dict[f"jet_energy_uncertainty_{name}"] = func
-                out_dict[f"JES_{name}"] = awkward.virtual(
-                    build_variant,
-                    args=(
-                        jets,
-                        out_dict[f"jet_energy_uncertainty_{name}"],
-                        self.name_map["JetPt"],
-                        out_dict[juncnames["JetPt"]],
-                        self.name_map["JetMass"],
-                        out_dict[juncnames["JetMass"]],
-                    ),
-                    length=len(out),
+                out_dict[f"JES_{name}"] = build_variant(
+                    func,
+                    self.name_map["JetPt"],
+                    out_dict[juncnames["JetPt"]],
+                    self.name_map["JetMass"],
+                    out_dict[juncnames["JetMass"]],
                 )
 
         out_parms = out.layout.parameters

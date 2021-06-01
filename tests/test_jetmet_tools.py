@@ -727,10 +727,8 @@ def test_factory_lifecycle():
         "Summer16_23Sep2016V3_MC_L3Absolute_AK4PFPuppi",
         "Spring16_25nsV10_MC_PtResolution_AK4PFPuppi",
         "Spring16_25nsV10_MC_SF_AK4PFPuppi",
+        "Summer16_23Sep2016V3_MC_UncertaintySources_AK4PFPuppi_AbsoluteStat",
     ]
-    # for key in evaluator.keys():
-    #     if 'Summer16_23Sep2016V3_MC_UncertaintySources_AK4PFPuppi' in key:
-    #         jec_stack_names.append(key)
 
     jec_stack = JECStack({name: evaluator[name] for name in jec_stack_names})
     name_map = jec_stack.blank_name_map
@@ -751,8 +749,11 @@ def test_factory_lifecycle():
     met_factory = CorrectedMETFactory(name_map)
 
     from coffea.nanoevents.mapping import ArrayLifecycleMapping
+    import weakref
+    import threading
 
     array_log = ArrayLifecycleMapping()
+    jec_finalized = threading.Event()  # just using this as a flag object
 
     def run():
         events = NanoEventsFactory.from_root(
@@ -768,6 +769,7 @@ def test_factory_lifecycle():
         )
         jets["rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
         jec_cache = cachetools.Cache(np.inf)
+        weakref.finalize(jec_cache, jec_finalized.set)
         corrected_jets = jet_factory.build(jets, lazy_cache=jec_cache)
         corrected_met = met_factory.build(met, corrected_jets, lazy_cache=jec_cache)
         print(corrected_met.pt_orig)
@@ -789,3 +791,4 @@ def test_factory_lifecycle():
     diff = set(array_log.accessed) - set(array_log.finalized)
     print("Diff:", diff)
     assert len(diff) == 0
+    assert jec_finalized.is_set()
