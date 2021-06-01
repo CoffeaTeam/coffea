@@ -81,8 +81,8 @@ ceph-mgr --id ${MGR_NAME}
 ceph --version
 ceph status
 
-apt update
-apt install -y ceph-fuse
+yum update
+yum install -y ceph-fuse
 
 # install dask, coffea, and updated PyArrow
 pip3 install dask[distributed] nbconvert
