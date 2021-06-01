@@ -236,9 +236,9 @@ class rochester_lookup:
         x = awkward.where(
             mask,
             (
-                numpy.sqrt(kData[mask] * kData[mask] - kMC[mask] * kMC[mask])
-                * sigma[mask]
-                * invcdf[mask]
+                numpy.sqrt(kData * kData - kMC * kMC)
+                * sigma
+                * invcdf
             ),
             x,
         )
