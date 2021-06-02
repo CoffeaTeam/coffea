@@ -19,7 +19,7 @@ def _parse_jme_formatted_file(
     if jme_f is None:
         fopen = open
         fmode = "rt"
-        if ".gz" in jmeFilePath:
+        if ".gz" in jmeFilePath[-3:]:
             import gzip
 
             fopen = gzip.open
@@ -383,7 +383,7 @@ def convert_junc_txt_component(juncFilePath, uncFile):
 def convert_effective_area_file(eaFilePath):
     fopen = open
     fmode = "rt"
-    if ".gz" in eaFilePath:
+    if ".gz" in eaFilePath[-3:]:
         import gzip
 
         fopen = gzip.open
@@ -477,7 +477,7 @@ def convert_rochester_file(path, loaduncs=True):
 
     fopen = open
     fmode = "rt"
-    if ".gz" in path:
+    if ".gz" in path[-3:]:
         import gzip
 
         fopen = gzip.open
