@@ -12,9 +12,11 @@ except ImportError:
 # for later
 # func = numbaize(formula,['p%i'%i for i in range(nParms)]+[varnames[i] for i in range(nEvalVars)])
 
+
 def is_gz_file(filename):
-    with open(filename, 'rb') as f:
-        return f.read(2) == b'\x1f\x8b'
+    with open(filename, "rb") as f:
+        return f.read(2) == b"\x1f\x8b"
+
 
 def _parse_jme_formatted_file(
     jmeFilePath, interpolatedFunc=False, parmsFromColumns=False, jme_f=None
