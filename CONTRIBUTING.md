@@ -6,13 +6,15 @@
 
 * If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/CoffeaTeam/coffea/issues/new). Be sure to include a **title and clear description**, as much relevant information as possible, and a **code sample** or an **executable test case** demonstrating the expected behavior that is not occurring.
 
-#### **Did you write a patch that fixes a bug?**
+#### **Do you want to write a patch that fixes a bug?**
+
+* Follow the [setup instructions for developers](https://coffeateam.github.io/coffea/installation.html#for-developers) to get a development environment
 
 * Open a new GitHub pull request with the patch.
 
 * Ensure the PR description clearly describes the problem and solution. Include the relevant issue number if applicable.
 
-* Before submitting, please run `python setup.py flake8` and `python setup.py pytest`, to ensure you follow our formatting conventions and do not break any existing code. Furthermore, we require that any newly contributed code does not reduce the current code coverage of the repository. Please make sure your test your code as thoroughly as is needed.
+* Before submitting, please run `flake8 coffea` and `pytest` to ensure you follow our formatting conventions and do not break any existing code. Furthermore, we prefer that any newly contributed code does not reduce the current code coverage of the repository. Please make sure your test your code as thoroughly as is needed.
 
 #### **Did you fix whitespace, format code, or make a purely cosmetic patch?**
 
@@ -20,17 +22,19 @@ Changes that are cosmetic in nature and do not add anything substantial to the s
 
 #### **Do you intend to add a new feature or change an existing one?**
 
-* Suggest your change in the [cms-coffea mailing list](cms-coffea@cern.ch) and start writing code.
-
-* Do not open an issue on GitHub until you have collected positive feedback about the change. GitHub issues are primarily intended for bug reports and fixes.
+* Suggest your change either in a new GitHub feature request [issue](https://github.com/CoffeaTeam/coffea/issues) or in the [Discussions](https://github.com/CoffeaTeam/coffea/discussions) section!
 
 #### **Do you have questions about the source code?**
 
-* Ask any question about how to use coffea in the [coffea iris-hep slack channel](https://iris-hep.slack.com).
+* Ask any question about how to use coffea in the [coffea iris-hep slack channel](https://iris-hep.slack.com) or in the [Discussions](https://github.com/CoffeaTeam/coffea/discussions) section.
 
 #### **Do you want to contribute to the coffea documentation?**
 
-* Please read [Contributing to the coffea documentation](COMING SOON).
+* Follow the [setup instructions for developers](https://coffeateam.github.io/coffea/installation.html#for-developers) to get a development environment
+
+* Edit the ReStructured Text files in `docs/source` or the docstrings in the python source code as appropriate
+
+* Run `pushd docs && make html && popd` to compile, and open `docs/build/html/index.html` in a browser to see your local changes
 
 coffea is a HEP community and volunteer effort. We encourage you to pitch in and [join the team](mailto:cms-coffea@cern.ch)!
 
