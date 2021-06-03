@@ -13,13 +13,18 @@ except ImportError:
 # func = numbaize(formula,['p%i'%i for i in range(nParms)]+[varnames[i] for i in range(nEvalVars)])
 
 
+def is_gz_file(filename):
+    with open(filename, "rb") as f:
+        return f.read(2) == b"\x1f\x8b"
+
+
 def _parse_jme_formatted_file(
     jmeFilePath, interpolatedFunc=False, parmsFromColumns=False, jme_f=None
 ):
     if jme_f is None:
         fopen = open
         fmode = "rt"
-        if ".gz" in jmeFilePath:
+        if is_gz_file(jmeFilePath):
             import gzip
 
             fopen = gzip.open
@@ -293,7 +298,7 @@ def convert_junc_txt_file(juncFilePath):
     basename = os.path.basename(juncFilePath).split(".")[0]
     fopen = open
     fmode = "rt"
-    if ".gz" in juncFilePath:
+    if is_gz_file(juncFilePath):
         import gzip
 
         fopen = gzip.open
@@ -383,7 +388,7 @@ def convert_junc_txt_component(juncFilePath, uncFile):
 def convert_effective_area_file(eaFilePath):
     fopen = open
     fmode = "rt"
-    if ".gz" in eaFilePath:
+    if is_gz_file(eaFilePath):
         import gzip
 
         fopen = gzip.open
@@ -477,7 +482,7 @@ def convert_rochester_file(path, loaduncs=True):
 
     fopen = open
     fmode = "rt"
-    if ".gz" in path:
+    if is_gz_file(path):
         import gzip
 
         fopen = gzip.open
