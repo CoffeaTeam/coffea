@@ -1,3 +1,4 @@
+"""Mixins for the ATLAS PHYSLITE schema - work in progress."""
 import awkward
 import numpy
 from coffea.nanoevents.methods import base, vector
@@ -59,6 +60,8 @@ def _element_link_multiple(events, obj, link_field, with_name=None):
 
 @awkward.mixin_class(behavior)
 class Particle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
+    """Generic particle collection that has Lorentz vector properties"""
+
     @property
     def mass(self):
         return self.m
@@ -69,7 +72,8 @@ _set_repr_name("Particle")
 
 @awkward.mixin_class(behavior)
 class TrackParticle(vector.LorentzVector, base.NanoCollection):
-    "see https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODTracking/Root/TrackParticle_v1.cxx#L82"
+    """Collection of track particles, following `xAOD::TrackParticle_v1
+    <https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODTracking/Root/TrackParticle_v1.cxx#L82>`_."""
 
     @property
     def theta(self):
@@ -105,6 +109,10 @@ _set_repr_name("TrackParticle")
 
 @awkward.mixin_class(behavior)
 class Muon(Particle):
+    """Muon collection, following `xAOD::Muon_v1
+    <https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODMuon/Root/Muon_v1.cxx>`_.
+    """
+
     @property
     def trackParticle(self):
         return _element_link(
@@ -121,6 +129,10 @@ _set_repr_name("Muon")
 
 @awkward.mixin_class(behavior)
 class Electron(Particle):
+    """Electron collection, following `xAOD::Electron_v1
+    <https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODEgamma/Root/Electron_v1.cxx>`_.
+    """
+
     @property
     def trackParticles(self):
         return _element_link(
@@ -142,6 +154,9 @@ _set_repr_name("Electron")
 
 @awkward.mixin_class(behavior)
 class TruthParticle(vector.LorentzVector, base.NanoCollection):
+    """Truth particle collection, following `xAOD::TruthParticle_v1
+    <https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODTruth/Root/TruthParticle_v1.cxx>`_."""
+
     @property
     def x(self):
         return self["px"]
