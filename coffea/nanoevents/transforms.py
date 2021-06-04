@@ -121,7 +121,7 @@ def local2global(stack):
     Signature: index,target_offsets,!local2global
     Outputs a content array with same shape as index content
     """
-    target_offsets = stack.pop()
+    target_offsets = numpy.asarray(stack.pop())
     index = stack.pop()
     index = index.mask[index >= 0] + target_offsets[:-1]
     index = index.mask[index < target_offsets[1:]]
@@ -335,7 +335,3 @@ def nestedindex(stack):
 def item(stack):
     field = stack.pop()
     stack.append(stack.pop()[field])
-
-
-def to_numpy(stack):
-    stack.append(numpy.asarray(stack.pop()))

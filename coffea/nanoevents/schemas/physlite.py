@@ -126,7 +126,7 @@ class PHYSLITESchema(BaseSchema):
     def _create_global_index_form(base_form, key, linkto_key):
         form = copy.deepcopy(base_form)
         form["content"]["form_key"] = quote(
-            f"{key},!load,{linkto_key},!load,!offsets,!to_numpy,!local2global"
+            f"{key},!load,{linkto_key},!load,!offsets,!local2global"
         )
         form["content"]["itemsize"] = 8
         form["content"]["primitive"] = "int64"
@@ -138,7 +138,7 @@ class PHYSLITESchema(BaseSchema):
         record = form["content"]["content"]["contents"]
         form["content"]["content"] = record["m_persIndex"]
         form["content"]["content"]["form_key"] = quote(
-            f"{key},!load,m_persIndex,!item,{linkto_key},!load,!offsets,!to_numpy,!local2global"
+            f"{key},!load,m_persIndex,!item,{linkto_key},!load,!offsets,!local2global"
         )
         form["content"]["form_key"] = quote(
             # the !skip,{linkto_key} is a hack to avoid having the same key as the actual elementlink
