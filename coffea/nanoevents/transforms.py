@@ -121,11 +121,11 @@ def local2global(stack):
     Signature: index,target_offsets,!local2global
     Outputs a content array with same shape as index content
     """
-    target_offsets = stack.pop()
+    target_offsets = numpy.asarray(stack.pop())
     index = stack.pop()
     index = index.mask[index >= 0] + target_offsets[:-1]
     index = index.mask[index < target_offsets[1:]]
-    out = numpy.array(awkward.flatten(awkward.fill_none(index, -1)))
+    out = numpy.array(awkward.flatten(awkward.fill_none(index, -1), axis=None))
     if out.dtype != numpy.int64:
         raise RuntimeError
     stack.append(out)
