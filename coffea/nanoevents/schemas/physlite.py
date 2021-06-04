@@ -6,6 +6,23 @@ from coffea.nanoevents.util import quote
 
 
 class PHYSLITESchema(BaseSchema):
+    """PHYSLITE schema builder - work in progress.
+
+    This is a schema for the `ATLAS DAOD_PHYSLITE derivation
+    <https://gitlab.cern.ch/atlas/athena/-/blob/release/21.2.108.0/PhysicsAnalysis/DerivationFramework/DerivationFrameworkPhys/share/PHYSLITE.py>`_.
+    Closely following `schemas.nanoaod.NanoAODSchema`, it is mainly build from
+    naming patterns where the "Analysis" prefix has been removed, so the
+    collections will be named Electrons, Muons, instead of AnalysisElectrons,
+    AnalysisMunos, etc. The collection fields correspond to the "Aux" and
+    "AuxDyn" columns.
+
+    Collections are assigned mixin types according to the `mixins` mapping.
+    All collections are then zipped into one `base.NanoEvents` record and returned.
+
+    Cross references are build from ElementLink columns where the possible
+    index -> target collection relations are currently hard coded in the
+    `cross_reference_indices` and `cross_reference_elementlinks` mappings.
+    """
 
     _hack_for_elementlink_int64 = True
 
@@ -19,6 +36,11 @@ class PHYSLITESchema(BaseSchema):
         "TruthBottom",
         "TruthTop",
     ]
+    """TRUTH3 collection names.
+
+    TruthParticle behavior is assigned to all of them and global index forms
+    for parent/children relations are created for all combinations.
+    """
 
     mixins = {
         "Electrons": "Electron",
@@ -31,34 +53,39 @@ class PHYSLITESchema(BaseSchema):
         "InDetTrackParticles": "TrackParticle",
         "MuonSpectrometerTrackParticles": "TrackParticle",
     }
-    for k in truth_collections:
-        mixins[k] = "TruthParticle"
+    """Default configuration for mixin types, based on the collection name.
 
-    # create global indices for single-jagged arrays after cross referencing
+    The types are implemented in the `coffea.nanoevents.methods.physlite` module.
+    """
+
+    for _k in truth_collections:
+        mixins[_k] = "TruthParticle"
+
     cross_reference_indices = {
         ("Muons", "combinedTrackParticleLink.m_persIndex"): [
             "CombinedMuonTrackParticles"
         ]
     }
-    # create global indices for double-jagged arrays after cross referencing
-    # here we will resolve ".m_persIndex" since these branches are not split
+    """Possible relations for single-jagged ElementLinks"""
+
     cross_reference_elementlinks = {
         ("Electrons", "trackParticleLinks"): ["GSFTrackParticles"],
         ("HLT_e7_lhmedium_nod0_mu24", "TrigMatchedObjects"): ["Electrons", "Muons"],
     }
-    for k in truth_collections:
-        cross_reference_elementlinks[(k, "childLinks")] = truth_collections
-        cross_reference_elementlinks[(k, "parentLinks")] = truth_collections
+    """Possible relations for double-jagged ElementLinks"""
+    for _k in truth_collections:
+        cross_reference_elementlinks[(_k, "childLinks")] = truth_collections
+        cross_reference_elementlinks[(_k, "parentLinks")] = truth_collections
 
-    # for the target collections an arbitrary column (e.g z0) has to be chosen to extract the offsets
     link_load_columns = {
         "CombinedMuonTrackParticles": "CombinedMuonTrackParticlesAuxDyn.z0",
         "GSFTrackParticles": "GSFTrackParticlesAuxDyn.z0",
         "Electrons": "AnalysisElectronsAuxDyn.pt",
         "Muons": "AnalysisMuonsAuxDyn.pt",
     }
-    for k in truth_collections:
-        link_load_columns[k] = f"{k}AuxDyn.px"
+    """Columns to load for extracting offsets when creating global indices"""
+    for _k in truth_collections:
+        link_load_columns[_k] = f"{_k}AuxDyn.px"
 
     def __init__(self, base_form):
         super().__init__(base_form)
