@@ -58,6 +58,18 @@ def _element_link_multiple(events, obj, link_field, with_name=None):
     return out
 
 
+def _get_target_offsets(offsets, event_index):
+
+    if isinstance(event_index, int):
+        return offsets[event_index]
+
+    def descend(layout, depth):
+        if layout.purelist_depth == 1:
+            return lambda: awkward.layout.NumpyArray(offsets)[layout]
+
+    return awkward._util.recursively_apply(event_index.layout, descend)
+
+
 @awkward.mixin_class(behavior)
 class Particle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     """Generic particle collection that has Lorentz vector properties"""
@@ -133,13 +145,21 @@ class Electron(Particle):
     <https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODEgamma/Root/Electron_v1.cxx>`_.
     """
 
+    # @property
+    # def trackParticles(self):
+    #     return _element_link(
+    #         self._events().GSFTrackParticles,
+    #         self.trackParticleLinks__G__GSFTrackParticles,
+    #         self.trackParticleLinks.m_persKey,
+    #     )
+
     @property
     def trackParticles(self):
-        return _element_link(
-            self._events().GSFTrackParticles,
-            self.trackParticleLinks__G__GSFTrackParticles,
-            self.trackParticleLinks.m_persKey,
-        )
+        target = self._events().GSFTrackParticles
+        awkward.materialized(target.pt)  # need to load one column
+        target_offsets = _get_target_offsets(target.layout.offsets, self._eventindex)
+        global_index = target_offsets + self.trackParticleLinks.m_persIndex
+        return target._apply_global_index(global_index)
 
     @property
     def trackParticle(self):

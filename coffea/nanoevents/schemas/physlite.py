@@ -133,6 +133,12 @@ class PHYSLITESchema(BaseSchema):
                             ((key, sub_key + "__G__" + linkto_collection), form)
                         )
 
+            # eventindex forms
+            if sub_key.endswith("pt"):
+                zip_groups[objname].append(
+                    ((key, "_eventindex"), self._create_eventindex_form(ak_form, key))
+                )
+
         contents = {}
         for objname, keys_and_form in zip_groups.items():
             try:
@@ -173,6 +179,15 @@ class PHYSLITESchema(BaseSchema):
         )
         form["content"]["content"]["itemsize"] = 8
         form["content"]["content"]["primitive"] = "int64"
+        return form
+
+    @staticmethod
+    def _create_eventindex_form(base_form, key):
+        form = copy.deepcopy(base_form)
+        form["content"]["parameters"] = {}
+        form["content"]["form_key"] = quote(f"{key},!load,!eventindex,!content")
+        form["content"]["itemsize"] = 8
+        form["content"]["primitive"] = "int64"
         return form
 
     @property
