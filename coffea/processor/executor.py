@@ -84,7 +84,9 @@ class FileMeta(object):
             return False
         return True
 
-    def chunks(self, target_chunksize, align_clusters):
+    def chunks(self, target_chunksize, align_clusters, dynamic_chunksize):
+        if align_clusters and dynamic_chunksize:
+            raise RuntimeError("align_clusters cannot be used with a dynamic chunksize.")
         if not self.populated(clusters=align_clusters):
             raise RuntimeError
         user_keys = set(self.metadata.keys()) - _PROTECTED_NAMES
@@ -109,10 +111,15 @@ class FileMeta(object):
         else:
             n = max(round(self.metadata["numentries"] / target_chunksize), 1)
             actual_chunksize = math.ceil(self.metadata["numentries"] / n)
-            for index in range(n):
-                start, stop = actual_chunksize * index, min(
-                    self.metadata["numentries"], actual_chunksize * (index + 1)
-                )
+            next_chunksize = None
+
+            start = 0
+            while start < self.metadata["numentries"]:
+                if dynamic_chunksize:
+                    next_chunksize = yield
+                    if next_chunksize:
+                        actual_chunksize = next_chunksize
+                stop = min(self.metadata["numentries"], start + actual_chunksize)
                 yield WorkItem(
                     self.dataset,
                     self.filename,
@@ -122,6 +129,7 @@ class FileMeta(object):
                     self.metadata["uuid"],
                     user_meta,
                 )
+                start = stop
 
 
 class WorkItem(object):
@@ -1251,6 +1259,70 @@ def _get_metadata(
     return out
 
 
+def _preprocess_fileset(pre_executor, pre_args, fileset, metadata_fetcher, metadata_cache, align_clusters, maxchunks, skipbadfiles):
+    if maxchunks is None:
+        # this is a bit of an abuse of map-reduce but ok
+        to_get = set(
+            filemeta
+            for filemeta in fileset
+            if not filemeta.populated(clusters=align_clusters)
+        )
+        if len(to_get) > 0:
+            out = set_accumulator()
+            pre_arg_override = {
+                "function_name": "get_metadata",
+                "desc": "Preprocessing",
+                "unit": "file",
+                "compression": None,
+                "tailtimeout": None,
+                "worker_affinity": False
+            }
+            pre_args.update(pre_arg_override)
+            out = pre_executor(to_get, metadata_fetcher, out, **pre_args)
+            while out:
+                item = out.pop()
+                metadata_cache[item] = item.metadata
+            for filemeta in fileset:
+                filemeta.maybe_populate(metadata_cache)
+    else:
+        for filemeta in fileset:
+            # not sure why need to check for bad files here... otherwise pop fails below with pytest.
+            if skipbadfiles and not filemeta.populated(clusters=align_clusters):
+                continue
+            if not filemeta.populated(clusters=align_clusters):
+                filemeta.metadata = metadata_fetcher(filemeta).pop().metadata
+                metadata_cache[filemeta] = filemeta.metadata
+
+
+def _filter_badfiles(fileset, align_clusters, skipbadfiles):
+    final_fileset = []
+    for filemeta in fileset:
+        if filemeta.populated(clusters=align_clusters):
+            final_fileset.append(filemeta)
+        elif not skipbadfiles:
+            raise RuntimeError("Metadata for file {} could not be accessed.")
+    return final_fileset
+
+
+def _chunk_generator(fileset, metadata_fetcher, metadata_cache, chunksize, align_clusters, maxchunks, dynamic_chunksize=True):
+    if maxchunks is None:
+        for filemeta in fileset:
+            yield from filemeta.chunks(chunksize, align_clusters, dynamic_chunksize)
+    else:
+        # get just enough file info to compute chunking
+        nchunks = defaultdict(int)
+        chunks = []
+        for filemeta in fileset:
+            if nchunks[filemeta.dataset] >= maxchunks:
+                continue
+            for chunk in filemeta.chunks(chunksize, align_clusters, dynamic_chunksize=False):
+                chunks.append(chunk)
+                nchunks[filemeta.dataset] += 1
+                if nchunks[filemeta.dataset] >= maxchunks:
+                    break
+        yield from iter(chunks)
+
+
 def run_uproot_job(
     fileset,
     treename,
@@ -1262,6 +1334,7 @@ def run_uproot_job(
     chunksize=100000,
     maxchunks=None,
     metadata_cache=None,
+    dynamic_chunksize=False,
 ):
     """A tool to run a processor using uproot for data delivery
 
@@ -1355,6 +1428,12 @@ def run_uproot_job(
         retries = executor_args.pop("retries", 0)
     xrootdtimeout = executor_args.pop("xrootdtimeout", None)
     align_clusters = executor_args.pop("align_clusters", False)
+
+    if align_clusters and dynamic_chunksize:
+        raise RuntimeError("align_clusters and dynamic-chunksize cannot be used simultaneously")
+    if maxchunks and dynamic_chunksize:
+        raise RuntimeError("maxchunks and dynamic-chunksize cannot be used simultaneously")
+
     metadata_fetcher = partial(
         _get_metadata,
         skipbadfiles=skipbadfiles,
@@ -1363,54 +1442,9 @@ def run_uproot_job(
         align_clusters=align_clusters,
     )
 
-    chunks = []
-    if maxchunks is None:
-        # this is a bit of an abuse of map-reduce but ok
-        to_get = set(
-            filemeta
-            for filemeta in fileset
-            if not filemeta.populated(clusters=align_clusters)
-        )
-        if len(to_get) > 0:
-            out = set_accumulator()
-            pre_arg_override = {
-                "function_name": "get_metadata",
-                "desc": "Preprocessing",
-                "unit": "file",
-                "compression": None,
-                "tailtimeout": None,
-                "worker_affinity": False,
-            }
-            pre_args.update(pre_arg_override)
-            out = pre_executor(to_get, metadata_fetcher, out, **pre_args)
-            while out:
-                item = out.pop()
-                metadata_cache[item] = item.metadata
-            for filemeta in fileset:
-                filemeta.maybe_populate(metadata_cache)
-        while fileset:
-            filemeta = fileset.pop()
-            if skipbadfiles and not filemeta.populated(clusters=align_clusters):
-                continue
-            for chunk in filemeta.chunks(chunksize, align_clusters):
-                chunks.append(chunk)
-    else:
-        # get just enough file info to compute chunking
-        nchunks = defaultdict(int)
-        while fileset:
-            filemeta = fileset.pop()
-            if nchunks[filemeta.dataset] >= maxchunks:
-                continue
-            if skipbadfiles and not filemeta.populated(clusters=align_clusters):
-                continue
-            if not filemeta.populated(clusters=align_clusters):
-                filemeta.metadata = metadata_fetcher(filemeta).pop().metadata
-                metadata_cache[filemeta] = filemeta.metadata
-            for chunk in filemeta.chunks(chunksize, align_clusters):
-                chunks.append(chunk)
-                nchunks[filemeta.dataset] += 1
-                if nchunks[filemeta.dataset] >= maxchunks:
-                    break
+    _preprocess_fileset(pre_executor, pre_args, fileset, metadata_fetcher, metadata_cache, align_clusters, maxchunks, skipbadfiles)
+    fileset = _filter_badfiles(fileset, align_clusters, skipbadfiles)
+    chunks = _chunk_generator(fileset, metadata_fetcher, metadata_cache, chunksize, align_clusters, maxchunks, dynamic_chunksize)
 
     # pop all _work_function args here
     savemetrics = executor_args.pop("savemetrics", False)
@@ -1457,10 +1491,19 @@ def run_uproot_job(
     else:
         closure = partial(closure, processor_instance=pi_to_send)
 
+    if dynamic_chunksize:
+        events_total = sum(f.metadata["numentries"] for f in fileset)
+    else:
+        chunks = [c for c in chunks]
+        events_total = sum(c.entrystop - c.entrystart for c in chunks)
+
     exe_args = {
         "unit": "chunk",
         "function_name": type(processor_instance).__name__,
         "use_dataframes": use_dataframes,
+        "events-total": events_total,
+        "dynamic-chunksize": dynamic_chunksize,
+        "dynamic-chunksize-base": chunksize
     }
     exe_args.update(executor_args)
     wrapped_out = executor(chunks, closure, None, **exe_args)
