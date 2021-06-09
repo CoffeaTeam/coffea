@@ -10,6 +10,8 @@ import shutil
 import json
 import cloudpickle
 import uproot
+import numpy as np
+import scipy as sc
 import re
 import os
 import uuid
@@ -414,6 +416,49 @@ def wqex_output_task(task, verbose_mode, resource_mode, output_mode):
         print("Task id #{} failed with code: {}".format(task.id, task.result))
 
 
+def _compute_chunksize_target(target_time, base_chunksize, task_reports):
+
+    if len(task_reports) > 1:
+        avgs = [e / max(1, t) for (t, e, mem) in task_reports]
+        quantiles = np.quantile(avgs, [0.25, 0.5, 0.75], interpolation='nearest')
+
+        # remove outliers outside the 25%---75% range
+        task_reports_filtered = []
+        for (i, avg) in enumerate(avgs):
+            if avg >= quantiles[0] and avg <= quantiles[-1]:
+                task_reports_filtered.append(task_reports[i])
+
+        try:
+            # separate into time, numevents arrays
+            slope, intercept, r_value, p_value, std_err = sc.stats.linregress(
+                [rep[0] for rep in task_reports_filtered],
+                [rep[1] for rep in task_reports_filtered]
+            )
+        except Exception:
+            slope = None
+
+        if slope is None or slope < 0 or intercept > 0:
+            # we assume that chunksize and walltime have a positive
+            # correlation, with a non-negative overhead (-intercept/slope). If
+            # this is not true because noisy data, use the avg chunksize/time.
+            slope = quantiles[1]
+            intercept = 0
+        org = (slope * target_time) + intercept
+
+        if org >= base_chunksize:
+            exp = math.ceil(math.log2(org / base_chunksize))
+        else:
+            exp = -1 * math.floor(math.log2(base_chunksize / org))
+    else:
+        exp = 0
+
+    # round-up to nearest power of 2, plus minus one power to better sample the space.
+    exp += np.random.choice([-1, 0, 1])
+    pow2 = int(base_chunksize * math.pow(2, exp))
+
+    return max(1, pow2)
+
+
 # The Work Queue object is global b/c we want to
 # retain state between runs of the executor, such
 # as connections to workers, cached data, etc.
@@ -427,8 +472,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
     Parameters
     ----------
-        items : list
-            List of input arguments
+        items : list or generator
+            Sequence of input arguments
         function : callable
             A function to be called on each input, which returns an accumulator instance
         accumulator : Accumulatable
@@ -537,6 +582,13 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     port = kwargs.pop("port", None)
     x509_proxy = kwargs.pop("x509_proxy", None)
 
+    dynamic_chunksize = kwargs.pop("dynamic-chunksize", False)
+    base_chunksize = kwargs.pop("dynamic-chunksize-base", 1000)
+    target_time_chunksize = kwargs.pop("dynamic-target-time", 60)
+    chunksize = base_chunksize
+
+    items_total = kwargs["events-total"]
+
     if port is None:
         if master_name:
             port = 0
@@ -606,37 +658,44 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
         infile_function = os.path.join(tmpdir, "function.p")
 
-        # Nothing to do?  Just return the accumulator.
-        if len(items) == 0:
-            return accumulator
-
         # Keep track of total tasks in each state.
         tasks_submitted = 0
         tasks_done = 0
-        tasks_total = len(items)
+        items_submitted = 0
+        items_done = 0
 
         print("Listening for work queue workers on port {}...".format(_wq_queue.port))
 
         # Create a dual progress bar to show submission and completion.
         submit_bar = tqdm(
-            total=tasks_total,
+            total=items_total,
             position=0,
             disable=not status,
             unit=unit,
             desc="Submitted",
         )
         complete_bar = tqdm(
-            total=tasks_total, position=1, disable=not status, unit=unit, desc=desc
+            total=items_total, position=1, disable=not status, unit=unit, desc=desc
         )
 
-        itemiter = iter(items)
+        # triplets of num of events, wall_time, memory
+        task_reports = []
+
+        # ensure items looks like a generator
+        if isinstance(items, list):
+            items = iter(items)
 
         # Main loop of executor
-        while tasks_done < tasks_total:
-
-            # Submit tasks into the queue, but no more than 100 idle tasks
-            while tasks_submitted < tasks_total and _wq_queue.stats.tasks_waiting < 100:
-                item = next(itemiter)
+        while items_done < items_total:
+            while items_submitted < items_total and _wq_queue.hungry():
+                if dynamic_chunksize:
+                    next(items)
+                    chunksize = _compute_chunksize_target(target_time_chunksize, base_chunksize, task_reports)
+                    if verbose_mode:
+                        print("Using chunksize:", chunksize)
+                    item = items.send(chunksize)
+                else:
+                    item = next(items)
                 task = wqex_create_task(
                     tasks_submitted,
                     item,
@@ -650,6 +709,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                 )
                 task_id = _wq_queue.submit(task)
                 tasks_submitted += 1
+                items_submitted += len(item)
 
                 if verbose_mode:
                     print("Submitted task (id #{}): {}".format(task_id, task.command))
@@ -675,19 +735,27 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                 # The task tag remembers the itemid for us.
                 itemid = task.tag
                 itemfile = os.path.join(tmpdir, "item_{}.p".format(itemid))
+                infile = os.path.join(tmpdir, "item_{}.p".format(itemid))
                 outfile = os.path.join(tmpdir, "output_{}.p".format(itemid))
 
                 # Accumulate results from the pickled output
+                with open(infile, "rb") as rf:
+                    unpickle_input = dill.load(rf)
+                    num_items = len(unpickle_input)
+                    items_done += num_items
+                    # time in seconds, num events, memory used in MB
+                    task_reports.append((task.resources_measured.wall_time / 1e6, num_items, task.resources_measured.memory))
+
                 with open(outfile, "rb") as rf:
                     unpickle_output = dill.load(rf)
-                accumulator = accumulate(
-                    [
-                        unpickle_output
-                        if clevel is None
-                        else _decompress(unpickle_output)
-                    ],
-                    accumulator,
-                )
+                    accumulator = accumulate(
+                        [
+                            unpickle_output
+                            if clevel is None
+                            else _decompress(unpickle_output)
+                        ],
+                        accumulator,
+                    )
 
                 # Remove output files as we go to avoid unbounded disk
                 os.remove(itemfile)
@@ -701,6 +769,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
         submit_bar.close()
         complete_bar.close()
+
+        _compute_chunksize_target(target_time_chunksize, base_chunksize, task_reports)
 
         return accumulator
 
@@ -1411,6 +1481,9 @@ def run_uproot_job(
 
     if pre_executor is None:
         pre_executor = executor
+    if pre_executor is work_queue_executor:
+        # work_queue_executor currently specialized for dynamic chunksize
+        pre_executor = futures_executor
     if pre_args is None:
         pre_args = dict(executor_args)
     else:
@@ -1436,6 +1509,8 @@ def run_uproot_job(
         raise RuntimeError("align_clusters and dynamic-chunksize cannot be used simultaneously")
     if maxchunks and dynamic_chunksize:
         raise RuntimeError("maxchunks and dynamic-chunksize cannot be used simultaneously")
+    if dynamic_chunksize and executor is not work_queue_executor:
+        raise RuntimeError("dynamic-chunksize currently only supported by the work_queue_executor")
 
     metadata_fetcher = partial(
         _get_metadata,
@@ -1501,13 +1576,14 @@ def run_uproot_job(
         events_total = sum(c.entrystop - c.entrystart for c in chunks)
 
     exe_args = {
-        "unit": "chunk",
+        "unit": "event" if executor is work_queue_executor else "chunk",
         "function_name": type(processor_instance).__name__,
         "use_dataframes": use_dataframes,
         "events-total": events_total,
         "dynamic-chunksize": dynamic_chunksize,
         "dynamic-chunksize-base": chunksize
     }
+
     exe_args.update(executor_args)
     wrapped_out = executor(chunks, closure, None, **exe_args)
 
