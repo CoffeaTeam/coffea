@@ -161,6 +161,9 @@ class WorkItem(object):
         self.fileuuid = fileuuid
         self.usermeta = usermeta
 
+    def __len__(self):
+        return self.entrystop - self.entrystart
+
 
 def _compress(item, clevel):
     return lz4f.compress(
