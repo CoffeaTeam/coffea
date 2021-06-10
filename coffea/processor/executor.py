@@ -788,8 +788,6 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         submit_bar.close()
         complete_bar.close()
 
-        _compute_chunksize_target(target_time_chunksize, base_chunksize, task_reports)
-
         return accumulator
 
 
