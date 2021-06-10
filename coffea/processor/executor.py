@@ -88,7 +88,9 @@ class FileMeta(object):
 
     def chunks(self, target_chunksize, align_clusters, dynamic_chunksize):
         if align_clusters and dynamic_chunksize:
-            raise RuntimeError("align_clusters cannot be used with a dynamic chunksize.")
+            raise RuntimeError(
+                "align_clusters cannot be used with a dynamic chunksize."
+            )
         if not self.populated(clusters=align_clusters):
             raise RuntimeError
         user_keys = set(self.metadata.keys()) - _PROTECTED_NAMES
@@ -420,7 +422,7 @@ def _compute_chunksize_target(target_time, base_chunksize, task_reports):
 
     if len(task_reports) > 1:
         avgs = [e / max(1, t) for (t, e, mem) in task_reports]
-        quantiles = np.quantile(avgs, [0.25, 0.5, 0.75], interpolation='nearest')
+        quantiles = np.quantile(avgs, [0.25, 0.5, 0.75], interpolation="nearest")
 
         # remove outliers outside the 25%---75% range
         task_reports_filtered = []
@@ -432,7 +434,7 @@ def _compute_chunksize_target(target_time, base_chunksize, task_reports):
             # separate into time, numevents arrays
             slope, intercept, r_value, p_value, std_err = sc.stats.linregress(
                 [rep[0] for rep in task_reports_filtered],
-                [rep[1] for rep in task_reports_filtered]
+                [rep[1] for rep in task_reports_filtered],
             )
         except Exception:
             slope = None
@@ -690,7 +692,9 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             while items_submitted < items_total and _wq_queue.hungry():
                 if dynamic_chunksize:
                     next(items)
-                    chunksize = _compute_chunksize_target(target_time_chunksize, base_chunksize, task_reports)
+                    chunksize = _compute_chunksize_target(
+                        target_time_chunksize, base_chunksize, task_reports
+                    )
                     if verbose_mode:
                         print("Using chunksize:", chunksize)
                     item = items.send(chunksize)
@@ -744,7 +748,13 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                     num_items = len(unpickle_input)
                     items_done += num_items
                     # time in seconds, num events, memory used in MB
-                    task_reports.append((task.resources_measured.wall_time / 1e6, num_items, task.resources_measured.memory))
+                    task_reports.append(
+                        (
+                            task.resources_measured.wall_time / 1e6,
+                            num_items,
+                            task.resources_measured.memory,
+                        )
+                    )
 
                 with open(outfile, "rb") as rf:
                     unpickle_output = dill.load(rf)
@@ -1332,7 +1342,16 @@ def _get_metadata(
     return out
 
 
-def _preprocess_fileset(pre_executor, pre_args, fileset, metadata_fetcher, metadata_cache, align_clusters, maxchunks, skipbadfiles):
+def _preprocess_fileset(
+    pre_executor,
+    pre_args,
+    fileset,
+    metadata_fetcher,
+    metadata_cache,
+    align_clusters,
+    maxchunks,
+    skipbadfiles,
+):
     if maxchunks is None:
         # this is a bit of an abuse of map-reduce but ok
         to_get = set(
@@ -1348,7 +1367,7 @@ def _preprocess_fileset(pre_executor, pre_args, fileset, metadata_fetcher, metad
                 "unit": "file",
                 "compression": None,
                 "tailtimeout": None,
-                "worker_affinity": False
+                "worker_affinity": False,
             }
             pre_args.update(pre_arg_override)
             out = pre_executor(to_get, metadata_fetcher, out, **pre_args)
@@ -1377,7 +1396,15 @@ def _filter_badfiles(fileset, align_clusters, skipbadfiles):
     return final_fileset
 
 
-def _chunk_generator(fileset, metadata_fetcher, metadata_cache, chunksize, align_clusters, maxchunks, dynamic_chunksize=True):
+def _chunk_generator(
+    fileset,
+    metadata_fetcher,
+    metadata_cache,
+    chunksize,
+    align_clusters,
+    maxchunks,
+    dynamic_chunksize=True,
+):
     if maxchunks is None:
         for filemeta in fileset:
             yield from filemeta.chunks(chunksize, align_clusters, dynamic_chunksize)
@@ -1388,7 +1415,9 @@ def _chunk_generator(fileset, metadata_fetcher, metadata_cache, chunksize, align
         for filemeta in fileset:
             if nchunks[filemeta.dataset] >= maxchunks:
                 continue
-            for chunk in filemeta.chunks(chunksize, align_clusters, dynamic_chunksize=False):
+            for chunk in filemeta.chunks(
+                chunksize, align_clusters, dynamic_chunksize=False
+            ):
                 chunks.append(chunk)
                 nchunks[filemeta.dataset] += 1
                 if nchunks[filemeta.dataset] >= maxchunks:
@@ -1506,11 +1535,17 @@ def run_uproot_job(
     align_clusters = executor_args.pop("align_clusters", False)
 
     if align_clusters and dynamic_chunksize:
-        raise RuntimeError("align_clusters and dynamic-chunksize cannot be used simultaneously")
+        raise RuntimeError(
+            "align_clusters and dynamic-chunksize cannot be used simultaneously"
+        )
     if maxchunks and dynamic_chunksize:
-        raise RuntimeError("maxchunks and dynamic-chunksize cannot be used simultaneously")
+        raise RuntimeError(
+            "maxchunks and dynamic-chunksize cannot be used simultaneously"
+        )
     if dynamic_chunksize and executor is not work_queue_executor:
-        raise RuntimeError("dynamic-chunksize currently only supported by the work_queue_executor")
+        raise RuntimeError(
+            "dynamic-chunksize currently only supported by the work_queue_executor"
+        )
 
     metadata_fetcher = partial(
         _get_metadata,
@@ -1520,9 +1555,26 @@ def run_uproot_job(
         align_clusters=align_clusters,
     )
 
-    _preprocess_fileset(pre_executor, pre_args, fileset, metadata_fetcher, metadata_cache, align_clusters, maxchunks, skipbadfiles)
+    _preprocess_fileset(
+        pre_executor,
+        pre_args,
+        fileset,
+        metadata_fetcher,
+        metadata_cache,
+        align_clusters,
+        maxchunks,
+        skipbadfiles,
+    )
     fileset = _filter_badfiles(fileset, align_clusters, skipbadfiles)
-    chunks = _chunk_generator(fileset, metadata_fetcher, metadata_cache, chunksize, align_clusters, maxchunks, dynamic_chunksize)
+    chunks = _chunk_generator(
+        fileset,
+        metadata_fetcher,
+        metadata_cache,
+        chunksize,
+        align_clusters,
+        maxchunks,
+        dynamic_chunksize,
+    )
 
     # pop all _work_function args here
     savemetrics = executor_args.pop("savemetrics", False)
@@ -1581,7 +1633,7 @@ def run_uproot_job(
         "use_dataframes": use_dataframes,
         "events-total": events_total,
         "dynamic-chunksize": dynamic_chunksize,
-        "dynamic-chunksize-base": chunksize
+        "dynamic-chunksize-base": chunksize,
     }
 
     exe_args.update(executor_args)
