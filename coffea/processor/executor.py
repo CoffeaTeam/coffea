@@ -758,7 +758,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                     # time in seconds, num events, memory used in MB
                     task_reports.append(
                         (
-                            task.resources_measured.wall_time / 1e6,
+                            (task.execute_cmd_finish - task.execute_cmd_start) / 1e6,
                             num_items,
                             task.resources_measured.memory,
                         )
