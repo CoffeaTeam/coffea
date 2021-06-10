@@ -439,10 +439,18 @@ def _compute_chunksize_target(target_time, base_chunksize, task_reports):
         except Exception:
             slope = None
 
-        if slope is None or slope < 0 or intercept > 0:
+        if (
+            slope is None
+            or np.isnan(slope)
+            or np.isnan(intercept)
+            or slope < 0
+            or intercept > 0
+        ):
             # we assume that chunksize and walltime have a positive
             # correlation, with a non-negative overhead (-intercept/slope). If
             # this is not true because noisy data, use the avg chunksize/time.
+            # slope and intercept may be nan when data falls in a vertical line
+            # (specially at the start)
             slope = quantiles[1]
             intercept = 0
         org = (slope * target_time) + intercept
