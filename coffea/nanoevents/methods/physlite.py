@@ -30,13 +30,16 @@ _hash_to_target_name = {
 }
 
 
-def _element_link(target_collection, global_index, key):
+def _element_link(target_collection, eventindex, index, key):
+    global_index = _get_global_index(target_collection, eventindex, index)
     global_index = awkward.where(key != 0, global_index, -1)
     return target_collection._apply_global_index(global_index)
 
 
 def _element_link_multiple(events, obj, link_field, with_name=None):
-    key = obj[link_field].m_persKey
+    link = obj[link_field]
+    key = link.m_persKey
+    index = link.m_persIndex
     unique_keys = [
         i
         for i in numpy.unique(awkward.to_numpy(awkward.flatten(key, axis=None)))
@@ -45,17 +48,38 @@ def _element_link_multiple(events, obj, link_field, with_name=None):
 
     def where(unique_keys):
         target_name = _hash_to_target_name[unique_keys[0]]
-        links = events[target_name]._apply_global_index(
-            obj[f"{link_field}__G__{target_name}"]
-        )
+        mask = key == unique_keys[0]
+        global_index = _get_global_index(events[target_name], obj._eventindex, index)
+        global_index = awkward.where(mask, global_index, -1)
+        links = events[target_name]._apply_global_index(global_index)
         if len(unique_keys) == 1:
             return links
-        return awkward.where(key == unique_keys[0], links, where(unique_keys[1:]))
+        return awkward.where(mask, links, where(unique_keys[1:]))
 
     out = where(unique_keys).mask[key != 0]
     if with_name is not None:
         out = awkward.with_parameter(out, "__record__", with_name)
     return out
+
+
+def _get_target_offsets(offsets, event_index):
+
+    if isinstance(event_index, int):
+        return offsets[event_index]
+
+    def descend(layout, depth):
+        if layout.purelist_depth == 1:
+            return lambda: awkward.layout.NumpyArray(offsets)[layout]
+
+    return awkward._util.recursively_apply(event_index.layout, descend)
+
+
+def _get_global_index(target, eventindex, index):
+    load_column = awkward.materialized(
+        target[target.fields[0]]
+    )  # need to load one column to extract the offsets
+    target_offsets = _get_target_offsets(load_column.layout.offsets, eventindex)
+    return target_offsets + index
 
 
 @awkward.mixin_class(behavior)
@@ -117,9 +141,8 @@ class Muon(Particle):
     def trackParticle(self):
         return _element_link(
             self._events().CombinedMuonTrackParticles,
-            self[
-                "combinedTrackParticleLink.m_persIndex__G__CombinedMuonTrackParticles"
-            ],
+            self._eventindex,
+            self["combinedTrackParticleLink.m_persIndex"],
             self["combinedTrackParticleLink.m_persKey"],
         )
 
@@ -135,10 +158,12 @@ class Electron(Particle):
 
     @property
     def trackParticles(self):
+        links = self.trackParticleLinks
         return _element_link(
             self._events().GSFTrackParticles,
-            self.trackParticleLinks__G__GSFTrackParticles,
-            self.trackParticleLinks.m_persKey,
+            self._eventindex,
+            links.m_persIndex,
+            links.m_persKey,
         )
 
     @property
