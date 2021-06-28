@@ -10,8 +10,8 @@ import shutil
 import json
 import cloudpickle
 import uproot
-import numpy as np
-import scipy as sc
+import numpy
+import scipy
 import re
 import os
 import uuid
@@ -422,7 +422,7 @@ def _compute_chunksize_target(target_time, base_chunksize, task_reports):
 
     if len(task_reports) > 1:
         avgs = [e / max(1, t) for (t, e, mem) in task_reports]
-        quantiles = np.quantile(avgs, [0.25, 0.5, 0.75], interpolation="nearest")
+        quantiles = numpy.quantile(avgs, [0.25, 0.5, 0.75], interpolation="nearest")
 
         # remove outliers outside the 25%---75% range
         task_reports_filtered = []
@@ -432,7 +432,7 @@ def _compute_chunksize_target(target_time, base_chunksize, task_reports):
 
         try:
             # separate into time, numevents arrays
-            slope, intercept, r_value, p_value, std_err = sc.stats.linregress(
+            slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(
                 [rep[0] for rep in task_reports_filtered],
                 [rep[1] for rep in task_reports_filtered],
             )
@@ -441,8 +441,8 @@ def _compute_chunksize_target(target_time, base_chunksize, task_reports):
 
         if (
             slope is None
-            or np.isnan(slope)
-            or np.isnan(intercept)
+            or numpy.isnan(slope)
+            or numpy.isnan(intercept)
             or slope < 0
             or intercept > 0
         ):
@@ -463,7 +463,7 @@ def _compute_chunksize_target(target_time, base_chunksize, task_reports):
         exp = 0
 
     # round-up to nearest power of 2, plus minus one power to better sample the space.
-    exp += np.random.choice([-1, 0, 1])
+    exp += numpy.random.choice([-1, 0, 1])
     pow2 = int(base_chunksize * math.pow(2, exp))
 
     return max(1, pow2)
