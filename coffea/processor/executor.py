@@ -10,6 +10,8 @@ import shutil
 import json
 import cloudpickle
 import uproot
+import numpy
+import scipy
 import re
 import os
 import uuid
@@ -84,7 +86,11 @@ class FileMeta(object):
             return False
         return True
 
-    def chunks(self, target_chunksize, align_clusters):
+    def chunks(self, target_chunksize, align_clusters, dynamic_chunksize):
+        if align_clusters and dynamic_chunksize:
+            raise RuntimeError(
+                "align_clusters cannot be used with a dynamic chunksize."
+            )
         if not self.populated(clusters=align_clusters):
             raise RuntimeError
         user_keys = set(self.metadata.keys()) - _PROTECTED_NAMES
@@ -109,11 +115,11 @@ class FileMeta(object):
         else:
             n = max(round(self.metadata["numentries"] / target_chunksize), 1)
             actual_chunksize = math.ceil(self.metadata["numentries"] / n)
-            for index in range(n):
-                start, stop = actual_chunksize * index, min(
-                    self.metadata["numentries"], actual_chunksize * (index + 1)
-                )
-                yield WorkItem(
+
+            start = 0
+            while start < self.metadata["numentries"]:
+                stop = min(self.metadata["numentries"], start + actual_chunksize)
+                next_chunksize = yield WorkItem(
                     self.dataset,
                     self.filename,
                     self.treename,
@@ -122,6 +128,9 @@ class FileMeta(object):
                     self.metadata["uuid"],
                     user_meta,
                 )
+                start = stop
+                if dynamic_chunksize and next_chunksize:
+                    actual_chunksize = next_chunksize
 
 
 class WorkItem(object):
@@ -152,6 +161,9 @@ class WorkItem(object):
         self.entrystop = entrystop
         self.fileuuid = fileuuid
         self.usermeta = usermeta
+
+    def __len__(self):
+        return self.entrystop - self.entrystart
 
 
 def _compress(item, clevel):
@@ -403,6 +415,65 @@ def wqex_output_task(task, verbose_mode, resource_mode, output_mode):
         print("Task id #{} failed with code: {}".format(task.id, task.result))
 
 
+def _ceil_to_pow2(value):
+    return pow(2, math.ceil(math.log2(value)))
+
+
+def _compute_chunksize(targets, initial_chunksize, task_reports):
+    if not targets or len(task_reports) < 1:
+        return _ceil_to_pow2(initial_chunksize)
+
+    chunksize_by_time = _compute_chunksize_target(
+        targets.get("walltime", 60), [(t, e) for (e, t, mem) in task_reports]
+    )
+    # chunksize_by_memory = _compute_chunksize_target(targets.get('walltime', 1024), [(mem, e) for (e, t, mem) in task_reports)
+
+    return chunksize_by_time
+
+
+def _compute_chunksize_target(target, pairs):
+    avgs = [e / max(1, target) for (target, e) in pairs]
+    quantiles = numpy.quantile(avgs, [0.25, 0.5, 0.75], interpolation="nearest")
+
+    # remove outliers outside the 25%---75% range
+    pairs_filtered = []
+    for (i, avg) in enumerate(avgs):
+        if avg >= quantiles[0] and avg <= quantiles[-1]:
+            pairs_filtered.append(pairs[i])
+
+    try:
+        # separate into time, numevents arrays
+        slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(
+            [rep[0] for rep in pairs_filtered],
+            [rep[1] for rep in pairs_filtered],
+        )
+    except Exception:
+        slope = None
+
+    if (
+        slope is None
+        or numpy.isnan(slope)
+        or numpy.isnan(intercept)
+        or slope < 0
+        or intercept > 0
+    ):
+        # we assume that chunksize and walltime have a positive
+        # correlation, with a non-negative overhead (-intercept/slope). If
+        # this is not true because noisy data, use the avg chunksize/time.
+        # slope and intercept may be nan when data falls in a vertical line
+        # (specially at the start)
+        slope = quantiles[1]
+        intercept = 0
+    org = (slope * target) + intercept
+    exp = math.ceil(math.log2(org))
+
+    # round-up to nearest power of 2, plus minus one power to better sample the space.
+    exp += numpy.random.choice([-1, 0, 1])
+    pow2 = int(math.pow(2, exp))
+
+    return max(1, pow2)
+
+
 # The Work Queue object is global b/c we want to
 # retain state between runs of the executor, such
 # as connections to workers, cached data, etc.
@@ -416,8 +487,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
     Parameters
     ----------
-        items : list
-            List of input arguments
+        items : list or generator
+            Sequence of input arguments
         function : callable
             A function to be called on each input, which returns an accumulator instance
         accumulator : Accumulatable
@@ -526,6 +597,12 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     port = kwargs.pop("port", None)
     x509_proxy = kwargs.pop("x509_proxy", None)
 
+    dynamic_chunksize = kwargs.pop("dynamic_chunksize", False)
+    dynamic_chunksize_targets = kwargs.pop("dynamic_chunksize_targets", {})
+    chunksize = kwargs.pop("chunksize", 1024)
+
+    items_total = kwargs["events_total"]
+
     if port is None:
         if master_name:
             port = 0
@@ -595,37 +672,47 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
         infile_function = os.path.join(tmpdir, "function.p")
 
-        # Nothing to do?  Just return the accumulator.
-        if len(items) == 0:
-            return accumulator
-
         # Keep track of total tasks in each state.
         tasks_submitted = 0
         tasks_done = 0
-        tasks_total = len(items)
+        items_submitted = 0
+        items_done = 0
 
         print("Listening for work queue workers on port {}...".format(_wq_queue.port))
 
         # Create a dual progress bar to show submission and completion.
         submit_bar = tqdm(
-            total=tasks_total,
+            total=items_total,
             position=0,
             disable=not status,
             unit=unit,
             desc="Submitted",
         )
         complete_bar = tqdm(
-            total=tasks_total, position=1, disable=not status, unit=unit, desc=desc
+            total=items_total, position=1, disable=not status, unit=unit, desc=desc
         )
 
-        itemiter = iter(items)
+        # triplets of num of events, wall_time, memory
+        task_reports = []
+
+        # ensure items looks like a generator
+        if isinstance(items, list):
+            items = iter(items)
 
         # Main loop of executor
-        while tasks_done < tasks_total:
-
-            # Submit tasks into the queue, but no more than 100 idle tasks
-            while tasks_submitted < tasks_total and _wq_queue.stats.tasks_waiting < 100:
-                item = next(itemiter)
+        while items_done < items_total:
+            while (
+                items_submitted < items_total and _wq_queue.stats.tasks_waiting < 1
+            ):  # and _wq_queue.hungry():
+                if items_submitted < 1 or not dynamic_chunksize:
+                    item = next(items)
+                else:
+                    item = items.send(chunksize)
+                    chunksize = _compute_chunksize(
+                        dynamic_chunksize_targets, chunksize, task_reports
+                    )
+                    if verbose_mode:
+                        print("Updated chunksize:", chunksize)
                 task = wqex_create_task(
                     tasks_submitted,
                     item,
@@ -639,12 +726,12 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                 )
                 task_id = _wq_queue.submit(task)
                 tasks_submitted += 1
+                items_submitted += len(item)
 
                 if verbose_mode:
                     print("Submitted task (id #{}): {}".format(task_id, task.command))
-                else:
-                    submit_bar.update(1)
-                    complete_bar.update(0)
+                submit_bar.update(len(item))
+                complete_bar.update(0)
 
             # When done submitting, look for completed tasks.
 
@@ -664,19 +751,33 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                 # The task tag remembers the itemid for us.
                 itemid = task.tag
                 itemfile = os.path.join(tmpdir, "item_{}.p".format(itemid))
+                infile = os.path.join(tmpdir, "item_{}.p".format(itemid))
                 outfile = os.path.join(tmpdir, "output_{}.p".format(itemid))
 
                 # Accumulate results from the pickled output
+                with open(infile, "rb") as rf:
+                    unpickle_input = dill.load(rf)
+                    num_items = len(unpickle_input)
+                    items_done += num_items
+                    # num events, time in seconds, memory used in MB
+                    task_reports.append(
+                        (
+                            num_items,
+                            (task.execute_cmd_finish - task.execute_cmd_start) / 1e6,
+                            task.resources_measured.memory,
+                        )
+                    )
+
                 with open(outfile, "rb") as rf:
                     unpickle_output = dill.load(rf)
-                accumulator = accumulate(
-                    [
-                        unpickle_output
-                        if clevel is None
-                        else _decompress(unpickle_output)
-                    ],
-                    accumulator,
-                )
+                    accumulator = accumulate(
+                        [
+                            unpickle_output
+                            if clevel is None
+                            else _decompress(unpickle_output)
+                        ],
+                        accumulator,
+                    )
 
                 # Remove output files as we go to avoid unbounded disk
                 os.remove(itemfile)
@@ -684,9 +785,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
                 tasks_done += 1
 
-                if not verbose_mode:
-                    submit_bar.update(0)
-                    complete_bar.update(1)
+                submit_bar.update(0)
+                complete_bar.update(num_items)
 
         submit_bar.close()
         complete_bar.close()
@@ -1251,6 +1351,89 @@ def _get_metadata(
     return out
 
 
+def _preprocess_fileset(
+    pre_executor,
+    pre_args,
+    fileset,
+    metadata_fetcher,
+    metadata_cache,
+    align_clusters,
+    maxchunks,
+    skipbadfiles,
+):
+    if maxchunks is None:
+        # this is a bit of an abuse of map-reduce but ok
+        to_get = set(
+            filemeta
+            for filemeta in fileset
+            if not filemeta.populated(clusters=align_clusters)
+        )
+        if len(to_get) > 0:
+            out = set_accumulator()
+            pre_arg_override = {
+                "function_name": "get_metadata",
+                "desc": "Preprocessing",
+                "unit": "file",
+                "compression": None,
+                "tailtimeout": None,
+                "worker_affinity": False,
+            }
+            pre_args.update(pre_arg_override)
+            out = pre_executor(to_get, metadata_fetcher, out, **pre_args)
+            while out:
+                item = out.pop()
+                metadata_cache[item] = item.metadata
+            for filemeta in fileset:
+                filemeta.maybe_populate(metadata_cache)
+    else:
+        for filemeta in fileset:
+            # not sure why need to check for bad files here... otherwise pop fails below with pytest.
+            if skipbadfiles and not filemeta.populated(clusters=align_clusters):
+                continue
+            if not filemeta.populated(clusters=align_clusters):
+                filemeta.metadata = metadata_fetcher(filemeta).pop().metadata
+                metadata_cache[filemeta] = filemeta.metadata
+
+
+def _filter_badfiles(fileset, align_clusters, skipbadfiles):
+    final_fileset = []
+    for filemeta in fileset:
+        if filemeta.populated(clusters=align_clusters):
+            final_fileset.append(filemeta)
+        elif not skipbadfiles:
+            raise RuntimeError("Metadata for file {} could not be accessed.")
+    return final_fileset
+
+
+def _chunk_generator(
+    fileset,
+    metadata_fetcher,
+    metadata_cache,
+    chunksize,
+    align_clusters,
+    maxchunks,
+    dynamic_chunksize=False,
+):
+    if maxchunks is None:
+        for filemeta in fileset:
+            yield from filemeta.chunks(chunksize, align_clusters, dynamic_chunksize)
+    else:
+        # get just enough file info to compute chunking
+        nchunks = defaultdict(int)
+        chunks = []
+        for filemeta in fileset:
+            if nchunks[filemeta.dataset] >= maxchunks:
+                continue
+            for chunk in filemeta.chunks(
+                chunksize, align_clusters, dynamic_chunksize=False
+            ):
+                chunks.append(chunk)
+                nchunks[filemeta.dataset] += 1
+                if nchunks[filemeta.dataset] >= maxchunks:
+                    break
+        yield from iter(chunks)
+
+
 def run_uproot_job(
     fileset,
     treename,
@@ -1262,6 +1445,8 @@ def run_uproot_job(
     chunksize=100000,
     maxchunks=None,
     metadata_cache=None,
+    dynamic_chunksize=False,
+    dynamic_chunksize_targets=None,
 ):
     """A tool to run a processor using uproot for data delivery
 
@@ -1319,6 +1504,13 @@ def run_uproot_job(
             determine chunking.  Defaults to a in-memory LRU cache that holds 100k entries
             (about 1MB depending on the length of filenames, etc.)  If you edit an input file
             (please don't) during a session, the session can be restarted to clear the cache.
+        dynamic_chunksize : bool, optional
+            Whether to adapt the chunksize for units of work to run in
+            dynamic_chunksize_target_time.
+        dynamic_chunksize_targets : dict, optional
+            The target execution measurements per chunk when using dynamic
+            chunksize. The chunksize will be modified to approximate these
+            measurements. Currently only supported is 'walltime' (default 60s).
     """
 
     import warnings
@@ -1335,6 +1527,9 @@ def run_uproot_job(
 
     if pre_executor is None:
         pre_executor = executor
+    if pre_executor is work_queue_executor:
+        # work_queue_executor currently specialized for dynamic chunksize
+        pre_executor = futures_executor
     if pre_args is None:
         pre_args = dict(executor_args)
     else:
@@ -1355,6 +1550,20 @@ def run_uproot_job(
         retries = executor_args.pop("retries", 0)
     xrootdtimeout = executor_args.pop("xrootdtimeout", None)
     align_clusters = executor_args.pop("align_clusters", False)
+
+    if align_clusters and dynamic_chunksize:
+        raise RuntimeError(
+            "align_clusters and dynamic_chunksize cannot be used simultaneously"
+        )
+    if maxchunks and dynamic_chunksize:
+        raise RuntimeError(
+            "maxchunks and dynamic_chunksize cannot be used simultaneously"
+        )
+    if dynamic_chunksize and executor is not work_queue_executor:
+        raise RuntimeError(
+            "dynamic_chunksize currently only supported by the work_queue_executor"
+        )
+
     metadata_fetcher = partial(
         _get_metadata,
         skipbadfiles=skipbadfiles,
@@ -1363,54 +1572,26 @@ def run_uproot_job(
         align_clusters=align_clusters,
     )
 
-    chunks = []
-    if maxchunks is None:
-        # this is a bit of an abuse of map-reduce but ok
-        to_get = set(
-            filemeta
-            for filemeta in fileset
-            if not filemeta.populated(clusters=align_clusters)
-        )
-        if len(to_get) > 0:
-            out = set_accumulator()
-            pre_arg_override = {
-                "function_name": "get_metadata",
-                "desc": "Preprocessing",
-                "unit": "file",
-                "compression": None,
-                "tailtimeout": None,
-                "worker_affinity": False,
-            }
-            pre_args.update(pre_arg_override)
-            out = pre_executor(to_get, metadata_fetcher, out, **pre_args)
-            while out:
-                item = out.pop()
-                metadata_cache[item] = item.metadata
-            for filemeta in fileset:
-                filemeta.maybe_populate(metadata_cache)
-        while fileset:
-            filemeta = fileset.pop()
-            if skipbadfiles and not filemeta.populated(clusters=align_clusters):
-                continue
-            for chunk in filemeta.chunks(chunksize, align_clusters):
-                chunks.append(chunk)
-    else:
-        # get just enough file info to compute chunking
-        nchunks = defaultdict(int)
-        while fileset:
-            filemeta = fileset.pop()
-            if nchunks[filemeta.dataset] >= maxchunks:
-                continue
-            if skipbadfiles and not filemeta.populated(clusters=align_clusters):
-                continue
-            if not filemeta.populated(clusters=align_clusters):
-                filemeta.metadata = metadata_fetcher(filemeta).pop().metadata
-                metadata_cache[filemeta] = filemeta.metadata
-            for chunk in filemeta.chunks(chunksize, align_clusters):
-                chunks.append(chunk)
-                nchunks[filemeta.dataset] += 1
-                if nchunks[filemeta.dataset] >= maxchunks:
-                    break
+    _preprocess_fileset(
+        pre_executor,
+        pre_args,
+        fileset,
+        metadata_fetcher,
+        metadata_cache,
+        align_clusters,
+        maxchunks,
+        skipbadfiles,
+    )
+    fileset = _filter_badfiles(fileset, align_clusters, skipbadfiles)
+    chunks = _chunk_generator(
+        fileset,
+        metadata_fetcher,
+        metadata_cache,
+        chunksize,
+        align_clusters,
+        maxchunks,
+        dynamic_chunksize,
+    )
 
     # pop all _work_function args here
     savemetrics = executor_args.pop("savemetrics", False)
@@ -1457,11 +1638,22 @@ def run_uproot_job(
     else:
         closure = partial(closure, processor_instance=pi_to_send)
 
+    if dynamic_chunksize:
+        events_total = sum(f.metadata["numentries"] for f in fileset)
+    else:
+        chunks = [c for c in chunks]
+        events_total = sum(len(c) for c in chunks)
+
     exe_args = {
-        "unit": "chunk",
+        "unit": "event" if executor is work_queue_executor else "chunk",
         "function_name": type(processor_instance).__name__,
         "use_dataframes": use_dataframes,
+        "events_total": events_total,
+        "dynamic_chunksize": dynamic_chunksize,
+        "chunksize": chunksize,
+        "dynamic_chunksize_targets": dynamic_chunksize_targets,
     }
+
     exe_args.update(executor_args)
     wrapped_out = executor(chunks, closure, None, **exe_args)
 
