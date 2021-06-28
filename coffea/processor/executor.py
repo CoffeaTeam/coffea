@@ -415,53 +415,57 @@ def wqex_output_task(task, verbose_mode, resource_mode, output_mode):
         print("Task id #{} failed with code: {}".format(task.id, task.result))
 
 
-def _compute_chunksize_target(target_time, base_chunksize, task_reports):
+def _ceil_to_pow2(value):
+    return pow(2, math.ceil(math.log2(value)))
 
-    if len(task_reports) > 1:
-        avgs = [e / max(1, t) for (t, e, mem) in task_reports]
-        quantiles = numpy.quantile(avgs, [0.25, 0.5, 0.75], interpolation="nearest")
+def _compute_chunksize(targets, initial_chunksize, task_reports):
+    if not targets or len(task_reports) < 1:
+        return _ceil_to_pow2(initial_chunksize)
 
-        # remove outliers outside the 25%---75% range
-        task_reports_filtered = []
-        for (i, avg) in enumerate(avgs):
-            if avg >= quantiles[0] and avg <= quantiles[-1]:
-                task_reports_filtered.append(task_reports[i])
+    chunksize_by_time = _compute_chunksize_target(targets.get('walltime', 60), [(t, e) for (e, t, mem) in task_reports])
+    #chunksize_by_memory = _compute_chunksize_target(targets.get('walltime', 1024), [(mem, e) for (e, t, mem) in task_reports)
 
-        try:
-            # separate into time, numevents arrays
-            slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(
-                [rep[0] for rep in task_reports_filtered],
-                [rep[1] for rep in task_reports_filtered],
-            )
-        except Exception:
-            slope = None
+    return chunksize_by_time
 
-        if (
-            slope is None
-            or numpy.isnan(slope)
-            or numpy.isnan(intercept)
-            or slope < 0
-            or intercept > 0
-        ):
-            # we assume that chunksize and walltime have a positive
-            # correlation, with a non-negative overhead (-intercept/slope). If
-            # this is not true because noisy data, use the avg chunksize/time.
-            # slope and intercept may be nan when data falls in a vertical line
-            # (specially at the start)
-            slope = quantiles[1]
-            intercept = 0
-        org = (slope * target_time) + intercept
+def _compute_chunksize_target(target, pairs):
+    avgs = [e / max(1, target) for (target, e) in pairs]
+    quantiles = numpy.quantile(avgs, [0.25, 0.5, 0.75], interpolation="nearest")
 
-        if org >= base_chunksize:
-            exp = math.ceil(math.log2(org / base_chunksize))
-        else:
-            exp = -1 * math.floor(math.log2(base_chunksize / org))
-    else:
-        exp = 0
+    # remove outliers outside the 25%---75% range
+    pairs_filtered = []
+    for (i, avg) in enumerate(avgs):
+        if avg >= quantiles[0] and avg <= quantiles[-1]:
+            pairs_filtered.append(pairs[i])
+
+    try:
+        # separate into time, numevents arrays
+        slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(
+            [rep[0] for rep in pairs_filtered],
+            [rep[1] for rep in pairs_filtered],
+        )
+    except Exception:
+        slope = None
+
+    if (
+        slope is None
+        or numpy.isnan(slope)
+        or numpy.isnan(intercept)
+        or slope < 0
+        or intercept > 0
+    ):
+        # we assume that chunksize and walltime have a positive
+        # correlation, with a non-negative overhead (-intercept/slope). If
+        # this is not true because noisy data, use the avg chunksize/time.
+        # slope and intercept may be nan when data falls in a vertical line
+        # (specially at the start)
+        slope = quantiles[1]
+        intercept = 0
+    org = (slope * target) + intercept
+    exp = math.ceil(math.log2(org))
 
     # round-up to nearest power of 2, plus minus one power to better sample the space.
     exp += numpy.random.choice([-1, 0, 1])
-    pow2 = int(base_chunksize * math.pow(2, exp))
+    pow2 = int(math.pow(2, exp))
 
     return max(1, pow2)
 
@@ -590,9 +594,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     x509_proxy = kwargs.pop("x509_proxy", None)
 
     dynamic_chunksize = kwargs.pop("dynamic_chunksize", False)
-    base_chunksize = kwargs.pop("dynamic_chunksize_base", 1024)
-    target_time_chunksize = kwargs.pop("dynamic_chunksize_target_time", 60)
-    chunksize = base_chunksize
+    dynamic_chunksize_targets = kwargs.pop("dynamic_chunksize_targets", {})
+    chunksize = kwargs.pop("chunksize", 1024)
 
     items_total = kwargs["events_total"]
 
@@ -694,17 +697,14 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
         # Main loop of executor
         while items_done < items_total:
-            while items_submitted < items_total and _wq_queue.hungry():
-                if dynamic_chunksize:
-                    chunksize = _compute_chunksize_target(
-                        target_time_chunksize, base_chunksize, task_reports
-                    )
-                    if verbose_mode:
-                        print("Using chunksize:", chunksize)
-                if items_submitted < 1:
+            while items_submitted < items_total and _wq_queue.stats.tasks_waiting < 1: #and _wq_queue.hungry():
+                if items_submitted < 1 or not dynamic_chunksize:
                     item = next(items)
                 else:
                     item = items.send(chunksize)
+                    chunksize = _compute_chunksize(dynamic_chunksize_targets, chunksize, task_reports)
+                    if verbose_mode:
+                        print("Updated chunksize:", chunksize)
                 task = wqex_create_task(
                     tasks_submitted,
                     item,
@@ -751,11 +751,11 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                     unpickle_input = dill.load(rf)
                     num_items = len(unpickle_input)
                     items_done += num_items
-                    # time in seconds, num events, memory used in MB
+                    # num events, time in seconds, memory used in MB
                     task_reports.append(
                         (
-                            (task.execute_cmd_finish - task.execute_cmd_start) / 1e6,
                             num_items,
+                            (task.execute_cmd_finish - task.execute_cmd_start) / 1e6,
                             task.resources_measured.memory,
                         )
                     )
@@ -1438,7 +1438,7 @@ def run_uproot_job(
     maxchunks=None,
     metadata_cache=None,
     dynamic_chunksize=False,
-    dynamic_chunksize_target_time=60,
+    dynamic_chunksize_targets=None,
 ):
     """A tool to run a processor using uproot for data delivery
 
@@ -1499,10 +1499,10 @@ def run_uproot_job(
         dynamic_chunksize : bool, optional
             Whether to adapt the chunksize for units of work to run in
             dynamic_chunksize_target_time.
-        dynamic_chunksize_target_time : int, optional
-            When using dynamic_chunksize, the target number of seconds each
-            chunk should be processed. The chunksize will be modified to
-            approximate this target time. Default is 60s.
+        dynamic_chunksize_targets : dict, optional
+            The target execution measurements per chunk when using dynamic
+            chunksize. The chunksize will be modified to approximate these
+            measurements. Currently only supported is 'walltime' (default 60s).
     """
 
     import warnings
@@ -1642,8 +1642,8 @@ def run_uproot_job(
         "use_dataframes": use_dataframes,
         "events_total": events_total,
         "dynamic_chunksize": dynamic_chunksize,
-        "dynamic_chunksize_target_time": dynamic_chunksize_target_time,
-        "dynamic_chunksize_base": chunksize,
+        "chunksize": chunksize,
+        "dynamic_chunksize_targets": dynamic_chunksize_targets,
     }
 
     exe_args.update(executor_args)
