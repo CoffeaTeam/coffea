@@ -115,16 +115,11 @@ class FileMeta(object):
         else:
             n = max(round(self.metadata["numentries"] / target_chunksize), 1)
             actual_chunksize = math.ceil(self.metadata["numentries"] / n)
-            next_chunksize = None
 
             start = 0
             while start < self.metadata["numentries"]:
-                if dynamic_chunksize:
-                    next_chunksize = yield
-                    if next_chunksize:
-                        actual_chunksize = next_chunksize
                 stop = min(self.metadata["numentries"], start + actual_chunksize)
-                yield WorkItem(
+                next_chunksize = yield WorkItem(
                     self.dataset,
                     self.filename,
                     self.treename,
@@ -134,6 +129,8 @@ class FileMeta(object):
                     user_meta,
                 )
                 start = stop
+                if dynamic_chunksize and next_chunksize:
+                    actual_chunksize = next_chunksize
 
 
 class WorkItem(object):
@@ -699,15 +696,15 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         while items_done < items_total:
             while items_submitted < items_total and _wq_queue.hungry():
                 if dynamic_chunksize:
-                    next(items)
                     chunksize = _compute_chunksize_target(
                         target_time_chunksize, base_chunksize, task_reports
                     )
                     if verbose_mode:
                         print("Using chunksize:", chunksize)
-                    item = items.send(chunksize)
-                else:
+                if items_submitted < 1:
                     item = next(items)
+                else:
+                    item = items.send(chunksize)
                 task = wqex_create_task(
                     tasks_submitted,
                     item,
