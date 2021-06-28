@@ -335,3 +335,9 @@ def nestedindex(stack):
 def item(stack):
     field = stack.pop()
     stack.append(stack.pop()[field])
+
+
+def eventindex(stack):
+    out = stack.pop()
+    out, _ = awkward.broadcast_arrays(numpy.arange(len(out), dtype=numpy.int64), out)
+    stack.append(out)
