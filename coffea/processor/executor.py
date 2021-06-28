@@ -418,14 +418,18 @@ def wqex_output_task(task, verbose_mode, resource_mode, output_mode):
 def _ceil_to_pow2(value):
     return pow(2, math.ceil(math.log2(value)))
 
+
 def _compute_chunksize(targets, initial_chunksize, task_reports):
     if not targets or len(task_reports) < 1:
         return _ceil_to_pow2(initial_chunksize)
 
-    chunksize_by_time = _compute_chunksize_target(targets.get('walltime', 60), [(t, e) for (e, t, mem) in task_reports])
-    #chunksize_by_memory = _compute_chunksize_target(targets.get('walltime', 1024), [(mem, e) for (e, t, mem) in task_reports)
+    chunksize_by_time = _compute_chunksize_target(
+        targets.get("walltime", 60), [(t, e) for (e, t, mem) in task_reports]
+    )
+    # chunksize_by_memory = _compute_chunksize_target(targets.get('walltime', 1024), [(mem, e) for (e, t, mem) in task_reports)
 
     return chunksize_by_time
+
 
 def _compute_chunksize_target(target, pairs):
     avgs = [e / max(1, target) for (target, e) in pairs]
@@ -697,12 +701,16 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
         # Main loop of executor
         while items_done < items_total:
-            while items_submitted < items_total and _wq_queue.stats.tasks_waiting < 1: #and _wq_queue.hungry():
+            while (
+                items_submitted < items_total and _wq_queue.stats.tasks_waiting < 1
+            ):  # and _wq_queue.hungry():
                 if items_submitted < 1 or not dynamic_chunksize:
                     item = next(items)
                 else:
                     item = items.send(chunksize)
-                    chunksize = _compute_chunksize(dynamic_chunksize_targets, chunksize, task_reports)
+                    chunksize = _compute_chunksize(
+                        dynamic_chunksize_targets, chunksize, task_reports
+                    )
                     if verbose_mode:
                         print("Updated chunksize:", chunksize)
                 task = wqex_create_task(
