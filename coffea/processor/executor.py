@@ -725,9 +725,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
                 if verbose_mode:
                     print("Submitted task (id #{}): {}".format(task_id, task.command))
-                else:
-                    submit_bar.update(1)
-                    complete_bar.update(0)
+                submit_bar.update(len(item))
+                complete_bar.update(0)
 
             # When done submitting, look for completed tasks.
 
@@ -781,9 +780,8 @@ def work_queue_executor(items, function, accumulator, **kwargs):
 
                 tasks_done += 1
 
-                if not verbose_mode:
-                    submit_bar.update(0)
-                    complete_bar.update(1)
+                submit_bar.update(0)
+                complete_bar.update(num_items)
 
         submit_bar.close()
         complete_bar.close()
@@ -1631,7 +1629,7 @@ def run_uproot_job(
         events_total = sum(f.metadata["numentries"] for f in fileset)
     else:
         chunks = [c for c in chunks]
-        events_total = sum(c.entrystop - c.entrystart for c in chunks)
+        events_total = sum(len(c) for c in chunks)
 
     exe_args = {
         "unit": "event" if executor is work_queue_executor else "chunk",
