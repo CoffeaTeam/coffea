@@ -592,12 +592,12 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     port = kwargs.pop("port", None)
     x509_proxy = kwargs.pop("x509_proxy", None)
 
-    dynamic_chunksize = kwargs.pop("dynamic-chunksize", False)
-    base_chunksize = kwargs.pop("dynamic-chunksize-base", 1000)
-    target_time_chunksize = kwargs.pop("dynamic-target-time", 60)
+    dynamic_chunksize = kwargs.pop("dynamic_chunksize", False)
+    base_chunksize = kwargs.pop("dynamic_chunksize_base", 1024)
+    target_time_chunksize = kwargs.pop("dynamic_chunksize_target_time", 60)
     chunksize = base_chunksize
 
-    items_total = kwargs["events-total"]
+    items_total = kwargs["events_total"]
 
     if port is None:
         if master_name:
@@ -1407,7 +1407,7 @@ def _chunk_generator(
     chunksize,
     align_clusters,
     maxchunks,
-    dynamic_chunksize=True,
+    dynamic_chunksize=False,
 ):
     if maxchunks is None:
         for filemeta in fileset:
@@ -1441,6 +1441,7 @@ def run_uproot_job(
     maxchunks=None,
     metadata_cache=None,
     dynamic_chunksize=False,
+    dynamic_chunksize_target_time=60,
 ):
     """A tool to run a processor using uproot for data delivery
 
@@ -1498,6 +1499,13 @@ def run_uproot_job(
             determine chunking.  Defaults to a in-memory LRU cache that holds 100k entries
             (about 1MB depending on the length of filenames, etc.)  If you edit an input file
             (please don't) during a session, the session can be restarted to clear the cache.
+        dynamic_chunksize : bool, optional
+            Whether to adapt the chunksize for units of work to run in
+            dynamic_chunksize_target_time.
+        dynamic_chunksize_target_time : int, optional
+            When using dynamic_chunksize, the target number of seconds each
+            chunk should be processed. The chunksize will be modified to
+            approximate this target time. Default is 60s.
     """
 
     import warnings
@@ -1540,15 +1548,15 @@ def run_uproot_job(
 
     if align_clusters and dynamic_chunksize:
         raise RuntimeError(
-            "align_clusters and dynamic-chunksize cannot be used simultaneously"
+            "align_clusters and dynamic_chunksize cannot be used simultaneously"
         )
     if maxchunks and dynamic_chunksize:
         raise RuntimeError(
-            "maxchunks and dynamic-chunksize cannot be used simultaneously"
+            "maxchunks and dynamic_chunksize cannot be used simultaneously"
         )
     if dynamic_chunksize and executor is not work_queue_executor:
         raise RuntimeError(
-            "dynamic-chunksize currently only supported by the work_queue_executor"
+            "dynamic_chunksize currently only supported by the work_queue_executor"
         )
 
     metadata_fetcher = partial(
@@ -1635,9 +1643,10 @@ def run_uproot_job(
         "unit": "event" if executor is work_queue_executor else "chunk",
         "function_name": type(processor_instance).__name__,
         "use_dataframes": use_dataframes,
-        "events-total": events_total,
-        "dynamic-chunksize": dynamic_chunksize,
-        "dynamic-chunksize-base": chunksize,
+        "events_total": events_total,
+        "dynamic_chunksize": dynamic_chunksize,
+        "dynamic_chunksize_target_time": dynamic_chunksize_target_time,
+        "dynamic_chunksize_base": chunksize,
     }
 
     exe_args.update(executor_args)
