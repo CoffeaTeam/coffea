@@ -70,9 +70,10 @@ def jer_smear(
 
     jersmear = jet_energy_resolution * jet_resolution_rand_gauss
     jersf = jet_energy_resolution_scale_factor[:, variation]
-    doHybrid = pt_gen > 0
+    deltaPtRel = (jetPt - pt_gen) / jetPt
+    doHybrid = (pt_gen > 0) & (numpy.abs(deltaPtRel) < 3)
 
-    detSmear = 1 + (jersf - 1) * (jetPt - pt_gen) / jetPt  # because of awkward1.0#367
+    detSmear = 1 + (jersf - 1) * deltaPtRel
     stochSmear = 1 + numpy.sqrt(numpy.maximum(jersf ** 2 - 1, 0)) * jersmear
 
     min_jet_pt = _MIN_JET_ENERGY / numpy.cosh(etaJet)
