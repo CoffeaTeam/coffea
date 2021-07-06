@@ -34,8 +34,7 @@ class dense_lookup(lookup_base):
         for dim in range(self._dimension):
             indices.append(
                 numpy.clip(
-                    numpy.searchsorted(self._axes[dim], args[dim], side="right")
-                    - 1,
+                    numpy.searchsorted(self._axes[dim], args[dim], side="right") - 1,
                     0,
                     self._values.shape[dim] - 1,
                 )
