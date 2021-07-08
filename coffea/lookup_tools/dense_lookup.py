@@ -32,9 +32,12 @@ class dense_lookup(lookup_base):
     def _evaluate(self, *args):
         indices = []
         if self._dimension == 1:
+            axes = (
+                self._axes if isinstance(self._axes, numpy.ndarray) else self._axes[0]
+            )
             indices.append(
                 numpy.clip(
-                    numpy.searchsorted(self._axes, args[0], side="right") - 1,
+                    numpy.searchsorted(axes, args[0], side="right") - 1,
                     0,
                     self._values.shape[0] - 1,
                 )

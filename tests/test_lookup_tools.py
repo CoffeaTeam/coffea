@@ -413,3 +413,18 @@ def test_dense_lookup():
     assert lookup(0.1, 0.3) == 1.0
     assert numpy.all(lookup(0.1, numpy.array([0.3, 0.5])) == numpy.array([1.0, 1.0]))
     assert ak.to_list(lookup(a, a)) == [[1.0, 1.0], [1.0]]
+
+
+def test_549():
+    import awkward as ak
+    from coffea.lookup_tools import extractor
+
+    ext = extractor()
+    f_in = "tests/samples/SFttbar_2016_ele_pt.root"
+    ext.add_weight_sets(["ele_pt histo_eff_data %s" % f_in])
+    ext.finalize()
+    evaluator = ext.make_evaluator()
+
+    evaluator["ele_pt"](
+        ak.Array([[45]]),
+    )
