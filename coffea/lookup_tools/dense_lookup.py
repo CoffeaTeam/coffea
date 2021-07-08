@@ -31,14 +31,27 @@ class dense_lookup(lookup_base):
 
     def _evaluate(self, *args):
         indices = []
-        for dim in range(self._dimension):
+        if self._dimension == 1:
+            axes = (
+                self._axes if isinstance(self._axes, numpy.ndarray) else self._axes[0]
+            )
             indices.append(
                 numpy.clip(
-                    numpy.searchsorted(self._axes[dim], args[dim], side="right") - 1,
+                    numpy.searchsorted(axes, args[0], side="right") - 1,
                     0,
-                    self._values.shape[dim] - 1,
+                    self._values.shape[0] - 1,
                 )
             )
+        else:
+            for dim in range(self._dimension):
+                indices.append(
+                    numpy.clip(
+                        numpy.searchsorted(self._axes[dim], args[dim], side="right")
+                        - 1,
+                        0,
+                        self._values.shape[dim] - 1,
+                    )
+                )
         return self._values[tuple(indices)]
 
     def __repr__(self):
