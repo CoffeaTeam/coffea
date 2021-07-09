@@ -28,9 +28,6 @@ from ..util import _hash
 
 from collections.abc import Mapping, MutableMapping
 
-from .work_queue_tools import work_queue_main
-
-
 _PICKLE_PROTOCOL = pickle.HIGHEST_PROTOCOL
 DEFAULT_METADATA_CACHE: MutableMapping = LRUCache(100000)
 
@@ -327,6 +324,11 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         wrapper : str
             Wrapper script to run/open python environment tarball. Defaults to python_package_run found in PATH.
 
+        chunks_per_accum : int
+            Number of processed chunks per accumulation task. Defaults is 10.
+        chunks_accum_in_mem : int
+            Maximum number of chunks to keep in memory at each accumulation step in an accumulation task. Default is 2.
+
         verbose : bool
             If true, emit a message on each task submission and completion.
             Default is false.
@@ -347,7 +349,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         print("You must have Work Queue and dill installed to use work_queue_executor!")
         raise e
 
-    return work_queue_main(items, function, accumulator, _compression_wrapper, _decompress, **kwargs)
+    return work_queue_main(items, function, accumulator, **kwargs)
 
 
 def iterative_executor(items, function, accumulator, **kwargs):
@@ -1002,7 +1004,7 @@ def run_uproot_job(
     maxchunks=None,
     metadata_cache=None,
     dynamic_chunksize=False,
-    dynamic_chunksize_targets=None,
+    dynamic_chunksize_targets={},
 ):
     """A tool to run a processor using uproot for data delivery
 
@@ -1083,9 +1085,6 @@ def run_uproot_job(
 
     if pre_executor is None:
         pre_executor = executor
-    if pre_executor is work_queue_executor:
-        # work_queue_executor currently specialized for dynamic chunksize
-        pre_executor = futures_executor
     if pre_args is None:
         pre_args = dict(executor_args)
     else:

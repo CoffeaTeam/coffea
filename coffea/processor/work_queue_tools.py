@@ -1,16 +1,25 @@
-import work_queue as wq
 import dill
 
 import os
 import re
 import tempfile
 import shutil
+import textwrap
+import hashlib
+import warnings
+
+from os.path import basename, join
 
 import math
 import numpy
 import scipy
 
 from tqdm.auto import tqdm
+
+from .executor import (
+    _compression_wrapper,
+    _decompress,
+)
 
 from .accumulator import (
     accumulate,
@@ -23,416 +32,813 @@ from .accumulator import (
 _wq_queue = None
 
 
-def work_queue_main(items, function, accumulator, compression_wrapper, decompress_fn, **kwargs):
+# This function, that accumulates results from files does not require wq.
+# We declare it before checking for wq so that we do not need to install wq at
+# the remote site.
+def accumulate_result_files(
+    chunks_accum_in_mem, clevel, files_to_accumulate, accumulator=None
+):
+    from coffea.processor import accumulate
+
+    in_memory = []
+
+    # work on local copy of list
+    files_to_accumulate = list(files_to_accumulate)
+    while files_to_accumulate:
+        f = files_to_accumulate.pop()
+
+        # ensure that no files are left unprocessed because lenght of list
+        # smaller than desired files in memory.
+        chunks_accum_in_mem = min(chunks_accum_in_mem, len(files_to_accumulate))
+
+        with open(f, "rb") as rf:
+            result_f = dill.load(rf)
+            if clevel:
+                result_f = _decompress(result_f)
+
+        if not accumulator:
+            accumulator = result_f
+            continue
+
+        in_memory.append(result_f)
+        if len(in_memory) > chunks_accum_in_mem - 1:
+            accumulator = accumulate(in_memory, accumulator)
+            in_memory = []
+    return accumulator
+
+
+try:
+    from work_queue import WorkQueue, Task
+    import work_queue as wq
+except ImportError:
+    print("work_queue module not available")
+
+    class Task:
+        def __init__(self, *args, **kwargs):
+            raise ImportError("work_queue not available")
+
+    class WorkQueue:
+        def __init__(self, *args, **kwargs):
+            raise ImportError("work_queue not available")
+
+
+class CoffeaWQTask(Task):
+    def __init__(
+        self, fn_wrapper, infile_function, item_args, itemid, tmpdir, exec_defaults
+    ):
+        self.itemid = itemid
+        self.py_result = None
+
+        self.clevel = exec_defaults["compression"]
+
+        self.infile_args = join(tmpdir, "args_{}.p".format(self.itemid))
+        self.infile_output = join(tmpdir, "out_{}.p".format(self.itemid))
+
+        with open(self.infile_args, "wb") as wf:
+            dill.dump(item_args, wf)
+
+        super().__init__(
+            self.remote_command(env_file=exec_defaults["environment_file"])
+        )
+
+        self.specify_input_file(fn_wrapper, "fn_wrapper", cache=False)
+        self.specify_input_file(infile_function, "function.p", cache=False)
+        self.specify_input_file(self.infile_args, "args.p", cache=False)
+        self.specify_output_file(self.infile_output, "output.p", cache=False)
+
+        for f in exec_defaults["extra_input_files"]:
+            self.specify_input_file(f, cache=True)
+
+        if exec_defaults["x509_proxy"]:
+            self.specify_input_file(exec_defaults["x509_proxy"], cache=True)
+
+        if exec_defaults["wrapper"] and exec_defaults["environment_file"]:
+            self.specify_input_file(exec_defaults["wrapper"], "py_wrapper", cache=True)
+            self.specify_input_file(
+                exec_defaults["environment_file"], "env_file", cache=True
+            )
+
+    def __len__(self):
+        return self.size
+
+    def remote_command(self, env_file=None):
+        fn_command = "python fn_wrapper function.p args.p output.p"
+        command = fn_command
+
+        if env_file:
+            wrap = './py_wrapper -d -e env_file -u "$WORK_QUEUE_SANDBOX"/{}-env -- {}'
+            command = wrap.format(basename(env_file), fn_command)
+
+        return command
+
+    @property
+    def std_output(self):
+        return super().output
+
+    # use output to return python result, rathern than stdout are regular wq
+    @property
+    def output(self):
+        if not self.py_result:
+            with open(self.infile_output, "rb") as rf:
+                result = dill.load(rf)
+                if self.clevel:
+                    result = _decompress(result)
+                self.py_result = result
+        return self.py_result
+
+    def cleanup_inputs(self):
+        os.remove(self.infile_args)
+
+    def cleanup_outputs(self):
+        os.remove(self.infile_output)
+
+    def report(self, output_mode, resource_mode):
+        task_failed = (self.result != 0) or (self.return_status != 0)
+
+        if task_failed:
+            _vprint.verbose_mode = True
+
+        _vprint(
+            "{} task id {} item {} with {} events completed on {}. return code {}",
+            self.category,
+            self.id,
+            self.itemid,
+            len(self),
+            self.hostname,
+            self.return_status,
+        )
+
+        _vprint(
+            "    allocated cores: {}, memory: {} MB, disk: {} MB, gpus: {}",
+            self.resources_allocated.cores,
+            self.resources_allocated.memory,
+            self.resources_allocated.disk,
+            self.resources_allocated.gpus,
+        )
+
+        if resource_mode:
+            _vprint(
+                "    measured cores: {}, memory: {} MB, disk {} MB, gpus: {}, runtime {}",
+                self.resources_measured.cores,
+                self.resources_measured.memory,
+                self.resources_measured.disk,
+                self.resources_measured.gpus,
+                self.resources_measured.wall_time / 1000000,
+            )
+
+        if (task_failed or output_mode) and self.std_output:
+            _vprint.print("    output:")
+            _vprint.print(self.std_output)
+
+        if task_failed:
+            # Note that WQ already retries internal failures.
+            # If we get to this point, it's a badly formed task
+            raise RuntimeError(
+                "Task id {} item {} failed: {}".format(
+                    self.id, self.itemid, self.result_str
+                )
+            )
+
+
+class PreProcCoffeaWQTask(CoffeaWQTask):
+    tasks_counter = 0
+    infile_function = None
+
+    def __init__(self, fn_wrapper, infile_function, item, tmpdir, exec_defaults):
+        PreProcCoffeaWQTask.tasks_counter += 1
+        itemid = "pre_{}".format(PreProcCoffeaWQTask.tasks_counter)
+
+        self.size = 1
+
+        super().__init__(
+            fn_wrapper, infile_function, [item], itemid, tmpdir, exec_defaults
+        )
+
+        self.specify_category("preprocessing")
+
+        if re.search("://", item.filename) or os.path.isabs(item.filename):
+            # This looks like an URL or an absolute path (assuming shared
+            # filesystem). Not transfering file.
+            pass
+        else:
+            self.specify_input_file(
+                item.filename, remote_name=item.filename, cache=True
+            )
+
+
+class ProcCoffeaWQTask(CoffeaWQTask):
+    def __init__(self, fn_wrapper, infile_function, item, tmpdir, exec_defaults):
+
+        self.size = len(item)
+        itemid = hashlib.sha256(
+            "proc_{}{}{}".format(
+                item.entrystart, item.entrystop, item.fileuuid
+            ).encode()
+        ).hexdigest()[0:8]
+
+        super().__init__(
+            fn_wrapper, infile_function, [item], itemid, tmpdir, exec_defaults
+        )
+
+        self.specify_category("processing")
+
+        if re.search("://", item.filename) or os.path.isabs(item.filename):
+            # This looks like an URL or an absolute path (assuming shared
+            # filesystem). Not transfering file.
+            pass
+        else:
+            self.specify_input_file(
+                item.filename, remote_name=item.filename, cache=True
+            )
+
+
+class AccumCoffeaWQTask(CoffeaWQTask):
+    tasks_counter = 0
+
+    def __init__(
+        self, fn_wrapper, infile_function, tasks_to_accumulate, tmpdir, exec_defaults
+    ):
+        AccumCoffeaWQTask.tasks_counter += 1
+        itemid = "accum_{}".format(AccumCoffeaWQTask.tasks_counter)
+
+        self.tasks_to_accumulate = tasks_to_accumulate
+        self.size = sum(len(t) for t in self.tasks_to_accumulate)
+
+        args = [exec_defaults["chunks_accum_in_mem"], exec_defaults["compression"]]
+        args = args + [[basename(t.infile_output) for t in self.tasks_to_accumulate]]
+
+        super().__init__(
+            fn_wrapper, infile_function, args, itemid, tmpdir, exec_defaults
+        )
+
+        self.specify_category("accumulating")
+
+        for t in self.tasks_to_accumulate:
+            self.specify_input_file(t.infile_output, cache=False)
+
+    def cleanup_inputs(self):
+        super().cleanup_inputs()
+        # cleanup files associated with results already accumulated
+        for t in self.tasks_to_accumulate:
+            t.cleanup_outputs()
+
+
+def work_queue_main(items, function, accumulator, **kwargs):
     """Execute using Work Queue
 
     For valid parameters, see :py:func:`work_queue_executor` in :py:mod:`executor`.
     For more information, see :ref:`intro-coffea-wq`
     """
 
-    try:
-        import work_queue as wq
-        import dill
-    except ImportError as e:
-        print("You must have Work Queue and dill installed to use work_queue_executor!")
-        raise e
-
     global _wq_queue
 
-    # Standard executor options:
-    unit = kwargs.pop("unit", "items")
-    status = kwargs.pop("status", True)
-    desc = kwargs.pop("desc", "Processing")
-    clevel = kwargs.pop("compression", 1)
-    filepath = kwargs.pop("filepath", ".")
+    default_kwargs = {
+        # Standard executor options:
+        "unit": "items",
+        "desc": "Processing",
+        "compression": True,
+        "status": True,
+        "function_name": None,
+        # ignored
+        "schema": None,
+        "skipbadfiles": None,
+        "tailtimeout": None,
+        "worker_affinity": None,
+        "use_dataframes": None,
+        # wq executor options:
+        "master_name": None,
+        "port": None,
+        "filepath": ".",
+        "events_total": None,
+        "x509_proxy": _get_x509_proxy(),
+        "verbose": False,
+        "print_stdout": False,
+        "bar_format": "{desc:<14}{percentage:3.0f}%|{bar}{r_bar:<55}",
+        "debug_log": None,
+        "stats_log": None,
+        "transactions_log": None,
+        "password_file": None,
+        "environment_file": None,
+        "extra_input_files": [],
+        "wrapper": shutil.which("python_package_run"),
+        "resource_monitor": False,
+        "resources_mode": "fixed",
+        "cores": None,
+        "memory": None,
+        "disk": None,
+        "gpus": None,
+        "chunks_per_accum": 10,
+        "chunks_accum_in_mem": 2,
+        "chunksize": 1024,
+        "dynamic_chunksize": False,
+        "dynamic_chunksize_targets": {},
+    }
 
-    if clevel is not None:
-        function = compression_wrapper(clevel, function)
+    _update_deprecated_kwords(kwargs)
+    _warn_unknown_kwords(default_kwargs, kwargs)
 
-    # Work Queue specific options:
-    verbose_mode = kwargs.pop("verbose", False)
-    debug_log = kwargs.pop("debug-log", None)
-    stats_log = kwargs.pop("stats-log", None)
-    trans_log = kwargs.pop("transactions-log", None)
-    extra_input_files = kwargs.pop("extra-input-files", [])
-    output = kwargs.pop("print-stdout", False)
-    password_file = kwargs.pop("password-file", None)
-    env_file = kwargs.pop("environment-file", None)
-    wrapper = kwargs.pop("wrapper", shutil.which("python_package_run"))
-    resources_mode = kwargs.pop("resources-mode", "fixed")
-    cores = kwargs.pop("cores", None)
-    memory = kwargs.pop("memory", None)
-    disk = kwargs.pop("disk", None)
-    gpus = kwargs.pop("gpus", None)
-    resource_monitor = kwargs.pop("resource-monitor", False)
-    master_name = kwargs.pop("master-name", None)
-    port = kwargs.pop("port", None)
-    x509_proxy = kwargs.pop("x509_proxy", None)
+    # create new dictionary fillining kwargs defaults
+    kwargs = {**default_kwargs, **kwargs}
 
-    dynamic_chunksize = kwargs.pop("dynamic_chunksize", False)
-    dynamic_chunksize_targets = kwargs.pop("dynamic_chunksize_targets", {})
-    chunksize = kwargs.pop("chunksize", 1024)
+    clevel = kwargs["compression"]
+    if clevel:
+        function = _compression_wrapper(clevel, function)
+        accumulate_fn = _compression_wrapper(clevel, accumulate_result_files)
+    else:
+        accumulate_fn = accumulate_result_files
 
-    items_total = kwargs["events_total"]
+    _vprint.verbose_mode = kwargs["verbose"] or kwargs["print_stdout"]
+    _vprint.status_mode = kwargs["status"]
 
-    if port is None:
-        if master_name:
-            port = 0
-        else:
-            port = 9123
+    if not kwargs["port"]:
+        kwargs["port"] = 0 if kwargs["master_name"] else 9123
 
-    if _wq_queue is None:
-        _wq_queue = wq.WorkQueue(
-            port,
-            name=master_name,
-            debug_log=debug_log,
-            stats_log=stats_log,
-            transactions_log=trans_log,
-        )
-
-    if env_file and not wrapper:
+    if kwargs["environment_file"] and not kwargs["wrapper"]:
         raise ValueError(
             "Location of python_package_run could not be determined automatically.\nUse 'wrapper' argument to the work_queue_executor."
         )
 
-    # If explicit resources are given, collect them into default_resources
-    default_resources = {}
-    if cores:
-        default_resources["cores"] = cores
-    if memory:
-        default_resources["memory"] = memory
-    if disk:
-        default_resources["disk"] = disk
-    if gpus:
-        default_resources["gpus"] = gpus
-
-    # if x509_proxy was not provided, then try to get it from env variable or
-    # default location.
-    if x509_proxy is None:
-        if os.environ.get("X509_USER_PROXY", None):
-            x509_proxy = os.environ["X509_USER_PROXY"]
-        else:
-            x509_proxy_default = os.path.join("/tmp", "x509up_u{}".format(os.getuid()))
-            if os.path.exists(x509_proxy_default):
-                x509_proxy = x509_proxy_default
-
-    # Working within a custom temporary directory:
-    with tempfile.TemporaryDirectory(prefix="wq-executor-tmp-", dir=filepath) as tmpdir:
-
-        # Save the executable function in a dilled file.
-        with open(os.path.join(tmpdir, "function.p"), "wb") as wf:
-            dill.dump(function, wf)
-
-        # Create a wrapper script to run the function.
-        command_path = wqex_create_function_wrapper(tmpdir, x509_proxy)
-
-        # Enable monitoring and auto resource consumption, if desired:
-        if resource_monitor:
-            _wq_queue.enable_monitoring()
-
-        _wq_queue.specify_category_max_resources("default", default_resources)
-        if resources_mode == "auto":
-            _wq_queue.tune("category-steady-n-tasks", 3)
-            _wq_queue.specify_category_max_resources("default", {})
-            _wq_queue.specify_category_mode(
-                "default", wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT
-            )
+    if _wq_queue is None:
+        _wq_queue = WorkQueue(
+            port=kwargs["port"],
+            name=kwargs["master_name"],
+            debug_log=kwargs["debug_log"],
+            stats_log=kwargs["stats_log"],
+            transactions_log=kwargs["transactions_log"],
+        )
 
         # Make use of the stored password file, if enabled.
-        if password_file is not None:
-            _wq_queue.specify_password_file(password_file)
-
-        infile_function = os.path.join(tmpdir, "function.p")
-
-        # Keep track of total tasks in each state.
-        tasks_submitted = 0
-        tasks_done = 0
-        items_submitted = 0
-        items_done = 0
+        if kwargs["password_file"] is not None:
+            _wq_queue.specify_password_file(kwargs["password_file"])
 
         print("Listening for work queue workers on port {}...".format(_wq_queue.port))
+        # perform a wait to print any warnings before progress bars
+        _wq_queue.wait(0)
 
-        # Create a dual progress bar to show submission and completion.
-        submit_bar = tqdm(
-            total=items_total,
-            position=2,
-            disable=not status,
-            unit=unit,
-            desc="Submitted",
+    _declare_resources(kwargs)
+
+    # Working within a custom temporary directory:
+    with tempfile.TemporaryDirectory(
+        prefix="wq-executor-tmp-", dir=kwargs["filepath"]
+    ) as tmpdir:
+        fn_wrapper = _create_fn_wrapper(kwargs["x509_proxy"], tmpdir=tmpdir)
+        infile_function = _function_to_file(
+            function, prefix_name=kwargs["function_name"], tmpdir=tmpdir
         )
-        complete_bar = tqdm(
-            total=items_total,
-            position=1,
-            disable=not status,
-            unit=unit,
-            desc=desc
+        infile_accum_fn = _function_to_file(
+            accumulate_fn, prefix_name="accum", tmpdir=tmpdir
         )
 
-        # triplets of num of events, wall_time, memory
-        task_reports = []
+        if kwargs["desc"] == "Preprocessing":
+            return _work_queue_preprocessing(
+                items, accumulator, fn_wrapper, infile_function, tmpdir, kwargs
+            )
+        else:
+            return _work_queue_processing(
+                items,
+                accumulator,
+                fn_wrapper,
+                infile_function,
+                infile_accum_fn,
+                tmpdir,
+                kwargs,
+            )
 
-        # ensure items looks like a generator
-        if isinstance(items, list):
-            items = iter(items)
 
-        # Main loop of executor
-        while items_done < items_total or not _wq_queue.empty():
-            while (
-                items_submitted < items_total and _wq_queue.stats.tasks_waiting < 1
-            ):  # and _wq_queue.hungry():
-                if items_submitted < 1 or not dynamic_chunksize:
-                    item = next(items)
-                else:
-                    item = items.send(chunksize)
-                    chunksize = _compute_chunksize(
-                        dynamic_chunksize_targets, chunksize, task_reports
+def _work_queue_processing(
+    items,
+    accumulator,
+    fn_wrapper,
+    infile_function,
+    infile_accum_fn,
+    tmpdir,
+    exec_defaults,
+):
+
+    # Keep track of total tasks in each state.
+    items_submitted = 0
+    items_done = 0
+
+    # triplets of num of events, wall_time, memory
+    task_reports = []
+
+    # tasks with results to accumulate, sorted by the number of events
+    tasks_to_accumulate = []
+
+    # ensure items looks like a generator
+    if isinstance(items, list):
+        items = iter(items)
+
+    items_total = exec_defaults["events_total"]
+    chunksize = exec_defaults["chunksize"]
+
+    progress_bars = _make_progress_bars(exec_defaults)
+
+    # Main loop of executor
+    while items_done < items_total or not _wq_queue.empty():
+        while items_submitted < items_total and _wq_queue.hungry():
+            update_chunksize = (
+                items_submitted > 0 and exec_defaults["dynamic_chunksize"]
+            )
+            if update_chunksize:
+                chunksize = _compute_chunksize(task_reports, exec_defaults)
+
+            task = _submit_proc_task(
+                fn_wrapper,
+                infile_function,
+                items,
+                chunksize,
+                update_chunksize,
+                tmpdir,
+                exec_defaults,
+            )
+            items_submitted += len(task)
+            progress_bars["submit"].update(len(task))
+
+        # When done submitting, look for completed tasks.
+        task = _wq_queue.wait(5)
+
+        # refresh progress bars
+        for bar in progress_bars.values():
+            bar.update(0)
+
+        if task:
+            # Evaluate and display details of the completed task
+            task.report(
+                exec_defaults["print_stdout"], exec_defaults["resource_monitor"]
+            )
+            tasks_to_accumulate.append(task)
+
+            if task.category == "processing":
+                items_done += len(task)
+                progress_bars["process"].update(len(task))
+
+                # gather statistics for dynamic chunksize
+                task_reports.append(
+                    (
+                        len(task),
+                        (task.execute_cmd_finish - task.execute_cmd_start) / 1e6,
+                        task.resources_measured.memory,
                     )
-                    if verbose_mode:
-                        print("Updated chunksize:", chunksize)
-                task = wqex_create_task(
-                    tasks_submitted,
-                    item,
-                    wrapper,
-                    env_file,
-                    command_path,
-                    infile_function,
-                    tmpdir,
-                    extra_input_files,
-                    x509_proxy,
                 )
-                task_id = _wq_queue.submit(task)
-                tasks_submitted += 1
-                items_submitted += len(item)
+            else:
+                progress_bars["accumulate"].update(1)
 
-                if verbose_mode:
-                    print("Submitted task (id #{}): {}".format(task_id, task.command))
-                submit_bar.update(len(item))
-                complete_bar.update(0)
+            force_last_accum = items_done >= items_total
+            tasks_to_accumulate = _submit_accum_tasks(
+                fn_wrapper,
+                infile_accum_fn,
+                tasks_to_accumulate,
+                force_last_accum,
+                tmpdir,
+                exec_defaults,
+            )
+            progress_bars["accumulate"].total = math.ceil(
+                items_total * AccumCoffeaWQTask.tasks_counter / items_done
+            )
 
-            # When done submitting, look for completed tasks.
+            # Remove input files as we go to avoid unbounded disk
+            # we do not remove outputs, as they are used by further accumulate tasks
+            task.cleanup_inputs()
 
-            task = _wq_queue.wait(5)
-            if task:
-                # Display details of the completed task
-                wqex_output_task(task, verbose_mode, resource_monitor, output)
-                if task.result != 0:
-                    # Note that WQ already retries internal failures.
-                    # If we get to this point, it's a badly formed task.
-                    raise RuntimeError(
-                        "Task {} item {} failed with output:\n{}".format(
-                            task.id, task.tag, task.output
-                        )
-                    )
+    if len(tasks_to_accumulate) != 1:
+        raise RuntimeError("Not all tasks were accumulated.")
 
-                # The task tag remembers the itemid for us.
-                itemid = task.tag
-                itemfile = os.path.join(tmpdir, "item_{}.p".format(itemid))
-                infile = os.path.join(tmpdir, "item_{}.p".format(itemid))
-                outfile = os.path.join(tmpdir, "output_{}.p".format(itemid))
+    final_accum_task = tasks_to_accumulate.pop()
+    accumulator = accumulate_result_files(
+        2, exec_defaults["compression"], [final_accum_task.infile_output], accumulator
+    )
+    final_accum_task.cleanup_outputs()
 
-                # Accumulate results from the pickled output
-                with open(infile, "rb") as rf:
-                    unpickle_input = dill.load(rf)
-                    num_items = len(unpickle_input)
-                    items_done += num_items
-                    # num events, time in seconds, memory used in MB
-                    task_reports.append(
-                        (
-                            num_items,
-                            (task.execute_cmd_finish - task.execute_cmd_start) / 1e6,
-                            task.resources_measured.memory,
-                        )
-                    )
+    for bar in progress_bars.values():
+        bar.close()
 
-                with open(outfile, "rb") as rf:
-                    unpickle_output = dill.load(rf)
-                    accumulator = accumulate(
-                        [
-                            unpickle_output
-                            if clevel is None
-                            else decompress_fn(unpickle_output)
-                        ],
-                        accumulator,
-                    )
+    if exec_defaults["dynamic_chunksize"]:
+        _vprint(
+            "final chunksize {}",
+            _compute_chunksize(task_reports, exec_defaults, sample=False),
+        )
 
-                # Remove output files as we go to avoid unbounded disk
-                os.remove(itemfile)
-                os.remove(outfile)
-
-                tasks_done += 1
-
-                submit_bar.update(0)
-                complete_bar.update(num_items)
-
-        submit_bar.close()
-        complete_bar.close()
-
-        return accumulator
+    return accumulator
 
 
-def wqex_create_function_wrapper(tmpdir, x509_proxy=None):
+def _work_queue_preprocessing(
+    items, accumulator, fn_wrapper, infile_function, tmpdir, exec_defaults
+):
+    preprocessing_bar = tqdm(
+        desc="Preprocessing",
+        total=len(items),
+        disable=not exec_defaults["status"],
+        unit=exec_defaults["unit"],
+        bar_format=exec_defaults["bar_format"],
+    )
+
+    for item in items:
+        task = PreProcCoffeaWQTask(
+            fn_wrapper, infile_function, item, tmpdir, exec_defaults
+        )
+        _wq_queue.submit(task)
+        _vprint("submitted preprocessing task {}", task.id)
+
+    while not _wq_queue.empty():
+        task = _wq_queue.wait(5)
+        if task:
+            task.report(
+                exec_defaults["print_stdout"], exec_defaults["resource_monitor"]
+            )
+            accumulator = accumulate([task.output], accumulator)
+            preprocessing_bar.update(1)
+            task.cleanup_inputs()
+            task.cleanup_outputs()
+
+    preprocessing_bar.close()
+
+    return accumulator
+
+
+def _declare_resources(exec_defaults):
+    # If explicit resources are given, collect them into default_resources
+    default_resources = {}
+    if exec_defaults["cores"]:
+        default_resources["cores"] = exec_defaults["cores"]
+    if exec_defaults["memory"]:
+        default_resources["memory"] = exec_defaults["memory"]
+    if exec_defaults["disk"]:
+        default_resources["disk"] = exec_defaults["disk"]
+    if exec_defaults["gpus"]:
+        default_resources["gpus"] = exec_defaults["gpus"]
+
+    # Enable monitoring and auto resource consumption, if desired:
+    if exec_defaults["resource_monitor"]:
+        _wq_queue.enable_monitoring()
+
+    _wq_queue.specify_category_max_resources("default", default_resources)
+    _wq_queue.specify_category_max_resources("preprocessing", default_resources)
+    _wq_queue.specify_category_max_resources("processing", default_resources)
+    _wq_queue.specify_category_max_resources("accumulating", default_resources)
+    if exec_defaults["resources_mode"] == "auto":
+        _wq_queue.tune("category-steady-n-tasks", 3)
+        _wq_queue.specify_category_max_resources("default", {})
+        _wq_queue.specify_category_mode(
+            "default", wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT
+        )
+
+
+def _submit_proc_task(
+    fn_wrapper,
+    infile_function,
+    items,
+    chunksize,
+    update_chunksize,
+    tmpdir,
+    exec_defaults,
+):
+    if update_chunksize:
+        item = items.send(chunksize)
+    else:
+        item = next(items)
+
+    task = ProcCoffeaWQTask(fn_wrapper, infile_function, item, tmpdir, exec_defaults)
+    task_id = _wq_queue.submit(task)
+    _vprint(
+        "submitted processing task id {} item {}, with {} events",
+        task_id,
+        task.itemid,
+        len(task),
+    )
+
+    return task
+
+
+def _submit_accum_tasks(
+    fn_wrapper,
+    infile_function,
+    tasks_to_accumulate,
+    force_last_accum,
+    tmpdir,
+    exec_defaults,
+):
+
+    chunks_per_accum = exec_defaults["chunks_per_accum"]
+    chunks_accum_in_mem = exec_defaults["chunks_accum_in_mem"]
+
+    if chunks_per_accum < 2 or chunks_accum_in_mem < 2:
+        raise RuntimeError("A minimum of two chunks should be used when accumulating")
+
+    for next_to_accum in _group_lst(tasks_to_accumulate, chunks_per_accum):
+        # return immediately if not enough for a single accumulation
+        if len(next_to_accum) < 2:
+            return next_to_accum
+
+        if len(next_to_accum) < chunks_per_accum and not force_last_accum:
+            # not enough tasks for a chunks_per_accum, and not all events have
+            # been processed.
+            return next_to_accum
+
+        accum_task = AccumCoffeaWQTask(
+            fn_wrapper, infile_function, next_to_accum, tmpdir, exec_defaults
+        )
+        task_id = _wq_queue.submit(accum_task)
+        _vprint(
+            "submitted accumulation task id {} item {}, with {} events",
+            task_id,
+            accum_task.itemid,
+            len(accum_task),
+        )
+
+    # if we get here all tasks in tasks_to_accumulate were included in an
+    # accumulation.
+    return []
+
+
+def _group_lst(lst, n):
+    """Split the lst into sublists of len n."""
+    return (lst[i : i + n] for i in range(0, len(lst), n))
+
+
+def _create_fn_wrapper(x509_proxy=None, prefix_name="fn_wrapper", tmpdir=None):
     """Writes a wrapper script to run dilled python functions and arguments.
     The wrapper takes as arguments the name of three files: function, argument, and output.
     The files function and argument have the dilled function and argument, respectively.
     The file output is created (or overwritten), with the dilled result of the function call.
     The wrapper created is created/deleted according to the lifetime of the work_queue_executor."""
 
-    name = os.path.join(tmpdir, "fn_as_file")
-
     proxy_basename = ""
     if x509_proxy:
-        proxy_basename = os.path.basename(x509_proxy)
+        proxy_basename = basename(x509_proxy)
 
-    with open(name, mode="w") as f:
-        f.write(
-            """
-#!/usr/bin/env python3
-import os
-import sys
-import dill
-import coffea
+    contents = textwrap.dedent(
+        """\
+                    #!/usr/bin/env python3
+                    import os
+                    import sys
+                    import dill
+                    import coffea
 
-if "{proxy}":
-    os.environ['X509_USER_PROXY'] = "{proxy}"
+                    if "{proxy}":
+                        os.environ['X509_USER_PROXY'] = "{proxy}"
 
-(fn, arg, out) = sys.argv[1], sys.argv[2], sys.argv[3]
+                    (fn, args, out) = sys.argv[1], sys.argv[2], sys.argv[3]
 
-with open(fn, "rb") as f:
-    exec_function = dill.load(f)
-with open(arg, "rb") as f:
-    exec_item = dill.load(f)
+                    with open(fn, 'rb') as f:
+                        exec_function = dill.load(f)
+                    with open(args, 'rb') as f:
+                        exec_args = dill.load(f)
 
-pickle_out = exec_function(exec_item)
-with open(out, "wb") as f:
-    dill.dump(pickle_out, f)
+                    pickle_out = exec_function(*exec_args)
+                    with open(out, 'wb') as f:
+                        dill.dump(pickle_out, f)
 
-# Force an OS exit here to avoid a bug in xrootd finalization
-os._exit(0)
-""".format(
-                proxy=proxy_basename
-            )
-        )
-
-    return name
+                    # Force an OS exit here to avoid a bug in xrootd finalization
+                    os._exit(0)
+                    """
+    )
+    with tempfile.NamedTemporaryFile(prefix=prefix_name, dir=tmpdir, delete=False) as f:
+        f.write(contents.format(proxy=proxy_basename).encode())
+        return f.name
 
 
-def wqex_create_task(
-    itemid,
-    item,
-    wrapper,
-    env_file,
-    command_path,
-    infile_function,
-    tmpdir,
-    extra_input_files,
-    x509_proxy,
-):
-    import dill
-    from os.path import basename
-    import work_queue as wq
+def _function_to_file(function, prefix_name=None, tmpdir=None):
+    with tempfile.NamedTemporaryFile(
+        prefix=prefix_name, suffix="_fn.p", dir=tmpdir, delete=False
+    ) as f:
+        dill.dump(function, f)
+        return f.name
 
-    with open(os.path.join(tmpdir, "item_{}.p".format(itemid)), "wb") as wf:
-        dill.dump(item, wf)
 
-    infile_item = os.path.join(tmpdir, "item_{}.p".format(itemid))
-    outfile = os.path.join(tmpdir, "output_{}.p".format(itemid))
+def _get_x509_proxy(x509_proxy=None):
+    if x509_proxy:
+        return x509_proxy
 
-    # Base command just invokes python on the function and data.
-    command = "python {} {} {} {}".format(
-        basename(command_path),
-        basename(infile_function),
-        basename(infile_item),
-        basename(outfile),
+    x509_proxy = os.environ.get("X509_USER_PROXY", None)
+    if x509_proxy:
+        return x509_proxy
+
+    x509_proxy = join(
+        os.environ.get("TMPDIR", "/tmp"), "x509up_u{}".format(os.getuid())
+    )
+    if os.path.exists(x509_proxy):
+        return x509_proxy
+
+    return None
+
+
+def _make_progress_bars(exec_defaults):
+    items_total = exec_defaults["events_total"]
+    status = exec_defaults["status"]
+    unit = exec_defaults["unit"]
+    bar_format = exec_defaults["bar_format"]
+    chunksize = exec_defaults["chunksize"]
+    chunks_per_accum = exec_defaults["chunks_per_accum"]
+
+    submit_bar = tqdm(
+        total=items_total,
+        disable=not status,
+        unit=unit,
+        desc="Submitted",
+        bar_format=bar_format,
+        miniters=1,
     )
 
-    # If wrapper and env provided, add that.
-    if wrapper and env_file:
-        command = (
-            './{} --environment {} --unpack-to "$WORK_QUEUE_SANDBOX"/{}-env {}'.format(
-                basename(wrapper), basename(env_file), basename(env_file), command
-            )
-        )
+    processed_bar = tqdm(
+        total=items_total,
+        disable=not status,
+        unit=unit,
+        desc="Processing",
+        bar_format=bar_format,
+    )
 
-    task = wq.Task(command)
-    task.specify_category("default")
-    task.specify_input_file(command_path, cache=True)
-    task.specify_input_file(infile_function, cache=False)
-    task.specify_input_file(infile_item, cache=False)
+    accumulated_bar = tqdm(
+        total=1 + int(items_total / (chunksize * chunks_per_accum)),
+        disable=not status,
+        unit="tasks",
+        desc="Accumulated",
+        bar_format=bar_format,
+    )
 
-    for f in extra_input_files:
-        task.specify_input_file(f, cache=True)
-
-    if x509_proxy:
-        task.specify_input_file(x509_proxy, cache=True)
-
-    if wrapper and env_file:
-        task.specify_input_file(env_file, cache=True)
-        task.specify_input_file(wrapper, cache=True)
-
-    if re.search("://", item.filename) or os.path.isabs(item.filename):
-        # This looks like an URL or an absolute path (assuming shared
-        # filesystem). Not transfering file.
-        pass
-    else:
-        task.specify_input_file(item.filename, remote_name=item.filename, cache=True)
-
-    task.specify_output_file(outfile, cache=False)
-
-    # Put the item ID into the tag to associate upon completion.
-    task.specify_tag("{}".format(itemid))
-
-    return task
+    return {
+        "submit": submit_bar,
+        "process": processed_bar,
+        "accumulate": accumulated_bar,
+    }
 
 
-def wqex_output_task(task, verbose_mode, resource_mode, output_mode):
-    if verbose_mode:
-        print(
-            "Task (id #{}) complete: {} (return code {})".format(
-                task.id, task.command, task.return_status
-            )
-        )
+def _update_deprecated_kwords(kwargs):
+    deprecated_keys = []
+    for key in kwargs:
+        if re.search("-", key):
+            deprecated_keys.append(key)
 
-        print(
-            "Allocated cores: {}, memory: {} MB, disk: {} MB, gpus: {}".format(
-                task.resources_allocated.cores,
-                task.resources_allocated.memory,
-                task.resources_allocated.disk,
-                task.resources_allocated.gpus,
-            )
-        )
-
-        if resource_mode:
-            print(
-                "Measured cores: {}, memory: {} MB, disk {} MB, gpus: {}, runtime {}".format(
-                    task.resources_measured.cores,
-                    task.resources_measured.memory,
-                    task.resources_measured.disk,
-                    task.resources_measured.gpus,
-                    task.resources_measured.wall_time / 1000000,
+    if deprecated_keys:
+        for key in sorted(deprecated_keys):
+            new_key = key.replace("-", "_")
+            warnings.warn(
+                "work_queue_executor argument {} is deprecated. Please use {}".format(
+                    key, new_key
                 )
             )
+            kwargs[new_key] = kwargs[key]
+            del kwargs[key]
 
-    if output_mode and task.output:
-        print("Task id #{} output:\n{}".format(task.id, task.output))
 
-    if task.result != 0:
-        print("Task id #{} failed with code: {}".format(task.id, task.result))
+def _warn_unknown_kwords(default_kwargs, kwargs):
+    for key in sorted(kwargs):
+        if key not in default_kwargs:
+            warnings.warn("work_queue_executor key {} is unknown.".format(key))
+
+
+class VerbosePrint:
+    def __init__(self, status_mode=True, verbose_mode=True):
+        self.status_mode = status_mode
+        self.verbose_mode = verbose_mode
+
+    def __call__(self, format_str, *args, **kwargs):
+        if self.verbose_mode:
+            self.print(format_str, *args, **kwargs)
+
+    def print(self, format_str, *args, **kwargs):
+        msg = format_str.format(*args, **kwargs)
+        if self.status_mode:
+            tqdm.write(msg)
+        else:
+            print(msg)
+
+
+_vprint = VerbosePrint()
 
 
 def _ceil_to_pow2(value):
+    if value < 1:
+        return 1
+
     return pow(2, math.ceil(math.log2(value)))
 
 
-def _compute_chunksize(targets, initial_chunksize, task_reports):
-    if not targets or len(task_reports) < 1:
-        return _ceil_to_pow2(initial_chunksize)
+def _compute_chunksize(task_reports, exec_defaults, sample=True):
+    chunksize = exec_defaults["chunksize"]
+    targets = exec_defaults["dynamic_chunksize_targets"]
 
-    chunksize_by_time = _compute_chunksize_target(
-        targets.get("walltime", 60), [(t, e) for (e, t, mem) in task_reports]
-    )
-    # chunksize_by_memory = _compute_chunksize_target(targets.get('walltime', 1024), [(mem, e) for (e, t, mem) in task_reports)
+    if targets is not None and len(task_reports) > 1:
+        # by memory:
+        # chunksize = _compute_chunksize_target(targets.get('walltime', 1024), [(mem, e) for (e, t, mem) in task_reports)
+        chunksize = _compute_chunksize_target(
+            targets.get("walltime", 60), [(t, e) for (e, t, mem) in task_reports]
+        )
 
-    return chunksize_by_time
+    try:
+        chunksize = _ceil_to_pow2(chunksize)
+        if sample:
+            exp = math.ceil(math.log2(chunksize))
+
+            # round-up to nearest power of 2, minus 0, 1 or 2 power to better sample the space.
+            exp += numpy.random.choice([-2, -1, 0])
+            exp = max(0, exp)
+
+            chunksize = int(math.pow(2, exp))
+    except ValueError:
+        chunksize = exec_defaults["chunksize"]
+
+    return chunksize
 
 
 def _compute_chunksize_target(target, pairs):
@@ -468,13 +874,7 @@ def _compute_chunksize_target(target, pairs):
         # (specially at the start)
         slope = quantiles[1]
         intercept = 0
+
     org = (slope * target) + intercept
-    exp = math.ceil(math.log2(org))
 
-    # round-up to nearest power of 2, plus minus one power to better sample the space.
-    exp += numpy.random.choice([-1, 0, 1])
-    pow2 = int(math.pow(2, exp))
-
-    return max(1, pow2)
-
-
+    return org
