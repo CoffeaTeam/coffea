@@ -1583,6 +1583,11 @@ def run_uproot_job(
         skipbadfiles,
     )
     fileset = _filter_badfiles(fileset, align_clusters, skipbadfiles)
+
+    # reverse fileset list to match the order of files as presented in version
+    # v0.7.4. This fixes tests using maxchunks.
+    fileset.reverse()
+
     chunks = _chunk_generator(
         fileset,
         metadata_fetcher,
