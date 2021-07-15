@@ -17,6 +17,8 @@ def convert_histo_root_file(file):
     converted_file = {}
     fin = uproot.open(file.strip())
     for path, item in fin.iteritems(recursive=True):
+        if isinstance(item, uproot.ReadOnlyDirectory):
+            continue
         nicepath = killcycle(path, cycle)
         rootclass = item.classname
         if rootclass in histTypes:
