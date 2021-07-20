@@ -31,7 +31,7 @@ def convert_histo_root_file(file):
                 )
         elif rootclass in graphTypes:
             deprecate(
-                "The support for TGraph-types will be removed in a future coffea release. In case you need support for TGraph-type, please submit an issue to `https://github.com/CoffeaTeam/coffea/issues`.",
+                "The support for TGraph-types will be removed in a future coffea release. In case you need support for TGraph-type, please submit an issue to `https://github.com/CoffeaTeam/coffea/issues`.",  # noqa: E501
                 "<unknown>",
             )
             continue
