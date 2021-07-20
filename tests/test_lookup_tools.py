@@ -428,3 +428,24 @@ def test_549():
     evaluator["ele_pt"](
         ak.Array([[45]]),
     )
+
+
+def test_554():
+    import uproot
+    from coffea.lookup_tools.root_converters import convert_histo_root_file
+
+    f_in = "tests/samples/PR554_SkipReadOnlyDirectory.root"
+    rf = uproot.open(f_in)
+
+    # check that input file contains uproot.ReadOnlyDirectory
+    assert any(isinstance(v, uproot.ReadOnlyDirectory) for v in rf.values())
+    # check that we can do the conversion now and get histograms out of uproot.ReadOnlyDirectories
+    out = convert_histo_root_file(f_in)
+    assert out
+    # check that output does not contain any Directory-like keys
+    rfkeys = set(k.rsplit(";")[0] for k in rf.keys())
+    assert all(
+        not isinstance(rf[k], uproot.ReadOnlyDirectory)
+        for k, _ in out.keys()
+        if k in rfkeys
+    )

@@ -1,4 +1,4 @@
-from ..util import numpy as np
+from ..util import numpy as np, deprecate
 import uproot
 import re
 
@@ -17,6 +17,8 @@ def convert_histo_root_file(file):
     converted_file = {}
     fin = uproot.open(file.strip())
     for path, item in fin.iteritems(recursive=True):
+        if isinstance(item, uproot.ReadOnlyDirectory):
+            continue
         nicepath = killcycle(path, cycle)
         rootclass = item.classname
         if rootclass in histTypes:
@@ -28,7 +30,10 @@ def convert_histo_root_file(file):
                     edges,
                 )
         elif rootclass in graphTypes:
-            # TODO: convert TGraph into interpolated lookup
+            deprecate(
+                "The support for TGraph-types will be removed in a future coffea release. In case you need support for TGraph-type, please submit an issue to `https://github.com/CoffeaTeam/coffea/issues`.",  # noqa: E501
+                "<unknown>",
+            )
             continue
         elif hasattr(item, "_fEX") and hasattr(item, "_fEY"):
             # TODO what is this?
