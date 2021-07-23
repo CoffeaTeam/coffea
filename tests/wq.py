@@ -18,14 +18,14 @@ def template_analysis(environment_file, filelist, executor, compression):
 
     exe_args = {
         "compression": compression,
-        "environment-file": environment_file,
-        "resources-mode": "fixed",
+        "environment_file": environment_file,
+        "resources_mode": "fixed",
         "cores": 2,
         "memory": 500,  # MB
         "disk": 1000,  # MB
-        "master-name": "coffea-test",
+        "master_name": "coffea_test",
         "port": work_queue_port,
-        "print-stdout": True,
+        "print_stdout": True,
     }
 
     hists = run_uproot_job(
