@@ -51,7 +51,7 @@ class auto_schema(BaseSchema):
 
         # Get the collection names - anything with a common name before the "_".
         contents = self._form["contents"]
-        collections = set(k.split("_")[0] for k in contents if '_' in k)
+        collections = set(k.split("_")[0] for k in contents if "_" in k)
 
         output = {}
         for c_name in collections:
@@ -75,9 +75,13 @@ class auto_schema(BaseSchema):
                 and "energy" in mapping
                 and "charge" in mapping
             )
-            record_name = "PtEtaPhiMCandidate" if is_4vector_mass \
-                else "PtEtaPhiECandidate" if is_4vector_E \
+            record_name = (
+                "PtEtaPhiMCandidate"
+                if is_4vector_mass
+                else "PtEtaPhiECandidate"
+                if is_4vector_E
                 else "NanoCollection"
+            )
 
             record = _build_record_array(
                 c_name,
@@ -90,7 +94,7 @@ class auto_schema(BaseSchema):
             output[c_name] = record
 
         # Single items in the collection
-        single_items = [k for k in contents if '_' not in k]
+        single_items = [k for k in contents if "_" not in k]
         for item_name in single_items:
             output[item_name] = contents[item_name]
 
