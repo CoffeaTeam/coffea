@@ -87,7 +87,8 @@ class CoffeaWQTask(Task):
         self, fn_wrapper, infile_function, item_args, itemid, tmpdir, exec_defaults
     ):
         self.itemid = itemid
-        self.py_result = None
+
+        self.py_result = ResultUnavailable()
 
         self.clevel = exec_defaults["compression"]
 
@@ -121,6 +122,9 @@ class CoffeaWQTask(Task):
     def __len__(self):
         return self.size
 
+    def __str__(self):
+        return str(self.itemid)
+
     def remote_command(self, env_file=None):
         fn_command = "python fn_wrapper function.p args.p output.p"
         command = fn_command
@@ -135,15 +139,21 @@ class CoffeaWQTask(Task):
     def std_output(self):
         return super().output
 
+    def _has_result(self):
+        return not (self.py_result is None or isinstance(self.py_result, ResultUnavailable))
+
     # use output to return python result, rathern than stdout are regular wq
     @property
     def output(self):
-        if not self.py_result:
-            with open(self.infile_output, "rb") as rf:
-                result = dill.load(rf)
-                if self.clevel:
-                    result = _decompress(result)
-                self.py_result = result
+        if not self._has_result():
+            try:
+                with open(self.infile_output, "rb") as rf:
+                    result = dill.load(rf)
+                    if self.clevel:
+                        result = _decompress(result)
+                    self.py_result = result
+            except Exception as e:
+                self.py_result = ResultUnavailable(e)
         return self.py_result
 
     def cleanup_inputs(self):
@@ -152,21 +162,39 @@ class CoffeaWQTask(Task):
     def cleanup_outputs(self):
         os.remove(self.infile_output)
 
+    def resubmit(self, tmpdir, exec_defaults):
+        if self.retries < 1:
+            raise RuntimeError("item {} failed permanently.".format(self.itemid))
+
+        t = self.clone(tmpdir, exec_defaults)
+        t.retries = self.retries - 1
+
+        _vprint("resubmitting {}. {} attempt(s) left.", t.itemid, t.retries)
+        _wq_queue.submit(t)
+
+    def clone(self, tmpdir, exec_defaults):
+        raise NotImplementedError
+
+    def debug_info(self):
+        self.output # load results, if needed
+
+        has_output = "" if self._has_result() else "out"
+        msg = "{} with{} result.".format(self.itemid, has_output)
+        return msg
+
     def report(self, output_mode, resource_mode):
         task_failed = (self.result != 0) or (self.return_status != 0)
 
-        if task_failed:
-            _vprint.verbose_mode = True
-
-        _vprint(
-            "{} task id {} item {} with {} events completed on {}. return code {}",
-            self.category,
-            self.id,
-            self.itemid,
-            len(self),
-            self.hostname,
-            self.return_status,
-        )
+        if (_vprint.verbose_mode or task_failed or output_mode):
+            _vprint.print(
+                "{} task id {} item {} with {} events completed on {}. return code {}",
+                self.category,
+                self.id,
+                self.itemid,
+                len(self),
+                self.hostname,
+                self.return_status,
+            )
 
         _vprint(
             "    allocated cores: {}, memory: {} MB, disk: {} MB, gpus: {}",
@@ -281,6 +309,18 @@ class AccumCoffeaWQTask(CoffeaWQTask):
         # cleanup files associated with results already accumulated
         for t in self.tasks_to_accumulate:
             t.cleanup_outputs()
+
+
+    def debug_info(self):
+        tasks = self.tasks_to_accumulate
+
+        msg = super().debug_info()
+
+        results = [CoffeaWQTask.debug_info(t) for t in tasks if isinstance(t, AccumCoffeaWQTask)]
+        results += [t.debug_info() for t in tasks if not isinstance(t, AccumCoffeaWQTask)]
+
+        return "{} accumulating: {} ".format(msg, results)
+
 
 
 def work_queue_main(items, function, accumulator, **kwargs):
@@ -784,6 +824,10 @@ def _warn_unknown_kwords(default_kwargs, kwargs):
     for key in sorted(kwargs):
         if key not in default_kwargs:
             warnings.warn("work_queue_executor key {} is unknown.".format(key))
+
+
+class ResultUnavailable(Exception):
+    pass
 
 
 class VerbosePrint:
