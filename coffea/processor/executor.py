@@ -30,7 +30,7 @@ from ..util import _hash, deprecate
 from collections.abc import Mapping, MutableMapping
 from enum import Enum
 
-from typing import Type, Dict, Sequence, Callable, Any, Optional, TypeVar, cast
+from typing import Dict, Sequence, Callable, Any, Optional, TypeVar, cast
 
 try:
     from typing import Protocol, runtime_checkable  # type: ignore
@@ -268,13 +268,6 @@ def _futures_handler(futures, timeout):
             )
         while futures:
             _cancel(futures.pop())
-
-
-def isclass(cl: Type[Any]):
-    try:
-        return issubclass(cl, cl)
-    except TypeError:
-        return False
 
 
 # see: https://github.com/scikit-hep/boost-histogram/blob/master/src/boost_histogram/_internal/enum.py
