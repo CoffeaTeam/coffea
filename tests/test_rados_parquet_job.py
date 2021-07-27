@@ -52,7 +52,7 @@ if __name__ == "__main__":
         },
         "Events",
         processor_instance=NanoEventsProcessor(),
-        executor=processor.dask_executor,
+        executor="Dask",
         executor_args=executor_args,
     )
 
@@ -71,7 +71,7 @@ if __name__ == "__main__":
         },
         "Events",
         processor_instance=NanoEventsProcessor(),
-        executor=processor.dask_executor,
+        executor="Dask",
         executor_args=executor_args,
     )
 

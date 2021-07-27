@@ -10,9 +10,7 @@ if sys.platform.startswith("win"):
 
 @pytest.mark.parametrize("maxchunks", [None, 1000])
 @pytest.mark.parametrize("compression", [None, 0, 2])
-@pytest.mark.parametrize(
-    "executor", [processor.iterative_executor, processor.futures_executor]
-)
+@pytest.mark.parametrize("executor", ["Iterative", "Futures"])
 def test_nanoevents_analysis(executor, compression, maxchunks):
     from coffea.processor.test_items import NanoEventsProcessor
 
@@ -58,9 +56,7 @@ def test_nanoevents_analysis(executor, compression, maxchunks):
 
 @pytest.mark.parametrize("chunksize", [100000, 5])
 @pytest.mark.parametrize("schema", [None, schemas.BaseSchema])
-@pytest.mark.parametrize(
-    "executor", [processor.iterative_executor, processor.futures_executor]
-)
+@pytest.mark.parametrize("executor", ["Iterative", "Futures"])
 def test_dataframe_analysis(executor, schema, chunksize):
     from coffea.processor.test_items import NanoTestProcessor
 

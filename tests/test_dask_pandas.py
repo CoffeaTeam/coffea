@@ -21,7 +21,7 @@ def do_dask_pandas_job(client, filelist):
         filelist,
         treename,
         processor_instance=proc,
-        executor=processor.dask_executor,
+        executor="Dask",
         executor_args=exe_args,
     )
 

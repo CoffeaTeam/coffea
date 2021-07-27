@@ -17,7 +17,7 @@ def do_dask_job(client, filelist, compression=0):
         filelist,
         treename,
         processor_instance=proc,
-        executor=processor.dask_executor,
+        executor="Dask",
         executor_args=exe_args,
     )
 
@@ -54,7 +54,7 @@ def do_dask_cached(client, filelist, cachestrategy=None):
                 "a9490124-3648-11ea-89e9-f5b55c90beef/%2FEvents%3B1/0-40/Muon_charge%2C%21load%2C%21content",
             ]
         ),
-        executor=processor.dask_executor,
+        executor="Dask",
         executor_args=exe_args,
     )
 

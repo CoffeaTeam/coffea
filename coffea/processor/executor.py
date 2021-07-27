@@ -1,6 +1,6 @@
 from __future__ import print_function, division
 import concurrent.futures
-from functools import partial
+from functools import partial, wraps
 from itertools import repeat
 import time
 import pickle
@@ -19,14 +19,24 @@ from .processor import ProcessorABC
 from .accumulator import (
     accumulate,
     set_accumulator,
+    Accumulatable,
 )
 from .dataframe import (
     LazyDataFrame,
 )
 from ..nanoevents import NanoEventsFactory, schemas
-from ..util import _hash
+from ..util import _hash, deprecate
 
 from collections.abc import Mapping, MutableMapping
+
+
+from typing import Type, Dict, Sequence, FrozenSet, Callable, Any, Optional, TypeVar
+
+try:
+    from typing import Protocol, runtime_checkable  # type: ignore
+except ImportError:
+    from typing_extensions import Protocol, runtime_checkable  # type: ignore
+
 
 _PICKLE_PROTOCOL = pickle.HIGHEST_PROTOCOL
 DEFAULT_METADATA_CACHE: MutableMapping = LRUCache(100000)
@@ -260,6 +270,87 @@ def _futures_handler(futures, timeout):
             _cancel(futures.pop())
 
 
+@runtime_checkable
+class ExecutorLike(Protocol):
+    name: str
+
+    @staticmethod
+    def executor(
+        items: Sequence,
+        function: Callable,
+        accumulator: Accumulatable,
+        **kwargs: Any,
+    ) -> Accumulatable:
+        ...
+
+
+SupportedExecutors: FrozenSet[str] = frozenset(
+    {"Iterative", "Futures", "Dask", "Parsl", "WorkQueue"}
+)
+ExecutorBaseClasses: Dict[str, Type[Any]] = {
+    f"{name}Base": type(f"{name}BaseExecutor", (), dict(name=name.lower()))
+    for name in SupportedExecutors
+}
+Executors: Dict[str, ExecutorLike] = {}
+
+T = TypeVar("T")
+
+
+def isclass(cl: Type[Any]):
+    try:
+        return issubclass(cl, cl)
+    except TypeError:
+        return False
+
+
+class DispatchExecutor:
+    def __init__(self: T, name: str, basecls: Optional[str] = None) -> None:
+        self.name = name
+        if basecls is None:
+            basecls = f"{self.name}Base"
+        if isinstance(basecls, str):
+            assert (
+                basecls in ExecutorBaseClasses
+            ), f"{basecls} is not supported, please provide directly a base class."
+            basecls = ExecutorBaseClasses[basecls]
+        else:
+            ExecutorBaseClasses[f"{self.name}Base"] = basecls
+        assert isclass(basecls)
+        self.basecls = basecls
+
+    def mkcls(self: T, executor: Callable) -> ExecutorLike:
+        assert callable(executor)
+        return type(
+            f"{self.name}Executor",
+            (self.basecls,),
+            dict(name=self.name.lower(), executor=executor),
+        )
+
+    def __call__(self: T, executor: Callable, *args: Any, **kwargs: Any) -> Callable:
+        Executors[self.name] = self.mkcls(executor)
+
+        @wraps(executor)
+        def wrapper(*args, **kwargs):
+            return executor(*args, **kwargs)
+
+        return wrapper
+
+
+DispatchExecutor.__doc__ = f"""Dispatch executor functions to classes
+
+Parameters
+----------
+    name : str
+        name of the executor-class
+    basecls: str or class, optional
+        executor base class, available: {list(ExecutorBaseClasses.keys())}
+"""
+
+
+deprecated_executor_usage = {}
+
+
+@DispatchExecutor(name="WorkQueue")
 def work_queue_executor(items, function, accumulator, **kwargs):
     """Execute using Work Queue
 
@@ -352,6 +443,10 @@ def work_queue_executor(items, function, accumulator, **kwargs):
     return work_queue_main(items, function, accumulator, **kwargs)
 
 
+deprecated_executor_usage[work_queue_executor] = "WorkQueue"
+
+
+@DispatchExecutor(name="Iterative")
 def iterative_executor(items, function, accumulator, **kwargs):
     """Execute in one thread iteratively
 
@@ -382,6 +477,10 @@ def iterative_executor(items, function, accumulator, **kwargs):
     return accumulate(gen, accumulator)
 
 
+deprecated_executor_usage[iterative_executor] = "Iterative"
+
+
+@DispatchExecutor(name="Futures")
 def futures_executor(items, function, accumulator, **kwargs):
     """Execute using multiple local cores using python futures
 
@@ -449,6 +548,10 @@ def futures_executor(items, function, accumulator, **kwargs):
             return processwith(poolinstance)
 
 
+deprecated_executor_usage[futures_executor] = "Futures"
+
+
+@DispatchExecutor(name="Dask")
 def dask_executor(items, function, accumulator, **kwargs):
     """Execute using dask futures
 
@@ -573,6 +676,10 @@ def dask_executor(items, function, accumulator, **kwargs):
         return {"out": dd.from_delayed(work)}
 
 
+deprecated_executor_usage[dask_executor] = "Dask"
+
+
+@DispatchExecutor(name="Parsl")
 def parsl_executor(items, function, accumulator, **kwargs):
     """Execute using parsl pyapp wrapper
 
@@ -654,6 +761,9 @@ def parsl_executor(items, function, accumulator, **kwargs):
         parsl.clear()
 
     return accumulator
+
+
+deprecated_executor_usage[parsl_executor] = "Parsl"
 
 
 def _get_cache(strategy):
@@ -1025,8 +1135,8 @@ def run_uproot_job(
             treename can also be defined in fileset, which will override the passed treename
         processor_instance : ProcessorABC
             An instance of a class deriving from ProcessorABC
-        executor : callable
-            A function that takes 3 arguments: items, function, accumulator
+        executor : str
+            Name of an Executor, which implements a callable with inputs: items, function, accumulator
             and performs some action equivalent to:
             ``for item in items: accumulator += function(item)``
         executor_args : dict, optional
@@ -1047,8 +1157,8 @@ def run_uproot_job(
             - ``align_clusters`` aligns the chunks to natural boundaries in the ROOT files (default False)
             - ``use_dataframes`` retrieve output as a distributed Dask DataFrame (default False).
                 Only works with `dask_executor`; the processor output must be a Pandas DataFrame.
-        pre_executor : callable
-            A function like executor, used to calculate fileset metadata
+        pre_executor : str
+            A name of an Executor, used to calculate fileset metadata
             Defaults to executor
         pre_args : dict, optional
             Similar to executor_args, defaults to executor_args
@@ -1085,6 +1195,23 @@ def run_uproot_job(
 
     if pre_executor is None:
         pre_executor = executor
+    if callable(executor):
+        executor = deprecated_executor_usage[executor]
+        deprecate(
+            f"The support for executor callable will be removed in a future coffea release. Please use '{executor}' instead, e.g.: `run_uproot_job(..., executor='{executor}', ...)`",  # noqa: E501
+            "<unknown>",
+        )
+    if callable(pre_executor):
+        pre_executor = deprecated_executor_usage[pre_executor]
+        deprecate(
+            f"The support for pre_executor callable will be removed in a future coffea release. Please use '{pre_executor}' instead, e.g.: `run_uproot_job(..., pre_executor='{pre_executor}', ...)`",  # noqa: E501
+            "<unknown>",
+        )
+    assert isinstance(executor, str)
+    assert isinstance(pre_executor, str)
+    Executor = Executors[executor]
+    PreExecutor = Executors[pre_executor]
+
     if pre_args is None:
         pre_args = dict(executor_args)
     else:
@@ -1098,7 +1225,7 @@ def run_uproot_job(
 
     # pop _get_metdata args here (also sent to _work_function)
     skipbadfiles = executor_args.pop("skipbadfiles", False)
-    if executor is dask_executor:
+    if issubclass(Executor, ExecutorBaseClasses["DaskBase"]):
         # this executor has a builtin retry mechanism
         retries = 0
     else:
@@ -1114,7 +1241,7 @@ def run_uproot_job(
         raise RuntimeError(
             "maxchunks and dynamic_chunksize cannot be used simultaneously"
         )
-    if dynamic_chunksize and executor is not work_queue_executor:
+    if dynamic_chunksize and Executor is not Executors["WorkQueueBase"]:
         raise RuntimeError(
             "dynamic_chunksize currently only supported by the work_queue_executor"
         )
@@ -1128,7 +1255,7 @@ def run_uproot_job(
     )
 
     _preprocess_fileset(
-        pre_executor,
+        PreExecutor.executor,
         pre_args,
         fileset,
         metadata_fetcher,
@@ -1162,7 +1289,7 @@ def run_uproot_job(
     mmap = executor_args.pop("mmap", False)
     schema = executor_args.pop("schema", schemas.BaseSchema)
     use_dataframes = executor_args.pop("use_dataframes", False)
-    if (executor is not dask_executor) and use_dataframes:
+    if not issubclass(Executor, ExecutorBaseClasses["DaskBase"]) and use_dataframes:
         warnings.warn(
             "Only Dask executor supports DataFrame outputs! Resetting 'use_dataframes' argument to False."
         )
@@ -1192,7 +1319,7 @@ def run_uproot_job(
         use_dataframes=use_dataframes,
     )
     # hack around dask/dask#5503 which is really a silly request but here we are
-    if executor is dask_executor:
+    if issubclass(Executor, ExecutorBaseClasses["DaskBase"]):
         executor_args["heavy_input"] = pi_to_send
         closure = partial(closure, processor_instance="heavy")
     else:
@@ -1205,7 +1332,9 @@ def run_uproot_job(
         events_total = sum(len(c) for c in chunks)
 
     exe_args = {
-        "unit": "event" if executor is work_queue_executor else "chunk",
+        "unit": "event"
+        if issubclass(Executor, ExecutorBaseClasses["WorkQueueBase"])
+        else "chunk",
         "function_name": type(processor_instance).__name__,
         "use_dataframes": use_dataframes,
         "events_total": events_total,
@@ -1215,7 +1344,7 @@ def run_uproot_job(
     }
 
     exe_args.update(executor_args)
-    wrapped_out = executor(chunks, closure, None, **exe_args)
+    wrapped_out = Executor.executor(chunks, closure, None, **exe_args)
 
     processor_instance.postprocess(wrapped_out["out"])
     if savemetrics and not use_dataframes:

@@ -40,8 +40,6 @@ def template_analysis(environment_file, filelist, executor, compression):
 
 
 def work_queue_example(environment_file):
-    from coffea.processor import work_queue_executor
-
     # Work Queue does not allow absolute paths
     filelist = {
         "ZJets": ["./samples/nano_dy.root"],
@@ -59,9 +57,7 @@ def work_queue_example(environment_file):
 
     with workers:
         # template_analysis(environment_file, filelist, work_queue_executor, compression=0)
-        template_analysis(
-            environment_file, filelist, work_queue_executor, compression=2
-        )
+        template_analysis(environment_file, filelist, "WorkQueue", compression=2)
 
 
 def create_conda_environment(env_file, py_version):
