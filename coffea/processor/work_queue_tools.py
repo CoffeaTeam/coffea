@@ -352,7 +352,7 @@ class AccumCoffeaWQTask(CoffeaWQTask):
         results = [CoffeaWQTask.debug_info(t) for t in tasks if isinstance(t, AccumCoffeaWQTask)]
         results += [t.debug_info() for t in tasks if not isinstance(t, AccumCoffeaWQTask)]
 
-        return "{} accumulating: {} ".format(msg, results)
+        return "{} accumulating: [{}] ".format(msg, "\n".join(results))
 
 
 
