@@ -183,7 +183,7 @@ class CoffeaWQTask(Task):
                 self.resources_measured.memory,
                 self.resources_measured.disk,
                 self.resources_measured.gpus,
-                self.resources_measured.wall_time / 1000000,
+                (self.execute_cmd_finish - self.execute_cmd_start) / 1e6,
             )
 
         if (task_failed or output_mode) and self.std_output:
