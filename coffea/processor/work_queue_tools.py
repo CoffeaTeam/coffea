@@ -64,7 +64,7 @@ def accumulate_result_files(
         if len(in_memory) > chunks_accum_in_mem - 1:
             accumulator = accumulate(in_memory, accumulator)
             while in_memory:
-                result = in_memory.pop()
+                result = in_memory.pop()  # noqa
                 del result
     return accumulator
 
@@ -147,7 +147,9 @@ class CoffeaWQTask(Task):
         return super().output
 
     def _has_result(self):
-        return not (self.py_result is None or isinstance(self.py_result, ResultUnavailable))
+        return not (
+            self.py_result is None or isinstance(self.py_result, ResultUnavailable)
+        )
 
     # use output to return python result, rathern than stdout are regular wq
     @property
@@ -183,7 +185,7 @@ class CoffeaWQTask(Task):
         raise NotImplementedError
 
     def debug_info(self):
-        self.output # load results, if needed
+        self.output  # load results, if needed
 
         has_output = "" if self._has_result() else "out"
         msg = "{} with{} result.".format(self.itemid, has_output)
@@ -192,7 +194,7 @@ class CoffeaWQTask(Task):
     def report(self, output_mode, resource_mode):
         task_failed = (self.result != 0) or (self.return_status != 0)
 
-        if (_vprint.verbose_mode or task_failed or output_mode):
+        if _vprint.verbose_mode or task_failed or output_mode:
             _vprint.printf(
                 "{} task id {} item {} with {} events completed on {}. return code {}",
                 self.category,
@@ -229,8 +231,13 @@ class CoffeaWQTask(Task):
             # Note that WQ already retries internal failures.
             # If we get to this point, it's a badly formed task
             info = self.debug_info()
-            _vprint.printf("task id {} item {} failed: {}\n    {}",
-                self.id, self.itemid, self.result_str, info)
+            _vprint.printf(
+                "task id {} item {} failed: {}\n    {}",
+                self.id,
+                self.itemid,
+                self.result_str,
+                info,
+            )
 
         return not task_failed
 
@@ -239,7 +246,9 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
     tasks_counter = 0
     infile_function = None
 
-    def __init__(self, fn_wrapper, infile_function, item, tmpdir, exec_defaults, itemid=None):
+    def __init__(
+        self, fn_wrapper, infile_function, item, tmpdir, exec_defaults, itemid=None
+    ):
         PreProcCoffeaWQTask.tasks_counter += 1
 
         if not itemid:
@@ -264,7 +273,14 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
             )
 
     def clone(self, tmpdir, exec_defaults):
-        return PreProcCoffeaWQTask(self.fn_wrapper, self.infile_function, self.item, tmpdir, exec_defaults, self.itemid)
+        return PreProcCoffeaWQTask(
+            self.fn_wrapper,
+            self.infile_function,
+            self.item,
+            tmpdir,
+            exec_defaults,
+            self.itemid,
+        )
 
     def debug_info(self):
         i = self.item
@@ -273,7 +289,9 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
 
 
 class ProcCoffeaWQTask(CoffeaWQTask):
-    def __init__(self, fn_wrapper, infile_function, item, tmpdir, exec_defaults, itemid = None):
+    def __init__(
+        self, fn_wrapper, infile_function, item, tmpdir, exec_defaults, itemid=None
+    ):
 
         self.size = len(item)
 
@@ -290,7 +308,6 @@ class ProcCoffeaWQTask(CoffeaWQTask):
             fn_wrapper, infile_function, [item], itemid, tmpdir, exec_defaults
         )
 
-
         self.specify_category("processing")
 
         if re.search("://", item.filename) or os.path.isabs(item.filename):
@@ -303,19 +320,34 @@ class ProcCoffeaWQTask(CoffeaWQTask):
             )
 
     def clone(self, tmpdir, exec_defaults):
-        return ProcCoffeaWQTask(self.fn_wrapper, self.infile_function, self.item, tmpdir, exec_defaults, self.itemid)
+        return ProcCoffeaWQTask(
+            self.fn_wrapper,
+            self.infile_function,
+            self.item,
+            tmpdir,
+            exec_defaults,
+            self.itemid,
+        )
 
     def debug_info(self):
         i = self.item
         msg = super().debug_info()
-        return "{} {}".format((i.dataset, i.filename, i.treename, i.entrystart, i.entrystop), msg)
+        return "{} {}".format(
+            (i.dataset, i.filename, i.treename, i.entrystart, i.entrystop), msg
+        )
 
 
 class AccumCoffeaWQTask(CoffeaWQTask):
     tasks_counter = 0
 
     def __init__(
-        self, fn_wrapper, infile_function, tasks_to_accumulate, tmpdir, exec_defaults, itemid=None
+        self,
+        fn_wrapper,
+        infile_function,
+        tasks_to_accumulate,
+        tmpdir,
+        exec_defaults,
+        itemid=None,
     ):
         AccumCoffeaWQTask.tasks_counter += 1
 
@@ -344,18 +376,30 @@ class AccumCoffeaWQTask(CoffeaWQTask):
             t.cleanup_outputs()
 
     def clone(self, tmpdir, exec_defaults):
-        return AccumCoffeaWQTask(self.fn_wrapper, self.infile_function, self.tasks_to_accumulate, tmpdir, exec_defaults, self.itemid)
+        return AccumCoffeaWQTask(
+            self.fn_wrapper,
+            self.infile_function,
+            self.tasks_to_accumulate,
+            tmpdir,
+            exec_defaults,
+            self.itemid,
+        )
 
     def debug_info(self):
         tasks = self.tasks_to_accumulate
 
         msg = super().debug_info()
 
-        results = [CoffeaWQTask.debug_info(t) for t in tasks if isinstance(t, AccumCoffeaWQTask)]
-        results += [t.debug_info() for t in tasks if not isinstance(t, AccumCoffeaWQTask)]
+        results = [
+            CoffeaWQTask.debug_info(t)
+            for t in tasks
+            if isinstance(t, AccumCoffeaWQTask)
+        ]
+        results += [
+            t.debug_info() for t in tasks if not isinstance(t, AccumCoffeaWQTask)
+        ]
 
         return "{} accumulating: [{}] ".format(msg, "\n".join(results))
-
 
 
 def work_queue_main(items, function, accumulator, **kwargs):
@@ -661,9 +705,7 @@ def _declare_resources(exec_defaults):
         _wq_queue.specify_category_max_resources(category, default_resources)
 
         if exec_defaults["resources_mode"] == "auto":
-            _wq_queue.specify_category_mode(
-                category, wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT
-            )
+            _wq_queue.specify_category_mode(category, wq.WORK_QUEUE_ALLOCATION_MODE_MAX)
 
 
 def _submit_proc_task(
@@ -891,6 +933,7 @@ class VerbosePrint:
     def printf(self, format_str, *args, **kwargs):
         msg = format_str.format(*args, **kwargs)
         self.print(msg)
+
 
 _vprint = VerbosePrint()
 
