@@ -63,7 +63,9 @@ def accumulate_result_files(
         in_memory.append(result_f)
         if len(in_memory) > chunks_accum_in_mem - 1:
             accumulator = accumulate(in_memory, accumulator)
-            in_memory = []
+            while in_memory:
+                result = in_memory.pop()
+                del result
     return accumulator
 
 
