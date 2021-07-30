@@ -53,7 +53,7 @@ def accumulate_result_files(
 
         with open(f, "rb") as rf:
             result_f = dill.load(rf)
-            if clevel:
+            if clevel is not None:
                 result_f = _decompress(result_f)
 
         if not accumulator:
@@ -158,7 +158,7 @@ class CoffeaWQTask(Task):
             try:
                 with open(self.infile_output, "rb") as rf:
                     result = dill.load(rf)
-                    if self.clevel:
+                    if self.clevel is not None:
                         result = _decompress(result)
                     self.py_result = result
             except Exception as e:
@@ -461,7 +461,7 @@ def work_queue_main(items, function, accumulator, **kwargs):
     kwargs = {**default_kwargs, **kwargs}
 
     clevel = kwargs["compression"]
-    if clevel:
+    if clevel is not None:
         function = _compression_wrapper(clevel, function)
         accumulate_fn = _compression_wrapper(clevel, accumulate_result_files)
     else:
