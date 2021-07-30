@@ -280,7 +280,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         desc : str
             Label of progress bar description
         compression : int, optional
-            Compress accumulator outputs in flight with LZ4, at level specified (default 1)
+            Compress accumulator outputs in flight with LZ4, at level specified (default 9)
             Set to ``None`` for no compression.
 
         # work queue specific options:
