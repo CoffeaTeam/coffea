@@ -122,7 +122,7 @@ class ParquetSourceMapping(BaseSourceMapping):
         column_forms = {}
         for field in arrow_schema:
             key = field.name
-            fmeta = field.metadata
+            fmeta = {} if field.metadata is None else field.metadata
 
             if "," in key or "!" in key:
                 warnings.warn(
