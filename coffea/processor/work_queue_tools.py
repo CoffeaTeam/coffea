@@ -569,19 +569,18 @@ def _declare_resources(exec_defaults):
         default_resources["gpus"] = exec_defaults["gpus"]
 
     # Enable monitoring and auto resource consumption, if desired:
-    if exec_defaults["resource_monitor"]:
+    _wq_queue.tune("category-steady-n-tasks", 3)
+
+    if exec_defaults["resource_monitor"] or exec_defaults["resources_mode"] == "auto":
         _wq_queue.enable_monitoring()
 
-    _wq_queue.specify_category_max_resources("default", default_resources)
-    _wq_queue.specify_category_max_resources("preprocessing", default_resources)
-    _wq_queue.specify_category_max_resources("processing", default_resources)
-    _wq_queue.specify_category_max_resources("accumulating", default_resources)
-    if exec_defaults["resources_mode"] == "auto":
-        _wq_queue.tune("category-steady-n-tasks", 3)
-        _wq_queue.specify_category_max_resources("default", {})
-        _wq_queue.specify_category_mode(
-            "default", wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT
-        )
+    for category in "default preprocessing processing accumulating".split():
+        _wq_queue.specify_category_max_resources(category, default_resources)
+
+        if exec_defaults["resources_mode"] == "auto":
+            _wq_queue.specify_category_mode(
+                category, wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT
+            )
 
 
 def _submit_proc_task(
