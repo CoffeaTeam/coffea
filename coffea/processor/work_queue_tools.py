@@ -415,7 +415,7 @@ def work_queue_main(items, function, accumulator, **kwargs):
         # Standard executor options:
         "unit": "items",
         "desc": "Processing",
-        "compression": True,
+        "compression": 9,  # as recommended by lz4
         "status": True,
         "function_name": None,
         "retries": 2,  # task executes at most 3 times
