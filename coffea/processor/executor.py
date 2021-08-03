@@ -127,15 +127,20 @@ class FileMeta(object):
                     actual_chunksize = next_chunksize
 
 
-class WorkItem(namedtuple("WorkItemBase", [
-    "dataset",
-    "filename",
-    "treename",
-    "entrystart",
-    "entrystop",
-    "fileuuid",
-    "usermeta"
-])):
+class WorkItem(
+    namedtuple(
+        "WorkItemBase",
+        [
+            "dataset",
+            "filename",
+            "treename",
+            "entrystart",
+            "entrystop",
+            "fileuuid",
+            "usermeta",
+        ],
+    )
+):
     def __new__(
         cls,
         dataset,
@@ -147,14 +152,7 @@ class WorkItem(namedtuple("WorkItemBase", [
         usermeta=None,
     ):
         return cls.__bases__[0].__new__(
-            cls,
-            dataset,
-            filename,
-            treename,
-            entrystart,
-            entrystop,
-            fileuuid,
-            usermeta
+            cls, dataset, filename, treename, entrystart, entrystop, fileuuid, usermeta
         )
 
     def __len__(self):
