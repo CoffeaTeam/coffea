@@ -98,7 +98,7 @@ class jersf_lookup(lookup_base):
 
         # get parameter values
         parm_values = numpy.stack(
-            [numpy.array(parms)[..., 0][bin_tuple] for parm in self._parms],
+            [numpy.array(parm)[..., 0][bin_tuple] for parm in self._parms],
             axis=1,
         )
         return parm_values
