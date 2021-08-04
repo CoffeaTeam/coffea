@@ -755,7 +755,7 @@ def _work_function(
                         rados_parquet_options = {}
                         if ":" in item.filename:
                             ceph_config_path, filename = item.filename.split(":")
-                            item = item._as_dict()
+                            item = item._asdict()
                             item["filename"] = filename
                             item = WorkItem(**item)
                             rados_parquet_options["ceph_config_path"] = ceph_config_path
