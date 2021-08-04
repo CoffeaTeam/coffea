@@ -97,11 +97,9 @@ class jersf_lookup(lookup_base):
             eval_values.append(numpy.clip(eval_vals[eval_name], clamp_mins, clamp_maxs))
 
         # get parameter values
-        parm_values_central = numpy.array(self._parms[0][bin_tuple]).squeeze()
-        parm_values_up = numpy.array(self._parms[1][bin_tuple]).squeeze()
-        parm_values_down = numpy.array(self._parms[2][bin_tuple]).squeeze()
         parm_values = numpy.stack(
-            [parm_values_central, parm_values_up, parm_values_down], axis=1
+            [numpy.array(parms)[..., 0][bin_tuple] for parm in self._parms],
+            axis=1,
         )
         return parm_values
 
