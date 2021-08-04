@@ -492,7 +492,7 @@ def test_jet_resolution_sf_2d():
     print(resosf)
 
     # 0-jet compatibility
-    assert resosf.getScaleFactor(JetPt=test_pt[:0], JetEta=test_eta[:0]).shape == (0, 3) 
+    assert resosf.getScaleFactor(JetPt=test_pt[:0], JetEta=test_eta[:0]).shape == (0, 3)
 
     resosfs = resosf.getScaleFactor(JetPt=test_pt, JetEta=test_eta)
     resosfs_jag = resosf.getScaleFactor(JetPt=test_pt_jag, JetEta=test_eta_jag)
