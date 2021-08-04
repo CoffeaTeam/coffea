@@ -87,6 +87,7 @@ class jersf_lookup(lookup_base):
             bin_indices.append(
                 masked_bin_eval(bin_indices[0], self._bins[binname], bin_vals[binname])
             )
+        bin_indices.append(0)
         bin_tuple = tuple(bin_indices)
 
         # get clamp values and clip the inputs
@@ -98,7 +99,7 @@ class jersf_lookup(lookup_base):
 
         # get parameter values
         parm_values = numpy.stack(
-            [numpy.array(parm)[bin_tuple].squeeze() for parm in self._parms],
+            [numpy.array(parm[bin_tuple]) for parm in self._parms],
             axis=1,
         )
         return parm_values
