@@ -754,7 +754,10 @@ def _work_function(
                     elif format == "parquet":
                         rados_parquet_options = {}
                         if ":" in item.filename:
-                            ceph_config_path, item.filename = item.filename.split(":")
+                            ceph_config_path, filename = item.filename.split(":")
+                            item = item._as_dict()
+                            item["filename"] = filename
+                            item = WorkItem(**item)
                             rados_parquet_options["ceph_config_path"] = ceph_config_path
 
                         factory = NanoEventsFactory.from_parquet(
