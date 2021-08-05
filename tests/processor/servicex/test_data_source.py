@@ -37,7 +37,7 @@ class TestDataSource:
 
         dataset = MockDatset(
             urls=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
-            datatype='root'
+            datatype="root",
         )
         data_source = DataSource(query=query, metadata={}, datasets=[dataset])
 
@@ -56,7 +56,7 @@ class TestDataSource:
 
         dataset = MockDatset(
             urls=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
-            datatype='parquet'
+            datatype="parquet",
         )
         data_source = DataSource(query=query, metadata={}, datasets=[dataset])
 
@@ -75,7 +75,7 @@ class TestDataSource:
 
         dataset = MockDatset(
             files=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
-            datatype='root'
+            datatype="root",
         )
         data_source = DataSource(query=query, metadata={}, datasets=[dataset])
 
@@ -94,7 +94,7 @@ class TestDataSource:
 
         dataset = MockDatset(
             files=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
-            datatype='parquet'
+            datatype="parquet",
         )
         data_source = DataSource(query=query, metadata={}, datasets=[dataset])
 
@@ -108,7 +108,7 @@ class TestDataSource:
 
 
 class MockDatset:
-    def __init__(self, files=[], urls=[], datatype='root'):
+    def __init__(self, files=[], urls=[], datatype="root"):
         self.files = files
         self.urls = urls
         self.called_query = None
