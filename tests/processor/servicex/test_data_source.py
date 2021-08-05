@@ -31,12 +31,13 @@ from coffea.processor.servicex import DataSource, FuncAdlDataset
 
 class TestDataSource:
     @pytest.mark.asyncio
-    async def test_stream_result_file_urls(self, mocker):
+    async def test_stream_result_file_urls_root(self, mocker):
         query = mocker.MagicMock(FuncAdlDataset)
         query.value = mocker.Mock(return_value="select * from events")
 
         dataset = MockDatset(
-            urls=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"]
+            urls=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
+            datatype='root'
         )
         data_source = DataSource(query=query, metadata={}, datasets=[dataset])
 
@@ -49,12 +50,32 @@ class TestDataSource:
         assert dataset.called_query == "select * from events"
 
     @pytest.mark.asyncio
-    async def test_stream_result_files(self, mocker):
+    async def test_stream_result_file_urls_parquet(self, mocker):
         query = mocker.MagicMock(FuncAdlDataset)
         query.value = mocker.Mock(return_value="select * from events")
 
         dataset = MockDatset(
-            files=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"]
+            urls=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
+            datatype='parquet'
+        )
+        data_source = DataSource(query=query, metadata={}, datasets=[dataset])
+
+        url_stream = [url async for url in data_source.stream_result_file_urls()]
+        assert url_stream == [
+            "http://foo.bar.com/yyy.ROOT",
+            "http://baz.bar.com/xxx.ROOT",
+        ]
+        assert dataset.num_calls_parquet == 1
+        assert dataset.called_query == "select * from events"
+
+    @pytest.mark.asyncio
+    async def test_stream_result_files_root(self, mocker):
+        query = mocker.MagicMock(FuncAdlDataset)
+        query.value = mocker.Mock(return_value="select * from events")
+
+        dataset = MockDatset(
+            files=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
+            datatype='root'
         )
         data_source = DataSource(query=query, metadata={}, datasets=[dataset])
 
@@ -66,17 +87,45 @@ class TestDataSource:
         assert dataset.num_calls == 1
         assert dataset.called_query == "select * from events"
 
+    @pytest.mark.asyncio
+    async def test_stream_result_files_parquet(self, mocker):
+        query = mocker.MagicMock(FuncAdlDataset)
+        query.value = mocker.Mock(return_value="select * from events")
+
+        dataset = MockDatset(
+            files=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
+            datatype='parquet'
+        )
+        data_source = DataSource(query=query, metadata={}, datasets=[dataset])
+
+        file_stream = [f async for f in data_source.stream_result_files()]
+        assert file_stream == [
+            "http://foo.bar.com/yyy.ROOT",
+            "http://baz.bar.com/xxx.ROOT",
+        ]
+        assert dataset.num_calls_parquet == 1
+        assert dataset.called_query == "select * from events"
+
 
 class MockDatset:
-    def __init__(self, files=[], urls=[]):
+    def __init__(self, files=[], urls=[], datatype='root'):
         self.files = files
         self.urls = urls
         self.called_query = None
         self.num_calls = 0
+        self.num_calls_parquet = 0
+        self.datatype = datatype
 
     async def get_data_rootfiles_url_stream(self, query):
         self.called_query = query
         self.num_calls += 1
+
+        for url in self.urls:
+            yield url
+
+    async def get_data_parquet_url_stream(self, query):
+        self.called_query = query
+        self.num_calls_parquet += 1
 
         for url in self.urls:
             yield url
@@ -87,3 +136,13 @@ class MockDatset:
 
         for f in self.files:
             yield f
+
+    async def get_data_parquet_stream(self, query):
+        self.called_query = query
+        self.num_calls_parquet += 1
+
+        for f in self.files:
+            yield f
+
+    def first_supported_datatype(self, possible_list):
+        return self.datatype

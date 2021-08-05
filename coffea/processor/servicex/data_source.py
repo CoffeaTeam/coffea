@@ -27,13 +27,14 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Dict, List
 
-from servicex.servicex import StreamInfoUrl
+from servicex import ServiceXDataset, StreamInfoPath, StreamInfoUrl
 
 
 class DataSource:
-    def __init__(self, query, metadata={}, datasets=[]):
+    def __init__(self, query, metadata: Dict[str, str] = {},
+                 datasets: List[ServiceXDataset] = []):
         self.query = query
         self.metadata = metadata
         self.schema = None
@@ -49,10 +50,17 @@ class DataSource:
             [type]: [description]
         """
         for dataset in self.datasets:
-            async for file in dataset.get_data_rootfiles_url_stream(self.query.value()):
-                yield file
+            data_type = dataset.first_supported_datatype(['parquet', 'root'])
+            if data_type == 'root':
+                async for file in dataset.get_data_rootfiles_url_stream(self.query.value()):
+                    yield file
+            elif data_type == 'parquet':
+                async for file in dataset.get_data_parquet_url_stream(self.query.value()):
+                    yield file
+            else:
+                raise Exception(f'This dataset ({str(dataset)}) supports unknown datatypes')
 
-    async def stream_result_files(self) -> AsyncGenerator[StreamInfoUrl, None]:
+    async def stream_result_files(self) -> AsyncGenerator[StreamInfoPath, None]:
         """Launch all datasources at once
 
         TODO: This is currently sync (that outter for loop does one datasource and then the next).
@@ -62,5 +70,10 @@ class DataSource:
             [type]: [description]
         """
         for dataset in self.datasets:
-            async for file in dataset.get_data_rootfiles_stream(self.query.value()):
-                yield file
+            data_type = dataset.first_supported_datatype(['parquet', 'root'])
+            if data_type == 'root':
+                async for file in dataset.get_data_rootfiles_stream(self.query.value()):
+                    yield file
+            else:
+                async for file in dataset.get_data_parquet_stream(self.query.value()):
+                    yield file
