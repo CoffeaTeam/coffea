@@ -54,6 +54,7 @@ class DataSource:
         Yields:
             [type]: [description]
         """
+        qastle = await self.query.value_async()
         for dataset in self.datasets:
             data_type = dataset.first_supported_datatype(["parquet", "root"])
             if data_type == "root":

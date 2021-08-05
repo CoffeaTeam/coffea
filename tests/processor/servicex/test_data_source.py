@@ -33,7 +33,7 @@ class TestDataSource:
     @pytest.mark.asyncio
     async def test_stream_result_file_urls_root(self, mocker):
         query = mocker.MagicMock(FuncAdlDataset)
-        query.value = mocker.Mock(return_value="select * from events")
+        query.value_async = mocker.AsyncMock(return_value="select * from events")
 
         dataset = MockDatset(
             urls=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
@@ -52,7 +52,7 @@ class TestDataSource:
     @pytest.mark.asyncio
     async def test_stream_result_file_urls_parquet(self, mocker):
         query = mocker.MagicMock(FuncAdlDataset)
-        query.value = mocker.Mock(return_value="select * from events")
+        query.value_async = mocker.AsyncMock(return_value="select * from events")
 
         dataset = MockDatset(
             urls=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
@@ -71,7 +71,7 @@ class TestDataSource:
     @pytest.mark.asyncio
     async def test_stream_result_files_root(self, mocker):
         query = mocker.MagicMock(FuncAdlDataset)
-        query.value = mocker.Mock(return_value="select * from events")
+        query.value_async = mocker.AsyncMock(return_value="select * from events")
 
         dataset = MockDatset(
             files=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
@@ -90,7 +90,7 @@ class TestDataSource:
     @pytest.mark.asyncio
     async def test_stream_result_files_parquet(self, mocker):
         query = mocker.MagicMock(FuncAdlDataset)
-        query.value = mocker.Mock(return_value="select * from events")
+        query.value_async = mocker.AsyncMock(return_value="select * from events")
 
         dataset = MockDatset(
             files=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
