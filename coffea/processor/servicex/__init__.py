@@ -30,6 +30,7 @@ from .data_source import *
 from .sx_qastle import *
 from .analysis import *
 from .local_executor import *
+from .dask_executor import *
 
 __all__ = [
     "DataSource",
@@ -37,4 +38,5 @@ __all__ = [
     "sx_event_stream",
     "Analysis",
     "LocalExecutor",
+    "DaskExecutor",
 ]

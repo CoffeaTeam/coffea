@@ -25,7 +25,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import Optional
+from typing import Callable, Optional
 from dask.distributed import Client
 from .executor import run_coffea_processor, Executor
 
@@ -51,11 +51,16 @@ class DaskExecutor(Executor):
         else:
             return datasource.stream_result_file_urls()
 
-    def run_async_analysis(self, file_url, tree_name, process_func):
+    def run_async_analysis(self,
+                           file_url: str,
+                           tree_name: Optional[str],
+                           data_type: str,
+                           process_func: Callable):
         data_result = self.dask.submit(
             run_coffea_processor,
             events_url=file_url,
             tree_name=tree_name,
+            data_type=data_type,
             proc=process_func,
         )
 
