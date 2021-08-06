@@ -41,7 +41,7 @@ class TestDataSource:
             urls=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
             datatype="root",
         )
-        data_source = DataSource(query=query, metadata={}, datasets=[dataset])
+        data_source = DataSource(query=query, metadata={}, datasets=[dataset])  # type: ignore
 
         url_stream = [url async for url in data_source.stream_result_file_urls()]
         assert url_stream == [
@@ -60,7 +60,7 @@ class TestDataSource:
             urls=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
             datatype="parquet",
         )
-        data_source = DataSource(query=query, metadata={}, datasets=[dataset])
+        data_source = DataSource(query=query, metadata={}, datasets=[dataset])  # type: ignore
 
         url_stream = [url async for url in data_source.stream_result_file_urls()]
         assert url_stream == [
@@ -69,6 +69,7 @@ class TestDataSource:
         ]
         assert dataset.num_calls_parquet == 1
         assert dataset.called_query == "select * from events"
+        assert query.return_qastle
 
     @pytest.mark.asyncio
     async def test_stream_result_files_root(self, mocker):
@@ -78,7 +79,7 @@ class TestDataSource:
             files=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
             datatype="root",
         )
-        data_source = DataSource(query=query, metadata={}, datasets=[dataset])
+        data_source = DataSource(query=query, metadata={}, datasets=[dataset])  # type: ignore
 
         file_stream = [f async for f in data_source.stream_result_files()]
         assert file_stream == [
@@ -87,6 +88,7 @@ class TestDataSource:
         ]
         assert dataset.num_calls == 1
         assert dataset.called_query == "select * from events"
+        assert query.return_qastle
 
     @pytest.mark.asyncio
     async def test_stream_result_files_parquet(self, mocker):
@@ -96,7 +98,7 @@ class TestDataSource:
             files=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
             datatype="parquet",
         )
-        data_source = DataSource(query=query, metadata={}, datasets=[dataset])
+        data_source = DataSource(query=query, metadata={}, datasets=[dataset])  # type: ignore
 
         file_stream = [f async for f in data_source.stream_result_files()]
         assert file_stream == [
@@ -105,6 +107,7 @@ class TestDataSource:
         ]
         assert dataset.num_calls_parquet == 1
         assert dataset.called_query == "select * from events"
+        assert query.return_qastle
 
 
 class MockDatset:
