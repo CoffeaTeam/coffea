@@ -30,7 +30,7 @@
 from typing import AsyncGenerator, Dict, List
 
 from servicex import ServiceXDataset, StreamInfoPath, StreamInfoUrl
-from func_adl import ObjectStream
+from func_adl import ObjectStream, find_EventDataset
 
 
 class DataSource:
@@ -45,16 +45,29 @@ class DataSource:
         self.schema = None
         self.datasets = datasets
 
-    async def stream_result_file_urls(self) -> AsyncGenerator[StreamInfoUrl, None]:
-        """Launch all datasources at once
+    async def _get_query(self) -> str:
+        '''Return the qastle query.
 
-        TODO: This is currently sync (that outter for loop does one datasource and then the next).
-        Need to move to a different paradigm. Perhaps using the `aiostream` library.
+        Note: To do this we have to forward-cast the object: by design, not all `func_adl`
+        queries are `ServiceX` queries. But this library only works with datasets that are
+        based in `ServiceX`. Thus some duck typing occurs in this method.
+        '''
+        event_dataset_ast = find_EventDataset(self.query.query_ast)
+        event_dataset = event_dataset_ast._eds_object  # type: ignore
+        if not hasattr(event_dataset, 'return_qastle'):
+            raise Exception(f'Base func_adl query {str(event_dataset)} does not have a way to generate qastle!')
+        event_dataset.return_qastle = True  # type: ignore
+        return await self.query.value_async()
+
+    async def stream_result_file_urls(self) -> AsyncGenerator[StreamInfoUrl, None]:
+        """Launch all datasources off to servicex
 
         Yields:
             [type]: [description]
         """
-        qastle = await self.query.value_async()
+        qastle = await self._get_query()
+
+        # TODO: Make this for loop parallel
         for dataset in self.datasets:
             data_type = dataset.first_supported_datatype(["parquet", "root"])
             if data_type == "root":
@@ -69,15 +82,14 @@ class DataSource:
                 )
 
     async def stream_result_files(self) -> AsyncGenerator[StreamInfoPath, None]:
-        """Launch all datasources at once
-
-        TODO: This is currently sync (that outter for loop does one datasource and then the next).
-        Need to move to a different paradigm. Perhaps using the `aiostream` library.
+        """Launch all datasources at once off to servicex
 
         Yields:
             [type]: [description]
         """
-        qastle = await self.query.value_async()
+        qastle = await self._get_query()
+
+        # TODO: Make this for loop parallel
         for dataset in self.datasets:
             data_type = dataset.first_supported_datatype(["parquet", "root"])
             if data_type == "root":

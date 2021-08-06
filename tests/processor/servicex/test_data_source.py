@@ -25,15 +25,17 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import ast
+from typing import Any, Optional
+from func_adl.event_dataset import EventDataset
 import pytest
-from coffea.processor.servicex import DataSource, FuncAdlDataset
+from coffea.processor.servicex import DataSource
 
 
 class TestDataSource:
     @pytest.mark.asyncio
     async def test_stream_result_file_urls_root(self, mocker):
-        query = mocker.MagicMock(FuncAdlDataset)
-        query.value_async = mocker.AsyncMock(return_value="select * from events")
+        query = MockQuery("select * from events")
 
         dataset = MockDatset(
             urls=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
@@ -48,11 +50,11 @@ class TestDataSource:
         ]
         assert dataset.num_calls == 1
         assert dataset.called_query == "select * from events"
+        assert query.return_qastle
 
     @pytest.mark.asyncio
     async def test_stream_result_file_urls_parquet(self, mocker):
-        query = mocker.MagicMock(FuncAdlDataset)
-        query.value_async = mocker.AsyncMock(return_value="select * from events")
+        query = MockQuery("select * from events")
 
         dataset = MockDatset(
             urls=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
@@ -70,8 +72,7 @@ class TestDataSource:
 
     @pytest.mark.asyncio
     async def test_stream_result_files_root(self, mocker):
-        query = mocker.MagicMock(FuncAdlDataset)
-        query.value_async = mocker.AsyncMock(return_value="select * from events")
+        query = MockQuery("select * from events")
 
         dataset = MockDatset(
             files=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
@@ -89,8 +90,7 @@ class TestDataSource:
 
     @pytest.mark.asyncio
     async def test_stream_result_files_parquet(self, mocker):
-        query = mocker.MagicMock(FuncAdlDataset)
-        query.value_async = mocker.AsyncMock(return_value="select * from events")
+        query = MockQuery("select * from events")
 
         dataset = MockDatset(
             files=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
@@ -146,3 +146,21 @@ class MockDatset:
 
     def first_supported_datatype(self, possible_list):
         return self.datatype
+
+
+class MockQuery(EventDataset):
+    def __init__(self, query_return):
+        super().__init__()
+        self._query_return = query_return
+        self._return_qastle = False
+
+    async def execute_result_async(self, a: ast.AST, title: Optional[str] = None) -> Any:
+        return self._query_return
+
+    @property
+    def return_qastle(self):
+        return self._return_qastle
+
+    @return_qastle.setter
+    def return_qastle(self, value: bool):
+        self._return_qastle = value
