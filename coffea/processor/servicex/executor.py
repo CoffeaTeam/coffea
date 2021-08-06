@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from abc import ABC, abstractmethod
 from typing import Any, Callable, AsyncGenerator, Optional, Tuple
+
 # from urllib.parse import urlparse, unquote
 # from urllib.request import url2pathname
 
@@ -108,7 +109,7 @@ class Executor(ABC):
             #     file_url = url2pathname(unquote(p.path))
 
             # Determine the tree name if we've not gotten it already
-            if data_type == 'root':
+            if data_type == "root":
                 if tree_name is None:
                     with uproot.open(file_url) as sample:
                         tree_name = sample.keys()[0]
@@ -126,7 +127,11 @@ class Executor(ABC):
 
 
 def run_coffea_processor(
-    events_url: str, tree_name: Optional[str], proc, data_type, explicit_func_pickle=False
+    events_url: str,
+    tree_name: Optional[str],
+    proc,
+    data_type,
+    explicit_func_pickle=False,
 ):
     """
     Process a single file from a tree via a coffea processor on the remote node
@@ -151,7 +156,7 @@ def run_coffea_processor(
     from coffea.nanoevents import NanoEventsFactory
     from coffea.nanoevents.schemas.schema import auto_schema
 
-    if data_type == 'root':
+    if data_type == "root":
         # Use NanoEvents to build a 4-vector
         assert tree_name is not None
         events = NanoEventsFactory.from_root(
@@ -160,7 +165,7 @@ def run_coffea_processor(
             schemaclass=auto_schema,
             metadata={"filename": str(events_url)},
         ).events()
-    elif data_type == 'parquet':
+    elif data_type == "parquet":
         events = NanoEventsFactory.from_parquet(
             file=str(events_url),
             treepath="/",
@@ -168,7 +173,7 @@ def run_coffea_processor(
             metadata={"filename": str(events_url)},
         ).events()
     else:
-        raise Exception(f'Unknown stream data type of {data_type} - cannot process.')
+        raise Exception(f"Unknown stream data type of {data_type} - cannot process.")
 
     if explicit_func_pickle:
         import dill as pickle

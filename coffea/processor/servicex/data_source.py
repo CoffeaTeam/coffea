@@ -61,7 +61,9 @@ class DataSource:
         event_dataset.return_qastle = True  # type: ignore
         return await self.query.value_async()
 
-    async def stream_result_file_urls(self) -> AsyncGenerator[Tuple[str, StreamInfoUrl], None]:
+    async def stream_result_file_urls(
+        self,
+    ) -> AsyncGenerator[Tuple[str, StreamInfoUrl], None]:
         """Launch all datasources off to servicex
 
         Yields:
@@ -83,7 +85,9 @@ class DataSource:
                     f"This dataset ({str(dataset)}) supports unknown datatypes"
                 )
 
-    async def stream_result_files(self) -> AsyncGenerator[Tuple[str, StreamInfoPath], None]:
+    async def stream_result_files(
+        self,
+    ) -> AsyncGenerator[Tuple[str, StreamInfoPath], None]:
         """Launch all datasources at once off to servicex
 
         Yields:
@@ -97,7 +101,7 @@ class DataSource:
             if data_type == "root":
                 async for file in dataset.get_data_rootfiles_stream(qastle):
                     yield (data_type, file)
-            elif data_type == 'parquet':
+            elif data_type == "parquet":
                 async for file in dataset.get_data_parquet_stream(qastle):
                     yield (data_type, file)
             else:
