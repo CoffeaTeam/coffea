@@ -46,16 +46,18 @@ class DataSource:
         self.datasets = datasets
 
     async def _get_query(self) -> str:
-        '''Return the qastle query.
+        """Return the qastle query.
 
         Note: To do this we have to forward-cast the object: by design, not all `func_adl`
         queries are `ServiceX` queries. But this library only works with datasets that are
         based in `ServiceX`. Thus some duck typing occurs in this method.
-        '''
+        """
         event_dataset_ast = find_EventDataset(self.query.query_ast)
         event_dataset = event_dataset_ast._eds_object  # type: ignore
-        if not hasattr(event_dataset, 'return_qastle'):
-            raise Exception(f'Base func_adl query {str(event_dataset)} does not have a way to generate qastle!')
+        if not hasattr(event_dataset, "return_qastle"):
+            raise Exception(
+                f"Base func_adl query {str(event_dataset)} does not have a way to generate qastle!"
+            )
         event_dataset.return_qastle = True  # type: ignore
         return await self.query.value_async()
 
