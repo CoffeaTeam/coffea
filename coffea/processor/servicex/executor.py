@@ -26,9 +26,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from abc import ABC, abstractmethod
-from typing import Any, Callable, AsyncGenerator
-from urllib.parse import urlparse, unquote
-from urllib.request import url2pathname
+from typing import Any, Callable, AsyncGenerator, Optional, Tuple
+# from urllib.parse import urlparse, unquote
+# from urllib.request import url2pathname
 
 import aiostream
 import uproot
@@ -41,7 +41,8 @@ class Executor(ABC):
     def run_async_analysis(
         self,
         file_url: str,
-        tree_name: str,
+        tree_name: Optional[str],
+        data_type: str,
         process_func: Callable,
     ):
         raise NotImplementedError
@@ -82,7 +83,7 @@ class Executor(ABC):
 
     async def launch_analysis_tasks_from_stream(
         self,
-        result_file_stream: AsyncGenerator[StreamInfoUrl, None],
+        result_file_stream: AsyncGenerator[Tuple[str, StreamInfoUrl], None],
         process_func: Callable,
     ) -> AsyncGenerator[Any, None]:
         """
@@ -96,24 +97,27 @@ class Executor(ABC):
         """
         tree_name = None
         async for sx_data in result_file_stream:
-            file_url = sx_data.url
+            file_url = sx_data[1].url
+            data_type = sx_data[0]
 
             # Parse the absolute path out if this is a file:// uri. THis is due to a bug
             # in uproot4 that means `file://` isn't parsed correctly on windows.
             # TODO: Remove this hack when `uproot4` has been updated.
-            p = urlparse(file_url)
-            if p.scheme == "file":
-                file_url = url2pathname(unquote(p.path))
+            # p = urlparse(file_url)
+            # if p.scheme == "file":
+            #     file_url = url2pathname(unquote(p.path))
 
             # Determine the tree name if we've not gotten it already
-            if tree_name is None:
-                with uproot.open(file_url) as sample:
-                    tree_name = sample.keys()[0]
+            if data_type == 'root':
+                if tree_name is None:
+                    with uproot.open(file_url) as sample:
+                        tree_name = sample.keys()[0]
 
             # Invoke the implementation's task launcher
             data_result = self.run_async_analysis(
                 file_url=file_url,
                 tree_name=tree_name,
+                data_type=data_type,
                 process_func=process_func,
             )
 
@@ -122,18 +126,21 @@ class Executor(ABC):
 
 
 def run_coffea_processor(
-    events_url: str, tree_name: str, proc, explicit_func_pickle=False
+    events_url: str, tree_name: Optional[str], proc, data_type, explicit_func_pickle=False
 ):
     """
     Process a single file from a tree via a coffea processor on the remote node
     :param events_url:
         a URL to a ROOT file that uproot4 can open
     :param tree_name:
-        The tree in the ROOT file to use for our data
+        The tree in the ROOT file to use for our data. Can be null if the data isn't a root
+        tree!
     :param accumulator:
         Accumulator to store the results
     :param proc:
         Analysis function to execute. Must have signature
+    :param data_type:
+        What datatype is the data (root, parquet?)
     :param explicit_func_pickle: bool
         Do we need to use dill to explicitly pickle the process function, or can we
         rely on the remote execution framework to handle it correctly?
@@ -144,13 +151,24 @@ def run_coffea_processor(
     from coffea.nanoevents import NanoEventsFactory
     from coffea.nanoevents.schemas.schema import auto_schema
 
-    # Use NanoEvents to build a 4-vector
-    events = NanoEventsFactory.from_root(
-        file=str(events_url),
-        treepath=f"/{tree_name}",
-        schemaclass=auto_schema,
-        metadata={"dataset": "mc15x", "filename": str(events_url)},
-    ).events()
+    if data_type == 'root':
+        # Use NanoEvents to build a 4-vector
+        assert tree_name is not None
+        events = NanoEventsFactory.from_root(
+            file=str(events_url),
+            treepath=f"/{tree_name}",
+            schemaclass=auto_schema,
+            metadata={"filename": str(events_url)},
+        ).events()
+    elif data_type == 'parquet':
+        events = NanoEventsFactory.from_parquet(
+            file=str(events_url),
+            treepath="/",
+            schemaclass=auto_schema,
+            metadata={"filename": str(events_url)},
+        ).events()
+    else:
+        raise Exception(f'Unknown stream data type of {data_type} - cannot process.')
 
     if explicit_func_pickle:
         import dill as pickle

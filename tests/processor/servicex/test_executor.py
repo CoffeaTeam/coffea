@@ -45,11 +45,13 @@ class TestableExecutor(Executor):
         self,
         file_url: str,
         tree_name: str,
+        data_type: str,
         process_func: Callable,
     ):
 
         # Record the tree name so we can verify it later
         self.tree_name = tree_name
+        self.data_type = data_type
         return {file_url: 1}
 
 
@@ -69,7 +71,7 @@ async def mock_async_generator(list):
 
 class TestExecutor:
     @pytest.mark.asyncio
-    async def test_execute(self, mocker):
+    async def test_execute_root(self, mocker):
         executor = TestableExecutor()
         analysis = mocker.MagicMock(Analysis)
         mock_root_context = mocker.Mock()
@@ -85,8 +87,8 @@ class TestExecutor:
 
         datasource = MockDataSource(
             urls=[
-                StreamInfoUrl("foo", "http://foo.bar/foo", "bucket"),
-                StreamInfoUrl("foo", "http://foo.bar/foo1", "bucket"),
+                ('root', StreamInfoUrl("foo", "http://foo.bar/foo", "bucket")),
+                ('root', StreamInfoUrl("foo", "http://foo.bar/foo1", "bucket")),
             ]
         )
 
@@ -94,9 +96,27 @@ class TestExecutor:
         assert len(hist_stream) == 2
         mock_uproot_open.assert_called_with("http://foo.bar/foo")
         assert executor.tree_name == "myTree"
+        assert executor.data_type == 'root'
 
     @pytest.mark.asyncio
-    async def test_execute_with_file_url(self, mocker):
+    async def test_execute_parquet(self, mocker):
+        executor = TestableExecutor()
+        analysis = mocker.MagicMock(Analysis)
+
+        datasource = MockDataSource(
+            urls=[
+                ('parquet', StreamInfoUrl("foo", "http://foo.bar/foo", "bucket")),
+                ('parquet', StreamInfoUrl("foo", "http://foo.bar/foo1", "bucket")),
+            ]
+        )
+
+        hist_stream = [f async for f in executor.execute(analysis, datasource)]
+        assert len(hist_stream) == 2
+        assert executor.tree_name == None
+        assert executor.data_type == 'parquet'
+
+    @pytest.mark.asyncio
+    async def test_execute_with_file_url_root(self, mocker):
         executor = TestableExecutor()
         analysis = mocker.MagicMock(Analysis)
         analysis.accumulator = mocker.Mock()
@@ -121,20 +141,49 @@ class TestExecutor:
 
         datsource = MockDataSource(
             urls=[
-                StreamInfoPath(
+                ('root', StreamInfoPath(
                     "root1.ROOT", Path(os.path.join(file_path, "root1.ROOT"))
-                ),
-                StreamInfoPath(
+                )),
+                ('root', StreamInfoPath(
                     "root2.ROOT", Path(os.path.join(file_path, "root2.ROOT"))
-                ),
+                )),
             ]
         )
 
         hist_stream = [f async for f in executor.execute(analysis, datsource)]
 
         if os.name != "nt":
-            mock_uproot_open.assert_called_with("/foo/root1.ROOT")
+            mock_uproot_open.assert_called_with("file:///foo/root1.ROOT")
         else:
-            mock_uproot_open.assert_called_with("C:\\foo\\root1.ROOT")
+            mock_uproot_open.assert_called_with("file:///c:/foo/root1.ROOT")
+
+        assert len(hist_stream) == 2
+
+    @pytest.mark.asyncio
+    async def test_execute_with_file_url_parquet(self, mocker):
+        executor = TestableExecutor()
+        analysis = mocker.MagicMock(Analysis)
+        analysis.accumulator = mocker.Mock()
+        mock_histogram = mocker.Mock()
+        analysis.accumulator.identity = mocker.Mock(return_value=mock_histogram)
+
+        file_path = (
+            os.path.join(os.sep, "foo")
+            if os.name != "nt"
+            else os.path.join("c:", os.sep, "foo")
+        )
+
+        datsource = MockDataSource(
+            urls=[
+                ('parquet', StreamInfoPath(
+                    "root1.parquet", Path(os.path.join(file_path, "root1.parquet"))
+                )),
+                ('parquet', StreamInfoPath(
+                    "root2.parquet", Path(os.path.join(file_path, "root2.parquet"))
+                )),
+            ]
+        )
+
+        hist_stream = [f async for f in executor.execute(analysis, datsource)]
 
         assert len(hist_stream) == 2

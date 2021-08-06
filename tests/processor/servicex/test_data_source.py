@@ -45,8 +45,8 @@ class TestDataSource:
 
         url_stream = [url async for url in data_source.stream_result_file_urls()]
         assert url_stream == [
-            "http://foo.bar.com/yyy.ROOT",
-            "http://baz.bar.com/xxx.ROOT",
+            ('root', "http://foo.bar.com/yyy.ROOT"),
+            ('root', "http://baz.bar.com/xxx.ROOT"),
         ]
         assert dataset.num_calls == 1
         assert dataset.called_query == "select * from events"
@@ -64,8 +64,8 @@ class TestDataSource:
 
         url_stream = [url async for url in data_source.stream_result_file_urls()]
         assert url_stream == [
-            "http://foo.bar.com/yyy.ROOT",
-            "http://baz.bar.com/xxx.ROOT",
+            ('parquet', "http://foo.bar.com/yyy.ROOT"),
+            ('parquet', "http://baz.bar.com/xxx.ROOT"),
         ]
         assert dataset.num_calls_parquet == 1
         assert dataset.called_query == "select * from events"
@@ -83,8 +83,8 @@ class TestDataSource:
 
         file_stream = [f async for f in data_source.stream_result_files()]
         assert file_stream == [
-            "http://foo.bar.com/yyy.ROOT",
-            "http://baz.bar.com/xxx.ROOT",
+            ('root', "http://foo.bar.com/yyy.ROOT"),
+            ('root', "http://baz.bar.com/xxx.ROOT"),
         ]
         assert dataset.num_calls == 1
         assert dataset.called_query == "select * from events"
@@ -102,8 +102,8 @@ class TestDataSource:
 
         file_stream = [f async for f in data_source.stream_result_files()]
         assert file_stream == [
-            "http://foo.bar.com/yyy.ROOT",
-            "http://baz.bar.com/xxx.ROOT",
+            ('parquet', "http://foo.bar.com/yyy.ROOT"),
+            ('parquet', "http://baz.bar.com/xxx.ROOT"),
         ]
         assert dataset.num_calls_parquet == 1
         assert dataset.called_query == "select * from events"

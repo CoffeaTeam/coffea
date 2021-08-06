@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from typing import AsyncGenerator, Dict, List
+from typing import AsyncGenerator, Dict, List, Tuple
 
 from servicex import ServiceXDataset, StreamInfoPath, StreamInfoUrl
 from func_adl import ObjectStream, find_EventDataset
@@ -61,11 +61,11 @@ class DataSource:
         event_dataset.return_qastle = True  # type: ignore
         return await self.query.value_async()
 
-    async def stream_result_file_urls(self) -> AsyncGenerator[StreamInfoUrl, None]:
+    async def stream_result_file_urls(self) -> AsyncGenerator[Tuple[str, StreamInfoUrl], None]:
         """Launch all datasources off to servicex
 
         Yields:
-            [type]: [description]
+            Tuple[str, StreamInfoUrl]: List of data types and url's to process
         """
         qastle = await self._get_query()
 
@@ -74,20 +74,20 @@ class DataSource:
             data_type = dataset.first_supported_datatype(["parquet", "root"])
             if data_type == "root":
                 async for file in dataset.get_data_rootfiles_url_stream(qastle):
-                    yield file
+                    yield (data_type, file)
             elif data_type == "parquet":
                 async for file in dataset.get_data_parquet_url_stream(qastle):
-                    yield file
+                    yield (data_type, file)
             else:
                 raise Exception(
                     f"This dataset ({str(dataset)}) supports unknown datatypes"
                 )
 
-    async def stream_result_files(self) -> AsyncGenerator[StreamInfoPath, None]:
+    async def stream_result_files(self) -> AsyncGenerator[Tuple[str, StreamInfoPath], None]:
         """Launch all datasources at once off to servicex
 
         Yields:
-            [type]: [description]
+            Tuple[str, StreamInfoPath]: List of data types and file paths to process
         """
         qastle = await self._get_query()
 
@@ -96,7 +96,11 @@ class DataSource:
             data_type = dataset.first_supported_datatype(["parquet", "root"])
             if data_type == "root":
                 async for file in dataset.get_data_rootfiles_stream(qastle):
-                    yield file
-            else:
+                    yield (data_type, file)
+            elif data_type == 'parquet':
                 async for file in dataset.get_data_parquet_stream(qastle):
-                    yield file
+                    yield (data_type, file)
+            else:
+                raise Exception(
+                    f"This dataset ({str(dataset)}) supports unknown datatypes"
+                )
