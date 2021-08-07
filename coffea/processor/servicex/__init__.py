@@ -27,15 +27,12 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from .data_source import *
-from .sx_qastle import *
 from .analysis import *
 from .local_executor import *
 from .dask_executor import *
 
 __all__ = [
     "DataSource",
-    "FuncAdlDataset",
-    "sx_event_stream",
     "Analysis",
     "LocalExecutor",
     "DaskExecutor",
