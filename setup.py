@@ -85,7 +85,12 @@ EXTRAS_REQUIRE["dask"] = [
     "bokeh>=1.3.4",
     "blosc",
 ]
-EXTRAS_REQUIRE["servicex"] = ["aiostream", "tenacity", "servicex==2.4b3", "func-adl_servicex=1.1b8"]
+EXTRAS_REQUIRE["servicex"] = [
+    "aiostream",
+    "tenacity",
+    "servicex==2.4b3",
+    "func-adl_servicex=1.1b8",
+]
 EXTRAS_REQUIRE["dev"] = [
     "flake8",
     "black",
