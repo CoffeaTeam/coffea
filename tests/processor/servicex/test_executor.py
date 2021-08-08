@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Dict
 
 import pytest
 from servicex import StreamInfoUrl
@@ -46,18 +46,21 @@ class TestableExecutor(Executor):
         file_url: str,
         tree_name: str,
         data_type: str,
+        meta_data: Dict[str, str],
         process_func: Callable,
     ):
 
         # Record the tree name so we can verify it later
         self.tree_name = tree_name
         self.data_type = data_type
+        self.meta_data = meta_data
         return {file_url: 1}
 
 
 class MockDataSource:
     def __init__(self, urls=[]):
         self.urls = urls
+        self.metadata = {'item': 'value'}
 
     async def stream_result_file_urls(self):
         for url in self.urls:
@@ -87,8 +90,8 @@ class TestExecutor:
 
         datasource = MockDataSource(
             urls=[
-                ('root', StreamInfoUrl("foo", "http://foo.bar/foo", "bucket")),
-                ('root', StreamInfoUrl("foo", "http://foo.bar/foo1", "bucket")),
+                ('root', "dataset1", StreamInfoUrl("foo", "http://foo.bar/foo", "bucket")),
+                ('root', "dataset1", StreamInfoUrl("foo", "http://foo.bar/foo1", "bucket")),
             ]
         )
 
@@ -97,6 +100,7 @@ class TestExecutor:
         mock_uproot_open.assert_called_with("http://foo.bar/foo")
         assert executor.tree_name == "myTree"
         assert executor.data_type == 'root'
+        assert executor.meta_data == {'dataset': 'dataset1', 'item': 'value'}
 
     @pytest.mark.asyncio
     async def test_execute_parquet(self, mocker):
@@ -105,8 +109,8 @@ class TestExecutor:
 
         datasource = MockDataSource(
             urls=[
-                ('parquet', StreamInfoUrl("foo", "http://foo.bar/foo", "bucket")),
-                ('parquet', StreamInfoUrl("foo", "http://foo.bar/foo1", "bucket")),
+                ('parquet', "dataset1", StreamInfoUrl("foo", "http://foo.bar/foo", "bucket")),
+                ('parquet', "dataset1", StreamInfoUrl("foo", "http://foo.bar/foo1", "bucket")),
             ]
         )
 
@@ -114,6 +118,7 @@ class TestExecutor:
         assert len(hist_stream) == 2
         assert executor.tree_name == None
         assert executor.data_type == 'parquet'
+        assert executor.meta_data == {'dataset': 'dataset1', 'item': 'value'}
 
     @pytest.mark.asyncio
     async def test_execute_with_file_url_root(self, mocker):
@@ -141,10 +146,10 @@ class TestExecutor:
 
         datsource = MockDataSource(
             urls=[
-                ('root', StreamInfoPath(
+                ('root', "dataset1", StreamInfoPath(
                     "root1.ROOT", Path(os.path.join(file_path, "root1.ROOT"))
                 )),
-                ('root', StreamInfoPath(
+                ('root', "dataset1", StreamInfoPath(
                     "root2.ROOT", Path(os.path.join(file_path, "root2.ROOT"))
                 )),
             ]
@@ -175,10 +180,10 @@ class TestExecutor:
 
         datsource = MockDataSource(
             urls=[
-                ('parquet', StreamInfoPath(
+                ('parquet', "dataset1", StreamInfoPath(
                     "root1.parquet", Path(os.path.join(file_path, "root1.parquet"))
                 )),
-                ('parquet', StreamInfoPath(
+                ('parquet', "dataset1", StreamInfoPath(
                     "root2.parquet", Path(os.path.join(file_path, "root2.parquet"))
                 )),
             ]

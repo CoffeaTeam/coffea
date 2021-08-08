@@ -33,6 +33,16 @@ from coffea.processor.servicex import DataSource
 
 
 class TestDataSource:
+    def test_ds_metadata(self, mocker):
+        query = MockQuery("select * from events")
+
+        dataset = MockDatset(
+            urls=["http://foo.bar.com/yyy.ROOT", "http://baz.bar.com/xxx.ROOT"],
+            datatype="root",
+        )
+        data_source = DataSource(query=query, metadata={'item': 'stuff'}, datasets=[dataset])  # type: ignore
+        assert data_source.metadata == {'item': 'stuff'}
+    
     @pytest.mark.asyncio
     async def test_stream_result_file_urls_root(self, mocker):
         query = MockQuery("select * from events")
@@ -45,8 +55,8 @@ class TestDataSource:
 
         url_stream = [url async for url in data_source.stream_result_file_urls()]
         assert url_stream == [
-            ('root', "http://foo.bar.com/yyy.ROOT"),
-            ('root', "http://baz.bar.com/xxx.ROOT"),
+            ('root', "dataset1", "http://foo.bar.com/yyy.ROOT"),
+            ('root', "dataset1", "http://baz.bar.com/xxx.ROOT"),
         ]
         assert dataset.num_calls == 1
         assert dataset.called_query == "select * from events"
@@ -64,8 +74,8 @@ class TestDataSource:
 
         url_stream = [url async for url in data_source.stream_result_file_urls()]
         assert url_stream == [
-            ('parquet', "http://foo.bar.com/yyy.ROOT"),
-            ('parquet', "http://baz.bar.com/xxx.ROOT"),
+            ('parquet', "dataset1", "http://foo.bar.com/yyy.ROOT"),
+            ('parquet', "dataset1", "http://baz.bar.com/xxx.ROOT"),
         ]
         assert dataset.num_calls_parquet == 1
         assert dataset.called_query == "select * from events"
@@ -83,8 +93,8 @@ class TestDataSource:
 
         file_stream = [f async for f in data_source.stream_result_files()]
         assert file_stream == [
-            ('root', "http://foo.bar.com/yyy.ROOT"),
-            ('root', "http://baz.bar.com/xxx.ROOT"),
+            ('root', "dataset1", "http://foo.bar.com/yyy.ROOT"),
+            ('root', "dataset1", "http://baz.bar.com/xxx.ROOT"),
         ]
         assert dataset.num_calls == 1
         assert dataset.called_query == "select * from events"
@@ -102,8 +112,8 @@ class TestDataSource:
 
         file_stream = [f async for f in data_source.stream_result_files()]
         assert file_stream == [
-            ('parquet', "http://foo.bar.com/yyy.ROOT"),
-            ('parquet', "http://baz.bar.com/xxx.ROOT"),
+            ('parquet', "dataset1", "http://foo.bar.com/yyy.ROOT"),
+            ('parquet', "dataset1", "http://baz.bar.com/xxx.ROOT"),
         ]
         assert dataset.num_calls_parquet == 1
         assert dataset.called_query == "select * from events"
@@ -118,6 +128,10 @@ class MockDatset:
         self.num_calls = 0
         self.num_calls_parquet = 0
         self.datatype = datatype
+
+    @property
+    def dataset_as_name(self) -> str:
+        return "dataset1"
 
     async def get_data_rootfiles_url_stream(self, query):
         self.called_query = query

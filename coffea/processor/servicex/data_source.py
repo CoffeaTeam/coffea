@@ -63,7 +63,7 @@ class DataSource:
 
     async def stream_result_file_urls(
         self,
-    ) -> AsyncGenerator[Tuple[str, StreamInfoUrl], None]:
+    ) -> AsyncGenerator[Tuple[str, str, StreamInfoUrl], None]:
         """Launch all datasources off to servicex
 
         Yields:
@@ -76,10 +76,10 @@ class DataSource:
             data_type = dataset.first_supported_datatype(["parquet", "root"])
             if data_type == "root":
                 async for file in dataset.get_data_rootfiles_url_stream(qastle):
-                    yield (data_type, file)
+                    yield (data_type, dataset.dataset_as_name, file)
             elif data_type == "parquet":
                 async for file in dataset.get_data_parquet_url_stream(qastle):
-                    yield (data_type, file)
+                    yield (data_type, dataset.dataset_as_name, file)
             else:
                 raise Exception(
                     f"This dataset ({str(dataset)}) supports unknown datatypes"
@@ -87,7 +87,7 @@ class DataSource:
 
     async def stream_result_files(
         self,
-    ) -> AsyncGenerator[Tuple[str, StreamInfoPath], None]:
+    ) -> AsyncGenerator[Tuple[str, str, StreamInfoPath], None]:
         """Launch all datasources at once off to servicex
 
         Yields:
@@ -100,10 +100,10 @@ class DataSource:
             data_type = dataset.first_supported_datatype(["parquet", "root"])
             if data_type == "root":
                 async for file in dataset.get_data_rootfiles_stream(qastle):
-                    yield (data_type, file)
+                    yield (data_type, dataset.dataset_as_name, file)
             elif data_type == "parquet":
                 async for file in dataset.get_data_parquet_stream(qastle):
-                    yield (data_type, file)
+                    yield (data_type, dataset.dataset_as_name, file)
             else:
                 raise Exception(
                     f"This dataset ({str(dataset)}) supports unknown datatypes"

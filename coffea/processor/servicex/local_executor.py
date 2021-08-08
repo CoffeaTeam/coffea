@@ -25,7 +25,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import Callable, Optional
+from typing import Callable, Dict, Optional
 from .executor import Executor, run_coffea_processor
 
 
@@ -39,19 +39,22 @@ class LocalExecutor(Executor):
     def run_async_analysis(self, file_url: str,
                            tree_name: Optional[str],
                            data_type: str,
+                           meta_data: Dict[str, str],
                            process_func: Callable):
         # TODO: Do we need a second routine here? Can we just use this one?
         return self._async_analysis(
             events_url=file_url,
             tree_name=tree_name,
             data_type=data_type,
+            meta_data=meta_data,
             process_func=process_func,
         )
 
-    async def _async_analysis(self, events_url, tree_name, data_type, process_func):
+    async def _async_analysis(self, events_url, tree_name, data_type, meta_data, process_func):
         return run_coffea_processor(
             events_url=events_url,
             tree_name=tree_name,
             data_type=data_type,
+            meta_data=meta_data,
             proc=process_func,
         )

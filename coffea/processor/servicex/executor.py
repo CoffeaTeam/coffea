@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from abc import ABC, abstractmethod
-from typing import Any, Callable, AsyncGenerator, Optional, Tuple
+from typing import Any, Callable, AsyncGenerator, Dict, Optional, Tuple
 
 # from urllib.parse import urlparse, unquote
 # from urllib.request import url2pathname
@@ -44,6 +44,7 @@ class Executor(ABC):
         file_url: str,
         tree_name: Optional[str],
         data_type: str,
+        meta_data: Dict[str, str],
         process_func: Callable,
     ):
         raise NotImplementedError
@@ -66,7 +67,9 @@ class Executor(ABC):
 
         # Launch a task against this file
         func_results = self.launch_analysis_tasks_from_stream(
-            result_file_stream, analysis.process
+            result_file_stream,
+            datasource.metadata,
+            analysis.process
         )
 
         # Wait for all the data to show up
@@ -84,7 +87,8 @@ class Executor(ABC):
 
     async def launch_analysis_tasks_from_stream(
         self,
-        result_file_stream: AsyncGenerator[Tuple[str, StreamInfoUrl], None],
+        result_file_stream: AsyncGenerator[Tuple[str, str, StreamInfoUrl], None],
+        meta_data: Dict[str, str],
         process_func: Callable,
     ) -> AsyncGenerator[Any, None]:
         """
@@ -98,15 +102,9 @@ class Executor(ABC):
         """
         tree_name = None
         async for sx_data in result_file_stream:
-            file_url = sx_data[1].url
+            file_url = sx_data[2].url
+            sample_md = dict(meta_data, dataset=sx_data[1])
             data_type = sx_data[0]
-
-            # Parse the absolute path out if this is a file:// uri. THis is due to a bug
-            # in uproot4 that means `file://` isn't parsed correctly on windows.
-            # TODO: Remove this hack when `uproot4` has been updated.
-            # p = urlparse(file_url)
-            # if p.scheme == "file":
-            #     file_url = url2pathname(unquote(p.path))
 
             # Determine the tree name if we've not gotten it already
             if data_type == "root":
@@ -119,6 +117,7 @@ class Executor(ABC):
                 file_url=file_url,
                 tree_name=tree_name,
                 data_type=data_type,
+                meta_data=sample_md,
                 process_func=process_func,
             )
 
@@ -131,6 +130,7 @@ def run_coffea_processor(
     tree_name: Optional[str],
     proc,
     data_type,
+    meta_data,
     explicit_func_pickle=False,
 ):
     """
@@ -163,14 +163,14 @@ def run_coffea_processor(
             file=str(events_url),
             treepath=f"/{tree_name}",
             schemaclass=auto_schema,
-            metadata={"filename": str(events_url)},
+            metadata=dict(meta_data, filename=str(events_url)),
         ).events()
     elif data_type == "parquet":
         events = NanoEventsFactory.from_parquet(
             file=str(events_url),
             treepath="/",
             schemaclass=auto_schema,
-            metadata={"filename": str(events_url)},
+            metadata=dict(meta_data, filename=str(events_url)),
         ).events()
     else:
         raise Exception(f"Unknown stream data type of {data_type} - cannot process.")
