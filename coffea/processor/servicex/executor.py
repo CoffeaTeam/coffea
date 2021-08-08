@@ -67,9 +67,7 @@ class Executor(ABC):
 
         # Launch a task against this file
         func_results = self.launch_analysis_tasks_from_stream(
-            result_file_stream,
-            datasource.metadata,
-            analysis.process
+            result_file_stream, datasource.metadata, analysis.process
         )
 
         # Wait for all the data to show up

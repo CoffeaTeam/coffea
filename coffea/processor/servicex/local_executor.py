@@ -36,11 +36,14 @@ class LocalExecutor(Executor):
     def get_result_file_stream(self, datasource):
         return datasource.stream_result_files()
 
-    def run_async_analysis(self, file_url: str,
-                           tree_name: Optional[str],
-                           data_type: str,
-                           meta_data: Dict[str, str],
-                           process_func: Callable):
+    def run_async_analysis(
+        self,
+        file_url: str,
+        tree_name: Optional[str],
+        data_type: str,
+        meta_data: Dict[str, str],
+        process_func: Callable,
+    ):
         # TODO: Do we need a second routine here? Can we just use this one?
         return self._async_analysis(
             events_url=file_url,
@@ -50,7 +53,9 @@ class LocalExecutor(Executor):
             process_func=process_func,
         )
 
-    async def _async_analysis(self, events_url, tree_name, data_type, meta_data, process_func):
+    async def _async_analysis(
+        self, events_url, tree_name, data_type, meta_data, process_func
+    ):
         return run_coffea_processor(
             events_url=events_url,
             tree_name=tree_name,
