@@ -25,7 +25,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import Callable, Optional
+from typing import Callable, Dict, Optional
 from dask.distributed import Client
 from .executor import run_coffea_processor, Executor
 
@@ -55,12 +55,14 @@ class DaskExecutor(Executor):
                            file_url: str,
                            tree_name: Optional[str],
                            data_type: str,
+                           meta_data: Dict[str, str],
                            process_func: Callable):
         data_result = self.dask.submit(
             run_coffea_processor,
             events_url=file_url,
             tree_name=tree_name,
             data_type=data_type,
+            meta_data=meta_data,
             proc=process_func,
         )
 
