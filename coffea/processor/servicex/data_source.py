@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from typing import AsyncGenerator, Dict, List, Tuple
+from typing import AsyncGenerator, Dict, List, Optional, Tuple
 
 from servicex import ServiceXDataset, StreamInfoPath, StreamInfoUrl
 from func_adl import ObjectStream, find_EventDataset
@@ -62,7 +62,7 @@ class DataSource:
         return await self.query.value_async()
 
     async def stream_result_file_urls(
-        self,
+        self, title: Optional[str] = None
     ) -> AsyncGenerator[Tuple[str, str, StreamInfoUrl], None]:
         """Launch all datasources off to servicex
 
@@ -75,10 +75,14 @@ class DataSource:
         for dataset in self.datasets:
             data_type = dataset.first_supported_datatype(["parquet", "root"])
             if data_type == "root":
-                async for file in dataset.get_data_rootfiles_url_stream(qastle):
+                async for file in dataset.get_data_rootfiles_url_stream(
+                    qastle, title=title
+                ):
                     yield (data_type, dataset.dataset_as_name, file)
             elif data_type == "parquet":
-                async for file in dataset.get_data_parquet_url_stream(qastle):
+                async for file in dataset.get_data_parquet_url_stream(
+                    qastle, title=title
+                ):
                     yield (data_type, dataset.dataset_as_name, file)
             else:
                 raise Exception(
@@ -86,7 +90,7 @@ class DataSource:
                 )
 
     async def stream_result_files(
-        self,
+        self, title: Optional[str] = None
     ) -> AsyncGenerator[Tuple[str, str, StreamInfoPath], None]:
         """Launch all datasources at once off to servicex
 
@@ -99,10 +103,12 @@ class DataSource:
         for dataset in self.datasets:
             data_type = dataset.first_supported_datatype(["parquet", "root"])
             if data_type == "root":
-                async for file in dataset.get_data_rootfiles_stream(qastle):
+                async for file in dataset.get_data_rootfiles_stream(
+                    qastle, title=title
+                ):
                     yield (data_type, dataset.dataset_as_name, file)
             elif data_type == "parquet":
-                async for file in dataset.get_data_parquet_stream(qastle):
+                async for file in dataset.get_data_parquet_stream(qastle, title=title):
                     yield (data_type, dataset.dataset_as_name, file)
             else:
                 raise Exception(

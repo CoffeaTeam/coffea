@@ -45,11 +45,11 @@ class DaskExecutor(Executor):
             else Client(client_addr, asynchronous=True)
         )
 
-    def get_result_file_stream(self, datasource):
+    def get_result_file_stream(self, datasource, title):
         if self.is_local:
-            return datasource.stream_result_files()
+            return datasource.stream_result_files(title)
         else:
-            return datasource.stream_result_file_urls()
+            return datasource.stream_result_file_urls(title)
 
     def run_async_analysis(
         self,

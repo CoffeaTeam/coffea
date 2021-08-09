@@ -33,8 +33,8 @@ class LocalExecutor(Executor):
     def __init__(self):
         pass
 
-    def get_result_file_stream(self, datasource):
-        return datasource.stream_result_files()
+    def get_result_file_stream(self, datasource, title):
+        return datasource.stream_result_files(title)
 
     def run_async_analysis(
         self,
