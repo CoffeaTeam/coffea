@@ -133,29 +133,33 @@ class MockDatset:
     def dataset_as_name(self) -> str:
         return "dataset1"
 
-    async def get_data_rootfiles_url_stream(self, query):
+    async def get_data_rootfiles_url_stream(self, query, title):
         self.called_query = query
+        self.title = title
         self.num_calls += 1
 
         for url in self.urls:
             yield url
 
-    async def get_data_parquet_url_stream(self, query):
+    async def get_data_parquet_url_stream(self, query, title):
         self.called_query = query
+        self.title = title
         self.num_calls_parquet += 1
 
         for url in self.urls:
             yield url
 
-    async def get_data_rootfiles_stream(self, query):
+    async def get_data_rootfiles_stream(self, query, title):
         self.called_query = query
+        self.title = title
         self.num_calls += 1
 
         for f in self.files:
             yield f
 
-    async def get_data_parquet_stream(self, query):
+    async def get_data_parquet_stream(self, query, title):
         self.called_query = query
+        self.title = title
         self.num_calls_parquet += 1
 
         for f in self.files:
