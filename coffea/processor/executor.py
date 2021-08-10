@@ -1,6 +1,6 @@
 from __future__ import print_function, division
 import concurrent.futures
-from functools import partial, wraps
+from functools import partial
 from itertools import repeat
 import time
 import pickle
@@ -16,26 +16,13 @@ from collections import defaultdict
 from cachetools import LRUCache
 import lz4.frame as lz4f
 from .processor import ProcessorABC
-from .accumulator import (
-    accumulate,
-    set_accumulator,
-    Accumulatable,
-)
-from .dataframe import (
-    LazyDataFrame,
-)
+from .accumulator import accumulate, set_accumulator
+from .dataframe import LazyDataFrame
 from ..nanoevents import NanoEventsFactory, schemas
-from ..util import _hash, deprecate
+from ..util import _hash
 
 from collections.abc import Mapping, MutableMapping
-from enum import Enum
-
-from typing import Dict, Sequence, Callable, Any, Optional, TypeVar, cast
-
-try:
-    from typing import Protocol, runtime_checkable  # type: ignore
-except ImportError:
-    from typing_extensions import Protocol, runtime_checkable  # type: ignore
+from abc import ABCMeta, abstractmethod
 
 
 _PICKLE_PROTOCOL = pickle.HIGHEST_PROTOCOL
@@ -270,79 +257,19 @@ def _futures_handler(futures, timeout):
             _cancel(futures.pop())
 
 
-# see: https://github.com/scikit-hep/boost-histogram/blob/master/src/boost_histogram/_internal/enum.py
-class ExecutorKind(str, Enum):
-    Iterative = "Iterative"
-    Futures = "Futures"
-    Dask = "Dask"
-    Parsl = "Parsl"
-    WorkQueue = "WorkQueue"
-    Unkown = "Unkown"
-    __str__ = cast(Callable[["ExecutorKind"], str], str.__str__)  # type: ignore
+class ExecutorABC(metaclass=ABCMeta):
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs or {}
+
+    @abstractmethod
+    def __call__(self, items, function, accumulator):
+        return
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({', '.join([f'{k}={v}' for k, v in self.kwargs.items()])})"
 
 
-@runtime_checkable
-class ExecutorLike(Protocol):
-    name: str
-    kind: ExecutorKind
-
-    @staticmethod
-    def executor(
-        items: Sequence,
-        function: Callable,
-        accumulator: Accumulatable,
-        **kwargs: Any,
-    ) -> Accumulatable:
-        ...
-
-
-Executors: Dict[str, ExecutorLike] = {}
-
-
-T = TypeVar("T")
-
-
-class DispatchExecutor:
-    def __init__(self: T, name: str, kind: Optional[str] = None) -> None:
-        self.name = name
-        if kind is None:
-            kind = ExecutorKind.Unkown
-        self.kind = kind
-
-    def mkcls(self: T, executor: Callable) -> ExecutorLike:
-        assert callable(executor)
-        return type(
-            f"{self.name}Executor",
-            (),
-            dict(name=self.name.lower(), kind=self.kind, executor=executor),
-        )
-
-    def __call__(self: T, executor: Callable, *args: Any, **kwargs: Any) -> Callable:
-        Executors[self.name] = self.mkcls(executor)
-
-        @wraps(executor)
-        def wrapper(*args, **kwargs):
-            return executor(*args, **kwargs)
-
-        return wrapper
-
-
-DispatchExecutor.__doc__ = f"""Dispatch executor functions to classes
-
-Parameters
-----------
-    name : str
-        name of the executor-class
-    kind: str or class, optional
-        executor base class, available: {list(map(lambda x: x.value, ExecutorKind))}
-"""
-
-
-deprecated_executor_usage = {}
-
-
-@DispatchExecutor(name="WorkQueue", kind=ExecutorKind.WorkQueue)
-def work_queue_executor(items, function, accumulator, **kwargs):
+class WorkQueueExecutor(ExecutorABC):
     """Execute using Work Queue
 
     For more information, see :ref:`intro-coffea-wq`
@@ -364,7 +291,6 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         compression : int, optional
             Compress accumulator outputs in flight with LZ4, at level specified (default 9)
             Set to ``None`` for no compression.
-
         # work queue specific options:
         cores : int
             Number of cores for work queue task. If unset, use a whole worker.
@@ -374,16 +300,14 @@ def work_queue_executor(items, function, accumulator, **kwargs):
             Amount of disk space (in MB) for work queue task. If unset, use a whole worker.
         gpus : int
             Number of GPUs to allocate to each task.  If unset, use zero.
-
         resources-mode : one of 'fixed', or 'auto'. Default is 'fixed'.
             - 'fixed': allocate cores, memory, and disk specified for each task.
             - 'auto': use cores, memory, and disk as maximum values to allocate.
-                      Useful when the resources used by a task are not known, as
-                      it lets work queue find an efficient value for maximum
-                      throughput.
+                    Useful when the resources used by a task are not known, as
+                    it lets work queue find an efficient value for maximum
+                    throughput.
         resource-monitor : bool
             If true, (false is the default) turns on resource monitoring for Work Queue.
-
         master-name : str
             Name to refer to this work queue master.
             Sets port to 0 (any available port) if port not given.
@@ -423,22 +347,22 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         print-stdout : bool
             If true (default), print the standard output of work queue task on completion.
     """
-    try:
-        import work_queue  # noqa
-        import dill  # noqa
-        from .work_queue_tools import work_queue_main
-    except ImportError as e:
-        print("You must have Work Queue and dill installed to use work_queue_executor!")
-        raise e
 
-    return work_queue_main(items, function, accumulator, **kwargs)
+    def __call__(self, items, function, accumulator):
+        try:
+            import work_queue  # noqa
+            import dill  # noqa
+            from .work_queue_tools import work_queue_main
+        except ImportError as e:
+            print(
+                "You must have Work Queue and dill installed to use work_queue_executor!"
+            )
+            raise e
+
+        return work_queue_main(items, function, accumulator, **self.kwargs)
 
 
-deprecated_executor_usage[work_queue_executor] = "WorkQueue"
-
-
-@DispatchExecutor(name="Iterative", kind=ExecutorKind.Iterative)
-def iterative_executor(items, function, accumulator, **kwargs):
+class IterativeExecutor(ExecutorABC):
     """Execute in one thread iteratively
 
     Parameters
@@ -458,21 +382,28 @@ def iterative_executor(items, function, accumulator, **kwargs):
         compression : int, optional
             Ignored for iterative executor
     """
-    if len(items) == 0:
-        return accumulator
-    status = kwargs.pop("status", True)
-    unit = kwargs.pop("unit", "items")
-    desc = kwargs.pop("desc", "Processing")
-    gen = tqdm(items, disable=not status, unit=unit, total=len(items), desc=desc)
-    gen = map(function, gen)
-    return accumulate(gen, accumulator)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.status = kwargs.pop("status", True)
+        self.unit = kwargs.pop("unit", "items")
+        self.desc = kwargs.pop("desc", "Processing")
+
+    def __call__(self, items, function, accumulator):
+        if len(items) == 0:
+            return accumulator
+        gen = tqdm(
+            items,
+            disable=not self.status,
+            unit=self.unit,
+            total=len(items),
+            desc=self.desc,
+        )
+        gen = map(function, gen)
+        return accumulate(gen, accumulator)
 
 
-deprecated_executor_usage[iterative_executor] = "Iterative"
-
-
-@DispatchExecutor(name="Futures", kind=ExecutorKind.Futures)
-def futures_executor(items, function, accumulator, **kwargs):
+class FuturesExecutor(ExecutorABC):
     """Execute using multiple local cores using python futures
 
     Parameters
@@ -501,49 +432,50 @@ def futures_executor(items, function, accumulator, **kwargs):
             Timeout requirement on job tails. Cancel all remaining jobs if none have finished
             in the timeout window.
     """
-    if len(items) == 0:
-        return accumulator
-    pool = kwargs.pop("pool", concurrent.futures.ProcessPoolExecutor)
-    workers = kwargs.pop("workers", 1)
-    status = kwargs.pop("status", True)
-    unit = kwargs.pop("unit", "items")
-    desc = kwargs.pop("desc", "Processing")
-    clevel = kwargs.pop("compression", 1)
-    tailtimeout = kwargs.pop("tailtimeout", None)
-    if clevel is not None:
-        function = _compression_wrapper(clevel, function)
 
-    def processwith(pool):
-        gen = _futures_handler(
-            {pool.submit(function, item) for item in items}, tailtimeout
-        )
-        try:
-            return accumulate(
-                tqdm(
-                    gen if clevel is None else map(_decompress, gen),
-                    disable=not status,
-                    unit=unit,
-                    total=len(items),
-                    desc=desc,
-                ),
-                accumulator,
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.pool = kwargs.pop("pool", concurrent.futures.ProcessPoolExecutor)
+        self.workers = kwargs.pop("workers", 1)
+        self.status = kwargs.pop("status", True)
+        self.unit = kwargs.pop("unit", "items")
+        self.desc = kwargs.pop("desc", "Processing")
+        self.clevel = kwargs.pop("compression", 1)
+        self.tailtimeout = kwargs.pop("tailtimeout", None)
+
+    def __call__(self, items, function, accumulator):
+        if len(items) == 0:
+            return accumulator
+        if self.clevel is not None:
+            function = _compression_wrapper(self.clevel, function)
+
+        def processwith(pool):
+            gen = _futures_handler(
+                {pool.submit(function, item) for item in items}, self.tailtimeout
             )
-        finally:
-            gen.close()
+            try:
+                return accumulate(
+                    tqdm(
+                        gen if self.clevel is None else map(_decompress, gen),
+                        disable=not self.status,
+                        unit=self.unit,
+                        total=len(items),
+                        desc=self.desc,
+                    ),
+                    accumulator,
+                )
+            finally:
+                gen.close()
 
-    if isinstance(pool, concurrent.futures.Executor):
-        return processwith(pool)
-    else:
-        # assume its a class then
-        with pool(max_workers=workers) as poolinstance:
-            return processwith(poolinstance)
+        if isinstance(self.pool, concurrent.futures.Executor):
+            return processwith(pool=self.pool)
+        else:
+            # assume its a class then
+            with self.pool(max_workers=self.workers) as poolinstance:
+                return processwith(pool=poolinstance)
 
 
-deprecated_executor_usage[futures_executor] = "Futures"
-
-
-@DispatchExecutor(name="Dask", kind=ExecutorKind.Dask)
-def dask_executor(items, function, accumulator, **kwargs):
+class DaskExecutor(ExecutorABC):
     """Execute using dask futures
 
     Parameters
@@ -578,100 +510,111 @@ def dask_executor(items, function, accumulator, **kwargs):
 
             .. note:: If ``heavy_input`` is set, ``function`` is assumed to be pure.
     """
-    import dask.dataframe as dd
 
-    if len(items) == 0:
-        return accumulator
-    client = kwargs.pop("client")
-    ntree = kwargs.pop("treereduction", 20)
-    status = kwargs.pop("status", True)
-    clevel = kwargs.pop("compression", 1)
-    priority = kwargs.pop("priority", 0)
-    retries = kwargs.pop("retries", 3)
-    heavy_input = kwargs.pop("heavy_input", None)
-    function_name = kwargs.pop("function_name", None)
-    use_dataframes = kwargs.pop("use_dataframes", False)
-    # secret options
-    worker_affinity = kwargs.pop("worker_affinity", False)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.client = kwargs.pop("client")
+        self.ntree = kwargs.pop("treereduction", 20)
+        self.status = kwargs.pop("status", True)
+        self.clevel = kwargs.pop("compression", 1)
+        self.priority = kwargs.pop("priority", 0)
+        self.retries = kwargs.pop("retries", 3)
+        self.heavy_input = kwargs.pop("heavy_input", None)
+        self.function_name = kwargs.pop("function_name", None)
+        self.use_dataframes = kwargs.pop("use_dataframes", False)
+        # secret options
+        self.worker_affinity = kwargs.pop("worker_affinity", False)
 
-    if use_dataframes:
-        clevel = None
+    def __call__(self, items, function, accumulator):
+        import dask.dataframe as dd
 
-    reducer = _reduce(clevel)
-    if clevel is not None:
-        function = _compression_wrapper(clevel, function, name=function_name)
+        if len(items) == 0:
+            return accumulator
 
-    if heavy_input is not None:
-        # client.scatter is not robust against adaptive clusters
-        # https://github.com/CoffeaTeam/coffea/issues/465
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", "Large object of size")
-            items = list(zip(items, repeat(client.submit(lambda x: x, heavy_input))))
+        if self.use_dataframes:
+            self.clevel = None
 
-    work = []
-    if worker_affinity:
-        workers = list(client.run(lambda: 0))
-
-        def belongsto(workerindex, item):
-            if heavy_input is not None:
-                item = item[0]
-            hashed = _hash(
-                (item.fileuuid, item.treename, item.entrystart, item.entrystop)
+        reducer = _reduce(self.clevel)
+        if self.clevel is not None:
+            function = _compression_wrapper(
+                self.clevel, function, name=self.function_name
             )
-            return hashed % len(workers) == workerindex
 
-        for workerindex, worker in enumerate(workers):
-            work.extend(
-                client.map(
-                    function,
-                    [item for item in items if belongsto(workerindex, item)],
-                    pure=(heavy_input is not None),
-                    priority=priority,
-                    retries=retries,
-                    workers={worker},
-                    allow_other_workers=False,
+        if self.heavy_input is not None:
+            # client.scatter is not robust against adaptive clusters
+            # https://github.com/CoffeaTeam/coffea/issues/465
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", "Large object of size")
+                items = list(
+                    zip(
+                        items, repeat(self.client.submit(lambda x: x, self.heavy_input))
+                    )
                 )
+
+        work = []
+        if self.worker_affinity:
+            workers = list(self.client.run(lambda: 0))
+
+            def belongsto(heavy_input, workerindex, item):
+                if heavy_input is not None:
+                    item = item[0]
+                hashed = _hash(
+                    (item.fileuuid, item.treename, item.entrystart, item.entrystop)
+                )
+                return hashed % len(workers) == workerindex
+
+            for workerindex, worker in enumerate(workers):
+                work.extend(
+                    self.client.map(
+                        function,
+                        [
+                            item
+                            for item in items
+                            if belongsto(self.heavy_input, workerindex, item)
+                        ],
+                        pure=(self.heavy_input is not None),
+                        priority=self.priority,
+                        retries=self.retries,
+                        workers={worker},
+                        allow_other_workers=False,
+                    )
+                )
+        else:
+            work = self.client.map(
+                function,
+                items,
+                pure=(self.heavy_input is not None),
+                priority=self.priority,
+                retries=self.retries,
             )
-    else:
-        work = client.map(
-            function,
-            items,
-            pure=(heavy_input is not None),
-            priority=priority,
-            retries=retries,
-        )
-    if (function_name == "get_metadata") or not use_dataframes:
-        while len(work) > 1:
-            work = client.map(
-                reducer,
-                [work[i : i + ntree] for i in range(0, len(work), ntree)],
-                pure=True,
-                priority=priority,
-                retries=retries,
+        if (self.function_name == "get_metadata") or not self.use_dataframes:
+            while len(work) > 1:
+                work = self.client.map(
+                    reducer,
+                    [work[i : i + self.ntree] for i in range(0, len(work), self.ntree)],
+                    pure=True,
+                    priority=self.priority,
+                    retries=self.retries,
+                )
+            work = work[0]
+            if self.status:
+                from distributed import progress
+
+                # FIXME: fancy widget doesn't appear, have to live with boring pbar
+                progress(work, multi=True, notebook=False)
+            return accumulate(
+                [work.result() if self.clevel is None else _decompress(work.result())],
+                accumulator,
             )
-        work = work[0]
-        if status:
-            from distributed import progress
+        else:
+            if self.status:
+                from distributed import progress
 
-            # FIXME: fancy widget doesn't appear, have to live with boring pbar
-            progress(work, multi=True, notebook=False)
-        return accumulate(
-            [work.result() if clevel is None else _decompress(work.result())],
-            accumulator,
-        )
-    else:
-        if status:
-            from distributed import progress
-
-            progress(work, multi=True, notebook=False)
-        return {"out": dd.from_delayed(work)}
+                progress(work, multi=True, notebook=False)
+            return {"out": dd.from_delayed(work)}
 
 
-deprecated_executor_usage[dask_executor] = "Dask"
-
-
-@DispatchExecutor(name="Parsl", kind=ExecutorKind.Parsl)
-def parsl_executor(items, function, accumulator, **kwargs):
+class ParslExecutor(ExecutorABC):
     """Execute using parsl pyapp wrapper
 
     Parameters
@@ -699,62 +642,64 @@ def parsl_executor(items, function, accumulator, **kwargs):
             Timeout requirement on job tails. Cancel all remaining jobs if none have finished
             in the timeout window.
     """
-    if len(items) == 0:
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.status = kwargs.pop("status", True)
+        self.unit = kwargs.pop("unit", "items")
+        self.desc = kwargs.pop("desc", "Processing")
+        self.clevel = kwargs.pop("compression", 1)
+        self.tailtimeout = kwargs.pop("tailtimeout", None)
+        self.config = kwargs.pop("config", None)
+
+    def __call__(self, items, function, accumulator):
+        if len(items) == 0:
+            return accumulator
+        import parsl
+        from parsl.app.app import python_app
+        from .parsl.timeout import timeout
+
+        if self.clevel is not None:
+            function = _compression_wrapper(self.clevel, function)
+
+        cleanup = False
+        try:
+            parsl.dfk()
+        except RuntimeError:
+            cleanup = True
+            pass
+        if cleanup and self.config is None:
+            raise RuntimeError(
+                "No active parsl DataFlowKernel, must specify a config to construct one"
+            )
+        elif not cleanup and self.config is not None:
+            raise RuntimeError("An active parsl DataFlowKernel already exists")
+        elif self.config is not None:
+            parsl.clear()
+            parsl.load(self.config)
+
+        app = timeout(python_app(function))
+
+        gen = _futures_handler(map(app, items), self.tailtimeout)
+        try:
+            accumulator = accumulate(
+                tqdm(
+                    gen if self.clevel is None else map(_decompress, gen),
+                    disable=not self.status,
+                    unit=self.unit,
+                    total=len(items),
+                    desc=self.desc,
+                ),
+                accumulator,
+            )
+        finally:
+            gen.close()
+
+        if cleanup:
+            parsl.dfk().cleanup()
+            parsl.clear()
+
         return accumulator
-    import parsl
-    from parsl.app.app import python_app
-    from .parsl.timeout import timeout
-
-    status = kwargs.pop("status", True)
-    unit = kwargs.pop("unit", "items")
-    desc = kwargs.pop("desc", "Processing")
-    clevel = kwargs.pop("compression", 1)
-    tailtimeout = kwargs.pop("tailtimeout", None)
-    if clevel is not None:
-        function = _compression_wrapper(clevel, function)
-
-    cleanup = False
-    config = kwargs.pop("config", None)
-    try:
-        parsl.dfk()
-    except RuntimeError:
-        cleanup = True
-        pass
-    if cleanup and config is None:
-        raise RuntimeError(
-            "No active parsl DataFlowKernel, must specify a config to construct one"
-        )
-    elif not cleanup and config is not None:
-        raise RuntimeError("An active parsl DataFlowKernel already exists")
-    elif config is not None:
-        parsl.clear()
-        parsl.load(config)
-
-    app = timeout(python_app(function))
-
-    gen = _futures_handler(map(app, items), tailtimeout)
-    try:
-        accumulator = accumulate(
-            tqdm(
-                gen if clevel is None else map(_decompress, gen),
-                disable=not status,
-                unit=unit,
-                total=len(items),
-                desc=desc,
-            ),
-            accumulator,
-        )
-    finally:
-        gen.close()
-
-    if cleanup:
-        parsl.dfk().cleanup()
-        parsl.clear()
-
-    return accumulator
-
-
-deprecated_executor_usage[parsl_executor] = "Parsl"
 
 
 def _get_cache(strategy):
@@ -1038,7 +983,7 @@ def _preprocess_fileset(
                 "worker_affinity": False,
             }
             pre_args.update(pre_arg_override)
-            out = pre_executor(to_get, metadata_fetcher, out, **pre_args)
+            out = pre_executor(**pre_args)(to_get, metadata_fetcher, out)
             while out:
                 item = out.pop()
                 metadata_cache[item] = item.metadata
@@ -1126,13 +1071,13 @@ def run_uproot_job(
             treename can also be defined in fileset, which will override the passed treename
         processor_instance : ProcessorABC
             An instance of a class deriving from ProcessorABC
-        executor : str
-            Name of an Executor, which implements a callable with inputs: items, function, accumulator
+        executor : class
+            Executor, which implements a callable with inputs: items, function, accumulator
             and performs some action equivalent to:
             ``for item in items: accumulator += function(item)``
         executor_args : dict, optional
-            Arguments to pass to executor.  See `iterative_executor`,
-            `futures_executor`, `dask_executor`, or `parsl_executor` for available options.
+            Arguments to pass to executor.  See `IterativeExecutor`,
+            `FuturesExecutor`, `DaskExecutor`, or `ParslExecutor` for available options.
             Some options are not passed to executors but rather and affect the behavior of the
             work function itself:
 
@@ -1147,9 +1092,9 @@ def run_uproot_job(
             - ``tailtimeout`` timeout requirement on job tails (seconds)
             - ``align_clusters`` aligns the chunks to natural boundaries in the ROOT files (default False)
             - ``use_dataframes`` retrieve output as a distributed Dask DataFrame (default False).
-                Only works with `dask_executor`; the processor output must be a Pandas DataFrame.
-        pre_executor : str
-            A name of an Executor, used to calculate fileset metadata
+                Only works with `DaskExecutor`; the processor output must be a Pandas DataFrame.
+        pre_executor : class
+            Executor, used to calculate fileset metadata
             Defaults to executor
         pre_args : dict, optional
             Similar to executor_args, defaults to executor_args
@@ -1186,22 +1131,12 @@ def run_uproot_job(
 
     if pre_executor is None:
         pre_executor = executor
-    if callable(executor):
-        executor = deprecated_executor_usage[executor]
-        deprecate(
-            f"The support for executor callable will be removed in a future coffea release. Please use '{executor}' instead, e.g.: `run_uproot_job(..., executor='{executor}', ...)`",  # noqa: E501
-            "<unknown>",
-        )
-    if callable(pre_executor):
-        pre_executor = deprecated_executor_usage[pre_executor]
-        deprecate(
-            f"The support for pre_executor callable will be removed in a future coffea release. Please use '{pre_executor}' instead, e.g.: `run_uproot_job(..., pre_executor='{pre_executor}', ...)`",  # noqa: E501
-            "<unknown>",
-        )
-    assert isinstance(executor, str)
-    assert isinstance(pre_executor, str)
-    Executor = Executors[executor]
-    PreExecutor = Executors[pre_executor]
+
+    if not issubclass(executor, ExecutorABC):
+        raise ValueError("Expected executor to derive from ExecutorABC")
+
+    if not issubclass(pre_executor, ExecutorABC):
+        raise ValueError("Expected pre_executor to derive from ExecutorABC")
 
     if pre_args is None:
         pre_args = dict(executor_args)
@@ -1216,7 +1151,7 @@ def run_uproot_job(
 
     # pop _get_metdata args here (also sent to _work_function)
     skipbadfiles = executor_args.pop("skipbadfiles", False)
-    if Executor.kind == ExecutorKind.Dask:
+    if issubclass(executor, DaskExecutor):
         # this executor has a builtin retry mechanism
         retries = 0
     else:
@@ -1232,7 +1167,7 @@ def run_uproot_job(
         raise RuntimeError(
             "maxchunks and dynamic_chunksize cannot be used simultaneously"
         )
-    if dynamic_chunksize and not Executor.kind == ExecutorKind.WorkQueue:
+    if dynamic_chunksize and not issubclass(executor, WorkQueueExecutor):
         raise RuntimeError(
             "dynamic_chunksize currently only supported by the work_queue_executor"
         )
@@ -1246,7 +1181,7 @@ def run_uproot_job(
     )
 
     _preprocess_fileset(
-        PreExecutor.executor,
+        pre_executor,
         pre_args,
         fileset,
         metadata_fetcher,
@@ -1280,7 +1215,7 @@ def run_uproot_job(
     mmap = executor_args.pop("mmap", False)
     schema = executor_args.pop("schema", schemas.BaseSchema)
     use_dataframes = executor_args.pop("use_dataframes", False)
-    if not Executor.kind == ExecutorKind.Dask and use_dataframes:
+    if not issubclass(executor, DaskExecutor) and use_dataframes:
         warnings.warn(
             "Only Dask executor supports DataFrame outputs! Resetting 'use_dataframes' argument to False."
         )
@@ -1310,7 +1245,7 @@ def run_uproot_job(
         use_dataframes=use_dataframes,
     )
     # hack around dask/dask#5503 which is really a silly request but here we are
-    if Executor.kind == ExecutorKind.Dask:
+    if issubclass(executor, DaskExecutor):
         executor_args["heavy_input"] = pi_to_send
         closure = partial(closure, processor_instance="heavy")
     else:
@@ -1323,7 +1258,7 @@ def run_uproot_job(
         events_total = sum(len(c) for c in chunks)
 
     exe_args = {
-        "unit": "event" if Executor.kind == ExecutorKind.WorkQueue else "chunk",
+        "unit": "event" if issubclass(executor, WorkQueueExecutor) else "chunk",
         "function_name": type(processor_instance).__name__,
         "use_dataframes": use_dataframes,
         "events_total": events_total,
@@ -1333,7 +1268,7 @@ def run_uproot_job(
     }
 
     exe_args.update(executor_args)
-    wrapped_out = Executor.executor(chunks, closure, None, **exe_args)
+    wrapped_out = executor(**exe_args)(chunks, closure, None)
 
     processor_instance.postprocess(wrapped_out["out"])
     if savemetrics and not use_dataframes:
@@ -1492,6 +1427,9 @@ def run_parquet_job(fileset, treename, processor_instance, executor, executor_ar
     if not isinstance(processor_instance, ProcessorABC):
         raise ValueError("Expected processor_instance to derive from ProcessorABC")
 
+    if not issubclass(executor, ExecutorABC):
+        raise ValueError("Expected executor to derive from ExecutorABC")
+
     dataset_filelist_map = {}
     for dataset, basedir in fileset.items():
         ds_ = ds.dataset(basedir, format="parquet")
@@ -1502,7 +1440,7 @@ def run_parquet_job(fileset, treename, processor_instance, executor, executor_ar
 
     # pop _get_metdata args here (also sent to _work_function)
     skipbadfiles = executor_args.pop("skipbadfiles", False)
-    if executor is dask_executor:
+    if issubclass(executor, DaskExecutor):
         # this executor has a builtin retry mechanism
         retries = 0
     else:
@@ -1527,7 +1465,7 @@ def run_parquet_job(fileset, treename, processor_instance, executor, executor_ar
     mmap = executor_args.pop("mmap", False)
     schema = executor_args.pop("schema", schemas.BaseSchema)
     use_dataframes = executor_args.pop("use_dataframes", False)
-    if (executor is not dask_executor) and use_dataframes:
+    if not issubclass(executor, DaskExecutor) and use_dataframes:
         warnings.warn(
             "Only Dask executor supports DataFrame outputs! Resetting 'use_dataframes' argument to False."
         )
@@ -1558,7 +1496,7 @@ def run_parquet_job(fileset, treename, processor_instance, executor, executor_ar
         format="parquet",
     )
     # hack around dask/dask#5503 which is really a silly request but here we are
-    if executor is dask_executor:
+    if issubclass(executor, DaskExecutor):
         executor_args["heavy_input"] = pi_to_send
         closure = partial(closure, processor_instance="heavy")
     else:
@@ -1570,7 +1508,7 @@ def run_parquet_job(fileset, treename, processor_instance, executor, executor_ar
         "use_dataframes": use_dataframes,
     }
     exe_args.update(executor_args)
-    wrapped_out = executor(chunks, closure, None, **exe_args)
+    wrapped_out = executor(**exe_args)(chunks, closure, None)
 
     processor_instance.postprocess(wrapped_out["out"])
     if savemetrics and not use_dataframes:

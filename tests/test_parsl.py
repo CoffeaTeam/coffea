@@ -44,7 +44,7 @@ def do_parsl_job(filelist, flatten=False, compression=0, config=None):
         filelist,
         treename,
         processor_instance=proc,
-        executor="Parsl",
+        executor=processor.ParslExecutor,
         executor_args=exe_args,
     )
 
