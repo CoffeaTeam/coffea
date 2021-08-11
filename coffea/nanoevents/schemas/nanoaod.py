@@ -248,6 +248,7 @@ class NanoAODSchema(BaseSchema):
             elif "o" + name in branch_forms:
                 # list singleton, can use branch's own offsets
                 output[name] = branch_forms[name]
+                output[name].setdefault("parameters", {})
                 output[name]["parameters"].update(
                     {"__array__": mixin, "collection_name": name}
                 )
@@ -265,6 +266,7 @@ class NanoAODSchema(BaseSchema):
                     name,
                     record_name=mixin,
                 )
+                output[name].setdefault("parameters", {})
                 output[name]["parameters"].update({"collection_name": name})
 
         return output
