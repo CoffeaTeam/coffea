@@ -13,8 +13,7 @@ from .executor import (
     DaskExecutor,
     ParslExecutor,
     WorkQueueExecutor,
-    run_uproot_job,
-    run_parquet_job,
+    Runner,
     run_spark_job,
 )
 from .accumulator import (
@@ -43,8 +42,7 @@ __all__ = [
     "DaskExecutor",
     "ParslExecutor",
     "WorkQueueExecutor",
-    "run_uproot_job",
-    "run_parquet_job",
+    "Runner",
     "run_spark_job",
     "accumulate",
     "Accumulatable",

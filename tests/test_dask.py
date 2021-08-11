@@ -5,21 +5,12 @@ import pytest
 
 
 def do_dask_job(client, filelist, compression=0):
-    treename = "Events"
     from coffea.processor.test_items import NanoTestProcessor
 
-    proc = NanoTestProcessor()
-    exe_args = {
-        "client": client,
-        "compression": compression,
-    }
-    hists = processor.run_uproot_job(
-        filelist,
-        treename,
-        processor_instance=proc,
-        executor=processor.DaskExecutor,
-        executor_args=exe_args,
-    )
+    executor = processor.DaskExecutor(client=client, compression=compression)
+    run = processor.Runner(executor=executor)
+
+    hists = run(filelist, "Events", processor_instance=NanoTestProcessor())
 
     assert hists["cutflow"]["ZJets_pt"] == 18
     assert hists["cutflow"]["ZJets_mass"] == 6
@@ -28,20 +19,22 @@ def do_dask_job(client, filelist, compression=0):
 
 
 def do_dask_cached(client, filelist, cachestrategy=None):
-    from coffea.nanoevents import NanoAODSchema
+    from coffea.nanoevents import schemas
     from coffea.processor.test_items import NanoEventsProcessor
     from coffea.processor.dask import register_columncache
 
     register_columncache(client)
 
-    exe_args = {
-        "client": client,
-        "schema": NanoAODSchema,
-        "cachestrategy": cachestrategy,
-        "savemetrics": True,
-        "worker_affinity": True if cachestrategy is not None else False,
-    }
-    hists, metrics = processor.run_uproot_job(
+    worker_affinity = True if cachestrategy is not None else False
+    executor = processor.DaskExecutor(client=client, worker_affinity=worker_affinity)
+    run = processor.Runner(
+        executor=executor,
+        schema=schemas.NanoAODSchema,
+        cachestrategy=cachestrategy,
+        savemetrics=True,
+    )
+
+    hists, metrics = run(
         filelist,
         "Events",
         processor_instance=NanoEventsProcessor(
@@ -54,8 +47,6 @@ def do_dask_cached(client, filelist, cachestrategy=None):
                 "a9490124-3648-11ea-89e9-f5b55c90beef/%2FEvents%3B1/0-40/Muon_charge%2C%21load%2C%21content",
             ]
         ),
-        executor=processor.DaskExecutor,
-        executor_args=exe_args,
     )
 
     assert hists["cutflow"]["ZJets_pt"] == 18
