@@ -922,7 +922,7 @@ class Runner:
             cache = self.cachestrategy()
         return cache
 
-    def automatic_retries(self, func, /, *args, **kwargs):
+    def automatic_retries(self, func, *args, **kwargs):
         """This should probably defined on Executor-level."""
         import warnings
 
