@@ -24,7 +24,7 @@ from ..util import _hash
 
 from collections.abc import Mapping, MutableMapping
 from dataclasses import dataclass, field, asdict
-from typing import Sequence, Callable, Optional, List, Generator, Dict
+from typing import Iterable, Callable, Optional, List, Generator, Dict
 
 try:
     from functools import cached_property
@@ -256,7 +256,7 @@ class ExecutorBase:
 
     def __call__(
         self,
-        items: Sequence,
+        items: Iterable,
         function: Callable,
         accumulator: Accumulatable,
     ):
@@ -383,7 +383,7 @@ class WorkQueueExecutor(ExecutorBase):
 
     def __call__(
         self,
-        items: Sequence,
+        items: Iterable,
         function: Callable,
         accumulator: Accumulatable,
     ):
@@ -434,7 +434,7 @@ class IterativeExecutor(ExecutorBase):
 
     def __call__(
         self,
-        items: Sequence,
+        items: Iterable,
         function: Callable,
         accumulator: Accumulatable,
     ):
@@ -491,7 +491,7 @@ class FuturesExecutor(ExecutorBase):
 
     def __call__(
         self,
-        items: Sequence,
+        items: Iterable,
         function: Callable,
         accumulator: Accumulatable,
     ):
@@ -577,7 +577,7 @@ class DaskExecutor(ExecutorBase):
 
     def __call__(
         self,
-        items: Sequence,
+        items: Iterable,
         function: Callable,
         accumulator: Accumulatable,
     ):
@@ -715,7 +715,7 @@ class ParslExecutor(ExecutorBase):
 
     def __call__(
         self,
-        items: Sequence,
+        items: Iterable,
         function: Callable,
         accumulator: Accumulatable,
     ):
