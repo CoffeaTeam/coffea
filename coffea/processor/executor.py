@@ -13,7 +13,7 @@ import uuid
 import warnings
 import shutil
 from tqdm.auto import tqdm
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from cachetools import LRUCache
 import lz4.frame as lz4f
 from .processor import ProcessorABC
@@ -23,7 +23,7 @@ from ..nanoevents import NanoEventsFactory, schemas
 from ..util import _hash
 
 from collections.abc import Mapping, MutableMapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import Sequence, Callable, Optional, List, Generator, Dict
 
 try:
@@ -131,41 +131,23 @@ class FileMeta(object):
                     actual_chunksize = next_chunksize
 
 
-class WorkItem(
-    namedtuple(
-        "WorkItemBase",
-        [
-            "dataset",
-            "filename",
-            "treename",
-            "entrystart",
-            "entrystop",
-            "fileuuid",
-            "usermeta",
-        ],
-    )
-):
-    def __new__(
-        cls,
-        dataset,
-        filename,
-        treename,
-        entrystart,
-        entrystop,
-        fileuuid,
-        usermeta=None,
-    ):
-        return cls.__bases__[0].__new__(
-            cls, dataset, filename, treename, entrystart, entrystop, fileuuid, usermeta
-        )
+@dataclass(unsafe_hash=True)
+class WorkItem:
+    dataset: str
+    filename: str
+    treename: str
+    entrystart: int
+    entrystop: int
+    fileuuid: str
+    usermeta: Optional[Dict] = None
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.entrystop - self.entrystart
 
 
-def _compress(item, clevel):
+def _compress(item, compression):
     return lz4f.compress(
-        pickle.dumps(item, protocol=_PICKLE_PROTOCOL), compression_level=clevel
+        pickle.dumps(item, protocol=_PICKLE_PROTOCOL), compression_level=compression
     )
 
 
@@ -197,8 +179,8 @@ class _compression_wrapper(object):
 
 
 class _reduce:
-    def __init__(self, clevel):
-        self.compression = clevel
+    def __init__(self, compression):
+        self.compression = compression
 
     def __str__(self):
         return "reduce"
@@ -503,6 +485,9 @@ class FuturesExecutor(ExecutorBase):
     pool: concurrent.futures.Executor = concurrent.futures.ProcessPoolExecutor
     workers: int = 1
     tailtimeout: Optional[int] = None
+
+    def __getstate__(self):
+        return dict(self.__dict__, pool=None)
 
     def __call__(
         self,
@@ -1147,7 +1132,9 @@ class Runner:
                 elif self.format == "parquet":
                     rados_parquet_options = {}
                     if ":" in item.filename:
-                        ceph_config_path, item.filename = item.filename.split(":")
+                        ceph_config_path, filename = item.filename.split(":")
+                        # patch back filename into item
+                        item = WorkItem(**dict(asdict(item), filename=filename))
                         rados_parquet_options["ceph_config_path"] = ceph_config_path
 
                     factory = NanoEventsFactory.from_parquet(
