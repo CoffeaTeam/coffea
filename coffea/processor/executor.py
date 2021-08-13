@@ -791,15 +791,6 @@ class Runner:
 
     Parameters
     ----------
-        fileset : dict
-            A dictionary ``{dataset: [file, file], }``
-            Optionally, if some files' tree name differ, the dictionary can be specified:
-            ``{dataset: {'treename': 'name', 'files': [file, file]}, }``
-        treename : str
-            name of tree inside each root file, can be ``None``;
-            treename can also be defined in fileset, which will override the passed treename
-        processor_instance : ProcessorABC
-            An instance of a class deriving from ProcessorABC
         executor : ExecutorBase instance
             Executor, which implements a callable with inputs: items, function, accumulator
             and performs some action equivalent to:
@@ -1187,6 +1178,21 @@ class Runner:
         treename: str,
         processor_instance: ProcessorABC,
     ) -> Accumulatable:
+        """Run the processor_instance on a given fileset
+
+        Parameters
+        ----------
+            fileset : dict
+                A dictionary ``{dataset: [file, file], }``
+                Optionally, if some files' tree name differ, the dictionary can be specified:
+                ``{dataset: {'treename': 'name', 'files': [file, file]}, }``
+            treename : str
+                name of tree inside each root file, can be ``None``;
+                treename can also be defined in fileset, which will override the passed treename
+            processor_instance : ProcessorABC
+                An instance of a class deriving from ProcessorABC
+        """
+
         if not isinstance(fileset, (Mapping, str)):
             raise ValueError(
                 "Expected fileset to be a mapping dataset: list(files) or filename"
