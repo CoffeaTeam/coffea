@@ -88,7 +88,7 @@ class TwoVector:
     @property
     def r2(self):
         """Squared `r`"""
-        return self.x ** 2 + self.y ** 2
+        return self.x * self.x + self.y * self.y
 
     @property
     def pt2(self):
@@ -219,7 +219,7 @@ class PolarTwoVector(TwoVector):
     @property
     def r2(self):
         """Squared `r`"""
-        return self.r ** 2
+        return self.r * self.r
 
     @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
@@ -260,7 +260,7 @@ class ThreeVector(TwoVector):
     @property
     def rho2(self):
         """Squared `rho`"""
-        return self.r2 + self.z ** 2
+        return self.r2 + self.z * self.z
 
     @property
     def rho(self):
@@ -410,7 +410,7 @@ class SphericalThreeVector(ThreeVector, PolarTwoVector):
     @property
     def p2(self):
         """Squared `p`"""
-        return self.rho ** 2
+        return self.rho * self.rho
 
     @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
@@ -465,7 +465,7 @@ class LorentzVector(ThreeVector):
     @property
     def mass2(self):
         """Squared `mass`"""
-        return self.t ** 2 - self.p2
+        return self.t * self.t - self.p2
 
     @property
     def mass(self):
@@ -538,7 +538,9 @@ class LorentzVector(ThreeVector):
 
     def delta_r2(self, other):
         """Squared `delta_r`"""
-        return (self.eta - other.eta) ** 2 + self.delta_phi(other) ** 2
+        deta = self.eta - other.eta
+        dphi = self.delta_phi(other)
+        return  deta * deta + dphi * dphi
 
     def delta_r(self, other):
         r"""Distance between two Lorentz vectors in (eta,phi) plane
@@ -760,12 +762,12 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
     @property
     def rho2(self):
         """Squared `rho`"""
-        return self.rho ** 2
+        return self.rho * self.rho
 
     @property
     def mass2(self):
         """Squared `mass`"""
-        return self.mass ** 2
+        return self.mass * self.mass
 
     @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
@@ -875,7 +877,7 @@ class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
     @property
     def rho2(self):
         """Squared `rho`"""
-        return self.rho ** 2
+        return self.rho * self.rho
 
     @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
