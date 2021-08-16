@@ -54,14 +54,13 @@ def _run_x_job(
     format="root",
 ):
     """
-    Please use instead, e.g.::
+    Please use instead, e.g.:
 
         executor = IterativeExecutor()
         run = processor.Runner(
             executor=executor,
             schema=processor.NanoAODSchema,
         )
-
         hists = run(filelist, "Events", processor_instance=processor_instance)
     """
 
@@ -98,6 +97,7 @@ def _run_x_job(
         metadata_cache=metadata_cache,
         dynamic_chunksize=dynamic_chunksize,
         dynamic_chunksize_targets=dynamic_chunksize_targets,
+        format=format,
         **executor_args,
     )
 
