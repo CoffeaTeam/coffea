@@ -44,6 +44,27 @@ A small example::
 import numbers
 import numpy
 import awkward
+import numba
+
+
+@numba.vectorize(
+    [
+        numba.float32(numba.float32, numba.float32, numba.float32, numba.float32),
+        numba.float64(numba.float64, numba.float64, numba.float64, numba.float64),
+    ]
+)
+def _mass2_kernel(t, x, y, z):
+    return t * t - x * x - y * y - z * z
+
+
+@numba.vectorize(
+    [
+        numba.float32(numba.float32, numba.float32),
+        numba.float64(numba.float64, numba.float64),
+    ]
+)
+def _deltaphi_kernel(a, b):
+    return (a - b + numpy.pi) % (2 * numpy.pi) - numpy.pi
 
 
 behavior = {}
@@ -164,7 +185,7 @@ class TwoVector:
 
         Returns a value within [-pi, pi)
         """
-        return (self.phi - other.phi + numpy.pi) % (2 * numpy.pi) - numpy.pi
+        return _deltaphi_kernel(self.phi, other.phi)
 
     def dot(self, other):
         """Compute the dot product of two vectors"""
@@ -465,7 +486,7 @@ class LorentzVector(ThreeVector):
     @property
     def mass2(self):
         """Squared `mass`"""
-        return self.t * self.t - self.p2
+        return _mass2_kernel(self.t, self.x, self.y, self.z)
 
     @property
     def mass(self):
@@ -540,14 +561,14 @@ class LorentzVector(ThreeVector):
         """Squared `delta_r`"""
         deta = self.eta - other.eta
         dphi = self.delta_phi(other)
-        return  deta * deta + dphi * dphi
+        return deta * deta + dphi * dphi
 
     def delta_r(self, other):
         r"""Distance between two Lorentz vectors in (eta,phi) plane
 
         :math:`\sqrt{\Delta\eta^2 + \Delta\phi^2}`
         """
-        return numpy.sqrt(self.delta_r2(other))
+        return numpy.hypot(self.eta - other.eta, self.delta_phi(other))
 
     @awkward.mixin_class_method(numpy.negative)
     def negative(self):
