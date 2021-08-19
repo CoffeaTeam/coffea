@@ -124,12 +124,7 @@ class Executor(ABC):
 
 
 def run_coffea_processor(
-    events_url: str,
-    tree_name: Optional[str],
-    proc,
-    data_type,
-    meta_data,
-    explicit_func_pickle=False,
+    events_url: str, tree_name: Optional[str], proc, data_type, meta_data
 ):
     """
     Process a single file from a tree via a coffea processor on the remote node
@@ -144,9 +139,6 @@ def run_coffea_processor(
         Analysis function to execute. Must have signature
     :param data_type:
         What datatype is the data (root, parquet?)
-    :param explicit_func_pickle: bool
-        Do we need to use dill to explicitly pickle the process function, or can we
-        rely on the remote execution framework to handle it correctly?
     :return:
         Populated accumulator
     """
@@ -173,10 +165,4 @@ def run_coffea_processor(
     else:
         raise Exception(f"Unknown stream data type of {data_type} - cannot process.")
 
-    if explicit_func_pickle:
-        import dill as pickle
-
-        f = pickle.loads(proc)
-        return f(events)
-    else:
-        return proc(events)
+    return proc(events)
