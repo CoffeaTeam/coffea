@@ -70,14 +70,13 @@ INSTALL_REQUIRES = [
     "cloudpickle>=1.2.3",
     "mplhep>=0.1.18",
     "packaging",
-    "ipywidgets",
     "pandas",
     "hist>=2",
     'typing-extensions;python_version<"3.8"',
     "cachetools",
 ]
 EXTRAS_REQUIRE = {}
-EXTRAS_REQUIRE["spark"] = ["pyspark>=2.4.1,<3.0.0", "jinja2"]
+EXTRAS_REQUIRE["spark"] = ["ipywidgets", "pyspark>=2.4.1,<3.0.0", "jinja2"]
 EXTRAS_REQUIRE["parsl"] = ["parsl>=1.1"]
 EXTRAS_REQUIRE["dask"] = [
     "dask[dataframe]>=2.6.0",
