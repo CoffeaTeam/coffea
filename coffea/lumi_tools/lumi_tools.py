@@ -34,28 +34,6 @@ class LumiData(object):
                 ],  # not sure what lumi:0 means, appears to be always zero (DAQ off before beam dump?)
             },
         )
-        self.index = Dict.empty(
-            key_type=types.Tuple([types.uint32, types.uint32]), value_type=types.float64
-        )
-        self.build_lumi_table()
-
-    def build_lumi_table(self):
-        """Build index for numba-compiled functions
-
-        This needs to be executed upon unpickling, it should be part of
-        a custom deserialize function.
-        """
-        runs = self._lumidata[:, 0].astype("u4")
-        lumis = self._lumidata[:, 1].astype("u4")
-        LumiData._build_lumi_table_kernel(runs, lumis, self._lumidata, self.index)
-
-    @staticmethod
-    @numba.njit(parallel=False, fastmath=False)
-    def _build_lumi_table_kernel(runs, lumis, lumidata, index):
-        for i in range(len(runs)):
-            run = runs[i]
-            lumi = lumis[i]
-            index[(run, lumi)] = float(lumidata[i, 2])
 
     def get_lumi(self, runlumis):
         """Calculate integrated lumi
@@ -66,11 +44,27 @@ class LumiData(object):
                 A 2d numpy array of ``[[run,lumi], [run,lumi], ...]`` or `LumiList` object
                 of the lumiSections to integrate over.
         """
+        self.index = Dict.empty(
+            key_type=types.Tuple([types.uint32, types.uint32]), value_type=types.float64
+        )
+        runs = self._lumidata[:, 0].astype("u4")
+        lumis = self._lumidata[:, 1].astype("u4")
+        # fill self.index
+        LumiData._build_lumi_table_kernel(runs, lumis, self._lumidata, self.index)
+
         if isinstance(runlumis, LumiList):
             runlumis = runlumis.array
         tot_lumi = np.zeros((1,), dtype=np.float64)
         LumiData._get_lumi_kernel(runlumis[:, 0], runlumis[:, 1], self.index, tot_lumi)
         return tot_lumi[0]
+
+    @staticmethod
+    @numba.njit(parallel=False, fastmath=False)
+    def _build_lumi_table_kernel(runs, lumis, lumidata, index):
+        for i in range(len(runs)):
+            run = runs[i]
+            lumi = lumis[i]
+            index[(run, lumi)] = float(lumidata[i, 2])
 
     @staticmethod
     @numba.njit(parallel=False, fastmath=False)
@@ -100,7 +94,7 @@ class LumiMask(object):
         with open(jsonfile) as fin:
             goldenjson = json.load(fin)
 
-        self._masks = Dict.empty(key_type=types.uint32, value_type=types.uint32[:])
+        self._masks = {}
 
         for run, lumilist in goldenjson.items():
             mask = np.array(lumilist, dtype=np.uint32).flatten()
@@ -123,17 +117,18 @@ class LumiMask(object):
                 An array of dtype `bool` where valid (run, lumi) tuples
                 will have their corresponding entry set ``True``.
         """
+        # fill numba typed dict
+        _masks = Dict.empty(key_type=types.uint32, value_type=types.uint32[:])
+        for k, v in self._masks.items():
+            _masks[k] = v
+
         if isinstance(runs, ak.highlevel.Array):
             runs = ak.to_numpy(runs)
         if isinstance(lumis, ak.highlevel.Array):
             lumis = ak.to_numpy(lumis)
         mask_out = np.zeros(dtype="bool", shape=runs.shape)
-        LumiMask._apply_run_lumi_mask(self._masks, runs, lumis, mask_out)
+        LumiMask._apply_run_lumi_mask_kernel(_masks, runs, lumis, mask_out)
         return mask_out
-
-    @staticmethod
-    def _apply_run_lumi_mask(masks, runs, lumis, mask_out):
-        LumiMask._apply_run_lumi_mask_kernel(masks, runs, lumis, mask_out)
 
     # This could be run in parallel, but windows does not support it
     @staticmethod

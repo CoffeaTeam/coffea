@@ -300,6 +300,12 @@ def work_queue_executor(items, function, accumulator, **kwargs):
                       throughput.
         resource-monitor : bool
             If true, (false is the default) turns on resource monitoring for Work Queue.
+        fast_terminate_workers: int
+            Terminate workers on which tasks have been running longer than average.
+            The time limit is computed by multiplying the average runtime of tasks
+            by the value of 'fast_terminate_workers'. Since there are
+            legitimately slow tasks, no task may trigger fast termination in
+            two distinct workers. Less than 1 disables it.
 
         master-name : str
             Name to refer to this work queue master.

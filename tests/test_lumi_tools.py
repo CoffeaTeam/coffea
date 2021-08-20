@@ -1,5 +1,7 @@
 from __future__ import print_function, division
 
+import cloudpickle
+
 from coffea.lumi_tools import LumiData, LumiMask, LumiList
 from coffea.util import numpy as np
 
@@ -10,51 +12,81 @@ def test_lumidata():
 
     lumidata = LumiData("tests/samples/lumi_small.csv")
 
+    # pickle & unpickle
+    lumidata_pickle = cloudpickle.loads(cloudpickle.dumps(lumidata))
+
+    # check same internal lumidata
+    assert np.all(lumidata._lumidata == lumidata_pickle._lumidata)
+
     runslumis = np.zeros((10, 2), dtype=np.uint32)
-    runslumis[:, 0] = lumidata._lumidata[0:10, 0]
-    runslumis[:, 1] = lumidata._lumidata[0:10, 1]
-    lumi = lumidata.get_lumi(runslumis)
-    diff = abs(lumi - 1.539941814)
-    print("lumi:", lumi, "diff:", diff)
-    assert diff < 1e-4
+    results = {"lumi": {}, "index": {}}
+    for ld in lumidata, lumidata_pickle:
+        runslumis[:, 0] = ld._lumidata[0:10, 0]
+        runslumis[:, 1] = ld._lumidata[0:10, 1]
+        lumi = ld.get_lumi(runslumis)
+        results["lumi"][ld] = lumi
+        diff = abs(lumi - 1.539941814)
+        print("lumi:", lumi, "diff:", diff)
+        assert diff < 1e-4
 
-    # test build_lumi_table_kernel
-    py_index = Dict.empty(
-        key_type=types.Tuple([types.uint32, types.uint32]), value_type=types.float64
-    )
-    pyruns = lumidata._lumidata[:, 0].astype("u4")
-    pylumis = lumidata._lumidata[:, 1].astype("u4")
-    LumiData._build_lumi_table_kernel.py_func(
-        pyruns, pylumis, lumidata._lumidata, py_index
-    )
+        # test build_lumi_table_kernel
+        py_index = Dict.empty(
+            key_type=types.Tuple([types.uint32, types.uint32]), value_type=types.float64
+        )
+        pyruns = ld._lumidata[:, 0].astype("u4")
+        pylumis = ld._lumidata[:, 1].astype("u4")
+        LumiData._build_lumi_table_kernel.py_func(
+            pyruns, pylumis, ld._lumidata, py_index
+        )
 
-    assert len(py_index) == len(lumidata.index)
+        assert len(py_index) == len(ld.index)
 
-    # test get_lumi_kernel
-    py_tot_lumi = np.zeros((1,), dtype=np.float64)
-    LumiData._get_lumi_kernel.py_func(
-        runslumis[:, 0], runslumis[:, 1], py_index, py_tot_lumi
-    )
+        # test get_lumi_kernel
+        py_tot_lumi = np.zeros((1,), dtype=np.float64)
+        LumiData._get_lumi_kernel.py_func(
+            runslumis[:, 0], runslumis[:, 1], py_index, py_tot_lumi
+        )
 
-    assert abs(py_tot_lumi[0] - lumi) < 1e-4
+        assert abs(py_tot_lumi[0] - lumi) < 1e-4
+
+        # store results:
+        results["lumi"][ld] = lumi
+        results["index"][ld] = ld.index
+
+    assert np.all(results["lumi"][lumidata] == results["lumi"][lumidata_pickle])
+    assert len(results["index"][lumidata]) == len(results["index"][lumidata_pickle])
 
 
 def test_lumimask():
     lumimask = LumiMask(
         "tests/samples/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt"
     )
+
+    # pickle & unpickle
+    lumimask_pickle = cloudpickle.loads(cloudpickle.dumps(lumimask))
+
+    # check same mask keys
+    keys = lumimask._masks.keys()
+    assert keys == lumimask_pickle._masks.keys()
+    # check same mask values
+    assert all(np.all(lumimask._masks[k] == lumimask_pickle._masks[k]) for k in keys)
+
     runs = np.array([303825, 123], dtype=np.uint32)
     lumis = np.array([115, 123], dtype=np.uint32)
-    mask = lumimask(runs, lumis)
-    print("mask:", mask)
-    assert mask[0]
-    assert not mask[1]
 
-    # test underlying py_func
-    py_mask = np.zeros(dtype="bool", shape=runs.shape)
-    LumiMask._apply_run_lumi_mask_kernel.py_func(lumimask._masks, runs, lumis, py_mask)
+    for lm in lumimask, lumimask_pickle:
+        mask = lm(runs, lumis)
+        print("mask:", mask)
+        assert mask[0]
+        assert not mask[1]
 
-    assert np.all(mask == py_mask)
+        # test underlying py_func
+        py_mask = np.zeros(dtype="bool", shape=runs.shape)
+        LumiMask._apply_run_lumi_mask_kernel.py_func(lm._masks, runs, lumis, py_mask)
+
+        assert np.all(mask == py_mask)
+
+    assert np.all(lumimask(runs, lumis) == lumimask_pickle(runs, lumis))
 
 
 def test_lumilist():
