@@ -443,6 +443,7 @@ def work_queue_main(items, function, accumulator, **kwargs):
         "wrapper": shutil.which("python_package_run"),
         "resource_monitor": False,
         "resources_mode": "fixed",
+        "fast_terminate_workers": None,
         "cores": None,
         "memory": None,
         "disk": None,
@@ -706,6 +707,15 @@ def _declare_resources(exec_defaults):
 
         if exec_defaults["resources_mode"] == "auto":
             _wq_queue.specify_category_mode(category, wq.WORK_QUEUE_ALLOCATION_MODE_MAX)
+
+        # enable fast termination of workers
+        if (
+            exec_defaults["fast_terminate_workers"]
+            and exec_defaults["fast_terminate_workers"] > 1
+        ):
+            _wq_queue.activate_fast_abort_category(
+                category, exec_defaults["fast_terminate_workers"]
+            )
 
 
 def _submit_proc_task(
