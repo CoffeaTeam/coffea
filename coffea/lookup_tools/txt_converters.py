@@ -78,7 +78,9 @@ def _parse_jme_formatted_file(
     prefix = "" if parmsFromColumns else "eval_"
     if not interpolatedFunc:
         for i in range(nEvalVars):
-            columns.extend(["%s%s%s" % (prefix, layout[i + offset], mm) for mm in minMax])
+            columns.extend(
+                ["%s%s%s" % (prefix, layout[i + offset], mm) for mm in minMax]
+            )
             dtypes.extend(["<f4", "<f4"])
     for i in range(nParms):
         columns.append("p%i" % i)
