@@ -1,5 +1,7 @@
 from __future__ import print_function, division
 
+import cloudpickle
+
 from coffea.lumi_tools import LumiData, LumiMask, LumiList
 from coffea.util import numpy as np
 
@@ -9,6 +11,9 @@ def test_lumidata():
     from numba.typed import Dict
 
     lumidata = LumiData("tests/samples/lumi_small.csv")
+
+    # pickle & unpickle
+    cloudpickle.loads(cloudpickle.dumps(lumidata))
 
     runslumis = np.zeros((10, 2), dtype=np.uint32)
     runslumis[:, 0] = lumidata._lumidata[0:10, 0]
@@ -43,6 +48,10 @@ def test_lumimask():
     lumimask = LumiMask(
         "tests/samples/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt"
     )
+
+    # pickle & unpickle
+    cloudpickle.loads(cloudpickle.dumps(lumimask))
+
     runs = np.array([303825, 123], dtype=np.uint32)
     lumis = np.array([115, 123], dtype=np.uint32)
     mask = lumimask(runs, lumis)
