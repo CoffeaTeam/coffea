@@ -273,6 +273,18 @@ def test_jec_txt_scalefactors():
     )
     print(jersf_out)
     print(jersf_out_jagged)
+
+    # single jet jersf lookup test:
+    single_jersf_out_1d = evaluator["Spring16_25nsV10_MC_SF_AK4PFPuppi"](
+        np.array([1.4]), np.array([44.0])
+    )
+    single_jersf_out_0d = evaluator["Spring16_25nsV10_MC_SF_AK4PFPuppi"](
+        np.array(1.4), np.array(44.0)
+    )
+    truth_out = np.array([[1.084, 1.095, 1.073]], dtype=np.float32)
+    assert np.all(single_jersf_out_1d == truth_out)
+    assert np.all(single_jersf_out_0d == truth_out)
+
     print(evaluator["Spring16_25nsV10_MC_SF_AK4PFPuppi"])
 
     junc_out = evaluator["Fall17_17Nov2017_V32_MC_Uncertainty_AK4PFPuppi"](
