@@ -68,15 +68,17 @@ def _parse_jme_formatted_file(
     columns = []
     dtypes = []
     offset = 1
+    prefix = "" if parmsFromColumns else "binned_"
     for i in range(nBinnedVars):
-        columns.extend(["%s%s" % (layout[i + offset], mm) for mm in minMax])
+        columns.extend(["%s%s%s" % (prefix, layout[i + offset], mm) for mm in minMax])
         dtypes.extend(["<f4", "<f4"])
     columns.append("NVars")
     dtypes.append("<i8")
     offset += nBinnedVars + 1
+    prefix = "" if parmsFromColumns else "eval_"
     if not interpolatedFunc:
         for i in range(nEvalVars):
-            columns.extend(["%s%s" % (layout[i + offset], mm) for mm in minMax])
+            columns.extend(["%s%s%s" % (prefix, layout[i + offset], mm) for mm in minMax])
             dtypes.extend(["<f4", "<f4"])
     for i in range(nParms):
         columns.append("p%i" % i)
