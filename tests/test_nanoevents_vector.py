@@ -1,6 +1,8 @@
+import numpy as np
 import awkward as ak
 from coffea.nanoevents.methods import vector
 
+import pytest
 
 ATOL = 1e-8
 
@@ -404,3 +406,46 @@ def test_pt_eta_phi_e_lorentz_vector():
     assert ak.all(abs(boosted.x) < ATOL)
     assert ak.all(abs(boosted.y) < ATOL)
     assert ak.all(abs(boosted.z) < ATOL)
+
+
+@pytest.mark.parametrize("a_dtype", ["i4", "f4", "f8"])
+@pytest.mark.parametrize("b_dtype", ["i4", "f4", "f8"])
+def test_lorentz_vector_numba(a_dtype, b_dtype):
+    a = ak.zip(
+        {
+            "x": np.array([1, 2, 3, 4], dtype=a_dtype),
+            "y": np.array([5, 6, 7, 8], dtype=a_dtype),
+            "z": np.array([9, 10, 11, 12], dtype=a_dtype),
+            "t": np.array([50, 51, 52, 53], dtype=b_dtype),  # b on purpose
+        },
+        with_name="LorentzVector",
+        behavior=vector.behavior,
+    )
+    b = ak.zip(
+        {
+            "x": np.array([4, 1, 10, 11], dtype=b_dtype),
+            "y": np.array([17, 7, 11, 6], dtype=b_dtype),
+            "z": np.array([9, 11, 5, 16], dtype=b_dtype),
+            "t": np.array([60, 61, 62, 63], dtype=b_dtype),
+        },
+        with_name="LorentzVector",
+        behavior=vector.behavior,
+    )
+    assert pytest.approx(a.mass) == [
+        48.91829923454004,
+        49.60846701924985,
+        50.24937810560445,
+        50.84289527554464,
+    ]
+    assert pytest.approx((a + b).mass) == [
+        106.14612569472331,
+        109.20164833920778,
+        110.66616465749593,
+        110.68423555321688,
+    ]
+    assert pytest.approx(a.delta_phi(b), abs=1e-7) == [
+        0.03369510734601633,
+        -0.1798534997924781,
+        0.33292327383538156,
+        0.6078019961139605,
+    ]

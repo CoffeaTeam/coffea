@@ -12,7 +12,7 @@ import uproot
 import uuid
 import warnings
 from tqdm.auto import tqdm
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from cachetools import LRUCache
 import lz4.frame as lz4f
 from .processor import ProcessorABC
@@ -127,19 +127,22 @@ class FileMeta(object):
                     actual_chunksize = next_chunksize
 
 
-class WorkItem(object):
-    __slots__ = [
-        "dataset",
-        "filename",
-        "treename",
-        "entrystart",
-        "entrystop",
-        "fileuuid",
-        "usermeta",
-    ]
-
-    def __init__(
-        self,
+class WorkItem(
+    namedtuple(
+        "WorkItemBase",
+        [
+            "dataset",
+            "filename",
+            "treename",
+            "entrystart",
+            "entrystop",
+            "fileuuid",
+            "usermeta",
+        ],
+    )
+):
+    def __new__(
+        cls,
         dataset,
         filename,
         treename,
@@ -148,13 +151,9 @@ class WorkItem(object):
         fileuuid,
         usermeta=None,
     ):
-        self.dataset = dataset
-        self.filename = filename
-        self.treename = treename
-        self.entrystart = entrystart
-        self.entrystop = entrystop
-        self.fileuuid = fileuuid
-        self.usermeta = usermeta
+        return cls.__bases__[0].__new__(
+            cls, dataset, filename, treename, entrystart, entrystop, fileuuid, usermeta
+        )
 
     def __len__(self):
         return self.entrystop - self.entrystart
@@ -280,7 +279,7 @@ def work_queue_executor(items, function, accumulator, **kwargs):
         desc : str
             Label of progress bar description
         compression : int, optional
-            Compress accumulator outputs in flight with LZ4, at level specified (default 1)
+            Compress accumulator outputs in flight with LZ4, at level specified (default 9)
             Set to ``None`` for no compression.
 
         # work queue specific options:
@@ -755,7 +754,10 @@ def _work_function(
                     elif format == "parquet":
                         rados_parquet_options = {}
                         if ":" in item.filename:
-                            ceph_config_path, item.filename = item.filename.split(":")
+                            ceph_config_path, filename = item.filename.split(":")
+                            item = item._asdict()
+                            item["filename"] = filename
+                            item = WorkItem(**item)
                             rados_parquet_options["ceph_config_path"] = ceph_config_path
 
                         factory = NanoEventsFactory.from_parquet(

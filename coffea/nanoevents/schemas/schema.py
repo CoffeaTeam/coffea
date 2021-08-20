@@ -9,7 +9,7 @@ def _build_record_array(
     """Build a record array using the mapping we've got from the contents.
 
     Args:
-        nam_mapping (Dict[str, str]): The mapping of user variable to column in the contents
+        name_mapping (Dict[str, str]): The mapping of user variable to column in the contents
         contents (Dict[str, Any]): The contents of the array we are building into
     """
     items = {
@@ -33,7 +33,7 @@ def _build_record_array(
 
 
 class auto_schema(BaseSchema):
-    """Build a schema"""
+    """Build a schema using heuristics to imply a structure"""
 
     def __init__(self, base_form: Dict[str, Any]):
         """Create an auto schema by parsing the names of the incoming columns
@@ -42,6 +42,7 @@ class auto_schema(BaseSchema):
             - There is a recursiveness to this defintion, as there is to any data structure,
               that is not matched with this. This should be made much more flexible. Perhaps
               with something like python type-hints so editors can also take advantage of this.
+            - Any `_` is inerpreted as going down a level in the structure.
 
         Args:
             base_form (Dict[str, Any]): The base form of what we are going to generate a new schema (form) for.
@@ -50,7 +51,7 @@ class auto_schema(BaseSchema):
 
         # Get the collection names - anything with a common name before the "_".
         contents = self._form["contents"]
-        collections = set(k.split("_")[0] for k in contents)
+        collections = set(k.split("_")[0] for k in contents if "_" in k)
 
         output = {}
         for c_name in collections:
@@ -60,20 +61,42 @@ class auto_schema(BaseSchema):
 
             # Build the new data model from this guy. Look at what is available to see if
             # we can build a 4-vector collection or just a "normal" collection.
-            is_4vector = (
+            is_4vector_mass = (
                 "pt" in mapping
                 and "eta" in mapping
                 and "phi" in mapping
                 and "mass" in mapping
+                and "charge" in mapping
             )
+            is_4vector_E = (
+                "pt" in mapping
+                and "eta" in mapping
+                and "phi" in mapping
+                and "energy" in mapping
+                and "charge" in mapping
+            )
+            record_name = (
+                "PtEtaPhiMCandidate"
+                if is_4vector_mass
+                else "PtEtaPhiECandidate"
+                if is_4vector_E
+                else "NanoCollection"
+            )
+
             record = _build_record_array(
                 c_name,
                 mapping,
                 contents,
-                "PtEtaPhiMCandidate" if is_4vector else "NanoCollection",
+                record_name,
             )
+
             record["parameters"].update({"collection_name": c_name})
             output[c_name] = record
+
+        # Single items in the collection
+        single_items = [k for k in contents if "_" not in k]
+        for item_name in single_items:
+            output[item_name] = contents[item_name]
 
         self._form["contents"] = output
 
