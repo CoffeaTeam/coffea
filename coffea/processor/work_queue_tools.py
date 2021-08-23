@@ -626,17 +626,14 @@ def _work_queue_processing(
                 # we do not remove outputs, as they are used by further accumulate tasks
                 task.cleanup_inputs()
 
-    if len(tasks_to_accumulate) != 1:
-        raise RuntimeError("Not all tasks were accumulated.")
-
-    final_accum_task = tasks_to_accumulate.pop()
-    accumulator = accumulate_result_files(
-        2, exec_defaults["compression"], [final_accum_task.infile_output], accumulator
-    )
-    final_accum_task.cleanup_outputs()
-
     for bar in progress_bars.values():
         bar.close()
+
+    if items_done < items_total:
+        _vprint.printf("\nWARNING: Not all items were processed.\n")
+    accumulator = _final_accumulation(
+        accumulator, tasks_to_accumulate, exec_defaults["compression"]
+    )
 
     if exec_defaults["dynamic_chunksize"]:
         _vprint(
@@ -644,6 +641,26 @@ def _work_queue_processing(
             _compute_chunksize(task_reports, exec_defaults, sample=False),
         )
 
+    return accumulator
+
+
+def _final_accumulation(accumulator, tasks_to_accumulate, compression):
+    if len(tasks_to_accumulate) < 1:
+        raise RuntimeError("No results available.")
+    elif len(tasks_to_accumulate) > 1:
+        _vprint.printf(
+            "Not all results ({}) were accumulated in an accumulation job. Accumulating locally.".format(
+                len(tasks_to_accumulate)
+            )
+        )
+
+    _vprint("Performing final accumulation...")
+
+    accumulator = accumulate_result_files(
+        2, compression, [t.infile_output for t in tasks_to_accumulate], accumulator
+    )
+    for t in tasks_to_accumulate:
+        t.cleanup_outputs()
     return accumulator
 
 
