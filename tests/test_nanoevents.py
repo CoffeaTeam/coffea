@@ -1,7 +1,9 @@
 import os
+from pathlib import Path
+
 import awkward as ak
-from coffea.nanoevents import NanoEventsFactory, NanoAODSchema
 import pytest
+from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 
 
 def genroundtrips(genpart):
@@ -98,6 +100,20 @@ def test_read_nanomc(suffix):
             False,
             True,
         ]
+
+
+@pytest.mark.parametrize("suffix", suffixes)
+def test_read_from_uri(suffix):
+    "Make sure we can properly open the file when a uri is used"
+    path = Path(os.path.abspath(f"tests/samples/nano_dy.{suffix}")).as_uri()
+
+    nanoversion = NanoAODSchema.v6 if suffix == "root" else NanoAODSchema.v5
+    factory = getattr(NanoEventsFactory, f"from_{suffix}")(
+        path, schemaclass=nanoversion
+    )
+    events = factory.events()
+
+    assert len(events) == 40 if suffix == "root" else 10
 
 
 @pytest.mark.parametrize("suffix", suffixes)

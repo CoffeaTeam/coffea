@@ -1,22 +1,25 @@
+import io
+import os
+import pathlib
 import weakref
+from collections.abc import Mapping
+from functools import partial
+from urllib.parse import urlparse
+from urllib.request import url2pathname
+
 import awkward
 import uproot
-import pathlib
-import io
-from functools import partial
-from collections.abc import Mapping
-
-from coffea.nanoevents.util import key_to_tuple, tuple_to_key
 from coffea.nanoevents.mapping import (
-    TrivialUprootOpener,
-    TrivialParquetOpener,
-    UprootSourceMapping,
+    CachedMapping,
     ParquetSourceMapping,
     PreloadedOpener,
     PreloadedSourceMapping,
-    CachedMapping,
+    TrivialParquetOpener,
+    TrivialUprootOpener,
+    UprootSourceMapping,
 )
 from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema
+from coffea.nanoevents.util import key_to_tuple, tuple_to_key
 
 
 def _key_formatter(prefix, partition, form_key, attribute):
@@ -178,8 +181,8 @@ class NanoEventsFactory:
                 Pass a list instance to record which branches were lazily accessed by this instance
         """
         import pyarrow
-        import pyarrow.parquet
         import pyarrow.dataset as ds
+        import pyarrow.parquet
 
         ftypes = (
             str,
@@ -190,6 +193,13 @@ class NanoEventsFactory:
             io.RawIOBase,
             io.IOBase,
         )
+        if isinstance(file, str):
+            # If a URI to a local file, parse it properly
+            if file.startswith("file://"):
+                parsed = urlparse(file)
+                host = f"{os.path.sep}{os.path.sep}{parsed.netloc}{os.path.sep}"
+                file = os.path.normpath(os.path.join(host, url2pathname(parsed.path)))
+
         if isinstance(file, ftypes):
             table_file = pyarrow.parquet.ParquetFile(file, **parquet_options)
         elif isinstance(file, pyarrow.parquet.ParquetFile):
