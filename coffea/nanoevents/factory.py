@@ -1,11 +1,9 @@
 import io
-import os
 import pathlib
 import weakref
 from collections.abc import Mapping
 from functools import partial
-from urllib.parse import urlparse
-from urllib.request import url2pathname
+import fsspec
 
 import awkward
 import uproot
@@ -185,7 +183,6 @@ class NanoEventsFactory:
         import pyarrow.parquet
 
         ftypes = (
-            str,
             pathlib.Path,
             pyarrow.NativeFile,
             io.TextIOBase,
@@ -193,15 +190,12 @@ class NanoEventsFactory:
             io.RawIOBase,
             io.IOBase,
         )
-        if isinstance(file, str):
-            # If a URI to a local file, parse it properly
-            if file.startswith("file://"):
-                parsed = urlparse(file)
-                host = f"{os.path.sep}{os.path.sep}{parsed.netloc}{os.path.sep}"
-                file = os.path.normpath(os.path.join(host, url2pathname(parsed.path)))
 
         if isinstance(file, ftypes):
             table_file = pyarrow.parquet.ParquetFile(file, **parquet_options)
+        elif isinstance(file, str):
+            fs_file = fsspec.open(file, "rb")
+            table_file = pyarrow.parquet.ParquetFile(fs_file, **parquet_options)
         elif isinstance(file, pyarrow.parquet.ParquetFile):
             table_file = file
         else:
