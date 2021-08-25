@@ -7,6 +7,7 @@ import shutil
 import textwrap
 import hashlib
 import warnings
+import signal
 
 from os.path import basename, join
 
@@ -30,6 +31,10 @@ from .accumulator import (
 # retain state between runs of the executor, such
 # as connections to workers, cached data, etc.
 _wq_queue = None
+
+# If set to True, workflow stops processing and outputs only the results that
+# have been already processed.
+early_terminate = False
 
 
 # This function, that accumulates results from files does not require wq.
@@ -555,9 +560,13 @@ def _work_queue_processing(
 
     progress_bars = _make_progress_bars(exec_defaults)
 
+    signal.signal(signal.SIGINT, _handle_early_terminate)
+
     # Main loop of executor
-    while items_done < items_total or not _wq_queue.empty():
-        while items_submitted < items_total and _wq_queue.hungry():
+    while (not early_terminate and items_done < items_total) or not _wq_queue.empty():
+        while (
+            items_submitted < items_total and _wq_queue.hungry() and not early_terminate
+        ):
             update_chunksize = (
                 items_submitted > 0 and exec_defaults["dynamic_chunksize"]
             )
@@ -609,7 +618,7 @@ def _work_queue_processing(
                 else:
                     progress_bars["accumulate"].update(1)
 
-                force_last_accum = items_done >= items_total
+                force_last_accum = (items_done >= items_total) or early_terminate
                 tasks_to_accumulate = _submit_accum_tasks(
                     fn_wrapper,
                     infile_accum_fn,
@@ -642,6 +651,24 @@ def _work_queue_processing(
         )
 
     return accumulator
+
+
+def _handle_early_terminate(signum, frame):
+    global early_terminate
+
+    if early_terminate:
+        raise KeyboardInterrupt
+    else:
+        _vprint.printf(
+            "********************************************************************************"
+        )
+        _vprint.printf("Canceling processing tasks for final accumulation.")
+        _vprint.printf("C-c again to immediately terminate.")
+        _vprint.printf(
+            "********************************************************************************"
+        )
+        early_terminate = True
+        _wq_queue.cancel_by_category("processing")
 
 
 def _final_accumulation(accumulator, tasks_to_accumulate, compression):
