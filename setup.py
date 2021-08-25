@@ -61,6 +61,7 @@ INSTALL_REQUIRES = [
     "uproot3-methods>=0.10.0",
     "uproot3>=3.14.1",
     "pyarrow>=1.0.0",
+    "fsspec",
     "matplotlib>=3",
     "numba>=0.50.0",
     "numpy>=1.16.0",
