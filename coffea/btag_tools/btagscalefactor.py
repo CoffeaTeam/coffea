@@ -110,9 +110,8 @@ class BTagScaleFactor:
         for syst in list(df.index.levels[0]):
             corr = df.loc[syst]
             allbins = list(corr.index)
-            # NOTE: here we force the class to assume abs(eta) based on lack of examples where signed eta is used
             edges_eta = numpy.array(
-                sorted(set(abs(x) for tup in corr.index.levels[1] for x in tup))
+                sorted(set(x for tup in corr.index.levels[1] for x in tup))
             )
             edges_pt = numpy.array(
                 sorted(set(x for tup in corr.index.levels[2] for x in tup))
