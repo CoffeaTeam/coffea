@@ -159,7 +159,7 @@ class BTagScaleFactor:
                     2,
                 )
 
-    def eval(self, systematic, flavor, abseta, pt, discr=None, ignore_missing=False):
+    def eval(self, systematic, flavor, eta, pt, discr=None, ignore_missing=False):
         """Evaluate this scale factor as a function of jet properties
 
         Parameters
@@ -170,8 +170,8 @@ class BTagScaleFactor:
             flavor : numpy.ndarray or awkward.Array
                 The generated jet hadron flavor, following the enumeration:
                 0: uds quark or gluon, 4: charm quark, 5: bottom quark
-            abseta : numpy.ndarray or awkward.Array
-                The absolute value of the jet pseudorapitiy
+            eta : numpy.ndarray or awkward.Array
+                The jet pseudorapitiy
             pt : numpy.ndarray or awkward.Array
                 The jet transverse momentum
             discr : numpy.ndarray or awkward.Array, optional
@@ -192,14 +192,14 @@ class BTagScaleFactor:
             if discr is None:
                 raise ValueError("RESHAPE scale factor requires a discriminant array")
             return self._corrections[systematic](
-                flavor, abseta, pt, discr, ignore_missing=ignore_missing
+                flavor, eta, pt, discr, ignore_missing=ignore_missing
             )
         else:
             return self._corrections[systematic](
-                flavor, abseta, pt, ignore_missing=ignore_missing
+                flavor, eta, pt, ignore_missing=ignore_missing
             )
 
     def __call__(
-        self, systematic, flavor, abseta, pt, discr=None, ignore_missing=False
+        self, systematic, flavor, eta, pt, discr=None, ignore_missing=False
     ):
-        return self.eval(systematic, flavor, abseta, pt, discr, ignore_missing)
+        return self.eval(systematic, flavor, eta, pt, discr, ignore_missing)
