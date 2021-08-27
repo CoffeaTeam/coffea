@@ -199,7 +199,5 @@ class BTagScaleFactor:
                 flavor, eta, pt, ignore_missing=ignore_missing
             )
 
-    def __call__(
-        self, systematic, flavor, eta, pt, discr=None, ignore_missing=False
-    ):
+    def __call__(self, systematic, flavor, eta, pt, discr=None, ignore_missing=False):
         return self.eval(systematic, flavor, eta, pt, discr, ignore_missing)
