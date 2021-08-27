@@ -113,6 +113,9 @@ class BTagScaleFactor:
             edges_eta = numpy.array(
                 sorted(set(x for tup in corr.index.levels[1] for x in tup))
             )
+            if numpy.all(edges_eta >= 0):
+                assert edges_eta[0] == 0., "BTV correction doesn't cover the middle of the detector!"
+                edges_eta = numpy.concatenate([-edges_eta[:0:-1], edges_eta])
             edges_pt = numpy.array(
                 sorted(set(x for tup in corr.index.levels[2] for x in tup))
             )
@@ -138,6 +141,16 @@ class BTagScaleFactor:
                         and dbin[0] <= discr < dbin[1]
                     ):
                         return i
+                if eta < 0:
+                    # maybe in this region we have only abseta
+                    for i, (fbin, ebin, pbin, dbin) in enumerate(allbins):
+                        if (
+                            btvflavor == fbin
+                            and -ebin[1] <= eta < -ebin[0]
+                            and pbin[0] <= pt < pbin[1]
+                            and dbin[0] <= discr < dbin[1]
+                        ):
+                            return i
                 return -1
 
             for idx, _ in numpy.ndenumerate(mapping):
