@@ -110,10 +110,14 @@ class BTagScaleFactor:
         for syst in list(df.index.levels[0]):
             corr = df.loc[syst]
             allbins = list(corr.index)
-            # NOTE: here we force the class to assume abs(eta) based on lack of examples where signed eta is used
             edges_eta = numpy.array(
-                sorted(set(abs(x) for tup in corr.index.levels[1] for x in tup))
+                sorted(set(x for tup in corr.index.levels[1] for x in tup))
             )
+            if numpy.all(edges_eta >= 0):
+                assert (
+                    edges_eta[0] == 0.0
+                ), "BTV correction doesn't cover the middle of the detector!"
+                edges_eta = numpy.concatenate([-edges_eta[:0:-1], edges_eta])
             edges_pt = numpy.array(
                 sorted(set(x for tup in corr.index.levels[2] for x in tup))
             )
@@ -139,6 +143,16 @@ class BTagScaleFactor:
                         and dbin[0] <= discr < dbin[1]
                     ):
                         return i
+                if eta < 0:
+                    # maybe in this region we have only abseta
+                    for i, (fbin, ebin, pbin, dbin) in enumerate(allbins):
+                        if (
+                            btvflavor == fbin
+                            and -ebin[1] <= eta < -ebin[0]
+                            and pbin[0] <= pt < pbin[1]
+                            and dbin[0] <= discr < dbin[1]
+                        ):
+                            return i
                 return -1
 
             for idx, _ in numpy.ndenumerate(mapping):
@@ -160,7 +174,7 @@ class BTagScaleFactor:
                     2,
                 )
 
-    def eval(self, systematic, flavor, abseta, pt, discr=None, ignore_missing=False):
+    def eval(self, systematic, flavor, eta, pt, discr=None, ignore_missing=False):
         """Evaluate this scale factor as a function of jet properties
 
         Parameters
@@ -171,8 +185,8 @@ class BTagScaleFactor:
             flavor : numpy.ndarray or awkward.Array
                 The generated jet hadron flavor, following the enumeration:
                 0: uds quark or gluon, 4: charm quark, 5: bottom quark
-            abseta : numpy.ndarray or awkward.Array
-                The absolute value of the jet pseudorapitiy
+            eta : numpy.ndarray or awkward.Array
+                The jet pseudorapitiy
             pt : numpy.ndarray or awkward.Array
                 The jet transverse momentum
             discr : numpy.ndarray or awkward.Array, optional
@@ -193,14 +207,12 @@ class BTagScaleFactor:
             if discr is None:
                 raise ValueError("RESHAPE scale factor requires a discriminant array")
             return self._corrections[systematic](
-                flavor, abseta, pt, discr, ignore_missing=ignore_missing
+                flavor, eta, pt, discr, ignore_missing=ignore_missing
             )
         else:
             return self._corrections[systematic](
-                flavor, abseta, pt, ignore_missing=ignore_missing
+                flavor, eta, pt, ignore_missing=ignore_missing
             )
 
-    def __call__(
-        self, systematic, flavor, abseta, pt, discr=None, ignore_missing=False
-    ):
-        return self.eval(systematic, flavor, abseta, pt, discr, ignore_missing)
+    def __call__(self, systematic, flavor, eta, pt, discr=None, ignore_missing=False):
+        return self.eval(systematic, flavor, eta, pt, discr, ignore_missing)
