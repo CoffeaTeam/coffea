@@ -18,6 +18,7 @@ import scipy
 from tqdm.auto import tqdm
 
 from .executor import (
+    WorkItem,
     _compression_wrapper,
     _decompress,
 )
@@ -178,16 +179,33 @@ class CoffeaWQTask(Task):
 
     def resubmit(self, tmpdir, exec_defaults):
         if self.retries < 1:
-            raise RuntimeError("item {} failed permanently.".format(self.itemid))
+            raise RuntimeError(
+                "item {} failed permanently. No more retries left.".format(self.itemid)
+            )
 
-        t = self.clone(tmpdir, exec_defaults)
-        t.retries = self.retries - 1
+        resubmissions = []
+        if self.result == wq.WORK_QUEUE_RESULT_RESOURCE_EXHAUSTION:
+            _vprint("splitting {} to reduce resource consumption.", self.itemid)
+            resubmissions = self.split(tmpdir, exec_defaults)
+        else:
+            t = self.clone(tmpdir, exec_defaults)
+            t.retries = self.retries - 1
+            resubmissions = [t]
 
-        _vprint("resubmitting {}. {} attempt(s) left.", t.itemid, t.retries)
-        _wq_queue.submit(t)
+        for t in resubmissions:
+            _vprint(
+                "resubmitting {} partly as {}. {} attempt(s) left.",
+                self.itemid,
+                t.itemid,
+                t.retries,
+            )
+            _wq_queue.submit(t)
 
     def clone(self, tmpdir, exec_defaults):
         raise NotImplementedError
+
+    def split(self, tmpdir, exec_defaults):
+        raise RuntimeError("task cannot be split any further.")
 
     def debug_info(self):
         self.output  # load results, if needed
@@ -297,7 +315,6 @@ class ProcCoffeaWQTask(CoffeaWQTask):
     def __init__(
         self, fn_wrapper, infile_function, item, tmpdir, exec_defaults, itemid=None
     ):
-
         self.size = len(item)
 
         if not itemid:
@@ -333,6 +350,43 @@ class ProcCoffeaWQTask(CoffeaWQTask):
             exec_defaults,
             self.itemid,
         )
+
+    def split(self, tmpdir, exec_defaults):
+        total = len(self.item)
+
+        if total < 2:
+            raise RuntimeError("processing task cannot be split any further.")
+
+        middle = self.item.entrystart + int(total / 2)
+
+        item_a = WorkItem(
+            self.item.dataset,
+            self.item.filename,
+            self.item.treename,
+            self.item.entrystart,
+            middle,
+            self.item.fileuuid,
+            self.item.usermeta,
+        )
+
+        item_b = WorkItem(
+            self.item.dataset,
+            self.item.filename,
+            self.item.treename,
+            middle,
+            self.item.entrystop,
+            self.item.fileuuid,
+            self.item.usermeta,
+        )
+
+        task_a = self.__class__(
+            self.fn_wrapper, self.infile_function, item_a, tmpdir, exec_defaults
+        )
+        task_b = self.__class__(
+            self.fn_wrapper, self.infile_function, item_b, tmpdir, exec_defaults
+        )
+
+        return [task_a, task_b]
 
     def debug_info(self):
         i = self.item
