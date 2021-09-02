@@ -61,6 +61,7 @@ INSTALL_REQUIRES = [
     "uproot3-methods>=0.10.0",
     "uproot3>=3.14.1",
     "pyarrow>=1.0.0",
+    "fsspec",
     "matplotlib>=3",
     "numba>=0.50.0",
     "numpy>=1.16.0",
@@ -87,7 +88,7 @@ EXTRAS_REQUIRE["dask"] = [
 EXTRAS_REQUIRE["servicex"] = [
     "aiostream",
     "tenacity",
-    "func-adl_servicex==1.1.1",
+    "func-adl_servicex==1.1.2",
 ]
 EXTRAS_REQUIRE["dev"] = [
     "flake8",

@@ -1,22 +1,23 @@
+import io
+import pathlib
 import weakref
+from collections.abc import Mapping
+from functools import partial
+import fsspec
+
 import awkward
 import uproot
-import pathlib
-import io
-from functools import partial
-from collections.abc import Mapping
-
-from coffea.nanoevents.util import key_to_tuple, tuple_to_key
 from coffea.nanoevents.mapping import (
-    TrivialUprootOpener,
-    TrivialParquetOpener,
-    UprootSourceMapping,
+    CachedMapping,
     ParquetSourceMapping,
     PreloadedOpener,
     PreloadedSourceMapping,
-    CachedMapping,
+    TrivialParquetOpener,
+    TrivialUprootOpener,
+    UprootSourceMapping,
 )
 from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema
+from coffea.nanoevents.util import key_to_tuple, tuple_to_key
 
 
 def _key_formatter(prefix, partition, form_key, attribute):
@@ -178,11 +179,10 @@ class NanoEventsFactory:
                 Pass a list instance to record which branches were lazily accessed by this instance
         """
         import pyarrow
-        import pyarrow.parquet
         import pyarrow.dataset as ds
+        import pyarrow.parquet
 
         ftypes = (
-            str,
             pathlib.Path,
             pyarrow.NativeFile,
             io.TextIOBase,
@@ -190,8 +190,12 @@ class NanoEventsFactory:
             io.RawIOBase,
             io.IOBase,
         )
+
         if isinstance(file, ftypes):
             table_file = pyarrow.parquet.ParquetFile(file, **parquet_options)
+        elif isinstance(file, str):
+            fs_file = fsspec.open(file, "rb")
+            table_file = pyarrow.parquet.ParquetFile(fs_file, **parquet_options)
         elif isinstance(file, pyarrow.parquet.ParquetFile):
             table_file = file
         else:
