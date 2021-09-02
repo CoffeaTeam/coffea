@@ -59,8 +59,7 @@ class DaskExecutor(Executor):
         meta_data: Dict[str, str],
         process_func: Callable,
     ):
-        '''Create a dask future for a dask task to run the analysis.
-        '''
+        """Create a dask future for a dask task to run the analysis."""
         data_result = self.dask.submit(
             run_coffea_processor,
             events_url=file_url,
