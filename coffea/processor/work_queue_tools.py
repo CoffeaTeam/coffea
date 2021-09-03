@@ -510,8 +510,7 @@ def work_queue_main(items, function, accumulator, **kwargs):
         "chunks_per_accum": 10,
         "chunks_accum_in_mem": 2,
         "chunksize": 1024,
-        "dynamic_chunksize": False,
-        "dynamic_chunksize_targets": {},
+        "dynamic_chunksize": {},
     }
 
     _update_deprecated_kwords(kwargs)
@@ -519,6 +518,8 @@ def work_queue_main(items, function, accumulator, **kwargs):
 
     # create new dictionary fillining kwargs defaults
     kwargs = {**default_kwargs, **kwargs}
+
+    _check_dynamic_chunksize_targets(kwargs["dynamic_chunksize"])
 
     clevel = kwargs["compression"]
     if clevel is not None:
@@ -1017,6 +1018,13 @@ def _warn_unknown_kwords(default_kwargs, kwargs):
     for key in sorted(kwargs):
         if key not in default_kwargs:
             warnings.warn("work_queue_executor key {} is unknown.".format(key))
+
+
+def _check_dynamic_chunksize_targets(targets):
+    if targets:
+        for k in targets:
+            if k not in ["wall_time", "memory"]:
+                raise KeyError("dynamic chunksize resource {} is unknown.".format(k))
 
 
 class ResultUnavailable(Exception):
