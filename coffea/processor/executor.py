@@ -978,7 +978,7 @@ def _chunk_generator(
     chunksize,
     align_clusters,
     maxchunks,
-    dynamic_chunksize=False,
+    dynamic_chunksize=None,
 ):
     if maxchunks is None:
         for filemeta in fileset:
@@ -991,7 +991,7 @@ def _chunk_generator(
             if nchunks[filemeta.dataset] >= maxchunks:
                 continue
             for chunk in filemeta.chunks(
-                chunksize, align_clusters, dynamic_chunksize=False
+                chunksize, align_clusters, dynamic_chunksize=None
             ):
                 chunks.append(chunk)
                 nchunks[filemeta.dataset] += 1
@@ -1011,8 +1011,7 @@ def run_uproot_job(
     chunksize=100000,
     maxchunks=None,
     metadata_cache=None,
-    dynamic_chunksize=False,
-    dynamic_chunksize_targets={},
+    dynamic_chunksize=None,
 ):
     """A tool to run a processor using uproot for data delivery
 
@@ -1070,13 +1069,12 @@ def run_uproot_job(
             determine chunking.  Defaults to a in-memory LRU cache that holds 100k entries
             (about 1MB depending on the length of filenames, etc.)  If you edit an input file
             (please don't) during a session, the session can be restarted to clear the cache.
-        dynamic_chunksize : bool, optional
-            Whether to adapt the chunksize for units of work to run in
-            dynamic_chunksize_target_time.
-        dynamic_chunksize_targets : dict, optional
-            The target execution measurements per chunk when using dynamic
-            chunksize. The chunksize will be modified to approximate these
-            measurements. Currently only supported is 'walltime' (default 60s).
+        dynamic_chunksize : dict, optional
+            Whether to adapt the chunksize for units of work to run in the targets given.
+            Currently supported are 'wall_time' (in seconds), and 'memory' (in MB).
+            E.g., with {"wall_time": 120, "memory": 2048}, the chunksize will
+            be dynamically adapted so that processing jobs each run in about
+            two minutes, using two GB of memory.
     """
 
     import warnings
@@ -1217,9 +1215,8 @@ def run_uproot_job(
         "function_name": type(processor_instance).__name__,
         "use_dataframes": use_dataframes,
         "events_total": events_total,
-        "dynamic_chunksize": dynamic_chunksize,
         "chunksize": chunksize,
-        "dynamic_chunksize_targets": dynamic_chunksize_targets,
+        "dynamic_chunksize": dynamic_chunksize,
     }
 
     exe_args.update(executor_args)

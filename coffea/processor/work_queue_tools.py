@@ -18,6 +18,7 @@ import scipy
 from tqdm.auto import tqdm
 
 from .executor import (
+    WorkItem,
     _compression_wrapper,
     _decompress,
 )
@@ -178,16 +179,33 @@ class CoffeaWQTask(Task):
 
     def resubmit(self, tmpdir, exec_defaults):
         if self.retries < 1:
-            raise RuntimeError("item {} failed permanently.".format(self.itemid))
+            raise RuntimeError(
+                "item {} failed permanently. No more retries left.".format(self.itemid)
+            )
 
-        t = self.clone(tmpdir, exec_defaults)
-        t.retries = self.retries - 1
+        resubmissions = []
+        if self.result == wq.WORK_QUEUE_RESULT_RESOURCE_EXHAUSTION:
+            _vprint("splitting {} to reduce resource consumption.", self.itemid)
+            resubmissions = self.split(tmpdir, exec_defaults)
+        else:
+            t = self.clone(tmpdir, exec_defaults)
+            t.retries = self.retries - 1
+            resubmissions = [t]
 
-        _vprint("resubmitting {}. {} attempt(s) left.", t.itemid, t.retries)
-        _wq_queue.submit(t)
+        for t in resubmissions:
+            _vprint(
+                "resubmitting {} partly as {}. {} attempt(s) left.",
+                self.itemid,
+                t.itemid,
+                t.retries,
+            )
+            _wq_queue.submit(t)
 
     def clone(self, tmpdir, exec_defaults):
         raise NotImplementedError
+
+    def split(self, tmpdir, exec_defaults):
+        raise RuntimeError("task cannot be split any further.")
 
     def debug_info(self):
         self.output  # load results, if needed
@@ -297,7 +315,6 @@ class ProcCoffeaWQTask(CoffeaWQTask):
     def __init__(
         self, fn_wrapper, infile_function, item, tmpdir, exec_defaults, itemid=None
     ):
-
         self.size = len(item)
 
         if not itemid:
@@ -333,6 +350,43 @@ class ProcCoffeaWQTask(CoffeaWQTask):
             exec_defaults,
             self.itemid,
         )
+
+    def split(self, tmpdir, exec_defaults):
+        total = len(self.item)
+
+        if total < 2:
+            raise RuntimeError("processing task cannot be split any further.")
+
+        middle = self.item.entrystart + int(total / 2)
+
+        item_a = WorkItem(
+            self.item.dataset,
+            self.item.filename,
+            self.item.treename,
+            self.item.entrystart,
+            middle,
+            self.item.fileuuid,
+            self.item.usermeta,
+        )
+
+        item_b = WorkItem(
+            self.item.dataset,
+            self.item.filename,
+            self.item.treename,
+            middle,
+            self.item.entrystop,
+            self.item.fileuuid,
+            self.item.usermeta,
+        )
+
+        task_a = self.__class__(
+            self.fn_wrapper, self.infile_function, item_a, tmpdir, exec_defaults
+        )
+        task_b = self.__class__(
+            self.fn_wrapper, self.infile_function, item_b, tmpdir, exec_defaults
+        )
+
+        return [task_a, task_b]
 
     def debug_info(self):
         i = self.item
@@ -456,8 +510,7 @@ def work_queue_main(items, function, accumulator, **kwargs):
         "chunks_per_accum": 10,
         "chunks_accum_in_mem": 2,
         "chunksize": 1024,
-        "dynamic_chunksize": False,
-        "dynamic_chunksize_targets": {},
+        "dynamic_chunksize": {},
     }
 
     _update_deprecated_kwords(kwargs)
@@ -465,6 +518,8 @@ def work_queue_main(items, function, accumulator, **kwargs):
 
     # create new dictionary fillining kwargs defaults
     kwargs = {**default_kwargs, **kwargs}
+
+    _check_dynamic_chunksize_targets(kwargs["dynamic_chunksize"])
 
     clevel = kwargs["compression"]
     if clevel is not None:
@@ -965,6 +1020,13 @@ def _warn_unknown_kwords(default_kwargs, kwargs):
             warnings.warn("work_queue_executor key {} is unknown.".format(key))
 
 
+def _check_dynamic_chunksize_targets(targets):
+    if targets:
+        for k in targets:
+            if k not in ["wall_time", "memory"]:
+                raise KeyError("dynamic chunksize resource {} is unknown.".format(k))
+
+
 class ResultUnavailable(Exception):
     pass
 
@@ -1000,33 +1062,55 @@ def _ceil_to_pow2(value):
 
 
 def _compute_chunksize(task_reports, exec_defaults, sample=True):
-    chunksize = exec_defaults["chunksize"]
-    targets = exec_defaults["dynamic_chunksize_targets"]
+    targets = exec_defaults["dynamic_chunksize"]
+
+    chunksize_default = exec_defaults["chunksize"]
+    chunksize_time = None
+    chunksize_memory = None
 
     if targets is not None and len(task_reports) > 1:
-        # by memory:
-        # chunksize = _compute_chunksize_target(targets.get('walltime', 1024), [(mem, e) for (e, t, mem) in task_reports)
-        chunksize = _compute_chunksize_target(
-            targets.get("walltime", 60), [(t, e) for (e, t, mem) in task_reports]
-        )
+        target_time = targets.get("wall_time", None)
+        if target_time:
+            chunksize_time = _compute_chunksize_target(
+                target_time, [(time, evs) for (evs, time, mem) in task_reports]
+            )
+
+        target_memory = targets["memory"]
+        if target_memory:
+            chunksize_memory = _compute_chunksize_target(
+                target_memory, [(mem, evs) for (evs, time, mem) in task_reports]
+            )
+
+    candidate_sizes = [c for c in [chunksize_time, chunksize_memory] if c]
+    if candidate_sizes:
+        chunksize = min(candidate_sizes)
+    else:
+        chunksize = chunksize_default
 
     try:
         chunksize = _ceil_to_pow2(chunksize)
+        exp = math.ceil(math.log2(chunksize))
         if sample:
-            exp = math.ceil(math.log2(chunksize))
-
             # round-up to nearest power of 2, minus 0, 1 or 2 power to better sample the space.
             exp += numpy.random.choice([-2, -1, 0])
-            exp = max(0, exp)
+        else:
+            # on average, this what we would get as the average of all the sampling
+            # this is useful when reporting the final chunksize used.
+            exp += -1
 
-            chunksize = int(math.pow(2, exp))
+        exp = max(0, exp)
+        chunksize = int(math.pow(2, exp))
     except ValueError:
-        chunksize = exec_defaults["chunksize"]
+        chunksize = chunksize_default
 
     return chunksize
 
 
 def _compute_chunksize_target(target, pairs):
+    # if no info to compute dynamic chunksize (e.g. they info is -1), return nothing
+    if len(pairs) < 1 or pairs[0][0] < 0:
+        return None
+
     avgs = [e / max(1, target) for (target, e) in pairs]
     quantiles = numpy.quantile(avgs, [0.25, 0.5, 0.75], interpolation="nearest")
 
@@ -1052,7 +1136,7 @@ def _compute_chunksize_target(target, pairs):
         or slope < 0
         or intercept > 0
     ):
-        # we assume that chunksize and walltime have a positive
+        # we assume that chunksize and target have a positive
         # correlation, with a non-negative overhead (-intercept/slope). If
         # this is not true because noisy data, use the avg chunksize/time.
         # slope and intercept may be nan when data falls in a vertical line
