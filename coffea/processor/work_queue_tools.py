@@ -1062,33 +1062,55 @@ def _ceil_to_pow2(value):
 
 
 def _compute_chunksize(task_reports, exec_defaults, sample=True):
-    chunksize = exec_defaults["chunksize"]
-    targets = exec_defaults["dynamic_chunksize_targets"]
+    targets = exec_defaults["dynamic_chunksize"]
+
+    chunksize_default = exec_defaults["chunksize"]
+    chunksize_time = None
+    chunksize_memory = None
 
     if targets is not None and len(task_reports) > 1:
-        # by memory:
-        # chunksize = _compute_chunksize_target(targets.get('walltime', 1024), [(mem, e) for (e, t, mem) in task_reports)
-        chunksize = _compute_chunksize_target(
-            targets.get("walltime", 60), [(t, e) for (e, t, mem) in task_reports]
-        )
+        target_time = targets.get("wall_time", None)
+        if target_time:
+            chunksize_time = _compute_chunksize_target(
+                target_time, [(time, evs) for (evs, time, mem) in task_reports]
+            )
+
+        target_memory = targets["memory"]
+        if target_memory:
+            chunksize_memory = _compute_chunksize_target(
+                target_memory, [(mem, evs) for (evs, time, mem) in task_reports]
+            )
+
+    candidate_sizes = [c for c in [chunksize_time, chunksize_memory] if c]
+    if candidate_sizes:
+        chunksize = min(candidate_sizes)
+    else:
+        chunksize = chunksize_default
 
     try:
         chunksize = _ceil_to_pow2(chunksize)
+        exp = math.ceil(math.log2(chunksize))
         if sample:
-            exp = math.ceil(math.log2(chunksize))
-
             # round-up to nearest power of 2, minus 0, 1 or 2 power to better sample the space.
             exp += numpy.random.choice([-2, -1, 0])
-            exp = max(0, exp)
+        else:
+            # on average, this what we would get as the average of all the sampling
+            # this is useful when reporting the final chunksize used.
+            exp += -1
 
-            chunksize = int(math.pow(2, exp))
+        exp = max(0, exp)
+        chunksize = int(math.pow(2, exp))
     except ValueError:
-        chunksize = exec_defaults["chunksize"]
+        chunksize = chunksize_default
 
     return chunksize
 
 
 def _compute_chunksize_target(target, pairs):
+    # if no info to compute dynamic chunksize (e.g. they info is -1), return nothing
+    if len(pairs) < 1 or pairs[0][0] < 0:
+        return None
+
     avgs = [e / max(1, target) for (target, e) in pairs]
     quantiles = numpy.quantile(avgs, [0.25, 0.5, 0.75], interpolation="nearest")
 
@@ -1114,7 +1136,7 @@ def _compute_chunksize_target(target, pairs):
         or slope < 0
         or intercept > 0
     ):
-        # we assume that chunksize and walltime have a positive
+        # we assume that chunksize and target have a positive
         # correlation, with a non-negative overhead (-intercept/slope). If
         # this is not true because noisy data, use the avg chunksize/time.
         # slope and intercept may be nan when data falls in a vertical line
