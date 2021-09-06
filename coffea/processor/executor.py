@@ -310,6 +310,13 @@ class WorkQueueExecutor(ExecutorBase):
                     throughput.
         resource-monitor : bool
             If true, (false is the default) turns on resource monitoring for Work Queue.
+        fast_terminate_workers: int
+            Terminate workers on which tasks have been running longer than average.
+            The time limit is computed by multiplying the average runtime of tasks
+            by the value of 'fast_terminate_workers'. Since there are
+            legitimately slow tasks, no task may trigger fast termination in
+            two distinct workers. Less than 1 disables it.
+
         master-name : str
             Name to refer to this work queue master.
             Sets port to 0 (any available port) if port not given.
@@ -371,6 +378,7 @@ class WorkQueueExecutor(ExecutorBase):
     wrapper: Optional[str] = shutil.which("python_package_run")
     resource_monitor: bool = False
     resources_mode: str = "fixed"
+    fast_terminate_worker: Optional[int] = None
     cores: Optional[int] = None
     memory: Optional[int] = None
     disk: Optional[int] = None
@@ -379,7 +387,6 @@ class WorkQueueExecutor(ExecutorBase):
     chunks_accum_in_mem: int = 2
     chunksize: int = 1024
     dynamic_chunksize: bool = False
-    dynamic_chunksize_targets: Dict = field(default_factory=dict)
 
     def __call__(
         self,
@@ -808,13 +815,12 @@ class Runner:
             determine chunking.  Defaults to a in-memory LRU cache that holds 100k entries
             (about 1MB depending on the length of filenames, etc.)  If you edit an input file
             (please don't) during a session, the session can be restarted to clear the cache.
-        dynamic_chunksize : bool, optional
-            Whether to adapt the chunksize for units of work to run in
-            dynamic_chunksize_target_time.
-        dynamic_chunksize_targets : dict, optional
-            The target execution measurements per chunk when using dynamic
-            chunksize. The chunksize will be modified to approximate these
-            measurements. Currently only supported is 'walltime' (default 60s).
+        dynamic_chunksize : dict, optional
+            Whether to adapt the chunksize for units of work to run in the targets given.
+            Currently supported are 'wall_time' (in seconds), and 'memory' (in MB).
+            E.g., with {"wall_time": 120, "memory": 2048}, the chunksize will
+            be dynamically adapted so that processing jobs each run in about
+            two minutes, using two GB of memory.
     """
 
     executor: ExecutorBase
@@ -822,8 +828,7 @@ class Runner:
     chunksize: int = 100000
     maxchunks: Optional[int] = None
     metadata_cache: Optional[MutableMapping] = None
-    dynamic_chunksize: bool = False
-    dynamic_chunksize_targets: Dict = field(default_factory=dict)
+    dynamic_chunksize: Optional[Dict] = None
     skipbadfiles: bool = False
     xrootdtimeout: Optional[int] = None
     align_clusters: bool = False
@@ -1041,7 +1046,7 @@ class Runner:
                     if nchunks[filemeta.dataset] >= self.maxchunks:
                         continue
                     for chunk in filemeta.chunks(
-                        self.chunksize, self.align_clusters, dynamic_chunksize=False
+                        self.chunksize, self.align_clusters, dynamic_chunksize=None
                     ):
                         chunks.append(chunk)
                         nchunks[filemeta.dataset] += 1
@@ -1247,7 +1252,6 @@ class Runner:
                     "events_total": events_total,
                     "dynamic_chunksize": self.dynamic_chunksize,
                     "chunksize": self.chunksize,
-                    "dynamic_chunksize_targets": self.dynamic_chunksize_targets,
                 }
             )
 

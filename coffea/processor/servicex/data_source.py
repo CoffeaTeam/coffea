@@ -27,40 +27,90 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Dict, List, Optional, Tuple
 
-from servicex.servicex import StreamInfoUrl
+from servicex import ServiceXDataset, StreamInfoPath, StreamInfoUrl
+from func_adl import ObjectStream, find_EventDataset
 
 
 class DataSource:
-    def __init__(self, query, metadata={}, datasets=[]):
+    def __init__(
+        self,
+        query: ObjectStream,
+        metadata: Dict[str, str] = {},
+        datasets: List[ServiceXDataset] = [],
+    ):
         self.query = query
         self.metadata = metadata
         self.schema = None
         self.datasets = datasets
 
-    async def stream_result_file_urls(self) -> AsyncGenerator[StreamInfoUrl, None]:
-        """Launch all datasources at once
+    async def _get_query(self) -> str:
+        """Return the qastle query.
 
-        TODO: This is currently sync (that outter for loop does one datasource and then the next).
-        Need to move to a different paradigm. Perhaps using the `aiostream` library.
+        Note: To do this we have to forward-cast the object: by design, not all `func_adl`
+        queries are `ServiceX` queries. But this library only works with datasets that are
+        based in `ServiceX`. Thus some duck typing occurs in this method.
+        """
+        event_dataset_ast = find_EventDataset(self.query.query_ast)
+        event_dataset = event_dataset_ast._eds_object  # type: ignore
+        if not hasattr(event_dataset, "return_qastle"):
+            raise Exception(
+                f"Base func_adl query {str(event_dataset)} does not have a way to generate qastle!"
+            )
+        event_dataset.return_qastle = True  # type: ignore
+        return await self.query.value_async()
+
+    async def stream_result_file_urls(
+        self, title: Optional[str] = None
+    ) -> AsyncGenerator[Tuple[str, str, StreamInfoUrl], None]:
+        """Launch all datasources off to servicex
 
         Yields:
-            [type]: [description]
+            Tuple[str, StreamInfoUrl]: List of data types and url's to process
         """
+        qastle = await self._get_query()
+
+        # TODO: Make this for loop parallel
         for dataset in self.datasets:
-            async for file in dataset.get_data_rootfiles_url_stream(self.query.value()):
-                yield file
+            data_type = dataset.first_supported_datatype(["parquet", "root"])
+            if data_type == "root":
+                async for file in dataset.get_data_rootfiles_url_stream(
+                    qastle, title=title
+                ):
+                    yield (data_type, dataset.dataset_as_name, file)
+            elif data_type == "parquet":
+                async for file in dataset.get_data_parquet_url_stream(
+                    qastle, title=title
+                ):
+                    yield (data_type, dataset.dataset_as_name, file)
+            else:
+                raise Exception(
+                    f"This dataset ({str(dataset)}) supports unknown datatypes"
+                )
 
-    async def stream_result_files(self) -> AsyncGenerator[StreamInfoUrl, None]:
-        """Launch all datasources at once
-
-        TODO: This is currently sync (that outter for loop does one datasource and then the next).
-        Need to move to a different paradigm. Perhaps using the `aiostream` library.
+    async def stream_result_files(
+        self, title: Optional[str] = None
+    ) -> AsyncGenerator[Tuple[str, str, StreamInfoPath], None]:
+        """Launch all datasources at once off to servicex
 
         Yields:
-            [type]: [description]
+            Tuple[str, StreamInfoPath]: List of data types and file paths to process
         """
+        qastle = await self._get_query()
+
+        # TODO: Make this for loop parallel
         for dataset in self.datasets:
-            async for file in dataset.get_data_rootfiles_stream(self.query.value()):
-                yield file
+            data_type = dataset.first_supported_datatype(["parquet", "root"])
+            if data_type == "root":
+                async for file in dataset.get_data_rootfiles_stream(
+                    qastle, title=title
+                ):
+                    yield (data_type, dataset.dataset_as_name, file)
+            elif data_type == "parquet":
+                async for file in dataset.get_data_parquet_stream(qastle, title=title):
+                    yield (data_type, dataset.dataset_as_name, file)
+            else:
+                raise Exception(
+                    f"This dataset ({str(dataset)}) supports unknown datatypes"
+                )

@@ -61,6 +61,7 @@ INSTALL_REQUIRES = [
     "uproot3-methods>=0.10.0",
     "uproot3>=3.14.1",
     "pyarrow>=1.0.0",
+    "fsspec",
     "matplotlib>=3",
     "numba>=0.50.0",
     "numpy>=1.16.0",
@@ -70,14 +71,13 @@ INSTALL_REQUIRES = [
     "cloudpickle>=1.2.3",
     "mplhep>=0.1.18",
     "packaging",
-    "ipywidgets",
     "pandas",
     "hist>=2",
     'typing-extensions;python_version<"3.8"',
     "cachetools",
 ]
 EXTRAS_REQUIRE = {}
-EXTRAS_REQUIRE["spark"] = ["pyspark>=2.4.1,<3.0.0", "jinja2"]
+EXTRAS_REQUIRE["spark"] = ["ipywidgets", "pyspark>=2.4.1,<3.0.0", "jinja2"]
 EXTRAS_REQUIRE["parsl"] = ["parsl>=1.1"]
 EXTRAS_REQUIRE["dask"] = [
     "dask[dataframe]>=2.6.0",
@@ -85,7 +85,11 @@ EXTRAS_REQUIRE["dask"] = [
     "bokeh>=1.3.4",
     "blosc",
 ]
-EXTRAS_REQUIRE["servicex"] = ["aiostream", "tenacity", "servicex_clients"]
+EXTRAS_REQUIRE["servicex"] = [
+    "aiostream",
+    "tenacity",
+    "func-adl_servicex==1.1.2",
+]
 EXTRAS_REQUIRE["dev"] = [
     "flake8",
     "black",
