@@ -24,7 +24,14 @@ from ..util import _hash
 
 from collections.abc import Mapping, MutableMapping
 from dataclasses import dataclass, field, asdict
-from typing import Iterable, Callable, Optional, List, Generator, Dict, Union, Literal
+from typing import Iterable, Callable, Optional, List, Generator, Dict, Union
+
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 
 try:
     from functools import cached_property
