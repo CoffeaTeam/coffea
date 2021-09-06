@@ -385,7 +385,7 @@ class WorkQueueExecutor(ExecutorBase):
     wrapper: Optional[str] = shutil.which("python_package_run")
     resource_monitor: bool = False
     resources_mode: str = "fixed"
-    fast_terminate_worker: Optional[int] = None
+    fast_terminate_workers: Optional[int] = None
     cores: Optional[int] = None
     memory: Optional[int] = None
     disk: Optional[int] = None
