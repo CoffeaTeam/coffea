@@ -35,7 +35,6 @@ from coffea.nanoevents.schemas import (
 
 # deprecated run_uproot_job & executor usage:
 from functools import partial
-from coffea.util import deprecate
 
 
 def _run_x_job(
@@ -64,10 +63,13 @@ def _run_x_job(
         hists = run(filelist, "Events", processor_instance=processor_instance)
     """
 
-    deprecate(
-        f"This method is deprecated, please use directly the new: {executor} and {Runner} classes.\n {_run_x_job.__doc__}",  # noqa: E501
-        "<unknown>",
-    )
+    # turn this deprecation warning on from coffea.__version__ >= 0.8 on
+    # from coffea.util import deprecate
+    # deprecate(
+    #     f"This method is deprecated, please use directly the new: {executor} and {Runner} classes.\n {_run_x_job.__doc__}",  # noqa: E501
+    #     0.9,
+    # )
+
     # extract executor kwargs
     exe_args = {}
     exe_fields = executor.__dataclass_fields__.keys()

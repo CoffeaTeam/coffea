@@ -24,7 +24,7 @@ from ..util import _hash
 
 from collections.abc import Mapping, MutableMapping
 from dataclasses import dataclass, field, asdict
-from typing import Iterable, Callable, Optional, List, Generator, Dict
+from typing import Iterable, Callable, Optional, List, Generator, Dict, Union, Literal
 
 try:
     from functools import cached_property
@@ -489,7 +489,7 @@ class FuturesExecutor(ExecutorBase):
             in the timeout window.
     """
 
-    pool: concurrent.futures.Executor = concurrent.futures.ProcessPoolExecutor
+    pool: Union[Callable[..., concurrent.futures.Executor], concurrent.futures.Executor] = concurrent.futures.ProcessPoolExecutor  # fmt: skip
     workers: int = 1
     tailtimeout: Optional[int] = None
 
@@ -574,7 +574,7 @@ class DaskExecutor(ExecutorBase):
     treereduction: int = 20
     priority: int = 0
     retries: int = 3
-    heavy_input: Optional[str] = None
+    heavy_input: Optional[bytes] = None
     use_dataframes: bool = False
     # secret options
     worker_affinity: bool = False
@@ -595,7 +595,7 @@ class DaskExecutor(ExecutorBase):
         from dask.distributed import Client
 
         if self.client is None:
-            self.client = Client()
+            self.client = Client(threads_per_worker=1)
 
         if self.use_dataframes:
             self.compression = None
@@ -834,8 +834,8 @@ class Runner:
     align_clusters: bool = False
     savemetrics: bool = False
     mmap: bool = False
-    schema: schemas.BaseSchema = schemas.BaseSchema
-    cachestrategy: Optional[str] = None
+    schema: Optional[schemas.BaseSchema] = schemas.BaseSchema
+    cachestrategy: Optional[Union[Literal["dask-worker"], Callable[..., MutableMapping]]] = None  # fmt: skip
     processor_compression: int = 1
     ceph_config_path: Optional[str] = None
     format: str = "root"
@@ -911,7 +911,6 @@ class Runner:
         while retry_count <= self.retries:
             try:
                 return func(*args, **kwargs)
-                break
             # catch xrootd errors and optionally skip
             # or retry to read the file
             except Exception as e:
@@ -928,7 +927,10 @@ class Runner:
             retry_count += 1
 
     @staticmethod
-    def _normalize_fileset(fileset: Dict, treename: str) -> Generator:
+    def _normalize_fileset(
+        fileset: Dict,
+        treename: str,
+    ) -> Generator[FileMeta, None, None]:
         if isinstance(fileset, str):
             with open(fileset) as fin:
                 fileset = json.load(fin)
@@ -1149,7 +1151,7 @@ class Runner:
             try:
                 out = processor_instance.process(events)
             except Exception as e:
-                file_trace = f"\n\nFailed processing file: {item.filename} ({item.entrystart}-{item.entrystop})"
+                file_trace = f"\n\nFailed processing file: {item!r}"
                 raise type(e)(str(e) + file_trace).with_traceback(
                     sys.exc_info()[2]
                 ) from None
