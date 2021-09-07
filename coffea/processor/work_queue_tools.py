@@ -3,10 +3,8 @@ import dill
 import os
 import re
 import tempfile
-import shutil
 import textwrap
 import hashlib
-import warnings
 import signal
 
 from os.path import basename, join
@@ -469,55 +467,6 @@ def work_queue_main(items, function, accumulator, **kwargs):
     """
 
     global _wq_queue
-
-    default_kwargs = {
-        # Standard executor options:
-        "unit": "items",
-        "desc": "Processing",
-        "compression": 9,  # as recommended by lz4
-        "status": True,
-        "function_name": None,
-        "retries": 2,  # task executes at most 3 times
-        # ignored
-        "schema": None,
-        "skipbadfiles": None,
-        "tailtimeout": None,
-        "worker_affinity": None,
-        "use_dataframes": None,
-        # wq executor options:
-        "master_name": None,
-        "port": None,
-        "filepath": ".",
-        "events_total": None,
-        "x509_proxy": _get_x509_proxy(),
-        "verbose": False,
-        "print_stdout": False,
-        "bar_format": "{desc:<14}{percentage:3.0f}%|{bar}{r_bar:<55}",
-        "debug_log": None,
-        "stats_log": None,
-        "transactions_log": None,
-        "password_file": None,
-        "environment_file": None,
-        "extra_input_files": [],
-        "wrapper": shutil.which("python_package_run"),
-        "resource_monitor": False,
-        "resources_mode": "fixed",
-        "fast_terminate_workers": None,
-        "cores": None,
-        "memory": None,
-        "disk": None,
-        "gpus": None,
-        "chunks_per_accum": 10,
-        "chunks_accum_in_mem": 2,
-        "chunksize": 1024,
-        "dynamic_chunksize": {},
-    }
-
-    _update_deprecated_kwords(kwargs)
-    _warn_unknown_kwords(default_kwargs, kwargs)
-
-    # create new dictionary fillining kwargs defaults
-    kwargs = {**default_kwargs, **kwargs}
 
     _check_dynamic_chunksize_targets(kwargs["dynamic_chunksize"])
 
@@ -994,30 +943,6 @@ def _make_progress_bars(exec_defaults):
         "process": processed_bar,
         "accumulate": accumulated_bar,
     }
-
-
-def _update_deprecated_kwords(kwargs):
-    deprecated_keys = []
-    for key in kwargs:
-        if re.search("-", key):
-            deprecated_keys.append(key)
-
-    if deprecated_keys:
-        for key in sorted(deprecated_keys):
-            new_key = key.replace("-", "_")
-            warnings.warn(
-                "work_queue_executor argument {} is deprecated. Please use {}".format(
-                    key, new_key
-                )
-            )
-            kwargs[new_key] = kwargs[key]
-            del kwargs[key]
-
-
-def _warn_unknown_kwords(default_kwargs, kwargs):
-    for key in sorted(kwargs):
-        if key not in default_kwargs:
-            warnings.warn("work_queue_executor key {} is unknown.".format(key))
 
 
 def _check_dynamic_chunksize_targets(targets):

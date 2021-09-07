@@ -98,7 +98,7 @@ def test_lazy_dataframe_getattr():
 def test_processor_newaccumulator():
     from coffea.processor import (
         ProcessorABC,
-        iterative_executor,
+        IterativeExecutor,
         defaultdict_accumulator,
     )
 
@@ -111,7 +111,8 @@ def test_processor_newaccumulator():
 
     proc = Test()
 
-    out = iterative_executor(
+    exe = IterativeExecutor()
+    out = exe(
         range(10),
         proc.process,
         None,
@@ -133,7 +134,8 @@ def test_processor_newaccumulator():
 
     proc = TestOldStyle()
 
-    out = iterative_executor(
+    exe = IterativeExecutor()
+    out = exe(
         range(10),
         proc.process,
         proc.accumulator,

@@ -11,26 +11,24 @@ except ImportError:
 
 
 def template_analysis(environment_file, filelist, executor, compression):
-    from coffea.processor import run_uproot_job
-
-    treename = "Events"
+    from coffea.processor import Runner
     from coffea.processor.test_items import NanoTestProcessor
 
-    exe_args = {
-        "compression": compression,
-        "environment_file": environment_file,
-        "resources_mode": "fixed",
-        "cores": 2,
-        "memory": 500,  # MB
-        "disk": 1000,  # MB
-        "master_name": "coffea_test",
-        "port": work_queue_port,
-        "print_stdout": True,
-    }
-
-    hists = run_uproot_job(
-        filelist, treename, NanoTestProcessor(), executor, executor_args=exe_args
+    executor = executor(
+        compression=compression,
+        environment_file=environment_file,
+        resources_mode="fixed",
+        cores=2,
+        memory=500,  # MB
+        disk=1000,  # MB
+        master_name="coffea_test",
+        port=work_queue_port,
+        print_stdout=True,
     )
+
+    run = Runner(executor)
+
+    hists = run(filelist, "Events", NanoTestProcessor())
 
     print(hists)
     assert hists["cutflow"]["ZJets_pt"] == 18
@@ -40,7 +38,7 @@ def template_analysis(environment_file, filelist, executor, compression):
 
 
 def work_queue_example(environment_file):
-    from coffea.processor import work_queue_executor
+    from coffea.processor import WorkQueueExecutor
 
     # Work Queue does not allow absolute paths
     filelist = {
@@ -59,9 +57,7 @@ def work_queue_example(environment_file):
 
     with workers:
         # template_analysis(environment_file, filelist, work_queue_executor, compression=0)
-        template_analysis(
-            environment_file, filelist, work_queue_executor, compression=2
-        )
+        template_analysis(environment_file, filelist, WorkQueueExecutor, compression=2)
 
 
 def create_conda_environment(env_file, py_version):

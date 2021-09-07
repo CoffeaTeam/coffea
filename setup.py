@@ -75,6 +75,7 @@ INSTALL_REQUIRES = [
     "hist>=2",
     'typing-extensions;python_version<"3.8"',
     "cachetools",
+    'dataclasses;python_version<"3.7"',
 ]
 EXTRAS_REQUIRE = {}
 EXTRAS_REQUIRE["spark"] = ["ipywidgets", "pyspark>=2.4.1,<3.0.0", "jinja2"]

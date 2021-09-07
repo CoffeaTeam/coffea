@@ -5,25 +5,13 @@ import pytest
 
 
 def do_dask_pandas_job(client, filelist):
-    treename = "Events"
     from coffea.processor.test_items import NanoTestProcessorPandas
     from coffea import nanoevents
 
-    proc = NanoTestProcessorPandas()
+    executor = processor.DaskExecutor(client=client, use_dataframes=True)
+    run = processor.Runner(executor=executor, schema=nanoevents.NanoAODSchema)
 
-    exe_args = {
-        "client": client,
-        "schema": nanoevents.NanoAODSchema,
-        "use_dataframes": True,
-    }
-
-    output = processor.run_uproot_job(
-        filelist,
-        treename,
-        processor_instance=proc,
-        executor=processor.dask_executor,
-        executor_args=exe_args,
-    )
+    output = run(filelist, "Events", processor_instance=NanoTestProcessorPandas())
 
     # Can save to Parquet straight from distributed DataFrame without explicitly collecting the outputs:
     #

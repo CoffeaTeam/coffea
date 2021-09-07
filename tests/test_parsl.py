@@ -30,23 +30,12 @@ def test_parsl_start_stop():
 
 
 def do_parsl_job(filelist, flatten=False, compression=0, config=None):
-    treename = "Events"
-
     from coffea.processor.test_items import NanoTestProcessor
 
-    proc = NanoTestProcessor()
+    executor = processor.ParslExecutor(compression=compression, config=config)
+    run = processor.Runner(executor=executor)
 
-    exe_args = {
-        "compression": compression,
-        "config": config,
-    }
-    hists = processor.run_uproot_job(
-        filelist,
-        treename,
-        processor_instance=proc,
-        executor=processor.executor.parsl_executor,
-        executor_args=exe_args,
-    )
+    hists = run(filelist, "Events", processor_instance=NanoTestProcessor())
 
     assert hists["cutflow"]["ZJets_pt"] == 18
     assert hists["cutflow"]["ZJets_mass"] == 6
