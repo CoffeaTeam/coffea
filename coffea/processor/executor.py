@@ -446,6 +446,8 @@ class IterativeExecutor(ExecutorBase):
             Ignored for iterative executor
     """
 
+    workers: int = 1
+    
     def __call__(
         self,
         items: Iterable,
