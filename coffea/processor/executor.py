@@ -447,7 +447,7 @@ class IterativeExecutor(ExecutorBase):
     """
 
     workers: int = 1
-    
+
     def __call__(
         self,
         items: Iterable,
