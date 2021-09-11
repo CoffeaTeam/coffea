@@ -85,6 +85,10 @@ class UprootSourceMapping(BaseSourceMapping):
             elif form["class"] == "NumpyArray":
                 form["form_key"] = quote(f"{key},!load")
                 form["parameters"] = {"__doc__": branch.title}
+            elif form["class"] == "RegularArray":
+                form["form_key"] = quote(f"{key}")
+                form["content"]["form_key"] = quote(f"{key},!load")
+                form["content"]["parameters"] = {"__doc__": branch.title}
             else:
                 warnings.warn(
                     f"Skipping {key} as it is not interpretable by NanoEvents"
