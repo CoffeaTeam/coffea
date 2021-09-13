@@ -48,12 +48,8 @@ class DelphesSchema(BaseSchema):
         "WeightLHEF": "ChargedParticle",
     }
 
-    multi_mixins = {"Event": ["Event", "LHEFEvent", "HepMCEvent", "LHCOEvent"]}
-
-    """Default configuration for mixin types, based on the collection name.
-
-    The types are implemented in the `coffea.nanoevents.methods.nanoaod` module.
-    """
+    # These are stored as length-1 vectors unnecessarily
+    singletons = ["Event", "EventLHEF", "HepMCEvent", "LHCOEvent"]
 
     def __init__(self, base_form, version="latest"):
         super().__init__(base_form)
@@ -89,62 +85,25 @@ class DelphesSchema(BaseSchema):
         output = {}
         for name in collections:
             mixin = self.mixins.get(name, "NanoCollection")
-            multi_mixin = self.multi_mixins.get(name)
-            if "o" + name in branch_forms and name not in branch_forms:
-                # list collection
-                offsets = branch_forms["o" + name]
-                content = {
-                    k[2 * len(name) + 2 :]: branch_forms[k]
-                    for k in branch_forms
-                    if k.startswith(name + "/" + name)
+            # Every delphes collection is a list
+            offsets = branch_forms["o" + name]
+            content = {
+                k[2 * len(name) + 2 :]: branch_forms[k]
+                for k in branch_forms
+                if k.startswith(name + "/" + name)
+            }
+            output[name] = zip_forms(
+                content, name, record_name=mixin, offsets=offsets
+            )
+            output[name]["content"]["parameters"].update(
+                {
+                    "__doc__": offsets["parameters"]["__doc__"],
+                    "collection_name": name,
                 }
-                if multi_mixin is None:
-                    output[name] = zip_forms(
-                        content, name, record_name=mixin, offsets=offsets
-                    )
-                    output[name]["content"]["parameters"].update(
-                        {
-                            "__doc__": offsets["parameters"]["__doc__"],
-                            "collection_name": name,
-                        }
-                    )
-                else:
-                    for mixin_name in multi_mixin:
-                        # the output[name] will create `self.{name}` correspondingly
-                        output[mixin_name] = zip_forms(
-                            content, name, record_name=mixin_name, offsets=offsets
-                        )
-                        output[mixin_name]["content"]["parameters"].update(
-                            {
-                                "__doc__": offsets["parameters"]["__doc__"],
-                                "collection_name": name,
-                            }
-                        )
-
-            elif "o" + name in branch_forms:
-                # list singleton, can use branch's own offsets
-                output[name] = branch_forms[name]
-                output[name].setdefault("parameters", {})
-                output[name]["parameters"].update(
-                    {"__array__": mixin, "collection_name": name}
-                )
-            elif name in branch_forms:
-                # singleton
-                output[name] = branch_forms[name]
-            else:
-                # simple collection
-                output[name] = zip_forms(
-                    {
-                        k[len(name) + 1 :]: branch_forms[k]
-                        for k in branch_forms
-                        if k.startswith(name + "_")
-                    },
-                    name,
-                    record_name=mixin,
-                )
-                output[name].setdefault("parameters", {})
-                output[name]["parameters"].update({"collection_name": name})
-
+            )
+            if name in self.singletons:
+                # flatten!
+                output[name] = output[name]["content"]
         return output
 
     @property

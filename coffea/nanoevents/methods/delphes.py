@@ -13,7 +13,7 @@ behavior.update(candidate.behavior)
 
 class DelphesEvents(behavior["NanoEvents"]):
     def __repr__(self):
-        return f"<Delphes event {self.Event.number}>"
+        return f"<Delphes event {self.Event.Number}>"
 
 
 behavior["NanoEvents"] = DelphesEvents
