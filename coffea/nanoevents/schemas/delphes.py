@@ -14,38 +14,38 @@ class DelphesSchema(BaseSchema):
     warn_missing_crossrefs = True
 
     mixins = {
-        "CaloJet02": "ChargedParticle",
-        "CaloJet04": "ChargedParticle",
-        "CaloJet08": "ChargedParticle",
-        "CaloJet15": "ChargedParticle",
-        "EFlowNeutralHadron": "ChargedParticle",
+        "CaloJet02": "Particle",
+        "CaloJet04": "Particle",
+        "CaloJet08": "Particle",
+        "CaloJet15": "Particle",
+        "EFlowNeutralHadron": "Particle",
         "EFlowPhoton": "Photon",
-        "EFlowTrack": "ChargedParticle",
+        "EFlowTrack": "Particle",
         "Electron": "Electron",
         "GenJet": "GenJet",
-        "GenJet02": "ChargedParticle",
-        "GenJet04": "ChargedParticle",
-        "GenJet08": "ChargedParticle",
-        "GenJet15": "ChargedParticle",
+        "GenJet02": "Particle",
+        "GenJet04": "Particle",
+        "GenJet08": "Particle",
+        "GenJet15": "Particle",
         "GenMissingET": "MissingET",
         "Jet": "Jet",
         "MissingET": "MissingET",
         "Muon": "Muon",
-        "Particle": "GenParticle",
-        "ParticleFlowJet02": "ChargedParticle",
-        "ParticleFlowJet04": "ChargedParticle",
-        "ParticleFlowJet08": "ChargedParticle",
-        "ParticleFlowJet15": "ChargedParticle",
+        "Particle": "Particle",
+        "ParticleFlowJet02": "Particle",
+        "ParticleFlowJet04": "Particle",
+        "ParticleFlowJet08": "Particle",
+        "ParticleFlowJet15": "Particle",
         "Photon": "Photon",
         # "ScalarHT": "",
         # pseudo-lorentz: pt, eta, phi, mass=0
-        "Tower": "ChargedParticle",
-        "Track": "ChargedParticle",
-        "TrackJet02": "ChargedParticle",
-        "TrackJet04": "ChargedParticle",
-        "TrackJet08": "ChargedParticle",
-        "TrackJet15": "ChargedParticle",
-        "WeightLHEF": "ChargedParticle",
+        "Tower": "Particle",
+        "Track": "Particle",
+        "TrackJet02": "Particle",
+        "TrackJet04": "Particle",
+        "TrackJet08": "Particle",
+        "TrackJet15": "Particle",
+        "WeightLHEF": "Particle",
     }
 
     # These are stored as length-1 vectors unnecessarily
@@ -132,7 +132,6 @@ class DelphesSchema(BaseSchema):
             # update docstrings as needed
             # NB: must be before flattening for easier logic
             for parameter in output[name]["content"]["contents"].keys():
-                print("  ", parameter)
                 output[name]["content"]["contents"][parameter]["parameters"][
                     "__doc__"
                 ] = self.docstrings.get(
