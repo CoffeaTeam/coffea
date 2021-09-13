@@ -51,6 +51,35 @@ class DelphesSchema(BaseSchema):
     # These are stored as length-1 vectors unnecessarily
     singletons = ["Event", "EventLHEF", "HepMCEvent", "LHCOEvent"]
 
+    docstrings = {
+        "Number": "event number",
+        "ReadTime": "read time",
+        "ProcTime": "processing time",
+        "ProcessID": "subprocess code for the event",
+        "Weight": "weight for the event",
+        "CrossSection": "cross-section in [pb]",
+        "CrossSectionError": "cross-section error [pb]",
+        "ScalePDF": "Q-scale used in evaluation of PDF's [GeV]",
+        "AlphaQED": "value of the QED coupling used in the event, see hep-ph/0109068",
+        "AlphaQCD": "value of the QCD coupling used in the event, see hep-ph/0109068",
+        "MPI": "number of multi parton interactions",
+        "Scale": "energy scale, see hep-ph/0109068",
+        "ID1": "flavour code of first parton",
+        "ID2": "flavour code of second parton",
+        "X1": 'fraction of beam momentum carried by first parton ("beam side")',
+        "X2": 'fraction of beam momentum carried by second parton ("target side")',
+        "PDF1": "PDF (id1, x1, Q)",
+        "PDF2": "PDF (id2, x2, Q)",
+        "Trigger": "trigger word",
+        "PID": "particle HEP ID number",
+        "Status": "particle status",
+        "IsPU": "0 or 1 for particles from pile-up interactions",
+        "M1": "particle first parent",
+        "M2": "particle second parent",
+        "D1": "particle first child",
+        "D2": "particle last child",
+    }
+
     def __init__(self, base_form, version="latest"):
         super().__init__(base_form)
         self._version = version
@@ -92,18 +121,32 @@ class DelphesSchema(BaseSchema):
                 for k in branch_forms
                 if k.startswith(name + "/" + name)
             }
-            output[name] = zip_forms(
-                content, name, record_name=mixin, offsets=offsets
-            )
+            output[name] = zip_forms(content, name, record_name=mixin, offsets=offsets)
             output[name]["content"]["parameters"].update(
                 {
                     "__doc__": offsets["parameters"]["__doc__"],
                     "collection_name": name,
                 }
             )
+
+            # update docstrings as needed
+            # NB: must be before flattening for easier logic
+            for parameter in output[name]["content"]["contents"].keys():
+                print("  ", parameter)
+                output[name]["content"]["contents"][parameter]["parameters"][
+                    "__doc__"
+                ] = self.docstrings.get(
+                    parameter,
+                    output[name]["content"]["contents"][parameter]["parameters"][
+                        "__doc__"
+                    ],
+                )
+
             if name in self.singletons:
-                # flatten!
+                # flatten! this 'promotes' the content of an inner dimension
+                # upwards, effectively hiding one nested dimension
                 output[name] = output[name]["content"]
+
         return output
 
     @property

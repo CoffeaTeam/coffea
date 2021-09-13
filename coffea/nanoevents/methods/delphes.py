@@ -29,20 +29,7 @@ def _set_repr_name(classname):
 
 @awkward.mixin_class(behavior)
 class Event:
-    @property
-    def number(self):
-        """event number"""
-        return self["Number"]
-
-    @property
-    def read_time(self):
-        """read time"""
-        return self["ReadTime"]
-
-    @property
-    def proc_time(self):
-        """processing time"""
-        return self["ProcTime"]
+    ...
 
 
 _set_repr_name("Event")
@@ -50,35 +37,7 @@ _set_repr_name("Event")
 
 @awkward.mixin_class(behavior)
 class LHEFEvent(Event):
-    @property
-    def process_id(self):
-        """subprocess code for the event"""
-        return self["ProcessID"]
-
-    @property
-    def weight(self):
-        """weight for the event"""
-        return self["Weight"]
-
-    @property
-    def xsec(self):
-        """cross-section"""
-        return self["CrossSection"]
-
-    @property
-    def scale_pdf(self):
-        """scale in GeV used in the calculation of the PDFs in the event"""
-        return self["ScalePDF"]
-
-    @property
-    def alpha_qed(self):
-        """value of the QED coupling used in the event"""
-        return self["AlphaQED"]
-
-    @property
-    def alpha_qcd(self):
-        """value of the QCD coupling used in the event"""
-        return self["AlphaQCD"]
+    ...
 
 
 _set_repr_name("LHEFEvent")
@@ -86,80 +45,7 @@ _set_repr_name("LHEFEvent")
 
 @awkward.mixin_class(behavior)
 class HepMCEvent(Event):
-    @property
-    def process_id(self):
-        """subprocess code for the event"""
-        return self["ProcessID"]
-
-    @property
-    def mu(self):
-        """number of multi parton interactions"""
-        return self["MPI"]
-
-    @property
-    def weight(self):
-        """weight for the event"""
-        return self["Weight"]
-
-    @property
-    def xsec(self):
-        """cross-section in pb"""
-        return self["CrossSection"]
-
-    @property
-    def xsec_err(self):
-        """cross-section error in pb"""
-        return self["CrossSectionError"]
-
-    @property
-    def scale(self):
-        """energy scale, see hep-ph/0109068"""
-        return self["Scale"]
-
-    @property
-    def alpha_qed(self):
-        """QED coupling, see hep-ph/0109068"""
-        return self["AlphaQED"]
-
-    @property
-    def alpha_qcd(self):
-        """QCD coupling, see hep-ph/0109068"""
-        return self["AlphaQCD"]
-
-    @property
-    def parton1_id(self):
-        """flavour code of first parton"""
-        return self["ID1"]
-
-    @property
-    def parton2_id(self):
-        """flavour code of second parton"""
-        return self["ID2"]
-
-    @property
-    def parton1_efrac(self):
-        """fraction of beam momentum carried by first parton ("beam side")"""
-        return self["X1"]
-
-    @property
-    def parton2_efrac(self):
-        """fraction of beam momentum carried by second parton ("target side")"""
-        return self["X2"]
-
-    @property
-    def scale_pdf(self):
-        """Q-scale used in evaluation of PDF's (in GeV)"""
-        return self["ScalePDF"]
-
-    @property
-    def pdf1(self):
-        """PDF (id1, x1, Q)"""
-        return self["PDF1"]
-
-    @property
-    def pdf2(self):
-        """PDF (id2, x2, Q)"""
-        return self["PDF2"]
+    ...
 
 
 _set_repr_name("HepMCEvent")
@@ -167,10 +53,7 @@ _set_repr_name("HepMCEvent")
 
 @awkward.mixin_class(behavior)
 class LHCOEvent(Event):
-    @property
-    def trigger(self):
-        """trigger word"""
-        return self["Trigger"]
+    ...
 
 
 _set_repr_name("LHCOEvent")
@@ -178,7 +61,23 @@ _set_repr_name("LHCOEvent")
 
 @awkward.mixin_class(behavior)
 class Particle(vector.PtEtaPhiMLorentzVector):
-    """Generic particle collection that has Lorentz vector properties"""
+    """Generic particle collection that has Lorentz vector properties
+
+    The following branches are not used:
+
+     - E: particle energy
+     - Px: particle momentum vector (x component)
+     - Py: particle momentum vector (y component)
+     - Pz: particle momentum vector (z component)
+
+     - P: particle momentum
+     - Rapidity: particle rapidity
+
+     - T: particle vertex position (t component)
+     - X: particle vertex position (x component)
+     - Y: particle vertex position (y component)
+     - Z: particle vertex position (z component)
+    """
 
     @property
     def pt(self):
@@ -201,17 +100,28 @@ _set_repr_name("Particle")
 
 
 @awkward.mixin_class(behavior)
-class ChargedParticle(Particle):
+class Vertex(vector.LorentzVector):
+    """Generic vertex collection that has Lorentz vector properties"""
+
     @property
-    def charge(self):
-        return self["Charge"]
+    def t(self):
+        return self["T"]
 
+    @property
+    def x(self):
+        return self["X"]
 
-_set_repr_name("ChargedParticle")
+    @property
+    def y(self):
+        return self["Y"]
+
+    @property
+    def z(self):
+        return self["Z"]
 
 
 @awkward.mixin_class(behavior)
-class Electron(ChargedParticle, base.NanoCollection):
+class Electron(Particle, base.NanoCollection):
     ...
 
 
@@ -219,7 +129,7 @@ _set_repr_name("Electron")
 
 
 @awkward.mixin_class(behavior)
-class Muon(ChargedParticle, base.NanoCollection):
+class Muon(Particle, base.NanoCollection):
     ...
 
 
@@ -227,7 +137,7 @@ _set_repr_name("Muon")
 
 
 @awkward.mixin_class(behavior)
-class Photon(ChargedParticle, base.NanoCollection):
+class Photon(Particle, base.NanoCollection):
     ...
 
 
@@ -235,7 +145,7 @@ _set_repr_name("Photon")
 
 
 @awkward.mixin_class(behavior)
-class Jet(ChargedParticle, base.NanoCollection):
+class Jet(Particle, base.NanoCollection):
     ...
 
 
@@ -243,7 +153,7 @@ _set_repr_name("Jet")
 
 
 @awkward.mixin_class(behavior)
-class GenJet(ChargedParticle, base.NanoCollection):
+class GenJet(Particle, base.NanoCollection):
     ...
 
 
@@ -251,11 +161,11 @@ _set_repr_name("GenJet")
 
 
 @awkward.mixin_class(behavior)
-class GenParticle(ChargedParticle, base.NanoCollection):
+class Particle(Particle, base.NanoCollection):
     ...
 
 
-_set_repr_name("GenParticle")
+_set_repr_name("Particle")
 
 
 @awkward.mixin_class(behavior)
@@ -277,12 +187,10 @@ __all__ = [
     "LHEFEvent",
     "HepMCEvent",
     "Particle",
-    "ChargedParticle",
     "Electron",
     "Muon",
     "Photon",
     "Jet",
     "GenJet",
     "MissingET",
-    "GenParticle",
 ]
