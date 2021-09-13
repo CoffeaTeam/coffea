@@ -100,7 +100,6 @@ class DelphesSchema(BaseSchema):
                 output[name] = zip_forms(
                     content, name, record_name=mixin, offsets=offsets
                 )
-                print(name)
                 output[name]["content"]["parameters"].update(
                     {
                         "__doc__": offsets["parameters"]["__doc__"],
