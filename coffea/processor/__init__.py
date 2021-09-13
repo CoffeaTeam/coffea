@@ -48,8 +48,7 @@ def _run_x_job(
     chunksize=100000,
     maxchunks=None,
     metadata_cache=None,
-    dynamic_chunksize=False,
-    dynamic_chunksize_targets={},
+    dynamic_chunksize=None,
     format="root",
 ):
     """
@@ -98,7 +97,6 @@ def _run_x_job(
         maxchunks=maxchunks,
         metadata_cache=metadata_cache,
         dynamic_chunksize=dynamic_chunksize,
-        dynamic_chunksize_targets=dynamic_chunksize_targets,
         format=format,
         **executor_args,
     )
