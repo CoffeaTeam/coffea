@@ -1,6 +1,5 @@
 import os
 import pytest
-import numpy as np
 from coffea.nanoevents import NanoEventsFactory, DelphesSchema
 
 
