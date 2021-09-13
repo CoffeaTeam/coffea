@@ -22,8 +22,6 @@ class DelphesSchema(BaseSchema):
         "EFlowPhoton": "Photon",
         "EFlowTrack": "ChargedParticle",
         "Electron": "Electron",
-        # "Event": "",
-        # "EventLHEF": "",
         "GenJet": "GenJet",
         "GenJet02": "ChargedParticle",
         "GenJet04": "ChargedParticle",
@@ -49,6 +47,8 @@ class DelphesSchema(BaseSchema):
         "TrackJet15": "ChargedParticle",
         "WeightLHEF": "ChargedParticle",
     }
+
+    multi_mixins = {"Event": ["Event", "LHEFEvent", "HepMCEvent", "LHCOEvent"]}
 
     """Default configuration for mixin types, based on the collection name.
 
@@ -89,6 +89,7 @@ class DelphesSchema(BaseSchema):
         output = {}
         for name in collections:
             mixin = self.mixins.get(name, "NanoCollection")
+            multi_mixin = self.multi_mixins.get(name)
             if "o" + name in branch_forms and name not in branch_forms:
                 # list collection
                 offsets = branch_forms["o" + name]
@@ -97,15 +98,29 @@ class DelphesSchema(BaseSchema):
                     for k in branch_forms
                     if k.startswith(name + "/" + name)
                 }
-                output[name] = zip_forms(
-                    content, name, record_name=mixin, offsets=offsets
-                )
-                output[name]["content"]["parameters"].update(
-                    {
-                        "__doc__": offsets["parameters"]["__doc__"],
-                        "collection_name": name,
-                    }
-                )
+                if multi_mixin is None:
+                    output[name] = zip_forms(
+                        content, name, record_name=mixin, offsets=offsets
+                    )
+                    output[name]["content"]["parameters"].update(
+                        {
+                            "__doc__": offsets["parameters"]["__doc__"],
+                            "collection_name": name,
+                        }
+                    )
+                else:
+                    for mixin_name in multi_mixin:
+                        # the output[name] will create `self.{name}` correspondingly
+                        output[mixin_name] = zip_forms(
+                            content, name, record_name=mixin_name, offsets=offsets
+                        )
+                        output[mixin_name]["content"]["parameters"].update(
+                            {
+                                "__doc__": offsets["parameters"]["__doc__"],
+                                "collection_name": name,
+                            }
+                        )
+
             elif "o" + name in branch_forms:
                 # list singleton, can use branch's own offsets
                 output[name] = branch_forms[name]
