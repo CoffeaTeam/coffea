@@ -67,7 +67,10 @@ class UprootSourceMapping(BaseSourceMapping):
                 form["content"]["parameters"] = {"__doc__": branch.title}
             elif (
                 form["class"].startswith("ListOffset")
-                and form["content"]["class"].startswith("ListOffset")
+                and (
+                    form["content"]["class"].startswith("ListOffset")
+                    or form["content"]["class"] == "RegularArray"
+                )
                 and form["content"]["content"]["class"] in ["NumpyArray", "RecordArray"]
             ):
                 form["form_key"] = quote(f"{key},!load")
@@ -84,16 +87,16 @@ class UprootSourceMapping(BaseSourceMapping):
                         ] = quote(f"{key},!load,!content,!content,{field},!item")
             elif (
                 form["class"].startswith("ListOffset")
-                and form["content"]["class"] == 'RecordArray'
+                and form["content"]["class"] == "RecordArray"
             ):
                 # TODO: fix me?
                 form["form_key"] = quote(f"{key},!load")
                 form["content"]["form_key"] = quote(f"{key},!load,!content")
                 form["content"]["parameters"] = {"__doc__": branch.title}
                 for field in form["content"]["contents"]:
-                    form["content"]["contents"][field][
-                        "form_key"
-                    ] = quote(f"{key},!load,!content,{field},!item")
+                    form["content"]["contents"][field]["form_key"] = quote(
+                        f"{key},!load,!content,{field},!item"
+                    )
             elif form["class"] == "NumpyArray":
                 form["form_key"] = quote(f"{key},!load")
                 form["parameters"] = {"__doc__": branch.title}

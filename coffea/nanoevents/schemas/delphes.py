@@ -76,11 +76,14 @@ class DelphesSchema(BaseSchema):
         "TrimmedP4[5]",
     ]
 
+    # fixed through addition in uproot/mapping.py
+    # - Edges[4]
+    # - Tau[5]
+    # - FracPt[5]
+
     # uninterpretable items
     # - Area
     # - Constituents
-    # - Edges[4]
-    # - FracPt[5]
     # - Particle
     # - Particles
     # - PrunedP4[5]
@@ -88,7 +91,6 @@ class DelphesSchema(BaseSchema):
     # - SoftDroppedP4[5]
     # - SoftDroppedSubJet1
     # - SoftDroppedSubJet2
-    # - Tau[5]
     # - TrimmedP4[5]
 
     docstrings = {
