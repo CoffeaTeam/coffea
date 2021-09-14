@@ -66,6 +66,16 @@ class DelphesSchema(BaseSchema):
         "MissingET",
     ]
 
+    tlorentzvectors = [
+        "Area",
+        "PrunedP4[5]",
+        "SoftDroppedJet",
+        "SoftDroppedP4[5]",
+        "SoftDroppedSubJet1",
+        "SoftDroppedSubJet2",
+        "TrimmedP4[5]",
+    ]
+
     # uninterpretable items
     # - Area
     # - Constituents
@@ -227,6 +237,11 @@ class DelphesSchema(BaseSchema):
                 branch_forms[f"o{name}"] = transforms.counts2offsets_form(
                     branch_forms[f"{name}_size"]
                 )
+
+        for name in collections:
+            for key in self.tlorentzvectors:
+                if f"{name}/{name}.{key}" in branch_forms:
+                    ...  # do stuff
 
         output = {}
         for name in collections:
