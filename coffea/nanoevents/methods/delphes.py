@@ -61,6 +61,14 @@ _set_repr_name("LHCOEvent")
 
 
 @awkward.mixin_class(behavior)
+class WeightLHEF(Event):
+    ...
+
+
+_set_repr_name("WeightLHEF")
+
+
+@awkward.mixin_class(behavior)
 class Particle(vector.PtEtaPhiMLorentzVector):
     """Generic particle collection that has Lorentz vector properties
 
@@ -147,6 +155,40 @@ _set_repr_name("MissingET")
 
 
 @awkward.mixin_class(behavior)
+class ScalarHT(base.NanoCollection):
+    ...
+
+
+_set_repr_name("ScalarHT")
+
+
+@awkward.mixin_class(behavior)
+class Rho(base.NanoCollection):
+    ...
+
+
+_set_repr_name("Rho")
+
+
+@awkward.mixin_class(behavior)
+class Weight(base.NanoCollection):
+    ...
+
+
+_set_repr_name("Weight")
+
+
+@awkward.mixin_class(behavior)
+class Photon(Particle, base.NanoCollection):
+    @property
+    def mass(self):
+        return awkward.without_parameters(awkward.zeros_like(self.pt))
+
+
+_set_repr_name("Photon")
+
+
+@awkward.mixin_class(behavior)
 class Electron(Particle, base.NanoCollection):
     ...
 
@@ -160,14 +202,6 @@ class Muon(Particle, base.NanoCollection):
 
 
 _set_repr_name("Muon")
-
-
-@awkward.mixin_class(behavior)
-class Photon(Particle, base.NanoCollection):
-    ...
-
-
-_set_repr_name("Photon")
 
 
 @awkward.mixin_class(behavior)
