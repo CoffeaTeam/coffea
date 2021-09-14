@@ -66,15 +66,15 @@ class DelphesSchema(BaseSchema):
         "MissingET",
     ]
 
-    tlorentzvectors = [
-        "Area",
-        "PrunedP4[5]",
-        "SoftDroppedJet",
-        "SoftDroppedP4[5]",
-        "SoftDroppedSubJet1",
-        "SoftDroppedSubJet2",
-        "TrimmedP4[5]",
-    ]
+    tlorentzvectors = {
+        "Area": 1,
+        "PrunedP4[5]": 5,
+        "SoftDroppedJet": 5,
+        "SoftDroppedP4[5]": 5,
+        "SoftDroppedSubJet1": 1,
+        "SoftDroppedSubJet2": 1,
+        "TrimmedP4[5]": 5,
+    }
 
     # fixed through addition in uproot/mapping.py
     # - Edges[4]
@@ -240,13 +240,27 @@ class DelphesSchema(BaseSchema):
                     branch_forms[f"{name}_size"]
                 )
 
-        for name in collections:
-            for key in self.tlorentzvectors:
+            for key, scale in self.tlorentzvectors.items():
                 if f"{name}/{name}.{key}" in branch_forms:
-                    ...  # do stuff
+                    branch_forms[f"o{name}.{key}"] = transforms.counts2offsets_form(
+                        branch_forms[f"{name}_size"], scale=scale
+                    )
+                    branch_forms[
+                        f"{name}/{name}.{key}_distinctParentIdx"
+                    ] = transforms.distinctParent_form(
+                        branch_forms[f"{name}/{name}.fUniqueID"],
+                        branch_forms[f"{name}/{name}.fUniqueID"],
+                    )
+                    branch_forms[
+                        f"{name}/{name}.{key}_childrenIdx"
+                    ] = transforms.children_form(
+                        branch_forms[f"o{name}.{key}"],
+                        branch_forms[f"{name}/{name}.{key}_distinctParentIdx"],
+                    )
 
         output = {}
         for name in collections:
+            output[f"{name}.offsets"] = branch_forms[f"o{name}"]
             mixin = self.mixins.get(name, "NanoCollection")
             # Every delphes collection is a list
             offsets = branch_forms["o" + name]
@@ -266,6 +280,8 @@ class DelphesSchema(BaseSchema):
             # update docstrings as needed
             # NB: must be before flattening for easier logic
             for parameter in output[name]["content"]["contents"].keys():
+                if "parameters" not in output[name]["content"]["contents"][parameter]:
+                    continue
                 output[name]["content"]["contents"][parameter]["parameters"][
                     "__doc__"
                 ] = self.docstrings.get(
