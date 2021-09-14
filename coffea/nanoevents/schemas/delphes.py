@@ -66,6 +66,21 @@ class DelphesSchema(BaseSchema):
         "MissingET",
     ]
 
+    # uninterpretable items
+    # - Area
+    # - Constituents
+    # - Edges[4]
+    # - FracPt[5]
+    # - Particle
+    # - Particles
+    # - PrunedP4[5]
+    # - SoftDroppedJet
+    # - SoftDroppedP4[5]
+    # - SoftDroppedSubJet1
+    # - SoftDroppedSubJet2
+    # - Tau[5]
+    # - TrimmedP4[5]
+
     docstrings = {
         "AlphaQCD": "value of the QCD coupling used in the event, see hep-ph/0109068",
         "AlphaQED": "value of the QED coupling used in the event, see hep-ph/0109068",
@@ -98,7 +113,6 @@ class DelphesSchema(BaseSchema):
         "ErrorP": "momentum error [GeV]",
         "ErrorPT": "transverse momentum error [GeV]",
         "ErrorPhi": "azimuthal angle error",
-        "ErrorT": "time measurement error",
         "ErrorT": "vertex position error (t component)",
         "ErrorX": "vertex position error (x component)",
         "ErrorY": "vertex position error (y component)",
