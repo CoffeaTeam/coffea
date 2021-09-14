@@ -61,11 +61,81 @@ _set_repr_name("LHCOEvent")
 
 
 @awkward.mixin_class(behavior)
+class Weight(base.NanoCollection):
+    ...
+
+
+_set_repr_name("Weight")
+
+
+@awkward.mixin_class(behavior)
 class WeightLHEF(Event):
     ...
 
 
 _set_repr_name("WeightLHEF")
+
+
+@awkward.mixin_class(behavior)
+class Rho(base.NanoCollection):
+    ...
+
+
+_set_repr_name("Rho")
+
+
+@awkward.mixin_class(behavior)
+class ScalarHT(base.NanoCollection):
+    ...
+
+
+_set_repr_name("ScalarHT")
+
+
+@awkward.mixin_class(behavior)
+class MissingET(vector.SphericalThreeVector, base.NanoCollection):
+    @property
+    def rho(self):
+        return self["MET"] * numpy.cosh(self.eta)
+
+    @property
+    def theta(self):
+        return 2 * numpy.arctan(numpy.exp(-self.eta))
+
+    @property
+    def phi(self):
+        return self["Phi"]
+
+    @property
+    def eta(self):
+        return self["Eta"]
+
+
+_set_repr_name("MissingET")
+
+
+@awkward.mixin_class(behavior)
+class Vertex(vector.LorentzVector):
+    """Generic vertex collection that has Lorentz vector properties"""
+
+    @property
+    def t(self):
+        return self["T"]
+
+    @property
+    def x(self):
+        return self["X"]
+
+    @property
+    def y(self):
+        return self["Y"]
+
+    @property
+    def z(self):
+        return self["Z"]
+
+
+_set_repr_name("Vertex")
 
 
 @awkward.mixin_class(behavior)
@@ -109,87 +179,25 @@ _set_repr_name("Particle")
 
 
 @awkward.mixin_class(behavior)
-class Vertex(vector.LorentzVector):
-    """Generic vertex collection that has Lorentz vector properties"""
-
-    @property
-    def t(self):
-        return self["T"]
-
-    @property
-    def x(self):
-        return self["X"]
-
-    @property
-    def y(self):
-        return self["Y"]
-
-    @property
-    def z(self):
-        return self["Z"]
-
-
-_set_repr_name("Vertex")
-
-
-@awkward.mixin_class(behavior)
-class MissingET(vector.SphericalThreeVector, base.NanoCollection):
-    @property
-    def rho(self):
-        return self["MET"] * numpy.cosh(self.eta)
-
-    @property
-    def theta(self):
-        return 2 * numpy.arctan(numpy.exp(-self.eta))
-
-    @property
-    def phi(self):
-        return self["Phi"]
-
-    @property
-    def eta(self):
-        return self["Eta"]
-
-
-_set_repr_name("MissingET")
-
-
-@awkward.mixin_class(behavior)
-class ScalarHT(base.NanoCollection):
-    ...
-
-
-_set_repr_name("ScalarHT")
-
-
-@awkward.mixin_class(behavior)
-class Rho(base.NanoCollection):
-    ...
-
-
-_set_repr_name("Rho")
-
-
-@awkward.mixin_class(behavior)
-class Weight(base.NanoCollection):
-    ...
-
-
-_set_repr_name("Weight")
-
-
-@awkward.mixin_class(behavior)
-class Photon(Particle, base.NanoCollection):
+class MasslessParticle(Particle, base.NanoCollection):
     @property
     def mass(self):
         return awkward.without_parameters(awkward.zeros_like(self.pt))
+
+
+_set_repr_name("MasslessParticle")
+
+
+@awkward.mixin_class(behavior)
+class Photon(MasslessParticle, base.NanoCollection):
+    ...
 
 
 _set_repr_name("Photon")
 
 
 @awkward.mixin_class(behavior)
-class Electron(Particle, base.NanoCollection):
+class Electron(MasslessParticle, base.NanoCollection):
     ...
 
 
@@ -197,7 +205,7 @@ _set_repr_name("Electron")
 
 
 @awkward.mixin_class(behavior)
-class Muon(Particle, base.NanoCollection):
+class Muon(MasslessParticle, base.NanoCollection):
     ...
 
 
@@ -213,19 +221,21 @@ _set_repr_name("Jet")
 
 
 @awkward.mixin_class(behavior)
-class GenJet(Particle, base.NanoCollection):
+class Track(Particle, base.NanoCollection):
     ...
 
 
-_set_repr_name("GenJet")
+_set_repr_name("Track")
 
 
 @awkward.mixin_class(behavior)
-class Particle(Particle, base.NanoCollection):
-    ...
+class Tower(MasslessParticle, base.NanoCollection):
+    @property
+    def pt(self):
+        return self["ET"]
 
 
-_set_repr_name("Particle")
+_set_repr_name("Tower")
 
 
 __all__ = [
@@ -233,12 +243,18 @@ __all__ = [
     "Event",
     "LHEFEvent",
     "HepMCEvent",
-    "Particle",
-    "Vertex",
+    "LHCOEvent",
+    "Weight",
+    "WeightLHEF",
+    "Rho",
+    "ScalarHT",
     "MissingET",
+    "Vertex",
+    "Particle",
+    "Photon",
     "Electron",
     "Muon",
-    "Photon",
     "Jet",
-    "GenJet",
+    "Track",
+    "Tower",
 ]
