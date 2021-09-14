@@ -49,7 +49,7 @@ class DelphesSchema(BaseSchema):
     }
 
     # These are stored as length-1 vectors unnecessarily
-    singletons = ["Event", "EventLHEF", "HepMCEvent", "LHCOEvent"]
+    singletons = ["Event", "EventLHEF", "HepMCEvent", "LHCOEvent", "MissingET"]
 
     docstrings = {
         "Number": "event number",
