@@ -2,6 +2,7 @@
 
 See https://cp3.irmp.ucl.ac.be/projects/delphes/wiki/WorkBook/RootTreeDescription for details.
 """
+import numpy
 import awkward
 from coffea.nanoevents.methods import base, vector, candidate
 
@@ -120,6 +121,31 @@ class Vertex(vector.LorentzVector):
         return self["Z"]
 
 
+_set_repr_name("Vertex")
+
+
+@awkward.mixin_class(behavior)
+class MissingET(vector.SphericalThreeVector, base.NanoCollection):
+    @property
+    def rho(self):
+        return self["MET"] * numpy.cosh(self.eta)
+
+    @property
+    def theta(self):
+        return 2 * numpy.arctan(numpy.exp(-self.eta))
+
+    @property
+    def phi(self):
+        return self["Phi"]
+
+    @property
+    def eta(self):
+        return self["Eta"]
+
+
+_set_repr_name("MissingET")
+
+
 @awkward.mixin_class(behavior)
 class Electron(Particle, base.NanoCollection):
     ...
@@ -168,29 +194,17 @@ class Particle(Particle, base.NanoCollection):
 _set_repr_name("Particle")
 
 
-@awkward.mixin_class(behavior)
-class MissingET(vector.PolarTwoVector, base.NanoCollection):
-    @property
-    def r(self):
-        return self["MET"]
-
-    @property
-    def phi(self):
-        return self["Phi"]
-
-
-_set_repr_name("MissingET")
-
 __all__ = [
     "DelphesEvents",
     "Event",
     "LHEFEvent",
     "HepMCEvent",
     "Particle",
+    "Vertex",
+    "MissingET",
     "Electron",
     "Muon",
     "Photon",
     "Jet",
     "GenJet",
-    "MissingET",
 ]
