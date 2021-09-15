@@ -309,13 +309,13 @@ class WorkQueueExecutor(ExecutorBase):
             Amount of disk space (in MB) for work queue task. If unset, use a whole worker.
         gpus : int
             Number of GPUs to allocate to each task.  If unset, use zero.
-        resources-mode : one of 'fixed', or 'auto'. Default is 'fixed'.
+        resources_mode : one of 'fixed', or 'auto'. Default is 'fixed'.
             - 'fixed': allocate cores, memory, and disk specified for each task.
             - 'auto': use cores, memory, and disk as maximum values to allocate.
                     Useful when the resources used by a task are not known, as
                     it lets work queue find an efficient value for maximum
                     throughput.
-        resource-monitor : bool
+        resource_monitor : bool
             If true, (false is the default) turns on resource monitoring for Work Queue.
         fast_terminate_workers: int
             Terminate workers on which tasks have been running longer than average.
@@ -324,16 +324,16 @@ class WorkQueueExecutor(ExecutorBase):
             legitimately slow tasks, no task may trigger fast termination in
             two distinct workers. Less than 1 disables it.
 
-        master-name : str
+        master_name : str
             Name to refer to this work queue master.
             Sets port to 0 (any available port) if port not given.
         port : int
             Port number for work queue master program. Defaults to 9123 if
-            master-name not given.
-        password-file: str
+            master_name not given.
+        password_file: str
             Location of a file containing a password used to authenticate workers.
 
-        extra-input-files: list
+        extra_input_files: list
             A list of files in the current working directory to send along with each task.
             Useful for small custom libraries and configuration files needed by the processor.
         x509_proxy : str
@@ -341,8 +341,9 @@ class WorkQueueExecutor(ExecutorBase):
             environment variable X509_USER_PROXY, or fallback to the file /tmp/x509up_u${UID} if
             exists.  If False, disables the default behavior and no proxy is sent.
 
-        environment-file : str
-            Python environment to use. Required.
+        environment_file : optional, str
+            Conda python environment tarball to use. If not given, assume that
+            the python environment is already setup at the execution site.
         wrapper : str
             Wrapper script to run/open python environment tarball. Defaults to python_package_run found in PATH.
 
@@ -354,13 +355,13 @@ class WorkQueueExecutor(ExecutorBase):
         verbose : bool
             If true, emit a message on each task submission and completion.
             Default is false.
-        debug-log : str
+        debug_log : str
             Filename for debug output
-        stats-log : str
+        stats_log : str
             Filename for tasks statistics output
-        transactions-log : str
+        transactions_log : str
             Filename for tasks lifetime reports output
-        print-stdout : bool
+        print_stdout : bool
             If true (default), print the standard output of work queue task on completion.
     """
 
