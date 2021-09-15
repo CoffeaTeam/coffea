@@ -393,7 +393,7 @@ class WorkQueueExecutor(ExecutorBase):
     chunks_per_accum: int = 10
     chunks_accum_in_mem: int = 2
     chunksize: int = 1024
-    dynamic_chunksize: bool = False
+    dynamic_chunksize: Optional[Dict] = None
 
     def __call__(
         self,
@@ -407,7 +407,7 @@ class WorkQueueExecutor(ExecutorBase):
             from .work_queue_tools import work_queue_main
         except ImportError as e:
             print(
-                "You must have Work Queue and dill installed to use work_queue_executor!"
+                "You must have Work Queue and dill installed to use WorkQueueExecutor!"
             )
             raise e
 
@@ -829,7 +829,7 @@ class Runner:
             Currently supported are 'wall_time' (in seconds), and 'memory' (in MB).
             E.g., with {"wall_time": 120, "memory": 2048}, the chunksize will
             be dynamically adapted so that processing jobs each run in about
-            two minutes, using two GB of memory.
+            two minutes, using two GB of memory. (Currently only for the WorkQueueExecutor.)
     """
 
     executor: ExecutorBase
