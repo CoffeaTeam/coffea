@@ -341,8 +341,9 @@ class WorkQueueExecutor(ExecutorBase):
             environment variable X509_USER_PROXY, or fallback to the file /tmp/x509up_u${UID} if
             exists.  If False, disables the default behavior and no proxy is sent.
 
-        environment_file : str
-            Python environment to use. Required.
+        environment_file : optional, str
+            Conda python environment tarball to use. If not given, assume that
+            the python environment is already setup at the execution site.
         wrapper : str
             Wrapper script to run/open python environment tarball. Defaults to python_package_run found in PATH.
 
