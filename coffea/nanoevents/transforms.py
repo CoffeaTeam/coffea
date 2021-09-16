@@ -76,14 +76,14 @@ def content(stack):
     stack.append(to_layout(stack.pop()).content)
 
 
-def counts2offsets_form(counts_form, scale=1):
+def counts2offsets_form(counts_form):
     form = {
         "class": "NumpyArray",
         "itemsize": 8,
         "format": "i",
         "primitive": "int64",
         "parameters": counts_form.get("parameters", None),
-        "form_key": concat(f"{scale:d}", counts_form["form_key"], "!counts2offsets"),
+        "form_key": concat(counts_form["form_key"], "!counts2offsets"),
     }
     return form
 
@@ -91,15 +91,14 @@ def counts2offsets_form(counts_form, scale=1):
 def counts2offsets(stack):
     """Cumulative sum of counts
 
-    Signature: scale,counts,!counts2offsets
+    Signature: counts,!counts2offsets
     Outputs an array with length one larger than input
     """
     counts = numpy.array(stack.pop())
-    scale = int(stack.pop())
     offsets = numpy.empty(len(counts) + 1, dtype=numpy.int64)
     offsets[0] = 0
     numpy.cumsum(counts, out=offsets[1:])
-    stack.append(offsets * scale)
+    stack.append(offsets)
 
 
 def local2global_form(index, target_offsets):
