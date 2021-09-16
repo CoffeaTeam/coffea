@@ -66,33 +66,6 @@ class DelphesSchema(BaseSchema):
         "MissingET",
     ]
 
-    tlorentzvectors = {
-        "Area": 1,
-        "PrunedP4[5]": 5,
-        "SoftDroppedJet": 5,
-        "SoftDroppedP4[5]": 5,
-        "SoftDroppedSubJet1": 1,
-        "SoftDroppedSubJet2": 1,
-        "TrimmedP4[5]": 5,
-    }
-
-    # fixed through addition in uproot/mapping.py
-    # - Edges[4]
-    # - Tau[5]
-    # - FracPt[5]
-
-    # uninterpretable items
-    # - Area
-    # - Constituents
-    # - Particle
-    # - Particles
-    # - PrunedP4[5]
-    # - SoftDroppedJet
-    # - SoftDroppedP4[5]
-    # - SoftDroppedSubJet1
-    # - SoftDroppedSubJet2
-    # - TrimmedP4[5]
-
     docstrings = {
         "AlphaQCD": "value of the QCD coupling used in the event, see hep-ph/0109068",
         "AlphaQED": "value of the QED coupling used in the event, see hep-ph/0109068",
@@ -239,24 +212,6 @@ class DelphesSchema(BaseSchema):
                 branch_forms[f"o{name}"] = transforms.counts2offsets_form(
                     branch_forms[f"{name}_size"]
                 )
-
-            for key, scale in self.tlorentzvectors.items():
-                if f"{name}/{name}.{key}" in branch_forms:
-                    branch_forms[f"o{name}.{key}"] = transforms.counts2offsets_form(
-                        branch_forms[f"{name}_size"], scale=scale
-                    )
-                    branch_forms[
-                        f"{name}/{name}.{key}_distinctParentIdx"
-                    ] = transforms.distinctParent_form(
-                        branch_forms[f"{name}/{name}.fUniqueID"],
-                        branch_forms[f"{name}/{name}.fUniqueID"],
-                    )
-                    branch_forms[
-                        f"{name}/{name}.{key}_childrenIdx"
-                    ] = transforms.children_form(
-                        branch_forms[f"o{name}.{key}"],
-                        branch_forms[f"{name}/{name}.{key}_distinctParentIdx"],
-                    )
 
         output = {}
         for name in collections:

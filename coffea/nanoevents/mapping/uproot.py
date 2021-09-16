@@ -21,6 +21,46 @@ class TrivialUprootOpener(UUIDOpener):
         return rootdir
 
 
+class CannotBeNanoEvents(Exception):
+    pass
+
+
+def _lazify_form(form, prefix, docstr=None):
+    if not isinstance(form, dict) or "class" not in form:
+        raise RuntimeError("form should have been normalized by now")
+    elif form["class"].startswith("ListOffset"):
+        # awkward will add !offsets
+        form["form_key"] = quote(prefix)
+        form["content"] = _lazify_form(
+            form["content"], prefix + ",!content", docstr=docstr
+        )
+    elif form["class"] == "NumpyArray":
+        form["form_key"] = quote(prefix)
+        if docstr is not None:
+            form["parameters"] = {"__doc__": docstr}
+    elif form["class"] == "RegularArray":
+        form["content"] = _lazify_form(
+            form["content"], prefix + ",!content", docstr=docstr
+        )
+        if docstr is not None:
+            form["parameters"] = {"__doc__": docstr}
+    elif form["class"] == "RecordArray":
+        for field in list(form["contents"]):
+            if "," in field or "!" in field:
+                raise CannotBeNanoEvents(
+                    f"A subform contains a field with invalid characters: {field}"
+                )
+            form["contents"][field] = _lazify_form(
+                form["contents"][field], prefix + f",{field},!item"
+            )
+        if docstr is not None:
+            form["parameters"] = {"__doc__": docstr}
+    else:
+        print(form)
+        raise CannotBeNanoEvents("Unknown form")
+    return form
+
+
 class UprootSourceMapping(BaseSourceMapping):
     _debug = False
 
@@ -42,6 +82,7 @@ class UprootSourceMapping(BaseSourceMapping):
                 )
                 continue
             if len(branch):
+                # The branch is split and its sub-branches will be enumerated by tree.iteritems
                 continue
             if isinstance(
                 branch.interpretation,
@@ -56,58 +97,28 @@ class UprootSourceMapping(BaseSourceMapping):
                     f"Skipping {key} as it is it cannot be represented as an Awkward array"
                 )
                 continue
+            # until awkward-forth is available, this fixer is necessary
+            form = uproot._util.recursively_fix_awkward_form_of_iter(
+                awkward, branch.interpretation, form
+            )
             form = uproot._util.awkward_form_remove_uproot(awkward, form)
-            form = json.loads(form.tojson())
+            form = json.loads(
+                form.tojson()
+            )  # normalizes form (expand NumpyArray classes)
             if (
                 form["class"].startswith("ListOffset")
-                and form["content"]["class"] == "NumpyArray"  # noqa
-            ):
-                form["form_key"] = quote(f"{key},!load")
-                form["content"]["form_key"] = quote(f"{key},!load,!content")
-                form["content"]["parameters"] = {"__doc__": branch.title}
-            elif (
-                form["class"].startswith("ListOffset")
-                and (
-                    form["content"]["class"].startswith("ListOffset")
-                    or form["content"]["class"] == "RegularArray"
-                )
-                and form["content"]["content"]["class"] in ["NumpyArray", "RecordArray"]
-            ):
-                form["form_key"] = quote(f"{key},!load")
-                form["content"]["form_key"] = quote(f"{key},!load,!content")
-                form["content"]["parameters"] = {"__doc__": branch.title}
-                if form["content"]["content"]["class"] == "NumpyArray":
-                    form["content"]["content"]["form_key"] = quote(
-                        f"{key},!load,!content,!content"
-                    )
-                else:
-                    for field in form["content"]["content"]["contents"]:
-                        form["content"]["content"]["contents"][field][
-                            "form_key"
-                        ] = quote(f"{key},!load,!content,!content,{field},!item")
-            elif (
-                form["class"].startswith("ListOffset")
                 and form["content"]["class"] == "RecordArray"
+                and key.endswith("]")
             ):
-                # TODO: fix me?
-                form["form_key"] = quote(f"{key},!load")
-                form["content"]["form_key"] = quote(f"{key},!load,!content,!content")
-                form["content"]["parameters"] = {"__doc__": branch.title}
-                for field in form["content"]["contents"]:
-                    form["content"]["contents"][field]["form_key"] = quote(
-                        f"{key},!load,!content,{field},!item"
-                    )
-                    print(form["content"]["contents"][field]["form_key"])
-            elif form["class"] == "NumpyArray":
-                form["form_key"] = quote(f"{key},!load")
-                form["parameters"] = {"__doc__": branch.title}
-            elif form["class"] == "RegularArray":
-                form["form_key"] = quote(f"{key}")
-                form["content"]["form_key"] = quote(f"{key},!load")
-                form["content"]["parameters"] = {"__doc__": branch.title}
-            else:
                 warnings.warn(
-                    f"Skipping {key} as it is not interpretable by NanoEvents"
+                    f"Skipping {key} because uproot doesn't interpret it correctly yet"
+                )
+                continue
+            try:
+                form = _lazify_form(form, f"{key},!load", docstr=branch.title)
+            except CannotBeNanoEvents as ex:
+                warnings.warn(
+                    f"Skipping {key} as it is not interpretable by NanoEvents\nDetails: {ex}"
                 )
                 continue
             branch_forms[key] = form
