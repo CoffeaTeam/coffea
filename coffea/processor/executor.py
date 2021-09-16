@@ -363,6 +363,11 @@ class WorkQueueExecutor(ExecutorBase):
             Filename for tasks lifetime reports output
         print_stdout : bool
             If true (default), print the standard output of work queue task on completion.
+
+        custom_init : function, optional
+            A function that takes as an argument the queue's WorkQueue object.
+            The function is called just before the first work unit is submitted
+            to the queue.
     """
 
     # Standard executor options:
@@ -395,6 +400,7 @@ class WorkQueueExecutor(ExecutorBase):
     chunks_accum_in_mem: int = 2
     chunksize: int = 1024
     dynamic_chunksize: Optional[Dict] = None
+    custom_init: Optional[Callable] = None
 
     def __call__(
         self,

@@ -525,6 +525,9 @@ def work_queue_main(items, function, accumulator, **kwargs):
             accumulate_fn, prefix_name="accum", tmpdir=tmpdir
         )
 
+        if kwargs["custom_init"]:
+            kwargs["custom_init"](_wq_queue)
+
         if kwargs["desc"] == "Preprocessing":
             return _work_queue_preprocessing(
                 items, accumulator, fn_wrapper, infile_function, tmpdir, kwargs
