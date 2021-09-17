@@ -310,15 +310,21 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
 
 
 class ProcCoffeaWQTask(CoffeaWQTask):
+    tasks_counter = 0
+
     def __init__(
         self, fn_wrapper, infile_function, item, tmpdir, exec_defaults, itemid=None
     ):
         self.size = len(item)
 
+        ProcCoffeaWQTask.tasks_counter += 1
         if not itemid:
             itemid = hashlib.sha256(
-                "proc_{}{}{}".format(
-                    item.entrystart, item.entrystop, item.fileuuid
+                "proc_{}{}{}_{}".format(
+                    item.entrystart,
+                    item.entrystop,
+                    item.fileuuid,
+                    ProcCoffeaWQTask.tasks_counter,
                 ).encode()
             ).hexdigest()[0:8]
 
