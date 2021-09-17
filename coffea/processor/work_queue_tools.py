@@ -241,7 +241,7 @@ class CoffeaWQTask(Task):
                 self.resources_measured.memory,
                 self.resources_measured.disk,
                 self.resources_measured.gpus,
-                (self.execute_cmd_finish - self.execute_cmd_start) / 1e6,
+                (self.cmd_execution_time) / 1e6,
             )
 
         if (task_failed or output_mode) and self.std_output:
@@ -624,7 +624,7 @@ def _work_queue_processing(
                     task_reports.append(
                         (
                             len(task),
-                            (task.execute_cmd_finish - task.execute_cmd_start) / 1e6,
+                            (task.cmd_execution_time) / 1e6,
                             task.resources_measured.memory,
                         )
                     )
