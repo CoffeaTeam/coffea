@@ -57,7 +57,7 @@ def get_description():
 
 INSTALL_REQUIRES = [
     "awkward>=1.3.0",
-    "uproot @ https://github.com/scikit-hep/uproot4.git@master",
+    "uproot @ git+https://github.com/scikit-hep/uproot4.git",
     "uproot3-methods>=0.10.0",
     "uproot3>=3.14.1",
     "pyarrow>=1.0.0",
