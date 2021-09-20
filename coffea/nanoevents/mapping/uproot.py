@@ -56,7 +56,6 @@ def _lazify_form(form, prefix, docstr=None):
         if docstr is not None:
             form["parameters"] = {"__doc__": docstr}
     else:
-        print(form)
         raise CannotBeNanoEvents("Unknown form")
     return form
 
@@ -105,15 +104,6 @@ class UprootSourceMapping(BaseSourceMapping):
             form = json.loads(
                 form.tojson()
             )  # normalizes form (expand NumpyArray classes)
-            if (
-                form["class"].startswith("ListOffset")
-                and form["content"]["class"] == "RecordArray"
-                and key.endswith("]")
-            ):
-                warnings.warn(
-                    f"Skipping {key} because uproot doesn't interpret it correctly yet"
-                )
-                continue
             try:
                 form = _lazify_form(form, f"{key},!load", docstr=branch.title)
             except CannotBeNanoEvents as ex:
