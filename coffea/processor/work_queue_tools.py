@@ -942,7 +942,7 @@ def _make_progress_bars(exec_defaults):
     accumulated_bar = tqdm(
         total=1 + int(items_total / (chunksize * chunks_per_accum)),
         disable=not status,
-        unit="tasks",
+        unit="task",
         desc="Accumulated",
         bar_format=bar_format,
     )
