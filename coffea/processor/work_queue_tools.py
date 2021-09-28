@@ -137,7 +137,7 @@ class CoffeaWQTask(Task):
         return str(self.itemid)
 
     def remote_command(self, env_file=None):
-        fn_command = "python fn_wrapper function.p args.p output.p"
+        fn_command = "python fn_wrapper function.p args.p output.p 2>&1 | tee stdout.log"
         command = fn_command
 
         if env_file:
