@@ -225,6 +225,12 @@ class DelphesSchema(BaseSchema):
                 if k.startswith(name + "/" + name)
             }
             output[name] = zip_forms(content, name, record_name=mixin, offsets=offsets)
+
+            # handle branches named like [4] and [5]
+            output[name]["content"]["contents"] = {
+                k.replace("[", "_").replace("]", ""): v
+                for k, v in output[name]["content"]["contents"].items()
+            }
             output[name]["content"]["parameters"].update(
                 {
                     "__doc__": offsets["parameters"]["__doc__"],
