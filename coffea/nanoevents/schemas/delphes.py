@@ -1,5 +1,6 @@
 from coffea.nanoevents import transforms
 from coffea.nanoevents.schemas.base import BaseSchema, zip_forms
+import warnings
 
 
 class DelphesSchema(BaseSchema):
@@ -64,6 +65,17 @@ class DelphesSchema(BaseSchema):
         "Rho",
         "ScalarHT",
         "MissingET",
+    ]
+
+    # These are items on a collection that are lorentz vectors (fE, fX, fY, fZ)
+    lorentz_vectors_exyz = [
+        "Area",
+        "PrunedP4[5]",
+        "SoftDroppedJet",
+        "SoftDroppedP4[5]",
+        "SoftDroppedSubJet1",
+        "SoftDroppedSubJet2",
+        "TrimmedP4[5]",
     ]
 
     docstrings = {
@@ -218,6 +230,37 @@ class DelphesSchema(BaseSchema):
         for name in collections:
             output[f"{name}.offsets"] = branch_forms[f"o{name}"]
             mixin = self.mixins.get(name, "NanoCollection")
+
+            # handle any lorentz vector interpretations first
+            for objname in self.lorentz_vectors_exyz:
+                _full_name = f"{name}/{name}.{objname}"
+                if _full_name not in branch_forms:
+                    continue
+
+                _record = None
+                if branch_forms[_full_name]["content"]["class"] == "RecordArray":
+                    _record = branch_forms[_full_name].pop("content")
+                elif branch_forms[_full_name]["content"]["class"] == "RegularArray":
+                    # in this case, we have a nested structure that we'd like to flatten out
+                    _record = branch_forms[_full_name]["content"].pop("content")
+
+                if _record is None:
+                    warnings.warn(
+                        f"{_full_name} is not interpretable as a LorentzVector"
+                    )
+                    continue
+
+                branch_forms[_full_name]["content"] = zip_forms(
+                    {
+                        "x": _record["contents"]["fP"]["contents"]["fX"],
+                        "y": _record["contents"]["fP"]["contents"]["fY"],
+                        "z": _record["contents"]["fP"]["contents"]["fZ"],
+                        "t": _record["contents"]["fE"],
+                    },
+                    f"{name}.{objname}",
+                    "LorentzVector",
+                )
+
             # Every delphes collection is a list
             offsets = branch_forms["o" + name]
             content = {
@@ -232,13 +275,14 @@ class DelphesSchema(BaseSchema):
             for parameter in output[name]["content"]["contents"].keys():
                 if "parameters" not in output[name]["content"]["contents"][parameter]:
                     continue
+                print(parameter)
                 output[name]["content"]["contents"][parameter]["parameters"][
                     "__doc__"
                 ] = self.docstrings.get(
                     parameter,
-                    output[name]["content"]["contents"][parameter]["parameters"][
-                        "__doc__"
-                    ],
+                    output[name]["content"]["contents"][parameter]["parameters"].get(
+                        "__doc__", "no docstring available"
+                    ),
                 )
 
             # handle branches named like [4] and [5]
