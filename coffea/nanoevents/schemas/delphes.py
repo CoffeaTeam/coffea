@@ -215,6 +215,31 @@ class DelphesSchema(BaseSchema):
         return cls(base_form, version="1")
 
     def _build_collections(self, branch_forms):
+        def _tlorentz_vectorize(objname, form):
+            # first handle RecordArray
+            if {"fE", "fP"} == form.get("contents", {}).keys():
+                return zip_forms(
+                    {
+                        "x": form["contents"]["fP"]["contents"]["fX"],
+                        "y": form["contents"]["fP"]["contents"]["fY"],
+                        "z": form["contents"]["fP"]["contents"]["fZ"],
+                        "t": form["contents"]["fE"],
+                    },
+                    objname,
+                    "LorentzVector",
+                )
+            # If there's no "content", like a NumpyArray, just return.
+            # Note: this comes after checking for RecordArray.
+            if "content" not in form:
+                return form
+            # Then recursively go through and update the form's content.
+            form["content"] = _tlorentz_vectorize(objname, form["content"])
+            return form
+
+        # preprocess lorentz vectors properly (and recursively)
+        for objname, form in branch_forms.items():
+            branch_forms[objname] = _tlorentz_vectorize(objname, form)
+
         # parse into high-level records (collections, list collections, and singletons)
         collections = set(k.split("/")[0] for k in branch_forms)
         collections -= set(k for k in collections if k.endswith("_size"))
@@ -230,39 +255,6 @@ class DelphesSchema(BaseSchema):
         for name in collections:
             output[f"{name}.offsets"] = branch_forms[f"o{name}"]
             mixin = self.mixins.get(name, "NanoCollection")
-
-            # handle any lorentz vector interpretations first
-            for objname in self.lorentz_vectors_exyz:
-                _full_name = f"{name}/{name}.{objname}"
-                if _full_name not in branch_forms:
-                    continue
-
-                _top_level = branch_forms[_full_name]
-                _record = None
-                if branch_forms[_full_name]["content"]["class"] == "RecordArray":
-                    pass
-
-                elif branch_forms[_full_name]["content"]["class"] == "RegularArray":
-                    # in this case, we have a nested structure that we'd like to flatten out
-                    _top_level = branch_forms[_full_name]["content"]
-                else:
-                    warnings.warn(
-                        f"{_full_name} is not interpretable as a LorentzVector"
-                    )
-                    continue
-
-                _record = _top_level.pop("content")
-
-                _top_level["content"] = zip_forms(
-                    {
-                        "x": _record["contents"]["fP"]["contents"]["fX"],
-                        "y": _record["contents"]["fP"]["contents"]["fY"],
-                        "z": _record["contents"]["fP"]["contents"]["fZ"],
-                        "t": _record["contents"]["fE"],
-                    },
-                    f"{name}.{objname}",
-                    "LorentzVector",
-                )
 
             # Every delphes collection is a list
             offsets = branch_forms["o" + name]
