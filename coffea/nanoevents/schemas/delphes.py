@@ -237,20 +237,23 @@ class DelphesSchema(BaseSchema):
                 if _full_name not in branch_forms:
                     continue
 
+                _top_level = branch_forms[_full_name]
                 _record = None
                 if branch_forms[_full_name]["content"]["class"] == "RecordArray":
-                    _record = branch_forms[_full_name].pop("content")
+                    pass
+
                 elif branch_forms[_full_name]["content"]["class"] == "RegularArray":
                     # in this case, we have a nested structure that we'd like to flatten out
-                    _record = branch_forms[_full_name]["content"].pop("content")
-
-                if _record is None:
+                    _top_level = branch_forms[_full_name]["content"]
+                else:
                     warnings.warn(
                         f"{_full_name} is not interpretable as a LorentzVector"
                     )
                     continue
 
-                branch_forms[_full_name]["content"] = zip_forms(
+                _record = _top_level.pop("content")
+
+                _top_level["content"] = zip_forms(
                     {
                         "x": _record["contents"]["fP"]["contents"]["fX"],
                         "y": _record["contents"]["fP"]["contents"]["fY"],
@@ -275,7 +278,6 @@ class DelphesSchema(BaseSchema):
             for parameter in output[name]["content"]["contents"].keys():
                 if "parameters" not in output[name]["content"]["contents"][parameter]:
                     continue
-                print(parameter)
                 output[name]["content"]["contents"][parameter]["parameters"][
                     "__doc__"
                 ] = self.docstrings.get(
