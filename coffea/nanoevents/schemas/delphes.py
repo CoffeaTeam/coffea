@@ -69,6 +69,7 @@ class DelphesSchema(BaseSchema):
     docstrings = {
         "AlphaQCD": "value of the QCD coupling used in the event, see hep-ph/0109068",
         "AlphaQED": "value of the QED coupling used in the event, see hep-ph/0109068",
+        "Area": "area",
         "BTVSumPT2": "sum pt^2 of tracks attached to the secondary vertex",
         "BTag": "0 or 1 for a jet that has been tagged as containing a heavy quark",
         "BTagAlgo": "0 or 1 for a jet that has been tagged as containing a heavy quark",
@@ -226,18 +227,6 @@ class DelphesSchema(BaseSchema):
             }
             output[name] = zip_forms(content, name, record_name=mixin, offsets=offsets)
 
-            # handle branches named like [4] and [5]
-            output[name]["content"]["contents"] = {
-                k.replace("[", "_").replace("]", ""): v
-                for k, v in output[name]["content"]["contents"].items()
-            }
-            output[name]["content"]["parameters"].update(
-                {
-                    "__doc__": offsets["parameters"]["__doc__"],
-                    "collection_name": name,
-                }
-            )
-
             # update docstrings as needed
             # NB: must be before flattening for easier logic
             for parameter in output[name]["content"]["contents"].keys():
@@ -251,6 +240,18 @@ class DelphesSchema(BaseSchema):
                         "__doc__"
                     ],
                 )
+
+            # handle branches named like [4] and [5]
+            output[name]["content"]["contents"] = {
+                k.replace("[", "_").replace("]", ""): v
+                for k, v in output[name]["content"]["contents"].items()
+            }
+            output[name]["content"]["parameters"].update(
+                {
+                    "__doc__": offsets["parameters"]["__doc__"],
+                    "collection_name": name,
+                }
+            )
 
             if name in self.singletons:
                 # flatten! this 'promotes' the content of an inner dimension
