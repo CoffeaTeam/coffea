@@ -775,8 +775,11 @@ def _declare_resources(exec_defaults):
     for category in "default preprocessing processing accumulating".split():
         _wq_queue.specify_category_max_resources(category, default_resources)
 
-        if exec_defaults["resources_mode"] == "auto":
+        if exec_defaults["resources_mode"] != "fixed":
             _wq_queue.specify_category_mode(category, wq.WORK_QUEUE_ALLOCATION_MODE_MAX)
+
+            if category == 'processing' and exec_defaults["resource_mode"] == "max-throughput":
+                _wq_queue.specify_category_mode(category, wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT)
 
         # enable fast termination of workers
         if (
