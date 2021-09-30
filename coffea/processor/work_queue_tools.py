@@ -756,8 +756,21 @@ def _declare_resources(exec_defaults):
     # Enable monitoring and auto resource consumption, if desired:
     _wq_queue.tune("category-steady-n-tasks", 3)
 
-    if exec_defaults["resource_monitor"] or exec_defaults["resources_mode"] == "auto":
-        _wq_queue.enable_monitoring()
+    monitor_enabled = False
+
+    # if resource_monitor is given, and not 'off', then monitoring is activated.
+    # anything other than 'measure' is assumed to be 'watchdog' mode, where in
+    # addition to measuring resources, tasks are killed if they go over their
+    # resources.
+    if exec_defaults["resource_monitor"] and exec_defaults["resource_monitor"] != 'off':
+        monitor_enabled = True
+        _wq_queue.enable_monitoring(watchdog=(exec_defaults["resource_monitor"]!='measure'))
+
+    # activate monitoring as a watchdog if it has not been explicitely
+    # activated and we are using an automatic resource allocation.
+    if not monitor_enabled:
+        if exec_defaults['resources_mode'] and exec_defaults['resources_mode'] != 'fixed':
+            _wq_queue.enable_monitoring(watchdog=True)
 
     for category in "default preprocessing processing accumulating".split():
         _wq_queue.specify_category_max_resources(category, default_resources)
