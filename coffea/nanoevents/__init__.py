@@ -8,6 +8,7 @@ from coffea.nanoevents.schemas import (
     PFNanoAODSchema,
     TreeMakerSchema,
     PHYSLITESchema,
+    DelphesSchema,
 )
 
 __all__ = [
@@ -17,4 +18,5 @@ __all__ = [
     "PFNanoAODSchema",
     "TreeMakerSchema",
     "PHYSLITESchema",
+    "DelphesSchema",
 ]
