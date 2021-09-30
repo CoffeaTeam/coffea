@@ -176,7 +176,7 @@ class CoffeaWQTask(Task):
         os.remove(self.infile_output)
 
     def resubmit(self, tmpdir, exec_defaults):
-        if self.retries < 1:
+        if self.retries < 1 or not exec_defaults["split_on_exhaustion"]:
             raise RuntimeError(
                 "item {} failed permanently. No more retries left.".format(self.itemid)
             )

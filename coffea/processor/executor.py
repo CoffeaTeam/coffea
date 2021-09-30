@@ -309,6 +309,14 @@ class WorkQueueExecutor(ExecutorBase):
             Amount of disk space (in MB) for work queue task. If unset, use a whole worker.
         gpus : int
             Number of GPUs to allocate to each task.  If unset, use zero.
+        resource_monitor : str
+            If given, one of 'off', 'measure', or 'watchdog'. Default is 'off'.
+            - 'off': turns off resource monitoring. Overriden if resources_mode
+                     is not set to 'fixed'.
+            - 'measure': turns on resource monitoring for Work Queue. The
+                        resources used per task are measured.
+            - 'watchdog': in addition to measuring resources, tasks are terminated if they
+                        go above the cores, memory, or disk specified.
         resources_mode : str
             one of 'fixed', 'max-seen', or 'max-throughput'. Default is 'fixed'.
             Sets the strategy to automatically allocate resources to tasks.
@@ -322,14 +330,10 @@ class WorkQueueExecutor(ExecutorBase):
             accumulation tasks always use the 'max-seen' strategy, as the
             former tasks always use the same resources, the latter has a
             distribution of resources that increases over time.
-        resource_monitor : str
-            If given, one of 'off', 'measure', or 'watchdog'. Default is 'off'.
-            - 'off': turns off resource monitoring. Overriden if resources_mode
-                     is not set to 'fixed'.
-            - 'measure': turns on resource monitoring for Work Queue. The
-                        resources used per task are measured.
-            - 'watchdog': in addition to measuring resources, tasks are terminated if they
-                        go above the cores, memory, or disk specified.
+        split_on_exhaustion: bool
+            Whether to split a processing task in half according to its chunksize when it exhausts its
+            the cores, memory, or disk allocated to it. If False, a task that exhausts resources
+            permanently fails. Default is True.
         fast_terminate_workers: int
             Terminate workers on which tasks have been running longer than average.
             The time limit is computed by multiplying the average runtime of tasks
@@ -404,6 +408,7 @@ class WorkQueueExecutor(ExecutorBase):
     wrapper: Optional[str] = shutil.which("python_package_run")
     resource_monitor: Optional[str] = "off"
     resources_mode: Optional[str] = "fixed"
+    split_on_exhaustion: Optional[bool] = True
     fast_terminate_workers: Optional[int] = None
     cores: Optional[int] = None
     memory: Optional[int] = None
