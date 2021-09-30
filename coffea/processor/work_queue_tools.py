@@ -584,6 +584,11 @@ def _work_queue_processing(
                 items_submitted > 0 and exec_defaults["dynamic_chunksize"]
             )
             if update_chunksize:
+                _vprint(
+                    "current chunksize {}",
+                    _compute_chunksize(task_reports, exec_defaults, sample=False),
+                )
+
                 chunksize = _compute_chunksize(task_reports, exec_defaults)
 
             task = _submit_proc_task(
