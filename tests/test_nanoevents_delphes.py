@@ -16,6 +16,7 @@ def events():
 def test_listify(events):
     assert ak.to_list(events[0])
 
+
 @pytest.mark.parametrize(
     "collection",
     [
