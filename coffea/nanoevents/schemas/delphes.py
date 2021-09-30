@@ -66,17 +66,6 @@ class DelphesSchema(BaseSchema):
         "MissingET",
     ]
 
-    # These are items on a collection that are lorentz vectors (fE, fX, fY, fZ)
-    lorentz_vectors_exyz = [
-        "Area",
-        "PrunedP4[5]",
-        "SoftDroppedJet",
-        "SoftDroppedP4[5]",
-        "SoftDroppedSubJet1",
-        "SoftDroppedSubJet2",
-        "TrimmedP4[5]",
-    ]
-
     docstrings = {
         "AlphaQCD": "value of the QCD coupling used in the event, see hep-ph/0109068",
         "AlphaQED": "value of the QED coupling used in the event, see hep-ph/0109068",
@@ -169,6 +158,8 @@ class DelphesSchema(BaseSchema):
         "ScalePDF": "Q-scale used in evaluation of PDF's [GeV]",
         "Sigma": "vertex position (z component) error",
         "SoftDroppedP4[5]": "first entry (i = 0) is the total SoftDropped Jet 4-momenta and from i = 1 to 4 are the pruned subjets 4-momenta",
+        "SoftDroppedSubJet1": "leading soft-dropped subjet",
+        "SoftDroppedSubJet2": "subleading soft-dropped subjet",
         "Status": "particle status",
         "SumPT2": "sum pt^2 of tracks attached to the vertex",
         "SumPt": "isolation variable",
