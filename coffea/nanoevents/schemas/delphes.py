@@ -1,6 +1,5 @@
 from coffea.nanoevents import transforms
 from coffea.nanoevents.schemas.base import BaseSchema, zip_forms
-import warnings
 
 
 class DelphesSchema(BaseSchema):
