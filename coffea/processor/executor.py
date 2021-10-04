@@ -309,14 +309,31 @@ class WorkQueueExecutor(ExecutorBase):
             Amount of disk space (in MB) for work queue task. If unset, use a whole worker.
         gpus : int
             Number of GPUs to allocate to each task.  If unset, use zero.
-        resources_mode : one of 'fixed', or 'auto'. Default is 'fixed'.
+        resource_monitor : str
+            If given, one of 'off', 'measure', or 'watchdog'. Default is 'off'.
+            - 'off': turns off resource monitoring. Overriden if resources_mode
+                     is not set to 'fixed'.
+            - 'measure': turns on resource monitoring for Work Queue. The
+                        resources used per task are measured.
+            - 'watchdog': in addition to measuring resources, tasks are terminated if they
+                        go above the cores, memory, or disk specified.
+        resources_mode : str
+            one of 'fixed', 'max-seen', or 'max-throughput'. Default is 'fixed'.
+            Sets the strategy to automatically allocate resources to tasks.
             - 'fixed': allocate cores, memory, and disk specified for each task.
-            - 'auto': use cores, memory, and disk as maximum values to allocate.
-                    Useful when the resources used by a task are not known, as
-                    it lets work queue find an efficient value for maximum
-                    throughput.
-        resource_monitor : bool
-            If true, (false is the default) turns on resource monitoring for Work Queue.
+            - 'max-seen' or 'auto': use the cores, memory, and disk given as maximum values to allocate,
+                          but first try each task by allocating the maximum values seen. Leads
+                          to a good compromise between parallelism and number of retries.
+            - 'max-throughput': Like max-seen, but first tries the task with an
+                          allocation that maximizes overall throughput.
+            If resources_mode is other than 'fixed', preprocessing and
+            accumulation tasks always use the 'max-seen' strategy, as the
+            former tasks always use the same resources, the latter has a
+            distribution of resources that increases over time.
+        split_on_exhaustion: bool
+            Whether to split a processing task in half according to its chunksize when it exhausts its
+            the cores, memory, or disk allocated to it. If False, a task that exhausts resources
+            permanently fails. Default is True.
         fast_terminate_workers: int
             Terminate workers on which tasks have been running longer than average.
             The time limit is computed by multiplying the average runtime of tasks
@@ -389,8 +406,9 @@ class WorkQueueExecutor(ExecutorBase):
     environment_file: Optional[str] = None
     extra_input_files: List = field(default_factory=list)
     wrapper: Optional[str] = shutil.which("python_package_run")
-    resource_monitor: bool = False
-    resources_mode: str = "fixed"
+    resource_monitor: Optional[str] = "off"
+    resources_mode: Optional[str] = "fixed"
+    split_on_exhaustion: Optional[bool] = True
     fast_terminate_workers: Optional[int] = None
     cores: Optional[int] = None
     memory: Optional[int] = None

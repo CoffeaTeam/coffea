@@ -137,7 +137,9 @@ class CoffeaWQTask(Task):
         return str(self.itemid)
 
     def remote_command(self, env_file=None):
-        fn_command = "python fn_wrapper function.p args.p output.p"
+        fn_command = (
+            "python fn_wrapper function.p args.p output.p 2>&1 | tee stdout.log"
+        )
         command = fn_command
 
         if env_file:
@@ -176,7 +178,7 @@ class CoffeaWQTask(Task):
         os.remove(self.infile_output)
 
     def resubmit(self, tmpdir, exec_defaults):
-        if self.retries < 1:
+        if self.retries < 1 or not exec_defaults["split_on_exhaustion"]:
             raise RuntimeError(
                 "item {} failed permanently. No more retries left.".format(self.itemid)
             )
@@ -584,6 +586,11 @@ def _work_queue_processing(
                 items_submitted > 0 and exec_defaults["dynamic_chunksize"]
             )
             if update_chunksize:
+                _vprint(
+                    "current chunksize {}",
+                    _compute_chunksize(task_reports, exec_defaults, sample=False),
+                )
+
                 chunksize = _compute_chunksize(task_reports, exec_defaults)
 
             task = _submit_proc_task(
@@ -756,14 +763,40 @@ def _declare_resources(exec_defaults):
     # Enable monitoring and auto resource consumption, if desired:
     _wq_queue.tune("category-steady-n-tasks", 3)
 
-    if exec_defaults["resource_monitor"] or exec_defaults["resources_mode"] == "auto":
-        _wq_queue.enable_monitoring()
+    monitor_enabled = False
+
+    # if resource_monitor is given, and not 'off', then monitoring is activated.
+    # anything other than 'measure' is assumed to be 'watchdog' mode, where in
+    # addition to measuring resources, tasks are killed if they go over their
+    # resources.
+    if exec_defaults["resource_monitor"] and exec_defaults["resource_monitor"] != "off":
+        monitor_enabled = True
+        _wq_queue.enable_monitoring(
+            watchdog=(exec_defaults["resource_monitor"] != "measure")
+        )
+
+    # activate monitoring as a watchdog if it has not been explicitely
+    # activated and we are using an automatic resource allocation.
+    if not monitor_enabled:
+        if (
+            exec_defaults["resources_mode"]
+            and exec_defaults["resources_mode"] != "fixed"
+        ):
+            _wq_queue.enable_monitoring(watchdog=True)
 
     for category in "default preprocessing processing accumulating".split():
         _wq_queue.specify_category_max_resources(category, default_resources)
 
-        if exec_defaults["resources_mode"] == "auto":
+        if exec_defaults["resources_mode"] != "fixed":
             _wq_queue.specify_category_mode(category, wq.WORK_QUEUE_ALLOCATION_MODE_MAX)
+
+            if (
+                category == "processing"
+                and exec_defaults["resource_mode"] == "max-throughput"
+            ):
+                _wq_queue.specify_category_mode(
+                    category, wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT
+                )
 
         # enable fast termination of workers
         if (
@@ -942,7 +975,7 @@ def _make_progress_bars(exec_defaults):
     accumulated_bar = tqdm(
         total=1 + int(items_total / (chunksize * chunks_per_accum)),
         disable=not status,
-        unit="tasks",
+        unit="task",
         desc="Accumulated",
         bar_format=bar_format,
     )
