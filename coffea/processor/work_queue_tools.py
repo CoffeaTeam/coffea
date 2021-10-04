@@ -137,7 +137,9 @@ class CoffeaWQTask(Task):
         return str(self.itemid)
 
     def remote_command(self, env_file=None):
-        fn_command = "python fn_wrapper function.p args.p output.p 2>&1 | tee stdout.log"
+        fn_command = (
+            "python fn_wrapper function.p args.p output.p 2>&1 | tee stdout.log"
+        )
         command = fn_command
 
         if env_file:
@@ -767,14 +769,19 @@ def _declare_resources(exec_defaults):
     # anything other than 'measure' is assumed to be 'watchdog' mode, where in
     # addition to measuring resources, tasks are killed if they go over their
     # resources.
-    if exec_defaults["resource_monitor"] and exec_defaults["resource_monitor"] != 'off':
+    if exec_defaults["resource_monitor"] and exec_defaults["resource_monitor"] != "off":
         monitor_enabled = True
-        _wq_queue.enable_monitoring(watchdog=(exec_defaults["resource_monitor"]!='measure'))
+        _wq_queue.enable_monitoring(
+            watchdog=(exec_defaults["resource_monitor"] != "measure")
+        )
 
     # activate monitoring as a watchdog if it has not been explicitely
     # activated and we are using an automatic resource allocation.
     if not monitor_enabled:
-        if exec_defaults['resources_mode'] and exec_defaults['resources_mode'] != 'fixed':
+        if (
+            exec_defaults["resources_mode"]
+            and exec_defaults["resources_mode"] != "fixed"
+        ):
             _wq_queue.enable_monitoring(watchdog=True)
 
     for category in "default preprocessing processing accumulating".split():
@@ -783,8 +790,13 @@ def _declare_resources(exec_defaults):
         if exec_defaults["resources_mode"] != "fixed":
             _wq_queue.specify_category_mode(category, wq.WORK_QUEUE_ALLOCATION_MODE_MAX)
 
-            if category == 'processing' and exec_defaults["resource_mode"] == "max-throughput":
-                _wq_queue.specify_category_mode(category, wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT)
+            if (
+                category == "processing"
+                and exec_defaults["resource_mode"] == "max-throughput"
+            ):
+                _wq_queue.specify_category_mode(
+                    category, wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT
+                )
 
         # enable fast termination of workers
         if (
