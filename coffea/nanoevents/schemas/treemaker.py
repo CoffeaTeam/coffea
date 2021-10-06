@@ -42,7 +42,7 @@ class TreeMakerSchema(BaseSchema):
         # Turn any special classes into the appropriate awkward form
         composite_objects = list(set(k.split("/")[0] for k in branch_forms if "/" in k))
 
-        composite_behavior = { # Dictionary for overriding the default behavior
+        composite_behavior = {  # Dictionary for overriding the default behavior
             "Tracks": "LorentzVector"
         }
         for objname in composite_objects:
