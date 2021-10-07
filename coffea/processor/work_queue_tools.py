@@ -792,7 +792,7 @@ def _declare_resources(exec_defaults):
 
             if (
                 category == "processing"
-                and exec_defaults["resource_mode"] == "max-throughput"
+                and exec_defaults["resources_mode"] == "max-throughput"
             ):
                 _wq_queue.specify_category_mode(
                     category, wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT
