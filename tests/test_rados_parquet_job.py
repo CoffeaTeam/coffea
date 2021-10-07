@@ -67,7 +67,7 @@ if __name__ == "__main__":
     executor_args = {"client": client}
 
     run = processor.Runner(
-        executor=executor, 
+        executor=executor,
         format="parquet",
         schema=schemas.NanoAODSchema,
     )
