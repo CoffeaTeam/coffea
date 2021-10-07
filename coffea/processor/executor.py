@@ -1172,6 +1172,7 @@ class Runner:
                     factory = NanoEventsFactory.from_parquet(
                         file=item.filename,
                         treepath=item.treename,
+                        schemaclass=self.schema,
                         metadata=metadata,
                         rados_parquet_options=rados_parquet_options,
                     )

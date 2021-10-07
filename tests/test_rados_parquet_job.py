@@ -3,6 +3,7 @@ import uproot
 import awkward as ak
 from coffea import processor
 from coffea.processor.test_items import NanoEventsProcessor
+from coffea.nanoevents import schemas
 
 
 if __name__ == "__main__":
@@ -45,6 +46,7 @@ if __name__ == "__main__":
         executor=executor,
         ceph_config_path="/tmp/testradosparquetjob/ceph.conf",
         format="parquet",
+        schema=schemas.NanoAODSchema,
     )
 
     hists = run(
@@ -64,7 +66,11 @@ if __name__ == "__main__":
     # now run again on parquet files in cephfs (without any pushdown)
     executor_args = {"client": client}
 
-    run = processor.Runner(executor=executor, format="parquet")
+    run = processor.Runner(
+        executor=executor,
+        format="parquet",
+        schema=schemas.NanoAODSchema,
+    )
 
     hists = run(
         {
