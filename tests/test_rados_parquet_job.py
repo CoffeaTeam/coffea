@@ -66,7 +66,11 @@ if __name__ == "__main__":
     # now run again on parquet files in cephfs (without any pushdown)
     executor_args = {"client": client}
 
-    run = processor.Runner(executor=executor, format="parquet")
+    run = processor.Runner(
+        executor=executor, 
+        format="parquet",
+        schema=schemas.NanoAODSchema,
+    )
 
     hists = run(
         {
