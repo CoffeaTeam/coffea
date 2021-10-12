@@ -195,9 +195,10 @@ class CoffeaWQTask(Task):
 
         for t in resubmissions:
             _vprint(
-                "resubmitting {} partly as {}. {} attempt(s) left.",
+                "resubmitting {} partly as {} with {} events. {} attempt(s) left.",
                 self.itemid,
                 t.itemid,
+                len(t),
                 t.retries,
             )
             _wq_queue.submit(t)
@@ -364,36 +365,38 @@ class ProcCoffeaWQTask(CoffeaWQTask):
         if total < 2:
             raise RuntimeError("processing task cannot be split any further.")
 
-        middle = self.item.entrystart + int(total / 2)
+        # if the chunksize was updated to be less than total, then use that.
+        # Otherwise, just partition the task in two.
+        target_chunksize = exec_defaults["updated_chunksize"]
+        if total <= target_chunksize:
+            target_chunksize = math.ceil(total/2)
 
-        item_a = WorkItem(
-            self.item.dataset,
-            self.item.filename,
-            self.item.treename,
-            self.item.entrystart,
-            middle,
-            self.item.fileuuid,
-            self.item.usermeta,
-        )
+        n = max(math.ceil(total / target_chunksize), 1)
+        actual_chunksize = int(math.ceil(total / n))
 
-        item_b = WorkItem(
-            self.item.dataset,
-            self.item.filename,
-            self.item.treename,
-            middle,
-            self.item.entrystop,
-            self.item.fileuuid,
-            self.item.usermeta,
-        )
+        splits = []
+        start = self.item.entrystart
+        while start < self.item.entrystop:
+            stop = min(self.item.entrystop, start + actual_chunksize)
 
-        task_a = self.__class__(
-            self.fn_wrapper, self.infile_function, item_a, tmpdir, exec_defaults
-        )
-        task_b = self.__class__(
-            self.fn_wrapper, self.infile_function, item_b, tmpdir, exec_defaults
-        )
+            w = WorkItem(
+                    self.item.dataset,
+                    self.item.filename,
+                    self.item.treename,
+                    start,
+                    stop,
+                    self.item.fileuuid,
+                    self.item.usermeta,
+                    )
 
-        return [task_a, task_b]
+            t = self.__class__(
+                    self.fn_wrapper, self.infile_function, w, tmpdir, exec_defaults
+                    )
+
+            start = stop
+            splits.append(t)
+
+        return splits
 
     def debug_info(self):
         i = self.item
@@ -572,7 +575,13 @@ def _work_queue_processing(
         items = iter(items)
 
     items_total = exec_defaults["events_total"]
+
+    # "chunksize" is the original chunksize passed to the executor. Always used
+    # if dynamic_chunksize is not given.
     chunksize = exec_defaults["chunksize"]
+
+    # keep a record of the latest computed chunksize, if any
+    exec_defaults["updated_chunksize"] = exec_defaults["chunksize"]
 
     progress_bars = _make_progress_bars(exec_defaults)
 
@@ -820,6 +829,7 @@ def _submit_proc_task(
 ):
     if update_chunksize:
         item = items.send(chunksize)
+        exec_defaults["updated_chunksize"] = chunksize
     else:
         item = next(items)
 
@@ -953,7 +963,7 @@ def _make_progress_bars(exec_defaults):
     status = exec_defaults["status"]
     unit = exec_defaults["unit"]
     bar_format = exec_defaults["bar_format"]
-    chunksize = exec_defaults["chunksize"]
+    chunksize = exec_defaults["updated_chunksize"]
     chunks_per_accum = exec_defaults["chunks_per_accum"]
 
     submit_bar = tqdm(
