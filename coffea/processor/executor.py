@@ -136,8 +136,15 @@ class FileMeta(object):
                 )
                 start = stop
                 if dynamic_chunksize and next_chunksize:
-                    n = max(math.ceil((self.metadata["numentries"] - start) / next_chunksize), 1)
-                    actual_chunksize = math.ceil((self.metadata["numentries"] - start) / n)
+                    n = max(
+                        math.ceil(
+                            (self.metadata["numentries"] - start) / next_chunksize
+                        ),
+                        1,
+                    )
+                    actual_chunksize = math.ceil(
+                        (self.metadata["numentries"] - start) / n
+                    )
             if dynamic_chunksize and next_chunksize:
                 return next_chunksize
             else:

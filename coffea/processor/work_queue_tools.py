@@ -369,7 +369,7 @@ class ProcCoffeaWQTask(CoffeaWQTask):
         # Otherwise, just partition the task in two.
         target_chunksize = exec_defaults["updated_chunksize"]
         if total <= target_chunksize:
-            target_chunksize = math.ceil(total/2)
+            target_chunksize = math.ceil(total / 2)
 
         n = max(math.ceil(total / target_chunksize), 1)
         actual_chunksize = int(math.ceil(total / n))
@@ -380,18 +380,18 @@ class ProcCoffeaWQTask(CoffeaWQTask):
             stop = min(self.item.entrystop, start + actual_chunksize)
 
             w = WorkItem(
-                    self.item.dataset,
-                    self.item.filename,
-                    self.item.treename,
-                    start,
-                    stop,
-                    self.item.fileuuid,
-                    self.item.usermeta,
-                    )
+                self.item.dataset,
+                self.item.filename,
+                self.item.treename,
+                start,
+                stop,
+                self.item.fileuuid,
+                self.item.usermeta,
+            )
 
             t = self.__class__(
-                    self.fn_wrapper, self.infile_function, w, tmpdir, exec_defaults
-                    )
+                self.fn_wrapper, self.infile_function, w, tmpdir, exec_defaults
+            )
 
             start = stop
             splits.append(t)
