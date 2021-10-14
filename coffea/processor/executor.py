@@ -117,6 +117,7 @@ class FileMeta(object):
                     self.metadata["uuid"],
                     user_meta,
                 )
+            return target_chunksize
         else:
             n = max(round(self.metadata["numentries"] / target_chunksize), 1)
             actual_chunksize = math.ceil(self.metadata["numentries"] / n)
@@ -135,7 +136,19 @@ class FileMeta(object):
                 )
                 start = stop
                 if dynamic_chunksize and next_chunksize:
-                    actual_chunksize = next_chunksize
+                    n = max(
+                        math.ceil(
+                            (self.metadata["numentries"] - start) / next_chunksize
+                        ),
+                        1,
+                    )
+                    actual_chunksize = math.ceil(
+                        (self.metadata["numentries"] - start) / n
+                    )
+            if dynamic_chunksize and next_chunksize:
+                return next_chunksize
+            else:
+                return target_chunksize
 
 
 @dataclass(unsafe_hash=True)
@@ -1068,9 +1081,10 @@ class Runner:
     def _chunk_generator(self, fileset: Dict, treename: str) -> Generator:
         if self.format == "root":
             if self.maxchunks is None:
+                last_chunksize = self.chunksize
                 for filemeta in fileset:
-                    yield from filemeta.chunks(
-                        self.chunksize,
+                    last_chunksize = yield from filemeta.chunks(
+                        last_chunksize,
                         self.align_clusters,
                         self.dynamic_chunksize,
                     )
