@@ -8,6 +8,74 @@ from coffea.nanoevents import NanoEventsFactory
 
 from dummy_distributions import dummy_jagged_eta_pt
 
+# From make_expected_lookup.py
+_testSF2d_expected_output = np.array(
+    [
+        0.90780139,
+        0.82748538,
+        0.86332178,
+        0.86332178,
+        0.97981155,
+        0.79701495,
+        0.88245934,
+        0.82857144,
+        0.91884059,
+        0.97466666,
+        0.94072163,
+        1.00775194,
+        0.82748538,
+        1.00775194,
+        0.97203946,
+        0.98199672,
+        0.80655736,
+        0.90893763,
+        0.88245934,
+        0.79701495,
+        0.82748538,
+        0.82857144,
+        0.91884059,
+        0.90893763,
+        0.97520661,
+        0.97520661,
+        0.82748538,
+        0.91884059,
+        0.97203946,
+        0.88245934,
+        0.79701495,
+        0.9458763,
+        1.00775194,
+        0.80655736,
+        1.00775194,
+        1.00775194,
+        0.98976982,
+        0.98976982,
+        0.86332178,
+        0.94072163,
+        0.80655736,
+        0.98976982,
+        0.96638656,
+        0.9458763,
+        0.90893763,
+        0.9529984,
+        0.9458763,
+        0.9529984,
+        0.80655736,
+        0.80655736,
+        0.80655736,
+        0.98976982,
+        0.97466666,
+        0.98199672,
+        0.86332178,
+        1.03286386,
+        0.94072163,
+        1.03398061,
+        0.82857144,
+        0.80655736,
+        1.00775194,
+        0.80655736,
+    ]
+)
+
 
 def test_extractor_exceptions():
     extractor = lookup_tools.extractor()
@@ -81,11 +149,32 @@ def test_correctionlib():
 
     evaluator = extractor.make_evaluator()
 
-    print(evaluator["testSF2d"]["scalefactors_Tight_Electron"])
-
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
 
-    evaluator["testSF2d"]["scalefactors_Tight_Electron"](test_eta, test_pt)
+    test_out = evaluator["scalefactors_Tight_Electron"](test_eta, test_pt)
+
+    # print it
+    print(evaluator["scalefactors_Tight_Electron"])
+
+    # test structured eval
+    test_eta_jagged = ak.unflatten(test_eta, counts)
+    test_pt_jagged = ak.unflatten(test_pt, counts)
+    test_out_jagged = evaluator["scalefactors_Tight_Electron"](
+        test_eta_jagged, test_pt_jagged
+    )
+
+    assert ak.all(ak.num(test_out_jagged) == counts)
+    assert ak.all(ak.flatten(test_out_jagged) == test_out)
+
+    print(test_out)
+
+    diff = np.abs(test_out - _testSF2d_expected_output)
+    print("Max diff: %.16f" % diff.max())
+    print("Median diff: %.16f" % np.median(diff))
+    print(
+        "Diff over threshold rate: %.1f %%" % (100 * (diff >= 1.0e-8).sum() / diff.size)
+    )
+    assert (diff < 1.0e-8).all()
 
 
 def test_root_scalefactors():
@@ -114,77 +203,9 @@ def test_root_scalefactors():
     assert ak.all(ak.num(test_out_jagged) == counts)
     assert ak.all(ak.flatten(test_out_jagged) == test_out)
 
-    # From make_expected_lookup.py
-    expected_output = np.array(
-        [
-            0.90780139,
-            0.82748538,
-            0.86332178,
-            0.86332178,
-            0.97981155,
-            0.79701495,
-            0.88245934,
-            0.82857144,
-            0.91884059,
-            0.97466666,
-            0.94072163,
-            1.00775194,
-            0.82748538,
-            1.00775194,
-            0.97203946,
-            0.98199672,
-            0.80655736,
-            0.90893763,
-            0.88245934,
-            0.79701495,
-            0.82748538,
-            0.82857144,
-            0.91884059,
-            0.90893763,
-            0.97520661,
-            0.97520661,
-            0.82748538,
-            0.91884059,
-            0.97203946,
-            0.88245934,
-            0.79701495,
-            0.9458763,
-            1.00775194,
-            0.80655736,
-            1.00775194,
-            1.00775194,
-            0.98976982,
-            0.98976982,
-            0.86332178,
-            0.94072163,
-            0.80655736,
-            0.98976982,
-            0.96638656,
-            0.9458763,
-            0.90893763,
-            0.9529984,
-            0.9458763,
-            0.9529984,
-            0.80655736,
-            0.80655736,
-            0.80655736,
-            0.98976982,
-            0.97466666,
-            0.98199672,
-            0.86332178,
-            1.03286386,
-            0.94072163,
-            1.03398061,
-            0.82857144,
-            0.80655736,
-            1.00775194,
-            0.80655736,
-        ]
-    )
-
     print(test_out)
 
-    diff = np.abs(test_out - expected_output)
+    diff = np.abs(test_out - _testSF2d_expected_output)
     print("Max diff: %.16f" % diff.max())
     print("Median diff: %.16f" % np.median(diff))
     print(

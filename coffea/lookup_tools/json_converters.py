@@ -1,4 +1,5 @@
 from ..util import numpy
+import correctionlib
 import json
 
 
@@ -94,22 +95,6 @@ def convert_histo_json_file(filename):
 
 
 def convert_correctionlib_file(filename):
-    import correctionlib.schemav2
-    import gzip
-    from pathlib import Path
+    cset = correctionlib.CorrectionSet.from_file(filename)
 
-    p = Path(filename)
-
-    opener = open
-    if is_gz_file(filename):
-        opener = gzip.open
-
-    with opener(filename, "rb") as f:
-        obj = json.load(f)
-
-    name = p.name.split(".")[0]
-    return {
-        (name, "correctionlib_wrapper"): (
-            correctionlib.schemav2.CorrectionSet.parse_obj(obj),
-        )
-    }
+    return {(key, "correctionlib_wrapper"): (cset[key],) for key in cset.keys()}
