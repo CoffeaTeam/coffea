@@ -73,6 +73,21 @@ def test_evaluate_noimpl():
         pass
 
 
+def test_correctionlib():
+    extractor = lookup_tools.extractor()
+    extractor.add_weight_sets(["* * tests/samples/testSF2d.corr.json.gz"])
+
+    extractor.finalize()
+
+    evaluator = extractor.make_evaluator()
+
+    print(evaluator["testSF2d"]["scalefactors_Tight_Electron"])
+
+    counts, test_eta, test_pt = dummy_jagged_eta_pt()
+
+    evaluator["testSF2d"]["scalefactors_Tight_Electron"](test_eta, test_pt)
+
+
 def test_root_scalefactors():
     extractor = lookup_tools.extractor()
     extractor.add_weight_sets(
