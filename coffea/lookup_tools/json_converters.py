@@ -1,5 +1,11 @@
-from ..util import numpy as np
+from ..util import numpy
+import correctionlib
 import json
+
+
+def is_gz_file(filename):
+    with open(filename, "rb") as f:
+        return f.read(2) == b"\x1f\x8b"
 
 
 def extract_json_histo_structure(parselevel, axis_names, axes):
@@ -13,7 +19,7 @@ def extract_json_histo_structure(parselevel, axis_names, axes):
     for pair in bins_pairs:
         bins.extend([float(val) for val in pair])
     bins.sort()
-    bins = np.unique(np.array(bins))
+    bins = numpy.unique(numpy.array(bins))
     axis_names.append(name.encode())
     axes[axis_names[-1]] = bins
     extract_json_histo_structure(parselevel[list(parselevel)[0]], axis_names, axes)
@@ -66,9 +72,9 @@ def convert_histo_json_file(filename):
         theshape = tuple([axes[axis].size - 1 for axis in names_and_orders[name]])
         valsdict = {}
         for vname in names_and_valnames[histname]:
-            valsdict[vname] = np.zeros(shape=theshape).flatten()
-        flatidx = np.arange(np.zeros(shape=theshape).size)
-        binidx = np.unravel_index(flatidx, shape=theshape)
+            valsdict[vname] = numpy.zeros(shape=theshape).flatten()
+        flatidx = numpy.arange(numpy.zeros(shape=theshape).size)
+        binidx = numpy.unravel_index(flatidx, shape=theshape)
         for vname in valsdict:
             for iflat in flatidx:
                 binlows = []
@@ -86,3 +92,9 @@ def convert_histo_json_file(filename):
                 tuple(bins_in_order),
             )
     return wrapped_up
+
+
+def convert_correctionlib_file(filename):
+    cset = correctionlib.CorrectionSet.from_file(filename)
+
+    return {(key, "correctionlib_wrapper"): (cset[key],) for key in cset.keys()}

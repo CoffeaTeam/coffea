@@ -5,13 +5,20 @@ from coffea.lookup_tools.evaluator import evaluator
 
 from coffea.lookup_tools.root_converters import convert_histo_root_file
 from coffea.lookup_tools.csv_converters import convert_btag_csv_file
-from coffea.lookup_tools.json_converters import convert_histo_json_file
+from coffea.lookup_tools.json_converters import (
+    convert_histo_json_file,
+    convert_correctionlib_file,
+)
 from coffea.lookup_tools.txt_converters import *
 
 file_converters = {
     "root": {"default": convert_histo_root_file, "histo": convert_histo_root_file},
     "csv": {"default": convert_btag_csv_file, "btag": convert_btag_csv_file},
-    "json": {"default": convert_histo_json_file, "histo": convert_histo_json_file},
+    "json": {
+        "default": convert_histo_json_file,
+        "histo": convert_histo_json_file,
+        "corr": convert_correctionlib_file,
+    },
     "txt": {
         "default": convert_jec_txt_file,
         "jec": convert_jec_txt_file,
