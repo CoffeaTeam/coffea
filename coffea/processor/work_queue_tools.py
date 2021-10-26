@@ -96,6 +96,7 @@ class CoffeaWQTask(Task):
         self.itemid = itemid
 
         self.py_result = ResultUnavailable()
+        self._stdout = None
 
         self.clevel = exec_defaults["compression"]
 
@@ -103,7 +104,8 @@ class CoffeaWQTask(Task):
         self.infile_function = infile_function
 
         self.infile_args = join(tmpdir, "args_{}.p".format(self.itemid))
-        self.infile_output = join(tmpdir, "out_{}.p".format(self.itemid))
+        self.outfile_output = join(tmpdir, "out_{}.p".format(self.itemid))
+        self.outfile_stdout = join(tmpdir, "stdout_{}.p".format(self.itemid))
 
         self.retries = exec_defaults["retries"]
 
@@ -117,7 +119,8 @@ class CoffeaWQTask(Task):
         self.specify_input_file(fn_wrapper, "fn_wrapper", cache=False)
         self.specify_input_file(infile_function, "function.p", cache=False)
         self.specify_input_file(self.infile_args, "args.p", cache=False)
-        self.specify_output_file(self.infile_output, "output.p", cache=False)
+        self.specify_output_file(self.outfile_output, "output.p", cache=False)
+        self.specify_output_file(self.outfile_stdout, "stdout.log", cache=False)
 
         for f in exec_defaults["extra_input_files"]:
             self.specify_input_file(f, cache=True)
@@ -138,9 +141,7 @@ class CoffeaWQTask(Task):
         return str(self.itemid)
 
     def remote_command(self, env_file=None):
-        fn_command = (
-            "python fn_wrapper function.p args.p output.p 2>&1 | tee stdout.log"
-        )
+        fn_command = "python fn_wrapper function.p args.p output.p >stdout.log 2>&1"
         command = fn_command
 
         if env_file:
@@ -151,19 +152,25 @@ class CoffeaWQTask(Task):
 
     @property
     def std_output(self):
-        return super().output
+        if not self._stdout:
+            try:
+                with open(self.outfile_stdout, "r") as rf:
+                    self._stdout = rf.read()
+            except Exception:
+                self._stdout = None
+        return self._stdout
 
     def _has_result(self):
         return not (
             self.py_result is None or isinstance(self.py_result, ResultUnavailable)
         )
 
-    # use output to return python result, rathern than stdout are regular wq
+    # use output to return python result, rathern than stdout as regular wq
     @property
     def output(self):
         if not self._has_result():
             try:
-                with open(self.infile_output, "rb") as rf:
+                with open(self.outfile_output, "rb") as rf:
                     result = dill.load(rf)
                     if self.clevel is not None:
                         result = _decompress(result)
@@ -176,7 +183,7 @@ class CoffeaWQTask(Task):
         os.remove(self.infile_args)
 
     def cleanup_outputs(self):
-        os.remove(self.infile_output)
+        os.remove(self.outfile_output)
 
     def resubmit(self, tmpdir, exec_defaults):
         if self.retries < 1 or not exec_defaults["split_on_exhaustion"]:
@@ -427,7 +434,7 @@ class AccumCoffeaWQTask(CoffeaWQTask):
         self.size = sum(len(t) for t in self.tasks_to_accumulate)
 
         args = [exec_defaults["chunks_accum_in_mem"], exec_defaults["compression"]]
-        args = args + [[basename(t.infile_output) for t in self.tasks_to_accumulate]]
+        args = args + [[basename(t.outfile_output) for t in self.tasks_to_accumulate]]
 
         super().__init__(
             fn_wrapper, infile_function, args, itemid, tmpdir, exec_defaults
@@ -436,7 +443,7 @@ class AccumCoffeaWQTask(CoffeaWQTask):
         self.specify_category("accumulating")
 
         for t in self.tasks_to_accumulate:
-            self.specify_input_file(t.infile_output, cache=False)
+            self.specify_input_file(t.outfile_output, cache=False)
 
     def cleanup_inputs(self):
         super().cleanup_inputs()
@@ -714,7 +721,7 @@ def _final_accumulation(accumulator, tasks_to_accumulate, compression):
     _vprint("Performing final accumulation...")
 
     accumulator = accumulate_result_files(
-        2, compression, [t.infile_output for t in tasks_to_accumulate], accumulator
+        2, compression, [t.outfile_output for t in tasks_to_accumulate], accumulator
     )
     for t in tasks_to_accumulate:
         t.cleanup_outputs()
