@@ -31,19 +31,31 @@ from .executor import run_coffea_processor, Executor
 
 
 class DaskExecutor(Executor):
-    def __init__(self, client_addr: Optional[str] = None):
+    def __init__(
+        self,
+        client_addr: Optional[str] = None,
+        provided_dask_client: Optional[Client] = None,
+    ):
         """Create a Dask executor to process the analysis
 
         Args:
-            client_addr (Optional[str]): If `None` then create a local cluster that runs in-process.
-                                         Otherwise connect to an already existing cluster.
+            client_addr (Optional[str]): If `None` then create a local cluster that runs
+                                         in-process. Otherwise connect to an already
+                                         existing cluster.
+            provided_dask_client (Optional[Client]): Pass in an initialized Dask Client.
+                                         This client must have asynchronous=True.
         """
-        self.is_local = client_addr is None
-        self.dask = (
-            Client(threads_per_worker=10, asynchronous=True)
-            if self.is_local
-            else Client(client_addr, asynchronous=True)
-        )
+        if not provided_dask_client:
+            self.is_local = not client_addr
+
+            self.dask = (
+                Client(threads_per_worker=10, asynchronous=True)
+                if self.is_local
+                else Client(client_addr, asynchronous=True)
+            )
+        else:
+            assert provided_dask_client.asynchronous
+            self.dask = provided_dask_client
 
     def get_result_file_stream(self, datasource, title):
         if self.is_local:
