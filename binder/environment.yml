@@ -5,10 +5,4 @@ channels:
 dependencies:
   - xxhash
   - xrootd
-  - matplotlib>=3
-  - numba>=0.50
-  - numpy>=1.16
-  - scipy>=1.1
-  - pip
-  - pip:
-    - coffea==0.7.0rc1
+  - coffea>=0.7.0
