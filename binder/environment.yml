@@ -1,6 +1,5 @@
 name: coffea
 channels:
-  - anaconda
   - conda-forge
 dependencies:
   - xxhash
