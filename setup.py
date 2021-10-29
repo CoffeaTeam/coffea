@@ -56,7 +56,7 @@ def get_description():
 
 
 INSTALL_REQUIRES = [
-    "awkward>=1.5.1",
+    "awkward>=1.5.1,<2",
     "uproot>=4.1.6",
     "uproot3-methods>=0.10.0",
     "uproot3>=3.14.1",
