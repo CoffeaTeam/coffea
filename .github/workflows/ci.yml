@@ -43,7 +43,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
         java-version: [1.8]
-        python-version: [3.6, 3.10]
+        python-version: [3.6, 3.10.0]
         exclude:
           - os: macOS-latest
             python-version: 3.6
