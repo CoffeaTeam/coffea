@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.7]
+        python-version: [3.9]
     name: linter - flake8/black - python ${{ matrix.python-version }}
 
     steps:
