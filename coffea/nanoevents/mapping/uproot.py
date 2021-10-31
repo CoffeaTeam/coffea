@@ -62,6 +62,7 @@ def _lazify_form(form, prefix, docstr=None):
 
 class UprootSourceMapping(BaseSourceMapping):
     _debug = False
+    _fix_awkward_form_of_iter = True
 
     def __init__(self, fileopener, cache=None, access_log=None):
         super(UprootSourceMapping, self).__init__(fileopener, cache, access_log)
@@ -97,9 +98,10 @@ class UprootSourceMapping(BaseSourceMapping):
                 )
                 continue
             # until awkward-forth is available, this fixer is necessary
-            form = uproot._util.recursively_fix_awkward_form_of_iter(
-                awkward, branch.interpretation, form
-            )
+            if cls._fix_awkward_form_of_iter:
+                form = uproot._util.recursively_fix_awkward_form_of_iter(
+                    awkward, branch.interpretation, form
+                )
             form = uproot._util.awkward_form_remove_uproot(awkward, form)
             form = json.loads(
                 form.tojson()
