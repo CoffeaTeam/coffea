@@ -24,8 +24,6 @@ class PHYSLITESchema(BaseSchema):
     each collection.
     """
 
-    _hack_for_elementlink_int64 = True
-
     truth_collections = [
         "TruthPhotons",
         "TruthMuons",
@@ -74,17 +72,6 @@ class PHYSLITESchema(BaseSchema):
             top_key = key_fields[0]
             sub_key = ".".join(key_fields[1:])
             objname = top_key.replace("Analysis", "").replace("AuxDyn", "")
-
-            # temporary hack to have the correct type for the ElementLinks
-            # (uproot loses the type information somewhere on the way and they end up int64)
-            if self._hack_for_elementlink_int64:
-                try:
-                    for k in ["m_persIndex", "m_persKey"]:
-                        form = ak_form["content"]["content"]["contents"][k]
-                        form["itemsize"] = 8
-                        form["primitive"] = "int64"
-                except KeyError:
-                    pass
 
             zip_groups[objname].append(((key, sub_key), ak_form))
 
