@@ -152,7 +152,7 @@ jobs:
     needs: [test, testwq, testradosparquetjob]
     strategy:
       matrix:
-        python-version: [3.7]
+        python-version: [3.9]
     name: deploy release
 
     steps:
