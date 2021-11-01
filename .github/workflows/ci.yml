@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.7]
+        python-version: [3.9]
     name: linter - flake8/black - python ${{ matrix.python-version }}
 
     steps:
@@ -43,7 +43,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
         java-version: [1.8]
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: ["3.6", "3.9"]
         exclude:
           - os: macOS-latest
             python-version: 3.6
@@ -152,7 +152,7 @@ jobs:
     needs: [test, testwq, testradosparquetjob]
     strategy:
       matrix:
-        python-version: [3.7]
+        python-version: [3.9]
     name: deploy release
 
     steps:
