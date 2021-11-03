@@ -1049,6 +1049,7 @@ class Runner:
                 if isinstance(self.pre_executor, (FuturesExecutor, ParslExecutor)):
                     pre_arg_override.update({"tailtimeout": None})
                 if isinstance(self.pre_executor, (DaskExecutor)):
+                    self.pre_executor.heavy_input = None
                     pre_arg_override.update({"worker_affinity": False})
                 pre_executor = self.pre_executor.copy(**pre_arg_override)
                 closure = partial(self.automatic_retries, self.metadata_fetcher)
