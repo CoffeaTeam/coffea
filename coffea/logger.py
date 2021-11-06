@@ -1,5 +1,6 @@
-from typing import Optional, List
+from typing import Optional, List, Any
 import logging
+import json
 
 try:
     import rich
@@ -85,3 +86,7 @@ def setup_logger(
         logger.addHandler(file_handler)
 
     return logger
+
+
+def json_str(obj: Any) -> str:
+    return json.dumps(obj, sort_keys=True, indent=4)

@@ -40,6 +40,11 @@ from typing import (
     Awaitable,
 )
 
+from ..logger import json_str
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 try:
     from typing import Literal
@@ -1734,7 +1739,14 @@ class Runner:
         )
 
         executor = self.executor.copy(**exe_args)
-
+        # Construct logger information
+        chunks_size_info = {}
+        for chunk in chunks:
+            if chunk.dataset not in chunks_size_info:
+                chunks_size_info[chunk.dataset] = []
+            chunks_size_info[chunk.dataset].append(len(chunk))
+        logger.info(f"Ready to process {len(chunks)} chunks")
+        logger.info(f"Chunksizes:\n{json_str(chunks_size_info)}")
         wrapped_out, e = executor(chunks, closure, None)
         if wrapped_out is None:
             raise ValueError(
