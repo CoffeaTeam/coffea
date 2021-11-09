@@ -87,8 +87,8 @@ class BTagScaleFactor:
         df, self.discriminator = BTagScaleFactor.readcsv(filename)
         if set(df["OperatingPoint"].unique()).intersection({"L", "M", "T"}):
             raise RuntimeError(
-                f"The BTag csv file {filename} is in the new UL format which is not supported by coffea.\n"
-                "Instead one can use correctionlib for UL scale factors"
+                f"The BTag csv file {filename} is in the new UL format which is not supported by coffea.btag_tools.\n"
+                "Instead one can use correctionlib for UL scale factors."
             )
         cut = (df["jetFlavor"] == self.FLAV_B) & (df["measurementType"] == methods[0])
         if len(methods) > 1:
