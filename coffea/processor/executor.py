@@ -946,7 +946,7 @@ class Runner:
                 # emit warning if not found?
                 pass
         elif callable(cachestrategy):
-            cache = self.cachestrategy()
+            cache = cachestrategy()
         return cache
 
     @staticmethod
