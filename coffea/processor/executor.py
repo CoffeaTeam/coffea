@@ -932,45 +932,45 @@ class Runner:
         else:
             return False
 
-    @cached_property
-    def cache(self):
+    @staticmethod
+    def get_cache(cachestrategy):
         cache = None
-        if self.cachestrategy == "dask-worker":
+        if cachestrategy == "dask-worker":
             from distributed import get_worker
             from coffea.processor.dask import ColumnCache
 
-            assert isinstance(self.executor, DaskExecutor)
             worker = get_worker()
             try:
                 cache = worker.plugins[ColumnCache.name]
             except KeyError:
                 # emit warning if not found?
                 pass
-        elif callable(self.cachestrategy):
-            cache = self.cachestrategy()
+        elif callable(cachestrategy):
+            cache = cachestrategy()
         return cache
 
-    def automatic_retries(self, func, *args, **kwargs):
+    @staticmethod
+    def automatic_retries(retries: int, skipbadfiles: bool, func, *args, **kwargs):
         """This should probably defined on Executor-level."""
         import warnings
 
         retry_count = 0
-        while retry_count <= self.retries:
+        while retry_count <= retries:
             try:
                 return func(*args, **kwargs)
             # catch xrootd errors and optionally skip
             # or retry to read the file
             except Exception as e:
-                if self.skipbadfiles and isinstance(e, FileNotFoundError):
+                if skipbadfiles and isinstance(e, FileNotFoundError):
                     warnings.warn(str(e))
                     break
                 if (
-                    not self.skipbadfiles
+                    not skipbadfiles
                     or "Auth failed" in str(e)
-                    or self.retries == retry_count
+                    or retries == retry_count
                 ):
                     raise e
-                warnings.warn("Attempt %d of %d." % (retry_count + 1, self.retries + 1))
+                warnings.warn("Attempt %d of %d." % (retry_count + 1, retries + 1))
             retry_count += 1
 
     @staticmethod
@@ -1015,15 +1015,18 @@ class Runner:
             for filename in filelist:
                 yield FileMeta(dataset, filename, local_treename, user_meta)
 
-    def metadata_fetcher(self, item: FileMeta) -> Accumulatable:
+    @staticmethod
+    def metadata_fetcher(
+        xrootdtimeout: int, align_clusters: bool, item: FileMeta
+    ) -> Accumulatable:
         out = set_accumulator()
-        file = uproot.open(item.filename, timeout=self.xrootdtimeout)
+        file = uproot.open(item.filename, timeout=xrootdtimeout)
         tree = file[item.treename]
         metadata = {}
         if item.metadata:
             metadata.update(item.metadata)
         metadata.update({"numentries": tree.num_entries, "uuid": file.file.fUUID})
-        if self.align_clusters:
+        if align_clusters:
             metadata["clusters"] = tree.common_entry_offsets()
         out = set_accumulator(
             [FileMeta(item.dataset, item.filename, item.treename, metadata)]
@@ -1052,7 +1055,14 @@ class Runner:
                     self.pre_executor.heavy_input = None
                     pre_arg_override.update({"worker_affinity": False})
                 pre_executor = self.pre_executor.copy(**pre_arg_override)
-                closure = partial(self.automatic_retries, self.metadata_fetcher)
+                closure = partial(
+                    self.automatic_retries,
+                    self.retries,
+                    self.skipbadfiles,
+                    partial(
+                        self.metadata_fetcher, self.xrootdtimeout, self.align_clusters
+                    ),
+                )
                 out = pre_executor(to_get, closure, out)
                 while out:
                     item = out.pop()
@@ -1120,8 +1130,15 @@ class Runner:
                     chunks.append(WorkItem(dataset, filename, treename, 0, 0, ""))
             yield from iter(chunks)
 
+    @staticmethod
     def _work_function(
-        self,
+        format: str,
+        xrootdtimeout: int,
+        mmap: bool,
+        schema: schemas.BaseSchema,
+        cache_function: Callable[[], MutableMapping],
+        use_dataframes: bool,
+        savemetrics: bool,
         item: WorkItem,
         processor_instance: ProcessorABC,
     ) -> Dict:
@@ -1130,15 +1147,15 @@ class Runner:
         if not isinstance(processor_instance, ProcessorABC):
             processor_instance = cloudpickle.loads(lz4f.decompress(processor_instance))
 
-        if self.format == "root":
+        if format == "root":
             filecontext = uproot.open(
                 item.filename,
-                timeout=self.xrootdtimeout,
+                timeout=xrootdtimeout,
                 file_handler=uproot.MemmapSource
-                if self.mmap
+                if mmap
                 else uproot.MultithreadedFileSource,
             )
-        elif self.format == "parquet":
+        elif format == "parquet":
             filecontext = ParquetFileContext(item.filename)
 
         metadata = {
@@ -1155,28 +1172,28 @@ class Runner:
             metadata.update(item.usermeta)
 
         with filecontext as file:
-            if self.schema is None:
+            if schema is None:
                 # To deprecate
                 tree = file[item.treename]
                 events = LazyDataFrame(
                     tree, item.entrystart, item.entrystop, metadata=metadata
                 )
-            elif issubclass(self.schema, schemas.BaseSchema):
+            elif issubclass(schema, schemas.BaseSchema):
                 # change here
-                if self.format == "root":
+                if format == "root":
                     materialized = []
                     factory = NanoEventsFactory.from_root(
                         file=file,
                         treepath=item.treename,
                         entry_start=item.entrystart,
                         entry_stop=item.entrystop,
-                        persistent_cache=self.cache,
-                        schemaclass=self.schema,
+                        persistent_cache=cache_function(),
+                        schemaclass=schema,
                         metadata=metadata,
                         access_log=materialized,
                     )
                     events = factory.events()
-                elif self.format == "parquet":
+                elif format == "parquet":
                     rados_parquet_options = {}
                     if ":" in item.filename:
                         ceph_config_path, filename = item.filename.split(":")
@@ -1187,7 +1204,7 @@ class Runner:
                     factory = NanoEventsFactory.from_parquet(
                         file=item.filename,
                         treepath=item.treename,
-                        schemaclass=self.schema,
+                        schemaclass=schema,
                         metadata=metadata,
                         rados_parquet_options=rados_parquet_options,
                     )
@@ -1195,7 +1212,7 @@ class Runner:
             else:
                 raise ValueError(
                     "Expected schema to derive from nanoevents.BaseSchema, instead got %r"
-                    % self.schema
+                    % schema
                 )
             tic = time.time()
             try:
@@ -1210,16 +1227,14 @@ class Runner:
                     "Output of process() should not be None. Make sure your processor's process() function returns an accumulator."
                 )
             toc = time.time()
-            if self.use_dataframes:
+            if use_dataframes:
                 return out
             else:
-                if self.savemetrics:
+                if savemetrics:
                     metrics = {}
                     if isinstance(file, uproot.ReadOnlyDirectory):
                         metrics["bytesread"] = file.file.source.num_requested_bytes
-                    if self.schema is not None and issubclass(
-                        self.schema, schemas.BaseSchema
-                    ):
+                    if schema is not None and issubclass(schema, schemas.BaseSchema):
                         metrics["columns"] = set(materialized)
                         metrics["entries"] = len(events)
                     else:
@@ -1281,9 +1296,29 @@ class Runner:
         # hack around dask/dask#5503 which is really a silly request but here we are
         if isinstance(self.executor, DaskExecutor):
             self.executor.heavy_input = pi_to_send
-            closure = partial(self._work_function, processor_instance="heavy")
+            closure = partial(
+                self._work_function,
+                self.format,
+                self.xrootdtimeout,
+                self.mmap,
+                self.schema,
+                partial(self.get_cache, self.cachestrategy),
+                self.use_dataframes,
+                self.savemetrics,
+                processor_instance="heavy",
+            )
         else:
-            closure = partial(self._work_function, processor_instance=pi_to_send)
+            closure = partial(
+                self._work_function,
+                self.format,
+                self.xrootdtimeout,
+                self.mmap,
+                self.schema,
+                partial(self.get_cache, self.cachestrategy),
+                self.use_dataframes,
+                self.savemetrics,
+                processor_instance=pi_to_send,
+            )
 
         if self.format == "root":
             if self.dynamic_chunksize:
@@ -1307,7 +1342,9 @@ class Runner:
                 }
             )
 
-        closure = partial(self.automatic_retries, closure)
+        closure = partial(
+            self.automatic_retries, self.retries, self.skipbadfiles, closure
+        )
 
         executor = self.executor.copy(**exe_args)
         wrapped_out = executor(chunks, closure, None)
