@@ -159,7 +159,7 @@ class WorkItem:
     entrystart: int
     entrystop: int
     fileuuid: str
-    usermeta: Optional[Dict] = None
+    usermeta: Optional[Dict] = field(default=None, compare=False)
 
     def __len__(self) -> int:
         return self.entrystop - self.entrystart
