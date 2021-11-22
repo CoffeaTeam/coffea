@@ -20,16 +20,9 @@ def test_listify(events):
 @pytest.mark.parametrize(
     "collection",
     [
-        "HT"
+        "HT",
         "MET",
-        "Muons",
-        "Electrons",
-        "Photons",
-        "Jets",
-        "JetsAK8",
-        "Tracks",
-        "PrimaryVertices",
-        "GenParticles"
+        "Weight"
     ],
 )
 def test_collection_exists(events, collection):
@@ -37,66 +30,36 @@ def test_collection_exists(events, collection):
 
 
 @pytest.mark.parametrize(
-    "collection",
+    "collection,arr_type",
     [
-        "Muons",
-        "Electrons",
-        "Photons",
-        "Jets",
-        "JetsAK8",
-        "Tracks",
-        "GenParticles"
+        ("Muons", "PtEtaPhiELorentzVector"),
+        ("Electrons", "PtEtaPhiELorentzVector", ),
+        ("Photons", "PtEtaPhiELorentzVector"),
+        ("Jets", "PtEtaPhiELorentzVector"),
+        ("JetsAK8", "PtEtaPhiELorentzVector"),
+        ("Tracks", "LorentzVector"),
+        ("GenParticles", "PtEtaPhiELorentzVector"),
+        ("PrimaryVertices", "ThreeVector")
     ],
 )
-def test_lorentz_vectorization(collection, events):
-    mask = ak.num(events[collection]) > 0
-    assert (
-        ak.type(events[collection][mask][0, 0]).parameters["__record__"]
-        == "LorentzVector"
-    )
-
+def test_lorentzvector_behavior(collection, arr_type, events):
+    assert ak.type(events[collection])
+    assert ak.type(events[collection]).type.type.__str__().startswith(arr_type)
 
 @pytest.mark.parametrize(
-    "collection",
+    "collection,subcollection,arr_type,element",
     [
-        "CaloJet02",
-        "CaloJet04",
-        "CaloJet08",
-        "CaloJet15",
-        "GenJet",
-        "GenJet02",
-        "GenJet04",
-        "GenJet08",
-        "GenJet15",
-        "Jet",
-        "ParticleFlowJet02",
-        "ParticleFlowJet04",
-        "ParticleFlowJet08",
-        "ParticleFlowJet15",
-        "TrackJet02",
-        "TrackJet04",
-        "TrackJet08",
-        "TrackJet15",
+        ("JetsAK8", "subjets", "PtEtaPhiELorentzVector", 'pt'),
+        ("Tracks", "hitPattern", "int32", None),
     ],
 )
-def test_nested_lorentz_vectorization(collection, events):
-    mask = ak.num(events[collection]) > 0
-    assert ak.all(ak.num(events[collection].PrunedP4_5, axis=2) == 5)
-    assert (
-        ak.type(events[collection][mask].PrunedP4_5[0, 0, 0]).parameters["__record__"]
-        == "LorentzVector"
-    )
+def test_nested_collection(collection,subcollection, arr_type, element, events):
+    assert ak.type(events[collection][subcollection])
+    assert ak.type(events[collection][subcollection + 'Counts'])
+    assert ak.type(events[collection][subcollection]).type.type.type.__str__().startswith(arr_type)
+    if element == None:
+        assert ak.all(events[collection][subcollection + 'Counts'] == ak.count(events[collection][subcollection],axis=-1))
+    else:
+        assert ak.all(events[collection][subcollection + 'Counts'] == ak.count(events[collection][subcollection][element],axis=-1))
 
-    assert ak.all(ak.num(events[collection].SoftDroppedP4_5, axis=2) == 5)
-    assert (
-        ak.type(events[collection][mask].SoftDroppedP4_5[0, 0, 0]).parameters[
-            "__record__"
-        ]
-        == "LorentzVector"
-    )
 
-    assert ak.all(ak.num(events[collection].TrimmedP4_5, axis=2) == 5)
-    assert (
-        ak.type(events[collection][mask].TrimmedP4_5[0, 0, 0]).parameters["__record__"]
-        == "LorentzVector"
-    )
