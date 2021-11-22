@@ -61,7 +61,7 @@ def test_nested_collection(collection, subcollection, arr_type, element, events)
         .type.type.type.__str__()
         .startswith(arr_type)
     )
-    if element == None:
+    if element is None:
         assert ak.all(
             events[collection][subcollection + "Counts"]
             == ak.count(events[collection][subcollection], axis=-1)
