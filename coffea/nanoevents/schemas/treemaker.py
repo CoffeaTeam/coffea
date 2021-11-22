@@ -106,15 +106,30 @@ class TreeMakerSchema(BaseSchema):
             ]
         )
 
+        subcollections = []
+
         for cname in collections:
             items = sorted(k for k in branch_forms if k.startswith(cname + "_"))
             if len(items) == 0:
                 continue
-            if cname == "JetsAK8":
-                items = [k for k in items if not k.startswith("JetsAK8_subjets")]
-                items.append("JetsAK8_subjetsCounts")
-            if cname == "JetsAK8_subjets":
-                items = [k for k in items if not k.endswith("Counts")]
+
+            # Special pattern parsing for <collection>_<subcollection>Counts branches
+            countitems = [x for x in items if x.endswith("Counts")]
+            subcols = set(x[:-6] for x in countitems)  # List of subcollection names
+            for subcol in subcols:
+                items = [
+                    k for k in items if not k.startswith(subcol) or k.endswith("Counts")
+                ]
+                subname = subcol[len(cname) + 1 :]
+                subcollections.append(
+                    {
+                        "colname": cname,
+                        "subcol": subcol,
+                        "countname": subname + "Counts",
+                        "subname": subname,
+                    }
+                )
+
             if cname not in branch_forms:
                 collection = zip_forms(
                     {k[len(cname) + 1]: branch_forms.pop(k) for k in items}, cname
@@ -132,12 +147,13 @@ class TreeMakerSchema(BaseSchema):
                         item
                     )["content"]
 
-        nest_jagged_forms(
-            branch_forms["JetsAK8"],
-            branch_forms.pop("JetsAK8_subjets"),
-            "subjetsCounts",
-            "subjets",
-        )
+        for sub in subcollections:
+            nest_jagged_forms(
+                branch_forms[sub["colname"]],
+                branch_forms.pop(sub["subcol"]),
+                sub["countname"],
+                sub["subname"],
+            )
 
         return branch_forms
 
