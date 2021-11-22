@@ -19,11 +19,7 @@ def test_listify(events):
 
 @pytest.mark.parametrize(
     "collection",
-    [
-        "HT",
-        "MET",
-        "Weight"
-    ],
+    ["HT", "MET", "Weight"],
 )
 def test_collection_exists(events, collection):
     assert hasattr(events, collection)
@@ -33,33 +29,45 @@ def test_collection_exists(events, collection):
     "collection,arr_type",
     [
         ("Muons", "PtEtaPhiELorentzVector"),
-        ("Electrons", "PtEtaPhiELorentzVector", ),
+        (
+            "Electrons",
+            "PtEtaPhiELorentzVector",
+        ),
         ("Photons", "PtEtaPhiELorentzVector"),
         ("Jets", "PtEtaPhiELorentzVector"),
         ("JetsAK8", "PtEtaPhiELorentzVector"),
         ("Tracks", "LorentzVector"),
         ("GenParticles", "PtEtaPhiELorentzVector"),
-        ("PrimaryVertices", "ThreeVector")
+        ("PrimaryVertices", "ThreeVector"),
     ],
 )
 def test_lorentzvector_behavior(collection, arr_type, events):
     assert ak.type(events[collection])
     assert ak.type(events[collection]).type.type.__str__().startswith(arr_type)
 
+
 @pytest.mark.parametrize(
     "collection,subcollection,arr_type,element",
     [
-        ("JetsAK8", "subjets", "PtEtaPhiELorentzVector", 'pt'),
+        ("JetsAK8", "subjets", "PtEtaPhiELorentzVector", "pt"),
         ("Tracks", "hitPattern", "int32", None),
     ],
 )
-def test_nested_collection(collection,subcollection, arr_type, element, events):
+def test_nested_collection(collection, subcollection, arr_type, element, events):
     assert ak.type(events[collection][subcollection])
-    assert ak.type(events[collection][subcollection + 'Counts'])
-    assert ak.type(events[collection][subcollection]).type.type.type.__str__().startswith(arr_type)
+    assert ak.type(events[collection][subcollection + "Counts"])
+    assert (
+        ak.type(events[collection][subcollection])
+        .type.type.type.__str__()
+        .startswith(arr_type)
+    )
     if element == None:
-        assert ak.all(events[collection][subcollection + 'Counts'] == ak.count(events[collection][subcollection],axis=-1))
+        assert ak.all(
+            events[collection][subcollection + "Counts"]
+            == ak.count(events[collection][subcollection], axis=-1)
+        )
     else:
-        assert ak.all(events[collection][subcollection + 'Counts'] == ak.count(events[collection][subcollection][element],axis=-1))
-
-
+        assert ak.all(
+            events[collection][subcollection + "Counts"]
+            == ak.count(events[collection][subcollection][element], axis=-1)
+        )
