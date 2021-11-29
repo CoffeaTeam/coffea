@@ -416,6 +416,7 @@ def plotratio(
         ax.set_ylabel(num.label)
         edges = axis.edges(overflow=overflow)
         centers = axis.centers(overflow=overflow)
+        ranges = (edges[1:] - edges[:-1])/2
 
         sumw_num, sumw2_num = num.values(sumw2=True, overflow=overflow)[()]
         sumw_denom, sumw2_denom = denom.values(sumw2=True, overflow=overflow)[()]
@@ -445,7 +446,7 @@ def plotratio(
             opts = {"label": label, "linestyle": "none"}
             opts.update(error_opts)
             emarker = opts.pop("emarker", "")
-            errbar = ax.errorbar(x=centers, y=rsumw, yerr=rsumw_err, **opts)
+            errbar = ax.errorbar(x=centers, y=rsumw, xerr=ranges, yerr=rsumw_err, **opts)
             plt.setp(errbar[1], "marker", emarker)
         if denom_fill_opts is not None:
             unity = numpy.ones_like(sumw_denom)
