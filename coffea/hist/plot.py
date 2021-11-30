@@ -419,7 +419,7 @@ def plotratio(
         ax.set_ylabel(num.label)
         edges = axis.edges(overflow=overflow)
         centers = axis.centers(overflow=overflow)
-        ranges = (edges[1:] - edges[:-1])/2 if xerr else None
+        ranges = (edges[1:] - edges[:-1]) / 2 if xerr else None
 
         sumw_num, sumw2_num = num.values(sumw2=True, overflow=overflow)[()]
         sumw_denom, sumw2_denom = denom.values(sumw2=True, overflow=overflow)[()]
