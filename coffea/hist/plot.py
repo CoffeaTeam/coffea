@@ -449,7 +449,9 @@ def plotratio(
             opts = {"label": label, "linestyle": "none"}
             opts.update(error_opts)
             emarker = opts.pop("emarker", "")
-            errbar = ax.errorbar(x=centers, y=rsumw, xerr=ranges, yerr=rsumw_err, **opts)
+            errbar = ax.errorbar(
+                x=centers, y=rsumw, xerr=ranges, yerr=rsumw_err, **opts
+            )
             plt.setp(errbar[1], "marker", emarker)
         if denom_fill_opts is not None:
             unity = numpy.ones_like(sumw_denom)
