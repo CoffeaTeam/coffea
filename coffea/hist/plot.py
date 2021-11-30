@@ -341,6 +341,7 @@ def plotratio(
     ax=None,
     clear=True,
     overflow="none",
+    xerr=False,
     error_opts=None,
     denom_fill_opts=None,
     guide_opts=None,
@@ -363,6 +364,8 @@ def plotratio(
             If overflow behavior is not 'none', extra bins will be drawn on either end of the nominal
             axis range, to represent the contents of the overflow bins.  See `Hist.sum` documentation
             for a description of the options.
+        xerr: bool, optional
+            If true, then error bars are drawn for x-axis to indicate the size of the bin.
         error_opts : dict, optional
             A dictionary of options to pass to the matplotlib
             `ax.errorbar <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.pyplot.errorbar.html>`_ call
@@ -416,6 +419,7 @@ def plotratio(
         ax.set_ylabel(num.label)
         edges = axis.edges(overflow=overflow)
         centers = axis.centers(overflow=overflow)
+        ranges = (edges[1:] - edges[:-1]) / 2 if xerr else None
 
         sumw_num, sumw2_num = num.values(sumw2=True, overflow=overflow)[()]
         sumw_denom, sumw2_denom = denom.values(sumw2=True, overflow=overflow)[()]
@@ -445,7 +449,9 @@ def plotratio(
             opts = {"label": label, "linestyle": "none"}
             opts.update(error_opts)
             emarker = opts.pop("emarker", "")
-            errbar = ax.errorbar(x=centers, y=rsumw, yerr=rsumw_err, **opts)
+            errbar = ax.errorbar(
+                x=centers, y=rsumw, xerr=ranges, yerr=rsumw_err, **opts
+            )
             plt.setp(errbar[1], "marker", emarker)
         if denom_fill_opts is not None:
             unity = numpy.ones_like(sumw_denom)
