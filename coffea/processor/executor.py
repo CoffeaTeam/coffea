@@ -1077,7 +1077,13 @@ class Runner:
                     continue
                 # fmt: on
                 if not filemeta.populated(clusters=self.align_clusters):
-                    filemeta.metadata = self.metadata_fetcher(filemeta).pop().metadata
+                    filemeta.metadata = (
+                        self.metadata_fetcher(
+                            self.xrootdtimeout, self.align_clusters, filemeta
+                        )
+                        .pop()
+                        .metadata
+                    )
                     self.metadata_cache[filemeta] = filemeta.metadata
 
     def _filter_badfiles(self, fileset: Dict) -> List:
