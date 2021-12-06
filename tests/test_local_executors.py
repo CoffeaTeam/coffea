@@ -25,7 +25,11 @@ def test_dataframe_analysis(executor, schema, chunksize, maxchunks, skipbadfiles
 
     executor = executor()
     run = processor.Runner(
-        executor=executor, schema=schema, chunksize=chunksize, maxchunks=maxchunks, skipbadfiles=skipbadfiles,
+        executor=executor,
+        schema=schema,
+        chunksize=chunksize,
+        maxchunks=maxchunks,
+        skipbadfiles=skipbadfiles,
     )
 
     hists = run(filelist, "Events", processor_instance=NanoTestProcessor())
