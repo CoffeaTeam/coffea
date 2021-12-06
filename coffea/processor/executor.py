@@ -1071,11 +1071,6 @@ class Runner:
                     filemeta.maybe_populate(self.metadata_cache)
         else:
             for filemeta in fileset:
-                # not sure why need to check for bad files here... otherwise pop fails below with pytest.
-                # fmt: off
-                if self.skipbadfiles and not filemeta.populated(clusters=self.align_clusters):  # noqa  # fmt: skip <-- gets ignored, see: https://github.com/psf/black/issues/2421
-                    continue
-                # fmt: on
                 if not filemeta.populated(clusters=self.align_clusters):
                     filemeta.metadata = (
                         self.metadata_fetcher(

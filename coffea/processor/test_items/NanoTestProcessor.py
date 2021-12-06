@@ -37,7 +37,6 @@ class NanoTestProcessor(processor.ProcessorABC):
         output = self.accumulator.identity()
 
         dataset = df.metadata["dataset"]
-        print(df.metadata)
         if "checkusermeta" in df.metadata:
             metaname, metavalue = self.expected_usermeta[dataset]
             assert metavalue == df.metadata[metaname]
