@@ -1034,52 +1034,38 @@ class Runner:
         return out
 
     def _preprocess_fileset(self, fileset: Dict) -> None:
-        if self.maxchunks is None:
-            # this is a bit of an abuse of map-reduce but ok
-            to_get = set(
-                filemeta
-                for filemeta in fileset
-                if not filemeta.populated(clusters=self.align_clusters)
+        # this is a bit of an abuse of map-reduce but ok
+        to_get = set(
+            filemeta
+            for filemeta in fileset
+            if not filemeta.populated(clusters=self.align_clusters)
+        )
+        if len(to_get) > 0:
+            out = set_accumulator()
+            pre_arg_override = {
+                "function_name": "get_metadata",
+                "desc": "Preprocessing",
+                "unit": "file",
+                "compression": None,
+            }
+            if isinstance(self.pre_executor, (FuturesExecutor, ParslExecutor)):
+                pre_arg_override.update({"tailtimeout": None})
+            if isinstance(self.pre_executor, (DaskExecutor)):
+                self.pre_executor.heavy_input = None
+                pre_arg_override.update({"worker_affinity": False})
+            pre_executor = self.pre_executor.copy(**pre_arg_override)
+            closure = partial(
+                self.automatic_retries,
+                self.retries,
+                self.skipbadfiles,
+                partial(self.metadata_fetcher, self.xrootdtimeout, self.align_clusters),
             )
-            if len(to_get) > 0:
-                out = set_accumulator()
-                pre_arg_override = {
-                    "function_name": "get_metadata",
-                    "desc": "Preprocessing",
-                    "unit": "file",
-                    "compression": None,
-                }
-                if isinstance(self.pre_executor, (FuturesExecutor, ParslExecutor)):
-                    pre_arg_override.update({"tailtimeout": None})
-                if isinstance(self.pre_executor, (DaskExecutor)):
-                    self.pre_executor.heavy_input = None
-                    pre_arg_override.update({"worker_affinity": False})
-                pre_executor = self.pre_executor.copy(**pre_arg_override)
-                closure = partial(
-                    self.automatic_retries,
-                    self.retries,
-                    self.skipbadfiles,
-                    partial(
-                        self.metadata_fetcher, self.xrootdtimeout, self.align_clusters
-                    ),
-                )
-                out = pre_executor(to_get, closure, out)
-                while out:
-                    item = out.pop()
-                    self.metadata_cache[item] = item.metadata
-                for filemeta in fileset:
-                    filemeta.maybe_populate(self.metadata_cache)
-        else:
+            out = pre_executor(to_get, closure, out)
+            while out:
+                item = out.pop()
+                self.metadata_cache[item] = item.metadata
             for filemeta in fileset:
-                if not filemeta.populated(clusters=self.align_clusters):
-                    filemeta.metadata = (
-                        self.metadata_fetcher(
-                            self.xrootdtimeout, self.align_clusters, filemeta
-                        )
-                        .pop()
-                        .metadata
-                    )
-                    self.metadata_cache[filemeta] = filemeta.metadata
+                filemeta.maybe_populate(self.metadata_cache)
 
     def _filter_badfiles(self, fileset: Dict) -> List:
         final_fileset = []

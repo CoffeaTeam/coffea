@@ -9,7 +9,7 @@ if sys.platform.startswith("win"):
 
 
 @pytest.mark.parametrize("skipbadfiles", [True, False])
-@pytest.mark.parametrize("maxchunks", [10, None])
+@pytest.mark.parametrize("maxchunks", [1, None])
 @pytest.mark.parametrize("chunksize", [100000, 5])
 @pytest.mark.parametrize("schema", [None, schemas.BaseSchema])
 @pytest.mark.parametrize(
@@ -34,10 +34,17 @@ def test_dataframe_analysis(executor, schema, chunksize, maxchunks, skipbadfiles
 
     hists = run(filelist, "Events", processor_instance=NanoTestProcessor())
 
-    assert hists["cutflow"]["ZJets_pt"] == 18
-    assert hists["cutflow"]["ZJets_mass"] == 6
-    assert hists["cutflow"]["Data_pt"] == 84
-    assert hists["cutflow"]["Data_mass"] == 66
+    if maxchunks is None:
+        assert hists["cutflow"]["ZJets_pt"] == 18
+        assert hists["cutflow"]["ZJets_mass"] == 6
+        assert hists["cutflow"]["Data_pt"] == 84
+        assert hists["cutflow"]["Data_mass"] == 66
+    else:
+        assert maxchunks == 1
+        assert hists["cutflow"]["ZJets_pt"] == 18 if chunksize == 100_000 else 2
+        assert hists["cutflow"]["ZJets_mass"] == 6 if chunksize == 100_000 else 1
+        assert hists["cutflow"]["Data_pt"] == 84 if chunksize == 100_000 else 13
+        assert hists["cutflow"]["Data_mass"] == 66 if chunksize == 100_000 else 12
 
 
 @pytest.mark.parametrize("skipbadfiles", [True, False])
