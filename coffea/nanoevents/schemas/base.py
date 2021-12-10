@@ -55,7 +55,20 @@ def zip_forms(forms, name, record_name=None, offsets=None):
         if record_name is not None:
             record["parameters"] = {"__record__": record_name}
         return record
+    #elif all(form["class"] in [ "RecordArray", "NumpyArray", "ListOffsetArray"] for form in forms.values()):
+    elif all("class" in form for form in forms.values()):
+        record = {
+            "class": "RecordArray",
+            "contents": {k: form for k, form in forms.items()},
+            "form_key": quote("!invalid," + name),
+        }
+        if record_name is not None:
+            record["parameters"] = {"__record__": record_name}
+        return record
+
     else:
+        for form in forms.values():
+            print(form['class']) 
         raise NotImplementedError("Cannot zip forms")
 
 

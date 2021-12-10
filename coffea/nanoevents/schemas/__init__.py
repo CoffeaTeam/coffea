@@ -3,6 +3,7 @@ from .nanoaod import NanoAODSchema, PFNanoAODSchema
 from .treemaker import TreeMakerSchema
 from .physlite import PHYSLITESchema
 from .delphes import DelphesSchema
+from .pdune import PDUNESchema
 
 __all__ = [
     "BaseSchema",
@@ -11,4 +12,5 @@ __all__ = [
     "TreeMakerSchema",
     "PHYSLITESchema",
     "DelphesSchema",
+    "PDUNESchema"
 ]
