@@ -65,7 +65,7 @@ def _run_x_job(
     # turn this deprecation warning on from coffea.__version__ >= 0.8 on
     # from coffea.util import deprecate
     # deprecate(
-    #     f"This method is deprecated, please use directly the new: {executor} and {Runner} classes.\n {_run_x_job.__doc__}",  # noqa: E501
+    #     RuntimeError(f"This method is deprecated, please use directly the new: {executor} and {Runner} classes.\n {_run_x_job.__doc__}"),  # noqa: E501
     #     0.9,
     # )
 
