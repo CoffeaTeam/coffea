@@ -132,8 +132,8 @@ work_queue_executor_args = {
     # 'extra-input-files' : [ 'myproc.py', 'config.dat' ],
 
     # Resources to allocate per task.
-    'resources-mode' : 'auto',  # Adapt task resources to what's observed.
-    'resource-monitor': True,   # Measure actual resource consumption
+    # 'resources_mode' : 'auto',  # Adapt task resources to what's observed.
+    # 'resource_monitor': True,   # Measure actual resource consumption
 
     # With resources set to auto, these are the max values for any task.
     'cores': 2,                  # Cores needed per task.
@@ -142,23 +142,23 @@ work_queue_executor_args = {
     'gpus' : 0,                  # GPUs needed per task.
 
     # Options to control how workers find this master.
-    'master-name': wq_master_name,
+    'master_name': wq_master_name,
     'port': 9123,     # Port for manager to listen on: if zero, will choose automatically.
 
     # Options to control how the environment is constructed.
     # The named tarball will be transferred to each worker
     # and activated using the wrapper script.
-    'environment-file': wq_env_tarball,
+    'environment_file': wq_env_tarball,
     'wrapper' : wq_wrapper_path,
 
     # Debugging: Display output of task if not empty.
-    'print-stdout': True,
+    'print_stdout': True,
 
     # Debugging: Display notes about each task submitted/complete.
     'verbose': False,
 
     # Debugging: Produce a lot at the master side of things.
-    'debug-log' : 'coffea-wq.log',
+    'debug_log' : 'coffea-wq.log',
 }
 
 ###############################################################
