@@ -216,14 +216,6 @@ class _reduce:
         return accumulate(items)
 
 
-def _cancel(job):
-    try:
-        # this is not implemented with parsl AppFutures
-        job.cancel()
-    except NotImplementedError:
-        pass
-
-
 def _futures_handler(futures, timeout):
     """Essentially the same as concurrent.futures.as_completed
     but makes sure not to hold references to futures any longer than strictly necessary,
@@ -248,9 +240,13 @@ def _futures_handler(futures, timeout):
                         yield done.pop().result()
                     except concurrent.futures.CancelledError:
                         pass
-            except KeyboardInterrupt:
+            except KeyboardInterrupt as e:
                 for job in futures:
-                    _cancel(job)
+                    try:
+                        job.cancel()
+                        # this is not implemented with parsl AppFutures
+                    except NotImplementedError:
+                        raise e from None
                 running = sum(job.running() for job in futures)
                 warnings.warn(
                     f"Early stop: cancelled {len(futures) - running} jobs, will wait for {running} running jobs to complete"
@@ -261,8 +257,11 @@ def _futures_handler(futures, timeout):
             warnings.warn(
                 f"Cancelling {running} running jobs (likely due to an exception)"
             )
-        while futures:
-            _cancel(futures.pop())
+        try:
+            while futures:
+                futures.pop().cancel()
+        except NotImplementedError:
+            pass
 
 
 @dataclass
