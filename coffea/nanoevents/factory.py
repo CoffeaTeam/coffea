@@ -147,7 +147,7 @@ class NanoEventsFactory:
         schemaclass=NanoAODSchema,
         metadata=None,
         parquet_options={},
-        rados_parquet_options={},
+        skyhook_options={},
         access_log=None,
     ):
         """Quickly build NanoEvents from a parquet file
@@ -221,9 +221,9 @@ class NanoEventsFactory:
         )
 
         format_ = "parquet"
-        if "ceph_config_path" in rados_parquet_options:
-            format_ = ds.RadosParquetFileFormat(
-                rados_parquet_options["ceph_config_path"].encode()
+        if "ceph_config_path" in skyhook_options:
+            format_ = ds.SkyhookFileFormat(
+                "parquet", skyhook_options["ceph_config_path"].encode()
             )
 
         dataset = ds.dataset(file, schema=table_file.schema_arrow, format=format_)

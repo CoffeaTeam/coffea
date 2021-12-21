@@ -21,8 +21,8 @@ curl -sSfL https://raw.githubusercontent.com/getpopper/popper/master/install.sh 
 2. Run a single step workflow. Running the workflow will create a single-node Ceph cluster in a Docker container, mount CephFS, and will open up a Jupyter environment.
 
 ```bash
-cd docker/coffea_rados_parquet/
+cd docker/skyhook/
 popper run -f skyhook-coffea-demo.yml -w ../../
 ```
 
-3. Navigate to [`binder/nanoevents_pq.ipynb`](../../binder/nanoevents_pq.ipynb) and open the notebook. This notebook based guide starts with a brief hands-on on PyArrow with the   [`RadosParquetFileFormat`](https://github.com/uccross/arrow/blob/rados-dataset-dev/cpp/src/arrow/dataset/file_rados_parquet.h#L126) API and then shows how to read data into Coffea processors from CephFS by doing projection pushdowns using the Arrow Dataset API and the `RadosParquetFileFormat`.
+3. Navigate to [`binder/nanoevents_pq.ipynb`](../../binder/nanoevents_pq.ipynb) and open the notebook. This notebook based guide starts with a brief hands-on on PyArrow with the   [`SkyhookFileFormat`](https://github.com/uccross/arrow/blob/rados-dataset-dev/cpp/src/arrow/dataset/file_rados_parquet.h#L126) API and then shows how to read data into Coffea processors from CephFS by doing projection pushdowns using the Arrow Dataset API and the `SkyhookFileFormat`.
