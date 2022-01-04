@@ -686,6 +686,7 @@ class DaskExecutor(ExecutorBase):
                 ]
                 work_worker = self.client.map(
                     function,
+                    items_worker,
                     pure=(self.heavy_input is not None),
                     priority=self.priority,
                     retries=self.retries,
