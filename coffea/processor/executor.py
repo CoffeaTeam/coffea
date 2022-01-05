@@ -216,14 +216,6 @@ class _reduce:
         return accumulate(items)
 
 
-def _cancel(job):
-    try:
-        # this is not implemented with parsl AppFutures
-        job.cancel()
-    except NotImplementedError:
-        pass
-
-
 def _futures_handler(futures, timeout):
     """Essentially the same as concurrent.futures.as_completed
     but makes sure not to hold references to futures any longer than strictly necessary,
@@ -248,9 +240,13 @@ def _futures_handler(futures, timeout):
                         yield done.pop().result()
                     except concurrent.futures.CancelledError:
                         pass
-            except KeyboardInterrupt:
+            except KeyboardInterrupt as e:
                 for job in futures:
-                    _cancel(job)
+                    try:
+                        job.cancel()
+                        # this is not implemented with parsl AppFutures
+                    except NotImplementedError:
+                        raise e from None
                 running = sum(job.running() for job in futures)
                 warnings.warn(
                     f"Early stop: cancelled {len(futures) - running} jobs, will wait for {running} running jobs to complete"
@@ -261,8 +257,11 @@ def _futures_handler(futures, timeout):
             warnings.warn(
                 f"Cancelling {running} running jobs (likely due to an exception)"
             )
-        while futures:
-            _cancel(futures.pop())
+        try:
+            while futures:
+                futures.pop().cancel()
+        except NotImplementedError:
+            pass
 
 
 @dataclass
@@ -640,6 +639,7 @@ class DaskExecutor(ExecutorBase):
 
         import dask.dataframe as dd
         from dask.distributed import Client
+        from distributed.scheduler import KilledWorker
 
         if self.client is None:
             self.client = Client(threads_per_worker=1)
@@ -665,6 +665,7 @@ class DaskExecutor(ExecutorBase):
                 )
 
         work = []
+        key_to_item = {}
         if self.worker_affinity:
             workers = list(self.client.run(lambda: 0))
 
@@ -677,20 +678,26 @@ class DaskExecutor(ExecutorBase):
                 return hashed % len(workers) == workerindex
 
             for workerindex, worker in enumerate(workers):
-                work.extend(
-                    self.client.map(
-                        function,
-                        [
-                            item
-                            for item in items
-                            if belongsto(self.heavy_input, workerindex, item)
-                        ],
-                        pure=(self.heavy_input is not None),
-                        priority=self.priority,
-                        retries=self.retries,
-                        workers={worker},
-                        allow_other_workers=False,
-                    )
+                items_worker = [
+                    item
+                    for item in items
+                    if belongsto(self.heavy_input, workerindex, item)
+                ]
+                work_worker = self.client.map(
+                    function,
+                    items_worker,
+                    pure=(self.heavy_input is not None),
+                    priority=self.priority,
+                    retries=self.retries,
+                    workers={worker},
+                    allow_other_workers=False,
+                )
+                work.extend(work_worker)
+                key_to_item.update(
+                    {
+                        future.key: item
+                        for future, item in zip(work_worker, items_worker)
+                    }
                 )
         else:
             work = self.client.map(
@@ -700,6 +707,7 @@ class DaskExecutor(ExecutorBase):
                 priority=self.priority,
                 retries=self.retries,
             )
+            key_to_item.update({future.key: item for future, item in zip(work, items)})
         if (self.function_name == "get_metadata") or not self.use_dataframes:
             while len(work) > 1:
                 work = self.client.map(
@@ -712,20 +720,29 @@ class DaskExecutor(ExecutorBase):
                     priority=self.priority,
                     retries=self.retries,
                 )
+                key_to_item.update({future.key: "(output reducer)" for future in work})
             work = work[0]
-            if self.status:
-                from distributed import progress
+            try:
+                if self.status:
+                    from distributed import progress
 
-                # FIXME: fancy widget doesn't appear, have to live with boring pbar
-                progress(work, multi=True, notebook=False)
-            return accumulate(
-                [
-                    work.result()
-                    if self.compression is None
-                    else _decompress(work.result())
-                ],
-                accumulator,
-            )
+                    # FIXME: fancy widget doesn't appear, have to live with boring pbar
+                    progress(work, multi=True, notebook=False)
+                return accumulate(
+                    [
+                        work.result()
+                        if self.compression is None
+                        else _decompress(work.result())
+                    ],
+                    accumulator,
+                )
+            except KilledWorker as ex:
+                baditem = key_to_item[ex.task]
+                if self.heavy_input is not None and isinstance(baditem, tuple):
+                    baditem = baditem[0]
+                raise RuntimeError(
+                    f"Work item {baditem} caused a KilledWorker exception (likely a segfault or out-of-memory issue)"
+                )
         else:
             if self.status:
                 from distributed import progress

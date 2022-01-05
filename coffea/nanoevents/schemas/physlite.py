@@ -94,6 +94,7 @@ class PHYSLITESchema(BaseSchema):
                     {sub_key: form for (key, sub_key), form in keys_and_form},
                     objname,
                     self.mixins.get(objname, None),
+                    bypass=True,
                 )
                 content = contents[objname]["content"]
                 content["parameters"] = dict(

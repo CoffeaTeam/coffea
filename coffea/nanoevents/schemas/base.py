@@ -21,7 +21,7 @@ def listarray_form(content, offsets):
     }
 
 
-def zip_forms(forms, name, record_name=None, offsets=None):
+def zip_forms(forms, name, record_name=None, offsets=None, bypass=False):
     if not isinstance(forms, dict):
         raise ValueError("Expected a dictionary")
     if all(form["class"].startswith("ListOffsetArray") for form in forms.values()):
@@ -47,6 +47,16 @@ def zip_forms(forms, name, record_name=None, offsets=None):
         else:
             return listarray_form(record, offsets)
     elif all(form["class"] == "NumpyArray" for form in forms.values()):
+        record = {
+            "class": "RecordArray",
+            "contents": {k: form for k, form in forms.items()},
+            "form_key": quote("!invalid," + name),
+        }
+        if record_name is not None:
+            record["parameters"] = {"__record__": record_name}
+        return record
+    # elif all(form["class"] in [ "RecordArray", "NumpyArray", "ListOffsetArray"] for form in forms.values()):
+    elif all("class" in form for form in forms.values()) and not bypass:
         record = {
             "class": "RecordArray",
             "contents": {k: form for k, form in forms.items()},
