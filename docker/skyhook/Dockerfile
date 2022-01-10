@@ -1,4 +1,4 @@
-FROM uccross/skyhookdm-arrow:v0.2.0
+FROM uccross/skyhookdm-arrow:v0.4.0
 
 RUN yum -y update && \
     yum -y install python3 \

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eux
 
-DIR=/tmp/testradosparquetjob
+DIR=/tmp/testskyhookjob
 mkdir -p $DIR
 IS_CI=${IS_CI:-false}
 
@@ -83,6 +83,7 @@ ceph --version
 ceph status
 
 # install dask, coffea, and updated PyArrow
+pip3 install jupyter
 pip3 install dask[distributed] nbconvert
 pip3 install 'fsspec>=0.3.3'
 pip3 install --upgrade .
@@ -101,7 +102,7 @@ cp -r nyc /mnt/cephfs/
 sleep 15
 
 if [[ "${IS_CI}" == "true" ]]; then
-    python3 tests/test_rados_parquet_job.py
+    python3 tests/test_skyhook_job.py
 else
     # start the notebook
     jupyter notebook --allow-root --no-browser  --ip 0.0.0.0

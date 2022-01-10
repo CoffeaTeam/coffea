@@ -1198,19 +1198,19 @@ class Runner:
                     )
                     events = factory.events()
                 elif format == "parquet":
-                    rados_parquet_options = {}
+                    skyhook_options = {}
                     if ":" in item.filename:
                         ceph_config_path, filename = item.filename.split(":")
                         # patch back filename into item
                         item = WorkItem(**dict(asdict(item), filename=filename))
-                        rados_parquet_options["ceph_config_path"] = ceph_config_path
+                        skyhook_options["ceph_config_path"] = ceph_config_path
 
                     factory = NanoEventsFactory.from_parquet(
                         file=item.filename,
                         treepath=item.treename,
                         schemaclass=schema,
                         metadata=metadata,
-                        rados_parquet_options=rados_parquet_options,
+                        skyhook_options=skyhook_options,
                     )
                     events = factory.events()
             else:
