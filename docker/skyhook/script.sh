@@ -103,6 +103,7 @@ sleep 15
 
 if [[ "${IS_CI}" == "true" ]]; then
     python3 tests/test_skyhook_job.py
+    jupyter nbconvert --to notebook --execute binder/nanoevents_pq.ipynb
 else
     # start the notebook
     jupyter notebook --allow-root --no-browser  --ip 0.0.0.0
