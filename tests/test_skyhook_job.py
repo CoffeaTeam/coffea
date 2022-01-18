@@ -44,7 +44,8 @@ if __name__ == "__main__":
 
     run = processor.Runner(
         executor=executor,
-        ceph_config_path="/tmp/testskyhookjob/ceph.conf",
+        use_skyhook=True,
+        skyhook_options={"ceph_config_path": "/tmp/testskyhookjob/ceph.conf"},
         format="parquet",
         schema=schemas.NanoAODSchema,
     )

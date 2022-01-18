@@ -901,7 +901,8 @@ class Runner:
     schema: Optional[schemas.BaseSchema] = schemas.BaseSchema
     cachestrategy: Optional[Union[Literal["dask-worker"], Callable[..., MutableMapping]]] = None  # fmt: skip
     processor_compression: int = 1
-    ceph_config_path: Optional[str] = None
+    use_skyhook: Optional[bool] = False
+    skyhook_options: Optional[Dict] = field(default_factory=dict)
     format: str = "root"
 
     def __post_init__(self):
@@ -1128,9 +1129,15 @@ class Runner:
             chunks = []
             for dataset, filelist in dataset_filelist_map.items():
                 for filename in filelist:
-                    # if in cephfs, encode the ceph config path in the filename
-                    if self.ceph_config_path:
-                        filename = f"{self.ceph_config_path}:{filename}"
+                    # If skyhook config is provided and is not empty,
+                    if self.use_skyhook:
+                        ceph_config_path = self.skyhook_options.get(
+                            "ceph_config_path", "/etc/ceph/ceph.conf"
+                        )
+                        ceph_data_pool = self.skyhook_options.get(
+                            "ceph_data_pool", "cephfs_data"
+                        )
+                        filename = f"{ceph_config_path}:{ceph_data_pool}:{filename}"
                     chunks.append(WorkItem(dataset, filename, treename, 0, 0, ""))
             yield from iter(chunks)
 
@@ -1200,10 +1207,15 @@ class Runner:
                 elif format == "parquet":
                     skyhook_options = {}
                     if ":" in item.filename:
-                        ceph_config_path, filename = item.filename.split(":")
+                        (
+                            ceph_config_path,
+                            ceph_data_pool,
+                            filename,
+                        ) = item.filename.split(":")
                         # patch back filename into item
                         item = WorkItem(**dict(asdict(item), filename=filename))
                         skyhook_options["ceph_config_path"] = ceph_config_path
+                        skyhook_options["ceph_data_pool"] = ceph_data_pool
 
                     factory = NanoEventsFactory.from_parquet(
                         file=item.filename,
