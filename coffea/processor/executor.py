@@ -902,7 +902,7 @@ class Runner:
     cachestrategy: Optional[Union[Literal["dask-worker"], Callable[..., MutableMapping]]] = None  # fmt: skip
     processor_compression: int = 1
     use_skyhook: Optional[bool] = False
-    skyhook_config: Optional[dict] = {}
+    skyhook_config: Optional[Dict] = field(default_factory=dict)
     format: str = "root"
 
     def __post_init__(self):
