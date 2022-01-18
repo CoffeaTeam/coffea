@@ -1208,9 +1208,9 @@ class Runner:
                     skyhook_options = {}
                     if ":" in item.filename:
                         (
-                            ceph_config_path, 
-                            ceph_data_pool, 
-                            filename 
+                            ceph_config_path,
+                            ceph_data_pool,
+                            filename
                         ) = item.filename.split(":")
                         # patch back filename into item
                         item = WorkItem(**dict(asdict(item), filename=filename))
