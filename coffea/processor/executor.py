@@ -902,7 +902,7 @@ class Runner:
     cachestrategy: Optional[Union[Literal["dask-worker"], Callable[..., MutableMapping]]] = None  # fmt: skip
     processor_compression: int = 1
     use_skyhook: Optional[bool] = False
-    skyhook_config: Optional[Dict] = field(default_factory=dict)
+    skyhook_options: Optional[Dict] = field(default_factory=dict)
     format: str = "root"
 
     def __post_init__(self):
@@ -1131,10 +1131,10 @@ class Runner:
                 for filename in filelist:
                     # If skyhook config is provided and is not empty,
                     if self.use_skyhook:
-                        ceph_config_path = self.skyhook_config.get(
+                        ceph_config_path = self.skyhook_options.get(
                             "ceph_config_path", "/etc/ceph/ceph.conf"
                         )
-                        ceph_data_pool = self.skyhook_config.get(
+                        ceph_data_pool = self.skyhook_options.get(
                             "ceph_data_pool", "cephfs_data"
                         )
                         filename = f"{ceph_config_path}:{ceph_data_pool}:{filename}"
