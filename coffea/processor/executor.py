@@ -1131,8 +1131,12 @@ class Runner:
                 for filename in filelist:
                     # If skyhook config is provided and is not empty,
                     if self.use_skyhook:
-                        ceph_config_path = self.skyhook_config.get("ceph_config_path", "/etc/ceph/ceph.conf")
-                        ceph_data_pool = self.skyhook_config.get("ceph_data_pool", "cephfs_data")
+                        ceph_config_path = self.skyhook_config.get(
+                            "ceph_config_path", "/etc/ceph/ceph.conf"
+                        )
+                        ceph_data_pool = self.skyhook_config.get(
+                            "ceph_data_pool", "cephfs_data"
+                        )
                         filename = f"{ceph_config_path}:{ceph_data_pool}:{filename}"
                     chunks.append(WorkItem(dataset, filename, treename, 0, 0, ""))
             yield from iter(chunks)
@@ -1203,7 +1207,11 @@ class Runner:
                 elif format == "parquet":
                     skyhook_options = {}
                     if ":" in item.filename:
-                        ceph_config_path, ceph_data_pool, filename = item.filename.split(":")
+                        (
+                            ceph_config_path, 
+                            ceph_data_pool, 
+                            filename 
+                        ) = item.filename.split(":")
                         # patch back filename into item
                         item = WorkItem(**dict(asdict(item), filename=filename))
                         skyhook_options["ceph_config_path"] = ceph_config_path
