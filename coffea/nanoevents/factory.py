@@ -221,9 +221,11 @@ class NanoEventsFactory:
         )
 
         format_ = "parquet"
-        if "ceph_config_path" in skyhook_options:
+        if len(skyhook_options) > 0:
             format_ = ds.SkyhookFileFormat(
-                "parquet", skyhook_options["ceph_config_path"].encode()
+                "parquet",
+                skyhook_options["ceph_config_path"].encode(),
+                skyhook_options["ceph_data_pool"].encode()
             )
 
         dataset = ds.dataset(file, schema=table_file.schema_arrow, format=format_)
