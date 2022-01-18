@@ -1210,7 +1210,7 @@ class Runner:
                         (
                             ceph_config_path,
                             ceph_data_pool,
-                            filename
+                            filename,
                         ) = item.filename.split(":")
                         # patch back filename into item
                         item = WorkItem(**dict(asdict(item), filename=filename))
