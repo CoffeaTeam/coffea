@@ -77,7 +77,7 @@ class Weights(object):
             self._modifiers[name + "Down"] = weightDown
         self._weightStats[name] = {
             "sumw": weight.sum(),
-            "sumw2": (weight ** 2).sum(),
+            "sumw2": (weight**2).sum(),
             "min": weight.min(),
             "max": weight.max(),
             "n": weight.size,

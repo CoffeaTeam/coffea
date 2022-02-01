@@ -1100,7 +1100,7 @@ class Hist(AccumulatorABC):
                 ).reshape(self._dense_shape)
                 self._sumw2[sparse_key][:] += numpy.bincount(
                     xy,
-                    weights=weight ** 2,
+                    weights=weight**2,
                     minlength=numpy.array(self._dense_shape).prod(),
                 ).reshape(self._dense_shape)
             else:
@@ -1116,7 +1116,7 @@ class Hist(AccumulatorABC):
         else:
             if weight is not None:
                 self._sumw[sparse_key] += numpy.sum(weight)
-                self._sumw2[sparse_key] += numpy.sum(weight ** 2)
+                self._sumw2[sparse_key] += numpy.sum(weight**2)
             else:
                 self._sumw[sparse_key] += 1.0
                 if self._sumw2 is not None:
@@ -1416,7 +1416,7 @@ class Hist(AccumulatorABC):
         if isinstance(factor, numbers.Number) and axis is None:
             for key in self._sumw.keys():
                 self._sumw[key] *= factor
-                self._sumw2[key] *= factor ** 2
+                self._sumw2[key] *= factor**2
         elif isinstance(factor, dict):
             if not isinstance(axis, tuple):
                 axis = (axis,)

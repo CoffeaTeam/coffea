@@ -194,7 +194,7 @@ def test_hist():
     h_species.scale(5.0)
     tally = h_species.sum("mass", height, vocalization).values(sumw2=True)
     assert tally[("birds",)] == (520.0, 350.0)
-    assert tally[("mammals",)] == (435.0, 25 * (40 * (0.9 ** 2) + 20 * (2.5 ** 2) + 1))
+    assert tally[("mammals",)] == (435.0, 25 * (40 * (0.9**2) + 20 * (2.5**2) + 1))
 
     assert h_species.axis("vocalization") is vocalization
     assert h_species.axis("height") is height
