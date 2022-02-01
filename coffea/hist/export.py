@@ -62,7 +62,7 @@ def export1d(hist):
     centers = (edges[:-1] + edges[1:]) / 2.0
     out._fEntries = out._fTsumw = out._fTsumw2 = sumw[1:-1].sum()
     out._fTsumwx = (sumw[1:-1] * centers).sum()
-    out._fTsumwx2 = (sumw[1:-1] * centers ** 2).sum()
+    out._fTsumwx2 = (sumw[1:-1] * centers**2).sum()
 
     out._fName = "histogram"
     out._fTitle = hist.label

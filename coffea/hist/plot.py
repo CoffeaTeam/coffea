@@ -105,7 +105,7 @@ def normal_interval(pw, tw, pw2, tw2, coverage=_coverage1sd):
 
     eff = pw / tw
 
-    variance = (pw2 * (1 - 2 * eff) + tw2 * eff ** 2) / (tw ** 2)
+    variance = (pw2 * (1 - 2 * eff) + tw2 * eff**2) / (tw**2)
     sigma = numpy.sqrt(variance)
 
     prob = 0.5 * (1 - coverage)
@@ -436,7 +436,7 @@ def plotratio(
             )
         elif unc == "num":
             rsumw_err = numpy.abs(
-                poisson_interval(rsumw, sumw2_num / sumw_denom ** 2) - rsumw
+                poisson_interval(rsumw, sumw2_num / sumw_denom**2) - rsumw
             )
         elif unc == "normal":
             rsumw_err = numpy.abs(
@@ -455,7 +455,7 @@ def plotratio(
             plt.setp(errbar[1], "marker", emarker)
         if denom_fill_opts is not None:
             unity = numpy.ones_like(sumw_denom)
-            denom_unc = poisson_interval(unity, sumw2_denom / sumw_denom ** 2)
+            denom_unc = poisson_interval(unity, sumw2_denom / sumw_denom**2)
             opts = {"step": "post", "facecolor": (0, 0, 0, 0.3), "linewidth": 0}
             opts.update(denom_fill_opts)
             ax.fill_between(
@@ -571,7 +571,7 @@ def plot2d(
             areas = numpy.multiply.outer(numpy.diff(xedges), numpy.diff(yedges))
             binnorms = overallnorm / (areas * numpy.sum(sumw))
             sumw = sumw * binnorms
-            sumw2 = sumw2 * binnorms ** 2
+            sumw2 = sumw2 * binnorms**2
 
         if patch_opts is not None:
             opts = {"cmap": "viridis"}
