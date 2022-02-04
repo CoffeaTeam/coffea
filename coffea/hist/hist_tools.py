@@ -1494,6 +1494,7 @@ class Hist(AccumulatorABC):
                 identifiers = self.identifiers(axis)
                 newaxis = boost_histogram.axis.StrCategory(
                     [x.name for x in identifiers],
+                    growth=True,
                 )
                 newaxis.name = axis.name
                 newaxis.label = axis.label
