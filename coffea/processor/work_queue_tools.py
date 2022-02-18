@@ -4,7 +4,6 @@ import os
 import re
 import tempfile
 import textwrap
-import hashlib
 import signal
 
 from os.path import basename, join
@@ -332,14 +331,7 @@ class ProcCoffeaWQTask(CoffeaWQTask):
 
         ProcCoffeaWQTask.tasks_counter += 1
         if not itemid:
-            itemid = hashlib.sha256(
-                "proc_{}{}{}_{}".format(
-                    item.entrystart,
-                    item.entrystop,
-                    item.fileuuid,
-                    ProcCoffeaWQTask.tasks_counter,
-                ).encode()
-            ).hexdigest()[0:8]
+            itemid = "p_{}".format(ProcCoffeaWQTask.tasks_counter)
 
         self.item = item
 
