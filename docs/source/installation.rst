@@ -114,8 +114,8 @@ which then use coffea local executors, possibly multi-threaded. In this case, of
 is not available from batch workers, so a portable python enviroment needs to be created.
 Annoyingly, python virtual environments are not portable by default due to several hardcoded paths in specific locations, however
 there are two workarounds presented below. In both cases, we make a virtual environment that starts from a non-system base
-python environment to lower the amount of needed installations in the virtual environment. One can always start a venv scratch, but
-then the
+python environment to lower the amount of needed installations in the virtual environment. One can always start a venv from scratch,
+but the number of coffea dependencies makes the installation rather large, up to a few hundred MB.
 
 
 Container-based
@@ -138,7 +138,9 @@ image and have ``myenv`` activated. Next time you log in, only lines 1, 2, and 4
 
 If using HTCondor for job submission, you can create a tarball of the virtual environment directory and then submit condor
 jobs using the ``+SingularityImage`` `HTCondor option <https://htcondor.readthedocs.io/en/latest/admin-manual/singularity-support.html>`_.
-You will need to create a small wrapper script to re-source the environment to have the job use the same environment as your interactive container.
+Note that this option is not enabled by default in HTCondor installations, so you may need to talk to your site administrator to be
+able to use this option. You will also need to create a small wrapper script to re-source the environment to have the job use the
+same environment as your interactive container.
 A complete example that runs at FNAL LPC is shown `in this gist <https://gist.github.com/mattbellis/20b9f892689c8a32b99151c5aa7a4e5f>`_.
 
 
