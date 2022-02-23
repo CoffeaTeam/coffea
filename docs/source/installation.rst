@@ -105,15 +105,48 @@ Simply source a LCG release (shown here: 98python3) and install:
 
 This method can be fragile, since the LCG-distributed packages may conflict with the coffea dependencies. In general it is better to define your own environment or use an image.
 
-Creating a cvmfs-based portable virtual environment
----------------------------------------------------
+Creating a portable virtual environment
+---------------------------------------
 In some instances, it may be useful to have a self-contained environment that can be relocated.
 One use case is for users of coffea that do not have access to a distributed compute cluster that is compatible with
 one of the coffea distributed executors. Here, a fallback solution can be found by creating traditional batch jobs (e.g. condor)
 which then use coffea local executors, possibly multi-threaded. In this case, often the user-local python package directory
 is not available from batch workers, so a portable python enviroment needs to be created.
-Annoyingly, python virtual environments are not portable by default due to several hardcoded paths in specific locations,
-however there are not many locations and some sed hacks can save the day.
+Annoyingly, python virtual environments are not portable by default due to several hardcoded paths in specific locations, however
+there are two workarounds presented below. In both cases, we make a virtual environment that starts from a non-system base
+python environment to lower the amount of needed installations in the virtual environment. One can always start a venv from scratch,
+but the number of coffea dependencies makes the installation rather large, up to a few hundred MB.
+
+
+Container-based
+~~~~~~~~~~~~~~~
+If we start from one of the singularity containers from the `Pre-built images`_ section, we don't have to install nearly as much
+software in our virtual environment, letting the container image take care of the majority of the codebase. For example, the following
+code starts from the ``coffea-dask`` image and adds a special python module that is not included in the base image:
+
+.. code-block:: bash
+
+   singularity shell -B ${PWD}:/srv /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest
+   cd /srv
+   python -m venv --without-pip --system-site-packages myenv
+   source myenv/bin/activate
+   python -m pip install --ignore-installed h5py
+
+This creates a virtual environmennt ``myenv`` and a directory with the same name where the extra python module ``h5py`` will be
+installed. At this point, the terminal prompt will look like ``(myenv) Singularity>``, indicating you are inside a singularity
+image and have ``myenv`` activated. Next time you log in, only lines 1, 2, and 4 need to be re-executed.
+
+If using HTCondor for job submission, you can create a tarball of the virtual environment directory and then submit condor
+jobs using the ``+SingularityImage`` `HTCondor option <https://htcondor.readthedocs.io/en/latest/admin-manual/singularity-support.html>`_.
+Note that this option is not enabled by default in HTCondor installations, so you may need to talk to your site administrator to be
+able to use this option. You will also need to create a small wrapper script to re-source the environment to have the job use the
+same environment as your interactive container.
+A complete example that runs at FNAL LPC is shown `in this gist <https://gist.github.com/mattbellis/20b9f892689c8a32b99151c5aa7a4e5f>`_.
+
+
+LCG-based
+~~~~~~~~~
+There are not many locations to edit to make a venv portable, and some sed hacks can save the day.
 Here is an example of a bash script that installs coffea on top of the LCG 98python3 software stack inside a portable virtual environment,
 with the caveat that cvmfs must be visible from batch workers:
 
