@@ -64,6 +64,7 @@ jobs:
       if: matrix.os != 'windows-latest'
       run: |
         python -m pip install --upgrade pip setuptools wheel
+        python -m pip install --pre awkward
         python -m pip install -q -e .[dev,parsl,dask,spark,servicex]
         python -m pip list
         java -version
@@ -71,6 +72,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         python -m pip install --upgrade pip setuptools wheel
+        python -m pip install --pre awkward
         python -m pip install -q -e .[dev]
         python -m pip list
     - name: Test with pytest
