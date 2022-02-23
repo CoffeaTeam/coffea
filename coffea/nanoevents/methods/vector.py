@@ -652,8 +652,9 @@ class LorentzVector(ThreeVector):
         if axis is None:
             a, b = self, other
         else:
-            c = awkward.cartesian([self, other], axis=axis, nested=True)
-            a, b = c["0"], c["1"]
+            a, b = awkward.unzip(
+                awkward.cartesian([self, other], axis=axis, nested=True)
+            )
         mval = metric(a, b)
         if return_combinations:
             return mval, (a, b)
