@@ -65,7 +65,7 @@ INSTALL_REQUIRES = [
     "fsspec",
     "matplotlib>=3",
     "numba>=0.50.0",
-    "numpy>=1.16.0,<1.22", # <1.22 for numba version restrictions with 1.55 series
+    "numpy>=1.16.0,<1.22",  # <1.22 for numba version restrictions with 1.55 series
     "scipy>=1.1.0",
     "tqdm>=4.27.0",
     "lz4",
