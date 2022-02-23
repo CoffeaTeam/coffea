@@ -82,7 +82,7 @@ class rochester_lookup:
                 newargs = args + (s, m)
                 d = func(*newargs) - default
                 result = result + d * d * oneOver
-        return result ** 0.5
+        return result**0.5
 
     def kScaleDT(self, charge, pt, eta, phi, s=0, m=0):
         """Momentum scale correction for data

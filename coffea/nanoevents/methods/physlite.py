@@ -125,7 +125,7 @@ class TrackParticle(vector.LorentzVector, base.NanoCollection):
 
     @property
     def t(self):
-        return numpy.sqrt(139.570 ** 2 + self.x ** 2 + self.y ** 2 + self.z ** 2)
+        return numpy.sqrt(139.570**2 + self.x**2 + self.y**2 + self.z**2)
 
 
 _set_repr_name("TrackParticle")

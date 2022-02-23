@@ -216,7 +216,7 @@ def test_plotratio():
     plt.text(
         0.0,
         1.0,
-        u"☕",
+        "☕",
         fontsize=28,
         horizontalalignment="left",
         verticalalignment="bottom",

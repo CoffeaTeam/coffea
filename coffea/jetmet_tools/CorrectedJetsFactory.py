@@ -74,7 +74,7 @@ def jer_smear(
     doHybrid = (pt_gen > 0) & (numpy.abs(deltaPtRel) < 3 * jet_energy_resolution)
 
     detSmear = 1 + (jersf - 1) * deltaPtRel
-    stochSmear = 1 + numpy.sqrt(numpy.maximum(jersf ** 2 - 1, 0)) * jersmear
+    stochSmear = 1 + numpy.sqrt(numpy.maximum(jersf**2 - 1, 0)) * jersmear
 
     min_jet_pt = _MIN_JET_ENERGY / numpy.cosh(etaJet)
     min_jet_pt_corr = min_jet_pt / jetPt
