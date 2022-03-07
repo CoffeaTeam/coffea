@@ -12,20 +12,29 @@ behavior = {}
 
 @awkward.mixin_class(behavior)
 class Systematic:
-    """A base class to describe and build variations on a feature of an nanoevents object."""
+    """A base mixin class to describe and build variations on a feature of an nanoevents object."""
 
     _systematic_kinds = set()
 
     @classmethod
     def add_kind(cls, kind):
+        """
+        Register a type of systematic variation, it must fullfil the base class interface.
+        """
         cls._systematic_kinds.add(kind)
 
     def _ensure_systematics(self):
+        """
+        Make sure that the parent object always has a field called '__systematics__'.
+        """
         if "__systematics__" not in awkward.fields(self):
             self["__systematics__"] = {}
 
     @property
     def systematics(self):
+        """
+        Return the list of all systematics attached to this object.
+        """
         regex = re.compile(r"\_{2}.*\_{2}")
         self._ensure_systematics()
         fields = [
@@ -35,14 +44,16 @@ class Systematic:
 
     @abstractmethod
     def _build_variations(self, name, what, varying_function, *args, **kwargs):
-        # name: str, name of the systematic variation / uncertainty source
-        # what: Union[str, List[str], Tuple[str]], name what gets varied,
-        #       this could be a list or tuple of column names
-        # varying_function: Union[function, bound method], a function that describes how 'what' is varied
-        # *args: positional arguments to 'varying_function'
-        # **kwargs: keyword arguments to 'varying function'
-        # define how to manipulate the output of varying_function to produce
-        # all systematic variations
+        """
+        name: str, name of the systematic variation / uncertainty source
+        what: Union[str, List[str], Tuple[str]], name what gets varied,
+              this could be a list or tuple of column names
+        varying_function: Union[function, bound method], a function that describes how 'what' is varied
+        *args: positional arguments to 'varying_function'
+        **kwargs: keyword arguments to 'varying function'
+        define how to manipulate the output of varying_function to produce
+        all systematic variations
+        """
         pass
 
     @abstractmethod

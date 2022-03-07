@@ -22,9 +22,11 @@ class UpDownSystematic(Systematic):
         )
 
     def describe_variations(self):
+        """Show the map of variation names to indices."""
         return list(self._udmap.keys())
 
     def get_variation(self, name, what, astype, updown):
+        """Calculate and up or down variation."""
         fields = awkward.fields(self)
         fields.remove("__systematics__")
 
@@ -48,6 +50,7 @@ class UpDownSystematic(Systematic):
         )
 
     def up(self, name, what, astype):
+        """Return the "up" variation of this observable."""
         return awkward.virtual(
             self.get_variation,
             args=(name, what, astype, "up"),
@@ -56,6 +59,7 @@ class UpDownSystematic(Systematic):
         )
 
     def down(self, name, what, astype):
+        """Return the "down" variation of this observable."""
         return awkward.virtual(
             self.get_variation,
             args=(name, what, astype, "down"),
