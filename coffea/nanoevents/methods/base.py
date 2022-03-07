@@ -92,7 +92,7 @@ class Systematic:
             )
 
         rendered_type = flat.layout.parameters["__record__"]
-        as_syst_type = awkward.with_name(flat, kind)
+        as_syst_type = awkward.with_parameter(flat, "__record__", kind)
         as_syst_type._build_variations(name, what, varying_function, *args, **kwargs)
         variations = as_syst_type.describe_variations()
 
