@@ -894,7 +894,7 @@ class Runner:
     metadata_cache: Optional[MutableMapping] = None
     dynamic_chunksize: Optional[Dict] = None
     skipbadfiles: bool = False
-    xrootdtimeout: Optional[int] = None
+    xrootdtimeout: Optional[int] = 60
     align_clusters: bool = False
     savemetrics: bool = False
     mmap: bool = False
