@@ -906,7 +906,8 @@ class Runner:
     use_skyhook: Optional[bool] = False
     format: str = "root"
 
-    def read_coffea_config(self):
+    @staticmethod
+    def read_coffea_config():
         config_path = os.path.join(os.environ["HOME"], ".coffea.toml")
         if os.path.exists(config_path):
             with open(config_path) as f:
@@ -1107,7 +1108,7 @@ class Runner:
         return final_fileset
 
     def _chunk_generator(self, fileset: Dict, treename: str) -> Generator:
-        config = self.read_coffea_config()
+        config = Runner.read_coffea_config()
         if self.format == "root":
             if self.maxchunks is None:
                 last_chunksize = self.chunksize
