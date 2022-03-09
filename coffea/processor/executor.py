@@ -598,7 +598,7 @@ class FuturesExecutor(ExecutorBase):
         if self.compression is not None:
             function = _compression_wrapper(self.compression, function)
 
-        def merge_tqdm(chunks, accumulator, desc="Adding"):
+        def merge_tqdm(chunks, accumulator=None, desc="Adding", **kwargs):
             gen = (c for c in chunks)
             return accumulate(
                 tqdm(
@@ -607,6 +607,7 @@ class FuturesExecutor(ExecutorBase):
                     unit=self.unit,
                     total=len(chunks),
                     desc=desc,
+                    **kwargs
                 ),
                 accumulator,
                 )
@@ -628,7 +629,9 @@ class FuturesExecutor(ExecutorBase):
                             desc=self.desc, position=0, ascii=True)
                 if self.merging:
                     mbar = tqdm(disable=not self.status, total=1, desc="Merging",
-                                position=1, ascii=True)
+                                position=1, ascii=True)  
+                else:          
+                    merged = None
 
                 while len(FH.futures) + len(FH.merges) > 0:
                     FH.update()
@@ -645,6 +648,8 @@ class FuturesExecutor(ExecutorBase):
                             FH.merges.add(pool.submit(reducer, batch))
                             mbar.total += 1
                             mbar.refresh()
+                    else:
+                        merged = merge_tqdm(FH.fetch(len(FH.completed)), merged, desc="Merging", leave=False)
 
                     # Add checkpointing
                     # if FH.done["futures"]% 100 == 0:
@@ -659,8 +664,6 @@ class FuturesExecutor(ExecutorBase):
                     merged = FH.completed.pop().result()
                     if len(FH.completed) > 0:
                         raise RuntimeError("Not all futures are added.")
-                else:
-                    merged = reducer(FH.fetch(len(FH.completed)))
 
                 return reducer([merged, accumulator]), 0
 
