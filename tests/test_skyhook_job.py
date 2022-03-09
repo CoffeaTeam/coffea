@@ -11,10 +11,10 @@ if __name__ == "__main__":
     config_dict = {
         "skyhook": {
             "ceph_config_path": "/tmp/testskyhookjob/ceph.conf",
-            "ceph_data_pool": "cephfs_data"
+            "ceph_data_pool": "cephfs_data",
         }
     }
-    with open('/root/.coffea.toml', 'w') as f:
+    with open("/root/.coffea.toml", "w") as f:
         toml.dump(config_dict, f)
 
     ak.to_parquet(
