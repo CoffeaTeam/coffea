@@ -70,6 +70,7 @@ INSTALL_REQUIRES = [
     "tqdm>=4.27.0",
     "lz4",
     "cloudpickle>=1.2.3",
+    "toml>=0.10.2",
     "mplhep>=0.1.18",
     "packaging",
     "pandas",
