@@ -1134,9 +1134,9 @@ class Runner:
                             break
                 yield from iter(chunks)
         else:
-            if not config.get('skyhook', None):
+            if not config.get("skyhook", None):
                 print("No skyhook config found, using defaults")
-                config['skyhook'] = dict()
+                config["skyhook"] = dict()
 
             import pyarrow.dataset as ds
 
@@ -1149,10 +1149,10 @@ class Runner:
                 for filename in filelist:
                     # If skyhook config is provided and is not empty,
                     if self.use_skyhook:
-                        ceph_config_path = config['skyhook'].get(
+                        ceph_config_path = config["skyhook"].get(
                             "ceph_config_path", "/etc/ceph/ceph.conf"
                         )
-                        ceph_data_pool = config['skyhook'].get(
+                        ceph_data_pool = config["skyhook"].get(
                             "ceph_data_pool", "cephfs_data"
                         )
                         filename = f"{ceph_config_path}:{ceph_data_pool}:{filename}"
