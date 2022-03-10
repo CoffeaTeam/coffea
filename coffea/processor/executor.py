@@ -20,7 +20,7 @@ from .processor import ProcessorABC
 from .accumulator import accumulate, set_accumulator, Accumulatable
 from .dataframe import LazyDataFrame
 from ..nanoevents import NanoEventsFactory, schemas
-from ..util import _hash
+from ..util import _hash, _exception_chain
 
 from collections.abc import Mapping, MutableMapping
 from dataclasses import dataclass, field, asdict
@@ -979,12 +979,15 @@ class Runner:
             # catch xrootd errors and optionally skip
             # or retry to read the file
             except Exception as e:
-                if skipbadfiles and isinstance(e, FileNotFoundError):
+                chain = _exception_chain(e)
+                if skipbadfiles and any(
+                    isinstance(c, FileNotFoundError) for c in chain
+                ):
                     warnings.warn(str(e))
                     break
                 if (
                     not skipbadfiles
-                    or "Auth failed" in str(e)
+                    or any("Auth failed" in str(c) for c in chain)
                     or retries == retry_count
                 ):
                     raise e
@@ -1234,10 +1237,7 @@ class Runner:
             try:
                 out = processor_instance.process(events)
             except Exception as e:
-                file_trace = f"\n\nFailed processing file: {item!r}"
-                raise type(e)(str(e) + file_trace).with_traceback(
-                    sys.exc_info()[2]
-                ) from None
+                raise Exception(f"Failed processing file: {item!r}") from e
             if out is None:
                 raise ValueError(
                     "Output of process() should not be None. Make sure your processor's process() function returns an accumulator."
