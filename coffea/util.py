@@ -81,7 +81,7 @@ def _ensure_flat(array, allow_missing=False):
 
 
 def _exception_chain(exc: BaseException) -> List[BaseException]:
-    """ Retrieves the entire exception chain as a list. """
+    """Retrieves the entire exception chain as a list."""
     ret = []
     while isinstance(exc, BaseException):
         ret.append(exc)

@@ -980,7 +980,9 @@ class Runner:
             # or retry to read the file
             except Exception as e:
                 chain = _exception_chain(e)
-                if skipbadfiles and any(isinstance(c, FileNotFoundError) for c in chain):
+                if skipbadfiles and any(
+                    isinstance(c, FileNotFoundError) for c in chain
+                ):
                     warnings.warn(str(e))
                     break
                 if (
