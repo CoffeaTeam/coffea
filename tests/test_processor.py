@@ -117,7 +117,7 @@ def test_processor_newaccumulator():
         proc.process,
         None,
     )
-    assert out == {"itemsum": 45}
+    assert out == ({"itemsum": 45}, 0)
 
     class TestOldStyle(ProcessorABC):
         @property
@@ -140,4 +140,4 @@ def test_processor_newaccumulator():
         proc.process,
         proc.accumulator,
     )
-    assert out["itemsum"] == 45
+    assert out[0]["itemsum"] == 45

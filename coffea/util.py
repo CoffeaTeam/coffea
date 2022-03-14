@@ -1,12 +1,22 @@
 """Utility functions
 
 """
-from typing import List
+from typing import List, Optional, Any
 import awkward
 import hashlib
 import numpy
 import numba
 import coffea
+from rich.progress import (
+    Progress,
+    BarColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+    Column,
+    ProgressColumn,
+    Text,
+)
 
 ak = awkward
 np = numpy
@@ -87,6 +97,42 @@ def _exception_chain(exc: BaseException) -> List[BaseException]:
         ret.append(exc)
         exc = exc.__cause__
     return ret
+
+
+class SpeedColumn(ProgressColumn):
+    """Renders human readable transfer speed."""
+
+    def __init__(self, fmt: str = ".1f", table_column: Optional[Column] = None):
+        self.fmt = fmt
+        super().__init__(table_column=table_column)
+
+    def render(self, task: Any) -> Text:
+        """Show data transfer speed."""
+        speed = task.finished_speed or task.speed
+        if speed is None:
+            return Text("?", style="progress.data.speed")
+        return Text(f"{speed:{self.fmt}}", style="progress.data.speed")
+
+
+def rich_bar():
+    return Progress(
+        TextColumn("[bold blue]{task.description}", justify="right"),
+        "[progress.percentage]{task.percentage:>3.0f}%",
+        BarColumn(bar_width=None),
+        TextColumn(
+            "[bold blue][progress.completed]{task.completed}/{task.total}",
+            justify="right",
+        ),
+        "[",
+        TimeElapsedColumn(),
+        "<",
+        TimeRemainingColumn(),
+        "|",
+        SpeedColumn(".1f"),
+        TextColumn("[progress.data.speed]{task.fields[unit]}/s", justify="right"),
+        "]",
+        auto_refresh=False,
+    )
 
 
 # lifted from awkward - https://github.com/scikit-hep/awkward-1.0/blob/5fe31a916bf30df6c2ea10d4094f6f1aefcf3d0c/src/awkward/_util.py#L47-L61 # noqa

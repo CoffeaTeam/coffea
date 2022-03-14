@@ -23,11 +23,11 @@ from .processor import ProcessorABC
 from .accumulator import accumulate, set_accumulator, Accumulatable
 from .dataframe import LazyDataFrame
 from ..nanoevents import NanoEventsFactory, schemas
-from ..util import _hash, _exception_chain
+from ..util import _hash, _exception_chain, rich_bar
 
 from collections.abc import Mapping, MutableMapping
 from dataclasses import dataclass, field, asdict
-from typing import Iterable, Callable, Optional, List, Generator, Dict, Union
+from typing import Iterable, Callable, Optional, List, Generator, Dict, Union, Tuple
 
 
 try:
@@ -260,7 +260,6 @@ class FuturesHolder:
         return [
             self.completed.pop().result() for _ in range(min(N, len(self.completed)))
         ]
-
 
 
 def _futures_handler(futures, timeout):
@@ -500,11 +499,14 @@ class WorkQueueExecutor(ExecutorBase):
         if self.x509_proxy is None:
             self.x509_proxy = _get_x509_proxy()
 
-        return work_queue_main(
-            items,
-            function,
-            accumulator,
-            **self.__dict__,
+        return (
+            work_queue_main(
+                items,
+                function,
+                accumulator,
+                **self.__dict__,
+            ),
+            0,
         )
 
 
@@ -548,7 +550,7 @@ class IterativeExecutor(ExecutorBase):
             desc=self.desc,
         )
         gen = map(function, gen)
-        return accumulate(gen, accumulator)
+        return accumulate(gen, accumulator), 0
 
 
 @dataclass
@@ -571,31 +573,42 @@ class FuturesExecutor(ExecutorBase):
         status : bool, optional
             If true (default), enable progress bar
         desc : str, optional
-            Label of progress bar unit (default: 'Processing')
+            Label of progress description (default: 'Processing')
         unit : str, optional
-            Label of progress bar description (default: 'items')
+            Label of progress bar bar unit (default: 'items')
         compression : int, optional
             Compress accumulator outputs in flight with LZ4, at level specified (default 1)
             Set to ``None`` for no compression.
-        recoverable : bool
+        recoverable : bool, optional
+            Instead of raising Exception right away, the exception is captured and returned
+            up for custom parsing. Already completed items will be returned as well.
         checkpoints : bool
+            To do
         merging : bool | tuple(int, int, int), optional
-            Enables intermediate merges in jobs. Format is (n_batches, min_batch_size, max_batch_size)
-            Passing ``True`` will use default: (5, 4, 100)
+            Enables submitting intermediate merge jobs to the executor. Format is
+            (n_batches, min_batch_size, max_batch_size). Passing ``True`` will use default: (5, 4, 100).
             Default is ``None`` - results get merged as they finish in the main process.
-        pool : concurrent.futures.Executor class or instance, optional
-            The type of futures executor to use, defaults to ProcessPoolExecutor.
-            You can pass an instance instead of a class to re-use an executor
+        mergepool : concurrent.futures.Executor class or instance | int, optional
+            Supply an additional executor to process merge jobs indepedently.
+            An ``int`` will be interpretted as ``ProcessPoolExecutor(max_workers=int)``.
         tailtimeout : int, optional
             Timeout requirement on job tails. Cancel all remaining jobs if none have finished
             in the timeout window.
     """
 
-    pool: Union[Callable[..., concurrent.futures.Executor], concurrent.futures.Executor] = concurrent.futures.ProcessPoolExecutor  # fmt: skip
-    mergepool: Optional[Union[Callable[..., concurrent.futures.Executor], concurrent.futures.Executor, bool]] = None
-    merging: bool = False
+    pool: Union[
+        Callable[..., concurrent.futures.Executor], concurrent.futures.Executor
+    ] = concurrent.futures.ProcessPoolExecutor  # fmt: skip
+    mergepool: Optional[
+        Union[
+            Callable[..., concurrent.futures.Executor],
+            concurrent.futures.Executor,
+            bool,
+        ]
+    ] = None
+    merging: Optional[Union[bool, Tuple[int, int, int]]] = False
     workers: int = 1
-    recoverable: bool = True
+    recoverable: bool = False
     tailtimeout: Optional[int] = None
 
     def __getstate__(self):
@@ -612,19 +625,6 @@ class FuturesExecutor(ExecutorBase):
         if self.compression is not None:
             function = _compression_wrapper(self.compression, function)
 
-        def merge_tqdm(chunks, accumulator=None, desc="Adding", **kwargs):
-            gen = (c for c in chunks)
-            return _compress(
-                accumulate(
-                    tqdm(map(_decompress, gen),
-                         disable=not self.status,
-                         unit=self.unit,
-                         total=len(chunks),
-                         desc=desc,
-                         **kwargs),
-                    _decompress(accumulator),
-                ), self.compression)
-
         def processwith(pool, mergepool):
             reducer = _reduce(self.compression)
             FH = FuturesHolder(
@@ -637,46 +637,64 @@ class FuturesExecutor(ExecutorBase):
                 nparts, minred, maxred = 5, 4, 100
 
             try:
-                pbar = tqdm(disable=not self.status, unit=self.unit, total=len(items),
-                            desc=self.desc, position=0, ascii=True)
-                if self.merging:
-                    mbar = tqdm(disable=not self.status, total=1, desc="Merging",
-                                position=1, ascii=True)
-                else:
+                with rich_bar() as progress:
+                    prog_id = progress.add_task(
+                        self.desc, total=len(items), unit=self.unit
+                    )
+                    _mdesc = "Merging" if self.merging else "Merging (local)"
+                    prog_id_merge = progress.add_task(_mdesc, total=0, unit="merges")
+
                     merged = None
+                    while len(FH.futures) + len(FH.merges) > 0:
+                        FH.update()
+                        reduce = min(
+                            maxred, max(len(FH.completed) // nparts + 1, minred)
+                        )
+                        progress.update(
+                            prog_id,
+                            advance=FH.done["futures"]
+                            - progress._tasks[prog_id].completed,
+                        )
 
-                while len(FH.futures) + len(FH.merges) > 0:
-                    FH.update()
-                    reduce = min(maxred, max(len(FH.completed) // nparts + 1, minred))
-
-                    pbar.update(FH.done["futures"] - pbar.n)
-                    pbar.refresh()
-
-                    if self.merging:
-                        mbar.update(FH.done["merges"] - mbar.n)
-                        mbar.refresh()
-                        while len(FH.completed) > 1:
-                            batch = [b for b in FH.fetch(reduce)]
-                            if mergepool is None:
-                                FH.merges.add(pool.submit(reducer, batch))
-                            else:
-                                FH.merges.add(mergepool.submit(reducer, batch))
-                            mbar.total += 1
-                            mbar.refresh()
-                    else:  # Merge within process
-                        merged = merge_tqdm(FH.fetch(len(FH.completed)), merged, desc="Merging", leave=False)
-
+                        if self.merging:
+                            progress.update(
+                                prog_id_merge,
+                                advance=FH.done["merges"]
+                                - progress._tasks[prog_id_merge].completed,
+                                refresh=True,
+                            )
+                            while len(FH.completed) > 1:
+                                batch = [b for b in FH.fetch(reduce)]
+                                if mergepool is None:
+                                    FH.merges.add(pool.submit(reducer, batch))
+                                else:
+                                    FH.merges.add(mergepool.submit(reducer, batch))
+                                progress.update(
+                                    prog_id_merge,
+                                    total=progress._tasks[prog_id_merge].total + 1,
+                                    refresh=True,
+                                )
+                        else:  # Merge within process
+                            batch = FH.fetch(len(FH.completed))
+                            merged = _compress(
+                                accumulate(
+                                    progress.track(
+                                        map(_decompress, (c for c in batch)),
+                                        task_id=prog_id_merge,
+                                        total=progress._tasks[prog_id_merge].total
+                                        + len(batch),
+                                    ),
+                                    _decompress(merged),
+                                ),
+                                self.compression,
+                            )
                     # Add checkpointing
 
-                pbar.close()
-                if self.merging:
-                    mbar.update(1)  # last one
-                    mbar.refresh()
-                    mbar.close()
-                    merged = FH.completed.pop().result()
+                    if self.merging:
+                        merged = FH.completed.pop().result()
                     if len(FH.completed) > 0:
                         raise RuntimeError("Not all futures are added.")
-                return accumulate([_decompress(merged), accumulator]), 0
+                    return accumulate([_decompress(merged), accumulator]), 0
 
             except Exception as e:
                 if self.recoverable:
@@ -684,25 +702,52 @@ class FuturesExecutor(ExecutorBase):
                     for job in FH.futures:
                         job.cancel()
 
-                    if self.merging:
-                        with tqdm(disable=not self.status,
-                                  total=len(FH.merges),
-                                  desc="Recovering finished jobs",
-                                  position=1,
-                                  ascii=True) as mbar:
+                    with rich_bar() as progress:
+                        if self.merging:
+                            prog_id_wait = progress.add_task(
+                                "Waiting for merge jobs",
+                                total=len(FH.merges),
+                                unit=self.unit,
+                            )
                             while len(FH.merges) > 0:
                                 FH.update()
-                                mbar.update(FH.done["merges"] - mbar.n)
-                                mbar.refresh()
+                                progress.update(
+                                    prog_id_wait,
+                                    completed=(
+                                        progress._tasks[prog_id_wait].total
+                                        - len(FH.merges)
+                                    ),
+                                    refresh=True,
+                                )
 
-                    def is_good(future):
-                        return future.done(
-                        ) and not future.cancelled() and future.exception() is None
+                        def is_good(future):
+                            return (
+                                future.done()
+                                and not future.cancelled()
+                                and future.exception() is None
+                            )
 
-                    FH.update()
-                    recovered = [future.result() for future in FH.completed if is_good(future)]
+                        FH.update()
+                        recovered = [
+                            future.result()
+                            for future in FH.completed
+                            if is_good(future)
+                        ]
+                        prog_id_merge = progress.add_task(
+                            "Merging finished jobs", unit="merges"
+                        )
+                        merged = _compress(
+                            accumulate(
+                                progress.track(
+                                    map(_decompress, (c for c in recovered)),
+                                    task_id=prog_id_merge,
+                                    total=len(recovered),
+                                )
+                            ),
+                            self.compression,
+                        )
 
-                    return merge_tqdm(recovered, accumulator, desc="Merging finished jobs"), e
+                        return accumulate([_decompress(merged), accumulator]), e
                 else:
                     raise type(e)(str(e)).with_traceback(sys.exc_info()[2]) from None
 
@@ -714,15 +759,13 @@ class FuturesExecutor(ExecutorBase):
                 poolinstance = stack.enter_context(self.pool(max_workers=self.workers))
                 if self.mergepool is not None:
                     if isinstance(self.mergepool, int):
-                        self.mergepool = concurrent.futures.ProcessPoolExecutor(max_workers=self.mergepool)
+                        self.mergepool = concurrent.futures.ProcessPoolExecutor(
+                            max_workers=self.mergepool
+                        )
                     mergepoolinstance = stack.enter_context(self.mergepool)
                 else:
                     mergepoolinstance = None
                 return processwith(pool=poolinstance, mergepool=mergepoolinstance)
-
-
-            # with self.pool(max_workers=self.workers) as poolinstance:
-            #     return processwith(pool=poolinstance, mergepool=self.mergepool)
 
 
 @dataclass
@@ -874,13 +917,16 @@ class DaskExecutor(ExecutorBase):
 
                     # FIXME: fancy widget doesn't appear, have to live with boring pbar
                     progress(work, multi=True, notebook=False)
-                return accumulate(
-                    [
-                        work.result()
-                        if self.compression is None
-                        else _decompress(work.result())
-                    ],
-                    accumulator,
+                return (
+                    accumulate(
+                        [
+                            work.result()
+                            if self.compression is None
+                            else _decompress(work.result())
+                        ],
+                        accumulator,
+                    ),
+                    0,
                 )
             except KilledWorker as ex:
                 baditem = key_to_item[ex.task]
@@ -894,7 +940,7 @@ class DaskExecutor(ExecutorBase):
                 from distributed import progress
 
                 progress(work, multi=True, notebook=False)
-            return {"out": dd.from_delayed(work)}
+            return {"out": dd.from_delayed(work)}, 0
 
 
 @dataclass
@@ -982,7 +1028,7 @@ class ParslExecutor(ExecutorBase):
             parsl.dfk().cleanup()
             parsl.clear()
 
-        return accumulator
+        return accumulator, 0
 
 
 class ParquetFileContext:
@@ -1045,7 +1091,9 @@ class Runner:
     savemetrics: bool = False
     mmap: bool = False
     schema: Optional[schemas.BaseSchema] = schemas.BaseSchema
-    cachestrategy: Optional[Union[Literal["dask-worker"], Callable[..., MutableMapping]]] = None  # fmt: skip
+    cachestrategy: Optional[
+        Union[Literal["dask-worker"], Callable[..., MutableMapping]]
+    ] = None  # fmt: skip
     processor_compression: int = 1
     use_skyhook: Optional[bool] = False
     format: str = "root"
@@ -1515,7 +1563,9 @@ class Runner:
             chunks = [c for c in chunks]
 
         exe_args = {
-            "unit": "event" if isinstance(self.executor, WorkQueueExecutor) else "chunk",  # fmt: skip
+            "unit": "event"
+            if isinstance(self.executor, WorkQueueExecutor)
+            else "chunk",  # fmt: skip
             "function_name": type(processor_instance).__name__,
         }
         if self.format == "root" and isinstance(self.executor, WorkQueueExecutor):
@@ -1535,18 +1585,22 @@ class Runner:
 
         wrapped_out, e = executor(chunks, closure, None)
         if e != 0:
-            # print(type(e[0])(str(e[0])).with_traceback(e[1]))
             print(type(e)(str(e)))
 
-        print("X", wrapped_out)
         if wrapped_out is None:
-            raise ValueError("No chunks were processed, veryify ``processor`` instance structure.")
+            raise ValueError(
+                "No chunks were processed, veryify ``processor`` instance structure."
+            )
         else:
             processor_instance.postprocess(wrapped_out["out"])
+
+        _return = (wrapped_out["out"],)
+        if hasattr(self.executor, "recoverable") and self.executor.recoverable:
+            _return = *_return, list(wrapped_out["processed"])
         if self.savemetrics and not self.use_dataframes:
             wrapped_out["metrics"]["chunks"] = len(chunks)
-            return wrapped_out["out"], list(wrapped_out['processed']), wrapped_out["metrics"]
-        return wrapped_out["out"], list(wrapped_out['processed'])
+            _return = *_return, wrapped_out["metrics"]
+        return _return if len(_return) > 1 else _return[0]
 
 
 def run_spark_job(
