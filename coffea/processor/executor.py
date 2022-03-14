@@ -18,6 +18,7 @@ from tqdm.auto import tqdm
 from collections import defaultdict
 from cachetools import LRUCache
 import lz4.frame as lz4f
+from contextlib import ExitStack
 from .processor import ProcessorABC
 from .accumulator import accumulate, set_accumulator, Accumulatable
 from .dataframe import LazyDataFrame
@@ -168,13 +169,21 @@ class WorkItem:
 
 
 def _compress(item, compression):
-    return lz4f.compress(
-        pickle.dumps(item, protocol=_PICKLE_PROTOCOL), compression_level=compression
-    )
+    if compression is None or item is None:
+        return item
+    else:
+        return lz4f.compress(
+            pickle.dumps(item, protocol=_PICKLE_PROTOCOL), compression_level=compression
+        )
 
 
 def _decompress(item):
-    return pickle.loads(lz4f.decompress(item))
+    if item is None:
+        return item
+    elif isinstance(item, bytes):
+        return pickle.loads(lz4f.decompress(item))
+    else:
+        return item
 
 
 class _compression_wrapper(object):
@@ -208,7 +217,7 @@ class _reduce:
         return "reduce"
 
     def __call__(self, items):
-        items = list(items)
+        items = list(it for it in items if it is not None)
         if len(items) == 0:
             raise ValueError("Empty list provided to reduction")
         if self.compression is not None:
@@ -249,7 +258,7 @@ class FuturesHolder:
 
     def fetch(self, N):
         return [
-            self.completed.pop().result() for _ in range(N) if len(self.completed) > 0
+            self.completed.pop().result() for _ in range(min(N, len(self.completed)))
         ]
 
 
@@ -569,19 +578,24 @@ class FuturesExecutor(ExecutorBase):
             Compress accumulator outputs in flight with LZ4, at level specified (default 1)
             Set to ``None`` for no compression.
         recoverable : bool
+        checkpoints : bool
         merging : bool | tuple(int, int, int), optional
             Enables intermediate merges in jobs. Format is (n_batches, min_batch_size, max_batch_size)
             Passing ``True`` will use default: (5, 4, 100)
-        checkpoints : bool
+            Default is ``None`` - results get merged as they finish in the main process.
+        pool : concurrent.futures.Executor class or instance, optional
+            The type of futures executor to use, defaults to ProcessPoolExecutor.
+            You can pass an instance instead of a class to re-use an executor
         tailtimeout : int, optional
             Timeout requirement on job tails. Cancel all remaining jobs if none have finished
             in the timeout window.
     """
 
     pool: Union[Callable[..., concurrent.futures.Executor], concurrent.futures.Executor] = concurrent.futures.ProcessPoolExecutor  # fmt: skip
+    mergepool: Optional[Union[Callable[..., concurrent.futures.Executor], concurrent.futures.Executor, bool]] = None
+    merging: bool = False
     workers: int = 1
     recoverable: bool = True
-    merging: bool = False
     tailtimeout: Optional[int] = None
 
     def __getstate__(self):
@@ -600,21 +614,19 @@ class FuturesExecutor(ExecutorBase):
 
         def merge_tqdm(chunks, accumulator=None, desc="Adding", **kwargs):
             gen = (c for c in chunks)
-            return accumulate(
-                tqdm(
-                    gen if self.compression is None else map(_decompress, gen),
-                    disable=not self.status,
-                    unit=self.unit,
-                    total=len(chunks),
-                    desc=desc,
-                    **kwargs
-                ),
-                accumulator,
-                )
+            return _compress(
+                accumulate(
+                    tqdm(map(_decompress, gen),
+                         disable=not self.status,
+                         unit=self.unit,
+                         total=len(chunks),
+                         desc=desc,
+                         **kwargs),
+                    _decompress(accumulator),
+                ), self.compression)
 
-        def processwith(pool):
+        def processwith(pool, mergepool):
             reducer = _reduce(self.compression)
-
             FH = FuturesHolder(
                 set(pool.submit(function, item) for item in items), refresh=2
             )
@@ -629,8 +641,8 @@ class FuturesExecutor(ExecutorBase):
                             desc=self.desc, position=0, ascii=True)
                 if self.merging:
                     mbar = tqdm(disable=not self.status, total=1, desc="Merging",
-                                position=1, ascii=True)  
-                else:          
+                                position=1, ascii=True)
+                else:
                     merged = None
 
                 while len(FH.futures) + len(FH.merges) > 0:
@@ -645,16 +657,16 @@ class FuturesExecutor(ExecutorBase):
                         mbar.refresh()
                         while len(FH.completed) > 1:
                             batch = [b for b in FH.fetch(reduce)]
-                            FH.merges.add(pool.submit(reducer, batch))
+                            if mergepool is None:
+                                FH.merges.add(pool.submit(reducer, batch))
+                            else:
+                                FH.merges.add(mergepool.submit(reducer, batch))
                             mbar.total += 1
                             mbar.refresh()
-                    else:
+                    else:  # Merge within process
                         merged = merge_tqdm(FH.fetch(len(FH.completed)), merged, desc="Merging", leave=False)
 
                     # Add checkpointing
-                    # if FH.done["futures"]% 100 == 0:
-                        # accumulate([future.result() for future in FH.completed])
-                        # dump to pickle 
 
                 pbar.close()
                 if self.merging:
@@ -664,8 +676,7 @@ class FuturesExecutor(ExecutorBase):
                     merged = FH.completed.pop().result()
                     if len(FH.completed) > 0:
                         raise RuntimeError("Not all futures are added.")
-
-                return reducer([merged, accumulator]), 0
+                return accumulate([_decompress(merged), accumulator]), 0
 
             except Exception as e:
                 if self.recoverable:
@@ -674,14 +685,19 @@ class FuturesExecutor(ExecutorBase):
                         job.cancel()
 
                     if self.merging:
-                        with tqdm(disable=not self.status, total=len(FH.merges), desc="Recovering finished jobs", position=1, ascii=True) as mbar:
+                        with tqdm(disable=not self.status,
+                                  total=len(FH.merges),
+                                  desc="Recovering finished jobs",
+                                  position=1,
+                                  ascii=True) as mbar:
                             while len(FH.merges) > 0:
                                 FH.update()
                                 mbar.update(FH.done["merges"] - mbar.n)
                                 mbar.refresh()
 
                     def is_good(future):
-                        return future.done() and not future.cancelled() and future.exception() is None
+                        return future.done(
+                        ) and not future.cancelled() and future.exception() is None
 
                     FH.update()
                     recovered = [future.result() for future in FH.completed if is_good(future)]
@@ -691,11 +707,22 @@ class FuturesExecutor(ExecutorBase):
                     raise type(e)(str(e)).with_traceback(sys.exc_info()[2]) from None
 
         if isinstance(self.pool, concurrent.futures.Executor):
-            return processwith(pool=self.pool)
+            return processwith(pool=self.pool, mergepool=self.mergepool)
         else:
             # assume its a class then
-            with self.pool(max_workers=self.workers) as poolinstance:
-                return processwith(pool=poolinstance)
+            with ExitStack() as stack:
+                poolinstance = stack.enter_context(self.pool(max_workers=self.workers))
+                if self.mergepool is not None:
+                    if isinstance(self.mergepool, int):
+                        self.mergepool = concurrent.futures.ProcessPoolExecutor(max_workers=self.mergepool)
+                    mergepoolinstance = stack.enter_context(self.mergepool)
+                else:
+                    mergepoolinstance = None
+                return processwith(pool=poolinstance, mergepool=mergepoolinstance)
+
+
+            # with self.pool(max_workers=self.workers) as poolinstance:
+            #     return processwith(pool=poolinstance, mergepool=self.mergepool)
 
 
 @dataclass
@@ -1511,6 +1538,7 @@ class Runner:
             # print(type(e[0])(str(e[0])).with_traceback(e[1]))
             print(type(e)(str(e)))
 
+        print("X", wrapped_out)
         if wrapped_out is None:
             raise ValueError("No chunks were processed, veryify ``processor`` instance structure.")
         else:
