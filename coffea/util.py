@@ -1,6 +1,7 @@
 """Utility functions
 
 """
+from typing import List
 import awkward
 import hashlib
 import numpy
@@ -78,6 +79,15 @@ def _ensure_flat(array, allow_missing=False):
     if isinstance(array, ak.Array):
         array = ak.to_numpy(array, allow_missing=allow_missing)
     return array
+
+
+def _exception_chain(exc: BaseException) -> List[BaseException]:
+    """Retrieves the entire exception chain as a list."""
+    ret = []
+    while isinstance(exc, BaseException):
+        ret.append(exc)
+        exc = exc.__cause__
+    return ret
 
 
 # lifted from awkward - https://github.com/scikit-hep/awkward-1.0/blob/5fe31a916bf30df6c2ea10d4094f6f1aefcf3d0c/src/awkward/_util.py#L47-L61 # noqa
