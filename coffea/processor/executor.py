@@ -2,12 +2,14 @@ from __future__ import print_function, division
 import concurrent.futures
 from functools import partial
 from itertools import repeat
+import os
 import time
 import pickle
 import sys
 import math
 import json
 import cloudpickle
+import toml
 import uproot
 import uuid
 import warnings
@@ -902,8 +904,16 @@ class Runner:
     cachestrategy: Optional[Union[Literal["dask-worker"], Callable[..., MutableMapping]]] = None  # fmt: skip
     processor_compression: int = 1
     use_skyhook: Optional[bool] = False
-    skyhook_options: Optional[Dict] = field(default_factory=dict)
     format: str = "root"
+
+    @staticmethod
+    def read_coffea_config():
+        config_path = os.path.join(os.environ["HOME"], ".coffea.toml")
+        if os.path.exists(config_path):
+            with open(config_path) as f:
+                return toml.loads(f.read())
+        else:
+            return dict()
 
     def __post_init__(self):
         if self.pre_executor is None:
@@ -1098,6 +1108,7 @@ class Runner:
         return final_fileset
 
     def _chunk_generator(self, fileset: Dict, treename: str) -> Generator:
+        config = Runner.read_coffea_config()
         if self.format == "root":
             if self.maxchunks is None:
                 last_chunksize = self.chunksize
@@ -1123,6 +1134,10 @@ class Runner:
                             break
                 yield from iter(chunks)
         else:
+            if not config.get("skyhook", None):
+                print("No skyhook config found, using defaults")
+                config["skyhook"] = dict()
+
             import pyarrow.dataset as ds
 
             dataset_filelist_map = {}
@@ -1134,10 +1149,10 @@ class Runner:
                 for filename in filelist:
                     # If skyhook config is provided and is not empty,
                     if self.use_skyhook:
-                        ceph_config_path = self.skyhook_options.get(
+                        ceph_config_path = config["skyhook"].get(
                             "ceph_config_path", "/etc/ceph/ceph.conf"
                         )
-                        ceph_data_pool = self.skyhook_options.get(
+                        ceph_data_pool = config["skyhook"].get(
                             "ceph_data_pool", "cephfs_data"
                         )
                         filename = f"{ceph_config_path}:{ceph_data_pool}:{filename}"
