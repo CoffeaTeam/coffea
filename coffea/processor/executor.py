@@ -1734,12 +1734,18 @@ class Runner:
         else:
             processor_instance.postprocess(wrapped_out["out"])
 
+        def make_j_serializable(metrics):
+            for k, v in metrics.items():
+                if isinstance(v, set):
+                    metrics[k] = list(v)
+            return metrics
+
         _return = (wrapped_out["out"],)
         if hasattr(self.executor, "recoverable") and self.executor.recoverable:
             _return = *_return, list(wrapped_out["processed"])
         if self.savemetrics and not self.use_dataframes:
             wrapped_out["metrics"]["chunks"] = len(chunks)
-            _return = *_return, wrapped_out["metrics"]
+            _return = *_return, make_j_serializable(wrapped_out["metrics"])
         return _return if len(_return) > 1 else _return[0]
 
 
