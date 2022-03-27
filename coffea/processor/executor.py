@@ -15,7 +15,6 @@ import uuid
 import warnings
 import traceback
 import shutil
-from tqdm.auto import tqdm
 from collections import defaultdict
 from cachetools import LRUCache
 import lz4.frame as lz4f
@@ -660,15 +659,21 @@ class IterativeExecutor(ExecutorBase):
     ):
         if len(items) == 0:
             return accumulator
-        gen = tqdm(
-            items,
-            disable=not self.status,
-            unit=self.unit,
-            total=len(items),
-            desc=self.desc,
-        )
-        gen = map(function, gen)
-        return accumulate(gen, accumulator), 0
+        with rich_bar() as progress:
+            p_id = progress.add_task(
+                self.desc, total=len(items), unit=self.unit, disable=not self.status
+            )
+            return (
+                accumulate(
+                    progress.track(
+                        map(function, (c for c in items)),
+                        total=len(items),
+                        task_id=p_id,
+                    ),
+                    accumulator,
+                ),
+                0,
+            )
 
 
 @dataclass
