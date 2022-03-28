@@ -1729,11 +1729,11 @@ class Runner:
         executor = self.executor.copy(**exe_args)
 
         wrapped_out, e = executor(chunks, closure, None)
-        wrapped_out["exception"] = e
         if wrapped_out is None:
             raise ValueError(
-                "No chunks were processed, veryify ``processor`` instance structure."
+                "No chunks returned results, verify ``processor`` instance structure."
             )
+        wrapped_out["exception"] = e
         if not self.use_dataframes:
             processor_instance.postprocess(wrapped_out["out"])
 
