@@ -3,6 +3,7 @@ from __future__ import print_function, division
 import os
 from coffea import lookup_tools
 import awkward as ak
+import pytest
 from coffea.util import numpy as np
 from coffea.nanoevents import NanoEventsFactory
 
@@ -458,6 +459,10 @@ def test_dense_lookup():
         numpy.ones(shape=(3, 4)), (numpy.linspace(0, 1, 4), numpy.linspace(0, 1, 5))
     )
 
+    with pytest.raises(ValueError):
+        lookup(ak.Array([]))
+
+    assert ak.to_list(lookup(ak.Array([]), ak.Array([]))) == []
     assert lookup(0.1, 0.3) == 1.0
     assert numpy.all(lookup(0.1, numpy.array([0.3, 0.5])) == numpy.array([1.0, 1.0]))
     assert ak.to_list(lookup(a, a)) == [[1.0, 1.0], [1.0]]
