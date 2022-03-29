@@ -376,13 +376,13 @@ def _watcher(
         merged = None
         while FH.running > 0:
             FH.update()
-            merge_size = executor._merge_size(len(FH.completed))
             progress.update(p_id, completed=FH.done["futures"], refresh=True)
 
             if executor.merging:  # Merge jobs
+                merge_size = executor._merge_size(len(FH.completed))
                 progress.update(p_idm, completed=FH.done["merges"])
                 while len(FH.completed) > 1:
-                    if FH.running > 0 and len(FH.completed) < executor.minred:
+                    if FH.running > 0 and len(FH.completed) < executor.merging[1]:
                         break
                     batch = FH.fetch(merge_size)
                     # Add debug for batch mem size? TODO with logging?
@@ -420,7 +420,7 @@ def _watcher(
         return merged
 
 
-def _wait_for_merges(FH: _FuturesHolder, executor: ExecutorBase):
+def _wait_for_merges(FH: _FuturesHolder, executor: ExecutorBase) -> Accumulatable:
     with rich_bar() as progress:
         if executor.merging:
             to_finish = len(FH.merges)
@@ -738,21 +738,26 @@ class FuturesExecutor(ExecutorBase):
     ] = None
     recoverable: bool = False
     merging: Union[bool, Tuple[int, int, int]] = False
-    nparts: int = 5
-    minred: int = 4
-    maxred: int = 100
     workers: int = 1
     tailtimeout: Optional[int] = None
 
     def __post_init__(self):
-        if isinstance(self.merging, tuple) and len(self.merging) == 3:
-            self.nparts, self.minred, self.maxred = self.merging
+        if not (
+            isinstance(self.merging, bool)
+            or (isinstance(self.merging, tuple) and len(self.merging) == 3)
+        ):
+            raise ValueError(
+                f"merging={self.merging} not understood. Required format is "
+                "(n_batches, min_batch_size, max_batch_size)"
+            )
+        elif self.merging is True:
+            self.merging = (5, 4, 100)
+
+    def _merge_size(self, size: int):
+        return min(self.merging[2], max(size // self.merging[0] + 1, self.merging[1]))
 
     def __getstate__(self):
         return dict(self.__dict__, pool=None)
-
-    def _merge_size(self, size: int):
-        return min(self.maxred, max(size // self.nparts + 1, self.minred))
 
     def __call__(
         self,
@@ -1016,12 +1021,6 @@ class ParslExecutor(ExecutorBase):
             (n_batches, min_batch_size, max_batch_size). Passing ``True`` will use default: (5, 4, 100),
             aka as they are returned try to split completed jobs into 5 batches, but of at least 4 and at most 100 items.
             Default is ``False`` - results get merged as they finish in the main process.
-        nparts : int, optional
-            Number of merge jobs to create at a time. Also pass via ``merging(X, ..., ...)''
-        minred : int, optional
-            Minimum number of items to merge in one job. Also pass via ``merging(..., X, ...)''
-        maxred : int, optional
-            maximum number of items to merge in one job. Also pass via ``merging(..., ..., X)''
         jobs_executors : list | "all" optional
             Labels of the executors (from dfk.config.executors) that will process main jobs.
             Default is 'all'. Recommended is ``['jobs']``, while passing ``label='jobs'`` to the primary executor.
@@ -1037,18 +1036,23 @@ class ParslExecutor(ExecutorBase):
     config: Optional["parsl.config.Config"] = None  # noqa
     recoverable: bool = False
     merging: Optional[Union[bool, Tuple[int, int, int]]] = False
-    nparts: int = 5
-    minred: int = 4
-    maxred: int = 100
     jobs_executors: Union[str, List] = "all"
     merges_executors: Union[str, List] = "all"
 
     def __post_init__(self):
-        if isinstance(self.merging, tuple) and len(self.merging) == 3:
-            self.nparts, self.minred, self.maxred = self.merging
+        if not (
+            isinstance(self.merging, bool)
+            or (isinstance(self.merging, tuple) and len(self.merging) == 3)
+        ):
+            raise ValueError(
+                f"merging={self.merging} not understood. Required format is "
+                "(n_batches, min_batch_size, max_batch_size)"
+            )
+        elif self.merging is True:
+            self.merging = (5, 4, 100)
 
     def _merge_size(self, size: int):
-        return min(self.maxred, max(size // self.nparts + 1, self.minred))
+        return min(self.merging[2], max(size // self.merging[0] + 1, self.merging[1]))
 
     def __call__(
         self,
@@ -1626,7 +1630,7 @@ class Runner:
 
     def run(
         self,
-        fileset: Union[Dict, List, str],
+        fileset: Union[Dict, str, List[WorkItem], Generator],
         processor_instance: ProcessorABC,
         treename: str = None,
     ) -> Accumulatable:
@@ -1634,12 +1638,13 @@ class Runner:
 
         Parameters
         ----------
-            fileset : dict | str | List[WorkItem]
+            fileset : dict | str | List[WorkItem] | Generator
                 - A dictionary ``{dataset: [file, file], }``
                   Optionally, if some files' tree name differ, the dictionary can be specified:
                   ``{dataset: {'treename': 'name', 'files': [file, file]}, }``
                 - A single file name
                 - File chunks for self.preprocess()
+                - Chunk generator
             treename : str, optional
                 name of tree inside each root file, can be ``None``;
                 treename can also be defined in fileset, which will override the passed treename
@@ -1700,8 +1705,10 @@ class Runner:
 
         if self.format == "root":
             if self.dynamic_chunksize:
+                # chunks stay as generator
                 events_total = sum(f.metadata["numentries"] for f in fileset)
             else:
+                # materialize to list
                 chunks = [c for c in chunks]
                 events_total = sum(len(c) for c in chunks)
         else:
