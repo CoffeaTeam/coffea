@@ -30,6 +30,8 @@ class dense_lookup(lookup_base):
         self._values = deepcopy(values)
 
     def _evaluate(self, *args):
+        if len(args) != self._dimension:
+            raise ValueError(f"Insufficient arguments for correction {self}")
         indices = []
         if self._dimension == 1:
             axes = (
