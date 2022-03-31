@@ -6,6 +6,13 @@ from functools import partial
 import re
 import coffea
 from coffea.util import rewrap_recordarray, awkward_rewrap
+from typing import (
+    List,
+    Union,
+    Tuple,
+    Callable,
+)
+
 
 behavior = {}
 
@@ -17,7 +24,7 @@ class Systematic:
     _systematic_kinds = set()
 
     @classmethod
-    def add_kind(cls, kind):
+    def add_kind(cls, kind: str):
         """
         Register a type of systematic variation, it must fullfil the base class interface.
         """
@@ -43,21 +50,28 @@ class Systematic:
         return self["__systematics__"][fields]
 
     @abstractmethod
-    def _build_variations(self, name, what, varying_function, *args, **kwargs):
+    def _build_variations(
+        self,
+        name: str,
+        what: Union[str, List[str], Tuple[str]],
+        varying_function: Callable,
+    ):
         """
         name: str, name of the systematic variation / uncertainty source
         what: Union[str, List[str], Tuple[str]], name what gets varied,
               this could be a list or tuple of column names
-        varying_function: Union[function, bound method], a function that describes how 'what' is varied
-        *args: positional arguments to 'varying_function'
-        **kwargs: keyword arguments to 'varying function'
-        define how to manipulate the output of varying_function to produce
-        all systematic variations
+        varying_function: Union[function, bound method, partial], a function that describes how 'what' is varied
+        define how to manipulate the output of varying_function to produce all systematic variations. Varying function
+        must close over all non-event-data arguments.
         """
         pass
 
     @abstractmethod
     def explodes_how(self):
+        """
+        This describes how a systematic uncertainty needs to be evaluated in the context of other systematic uncertainties.
+        i.e. Do you iterate over this keeping all others fixed or do you need to have correlations with other (subsets of) systematics.
+        """
         # this function contains decades of thinking about iterate over systematics variations
         # your opinions about systematics go here. :D
         pass
@@ -67,14 +81,19 @@ class Systematic:
         """returns a list of variation names"""
         pass
 
-    def add_systematic(self, name, kind, what, varying_function, *args, **kwargs):
+    def add_systematic(
+        self,
+        name: str,
+        kind: str,
+        what: Union[str, List[str], Tuple[str]],
+        varying_function: Callable,
+    ):
         """
         name: str, name of the systematic variation / uncertainty source
+        kind: str, the name of the kind of systematic variation
         what: Union[str, List[str], Tuple[str]], name what gets varied,
                this could be a list or tuple of column names
-        varying_function: Union[function, bound method], a function that describes how 'what' is varied
-        *args: positional arguments to 'varying_function'
-        **kwargs: keyword arguments to 'varying function'
+        varying_function: Union[function, bound method], a function that describes how 'what' is varied, it must close over all non-event-data arguments.
         """
         self._ensure_systematics()
 
@@ -104,7 +123,7 @@ class Systematic:
 
         rendered_type = flat.layout.parameters["__record__"]
         as_syst_type = awkward.with_parameter(flat, "__record__", kind)
-        as_syst_type._build_variations(name, what, varying_function, *args, **kwargs)
+        as_syst_type._build_variations(name, what, varying_function)
         variations = as_syst_type.describe_variations()
 
         flat["__systematics__", name] = awkward.zip(
