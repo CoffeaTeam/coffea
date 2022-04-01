@@ -1,4 +1,5 @@
 import os
+import toml
 import uproot
 import awkward as ak
 from coffea import processor
@@ -7,6 +8,15 @@ from coffea.nanoevents import schemas
 
 
 if __name__ == "__main__":
+    config_dict = {
+        "skyhook": {
+            "ceph_config_path": "/tmp/testskyhookjob/ceph.conf",
+            "ceph_data_pool": "cephfs_data",
+        }
+    }
+    with open("/root/.coffea.toml", "w") as f:
+        toml.dump(config_dict, f)
+
     ak.to_parquet(
         uproot.lazy("tests/samples/nano_dy.root:Events"),
         "nano_dy.parquet",
@@ -45,7 +55,6 @@ if __name__ == "__main__":
     run = processor.Runner(
         executor=executor,
         use_skyhook=True,
-        skyhook_options={"ceph_config_path": "/tmp/testskyhookjob/ceph.conf"},
         format="parquet",
         schema=schemas.NanoAODSchema,
     )
