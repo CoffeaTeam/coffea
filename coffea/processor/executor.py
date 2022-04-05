@@ -553,6 +553,8 @@ class WorkQueueExecutor(ExecutorBase):
             Filename for tasks statistics output
         transactions_log : str
             Filename for tasks lifetime reports output
+        tasks_accum_log : str
+            Filename for the log of tasks that have been processed and accumulated.
         print_stdout : bool
             If true (default), print the standard output of work queue task on completion.
 
@@ -577,6 +579,7 @@ class WorkQueueExecutor(ExecutorBase):
     debug_log: Optional[str] = None
     stats_log: Optional[str] = None
     transactions_log: Optional[str] = None
+    tasks_accum_log: Optional[str] = None
     password_file: Optional[str] = None
     environment_file: Optional[str] = None
     extra_input_files: List = field(default_factory=list)
