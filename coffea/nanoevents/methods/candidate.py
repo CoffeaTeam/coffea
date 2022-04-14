@@ -31,6 +31,7 @@ class Candidate(vector.LorentzVector):
                 "charge": self.charge + other.charge,
             },
             with_name="Candidate",
+            behavior=self.behavior,
         )
 
     def sum(self, axis=-1):
@@ -44,6 +45,7 @@ class Candidate(vector.LorentzVector):
                 "charge": awkward.sum(self.charge, axis=axis),
             },
             with_name="Candidate",
+            behavior=self.behavior,
         )
 
 

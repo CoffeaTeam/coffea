@@ -389,6 +389,7 @@ class SecondaryVertex(Vertex):
                 "mass": self["mass"],
             },
             with_name="PtEtaPhiMLorentzVector",
+            behavior=self.behavior,
         )
 
 
