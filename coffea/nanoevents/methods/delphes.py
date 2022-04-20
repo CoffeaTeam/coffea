@@ -182,7 +182,9 @@ _set_repr_name("Particle")
 class MasslessParticle(Particle, base.NanoCollection):
     @property
     def mass(self):
-        return awkward.without_parameters(awkward.zeros_like(self.pt))
+        if hasattr(self.pt, "__len__"):
+            return awkward.without_parameters(awkward.zeros_like(self.pt))
+        return 0.0
 
 
 _set_repr_name("MasslessParticle")
