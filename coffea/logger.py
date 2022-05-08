@@ -2,10 +2,8 @@ from typing import Optional, List, Any
 import logging
 import json
 
-try:
-    import rich
-except ImportError:
-    rich = None
+from rich.logging import RichHandler
+from rich.console import Console
 
 
 class CustomFilter(logging.Filter):
@@ -48,39 +46,24 @@ def setup_logger(
         )
     logger.setLevel(getattr(logging, level))
 
-    if rich:
-        formatter = logging.Formatter("%(message)s")
-    else:
-        formatter = logging.Formatter(
-            "%(levelname)s - %(filename)s:%(lineno)d - %(message)s"
-        )
+    formatter = logging.Formatter("%(message)s")
 
     # Set up filter
     filt = CustomFilter(modules)
 
     # Set up stream handler (for stdout)
-    if rich:
-        from rich.logging import RichHandler
-
-        stream_handler = RichHandler(show_time=False, rich_tracebacks=True)
-    else:
-        stream_handler = logging.StreamHandler()
+    stream_handler = RichHandler(show_time=False, rich_tracebacks=True)
     stream_handler.setFormatter(formatter)
     stream_handler.addFilter(filt)
     logger.addHandler(stream_handler)
 
     # Set up file handler (for logfile)
     if logfile:
-        if rich:
-            from rich.console import Console
-
-            file_handler = RichHandler(
-                show_time=False,
-                rich_tracebacks=True,
-                console=Console(file=open(logfile, "wt")),
-            )
-        else:
-            file_handler = logging.FileHandler(logfile)
+        file_handler = RichHandler(
+            show_time=False,
+            rich_tracebacks=True,
+            console=Console(file=open(logfile, "wt")),
+        )
         file_handler.setFormatter(formatter)
         file_handler.addFilter(filt)
         logger.addHandler(file_handler)
