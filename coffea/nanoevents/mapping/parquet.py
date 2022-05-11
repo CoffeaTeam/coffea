@@ -10,13 +10,16 @@ from coffea.nanoevents.util import quote, tuple_to_key
 #              Later we should use the ParquetFile common_metadata to populate.
 class TrivialParquetOpener(UUIDOpener):
     class UprootLikeShim:
-        def __init__(self, file, dataset):
+        def __init__(self, file, dataset=None):
             self.file = file
             self.dataset = dataset
 
         def read(self, column_name):
             # make sure uproot is single-core since our calling context might not be
-            return self.dataset.to_table(use_threads=False, columns=[column_name])
+            if self.dataset is not None:
+                return self.dataset.to_table(use_threads=False, columns=[column_name])
+            else:
+                return self.file.read([column_name], use_threads=False)
 
         # for right now spoof the notion of directories in files
         # parquet can do it but we've gotta convince people to

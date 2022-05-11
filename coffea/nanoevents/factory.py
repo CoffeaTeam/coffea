@@ -221,14 +221,14 @@ class NanoEventsFactory:
         )
 
         format_ = "parquet"
+        dataset = None
         if len(skyhook_options) > 0:
             format_ = ds.SkyhookFileFormat(
                 "parquet",
                 skyhook_options["ceph_config_path"].encode(),
                 skyhook_options["ceph_data_pool"].encode(),
             )
-
-        dataset = ds.dataset(file, schema=table_file.schema_arrow, format=format_)
+            dataset = ds.dataset(file, schema=table_file.schema_arrow, format=format_)
 
         shim = TrivialParquetOpener.UprootLikeShim(file, dataset)
         mapping.preload_column_source(partition_key[0], partition_key[1], shim)
