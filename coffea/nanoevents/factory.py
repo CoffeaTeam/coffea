@@ -194,7 +194,7 @@ class NanoEventsFactory:
         if isinstance(file, ftypes):
             table_file = pyarrow.parquet.ParquetFile(file, **parquet_options)
         elif isinstance(file, str):
-            fs_file = fsspec.open(file, "rb")
+            fs_file = fsspec.open(file, "rb").open()  # Call open to materialize the file
             table_file = pyarrow.parquet.ParquetFile(fs_file, **parquet_options)
         elif isinstance(file, pyarrow.parquet.ParquetFile):
             table_file = file
@@ -232,7 +232,7 @@ class NanoEventsFactory:
             dataset = ds.dataset(file, schema=table_file.schema_arrow, format=format_)
             shim = TrivialParquetOpener.UprootLikeShim(file, dataset)
         else:
-            shim = TrivialParquetOpener.UprootLikeShim(table_file, dataset)
+            shim = TrivialParquetOpener.UprootLikeShim(table_file, dataset, openfile=fs_file)
 
         mapping.preload_column_source(partition_key[0], partition_key[1], shim)
 
