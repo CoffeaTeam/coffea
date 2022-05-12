@@ -53,7 +53,7 @@ class TestDataSource:
         )
         data_source = DataSource(query=query, metadata={}, datasets=[dataset])  # type: ignore
 
-        url_stream = [url async for url in data_source.stream_result_file_urls()]
+        url_stream = [url async for url in data_source.stream_result_file_uris()]
         assert url_stream == [
             ("root", "dataset1", "http://foo.bar.com/yyy.ROOT"),
             ("root", "dataset1", "http://baz.bar.com/xxx.ROOT"),
@@ -72,7 +72,7 @@ class TestDataSource:
         )
         data_source = DataSource(query=query, metadata={}, datasets=[dataset])  # type: ignore
 
-        url_stream = [url async for url in data_source.stream_result_file_urls()]
+        url_stream = [url async for url in data_source.stream_result_file_uris()]
         assert url_stream == [
             ("parquet", "dataset1", "http://foo.bar.com/yyy.ROOT"),
             ("parquet", "dataset1", "http://baz.bar.com/xxx.ROOT"),
