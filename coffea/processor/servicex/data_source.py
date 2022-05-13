@@ -61,7 +61,7 @@ class DataSource:
         event_dataset.return_qastle = True  # type: ignore
         return await self.query.value_async()
 
-    async def stream_result_file_urls(
+    async def stream_result_file_uris(
         self, title: Optional[str] = None
     ) -> AsyncGenerator[Tuple[str, str, StreamInfoUrl], None]:
         """Launch all datasources off to servicex
@@ -75,13 +75,13 @@ class DataSource:
         for dataset in self.datasets:
             data_type = dataset.first_supported_datatype(["parquet", "root"])
             if data_type == "root":
-                async for file in dataset.get_data_rootfiles_url_stream(
-                    qastle, title=title
+                async for file in dataset.get_data_rootfiles_uri_stream(
+                    qastle, title=title, as_signed_url=True
                 ):
                     yield (data_type, dataset.dataset_as_name, file)
             elif data_type == "parquet":
-                async for file in dataset.get_data_parquet_url_stream(
-                    qastle, title=title
+                async for file in dataset.get_data_parquet_uri_stream(
+                    qastle, title=title, as_signed_url=True
                 ):
                     yield (data_type, dataset.dataset_as_name, file)
             else:
