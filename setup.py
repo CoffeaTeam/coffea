@@ -91,7 +91,8 @@ EXTRAS_REQUIRE["dask"] = [
 EXTRAS_REQUIRE["servicex"] = [
     "aiostream",
     "tenacity",
-    "func-adl_servicex==1.1.2",
+    "servicex>=2.5.3",
+    "func-adl_servicex",
 ]
 EXTRAS_REQUIRE["dev"] = [
     "flake8",

@@ -53,7 +53,7 @@ class TestDataSource:
         )
         data_source = DataSource(query=query, metadata={}, datasets=[dataset])  # type: ignore
 
-        url_stream = [url async for url in data_source.stream_result_file_urls()]
+        url_stream = [url async for url in data_source.stream_result_file_uris()]
         assert url_stream == [
             ("root", "dataset1", "http://foo.bar.com/yyy.ROOT"),
             ("root", "dataset1", "http://baz.bar.com/xxx.ROOT"),
@@ -72,7 +72,7 @@ class TestDataSource:
         )
         data_source = DataSource(query=query, metadata={}, datasets=[dataset])  # type: ignore
 
-        url_stream = [url async for url in data_source.stream_result_file_urls()]
+        url_stream = [url async for url in data_source.stream_result_file_uris()]
         assert url_stream == [
             ("parquet", "dataset1", "http://foo.bar.com/yyy.ROOT"),
             ("parquet", "dataset1", "http://baz.bar.com/xxx.ROOT"),
@@ -133,18 +133,20 @@ class MockDatset:
     def dataset_as_name(self) -> str:
         return "dataset1"
 
-    async def get_data_rootfiles_url_stream(self, query, title):
+    async def get_data_rootfiles_uri_stream(self, query, title, as_signed_url=False):
         self.called_query = query
         self.title = title
         self.num_calls += 1
+        self.as_signed_url = as_signed_url
 
         for url in self.urls:
             yield url
 
-    async def get_data_parquet_url_stream(self, query, title):
+    async def get_data_parquet_uri_stream(self, query, title, as_signed_url=False):
         self.called_query = query
         self.title = title
         self.num_calls_parquet += 1
+        self.as_signed_url = as_signed_url
 
         for url in self.urls:
             yield url

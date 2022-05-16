@@ -2,6 +2,9 @@ import warnings
 import awkward
 import numpy
 import json
+
+from fsspec.core import OpenFile
+
 from coffea.nanoevents.mapping.base import UUIDOpener, BaseSourceMapping
 from coffea.nanoevents.util import quote, tuple_to_key
 
@@ -10,13 +13,34 @@ from coffea.nanoevents.util import quote, tuple_to_key
 #              Later we should use the ParquetFile common_metadata to populate.
 class TrivialParquetOpener(UUIDOpener):
     class UprootLikeShim:
-        def __init__(self, file, dataset):
+        def __init__(self, file, dataset=None, openfile: OpenFile = None):
+            """
+            Shim to allow uproot to read parquet files via pyArrow
+            :param file: Open ParquetReader handle
+            :param dataset: Optional dataset to support SkyHook
+            :param openfile: If the source for the Parquet used fsspec then we may need to
+                             explicitly close the OpenFile instance to clean up any
+                             materialized copies.
+            """
             self.file = file
             self.dataset = dataset
+            self.openfile = openfile
+
+        def __del__(self):
+            """
+            If we used fsspec to open the ParquetReader then there may be a
+            materialized view of the file floating around. Make sure we close it to
+            remove it from the local drive
+            """
+            if self.openfile:
+                self.openfile.close()
 
         def read(self, column_name):
             # make sure uproot is single-core since our calling context might not be
-            return self.dataset.to_table(use_threads=False, columns=[column_name])
+            if self.dataset is not None:
+                return self.dataset.to_table(use_threads=False, columns=[column_name])
+            else:
+                return self.file.read([column_name], use_threads=False)
 
         # for right now spoof the notion of directories in files
         # parquet can do it but we've gotta convince people to
