@@ -62,7 +62,7 @@ class MockDataSource:
         self.urls = urls
         self.metadata = {"item": "value"}
 
-    async def stream_result_file_urls(self, title):
+    async def stream_result_file_uris(self, title):
         for url in self.urls:
             yield url
 
