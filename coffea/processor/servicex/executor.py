@@ -50,7 +50,7 @@ class Executor(ABC):
         raise NotImplementedError
 
     def get_result_file_stream(self, datasource, title: Optional[str] = None):
-        return datasource.stream_result_file_urls(title)
+        return datasource.stream_result_file_uris(title)
 
     async def execute(self, analysis, datasource, title: Optional[str] = None):
         """

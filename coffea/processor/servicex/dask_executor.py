@@ -56,12 +56,13 @@ class DaskExecutor(Executor):
         else:
             assert provided_dask_client.asynchronous
             self.dask = provided_dask_client
+            self.is_local = False
 
     def get_result_file_stream(self, datasource, title):
         if self.is_local:
             return datasource.stream_result_files(title)
         else:
-            return datasource.stream_result_file_urls(title)
+            return datasource.stream_result_file_uris(title)
 
     def run_async_analysis(
         self,
