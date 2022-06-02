@@ -124,6 +124,8 @@ class extractor(object):
                 thetype = file_dots[-2]
             if 'pileup' in thefile:
                 thetype = 'pileup'
+            if '_SF_' in thefile:
+                thetype = 'jersf'
             self._filecache[thefile] = file_converters[theformat][thetype](thefile)
 
     def extract_from_file(self, thefile, name):
