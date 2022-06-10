@@ -730,8 +730,8 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
 
     @property
     def E(self):
-      '''Alias for `t`'''
-      return self.t
+        '''Alias for `t`'''
+        return self.t
 
     @property
     def pt(self):
@@ -854,8 +854,8 @@ class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
     """
     @property
     def E(self):
-      '''Alias for `t`'''
-      return self.t
+        '''Alias for `t`'''
+        return self.t
 
     @property
     def pt(self):
