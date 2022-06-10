@@ -50,6 +50,7 @@ class evaluator(object):
             lookup_type = types[names[key]]
             lookup_def = primitives[names[key]]
             self._functions[key] = lookup_types[lookup_type](*lookup_def)
+
     def __dir__(self):
         """dir is overloaded to list all available functions
         in the evaluator
