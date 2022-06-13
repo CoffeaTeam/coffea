@@ -7,8 +7,8 @@ class json_lookup:
         for i in range(len(run)):
             run_ = str(run[i])
             lumi_ = lumi[i]
-            if not run_ in self.values.keys() or not lumi_ in self.values[run_].keys():
-                print("    \033[91m run:lumi %s:%s not found \033[00m"%(run_, lumi_))
+            if run_ not in self.values.keys() or lumi_ not in self.values[run_].keys():
+                print("    \033[91m run:lumi %s:%s not found \033[00m" % (run_, lumi_))
             else:
                 mu.append(self.values[run_][lumi_])
         return mu
