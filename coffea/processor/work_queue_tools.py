@@ -88,6 +88,42 @@ except ImportError:
             raise ImportError("work_queue not available")
 
 
+class CoffeaWQ(WorkQueue):
+    def __init__(self, port=0, name=None, debug_log=None, stats_log=None, transactions_log=None, tasks_accum_log=None, password_file=None, report_stdout=None, report_monitor=None):
+        task = super().__init__(
+                port=port,
+                name=name,
+                debug_log=debug_log,
+                stats_log=stats_log,
+                transactions_log=transactions_log)
+
+        self.report_stdout = report_stdout
+        self.report_monitor = report_monitor
+
+        # Make use of the stored password file, if enabled.
+        if password_file:
+            self.specify_password_file(password_file)
+
+        if tasks_accum_log:
+            with open(tasks_accum_log, "w") as f:
+                f.write(
+                    "id,category,status,dataset,file,range_start,range_stop,accum_parent,time_start,time_end,cpu_time,memory\n"
+                )
+
+        print("Listening for work queue workers on port {}...".format(self.port))
+        # perform a wait to print any warnings before progress bars
+        self.wait(0)
+
+
+    def wait(self, timeout=None):
+        task = super().wait(timeout)
+        if task:
+            # Evaluate and display details of the completed task
+            task.report(self.report_stdout, self.report_monitor)
+            return task
+        return None
+
+
 class CoffeaWQTask(Task):
     def __init__(
         self, fn_wrapper, infile_function, item_args, itemid, tmpdir, exec_defaults
@@ -224,8 +260,11 @@ class CoffeaWQTask(Task):
         msg = "{} with{} result.".format(self.itemid, has_output)
         return msg
 
+    def successful(self):
+        return (self.result == 0) and (self.return_status == 0)
+
     def report(self, output_mode, resource_mode):
-        task_failed = (self.result != 0) or (self.return_status != 0)
+        task_failed = not self.successful()
 
         if _vprint.verbose_mode or task_failed or output_mode:
             _vprint.printf(
@@ -554,28 +593,17 @@ def work_queue_main(items, function, accumulator, **kwargs):
         )
 
     if _wq_queue is None:
-        _wq_queue = WorkQueue(
+        _wq_queue = CoffeaWQ(
             port=kwargs["port"],
             name=kwargs["master_name"],
             debug_log=kwargs["debug_log"],
             stats_log=kwargs["stats_log"],
             transactions_log=kwargs["transactions_log"],
+            tasks_accum_log=kwargs["tasks_accum_log"],
+            password_file=kwargs["password_file"],
+            report_stdout=kwargs["print_stdout"],
+            report_monitor=kwargs["resource_monitor"]
         )
-
-        # Make use of the stored password file, if enabled.
-        if kwargs["password_file"] is not None:
-            _wq_queue.specify_password_file(kwargs["password_file"])
-
-        if kwargs["tasks_accum_log"]:
-            with open(kwargs["tasks_accum_log"], "w") as f:
-                f.write(
-                    "id,category,status,dataset,file,range_start,range_stop,accum_parent,time_start,time_end,cpu_time,memory\n"
-                )
-
-        print("Listening for work queue workers on port {}...".format(_wq_queue.port))
-        # perform a wait to print any warnings before progress bars
-        _wq_queue.wait(0)
-
     _declare_resources(kwargs)
 
     # Working within a custom temporary directory:
@@ -682,12 +710,7 @@ def _work_queue_processing(
             bar.update(0)
 
         if task:
-            # Evaluate and display details of the completed task
-            success = task.report(
-                exec_defaults["print_stdout"], exec_defaults["resource_monitor"]
-            )
-
-            if not success:
+            if not task.successful():
                 task.resubmit(tmpdir, exec_defaults)
             else:
                 tasks_to_accumulate.append(task)
@@ -813,10 +836,7 @@ def _work_queue_preprocessing(
     while not _wq_queue.empty():
         task = _wq_queue.wait(5)
         if task:
-            success = task.report(
-                exec_defaults["print_stdout"], exec_defaults["resource_monitor"]
-            )
-            if success:
+            if task.successful():
                 accumulator = accumulate([task.output], accumulator)
                 preprocessing_bar.update(1)
                 task.cleanup_inputs()
