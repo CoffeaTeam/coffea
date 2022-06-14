@@ -6,7 +6,7 @@ import tempfile
 import textwrap
 import signal
 
-from os.path import basename, join
+from os.path import basename, join, getsize
 
 import math
 import numpy
@@ -89,13 +89,25 @@ except ImportError:
 
 
 class CoffeaWQ(WorkQueue):
-    def __init__(self, port=0, name=None, debug_log=None, stats_log=None, transactions_log=None, tasks_accum_log=None, password_file=None, report_stdout=None, report_monitor=None):
-        task = super().__init__(
-                port=port,
-                name=name,
-                debug_log=debug_log,
-                stats_log=stats_log,
-                transactions_log=transactions_log)
+    def __init__(
+        self,
+        port=0,
+        name=None,
+        debug_log=None,
+        stats_log=None,
+        transactions_log=None,
+        tasks_accum_log=None,
+        password_file=None,
+        report_stdout=None,
+        report_monitor=None,
+    ):
+        super().__init__(
+            port=port,
+            name=name,
+            debug_log=debug_log,
+            stats_log=stats_log,
+            transactions_log=transactions_log,
+        )
 
         self.report_stdout = report_stdout
         self.report_monitor = report_monitor
@@ -107,18 +119,19 @@ class CoffeaWQ(WorkQueue):
         if tasks_accum_log:
             with open(tasks_accum_log, "w") as f:
                 f.write(
-                    "id,category,status,dataset,file,range_start,range_stop,accum_parent,time_start,time_end,cpu_time,memory\n"
+                    "id,category,status,dataset,file,range_start,range_stop,accum_parent,time_start,time_end,cpu_time,memory,fin,fout\n"
                 )
 
         print("Listening for work queue workers on port {}...".format(self.port))
         # perform a wait to print any warnings before progress bars
         self.wait(0)
 
-
     def wait(self, timeout=None):
         task = super().wait(timeout)
         if task:
             # Evaluate and display details of the completed task
+            if task.successful():
+                task.fout_size = getsize(task.outfile_output)
             task.report(self.report_stdout, self.report_monitor)
             return task
         return None
@@ -325,7 +338,7 @@ class CoffeaWQTask(Task):
 
         with open(log_filename, "a") as f:
             f.write(
-                "{id},{cat},{status},{set},{file},{start},{stop},{accum},{time_start},{time_end},{cpu},{mem}\n".format(
+                "{id},{cat},{status},{set},{file},{start},{stop},{accum},{time_start},{time_end},{cpu},{mem},{fin},{fout}\n".format(
                     id=self.id,
                     cat=self.category,
                     status=status,
@@ -338,6 +351,8 @@ class CoffeaWQTask(Task):
                     time_end=self.resources_measured.end,
                     cpu=self.resources_measured.cpu_time,
                     mem=self.resources_measured.memory,
+                    fin=self.fin_size,
+                    fout=self.fout_size,
                 )
             )
 
@@ -371,6 +386,8 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
             self.specify_input_file(
                 item.filename, remote_name=item.filename, cache=True
             )
+
+        self.fin_size = 0
 
     def clone(self, tmpdir, exec_defaults):
         return PreProcCoffeaWQTask(
@@ -423,6 +440,8 @@ class ProcCoffeaWQTask(CoffeaWQTask):
             self.specify_input_file(
                 item.filename, remote_name=item.filename, cache=True
             )
+
+        self.fin_size = 0
 
     def clone(self, tmpdir, exec_defaults):
         return ProcCoffeaWQTask(
@@ -525,6 +544,8 @@ class AccumCoffeaWQTask(CoffeaWQTask):
         for t in self.tasks_to_accumulate:
             self.specify_input_file(t.outfile_output, cache=False)
 
+        self.fin_size = sum(t.fout_size for t in tasks_to_accumulate)
+
     def cleanup_inputs(self):
         super().cleanup_inputs()
         # cleanup files associated with results already accumulated
@@ -602,7 +623,7 @@ def work_queue_main(items, function, accumulator, **kwargs):
             tasks_accum_log=kwargs["tasks_accum_log"],
             password_file=kwargs["password_file"],
             report_stdout=kwargs["print_stdout"],
-            report_monitor=kwargs["resource_monitor"]
+            report_monitor=kwargs["resource_monitor"],
         )
     _declare_resources(kwargs)
 
