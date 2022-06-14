@@ -729,6 +729,11 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
     """
 
     @property
+    def E(self):
+        """Alias for `t`"""
+        return self.t
+
+    @property
     def pt(self):
         """Alias for `r`"""
         return self["pt"]
@@ -847,6 +852,11 @@ class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
     This mixin class requires the parent class to provide items `pt`, `eta`, `phi`, and `energy`.
     Some additional properties are overridden for performance
     """
+
+    @property
+    def E(self):
+        """Alias for `t`"""
+        return self.t
 
     @property
     def pt(self):
