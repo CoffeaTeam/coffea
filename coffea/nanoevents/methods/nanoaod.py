@@ -365,10 +365,21 @@ _set_repr_name("MissingET")
 
 
 @awkward.mixin_class(behavior)
-class Vertex(vector.ThreeVector, base.NanoCollection):
+class Vertex(base.NanoCollection):
     """NanoAOD vertex object"""
 
-    pass
+    @property
+    def pos(self):
+        """Vertex position as a three vector"""
+        return awkward.zip(
+            {
+                "x": self["x"],
+                "y": self["y"],
+                "z": self["z"],
+            },
+            with_name="ThreeVector",
+            behavior=self.behavior,
+        )
 
 
 _set_repr_name("Vertex")
