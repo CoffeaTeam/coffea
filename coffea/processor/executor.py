@@ -1200,8 +1200,15 @@ class Runner:
 
     @staticmethod
     def read_coffea_config():
-        config_path = os.path.join(os.environ["HOME"], ".coffea.toml")
-        if os.path.exists(config_path):
+        config_path = None
+        if "HOME" in os.environ:
+            config_path = os.path.join(os.environ["HOME"], ".coffea.toml")
+        elif "_CONDOR_SCRATCH_DIR" in os.environ:
+            config_path = os.path.join(
+                os.environ["_CONDOR_SCRATCH_DIR"], ".coffea.toml"
+            )
+
+        if config_path is not None and os.path.exists(config_path):
             with open(config_path) as f:
                 return toml.loads(f.read())
         else:
