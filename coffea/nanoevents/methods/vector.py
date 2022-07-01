@@ -148,7 +148,18 @@ class TwoVector:
             behavior=self.behavior,
         )
 
-    @awkward.mixin_class_method(numpy.subtract, {"TwoVector"})
+    @awkward.mixin_class_method(
+        numpy.subtract,
+        {
+            "TwoVector",
+            "ThreeVector",
+            "SphericalThreeVector",
+            "LorentzVector",
+            "PtEtaPhiMLorentzVector",
+            "PtEtaPhiELorentzVector",
+        },
+        transpose=False,
+    )
     def subtract(self, other):
         """Substract a vector from another elementwise using `x` and `y` compontents"""
         return awkward.zip(
@@ -306,6 +317,14 @@ class ThreeVector(TwoVector):
         return numpy.arctan2(self.r, self.z)
 
     @property
+    def eta(self):
+        r"""Pseudorapidity
+
+        :math:`-\ln[\tan(\theta/2)] = \text{arcsinh}(z/r)`
+        """
+        return numpy.arcsinh(self.z / self.r)
+
+    @property
     def p2(self):
         """Squared `p`"""
         return self.rho2
@@ -341,7 +360,17 @@ class ThreeVector(TwoVector):
             behavior=self.behavior,
         )
 
-    @awkward.mixin_class_method(numpy.subtract, {"ThreeVector"})
+    @awkward.mixin_class_method(
+        numpy.subtract,
+        {
+            "ThreeVector",
+            "SphericalThreeVector",
+            "LorentzVector",
+            "PtEtaPhiMLorentzVector",
+            "PtEtaPhiELorentzVector",
+        },
+        transpose=False,
+    )
     def subtract(self, other):
         """Subtract a vector from another elementwise using `x`, `y`, and `z` components"""
         return awkward.zip(
@@ -434,6 +463,14 @@ class SphericalThreeVector(ThreeVector, PolarTwoVector):
         return self["theta"]
 
     @property
+    def eta(self):
+        r"""Pseudorapidity
+
+        :math:`-\ln[\tan(\theta/2)] = \text{arcsinh}(z/r)`
+        """
+        return -numpy.log(numpy.tan(self.theta / 2))
+
+    @property
     def p(self):
         """Alias for `rho`"""
         return self.rho
@@ -488,14 +525,6 @@ class LorentzVector(ThreeVector):
         return self.t
 
     @property
-    def eta(self):
-        r"""Pseudorapidity
-
-        :math:`-\ln[\tan(\theta/2)] = \text{arcsinh}(z/r)`
-        """
-        return numpy.arcsinh(self.z / self.r)
-
-    @property
     def mass2(self):
         """Squared `mass`"""
         return _mass2_kernel(self.t, self.x, self.y, self.z)
@@ -530,7 +559,7 @@ class LorentzVector(ThreeVector):
             behavior=self.behavior,
         )
 
-    @awkward.mixin_class_method(numpy.subtract, {"LorentzVector"})
+    @awkward.mixin_class_method(numpy.subtract, {"LorentzVector"}, transpose=False)
     def subtract(self, other):
         """Subtract a vector from another elementwise using `x`, `y`, `z`, and `t` components"""
         return awkward.zip(

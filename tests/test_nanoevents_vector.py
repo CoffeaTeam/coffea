@@ -17,15 +17,13 @@ def test_two_vector():
     a = ak.zip(
         {"x": [[1, 2], [], [3], [4]], "y": [[5, 6], [], [7], [8]]},
         with_name="TwoVector",
-        highlevel=False,
+        behavior=vector.behavior,
     )
-    a = ak.Array(a, behavior=vector.behavior)
     b = ak.zip(
         {"x": [[11, 12], [], [13], [14]], "y": [[15, 16], [], [17], [18]]},
         with_name="TwoVector",
-        highlevel=False,
+        behavior=vector.behavior,
     )
-    b = ak.Array(b, behavior=vector.behavior)
 
     assert record_arrays_equal(
         -a, ak.zip({"x": [[-1, -2], [], [-3], [-4]], "y": [[-5, -6], [], [-7], [-8]]})
@@ -64,9 +62,8 @@ def test_polar_two_vector():
             "phi": [[0.3, 0.4], [], [0.5], [0.6]],
         },
         with_name="PolarTwoVector",
-        highlevel=False,
+        behavior=vector.behavior,
     )
-    a = ak.Array(a, behavior=vector.behavior)
 
     assert record_arrays_equal(
         a * 2,
@@ -102,9 +99,8 @@ def test_three_vector():
             "z": [[9, 10], [], [11], [12]],
         },
         with_name="ThreeVector",
-        highlevel=False,
+        behavior=vector.behavior,
     )
-    a = ak.Array(a, behavior=vector.behavior)
     b = ak.zip(
         {
             "x": [[4, 1], [], [10], [11]],
@@ -112,9 +108,8 @@ def test_three_vector():
             "z": [[9, 11], [], [5], [16]],
         },
         with_name="ThreeVector",
-        highlevel=False,
+        behavior=vector.behavior,
     )
-    b = ak.Array(b, behavior=vector.behavior)
 
     assert record_arrays_equal(
         -a,
@@ -144,6 +139,16 @@ def test_three_vector():
                 "x": [[-3, 1], [], [-7], [-7]],
                 "y": [[-12, -1], [], [-4], [2]],
                 "z": [[0, -1], [], [6], [-4]],
+            }
+        ),
+    )
+    assert record_arrays_equal(
+        b - a,
+        ak.zip(
+            {
+                "x": [[3, -1], [], [7], [7]],
+                "y": [[12, 1], [], [4], [-2]],
+                "z": [[0, 1], [], [-6], [4]],
             }
         ),
     )
@@ -205,9 +210,8 @@ def test_spherical_three_vector():
             "phi": [[0.3, 0.4], [], [0.5], [0.6]],
         },
         with_name="SphericalThreeVector",
-        highlevel=False,
+        behavior=vector.behavior,
     )
-    a = ak.Array(a, behavior=vector.behavior)
 
     assert ak.all(abs((-a).x + a.x) < ATOL)
     assert ak.all(abs((-a).y + a.y) < ATOL)
@@ -224,9 +228,8 @@ def test_lorentz_vector():
             "t": [[50, 51], [], [52], [53]],
         },
         with_name="LorentzVector",
-        highlevel=False,
+        behavior=vector.behavior,
     )
-    a = ak.Array(a, behavior=vector.behavior)
     b = ak.zip(
         {
             "x": [[4, 1], [], [10], [11]],
@@ -235,9 +238,8 @@ def test_lorentz_vector():
             "t": [[60, 61], [], [62], [63]],
         },
         with_name="LorentzVector",
-        highlevel=False,
+        behavior=vector.behavior,
     )
-    b = ak.Array(b, behavior=vector.behavior)
 
     assert record_arrays_equal(
         -a,
@@ -323,7 +325,7 @@ def test_pt_eta_phi_m_lorentz_vector():
             "mass": [[0.5, 0.9], [], [1.3], [4.5]],
         },
         with_name="PtEtaPhiMLorentzVector",
-        highlevel=False,
+        behavior=vector.behavior,
     )
     a = ak.Array(a, behavior=vector.behavior)
 
@@ -370,9 +372,8 @@ def test_pt_eta_phi_e_lorentz_vector():
             "energy": [[50, 51], [], [52], [60]],
         },
         with_name="PtEtaPhiELorentzVector",
-        highlevel=False,
+        behavior=vector.behavior,
     )
-    a = ak.Array(a, behavior=vector.behavior)
 
     assert ak.all((a * (-2)).pt == ak.Array([[2, 4], [], [6], [8]]))
     assert ak.all(
@@ -449,3 +450,88 @@ def test_lorentz_vector_numba(a_dtype, b_dtype):
         0.33292327383538156,
         0.6078019961139605,
     ]
+
+
+@pytest.mark.parametrize(
+    "lcoord", ["LorentzVector", "PtEtaPhiMLorentzVector", "PtEtaPhiELorentzVector"]
+)
+@pytest.mark.parametrize("threecoord", ["ThreeVector", "SphericalThreeVector"])
+@pytest.mark.parametrize("twocoord", ["TwoVector", "PolarTwoVector"])
+def test_inherited_method_transpose(lcoord, threecoord, twocoord):
+    if lcoord == "LorentzVector":
+        a = ak.zip(
+            {
+                "x": [10.0, 20.0, 30.0],
+                "y": [-10.0, 20.0, 30.0],
+                "z": [5.0, 10.0, 15.0],
+                "t": [16.0, 31.0, 46.0],
+            },
+            with_name=lcoord,
+            behavior=vector.behavior,
+        )
+    elif lcoord == "PtEtaPhiMLorentzVector":
+        a = ak.zip(
+            {
+                "pt": [10.0, 20.0, 30.0],
+                "eta": [0.0, 1.1, 2.2],
+                "phi": [0.1, 0.9, -1.1],
+                "mass": [1.0, 1.0, 1.0],
+            },
+            with_name=lcoord,
+            behavior=vector.behavior,
+        )
+    elif lcoord == "PtEtaPhiELorentzVector":
+        a = ak.zip(
+            {
+                "pt": [10.0, 20.0, 30.0],
+                "eta": [0.0, 1.1, 2.2],
+                "phi": [0.1, 0.9, -1.1],
+                "energy": [11.0, 21.0, 31.0],
+            },
+            with_name=lcoord,
+            behavior=vector.behavior,
+        )
+    if threecoord == "ThreeVector":
+        b = ak.zip(
+            {
+                "x": [-10.0, 20.0, -30.0],
+                "y": [-10.0, -20.0, 30.0],
+                "z": [5.0, -10.0, 15.0],
+            },
+            with_name=threecoord,
+            behavior=vector.behavior,
+        )
+    elif threecoord == "SphericalThreeVector":
+        b = ak.zip(
+            {
+                "rho": [10.0, 20.0, 30.0],
+                "theta": [0.3, 0.6, 1.1],
+                "phi": [-3.0, 1.1, 0.2],
+            },
+            with_name=threecoord,
+            behavior=vector.behavior,
+        )
+    if twocoord == "TwoVector":
+        c = ak.zip(
+            {"x": [-10.0, 13.0, 15.0], "y": [12.0, -4.0, 41.0]},
+            with_name=twocoord,
+            behavior=vector.behavior,
+        )
+    elif twocoord == "PolarTwoVector":
+        c = ak.zip(
+            {"r": [-10.0, 13.0, 15.0], "phi": [1.22, -1.0, 1.0]},
+            with_name=twocoord,
+            behavior=vector.behavior,
+        )
+
+    assert record_arrays_equal(a + b, b + a)
+    assert record_arrays_equal(a + c, c + a)
+    assert record_arrays_equal(b + c, c + b)
+
+    assert record_arrays_equal(a.delta_phi(b), b.delta_phi(a))
+    assert record_arrays_equal(a.delta_phi(c), c.delta_phi(a))
+    assert record_arrays_equal(b.delta_phi(c), c.delta_phi(b))
+
+    assert record_arrays_equal(a - b, -(b - a))
+    assert record_arrays_equal(a - c, -(c - a))
+    assert record_arrays_equal(b - c, -(c - b))
