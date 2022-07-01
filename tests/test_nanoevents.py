@@ -92,13 +92,13 @@ def test_read_nanomc(suffix):
         assert ak.any(events.Photon.isTight, axis=1).tolist()[:9] == [
             False,
             True,
-            False,
+            True,
             True,
             False,
             False,
             False,
             False,
-            True,
+            False,
         ]
 
 
