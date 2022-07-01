@@ -317,14 +317,6 @@ class ThreeVector(TwoVector):
         return numpy.arctan2(self.r, self.z)
 
     @property
-    def eta(self):
-        r"""Pseudorapidity
-
-        :math:`-\ln[\tan(\theta/2)] = \text{arcsinh}(z/r)`
-        """
-        return numpy.arcsinh(self.z / self.r)
-
-    @property
     def p2(self):
         """Squared `p`"""
         return self.rho2
@@ -463,14 +455,6 @@ class SphericalThreeVector(ThreeVector, PolarTwoVector):
         return self["theta"]
 
     @property
-    def eta(self):
-        r"""Pseudorapidity
-
-        :math:`-\ln[\tan(\theta/2)] = \text{arcsinh}(z/r)`
-        """
-        return -numpy.log(numpy.tan(self.theta / 2))
-
-    @property
     def p(self):
         """Alias for `rho`"""
         return self.rho
@@ -523,6 +507,14 @@ class LorentzVector(ThreeVector):
     def energy(self):
         """Alias for `t`"""
         return self.t
+
+    @property
+    def eta(self):
+        r"""Pseudorapidity
+
+        :math:`-\ln[\tan(\theta/2)] = \text{arcsinh}(z/r)`
+        """
+        return numpy.arcsinh(self.z / self.r)
 
     @property
     def mass2(self):
