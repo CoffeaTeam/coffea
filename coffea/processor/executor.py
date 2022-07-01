@@ -1520,7 +1520,19 @@ class Runner:
                             "ceph_data_pool", "cephfs_data"
                         )
                         filename = f"{ceph_config_path}:{ceph_data_pool}:{filename}"
-                    chunks.append(WorkItem(dataset, filename, treename, 0, 0, ""))
+                    chunks.append(
+                        WorkItem(
+                            dataset,
+                            filename,
+                            treename,
+                            0,
+                            0,
+                            "",
+                            fileset[dataset]["metadata"]
+                            if "metadata" in fileset[dataset]
+                            else None,
+                        )
+                    )
             yield from iter(chunks)
 
     @staticmethod
