@@ -1407,7 +1407,9 @@ class Runner:
         return final_fileset
 
     def _chunk_generator(self, fileset: Dict, treename: str) -> Generator:
-        config = Runner.read_coffea_config()
+        config = None
+        if self.use_skyhook:
+            config = Runner.read_coffea_config()
         if self.format == "root":
             if self.maxchunks is None:
                 last_chunksize = self.chunksize
@@ -1433,16 +1435,31 @@ class Runner:
                             break
                 yield from iter(chunks)
         else:
-            if not config.get("skyhook", None):
+            if self.use_skyhook and not config.get("skyhook", None):
                 print("No skyhook config found, using defaults")
                 config["skyhook"] = dict()
 
-            import pyarrow.dataset as ds
-
             dataset_filelist_map = {}
-            for dataset, basedir in fileset.items():
-                ds_ = ds.dataset(basedir, format="parquet")
-                dataset_filelist_map[dataset] = ds_.files
+            if self.use_skyhook:
+                import pyarrow.dataset as ds
+
+                for dataset, basedir in fileset.items():
+                    ds_ = ds.dataset(basedir, format="parquet")
+                    dataset_filelist_map[dataset] = ds_.files
+            else:
+                for dataset, maybe_filelist in fileset.items():
+                    if isinstance(maybe_filelist, list):
+                        dataset_filelist_map[dataset] = maybe_filelist
+                    elif isinstance(maybe_filelist, dict):
+                        if "files" not in maybe_filelist:
+                            raise ValueError(
+                                "Dataset definition must have key 'files' defined!"
+                            )
+                        dataset_filelist_map[dataset] = maybe_filelist["files"]
+                    else:
+                        raise ValueError(
+                            "Dataset definition in fileset must be dict[str: list[str]] or dict[str: dict[str: Any]]"
+                        )
             chunks = []
             for dataset, filelist in dataset_filelist_map.items():
                 for filename in filelist:
