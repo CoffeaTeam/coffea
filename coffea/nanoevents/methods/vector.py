@@ -148,7 +148,18 @@ class TwoVector:
             behavior=self.behavior,
         )
 
-    @awkward.mixin_class_method(numpy.subtract, {"TwoVector"})
+    @awkward.mixin_class_method(
+        numpy.subtract,
+        {
+            "TwoVector",
+            "ThreeVector",
+            "SphericalThreeVector",
+            "LorentzVector",
+            "PtEtaPhiMLorentzVector",
+            "PtEtaPhiELorentzVector",
+        },
+        transpose=False,
+    )
     def subtract(self, other):
         """Substract a vector from another elementwise using `x` and `y` compontents"""
         return awkward.zip(
@@ -341,7 +352,17 @@ class ThreeVector(TwoVector):
             behavior=self.behavior,
         )
 
-    @awkward.mixin_class_method(numpy.subtract, {"ThreeVector"})
+    @awkward.mixin_class_method(
+        numpy.subtract,
+        {
+            "ThreeVector",
+            "SphericalThreeVector",
+            "LorentzVector",
+            "PtEtaPhiMLorentzVector",
+            "PtEtaPhiELorentzVector",
+        },
+        transpose=False,
+    )
     def subtract(self, other):
         """Subtract a vector from another elementwise using `x`, `y`, and `z` components"""
         return awkward.zip(
@@ -530,7 +551,7 @@ class LorentzVector(ThreeVector):
             behavior=self.behavior,
         )
 
-    @awkward.mixin_class_method(numpy.subtract, {"LorentzVector"})
+    @awkward.mixin_class_method(numpy.subtract, {"LorentzVector"}, transpose=False)
     def subtract(self, other):
         """Subtract a vector from another elementwise using `x`, `y`, `z`, and `t` components"""
         return awkward.zip(
