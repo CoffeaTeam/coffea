@@ -1130,15 +1130,63 @@ class ParslExecutor(ExecutorBase):
                 parsl.clear()
 
 
+class ParquetFileUprootShim:
+    def __init__(self, table, name):
+        self.table = table
+        self.name = name
+
+    def array(self, **kwargs):
+        import awkward
+
+        return awkward.Array(self.table[self.name])
+
+
 class ParquetFileContext:
     def __init__(self, filename):
         self.filename = filename
+        self.filehandle = None
+        self.branchnames = None
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         pass
+
+    def _get_handle(self):
+        import pyarrow.parquet as pq
+
+        if self.filehandle is None:
+            self.filehandle = pq.ParquetFile(self.filename)
+            self.branchnames = set(
+                item.path.split(".")[0] for item in self.filehandle.schema
+            )
+
+    @property
+    def num_entries(self):
+        self._get_handle()
+        return self.filehandle.metadata.num_rows
+
+    def keys(self):
+        self._get_handle()
+        return self.branchnames
+
+    def __iter__(self):
+        self._get_handle()
+        return iter(self.branchnames)
+
+    def __getitem__(self, name):
+        self._get_handle()
+        if name in self.branchnames:
+            return ParquetFileUprootShim(
+                self.filehandle.read([name], use_threads=False), name
+            )
+        else:
+            return KeyError(name)
+
+    def __contains__(self, name):
+        self._get_handle()
+        return name in self.branchnames
 
 
 @dataclass
@@ -1519,7 +1567,13 @@ class Runner:
         with filecontext as file:
             if schema is None:
                 # To deprecate
-                tree = file[item.treename]
+                tree = None
+                if format == "root":
+                    tree = file[item.treename]
+                elif format == "parquet":
+                    tree = file
+                else:
+                    raise ValueError("Format can only be root or parquet!")
                 events = LazyDataFrame(
                     tree, item.entrystart, item.entrystop, metadata=metadata
                 )
