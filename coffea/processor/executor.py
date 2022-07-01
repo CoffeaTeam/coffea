@@ -1130,15 +1130,63 @@ class ParslExecutor(ExecutorBase):
                 parsl.clear()
 
 
+class ParquetFileUprootShim:
+    def __init__(self, table, name):
+        self.table = table
+        self.name = name
+
+    def array(self, **kwargs):
+        import awkward
+
+        return awkward.Array(self.table[self.name])
+
+
 class ParquetFileContext:
     def __init__(self, filename):
         self.filename = filename
+        self.filehandle = None
+        self.branchnames = None
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         pass
+
+    def _get_handle(self):
+        import pyarrow.parquet as pq
+
+        if self.filehandle is None:
+            self.filehandle = pq.ParquetFile(self.filename)
+            self.branchnames = set(
+                item.path.split(".")[0] for item in self.filehandle.schema
+            )
+
+    @property
+    def num_entries(self):
+        self._get_handle()
+        return self.filehandle.metadata.num_rows
+
+    def keys(self):
+        self._get_handle()
+        return self.branchnames
+
+    def __iter__(self):
+        self._get_handle()
+        return iter(self.branchnames)
+
+    def __getitem__(self, name):
+        self._get_handle()
+        if name in self.branchnames:
+            return ParquetFileUprootShim(
+                self.filehandle.read([name], use_threads=False), name
+            )
+        else:
+            return KeyError(name)
+
+    def __contains__(self, name):
+        self._get_handle()
+        return name in self.branchnames
 
 
 @dataclass
@@ -1200,8 +1248,15 @@ class Runner:
 
     @staticmethod
     def read_coffea_config():
-        config_path = os.path.join(os.environ["HOME"], ".coffea.toml")
-        if os.path.exists(config_path):
+        config_path = None
+        if "HOME" in os.environ:
+            config_path = os.path.join(os.environ["HOME"], ".coffea.toml")
+        elif "_CONDOR_SCRATCH_DIR" in os.environ:
+            config_path = os.path.join(
+                os.environ["_CONDOR_SCRATCH_DIR"], ".coffea.toml"
+            )
+
+        if config_path is not None and os.path.exists(config_path):
             with open(config_path) as f:
                 return toml.loads(f.read())
         else:
@@ -1400,7 +1455,9 @@ class Runner:
         return final_fileset
 
     def _chunk_generator(self, fileset: Dict, treename: str) -> Generator:
-        config = Runner.read_coffea_config()
+        config = None
+        if self.use_skyhook:
+            config = Runner.read_coffea_config()
         if self.format == "root":
             if self.maxchunks is None:
                 last_chunksize = self.chunksize
@@ -1426,16 +1483,31 @@ class Runner:
                             break
                 yield from iter(chunks)
         else:
-            if not config.get("skyhook", None):
+            if self.use_skyhook and not config.get("skyhook", None):
                 print("No skyhook config found, using defaults")
                 config["skyhook"] = dict()
 
-            import pyarrow.dataset as ds
-
             dataset_filelist_map = {}
-            for dataset, basedir in fileset.items():
-                ds_ = ds.dataset(basedir, format="parquet")
-                dataset_filelist_map[dataset] = ds_.files
+            if self.use_skyhook:
+                import pyarrow.dataset as ds
+
+                for dataset, basedir in fileset.items():
+                    ds_ = ds.dataset(basedir, format="parquet")
+                    dataset_filelist_map[dataset] = ds_.files
+            else:
+                for dataset, maybe_filelist in fileset.items():
+                    if isinstance(maybe_filelist, list):
+                        dataset_filelist_map[dataset] = maybe_filelist
+                    elif isinstance(maybe_filelist, dict):
+                        if "files" not in maybe_filelist:
+                            raise ValueError(
+                                "Dataset definition must have key 'files' defined!"
+                            )
+                        dataset_filelist_map[dataset] = maybe_filelist["files"]
+                    else:
+                        raise ValueError(
+                            "Dataset definition in fileset must be dict[str: list[str]] or dict[str: dict[str: Any]]"
+                        )
             chunks = []
             for dataset, filelist in dataset_filelist_map.items():
                 for filename in filelist:
@@ -1448,7 +1520,19 @@ class Runner:
                             "ceph_data_pool", "cephfs_data"
                         )
                         filename = f"{ceph_config_path}:{ceph_data_pool}:{filename}"
-                    chunks.append(WorkItem(dataset, filename, treename, 0, 0, ""))
+                    chunks.append(
+                        WorkItem(
+                            dataset,
+                            filename,
+                            treename,
+                            0,
+                            0,
+                            "",
+                            fileset[dataset]["metadata"]
+                            if "metadata" in fileset[dataset]
+                            else None,
+                        )
+                    )
             yield from iter(chunks)
 
     @staticmethod
@@ -1495,7 +1579,13 @@ class Runner:
         with filecontext as file:
             if schema is None:
                 # To deprecate
-                tree = file[item.treename]
+                tree = None
+                if format == "root":
+                    tree = file[item.treename]
+                elif format == "parquet":
+                    tree = file
+                else:
+                    raise ValueError("Format can only be root or parquet!")
                 events = LazyDataFrame(
                     tree, item.entrystart, item.entrystop, metadata=metadata
                 )
