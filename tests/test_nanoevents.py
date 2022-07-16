@@ -23,6 +23,8 @@ def genroundtrips(genpart):
             mask_identity=True,
         )
     )
+    # particles should have a different pdg id than their distinctChildrenDeep
+    assert not ak.any(genpart.pdgId == genpart.distinctChildrenDeep.pdgId)
     # exercise hasFlags
     genpart.hasFlags(["isHardProcess"])
     genpart.hasFlags(["isHardProcess", "isDecayedLeptonHadron"])
