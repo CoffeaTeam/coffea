@@ -97,6 +97,10 @@ class GenParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     def distinctChildren(self):
         return self._events().GenPart._apply_global_index(self.distinctChildrenIdxG)
 
+    @property
+    def distinctChildrenDeep(self):
+        return self._events().GenPart._apply_global_index(self.distinctChildrenDeepIdxG)
+
 
 _set_repr_name("GenParticle")
 
