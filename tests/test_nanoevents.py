@@ -29,8 +29,20 @@ def genroundtrips(genpart):
     # their distinctParent's should be the particle itself
     assert ak.all(genpart.distinctChildren.distinctParent.pdgId == genpart.pdgId)
 
-    # particles should have a different pdg id than their distinctChildrenDeep
-    assert not ak.any(genpart.pdgId == genpart.distinctChildrenDeep.pdgId)
+    # parents in decay chains (same pdg id) should never have distinctChildrenDeep
+    parents_in_decays = genpart[genpart.parent.pdgId == genpart.pdgId]
+    assert ak.all(ak.num(parents_in_decays.distinctChildrenDeep, axis=2) == 0)
+    # parents at the top of decay chains that have children should always have distinctChildrenDeep
+    real_parents_at_top = genpart[
+        (genpart.parent.pdgId != genpart.pdgId)
+        & (ak.num(genpart.children, axis=2) > 0)
+    ]
+    assert ak.all(ak.num(real_parents_at_top.distinctChildrenDeep, axis=2) > 0)
+    # distinctChildrenDeep whose parent pdg id is the same must not have children
+    children_in_decays = genpart.distinctChildrenDeep[
+        genpart.distinctChildrenDeep.pdgId == genpart.distinctChildrenDeep.parent.pdgId
+    ]
+    assert ak.all(ak.num(children_in_decays.children, axis=3) == 0)
 
     # exercise hasFlags
     genpart.hasFlags(["isHardProcess"])

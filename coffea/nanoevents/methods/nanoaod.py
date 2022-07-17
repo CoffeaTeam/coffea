@@ -102,7 +102,7 @@ class GenParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
 
     @property
     def distinctChildrenDeep(self):
-        """Accessor to distinct (different PDG id) child particles that skips intermediate particles"""
+        """Accessor to distinct child particles with different PDG id, or last ones in the chain"""
         return self._events().GenPart._apply_global_index(self.distinctChildrenDeepIdxG)
 
 

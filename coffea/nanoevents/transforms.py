@@ -300,33 +300,64 @@ def _distinctChildrenDeep_kernel(offsets_in, global_parents, global_pdgs):
         start_src, stop_src = offsets_in[record_index], offsets_in[record_index + 1]
 
         for index in range(start_src, stop_src):
-            # keep an index of parents with same pdg id
-            parents = numpy.empty(stop_src - index, dtype=numpy.int64)
-            parents[0] = index
-            offset2 = 1
             this_pdg = global_pdgs[index]
 
-            for possible_child in range(index, stop_src):
-                possible_parent = global_parents[possible_child]
-                child_pdg = global_pdgs[possible_child]
+            # only perform the deep lookup when this particle is not already part of a decay chain
+            # otherwise, the same child indices would be repeated for every parent in the chain
+            # which would require content_out to have a length that isa-priori unknown
+            if (
+                global_parents[index] >= 0
+                and this_pdg != global_pdgs[global_parents[index]]
+            ):
+                # keep an index of parents with same pdg id
+                parents = numpy.empty(stop_src - index, dtype=numpy.int64)
+                parents[0] = index
+                offset2 = 1
 
-                for parent_index in range(offset2):
-                    if possible_parent == parents[parent_index]:
-                        # new child found
-                        if child_pdg == this_pdg:
-                            # has the same pdg id, add to parents
-                            if offset2 >= len(parents):
-                                raise RuntimeError("offset2 went out of bounds!")
-                            parents[offset2] = possible_child
-                            offset2 = offset2 + 1
-                        else:
-                            # has a different pdg id, add to content
-                            if offset1 >= len(content_out):
-                                raise RuntimeError("offset1 went out of bounds!")
-                            content_out[offset1] = possible_child
-                            offset1 = offset1 + 1
-                        break
+                # keep an additional index with parents that have at least one child
+                parents_with_children = numpy.empty(stop_src - index, dtype=numpy.int64)
+                offset3 = 0
 
+                for possible_child in range(index, stop_src):
+                    possible_parent = global_parents[possible_child]
+                    possibe_child_pdg = global_pdgs[possible_child]
+
+                    # compare with seen parents
+                    for parent_index in range(offset2):
+                        # check if we found a new child
+                        if parents[parent_index] == possible_parent:
+                            # first, remember that the parent has at least one child
+                            if offset3 >= len(parents_with_children):
+                                raise RuntimeError("offset3 went out of bounds!")
+                            parents_with_children[offset3] = possible_parent
+                            offset3 = offset3 + 1
+
+                            # then, depending on the pdg id, add to parents or content
+                            if possibe_child_pdg == this_pdg:
+                                # has the same pdg id, add to parents
+                                if offset2 >= len(parents):
+                                    raise RuntimeError("offset2 went out of bounds!")
+                                parents[offset2] = possible_child
+                                offset2 = offset2 + 1
+                            else:
+                                # has a different pdg id, add to content
+                                if offset1 >= len(content_out):
+                                    raise RuntimeError("offset1 went out of bounds!")
+                                content_out[offset1] = possible_child
+                                offset1 = offset1 + 1
+                            break
+
+                # add parents with same pdg id that have no children
+                for parent_index in range(1, offset2):
+                    possible_child = parents[parent_index]
+                    if possible_child not in parents_with_children[:offset3]:
+                        if offset1 >= len(content_out):
+                            raise RuntimeError("offset1 went out of bounds! pt2")
+                        content_out[offset1] = possible_child
+
+                        offset1 = offset1 + 1
+
+            # finish this item by adding an offset
             if offset0 >= len(offsets_out):
                 raise RuntimeError("offset0 went out of bounds!")
             offsets_out[offset0] = offset1
