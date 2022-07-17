@@ -34,8 +34,7 @@ def genroundtrips(genpart):
     assert ak.all(ak.num(parents_in_decays.distinctChildrenDeep, axis=2) == 0)
     # parents at the top of decay chains that have children should always have distinctChildrenDeep
     real_parents_at_top = genpart[
-        (genpart.parent.pdgId != genpart.pdgId)
-        & (ak.num(genpart.children, axis=2) > 0)
+        (genpart.parent.pdgId != genpart.pdgId) & (ak.num(genpart.children, axis=2) > 0)
     ]
     assert ak.all(ak.num(real_parents_at_top.distinctChildrenDeep, axis=2) > 0)
     # distinctChildrenDeep whose parent pdg id is the same must not have children
