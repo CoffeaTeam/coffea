@@ -23,8 +23,15 @@ def genroundtrips(genpart):
             mask_identity=True,
         )
     )
+
+    # distinctChildren should be distinct
+    assert ak.all(genpart.distinctChildren.pdgId != genpart.pdgId)
+    # their distinctParent's should be the particle itself
+    assert ak.all(genpart.distinctChildren.distinctParent.pdgId == genpart.pdgId)
+
     # particles should have a different pdg id than their distinctChildrenDeep
     assert not ak.any(genpart.pdgId == genpart.distinctChildrenDeep.pdgId)
+
     # exercise hasFlags
     genpart.hasFlags(["isHardProcess"])
     genpart.hasFlags(["isHardProcess", "isDecayedLeptonHadron"])
