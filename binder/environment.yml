@@ -4,4 +4,4 @@ channels:
 dependencies:
   - xxhash
   - xrootd
-  - coffea>=0.7.0
+  - coffea==0.7.16
