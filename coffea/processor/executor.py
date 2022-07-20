@@ -17,6 +17,7 @@ import traceback
 import shutil
 from collections import defaultdict
 from cachetools import LRUCache
+from io import BytesIO
 import lz4.frame as lz4f
 from contextlib import ExitStack
 from .processor import ProcessorABC
@@ -186,9 +187,11 @@ def _compress(item, compression):
     if item is None or compression is None:
         return item
     else:
-        return lz4f.compress(
-            pickle.dumps(item, protocol=_PICKLE_PROTOCOL), compression_level=compression
-        )
+        with BytesIO() as bf:
+            with lz4f.open(bf, mode="wb", compression_level=compression) as f:
+                pickle.dump(item, f, protocol=_PICKLE_PROTOCOL)
+            result = bf.getvalue()
+        return result
 
 
 def _decompress(item):
