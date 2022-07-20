@@ -196,7 +196,11 @@ def _compress(item, compression):
 
 def _decompress(item):
     if isinstance(item, bytes):
-        return pickle.loads(lz4f.decompress(item))
+        # warning: if item is not exactly of type bytes, BytesIO(item) will
+        # make a copy of it, increasing the memory usage.
+        with BytesIO(item) as bf:
+            with lz4f.open(bf, mode="rb") as f:
+                return pickle.load(f)
     else:
         return item
 
