@@ -2,6 +2,8 @@ name: coffea
 channels:
   - conda-forge
 dependencies:
+  - python==3.10.*
+  - ipykernel
   - xxhash
   - xrootd
-  - coffea>=0.7.0
+  - coffea==0.7.16
