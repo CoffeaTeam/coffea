@@ -973,7 +973,7 @@ def _submit_accum_tasks(
     if chunks_per_accum < 2 or chunks_accum_in_mem < 2:
         raise RuntimeError("A minimum of two chunks should be used when accumulating")
 
-    if len(tasks_to_accumulate) != 2 * chunks_per_accum - 1 and not force_last_accum:
+    if len(tasks_to_accumulate) < 2 * chunks_per_accum - 1 and not force_last_accum:
         return tasks_to_accumulate
 
     tasks_to_accumulate.sort(key=lambda t: t.fout_size)
