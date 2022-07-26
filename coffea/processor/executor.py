@@ -583,7 +583,7 @@ class WorkQueueExecutor(ExecutorBase):
     password_file: Optional[str] = None
     environment_file: Optional[str] = None
     extra_input_files: List = field(default_factory=list)
-    wrapper: Optional[str] = shutil.which("python_package_run")
+    wrapper: Optional[str] = shutil.which("poncho_package_run")
     resource_monitor: Optional[str] = "off"
     resources_mode: Optional[str] = "max-seen"
     split_on_exhaustion: Optional[bool] = True
