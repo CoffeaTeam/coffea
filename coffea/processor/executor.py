@@ -592,7 +592,7 @@ class WorkQueueExecutor(ExecutorBase):
     memory: Optional[int] = None
     disk: Optional[int] = None
     gpus: Optional[int] = None
-    chunks_per_accum: int = 10
+    chunks_per_accum: int = 25
     chunks_accum_in_mem: int = 2
     chunksize: int = 1024
     dynamic_chunksize: Optional[Dict] = None
