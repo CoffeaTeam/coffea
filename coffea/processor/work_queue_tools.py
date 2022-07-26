@@ -886,6 +886,9 @@ def _declare_resources(exec_defaults):
     # Enable monitoring and auto resource consumption, if desired:
     _wq_queue.tune("category-steady-n-tasks", 3)
 
+    # Evenly divide resources in workers per category
+    _wq_queue.tune("force-proportional-resources", 1)
+
     monitor_enabled = False
 
     # if resource_monitor is given, and not 'off', then monitoring is activated.
