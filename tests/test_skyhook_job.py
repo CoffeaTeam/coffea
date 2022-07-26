@@ -80,6 +80,7 @@ if __name__ == "__main__":
         executor=executor,
         format="parquet",
         schema=schemas.NanoAODSchema,
+        use_skyhook=True,
     )
 
     hists = run(

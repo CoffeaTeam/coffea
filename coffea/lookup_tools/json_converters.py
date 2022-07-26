@@ -98,3 +98,22 @@ def convert_correctionlib_file(filename):
     cset = correctionlib.CorrectionSet.from_file(filename)
 
     return {(key, "correctionlib_wrapper"): (cset[key],) for key in cset.keys()}
+
+
+def convert_pileup_json_file(filename):
+    file = open(filename)
+    info = json.load(file)
+    file.close()
+
+    values = {}
+    for run in info.keys():
+        valsdict = {}
+        for i in range(len(info[run])):
+            lumisection = info[run][i][0]
+            val = info[run][i][3]
+            valsdict[lumisection] = val
+        values[run] = valsdict
+    wrapped_up = {}
+    wrapped_up[("pileup", "json_lookup")] = []
+    wrapped_up[("pileup", "json_lookup")].append(values)
+    return wrapped_up

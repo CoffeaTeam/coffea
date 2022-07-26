@@ -57,7 +57,7 @@ def get_description():
 
 INSTALL_REQUIRES = [
     "awkward>=1.5.1,<2",
-    "uproot>=4.1.6",
+    "uproot>=4.1.6,==4.*,!=4.2.4,!=4.3.0,!=4.3.1",
     "uproot3-methods>=0.10.0",
     "uproot3>=3.14.1",
     "correctionlib>=2.0.0",
@@ -91,7 +91,8 @@ EXTRAS_REQUIRE["dask"] = [
 EXTRAS_REQUIRE["servicex"] = [
     "aiostream",
     "tenacity",
-    "func-adl_servicex==1.1.2",
+    "servicex>=2.5.3",
+    "func-adl_servicex",
 ]
 EXTRAS_REQUIRE["dev"] = [
     "flake8",

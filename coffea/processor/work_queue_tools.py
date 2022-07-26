@@ -6,7 +6,7 @@ import tempfile
 import textwrap
 import signal
 
-from os.path import basename, join
+from os.path import basename, join, getsize
 
 import math
 import numpy
@@ -86,6 +86,55 @@ except ImportError:
     class WorkQueue:
         def __init__(self, *args, **kwargs):
             raise ImportError("work_queue not available")
+
+
+class CoffeaWQ(WorkQueue):
+    def __init__(
+        self,
+        port=0,
+        name=None,
+        debug_log=None,
+        stats_log=None,
+        transactions_log=None,
+        tasks_accum_log=None,
+        password_file=None,
+        report_stdout=None,
+        report_monitor=None,
+    ):
+        super().__init__(
+            port=port,
+            name=name,
+            debug_log=debug_log,
+            stats_log=stats_log,
+            transactions_log=transactions_log,
+        )
+
+        self.report_stdout = report_stdout
+        self.report_monitor = report_monitor
+
+        # Make use of the stored password file, if enabled.
+        if password_file:
+            self.specify_password_file(password_file)
+
+        if tasks_accum_log:
+            with open(tasks_accum_log, "w") as f:
+                f.write(
+                    "id,category,status,dataset,file,range_start,range_stop,accum_parent,time_start,time_end,cpu_time,memory,fin,fout\n"
+                )
+
+        print("Listening for work queue workers on port {}...".format(self.port))
+        # perform a wait to print any warnings before progress bars
+        self.wait(0)
+
+    def wait(self, timeout=None):
+        task = super().wait(timeout)
+        if task:
+            # Evaluate and display details of the completed task
+            if task.successful():
+                task.fout_size = getsize(task.outfile_output)
+            task.report(self.report_stdout, self.report_monitor)
+            return task
+        return None
 
 
 class CoffeaWQTask(Task):
@@ -224,8 +273,11 @@ class CoffeaWQTask(Task):
         msg = "{} with{} result.".format(self.itemid, has_output)
         return msg
 
+    def successful(self):
+        return (self.result == 0) and (self.return_status == 0)
+
     def report(self, output_mode, resource_mode):
-        task_failed = (self.result != 0) or (self.return_status != 0)
+        task_failed = not self.successful()
 
         if _vprint.verbose_mode or task_failed or output_mode:
             _vprint.printf(
@@ -274,6 +326,36 @@ class CoffeaWQTask(Task):
 
         return not task_failed
 
+    def task_accum_log(self, log_filename, accum_parent, status):
+        # Should call write_task_accum_log with the appropiate arguments
+        return NotImplementedError
+
+    def write_task_accum_log(
+        self, log_filename, accum_parent, dataset, filename, start, stop, status
+    ):
+        if not log_filename:
+            return
+
+        with open(log_filename, "a") as f:
+            f.write(
+                "{id},{cat},{status},{set},{file},{start},{stop},{accum},{time_start},{time_end},{cpu},{mem},{fin},{fout}\n".format(
+                    id=self.id,
+                    cat=self.category,
+                    status=status,
+                    set=dataset,
+                    file=filename,
+                    start=start,
+                    stop=stop,
+                    accum=accum_parent,
+                    time_start=self.resources_measured.start,
+                    time_end=self.resources_measured.end,
+                    cpu=self.resources_measured.cpu_time,
+                    mem=self.resources_measured.memory,
+                    fin=self.fin_size,
+                    fout=self.fout_size,
+                )
+            )
+
 
 class PreProcCoffeaWQTask(CoffeaWQTask):
     tasks_counter = 0
@@ -305,6 +387,8 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
                 item.filename, remote_name=item.filename, cache=True
             )
 
+        self.fin_size = 0
+
     def clone(self, tmpdir, exec_defaults):
         return PreProcCoffeaWQTask(
             self.fn_wrapper,
@@ -319,6 +403,13 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
         i = self.item
         msg = super().debug_info()
         return "{} {}".format((i.dataset, i.filename, i.treename), msg)
+
+    def task_accum_log(self, log_filename, accum_parent, status):
+        meta = list(self.output)[0].metadata
+        i = self.item
+        self.write_task_accum_log(
+            log_filename, "", i.dataset, i.filename, 0, meta["numentries"], "done"
+        )
 
 
 class ProcCoffeaWQTask(CoffeaWQTask):
@@ -349,6 +440,8 @@ class ProcCoffeaWQTask(CoffeaWQTask):
             self.specify_input_file(
                 item.filename, remote_name=item.filename, cache=True
             )
+
+        self.fin_size = 0
 
     def clone(self, tmpdir, exec_defaults):
         return ProcCoffeaWQTask(
@@ -406,6 +499,18 @@ class ProcCoffeaWQTask(CoffeaWQTask):
             (i.dataset, i.filename, i.treename, i.entrystart, i.entrystop), msg
         )
 
+    def task_accum_log(self, log_filename, accum_parent, status):
+        i = self.item
+        self.write_task_accum_log(
+            log_filename,
+            accum_parent,
+            i.dataset,
+            i.filename,
+            i.entrystart,
+            i.entrystop,
+            status,
+        )
+
 
 class AccumCoffeaWQTask(CoffeaWQTask):
     tasks_counter = 0
@@ -439,6 +544,8 @@ class AccumCoffeaWQTask(CoffeaWQTask):
         for t in self.tasks_to_accumulate:
             self.specify_input_file(t.outfile_output, cache=False)
 
+        self.fin_size = sum(t.fout_size for t in tasks_to_accumulate)
+
     def cleanup_inputs(self):
         super().cleanup_inputs()
         # cleanup files associated with results already accumulated
@@ -471,6 +578,11 @@ class AccumCoffeaWQTask(CoffeaWQTask):
 
         return "{} accumulating: [{}] ".format(msg, "\n".join(results))
 
+    def task_accum_log(self, log_filename, status, accum_parent=None):
+        self.write_task_accum_log(
+            log_filename, accum_parent, "", "", 0, len(self), status
+        )
+
 
 def work_queue_main(items, function, accumulator, **kwargs):
     """Execute using Work Queue
@@ -502,22 +614,17 @@ def work_queue_main(items, function, accumulator, **kwargs):
         )
 
     if _wq_queue is None:
-        _wq_queue = WorkQueue(
+        _wq_queue = CoffeaWQ(
             port=kwargs["port"],
             name=kwargs["master_name"],
             debug_log=kwargs["debug_log"],
             stats_log=kwargs["stats_log"],
             transactions_log=kwargs["transactions_log"],
+            tasks_accum_log=kwargs["tasks_accum_log"],
+            password_file=kwargs["password_file"],
+            report_stdout=kwargs["print_stdout"],
+            report_monitor=kwargs["resource_monitor"],
         )
-
-        # Make use of the stored password file, if enabled.
-        if kwargs["password_file"] is not None:
-            _wq_queue.specify_password_file(kwargs["password_file"])
-
-        print("Listening for work queue workers on port {}...".format(_wq_queue.port))
-        # perform a wait to print any warnings before progress bars
-        _wq_queue.wait(0)
-
     _declare_resources(kwargs)
 
     # Working within a custom temporary directory:
@@ -624,12 +731,7 @@ def _work_queue_processing(
             bar.update(0)
 
         if task:
-            # Evaluate and display details of the completed task
-            success = task.report(
-                exec_defaults["print_stdout"], exec_defaults["resource_monitor"]
-            )
-
-            if not success:
+            if not task.successful():
                 task.resubmit(tmpdir, exec_defaults)
             else:
                 tasks_to_accumulate.append(task)
@@ -647,6 +749,12 @@ def _work_queue_processing(
                         )
                     )
                 else:
+                    for t in task.tasks_to_accumulate:
+                        t.task_accum_log(
+                            exec_defaults["tasks_accum_log"],
+                            status="accumulated",
+                            accum_parent=task.id,
+                        )
                     progress_bars["accumulate"].update(1)
 
                 force_last_accum = (items_done >= items_total) or early_terminate
@@ -674,6 +782,11 @@ def _work_queue_processing(
     accumulator = _final_accumulation(
         accumulator, tasks_to_accumulate, exec_defaults["compression"]
     )
+
+    for t in tasks_to_accumulate:
+        t.task_accum_log(
+            exec_defaults["tasks_accum_log"], status="accumulated", accum_parent=0
+        )
 
     if exec_defaults["dynamic_chunksize"]:
         _vprint(
@@ -719,6 +832,7 @@ def _final_accumulation(accumulator, tasks_to_accumulate, compression):
     )
     for t in tasks_to_accumulate:
         t.cleanup_outputs()
+
     return accumulator
 
 
@@ -743,14 +857,12 @@ def _work_queue_preprocessing(
     while not _wq_queue.empty():
         task = _wq_queue.wait(5)
         if task:
-            success = task.report(
-                exec_defaults["print_stdout"], exec_defaults["resource_monitor"]
-            )
-            if success:
+            if task.successful():
                 accumulator = accumulate([task.output], accumulator)
                 preprocessing_bar.update(1)
                 task.cleanup_inputs()
                 task.cleanup_outputs()
+                task.task_accum_log(exec_defaults["tasks_accum_log"], "", "done")
             else:
                 task.resubmit(tmpdir, exec_defaults)
 

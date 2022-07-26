@@ -28,6 +28,10 @@ from .plot import (
 )
 from .export import export1d
 
+from coffea.util import deprecate
+
+deprecate(ImportError("coffea.hist is deprecated"), "v0.8.0", "31 Dec 2022")
+
 __all__ = [
     "Hist",
     "Bin",

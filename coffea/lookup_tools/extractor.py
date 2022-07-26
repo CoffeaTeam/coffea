@@ -9,6 +9,7 @@ from coffea.lookup_tools.json_converters import (
     convert_histo_json_file,
     convert_correctionlib_file,
 )
+from coffea.lookup_tools.json_converters import convert_pileup_json_file
 from coffea.lookup_tools.txt_converters import *
 
 file_converters = {
@@ -18,6 +19,7 @@ file_converters = {
         "default": convert_histo_json_file,
         "histo": convert_histo_json_file,
         "corr": convert_correctionlib_file,
+        "pileup": convert_pileup_json_file,
     },
     "txt": {
         "default": convert_jec_txt_file,
@@ -26,6 +28,7 @@ file_converters = {
         "jr": convert_jr_txt_file,
         "junc": convert_junc_txt_file,
         "ea": convert_effective_area_file,
+        "pileup": convert_pileup_json_file,
     },
 }
 
@@ -107,6 +110,8 @@ class extractor(object):
             else:
                 weights, thetype = self.extract_from_file(thefile, name)
                 self.add_weight_set(local_name, thetype, weights)
+                if thetype == "json_lookup":
+                    self._names[local_name] = 0
 
     def import_file(self, thefile):
         """cache the whole contents of a file for later processing"""
@@ -117,6 +122,10 @@ class extractor(object):
             thetype = "default"
             if len(file_dots) > 2:
                 thetype = file_dots[-2]
+            if "pileup" in thefile:
+                thetype = "pileup"
+            if "_SF_" in thefile:
+                thetype = "jersf"
             self._filecache[thefile] = file_converters[theformat][thetype](thefile)
 
     def extract_from_file(self, thefile, name):
