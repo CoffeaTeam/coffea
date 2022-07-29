@@ -777,21 +777,23 @@ def _work_queue_processing(
                     exec_defaults,
                 )
                 progress_bars["accumulate"].total = math.ceil(
-                    items_total * AccumCoffeaWQTask.tasks_counter / items_done
+                    items_total * _wq_queue.stats_category("accumulating").tasks_submitted / items_done
                 )
 
                 # Remove input files as we go to avoid unbounded disk
                 # we do not remove outputs, as they are used by further accumulate tasks
                 task.cleanup_inputs()
 
-    for bar in progress_bars.values():
-        bar.close()
-
     if items_done < items_total:
         _vprint.printf("\nWARNING: Not all items were processed.\n")
     accumulator = _final_accumulation(
         accumulator, tasks_to_accumulate, exec_defaults["compression"]
     )
+
+    progress_bars["accumulate"].total = math.ceil(_wq_queue.stats_category("accumulating").tasks_submitted)
+    progress_bars["accumulate"].refresh()
+    for bar in progress_bars.values():
+        bar.close()
 
     for t in tasks_to_accumulate:
         t.task_accum_log(
