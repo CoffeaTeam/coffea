@@ -622,7 +622,9 @@ def work_queue_main(items, function, accumulator, **kwargs):
 
     # Working within a custom temporary directory:
     try:
-        tmpdir_inst = tempfile.TemporaryDirectory(prefix="wq-executor-tmp-", dir=kwargs["filepath"])
+        tmpdir_inst = tempfile.TemporaryDirectory(
+            prefix="wq-executor-tmp-", dir=kwargs["filepath"]
+        )
         tmpdir = tmpdir_inst.name
 
         fn_wrapper = _create_fn_wrapper(kwargs["x509_proxy"], tmpdir=tmpdir)
@@ -651,7 +653,7 @@ def work_queue_main(items, function, accumulator, **kwargs):
                 infile_accum_fn,
                 tmpdir,
                 kwargs,
-                )
+            )
             _wq_queue = None
     except Exception as e:
         _wq_queue = None
@@ -769,8 +771,9 @@ def _work_queue_processing(
                     tmpdir,
                     exec_defaults,
                 )
+                acc_sub = _wq_queue.stats_category("accumulating").tasks_submitted
                 progress_bars["accumulate"].total = math.ceil(
-                    items_total * _wq_queue.stats_category("accumulating").tasks_submitted / items_done
+                    items_total * acc_sub / items_done
                 )
 
                 # Remove input files as we go to avoid unbounded disk
@@ -783,7 +786,9 @@ def _work_queue_processing(
         accumulator, tasks_to_accumulate, exec_defaults["compression"]
     )
 
-    progress_bars["accumulate"].total = math.ceil(_wq_queue.stats_category("accumulating").tasks_submitted)
+    progress_bars["accumulate"].total = _wq_queue.stats_category(
+        "accumulating"
+    ).tasks_submitted
     progress_bars["accumulate"].refresh()
     for bar in progress_bars.values():
         bar.close()
