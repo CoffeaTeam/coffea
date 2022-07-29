@@ -644,11 +644,13 @@ def work_queue_main(items, function, accumulator, **kwargs):
             kwargs["custom_init"](_wq_queue)
 
         if kwargs["desc"] == "Preprocessing":
-            return _work_queue_preprocessing(
+            result = _work_queue_preprocessing(
                 items, accumulator, fn_wrapper, infile_function, tmpdir, kwargs
             )
+            # we do not shutdown queue after preprocessing, as we want to
+            # keep the connected workers for processing/accumulation
         else:
-            return _work_queue_processing(
+            result = _work_queue_processing(
                 items,
                 accumulator,
                 fn_wrapper,
@@ -656,9 +658,14 @@ def work_queue_main(items, function, accumulator, **kwargs):
                 infile_accum_fn,
                 tmpdir,
                 kwargs,
-            )
+                )
+            _wq_queue = None
+    except Exception as e:
+        _wq_queue = None
+        raise e
     finally:
         tmpdir_inst.cleanup()
+    return result
 
 
 def _work_queue_processing(
