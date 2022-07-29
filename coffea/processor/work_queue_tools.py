@@ -138,9 +138,12 @@ class CoffeaWQ(WorkQueue):
 
 
 class CoffeaWQTask(Task):
+    tasks_counter = 0
+
     def __init__(
         self, fn_wrapper, infile_function, item_args, itemid, tmpdir, exec_defaults
     ):
+        CoffeaWQTask.tasks_counter += 1
         self.itemid = itemid
 
         self.py_result = ResultUnavailable()
@@ -358,16 +361,13 @@ class CoffeaWQTask(Task):
 
 
 class PreProcCoffeaWQTask(CoffeaWQTask):
-    tasks_counter = 0
     infile_function = None
 
     def __init__(
         self, fn_wrapper, infile_function, item, tmpdir, exec_defaults, itemid=None
     ):
-        PreProcCoffeaWQTask.tasks_counter += 1
-
         if not itemid:
-            itemid = "pre_{}".format(PreProcCoffeaWQTask.tasks_counter)
+            itemid = "pre_{}".format(CoffeaWQTask.tasks_counter)
 
         self.item = item
 
@@ -413,16 +413,13 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
 
 
 class ProcCoffeaWQTask(CoffeaWQTask):
-    tasks_counter = 0
-
     def __init__(
         self, fn_wrapper, infile_function, item, tmpdir, exec_defaults, itemid=None
     ):
         self.size = len(item)
 
-        ProcCoffeaWQTask.tasks_counter += 1
         if not itemid:
-            itemid = "p_{}".format(ProcCoffeaWQTask.tasks_counter)
+            itemid = "p_{}".format(CoffeaWQTask.tasks_counter)
 
         self.item = item
 
@@ -513,8 +510,6 @@ class ProcCoffeaWQTask(CoffeaWQTask):
 
 
 class AccumCoffeaWQTask(CoffeaWQTask):
-    tasks_counter = 0
-
     def __init__(
         self,
         fn_wrapper,
@@ -524,10 +519,8 @@ class AccumCoffeaWQTask(CoffeaWQTask):
         exec_defaults,
         itemid=None,
     ):
-        AccumCoffeaWQTask.tasks_counter += 1
-
         if not itemid:
-            itemid = "accum_{}".format(AccumCoffeaWQTask.tasks_counter)
+            itemid = "accum_{}".format(CoffeaWQTask.tasks_counter)
 
         self.tasks_to_accumulate = tasks_to_accumulate
         self.size = sum(len(t) for t in self.tasks_to_accumulate)
