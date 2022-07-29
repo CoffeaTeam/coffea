@@ -628,9 +628,10 @@ def work_queue_main(items, function, accumulator, **kwargs):
     _declare_resources(kwargs)
 
     # Working within a custom temporary directory:
-    with tempfile.TemporaryDirectory(
-        prefix="wq-executor-tmp-", dir=kwargs["filepath"]
-    ) as tmpdir:
+    try:
+        tmpdir_inst = tempfile.TemporaryDirectory(prefix="wq-executor-tmp-", dir=kwargs["filepath"])
+        tmpdir = tmpdir_inst.name
+
         fn_wrapper = _create_fn_wrapper(kwargs["x509_proxy"], tmpdir=tmpdir)
         infile_function = _function_to_file(
             function, prefix_name=kwargs["function_name"], tmpdir=tmpdir
@@ -656,6 +657,8 @@ def work_queue_main(items, function, accumulator, **kwargs):
                 tmpdir,
                 kwargs,
             )
+    finally:
+        tmpdir_inst.cleanup()
 
 
 def _work_queue_processing(
