@@ -500,7 +500,7 @@ class WorkQueueExecutor(ExecutorBase):
             - 'watchdog': in addition to measuring resources, tasks are terminated if they
                         go above the cores, memory, or disk specified.
         resources_mode : str
-            one of 'fixed', 'max-seen', or 'max-throughput'. Default is 'fixed'.
+            one of 'fixed', 'max-seen', or 'max-throughput'. Default is 'max-seen'.
             Sets the strategy to automatically allocate resources to tasks.
             - 'fixed': allocate cores, memory, and disk specified for each task.
             - 'max-seen' or 'auto': use the cores, memory, and disk given as maximum values to allocate,
@@ -590,18 +590,18 @@ class WorkQueueExecutor(ExecutorBase):
     password_file: Optional[str] = None
     environment_file: Optional[str] = None
     extra_input_files: List = field(default_factory=list)
-    wrapper: Optional[str] = shutil.which("python_package_run")
+    wrapper: Optional[str] = shutil.which("poncho_package_run")
     resource_monitor: Optional[str] = "off"
-    resources_mode: Optional[str] = "fixed"
+    resources_mode: Optional[str] = "max-seen"
     split_on_exhaustion: Optional[bool] = True
     fast_terminate_workers: Optional[int] = None
     cores: Optional[int] = None
     memory: Optional[int] = None
     disk: Optional[int] = None
     gpus: Optional[int] = None
-    chunks_per_accum: int = 10
+    chunks_per_accum: int = 25
     chunks_accum_in_mem: int = 2
-    chunksize: int = 1024
+    chunksize: int = 100000
     dynamic_chunksize: Optional[Dict] = None
     custom_init: Optional[Callable] = None
 
