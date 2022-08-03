@@ -24,7 +24,7 @@ print("coffea version:", coffea.__version__)
 
 project = 'coffea'
 copyright = '2019, Fermi National Accelerator Laboratory'
-author = 'M. Cremonesi, L. Gray, A. Hall, N. Smith, et al. (The Coffea Team)'
+author = 'L. Gray, N. Smith, et al. (The Coffea Team)'
 
 version = coffea.__version__.rsplit('.', 1)[0]
 release = coffea.__version__
@@ -48,6 +48,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx_automodapi.automodapi',
     'sphinx_automodapi.smart_resolver',
+    # 'IPython.sphinxext.ipython_console_highlighting',
 ]
 
 numpydoc_show_class_members = False
