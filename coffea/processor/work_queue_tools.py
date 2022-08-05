@@ -138,9 +138,12 @@ class CoffeaWQ(WorkQueue):
 
 
 class CoffeaWQTask(Task):
+    tasks_counter = 0
+
     def __init__(
         self, fn_wrapper, infile_function, item_args, itemid, tmpdir, exec_defaults
     ):
+        CoffeaWQTask.tasks_counter += 1
         self.itemid = itemid
 
         self.py_result = ResultUnavailable()
@@ -358,16 +361,13 @@ class CoffeaWQTask(Task):
 
 
 class PreProcCoffeaWQTask(CoffeaWQTask):
-    tasks_counter = 0
     infile_function = None
 
     def __init__(
         self, fn_wrapper, infile_function, item, tmpdir, exec_defaults, itemid=None
     ):
-        PreProcCoffeaWQTask.tasks_counter += 1
-
         if not itemid:
-            itemid = "pre_{}".format(PreProcCoffeaWQTask.tasks_counter)
+            itemid = "pre_{}".format(CoffeaWQTask.tasks_counter)
 
         self.item = item
 
@@ -413,16 +413,13 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
 
 
 class ProcCoffeaWQTask(CoffeaWQTask):
-    tasks_counter = 0
-
     def __init__(
         self, fn_wrapper, infile_function, item, tmpdir, exec_defaults, itemid=None
     ):
         self.size = len(item)
 
-        ProcCoffeaWQTask.tasks_counter += 1
         if not itemid:
-            itemid = "p_{}".format(ProcCoffeaWQTask.tasks_counter)
+            itemid = "p_{}".format(CoffeaWQTask.tasks_counter)
 
         self.item = item
 
@@ -513,8 +510,6 @@ class ProcCoffeaWQTask(CoffeaWQTask):
 
 
 class AccumCoffeaWQTask(CoffeaWQTask):
-    tasks_counter = 0
-
     def __init__(
         self,
         fn_wrapper,
@@ -524,10 +519,8 @@ class AccumCoffeaWQTask(CoffeaWQTask):
         exec_defaults,
         itemid=None,
     ):
-        AccumCoffeaWQTask.tasks_counter += 1
-
         if not itemid:
-            itemid = "accum_{}".format(AccumCoffeaWQTask.tasks_counter)
+            itemid = "accum_{}".format(CoffeaWQTask.tasks_counter)
 
         self.tasks_to_accumulate = tasks_to_accumulate
         self.size = sum(len(t) for t in self.tasks_to_accumulate)
@@ -628,9 +621,12 @@ def work_queue_main(items, function, accumulator, **kwargs):
     _declare_resources(kwargs)
 
     # Working within a custom temporary directory:
-    with tempfile.TemporaryDirectory(
-        prefix="wq-executor-tmp-", dir=kwargs["filepath"]
-    ) as tmpdir:
+    try:
+        tmpdir_inst = tempfile.TemporaryDirectory(
+            prefix="wq-executor-tmp-", dir=kwargs["filepath"]
+        )
+        tmpdir = tmpdir_inst.name
+
         fn_wrapper = _create_fn_wrapper(kwargs["x509_proxy"], tmpdir=tmpdir)
         infile_function = _function_to_file(
             function, prefix_name=kwargs["function_name"], tmpdir=tmpdir
@@ -643,11 +639,13 @@ def work_queue_main(items, function, accumulator, **kwargs):
             kwargs["custom_init"](_wq_queue)
 
         if kwargs["desc"] == "Preprocessing":
-            return _work_queue_preprocessing(
+            result = _work_queue_preprocessing(
                 items, accumulator, fn_wrapper, infile_function, tmpdir, kwargs
             )
+            # we do not shutdown queue after preprocessing, as we want to
+            # keep the connected workers for processing/accumulation
         else:
-            return _work_queue_processing(
+            result = _work_queue_processing(
                 items,
                 accumulator,
                 fn_wrapper,
@@ -656,6 +654,13 @@ def work_queue_main(items, function, accumulator, **kwargs):
                 tmpdir,
                 kwargs,
             )
+            _wq_queue = None
+    except Exception as e:
+        _wq_queue = None
+        raise e
+    finally:
+        tmpdir_inst.cleanup()
+    return result
 
 
 def _work_queue_processing(
@@ -766,22 +771,27 @@ def _work_queue_processing(
                     tmpdir,
                     exec_defaults,
                 )
+                acc_sub = _wq_queue.stats_category("accumulating").tasks_submitted
                 progress_bars["accumulate"].total = math.ceil(
-                    items_total * AccumCoffeaWQTask.tasks_counter / items_done
+                    items_total * acc_sub / items_done
                 )
 
                 # Remove input files as we go to avoid unbounded disk
                 # we do not remove outputs, as they are used by further accumulate tasks
                 task.cleanup_inputs()
 
-    for bar in progress_bars.values():
-        bar.close()
-
     if items_done < items_total:
         _vprint.printf("\nWARNING: Not all items were processed.\n")
     accumulator = _final_accumulation(
         accumulator, tasks_to_accumulate, exec_defaults["compression"]
     )
+
+    progress_bars["accumulate"].total = _wq_queue.stats_category(
+        "accumulating"
+    ).tasks_submitted
+    progress_bars["accumulate"].refresh()
+    for bar in progress_bars.values():
+        bar.close()
 
     for t in tasks_to_accumulate:
         t.task_accum_log(
