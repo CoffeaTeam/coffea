@@ -107,6 +107,7 @@ EXTRAS_REQUIRE["dev"] = [
     "sphinx-rtd-theme",
     "sphinx-automodapi",
     "pyinstrument",
+    "ipython",
 ]
 
 setup(
