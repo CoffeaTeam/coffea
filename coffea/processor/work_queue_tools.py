@@ -796,7 +796,7 @@ def _work_queue_processing(
                 )
                 acc_sub = _wq_queue.stats_category("accumulating").tasks_submitted
                 progress_bars["accumulate"].total = math.ceil(
-                    items_total * acc_sub / items_done
+                    1 + (items_total * acc_sub / items_done)
                 )
 
                 # Remove input files as we go to avoid unbounded disk
@@ -805,14 +805,13 @@ def _work_queue_processing(
 
     if items_done < items_total:
         _vprint.printf("\nWARNING: Not all items were processed.\n")
+
     accumulator = _final_accumulation(
         accumulator, tasks_to_accumulate, exec_defaults["compression"]
     )
-
-    progress_bars["accumulate"].total = _wq_queue.stats_category(
-        "accumulating"
-    ).tasks_submitted
+    progress_bars["accumulate"].update(1)
     progress_bars["accumulate"].refresh()
+
     for bar in progress_bars.values():
         bar.close()
 
