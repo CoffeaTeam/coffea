@@ -100,17 +100,20 @@ class CoffeaWQ(WorkQueue):
         password_file=None,
         report_stdout=None,
         report_monitor=None,
+        status_display_interval=None,
     ):
+        self.report_stdout = report_stdout
+        self.report_monitor = report_monitor
+        self.stats_coffea = Stats()
+
         super().__init__(
             port=port,
             name=name,
             debug_log=debug_log,
             stats_log=stats_log,
             transactions_log=transactions_log,
+            status_display_interval=status_display_interval,
         )
-
-        self.report_stdout = report_stdout
-        self.report_monitor = report_monitor
 
         # Make use of the stored password file, if enabled.
         if password_file:
@@ -122,7 +125,7 @@ class CoffeaWQ(WorkQueue):
                     "id,category,status,dataset,file,range_start,range_stop,accum_parent,time_start,time_end,cpu_time,memory,fin,fout\n"
                 )
 
-        print("Listening for work queue workers on port {}...".format(self.port))
+        _vprint.printf(f"Listening for work queue workers on port {self.port}.")
         # perform a wait to print any warnings before progress bars
         self.wait(0)
 
@@ -131,10 +134,25 @@ class CoffeaWQ(WorkQueue):
         if task:
             # Evaluate and display details of the completed task
             if task.successful():
-                task.fout_size = getsize(task.outfile_output)
+                task.fout_size = getsize(task.outfile_output) / 1e6
+                if task.fin_size > 0:
+                    # record only if task used any intermediate inputs
+                    self.stats_coffea.max("size_max_input", task.fin_size)
+                self.stats_coffea.max("size_max_output", task.fout_size)
             task.report(self.report_stdout, self.report_monitor)
             return task
         return None
+
+    def application_info(self):
+        return {
+            "application_info": {
+                "values": dict(self.stats_coffea),
+                "units": {
+                    "size_max_output": "MB",
+                    "size_max_input": "MB",
+                },
+            }
+        }
 
 
 class CoffeaWQTask(Task):
@@ -465,6 +483,9 @@ class ProcCoffeaWQTask(CoffeaWQTask):
         n = max(math.ceil(total / target_chunksize), 1)
         actual_chunksize = int(math.ceil(total / n))
 
+        _wq_queue.stats_coffea.inc("chunks_split")
+        _wq_queue.stats_coffea.min("min_chunksize_after_split", actual_chunksize)
+
         splits = []
         start = self.item.entrystart
         while start < self.item.entrystop:
@@ -617,6 +638,7 @@ def work_queue_main(items, function, accumulator, **kwargs):
             password_file=kwargs["password_file"],
             report_stdout=kwargs["print_stdout"],
             report_monitor=kwargs["resource_monitor"],
+            status_display_interval=kwargs["status_display_interval"],
         )
     _declare_resources(kwargs)
 
@@ -693,6 +715,9 @@ def _work_queue_processing(
     # if dynamic_chunksize is not given.
     chunksize = exec_defaults["chunksize"]
 
+    _wq_queue.stats_coffea.set("original_chunksize", chunksize)
+    _wq_queue.stats_coffea.set("current_chunksize", chunksize)
+
     # keep a record of the latest computed chunksize, if any
     exec_defaults["updated_chunksize"] = exec_defaults["chunksize"]
 
@@ -702,20 +727,16 @@ def _work_queue_processing(
 
     # Main loop of executor
     while (not early_terminate and items_done < items_total) or not _wq_queue.empty():
+        update_chunksize = items_submitted > 0 and exec_defaults["dynamic_chunksize"]
+        if update_chunksize:
+            chunksize = _compute_chunksize(task_reports, exec_defaults)
+            _wq_queue.stats_coffea.set("current_chunksize", chunksize)
+            _vprint("current chunksize {}", chunksize)
+            chunksize = _sample_chunksize(chunksize)
+
         while (
             items_submitted < items_total and _wq_queue.hungry() and not early_terminate
         ):
-            update_chunksize = (
-                items_submitted > 0 and exec_defaults["dynamic_chunksize"]
-            )
-            if update_chunksize:
-                _vprint(
-                    "current chunksize {}",
-                    _compute_chunksize(task_reports, exec_defaults, sample=False),
-                )
-
-                chunksize = _compute_chunksize(task_reports, exec_defaults)
-
             task = _submit_proc_task(
                 fn_wrapper,
                 infile_function,
@@ -773,7 +794,7 @@ def _work_queue_processing(
                 )
                 acc_sub = _wq_queue.stats_category("accumulating").tasks_submitted
                 progress_bars["accumulate"].total = math.ceil(
-                    items_total * acc_sub / items_done
+                    1 + (items_total * acc_sub / items_done)
                 )
 
                 # Remove input files as we go to avoid unbounded disk
@@ -782,14 +803,13 @@ def _work_queue_processing(
 
     if items_done < items_total:
         _vprint.printf("\nWARNING: Not all items were processed.\n")
+
     accumulator = _final_accumulation(
         accumulator, tasks_to_accumulate, exec_defaults["compression"]
     )
-
-    progress_bars["accumulate"].total = _wq_queue.stats_category(
-        "accumulating"
-    ).tasks_submitted
+    progress_bars["accumulate"].update(1)
     progress_bars["accumulate"].refresh()
+
     for bar in progress_bars.values():
         bar.close()
 
@@ -799,10 +819,7 @@ def _work_queue_processing(
         )
 
     if exec_defaults["dynamic_chunksize"]:
-        _vprint(
-            "final chunksize {}",
-            _compute_chunksize(task_reports, exec_defaults, sample=False),
-        )
+        _vprint("final chunksize {}", _compute_chunksize(task_reports, exec_defaults))
 
     return accumulator
 
@@ -836,12 +853,12 @@ def _final_accumulation(accumulator, tasks_to_accumulate, compression):
         )
 
     _vprint("Performing final accumulation...")
-
     accumulator = accumulate_result_files(
         2, compression, [t.outfile_output for t in tasks_to_accumulate], accumulator
     )
     for t in tasks_to_accumulate:
         t.cleanup_outputs()
+    _vprint("done")
 
     return accumulator
 
@@ -1139,6 +1156,35 @@ class ResultUnavailable(Exception):
     pass
 
 
+class Stats(dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def inc(self, stat, delta=1):
+        try:
+            self[stat] += delta
+        except KeyError:
+            self[stat] = delta
+
+    def set(self, stat, value):
+        self[stat] = value
+
+    def get(self, stat, default=None):
+        return self.setdefault(stat, 0)
+
+    def min(self, stat, value):
+        try:
+            self[stat] = min(self[stat], value)
+        except KeyError:
+            self[stat] = value
+
+    def max(self, stat, value):
+        try:
+            self[stat] = max(self[stat], value)
+        except KeyError:
+            self[stat] = value
+
+
 class VerbosePrint:
     def __init__(self, status_mode=True, verbose_mode=True):
         self.status_mode = status_mode
@@ -1168,7 +1214,18 @@ def _floor_to_pow2(value):
     return pow(2, math.floor(math.log2(value)))
 
 
-def _compute_chunksize(task_reports, exec_defaults, sample=True):
+def _sample_chunksize(chunksize):
+    # sample between value found and half of it, to better explore the
+    # space.  we take advantage of the fact that the function that
+    # generates chunks tries to have equally sized work units per file.
+    # Most files have a different number of events, which is unlikely
+    # to be a multiple of the chunsize computed. Just in case all files
+    # have the same number of events, we return chunksize/2 10% of the
+    # time.
+    return int(random.choices([chunksize, max(chunksize / 2, 1)], weights=[90, 10])[0])
+
+
+def _compute_chunksize(task_reports, exec_defaults):
     targets = exec_defaults["dynamic_chunksize"]
 
     chunksize_default = exec_defaults["chunksize"]
@@ -1196,15 +1253,6 @@ def _compute_chunksize(task_reports, exec_defaults, sample=True):
 
     try:
         chunksize = int(_floor_to_pow2(chunksize))
-        if sample:
-            # sample between value found and one minue, to better explore the
-            # space.  we take advantage of the fact that the function that
-            # generates chunks tries to have equally sized work units per file.
-            # Most files have a different number of events, which is unlikely
-            # to be a multiple of the chunsize computed. Just in case all files
-            # have a multiple of the chunsize, we return chunksize - 1 half the
-            # time.
-            chunksize = random.choice([chunksize, max(chunksize - 1, 1)])
     except ValueError:
         chunksize = chunksize_default
 
