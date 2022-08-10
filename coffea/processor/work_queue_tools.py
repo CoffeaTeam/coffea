@@ -727,18 +727,16 @@ def _work_queue_processing(
 
     # Main loop of executor
     while (not early_terminate and items_done < items_total) or not _wq_queue.empty():
+        update_chunksize = items_submitted > 0 and exec_defaults["dynamic_chunksize"]
+        if update_chunksize:
+            chunksize = _compute_chunksize(task_reports, exec_defaults)
+            _wq_queue.stats_coffea.set("current_chunksize", chunksize)
+            _vprint("current chunksize {}", chunksize)
+            chunksize = _sample_chunksize(chunksize)
+
         while (
             items_submitted < items_total and _wq_queue.hungry() and not early_terminate
         ):
-            update_chunksize = (
-                items_submitted > 0 and exec_defaults["dynamic_chunksize"]
-            )
-            if update_chunksize:
-                chunksize = _compute_chunksize(task_reports, exec_defaults)
-                _wq_queue.stats_coffea.set("current_chunksize", chunksize)
-                _vprint("current chunksize {}", chunksize)
-                chunksize = _sample_chunksize(chunksize)
-
             task = _submit_proc_task(
                 fn_wrapper,
                 infile_function,
@@ -1216,7 +1214,18 @@ def _floor_to_pow2(value):
     return pow(2, math.floor(math.log2(value)))
 
 
-def _compute_chunksize(task_reports, exec_defaults, sample=True):
+def _sample_chunksize(chunksize):
+    # sample between value found and half of it, to better explore the
+    # space.  we take advantage of the fact that the function that
+    # generates chunks tries to have equally sized work units per file.
+    # Most files have a different number of events, which is unlikely
+    # to be a multiple of the chunsize computed. Just in case all files
+    # have the same number of events, we return chunksize/2 10% of the
+    # time.
+    return int(random.choices([chunksize, max(chunksize / 2, 1)], weights=[90, 10])[0])
+
+
+def _compute_chunksize(task_reports, exec_defaults):
     targets = exec_defaults["dynamic_chunksize"]
 
     chunksize_default = exec_defaults["chunksize"]
@@ -1244,15 +1253,6 @@ def _compute_chunksize(task_reports, exec_defaults, sample=True):
 
     try:
         chunksize = int(_floor_to_pow2(chunksize))
-        if sample:
-            # sample between value found and one minue, to better explore the
-            # space.  we take advantage of the fact that the function that
-            # generates chunks tries to have equally sized work units per file.
-            # Most files have a different number of events, which is unlikely
-            # to be a multiple of the chunsize computed. Just in case all files
-            # have a multiple of the chunsize, we return chunksize - 1 half the
-            # time.
-            chunksize = random.choice([chunksize, max(chunksize - 1, 1)])
     except ValueError:
         chunksize = chunksize_default
 

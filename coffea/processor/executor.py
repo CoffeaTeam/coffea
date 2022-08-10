@@ -1804,16 +1804,16 @@ class Runner:
                 processor_instance=pi_to_send,
             )
 
-        if self.format == "root":
-            if self.dynamic_chunksize:
-                # chunks stay as generator
-                events_total = sum(f.metadata["numentries"] for f in fileset)
-            else:
-                # materialize to list
-                chunks = [c for c in chunks]
-                events_total = sum(len(c) for c in chunks)
+        if self.format == "root" and self.dynamic_chunksize:
+            # keep chunks in generator, use a copy to count number of events
+            # this is cheap, as we are reading from the cache
+            chunks_to_count = self.preprocess(fileset, treename)
         else:
-            chunks = [c for c in chunks]
+            # materialize chunks to list, then count that list
+            chunks = list(chunks)
+            chunks_to_count = chunks
+
+        events_total = sum(len(c) for c in chunks_to_count)
 
         exe_args = {
             "unit": "event"
