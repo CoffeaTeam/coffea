@@ -101,6 +101,10 @@ class CoffeaWQ(WorkQueue):
         report_stdout=None,
         report_monitor=None,
     ):
+        self.report_stdout = report_stdout
+        self.report_monitor = report_monitor
+        self.stats_coffea = Stats()
+
         super().__init__(
             port=port,
             name=name,
@@ -108,9 +112,6 @@ class CoffeaWQ(WorkQueue):
             stats_log=stats_log,
             transactions_log=transactions_log,
         )
-
-        self.report_stdout = report_stdout
-        self.report_monitor = report_monitor
 
         # Make use of the stored password file, if enabled.
         if password_file:
@@ -122,7 +123,7 @@ class CoffeaWQ(WorkQueue):
                     "id,category,status,dataset,file,range_start,range_stop,accum_parent,time_start,time_end,cpu_time,memory,fin,fout\n"
                 )
 
-        print("Listening for work queue workers on port {}...".format(self.port))
+        _vprint.printf(f"Listening for work queue workers on port {self.port}.")
         # perform a wait to print any warnings before progress bars
         self.wait(0)
 
@@ -465,6 +466,14 @@ class ProcCoffeaWQTask(CoffeaWQTask):
         n = max(math.ceil(total / target_chunksize), 1)
         actual_chunksize = int(math.ceil(total / n))
 
+        _wq_queue.stats_coffea.inc("chunks_split")
+        prev_min = _wq_queue.stats_coffea.get("min_chunksize_after_split")
+        if prev_min < 1:
+            prev_min = target_chunksize
+        _wq_queue.stats_coffea.set(
+            "min_chunksize_after_split", min(prev_min, actual_chunksize)
+        )
+
         splits = []
         start = self.item.entrystart
         while start < self.item.entrystop:
@@ -692,6 +701,9 @@ def _work_queue_processing(
     # "chunksize" is the original chunksize passed to the executor. Always used
     # if dynamic_chunksize is not given.
     chunksize = exec_defaults["chunksize"]
+
+    _wq_queue.stats_coffea.set("original_chunksize", chunksize)
+    _wq_queue.stats_coffea.set("current_chunksize", chunksize)
 
     # keep a record of the latest computed chunksize, if any
     exec_defaults["updated_chunksize"] = exec_defaults["chunksize"]
@@ -1137,6 +1149,23 @@ def _check_dynamic_chunksize_targets(targets):
 
 class ResultUnavailable(Exception):
     pass
+
+
+class Stats(dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def inc(self, stat, delta=1):
+        try:
+            self[stat] += delta
+        except KeyError:
+            self[stat] = delta
+
+    def set(self, stat, value):
+        self[stat] = value
+
+    def get(self, stat, default=None):
+        return self.setdefault(stat, 0)
 
 
 class VerbosePrint:
