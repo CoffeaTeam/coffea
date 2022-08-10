@@ -100,6 +100,7 @@ class CoffeaWQ(WorkQueue):
         password_file=None,
         report_stdout=None,
         report_monitor=None,
+        status_display_interval=None,
     ):
         self.report_stdout = report_stdout
         self.report_monitor = report_monitor
@@ -111,6 +112,7 @@ class CoffeaWQ(WorkQueue):
             debug_log=debug_log,
             stats_log=stats_log,
             transactions_log=transactions_log,
+            status_display_interval=status_display_interval,
         )
 
         # Make use of the stored password file, if enabled.
@@ -132,10 +134,25 @@ class CoffeaWQ(WorkQueue):
         if task:
             # Evaluate and display details of the completed task
             if task.successful():
-                task.fout_size = getsize(task.outfile_output)
+                task.fout_size = getsize(task.outfile_output) / 1e6
+                if task.fin_size > 0:
+                    # record only if task used any intermediate inputs
+                    self.stats_coffea.max("size_max_input", task.fin_size)
+                self.stats_coffea.max("size_max_output", task.fout_size)
             task.report(self.report_stdout, self.report_monitor)
             return task
         return None
+
+    def application_info(self):
+        return {
+            "application_info": {
+                "values": dict(self.stats_coffea),
+                "units": {
+                    "size_max_output": "MB",
+                    "size_max_input": "MB",
+                },
+            }
+        }
 
 
 class CoffeaWQTask(Task):
@@ -467,12 +484,7 @@ class ProcCoffeaWQTask(CoffeaWQTask):
         actual_chunksize = int(math.ceil(total / n))
 
         _wq_queue.stats_coffea.inc("chunks_split")
-        prev_min = _wq_queue.stats_coffea.get("min_chunksize_after_split")
-        if prev_min < 1:
-            prev_min = target_chunksize
-        _wq_queue.stats_coffea.set(
-            "min_chunksize_after_split", min(prev_min, actual_chunksize)
-        )
+        _wq_queue.stats_coffea.min("min_chunksize_after_split", actual_chunksize)
 
         splits = []
         start = self.item.entrystart
@@ -626,6 +638,7 @@ def work_queue_main(items, function, accumulator, **kwargs):
             password_file=kwargs["password_file"],
             report_stdout=kwargs["print_stdout"],
             report_monitor=kwargs["resource_monitor"],
+            status_display_interval=kwargs["status_display_interval"],
         )
     _declare_resources(kwargs)
 
@@ -721,12 +734,10 @@ def _work_queue_processing(
                 items_submitted > 0 and exec_defaults["dynamic_chunksize"]
             )
             if update_chunksize:
-                _vprint(
-                    "current chunksize {}",
-                    _compute_chunksize(task_reports, exec_defaults, sample=False),
-                )
-
                 chunksize = _compute_chunksize(task_reports, exec_defaults)
+                _wq_queue.stats_coffea.set("current_chunksize", chunksize)
+                _vprint("current chunksize {}", chunksize)
+                chunksize = _sample_chunksize(chunksize)
 
             task = _submit_proc_task(
                 fn_wrapper,
@@ -811,10 +822,7 @@ def _work_queue_processing(
         )
 
     if exec_defaults["dynamic_chunksize"]:
-        _vprint(
-            "final chunksize {}",
-            _compute_chunksize(task_reports, exec_defaults, sample=False),
-        )
+        _vprint("final chunksize {}", _compute_chunksize(task_reports, exec_defaults))
 
     return accumulator
 
@@ -848,12 +856,12 @@ def _final_accumulation(accumulator, tasks_to_accumulate, compression):
         )
 
     _vprint("Performing final accumulation...")
-
     accumulator = accumulate_result_files(
         2, compression, [t.outfile_output for t in tasks_to_accumulate], accumulator
     )
     for t in tasks_to_accumulate:
         t.cleanup_outputs()
+    _vprint("done")
 
     return accumulator
 
@@ -1166,6 +1174,18 @@ class Stats(dict):
 
     def get(self, stat, default=None):
         return self.setdefault(stat, 0)
+
+    def min(self, stat, value):
+        try:
+            self[stat] = min(self[stat], value)
+        except KeyError:
+            self[stat] = value
+
+    def max(self, stat, value):
+        try:
+            self[stat] = max(self[stat], value)
+        except KeyError:
+            self[stat] = value
 
 
 class VerbosePrint:

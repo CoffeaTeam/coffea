@@ -582,6 +582,7 @@ class WorkQueueExecutor(ExecutorBase):
     x509_proxy: Optional[str] = None
     verbose: bool = False
     print_stdout: bool = False
+    status_display_interval: Optional[int] = 10
     bar_format: str = "{desc:<14}{percentage:3.0f}%|{bar}{r_bar:<55}"
     debug_log: Optional[str] = None
     stats_log: Optional[str] = None
