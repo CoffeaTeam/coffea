@@ -531,6 +531,11 @@ class WorkQueueExecutor(ExecutorBase):
             master_name not given.
         password_file: str
             Location of a file containing a password used to authenticate workers.
+        ssl: bool or tuple(str, str)
+            Enable ssl encryption between master and workers. If a tuple, then it
+            should be of the form (key, cert), where key and cert are paths to the files
+            containing the key and certificate in pem format. If True, auto-signed temporary
+            key and cert are generated for the session.
 
         extra_input_files: list
             A list of files in the current working directory to send along with each task.
@@ -589,6 +594,7 @@ class WorkQueueExecutor(ExecutorBase):
     transactions_log: Optional[str] = None
     tasks_accum_log: Optional[str] = None
     password_file: Optional[str] = None
+    ssl: Union[bool, Tuple[str, str]] = False
     environment_file: Optional[str] = None
     extra_input_files: List = field(default_factory=list)
     wrapper: Optional[str] = shutil.which("poncho_package_run")

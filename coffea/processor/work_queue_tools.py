@@ -101,6 +101,7 @@ class CoffeaWQ(WorkQueue):
         report_stdout=None,
         report_monitor=None,
         status_display_interval=None,
+        ssl=False,
     ):
         self.report_stdout = report_stdout
         self.report_monitor = report_monitor
@@ -113,6 +114,7 @@ class CoffeaWQ(WorkQueue):
             stats_log=stats_log,
             transactions_log=transactions_log,
             status_display_interval=status_display_interval,
+            ssl=ssl,
         )
 
         # Make use of the stored password file, if enabled.
@@ -636,6 +638,7 @@ def work_queue_main(items, function, accumulator, **kwargs):
             transactions_log=kwargs["transactions_log"],
             tasks_accum_log=kwargs["tasks_accum_log"],
             password_file=kwargs["password_file"],
+            ssl=kwargs["ssl"],
             report_stdout=kwargs["print_stdout"],
             report_monitor=kwargs["resource_monitor"],
             status_display_interval=kwargs["status_display_interval"],
