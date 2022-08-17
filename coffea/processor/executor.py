@@ -1405,18 +1405,17 @@ class Runner:
     def metadata_fetcher(
         xrootdtimeout: int, align_clusters: bool, item: FileMeta
     ) -> Accumulatable:
-        out = set_accumulator()
-        file = uproot.open(item.filename, timeout=xrootdtimeout)
-        tree = file[item.treename]
-        metadata = {}
-        if item.metadata:
-            metadata.update(item.metadata)
-        metadata.update({"numentries": tree.num_entries, "uuid": file.file.fUUID})
-        if align_clusters:
-            metadata["clusters"] = tree.common_entry_offsets()
-        out = set_accumulator(
-            [FileMeta(item.dataset, item.filename, item.treename, metadata)]
-        )
+        with uproot.open(item.filename, timeout=xrootdtimeout) as file:
+            tree = file[item.treename]
+            metadata = {}
+            if item.metadata:
+                metadata.update(item.metadata)
+            metadata.update({"numentries": tree.num_entries, "uuid": file.file.fUUID})
+            if align_clusters:
+                metadata["clusters"] = tree.common_entry_offsets()
+            out = set_accumulator(
+                [FileMeta(item.dataset, item.filename, item.treename, metadata)]
+            )
         return out
 
     def _preprocess_fileset(self, fileset: Dict) -> None:
