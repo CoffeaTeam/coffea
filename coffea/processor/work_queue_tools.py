@@ -1,5 +1,3 @@
-import dill
-
 import os
 import re
 import tempfile
@@ -14,6 +12,8 @@ import scipy
 import random
 
 from tqdm.auto import tqdm
+
+import cloudpickle
 
 from .executor import (
     WorkItem,
@@ -56,7 +56,6 @@ def accumulate_result_files(
         chunks_accum_in_mem = min(chunks_accum_in_mem, len(files_to_accumulate))
 
         with open(f, "rb") as rf:
-            result_f = dill.load(rf)
             result_f = _decompress(result_f)
 
         if not accumulator:
@@ -171,7 +170,7 @@ class CoffeaWQTask(Task):
         self.retries_to_go = executor.retries
 
         with open(self.infile_args, "wb") as wf:
-            dill.dump(item_args, wf)
+            cloudpickle.dump(item_args, wf)
 
         super().__init__(
             self.remote_command(env_file=executor.environment_file)
@@ -234,7 +233,6 @@ class CoffeaWQTask(Task):
         if not self._has_result():
             try:
                 with open(self.outfile_output, "rb") as rf:
-                    result = dill.load(rf)
                     result = _decompress(result)
                     self.py_result = result
             except Exception as e:
@@ -1009,11 +1007,11 @@ def _group_lst(lst, n):
 
 
 def _create_fn_wrapper(x509_proxy=None, prefix_name="fn_wrapper", tmpdir=None):
-    """Writes a wrapper script to run dilled python functions and arguments.
+    """Writes a wrapper script to run serialized python functions and arguments.
     The wrapper takes as arguments the name of three files: function, argument, and output.
-    The files function and argument have the dilled function and argument, respectively.
-    The file output is created (or overwritten), with the dilled result of the function call.
-    The wrapper created is created/deleted according to the lifetime of the work_queue_executor."""
+    The files function and argument have the serialized function and argument, respectively.
+    The file output is created (or overwritten), with the serialized result of the function call.
+    The wrapper created is created/deleted according to the lifetime of the WorkQueueExecutor."""
 
     proxy_basename = ""
     if x509_proxy:
@@ -1024,7 +1022,7 @@ def _create_fn_wrapper(x509_proxy=None, prefix_name="fn_wrapper", tmpdir=None):
                     #!/usr/bin/env python3
                     import os
                     import sys
-                    import dill
+                    import cloudpickle
                     import coffea
 
                     if "{proxy}":
@@ -1033,13 +1031,13 @@ def _create_fn_wrapper(x509_proxy=None, prefix_name="fn_wrapper", tmpdir=None):
                     (fn, args, out) = sys.argv[1], sys.argv[2], sys.argv[3]
 
                     with open(fn, 'rb') as f:
-                        exec_function = dill.load(f)
+                        exec_function = cloudpickle.load(f)
                     with open(args, 'rb') as f:
-                        exec_args = dill.load(f)
+                        exec_args = cloudpickle.load(f)
 
-                    pickle_out = exec_function(*exec_args)
+                    pickled_out = exec_function(*exec_args)
                     with open(out, 'wb') as f:
-                        dill.dump(pickle_out, f)
+                        f.write(pickled_out)
 
                     # Force an OS exit here to avoid a bug in xrootd finalization
                     os._exit(0)
@@ -1054,7 +1052,7 @@ def _function_to_file(function, prefix_name=None, tmpdir=None):
     with tempfile.NamedTemporaryFile(
         prefix=prefix_name, suffix="_fn.p", dir=tmpdir, delete=False
     ) as f:
-        dill.dump(function, f)
+        cloudpickle.dump(function, f)
         return f.name
 
 
