@@ -112,6 +112,8 @@ class CoffeaWQ(WorkQueue):
         if self.executor.password_file:
             self.specify_password_file(self.executor.password_file)
 
+        self.function_wrapper = self._write_fn_wrapper()
+
         if self.executor.tasks_accum_log:
             with open(self.executor.tasks_accum_log, "w") as f:
                 f.write(
@@ -147,6 +149,47 @@ class CoffeaWQ(WorkQueue):
             }
         }
 
+    def _write_fn_wrapper(self):
+        """Writes a wrapper script to run serialized python functions and arguments.
+        The wrapper takes as arguments the name of three files: function, argument, and output.
+        The files function and argument have the serialized function and argument, respectively.
+        The file output is created (or overwritten), with the serialized result of the function call.
+        The wrapper created is created/deleted according to the lifetime of the WorkQueueExecutor."""
+
+        proxy_basename = ""
+        if self.executor.x509_proxy:
+            proxy_basename = basename(self.executor.x509_proxy)
+
+        contents = textwrap.dedent(
+            """\
+                        #!/usr/bin/env python3
+                        import os
+                        import sys
+                        import cloudpickle
+                        import coffea
+
+                        if "{proxy}":
+                            os.environ['X509_USER_PROXY'] = "{proxy}"
+
+                        (fn, args, out) = sys.argv[1], sys.argv[2], sys.argv[3]
+
+                        with open(fn, 'rb') as f:
+                            exec_function = cloudpickle.load(f)
+                        with open(args, 'rb') as f:
+                            exec_args = cloudpickle.load(f)
+
+                        pickled_out = exec_function(*exec_args)
+                        with open(out, 'wb') as f:
+                            f.write(pickled_out)
+
+                        # Force an OS exit here to avoid a bug in xrootd finalization
+                        os._exit(0)
+                        """
+        )
+        with tempfile.NamedTemporaryFile(prefix="fn_wrapper", dir=self.staging_dir, delete=False) as f:
+            f.write(contents.format(proxy=proxy_basename).encode())
+            return f.name
+
 
 class CoffeaWQTask(Task):
     tasks_counter = 0
@@ -161,7 +204,6 @@ class CoffeaWQTask(Task):
         self.py_result = ResultUnavailable()
         self._stdout = None
 
-        self.fn_wrapper = fn_wrapper
         self.infile_function = infile_function
 
         self.infile_args = join(tmpdir, "args_{}.p".format(self.itemid))
@@ -178,7 +220,7 @@ class CoffeaWQTask(Task):
             self.remote_command(env_file=executor.environment_file)
         )
 
-        self.specify_input_file(fn_wrapper, "fn_wrapper", cache=False)
+        self.specify_input_file(queue.function_wrapper, "fn_wrapper", cache=False)
         self.specify_input_file(infile_function, "function.p", cache=False)
         self.specify_input_file(self.infile_args, "args.p", cache=False)
         self.specify_output_file(self.outfile_output, "output.p", cache=False)
@@ -374,7 +416,7 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
     infile_function = None
 
     def __init__(
-        self, queue, fn_wrapper, infile_function, item, tmpdir, itemid=None
+        self, queue, infile_function, item, tmpdir, itemid=None
     ):
         if not itemid:
             itemid = "pre_{}".format(CoffeaWQTask.tasks_counter)
@@ -383,7 +425,7 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
 
         self.size = 1
         super().__init__(
-            queue, fn_wrapper, infile_function, [item], itemid, tmpdir
+            queue, infile_function, [item], itemid, tmpdir
         )
 
         self.specify_category("preprocessing")
@@ -402,7 +444,6 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
     def clone(self, queue, tmpdir):
         return PreProcCoffeaWQTask(
             queue,
-            self.fn_wrapper,
             self.infile_function,
             self.item,
             tmpdir,
@@ -424,7 +465,7 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
 
 class ProcCoffeaWQTask(CoffeaWQTask):
     def __init__(
-        self, queue, fn_wrapper, infile_function, item, tmpdir, itemid=None
+        self, queue, infile_function, item, tmpdir, itemid=None
     ):
         self.size = len(item)
 
@@ -434,7 +475,7 @@ class ProcCoffeaWQTask(CoffeaWQTask):
         self.item = item
 
         super().__init__(
-                queue, fn_wrapper, infile_function, [item], itemid, tmpdir
+                queue, infile_function, [item], itemid, tmpdir
         )
 
         self.specify_category("processing")
@@ -453,7 +494,6 @@ class ProcCoffeaWQTask(CoffeaWQTask):
     def clone(self, queue, tmpdir):
         return ProcCoffeaWQTask(
             queue,
-            self.fn_wrapper,
             self.infile_function,
             self.item,
             tmpdir,
@@ -493,9 +533,7 @@ class ProcCoffeaWQTask(CoffeaWQTask):
                 self.item.usermeta,
             )
 
-            t = self.__class__(
-                queue, self.fn_wrapper, self.infile_function, w, tmpdir
-            )
+            t = self.__class__(queue, self.infile_function, w, tmpdir)
 
             start = stop
             splits.append(t)
@@ -526,7 +564,6 @@ class AccumCoffeaWQTask(CoffeaWQTask):
     def __init__(
         self,
         queue,
-        fn_wrapper,
         infile_function,
         tasks_to_accumulate,
         tmpdir,
@@ -543,7 +580,7 @@ class AccumCoffeaWQTask(CoffeaWQTask):
         args = args + [[basename(t.outfile_output) for t in self.tasks_to_accumulate]]
 
         super().__init__(
-            queue, fn_wrapper, infile_function, args, itemid, tmpdir
+            queue, infile_function, args, itemid, tmpdir
         )
 
         self.specify_category("accumulating")
@@ -562,7 +599,6 @@ class AccumCoffeaWQTask(CoffeaWQTask):
     def clone(self, queue, tmpdir):
         return AccumCoffeaWQTask(
             queue,
-            self.fn_wrapper,
             self.infile_function,
             self.tasks_to_accumulate,
             tmpdir,
@@ -623,7 +659,6 @@ def work_queue_main(executor, items, function, accumulator):
         )
         tmpdir = tmpdir_inst.name
 
-        fn_wrapper = _create_fn_wrapper(executor.x509_proxy, tmpdir=tmpdir)
         infile_function = _function_to_file(
             function, prefix_name=executor.function_name, tmpdir=tmpdir
         )
@@ -1008,47 +1043,6 @@ def _group_lst(lst, n):
     """Split the lst into sublists of len n."""
     return (lst[i : i + n] for i in range(0, len(lst), n))
 
-
-def _create_fn_wrapper(x509_proxy=None, prefix_name="fn_wrapper", tmpdir=None):
-    """Writes a wrapper script to run serialized python functions and arguments.
-    The wrapper takes as arguments the name of three files: function, argument, and output.
-    The files function and argument have the serialized function and argument, respectively.
-    The file output is created (or overwritten), with the serialized result of the function call.
-    The wrapper created is created/deleted according to the lifetime of the WorkQueueExecutor."""
-
-    proxy_basename = ""
-    if x509_proxy:
-        proxy_basename = basename(x509_proxy)
-
-    contents = textwrap.dedent(
-        """\
-                    #!/usr/bin/env python3
-                    import os
-                    import sys
-                    import cloudpickle
-                    import coffea
-
-                    if "{proxy}":
-                        os.environ['X509_USER_PROXY'] = "{proxy}"
-
-                    (fn, args, out) = sys.argv[1], sys.argv[2], sys.argv[3]
-
-                    with open(fn, 'rb') as f:
-                        exec_function = cloudpickle.load(f)
-                    with open(args, 'rb') as f:
-                        exec_args = cloudpickle.load(f)
-
-                    pickled_out = exec_function(*exec_args)
-                    with open(out, 'wb') as f:
-                        f.write(pickled_out)
-
-                    # Force an OS exit here to avoid a bug in xrootd finalization
-                    os._exit(0)
-                    """
-    )
-    with tempfile.NamedTemporaryFile(prefix=prefix_name, dir=tmpdir, delete=False) as f:
-        f.write(contents.format(proxy=proxy_basename).encode())
-        return f.name
 
 
 def _function_to_file(function, prefix_name=None, tmpdir=None):
