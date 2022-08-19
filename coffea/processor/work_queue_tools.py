@@ -167,6 +167,38 @@ class CoffeaWQ(WorkQueue):
             cloudpickle.dump(function, f)
             return f.name
 
+    def preprocessing(self, items, function, accumulator):
+        preprocessing_bar = tqdm(
+            desc="Preprocessing",
+            total=len(items),
+            disable=not self.executor.status,
+            unit=self.executor.unit,
+            bar_format=executor.bar_format,
+        )
+
+        infile_function = self.function_to_file(function, "preproc")
+        for item in items:
+            task = PreProcCoffeaWQTask(self, infile_function, item)
+            self.submit(task)
+            self.console("submitted preprocessing task {}", task.id)
+
+        while not self.empty():
+            task = self.wait(5)
+            if task:
+                if task.successful():
+                    accumulator = accumulate([task.output], accumulator)
+                    preprocessing_bar.update(1)
+                    task.cleanup_inputs()
+                    task.cleanup_outputs()
+                    task.task_accum_log(self.executor.tasks_accum_log, "", "done")
+                else:
+                    task.resubmit(self)
+
+        preprocessing_bar.close()
+
+        return accumulator
+
+
     def _declare_resources(self):
         executor = self.executor
 
@@ -723,7 +755,7 @@ def work_queue_main(executor, items, function, accumulator):
             executor.custom_init(_wq_queue)
 
         if executor.desc == "Preprocessing":
-            result = _work_queue_preprocessing(items, accumulator, infile_function)
+            result = _wq_queue.preprocessing(items, function, accumulator)
             # we do not shutdown queue after preprocessing, as we want to
             # keep the connected workers for processing/accumulation
         else:
@@ -912,36 +944,6 @@ def _final_accumulation(queue, accumulator, tasks_to_accumulate):
 
     return accumulator
 
-
-def _work_queue_preprocessing(queue, items, accumulator, infile_function):
-    preprocessing_bar = tqdm(
-        desc="Preprocessing",
-        total=len(items),
-        disable=not queue.executor.status,
-        unit=executor.unit,
-        bar_format=executor.bar_format,
-    )
-
-    for item in items:
-        task = PreProcCoffeaWQTask(executor, infile_function, item)
-        queue.submit(task)
-        queue.console("submitted preprocessing task {}", task.id)
-
-    while not queue.empty():
-        task = queue.wait(5)
-        if task:
-            if task.successful():
-                accumulator = accumulate([task.output], accumulator)
-                preprocessing_bar.update(1)
-                task.cleanup_inputs()
-                task.cleanup_outputs()
-                task.task_accum_log(queue.executor.tasks_accum_log, "", "done")
-            else:
-                task.resubmit(queue)
-
-    preprocessing_bar.close()
-
-    return accumulator
 
 
 
