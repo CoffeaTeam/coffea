@@ -110,6 +110,8 @@ class CoffeaWQ(WorkQueue):
             ssl=self.executor.ssl,
         )
 
+        self._declare_resources()
+
         # Make use of the stored password file, if enabled.
         if self.executor.password_file:
             self.specify_password_file(self.executor.password_file)
@@ -164,6 +166,63 @@ class CoffeaWQ(WorkQueue):
         with NamedTemporaryFile(prefix=name, suffix=".p", dir=self.staging_dir, delete=False) as f:
             cloudpickle.dump(function, f)
             return f.name
+
+    def _declare_resources(self):
+        executor = self.executor
+
+        # If explicit resources are given, collect them into default_resources
+        default_resources = {}
+        if executor.cores:
+            default_resources["cores"] = executor.cores
+        if executor.memory:
+            default_resources["memory"] = executor.memory
+        if executor.disk:
+            default_resources["disk"] = executor.disk
+        if executor.gpus:
+            default_resources["gpus"] = executor.gpus
+
+        # Enable monitoring and auto resource consumption, if desired:
+        self.tune("category-steady-n-tasks", 3)
+
+        # Evenly divide resources in workers per category
+        self.tune("force-proportional-resources", 1)
+
+
+        # if resource_monitor is given, and not 'off', then monitoring is activated.
+        # anything other than 'measure' is assumed to be 'watchdog' mode, where in
+        # addition to measuring resources, tasks are killed if they go over their
+        # resources.
+        monitor_enabled = True
+        watchdog_enabled = True
+        if not executor.resource_monitor or executor.resource_monitor == "off":
+            monitor_enabled = False
+        elif executor.resource_monitor == "measure":
+            watchdog_enabled = False
+
+        # activate monitoring if it has not been explicitely activated and we are
+        # using an automatic resource allocation.
+        if executor.resources_mode != "fixed":
+            monitor_enabled = True
+
+        if monitor_enabled:
+            self.enable_monitoring(watchdog=watchdog_enabled)
+
+        # set the auto resource modes
+        mode = wq.WORK_QUEUE_ALLOCATION_MODE_MAX
+        if executor.resources_mode == "fixed":
+            mode = wq.WORK_QUEUE_ALLOCATION_MODE_FIXED
+        for category in "default preprocessing processing accumulating".split():
+            self.specify_category_max_resources(category, default_resources)
+            self.specify_category_mode(category, mode)
+        # use auto mode max-throughput only for processing tasks
+        if executor.resources_mode == "max-throughput":
+            self.specify_category_mode("processing", wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT)
+
+        # enable fast termination of workers
+        fast_terminate = executor.fast_terminate_workers
+        for category in "default preprocessing processing accumulating".split():
+            if fast_terminate and fast_terminate > 1:
+                self.activate_fast_abort_category(category, fast_terminate)
 
     def _write_fn_wrapper(self):
         """Writes a wrapper script to run serialized python functions and arguments.
@@ -654,7 +713,7 @@ def work_queue_main(executor, items, function, accumulator):
     if _wq_queue is None:
         _wq_queue = CoffeaWQ(executor)
 
-    _declare_resources(executor)
+    _wq_queue.declare_resources(executor)
 
     try:
         infile_function = _wq_queue.function_to_file(function, executor.function_name)
@@ -885,66 +944,6 @@ def _work_queue_preprocessing(queue, items, accumulator, infile_function):
     return accumulator
 
 
-def _declare_resources(executor):
-    # If explicit resources are given, collect them into default_resources
-    default_resources = {}
-    if executor.cores:
-        default_resources["cores"] = executor.cores
-    if executor.memory:
-        default_resources["memory"] = executor.memory
-    if executor.disk:
-        default_resources["disk"] = executor.disk
-    if executor.gpus:
-        default_resources["gpus"] = executor.gpus
-
-    # Enable monitoring and auto resource consumption, if desired:
-    _wq_queue.tune("category-steady-n-tasks", 3)
-
-    # Evenly divide resources in workers per category
-    _wq_queue.tune("force-proportional-resources", 1)
-
-
-    # if resource_monitor is given, and not 'off', then monitoring is activated.
-    # anything other than 'measure' is assumed to be 'watchdog' mode, where in
-    # addition to measuring resources, tasks are killed if they go over their
-    # resources.
-    monitor_enabled = True
-    watchdog_enabled = True
-    if not executor.resource_monitor or executor.resource_monitor == "off":
-        monitor_enabled = False
-    elif executor.resource_monitor == "measure":
-        watchdog_enabled = False
-
-    # activate monitoring if it has not been explicitely activated and we are
-    # using an automatic resource allocation.
-    if executor.resources_mode != "fixed":
-        monitor_enabled = True
-
-    if monitor_enabled:
-        _wq_queue.enable_monitoring(watchdog=watchdog_enabled)
-
-    for category in "default preprocessing processing accumulating".split():
-        _wq_queue.specify_category_max_resources(category, default_resources)
-
-        if executor.resources_mode != "fixed":
-            _wq_queue.specify_category_mode(category, wq.WORK_QUEUE_ALLOCATION_MODE_MAX)
-
-            if (
-                category == "processing"
-                and executor.resources_mode == "max-throughput"
-            ):
-                _wq_queue.specify_category_mode(
-                    category, wq.WORK_QUEUE_ALLOCATION_MODE_MAX_THROUGHPUT
-                )
-
-        # enable fast termination of workers
-        if (
-            executor.fast_terminate_workers
-            and executor.fast_terminate_workers > 1
-        ):
-            _wq_queue.activate_fast_abort_category(
-                category, executor.fast_terminate_workers
-            )
 
 
 def _submit_proc_task(
