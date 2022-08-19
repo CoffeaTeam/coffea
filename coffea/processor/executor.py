@@ -471,7 +471,7 @@ class WorkQueueExecutor(ExecutorBase):
             Label of progress bar description
         compression : int, optional
             Compress accumulator outputs in flight with LZ4, at level specified (default 9)
-            Set to ``None`` for no compression.
+            `None`` sets level to 1 (minimal compression)
         # work queue specific options:
         cores : int
             Number of cores for work queue task. If unset, use a whole worker.
@@ -618,17 +618,12 @@ class WorkQueueExecutor(ExecutorBase):
             )
             raise e
 
-        from .work_queue_tools import _get_x509_proxy
-
-        if self.x509_proxy is None:
-            self.x509_proxy = _get_x509_proxy()
-
         return (
             work_queue_main(
+                self,
                 items,
                 function,
                 accumulator,
-                **self.__dict__,
             ),
             0,
         )
