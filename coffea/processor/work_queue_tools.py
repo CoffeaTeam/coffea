@@ -1,9 +1,9 @@
 import os
 import re
-import tempfile
 import textwrap
 import signal
 
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 from os.path import basename, join, getsize
 
 import math
@@ -98,6 +98,8 @@ class CoffeaWQ(WorkQueue):
         if not self.executor.port:
             self.executor.port = 0 if self.executor.master_name else 9123
 
+        self._staging_dir_obj = TemporaryDirectory("wq-tmp-" dir=executor.filepath)
+
         super().__init__(
             port=self.executor.port,
             name=self.executor.master_name,
@@ -124,6 +126,12 @@ class CoffeaWQ(WorkQueue):
         # perform a wait to print any warnings before progress bars
         self.wait(0)
 
+    def __del__(self):
+        try:
+            self._staging_dir_obj.cleanup()
+        finally:
+            super().__del__()
+
     def wait(self, timeout=None):
         task = super().wait(timeout)
         if task:
@@ -148,6 +156,14 @@ class CoffeaWQ(WorkQueue):
                 },
             }
         }
+
+    def staging_dir(self):
+        return self._staging_dir_obj.name
+
+    def function_to_file(self, function, name=None):
+        with NamedTemporaryFile(prefix=name, suffix=".p", dir=self.staging_dir, delete=False) as f:
+            cloudpickle.dump(function, f)
+            return f.name
 
     def _write_fn_wrapper(self):
         """Writes a wrapper script to run serialized python functions and arguments.
@@ -186,7 +202,7 @@ class CoffeaWQ(WorkQueue):
                         os._exit(0)
                         """
         )
-        with tempfile.NamedTemporaryFile(prefix="fn_wrapper", dir=self.staging_dir, delete=False) as f:
+        with NamedTemporaryFile(prefix="fn_wrapper", dir=self.staging_dir, delete=False) as f:
             f.write(contents.format(proxy=proxy_basename).encode())
             return f.name
 
@@ -195,7 +211,7 @@ class CoffeaWQTask(Task):
     tasks_counter = 0
 
     def __init__(
-        self, queue, fn_wrapper, infile_function, item_args, itemid, tmpdir
+        self, queue, fn_wrapper, infile_function, item_args, itemid
     ):
         CoffeaWQTask.tasks_counter += 1
 
@@ -206,9 +222,9 @@ class CoffeaWQTask(Task):
 
         self.infile_function = infile_function
 
-        self.infile_args = join(tmpdir, "args_{}.p".format(self.itemid))
-        self.outfile_output = join(tmpdir, "out_{}.p".format(self.itemid))
-        self.outfile_stdout = join(tmpdir, "stdout_{}.p".format(self.itemid))
+        self.infile_args = join(queue.staging_dir, "args_{}.p".format(self.itemid))
+        self.outfile_output = join(queue.staging_dir, "out_{}.p".format(self.itemid))
+        self.outfile_stdout = join(queue.staging_dir, "stdout_{}.p".format(self.itemid))
 
         with open(self.infile_args, "wb") as wf:
             cloudpickle.dump(item_args, wf)
@@ -289,7 +305,7 @@ class CoffeaWQTask(Task):
     def cleanup_outputs(self):
         os.remove(self.outfile_output)
 
-    def resubmit(self, queue, tmpdir):
+    def resubmit(self, queue):
         if self.retries_to_go < 1 or not queue.executor.split_on_exhaustion:
             raise RuntimeError(
                 "item {} failed permanently. No more retries left.".format(self.itemid)
@@ -298,9 +314,9 @@ class CoffeaWQTask(Task):
         resubmissions = []
         if self.result == wq.WORK_QUEUE_RESULT_RESOURCE_EXHAUSTION:
             queue.console("splitting {} to reduce resource consumption.", self.itemid)
-            resubmissions = self.split(queue, tmpdir)
+            resubmissions = self.split(queue)
         else:
-            t = self.clone(queue, tmpdir)
+            t = self.clone(queue)
             t.retries_to_go = self.retries_to_go - 1
             resubmissions = [t]
 
@@ -314,10 +330,10 @@ class CoffeaWQTask(Task):
             )
             queue.submit(t)
 
-    def clone(self, queue, tmpdir):
+    def clone(self, queue):
         raise NotImplementedError
 
-    def split(self, queue, tmpdir):
+    def split(self, queue):
         raise RuntimeError("task cannot be split any further.")
 
     def debug_info(self):
@@ -415,18 +431,14 @@ class CoffeaWQTask(Task):
 class PreProcCoffeaWQTask(CoffeaWQTask):
     infile_function = None
 
-    def __init__(
-        self, queue, infile_function, item, tmpdir, itemid=None
-    ):
+    def __init__(self, queue, infile_function, item, itemid=None):
         if not itemid:
             itemid = "pre_{}".format(CoffeaWQTask.tasks_counter)
 
         self.item = item
 
         self.size = 1
-        super().__init__(
-            queue, infile_function, [item], itemid, tmpdir
-        )
+        super().__init__(queue, infile_function, [item], itemid)
 
         self.specify_category("preprocessing")
 
@@ -441,12 +453,11 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
 
         self.fin_size = 0
 
-    def clone(self, queue, tmpdir):
+    def clone(self, queue):
         return PreProcCoffeaWQTask(
             queue,
             self.infile_function,
             self.item,
-            tmpdir,
             self.itemid,
         )
 
@@ -464,9 +475,7 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
 
 
 class ProcCoffeaWQTask(CoffeaWQTask):
-    def __init__(
-        self, queue, infile_function, item, tmpdir, itemid=None
-    ):
+    def __init__(self, queue, infile_function, item, itemid=None):
         self.size = len(item)
 
         if not itemid:
@@ -474,9 +483,7 @@ class ProcCoffeaWQTask(CoffeaWQTask):
 
         self.item = item
 
-        super().__init__(
-                queue, infile_function, [item], itemid, tmpdir
-        )
+        super().__init__(queue, infile_function, [item], itemid)
 
         self.specify_category("processing")
 
@@ -491,16 +498,15 @@ class ProcCoffeaWQTask(CoffeaWQTask):
 
         self.fin_size = 0
 
-    def clone(self, queue, tmpdir):
+    def clone(self, queue):
         return ProcCoffeaWQTask(
             queue,
             self.infile_function,
             self.item,
-            tmpdir,
             self.itemid,
         )
 
-    def split(self, queue, tmpdir):
+    def split(self, queue):
         total = len(self.item)
 
         if total < 2:
@@ -533,7 +539,7 @@ class ProcCoffeaWQTask(CoffeaWQTask):
                 self.item.usermeta,
             )
 
-            t = self.__class__(queue, self.infile_function, w, tmpdir)
+            t = self.__class__(queue, self.infile_function, w)
 
             start = stop
             splits.append(t)
@@ -566,7 +572,6 @@ class AccumCoffeaWQTask(CoffeaWQTask):
         queue,
         infile_function,
         tasks_to_accumulate,
-        tmpdir,
         chunks_accum_in_mem,
         itemid=None,
     ):
@@ -579,9 +584,7 @@ class AccumCoffeaWQTask(CoffeaWQTask):
         args = [chunks_accum_in_mem]
         args = args + [[basename(t.outfile_output) for t in self.tasks_to_accumulate]]
 
-        super().__init__(
-            queue, infile_function, args, itemid, tmpdir
-        )
+        super().__init__(queue, infile_function, args, itemid)
 
         self.specify_category("accumulating")
 
@@ -596,12 +599,11 @@ class AccumCoffeaWQTask(CoffeaWQTask):
         for t in self.tasks_to_accumulate:
             t.cleanup_outputs()
 
-    def clone(self, queue, tmpdir):
+    def clone(self, queue):
         return AccumCoffeaWQTask(
             queue,
             self.infile_function,
             self.tasks_to_accumulate,
-            tmpdir,
             self.itemid,
         )
 
@@ -644,6 +646,8 @@ def work_queue_main(executor, items, function, accumulator):
     if executor.compression is None:
         self.compression = 1
 
+    executor.x509_proxy = _get_x509_proxy(executor.x509_proxy)
+
     function = _compression_wrapper(executor.compression, function)
     accumulate_fn = _compression_wrapper(executor.compression, accumulate_result_files)
 
@@ -652,44 +656,28 @@ def work_queue_main(executor, items, function, accumulator):
 
     _declare_resources(executor)
 
-    # Working within a custom temporary directory:
     try:
-        tmpdir_inst = tempfile.TemporaryDirectory(
-            prefix="wq-executor-tmp-", dir=executor.filepath
-        )
-        tmpdir = tmpdir_inst.name
-
-        infile_function = _function_to_file(
-            function, prefix_name=executor.function_name, tmpdir=tmpdir
-        )
-        infile_accum_fn = _function_to_file(
-            accumulate_fn, prefix_name="accum", tmpdir=tmpdir
-        )
+        infile_function = _wq_queue.function_to_file(function, executor.function_name)
+        infile_accum_fn = _wq_queue.function_to_file(accumulate_fn, "accum")
 
         if executor.custom_init:
             executor.custom_init(_wq_queue)
 
         if executor.desc == "Preprocessing":
-            result = _work_queue_preprocessing(
-                items, accumulator, fn_wrapper, infile_function, tmpdir
-            )
+            result = _work_queue_preprocessing(items, accumulator, infile_function)
             # we do not shutdown queue after preprocessing, as we want to
             # keep the connected workers for processing/accumulation
         else:
             result = _work_queue_processing(
                 items,
                 accumulator,
-                fn_wrapper,
                 infile_function,
                 infile_accum_fn,
-                tmpdir,
             )
             _wq_queue = None
     except Exception as e:
         _wq_queue = None
         raise e
-    finally:
-        tmpdir_inst.cleanup()
     return result
 
 
@@ -700,7 +688,6 @@ def _work_queue_processing(
     fn_wrapper,
     infile_function,
     infile_accum_fn,
-    tmpdir,
 ):
 
     # Keep track of total tasks in each state.
@@ -753,7 +740,6 @@ def _work_queue_processing(
                 items,
                 chunksize,
                 update_chunksize,
-                tmpdir,
             )
             items_submitted += len(task)
             progress_bars["submit"].update(len(task))
@@ -767,7 +753,7 @@ def _work_queue_processing(
 
         if task:
             if not task.successful():
-                task.resubmit(executor, tmpdir)
+                task.resubmit(executor)
             else:
                 tasks_to_accumulate.append(task)
 
@@ -795,11 +781,9 @@ def _work_queue_processing(
                 force_last_accum = (items_done >= items_total) or early_terminate
                 tasks_to_accumulate = _submit_accum_tasks(
                     executor,
-                    fn_wrapper,
                     infile_accum_fn,
                     tasks_to_accumulate,
                     force_last_accum,
-                    tmpdir,
                 )
                 acc_sub = queue.stats_category("accumulating").tasks_submitted
                 progress_bars["accumulate"].total = math.ceil(
@@ -870,9 +854,7 @@ def _final_accumulation(queue, accumulator, tasks_to_accumulate):
     return accumulator
 
 
-def _work_queue_preprocessing(
-    queue, items, accumulator, fn_wrapper, infile_function, tmpdir
-):
+def _work_queue_preprocessing(queue, items, accumulator, infile_function):
     preprocessing_bar = tqdm(
         desc="Preprocessing",
         total=len(items),
@@ -882,9 +864,7 @@ def _work_queue_preprocessing(
     )
 
     for item in items:
-        task = PreProcCoffeaWQTask(
-            executor, fn_wrapper, infile_function, item, tmpdir
-        )
+        task = PreProcCoffeaWQTask(executor, infile_function, item)
         queue.submit(task)
         queue.console("submitted preprocessing task {}", task.id)
 
@@ -898,7 +878,7 @@ def _work_queue_preprocessing(
                 task.cleanup_outputs()
                 task.task_accum_log(queue.executor.tasks_accum_log, "", "done")
             else:
-                task.resubmit(queue, tmpdir)
+                task.resubmit(queue)
 
     preprocessing_bar.close()
 
@@ -974,7 +954,6 @@ def _submit_proc_task(
     items,
     chunksize,
     update_chunksize,
-    tmpdir
 ):
     if update_chunksize:
         item = items.send(chunksize)
@@ -982,7 +961,7 @@ def _submit_proc_task(
     else:
         item = next(items)
 
-    task = ProcCoffeaWQTask(executor, fn_wrapper, infile_function, item, tmpdir)
+    task = ProcCoffeaWQTask(executor, infile_function, item)
     task_id = _wq_queue.submit(task)
     _wq_queue.console(
         "submitted processing task id {} item {}, with {} events",
@@ -1000,7 +979,6 @@ def _submit_accum_tasks(
     infile_function,
     tasks_to_accumulate,
     force_last_accum,
-    tmpdir,
 ):
 
     chunks_per_accum = executor.chunks_per_accum
@@ -1023,9 +1001,7 @@ def _submit_accum_tasks(
             # been processed.
             return next_to_accum
 
-        accum_task = AccumCoffeaWQTask(
-            executor, fn_wrapper, infile_function, next_to_accum, tmpdir
-        )
+        accum_task = AccumCoffeaWQTask(executor, infile_function, next_to_accum)
         task_id = _wq_queue.submit(accum_task)
         _wq_queue.console(
             "submitted accumulation task id {} item {}, with {} events",
@@ -1042,16 +1018,6 @@ def _submit_accum_tasks(
 def _group_lst(lst, n):
     """Split the lst into sublists of len n."""
     return (lst[i : i + n] for i in range(0, len(lst), n))
-
-
-
-def _function_to_file(function, prefix_name=None, tmpdir=None):
-    with tempfile.NamedTemporaryFile(
-        prefix=prefix_name, suffix="_fn.p", dir=tmpdir, delete=False
-    ) as f:
-        cloudpickle.dump(function, f)
-        return f.name
-
 
 def _get_x509_proxy(x509_proxy=None):
     if x509_proxy:
