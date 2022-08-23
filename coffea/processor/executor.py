@@ -1800,14 +1800,13 @@ class Runner:
         events_total = sum(len(c) for c in chunks_to_count)
 
         exe_args = {
-            "unit": "event"
-            if isinstance(self.executor, WorkQueueExecutor)
-            else "chunk",  # fmt: skip
+            "unit": "chunk",
             "function_name": type(processor_instance).__name__,
         }
-        if self.format == "root" and isinstance(self.executor, WorkQueueExecutor):
+        if isinstance(self.executor, WorkQueueExecutor):
             exe_args.update(
                 {
+                    "unit": "event",
                     "events_total": events_total,
                     "dynamic_chunksize": self.dynamic_chunksize,
                     "chunksize": self.chunksize,
