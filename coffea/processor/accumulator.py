@@ -46,6 +46,7 @@ def add(a: Accumulatable, b: Accumulatable) -> Accumulatable:
             )
         out.clear()
         lhs, rhs = set(a), set(b)
+        # Keep the order of elements as far as possible
         for key in a:
             if key in rhs:
                 out[key] = add(a[key], b[key])
