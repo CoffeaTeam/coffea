@@ -542,9 +542,7 @@ class WorkQueueExecutor(ExecutorBase):
             Wrapper script to run/open python environment tarball. Defaults to python_package_run found in PATH.
 
         chunks_per_accum : int
-            Number of processed chunks per accumulation task. Defaults is 10.
-        chunks_accum_in_mem : int
-            Maximum number of chunks to keep in memory at each accumulation step in an accumulation task. Default is 2.
+            Number of processed chunks per accumulation task. Defaults is 25.
 
         verbose : bool
             If true, emit a message on each task submission and completion.
@@ -597,7 +595,7 @@ class WorkQueueExecutor(ExecutorBase):
     disk: Optional[int] = None
     gpus: Optional[int] = None
     chunks_per_accum: int = 25
-    chunks_accum_in_mem: int = 2
+    chunks_accum_in_mem: Optional[int] = None
     chunksize: int = 100000
     dynamic_chunksize: Optional[Dict] = None
     custom_init: Optional[Callable] = None
@@ -609,6 +607,16 @@ class WorkQueueExecutor(ExecutorBase):
         accumulator: Accumulatable,
     ):
         from .work_queue_tools import run
+
+        if self.chunks_accum_in_mem:
+            from coffea.util import deprecate
+
+            deprecate(
+                RuntimeError("chunks_accum_in_mem is deprecated"),
+                "v0.8.0",
+                "31 Dec 2022",
+            )
+
         return (
             run(
                 self,

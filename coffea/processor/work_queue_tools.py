@@ -41,33 +41,23 @@ early_terminate = False
 # This function, that accumulates results from files does not require wq.
 # We declare it before checking for wq so that we do not need to install wq at
 # the remote site.
-def accumulate_result_files(chunks_accum_in_mem, files_to_accumulate, accumulator=None):
+def accumulate_result_files(files_to_accumulate, accumulator=None):
     from coffea.processor import accumulate
-
-    in_memory = []
 
     # work on local copy of list
     files_to_accumulate = list(files_to_accumulate)
     while files_to_accumulate:
         f = files_to_accumulate.pop()
 
-        # ensure that no files are left unprocessed because lenght of list
-        # smaller than desired files in memory.
-        chunks_accum_in_mem = min(chunks_accum_in_mem, len(files_to_accumulate))
-
         with open(f, "rb") as rf:
-            result_f = _decompress(rf)
+            result = _decompress(rf)
 
         if not accumulator:
-            accumulator = result_f
+            accumulator = result
             continue
 
-        in_memory.append(result_f)
-        if len(in_memory) > chunks_accum_in_mem - 1:
-            accumulator = accumulate(in_memory, accumulator)
-            while in_memory:
-                result = in_memory.pop()  # noqa
-                del result
+        accumulator = accumulate([result_f], accumulator)
+        del result
     return accumulator
 
 
@@ -263,7 +253,7 @@ class CoffeaWQ(WorkQueue):
 
         self.console("Merging with final accumulator...")
         accumulator = accumulate_result_files(
-            2, [t.outfile_output for t in self.tasks_to_accumulate], accumulator
+            [t.outfile_output for t in self.tasks_to_accumulate], accumulator
         )
 
         for t in self.tasks_to_accumulate:
@@ -359,18 +349,14 @@ class CoffeaWQ(WorkQueue):
 
     def _submit_accum_tasks(self, infile_accum_fn):
         chunks_per_accum = self.executor.chunks_per_accum
-        chunks_accum_in_mem = self.executor.chunks_accum_in_mem
 
         stats = self.coffea_stats
-
-        if chunks_per_accum < 2 or chunks_accum_in_mem < 2:
-            raise RuntimeError(
-                "A minimum of two chunks should be used when accumulating"
-            )
 
         force = (
             stats.get("events_processed") >= stats.get("events_total")
         ) or early_terminate
+        force = early_terminate
+        force |= stats.get("events_processed") >= stats.get("events_total")
 
         if len(self.tasks_to_accumulate) < 2 * chunks_per_accum - 1 and not force:
             return
@@ -870,7 +856,6 @@ class AccumCoffeaWQTask(CoffeaWQTask):
         queue,
         infile_procc_fn,
         tasks_to_accumulate,
-        chunks_accum_in_mem,
         itemid=None,
     ):
         if not itemid:
@@ -879,8 +864,7 @@ class AccumCoffeaWQTask(CoffeaWQTask):
         self.tasks_to_accumulate = tasks_to_accumulate
         self.size = sum(len(t) for t in self.tasks_to_accumulate)
 
-        args = [chunks_accum_in_mem]
-        args = args + [[basename(t.outfile_output) for t in self.tasks_to_accumulate]]
+        args = [[basename(t.outfile_output) for t in self.tasks_to_accumulate]]
 
         super().__init__(queue, infile_procc_fn, args, itemid)
 
@@ -943,6 +927,9 @@ def run(executor, items, function, accumulator):
 
     if executor.compression is None:
         executor.compression = 1
+
+    if executor.chunks_per_accum < 2:
+        executor.chunks_per_accum = 2
 
     executor.x509_proxy = _get_x509_proxy(executor.x509_proxy)
 
