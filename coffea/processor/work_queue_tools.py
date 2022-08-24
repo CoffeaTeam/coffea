@@ -38,7 +38,7 @@ _wq_queue = None
 early_terminate = False
 
 
-# This function, that accumulates results from files does not require wq.
+# This function that accumulates results from files does not require wq.
 # We declare it before checking for wq so that we do not need to install wq at
 # the remote site.
 def accumulate_result_files(files_to_accumulate, accumulator=None):
@@ -50,20 +50,19 @@ def accumulate_result_files(files_to_accumulate, accumulator=None):
         f = files_to_accumulate.pop()
 
         with open(f, "rb") as rf:
-            result = _decompress(rf)
-
+            result = _decompress(rf.read())
         if not accumulator:
             accumulator = result
             continue
 
-        accumulator = accumulate([result_f], accumulator)
+        accumulator = accumulate([result], accumulator)
         del result
     return accumulator
 
 
 try:
-    from work_queue import WorkQueue, Task
     import work_queue as wq
+    from work_queue import WorkQueue, Task
 except ImportError:
     wq = None
     print("work_queue module not available")
@@ -141,7 +140,7 @@ class CoffeaWQ(WorkQueue):
             id=taskid,
             item=task.itemid,
             size=len(task),
-            units=self.executor.unit,
+            unit=self.executor.unit,
         )
         return taskid
 
@@ -155,7 +154,7 @@ class CoffeaWQ(WorkQueue):
                     # record only if task used any intermediate inputs
                     self.stats_coffea.max("size_max_input", task.fin_size)
                 self.stats_coffea.max("size_max_output", task.fout_size)
-            task.report(self.executor.print_stdout, self.executor.resource_monitor)
+            task.report(self)
             # Remove input files as we go to avoid unbounded disk we do not
             # remove outputs, as they are used by further accumulate tasks
             task.cleanup_inputs()
@@ -173,6 +172,7 @@ class CoffeaWQ(WorkQueue):
             }
         }
 
+    @property
     def staging_dir(self):
         return self._staging_dir_obj.name
 
@@ -199,9 +199,9 @@ class CoffeaWQ(WorkQueue):
         )
 
         function = _compression_wrapper(self.executor.compression, function)
-        infile_procc_fn = self.function_to_file(function, "preproc")
+        infile_pre_fn = self.function_to_file(function, "preproc")
         for item in items:
-            task = PreProcCoffeaWQTask(self, infile_procc_fn, item)
+            task = PreProcCoffeaWQTask(self, infile_pre_fn, item)
             self.submit(task)
 
         while not self.empty():
@@ -224,7 +224,9 @@ class CoffeaWQ(WorkQueue):
                 return
             if not self.hungry():
                 return
-            if self.stats.get("events_queued") >= self.stats.get("events_total"):
+            if self.stats_coffea.get("events_queued") >= self.stats_coffea.get(
+                "events_total"
+            ):
                 return
 
             if (
@@ -287,8 +289,10 @@ class CoffeaWQ(WorkQueue):
 
         stats.set("chunksize_original", executor.chunksize)
         stats.set("chunksize_current", executor.chunksize)
+        self.chunksize_current = executor.chunksize
 
-        self.bars = self._make_bars(executor)
+        self._make_bars()
+
         signal.signal(signal.SIGINT, _handle_early_terminate)
 
         self._process_events(infile_procc_fn, infile_accum_fn, items)
@@ -304,8 +308,8 @@ class CoffeaWQ(WorkQueue):
         return accumulator
 
     def _process_events(self, infile_procc_fn, infile_accum_fn, items):
-        stats = self.coffea_stats
-        while (not self.empty) or stats.get("events_processed") < self.stats.get(
+        stats = self.stats_coffea
+        while (not self.empty) or stats.get("events_processed") < stats.get(
             "events_total"
         ):
             if early_terminate and self.empty():
@@ -313,7 +317,7 @@ class CoffeaWQ(WorkQueue):
                 # finished
                 break
 
-            self._submit_processing_tasks(infile_procc_fn)
+            self._submit_processing_tasks(infile_procc_fn, items)
 
             # When done submitting, look for completed tasks.
             task = self.wait(5)
@@ -341,7 +345,7 @@ class CoffeaWQ(WorkQueue):
     def _submit_accum_tasks(self, infile_accum_fn):
         chunks_per_accum = self.executor.chunks_per_accum
 
-        stats = self.coffea_stats
+        stats = self.stats_coffea
         force = early_terminate
         force |= stats.get("events_processed") >= stats.get("events_total")
 
@@ -481,26 +485,25 @@ class CoffeaWQ(WorkQueue):
             return f.name
 
     def _make_bars(self):
-        bars = {}
+        self.bars = {}
         for desc in ["Submitted", "Processed", "Accumulated"]:
-            bar[desc] = tqdm(
+            self.bars[desc] = tqdm(
                 desc=desc,
-                total=executor.events_total,
+                total=self.executor.events_total,
                 disable=not self.executor.status,
                 unit=self.executor.unit,
                 bar_format=self.executor.bar_format,
             )
-        bar["Submitted"].unit = "events"
+        self.bars["Submitted"].unit = "events"
         self._update_bars()
-        return bars
 
     def _update_bars(self, final_update=False):
-        total = self.coffea_stats.get("events_total")
-        procc = self.coffea_stats.get("events_processed")
+        total = self.stats_coffea.get("events_total")
+        procc = self.stats_coffea.get("events_processed")
         accum = self.stats_category("accumulating").tasks_submitted
 
-        if self.coffea_stats.has("chunks"):
-            chunks = self.coffea_stats.get("chunks")
+        if self.stats_coffea.has("chunks"):
+            chunks = self.stats_coffea.get("chunks")
         elif procc > 0:
             chunks = math.ceil(self.bars["Processed"].n * total / procc)
         else:
@@ -602,7 +605,7 @@ class CoffeaWQTask(Task):
         if not self._has_result():
             try:
                 with open(self.outfile_output, "rb") as rf:
-                    result = _decompress(rf)
+                    result = _decompress(rf.read())
                     self.py_result = result
             except Exception as e:
                 self.py_result = ResultUnavailable(e)
@@ -943,11 +946,11 @@ def run(executor, items, function, accumulator):
     if not wq:
         print("You must have Work Queue installed to use WorkQueueExecutor!")
         # raise an import error for work queue
-        import work_queue
+        import work_queue  # noqa
 
-    if executor.environment_file and not executor.environment_file.wrapper:
+    if executor.environment_file and not executor.wrapper:
         raise ValueError(
-            "Location of python_package_run could not be determined automatically.\nUse 'wrapper' argument to the work_queue_executor."
+            "Location of poncho_package_run could not be determined automatically.\nUse 'wrapper' argument to the work_queue_executor."
         )
 
     if executor.compression is None:
@@ -961,8 +964,10 @@ def run(executor, items, function, accumulator):
     global _wq_queue
     if _wq_queue is None:
         _wq_queue = CoffeaWQ(executor)
-
-    _wq_queue.declare_resources(executor)
+    else:
+        # if queue already listening on port, update the parameters given by
+        # the executor
+        _wq_queue.executor = executor
 
     try:
         if executor.custom_init:
@@ -1074,8 +1079,6 @@ class VerbosePrint:
 
 
 # Functions related to dynamic chunksize, independent of Work Queue
-
-
 def _floor_to_pow2(value):
     if value < 1:
         return 1
