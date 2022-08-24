@@ -608,15 +608,9 @@ class WorkQueueExecutor(ExecutorBase):
         function: Callable,
         accumulator: Accumulatable,
     ):
-        try:
-            import work_queue  # noqa
-            from .work_queue_tools import work_queue_main
-        except ImportError as e:
-            print("You must have Work Queue installed to use WorkQueueExecutor!")
-            raise e
-
+        from .work_queue_tools import run
         return (
-            work_queue_main(
+            run(
                 self,
                 items,
                 function,

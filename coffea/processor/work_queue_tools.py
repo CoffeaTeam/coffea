@@ -75,6 +75,7 @@ try:
     from work_queue import WorkQueue, Task
     import work_queue as wq
 except ImportError:
+    wq = None
     print("work_queue module not available")
 
     class Task:
@@ -926,14 +927,14 @@ class AccumCoffeaWQTask(CoffeaWQTask):
         )
 
 
-def work_queue_main(executor, items, function, accumulator):
+def run(executor, items, function, accumulator):
     """Execute using Work Queue
     For more information, see :ref:`intro-coffea-wq`
     """
-
-    global _wq_queue
-
-    _check_dynamic_chunksize_targets(executor.dynamic_chunksize)
+    if not wq:
+        print("You must have Work Queue installed to use WorkQueueExecutor!")
+        # raise an import error for work queue
+        import work_queue
 
     if executor.environment_file and not executor.environment_file.wrapper:
         raise ValueError(
