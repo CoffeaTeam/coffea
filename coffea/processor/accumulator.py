@@ -73,8 +73,10 @@ def iadd(a: Accumulatable, b: Accumulatable) -> Accumulatable:
                 f"Cannot add two mappings of incompatible type ({type(a)} vs. {type(b)})"
             )
         lhs, rhs = set(a), set(b)
-        for key in lhs & rhs:
-            a[key] = iadd(a[key], b[key])
+        # Keep the order of elements as far as possible
+        for key in a:
+            if key in rhs:
+                a[key] = iadd(a[key], b[key])
         for key in b:
             if key not in lhs:
                 a[key] = copy.deepcopy(b[key])
