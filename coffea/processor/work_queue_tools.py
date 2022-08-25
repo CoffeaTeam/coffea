@@ -309,14 +309,13 @@ class CoffeaWQ(WorkQueue):
         return accumulator
 
     def _process_events(self, infile_procc_fn, infile_accum_fn, items):
-        stats = self.stats_coffea
-        while (not self.empty) or stats.get("events_processed") < stats.get(
-            "events_total"
-        ):
-            if early_terminate and self.empty():
-                # all pending accumulation tasks after getting the signal have
-                # finished
-                break
+        s = self.stats_coffea
+        while True:
+            if self.empty():
+                if early_terminate:
+                    break
+                if s.get("events_total") <= s.get("events_processed"):
+                    break
 
             self._submit_processing_tasks(infile_procc_fn, items)
 
