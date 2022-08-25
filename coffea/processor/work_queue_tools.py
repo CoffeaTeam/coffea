@@ -416,11 +416,6 @@ class CoffeaWQ(WorkQueue):
         elif executor.resource_monitor == "measure":
             watchdog_enabled = False
 
-        # activate monitoring if it has not been explicitely activated and we are
-        # using an automatic resource allocation.
-        if executor.resources_mode != "fixed":
-            monitor_enabled = True
-
         if monitor_enabled:
             self.enable_monitoring(watchdog=watchdog_enabled)
 
@@ -965,8 +960,12 @@ def run(executor, items, function, accumulator):
     if executor.chunks_per_accum < 2:
         executor.chunks_per_accum = 2
 
-    executor.verbose = executor.verbose or executor.print_stdout
+    # activate monitoring if it has not been explicitely activated and we are
+    # using an automatic resource allocation.
+    if executor.resources_mode != "fixed" and executor.resource_monitor == "off":
+        executor.resource_monitor = "watchdog"
 
+    executor.verbose = executor.verbose or executor.print_stdout
     executor.x509_proxy = _get_x509_proxy(executor.x509_proxy)
 
     global _wq_queue
