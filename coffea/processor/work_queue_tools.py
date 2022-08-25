@@ -254,8 +254,6 @@ class CoffeaWQ(WorkQueue):
         total_accumulated_events = 0
         for t in self.tasks_to_accumulate:
             total_accumulated_events += len(t)
-            print(t.itemid)
-            print(self.empty())
             t.cleanup_outputs()
             t.task_accum_log(self.executor.tasks_accum_log, "accumulated", 0)
 
@@ -351,21 +349,23 @@ class CoffeaWQ(WorkQueue):
         force = early_terminate
         force |= stats.get("events_processed") >= stats.get("events_total")
 
-        if len(self.tasks_to_accumulate) < 2 * chunks_per_accum - 1 and not force:
+        if len(self.tasks_to_accumulate) < (2 * chunks_per_accum) - 1 and (not force):
             return
+
+        if force:
+            min_accum = 2
+        else:
+            min_accum = chunks_per_accum
 
         self.tasks_to_accumulate.sort(key=lambda t: t.fout_size)
 
         for start in range(0, len(self.tasks_to_accumulate), chunks_per_accum):
-            next_to_accum = self.tasks_to_accumulate[start : start + chunks_per_accum]
-
-            # return immediately if not enough for a single accumulation
-            # this can only happen in the last group
-            if len(next_to_accum) < 2 or (
-                len(next_to_accum) < chunks_per_accum and not force
-            ):
-                self.tasks_to_accumulate = next_to_accum
+            if len(self.tasks_to_accumulate) < min_accum:
                 break
+
+            end = min(len(self.tasks_to_accumulate), chunks_per_accum)
+            next_to_accum = self.tasks_to_accumulate[0 : end]
+            self.tasks_to_accumulate = self.tasks_to_accumulate[end : ]
 
             accum_task = AccumCoffeaWQTask(self, infile_accum_fn, next_to_accum)
             self.submit(accum_task)
