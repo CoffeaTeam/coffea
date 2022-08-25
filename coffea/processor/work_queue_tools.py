@@ -13,7 +13,7 @@ import numpy
 import scipy
 import random
 
-from tqdm.auto import tqdm
+from coffea.util import rich_bar
 
 import cloudpickle
 
@@ -85,9 +85,7 @@ class CoffeaWQ(WorkQueue):
         executor,
     ):
         self.executor = executor
-        self.console = VerbosePrint(
-            executor.status, executor.verbose or executor.print_stdout
-        )
+        self._staging_dir_obj = TemporaryDirectory("wq-tmp-", dir=executor.filepath)
         self.stats_coffea = Stats()
 
         self.tasks_to_accumulate = []
@@ -95,8 +93,6 @@ class CoffeaWQ(WorkQueue):
 
         if not self.executor.port:
             self.executor.port = 0 if self.executor.master_name else 9123
-
-        self._staging_dir_obj = TemporaryDirectory("wq-tmp-", dir=executor.filepath)
 
         super().__init__(
             port=self.executor.port,
@@ -107,6 +103,9 @@ class CoffeaWQ(WorkQueue):
             status_display_interval=self.executor.status_display_interval,
             ssl=self.executor.ssl,
         )
+
+        self.bar = StatusBar()
+        self.console = VerbosePrint(self.bar.console, executor.status, executor.verbose)
 
         self._declare_resources()
 
@@ -190,32 +189,26 @@ class CoffeaWQ(WorkQueue):
         self.task_reports.append(r)
 
     def _preprocessing(self, items, function, accumulator):
-        preprocessing_bar = tqdm(
-            desc="Preprocessing",
-            total=len(items),
-            disable=not self.executor.status,
-            unit=self.executor.unit,
-            bar_format=self.executor.bar_format,
-        )
-
         function = _compression_wrapper(self.executor.compression, function)
         infile_pre_fn = self.function_to_file(function, "preproc")
         for item in items:
             task = PreProcCoffeaWQTask(self, infile_pre_fn, item)
             self.submit(task)
 
+        self.bar.add_task("Preprocessing", total=len(items), unit=self.executor.unit)
         while not self.empty():
             task = self.wait(5)
             if task:
                 if task.successful():
                     accumulator = accumulate([task.output], accumulator)
-                    preprocessing_bar.update(1)
+                    self.bar.advance("Preprocessing", 1)
                     task.cleanup_outputs()
                     task.task_accum_log(self.executor.tasks_accum_log, "", "done")
                 else:
                     task.resubmit(self)
+                self.bar.refresh()
 
-        preprocessing_bar.close()
+        self.bar.stop_task("Preprocessing")
         return accumulator
 
     def _submit_processing_tasks(self, infile_procc_fn, items):
@@ -247,22 +240,32 @@ class CoffeaWQ(WorkQueue):
         t = ProcCoffeaWQTask(self, infile_procc_fn, item)
         self.submit(t)
         self.stats_coffea.inc("events_queued", len(t))
-        self.bars["Submitted"].update(len(t))
 
     def _final_accumulation(self, accumulator):
         if len(self.tasks_to_accumulate) < 1:
             raise RuntimeError("No results available.")
 
         self.console("Merging with local final accumulator...")
+        self.console(f"{len(self.tasks_to_accumulate)}")
         accumulator = accumulate_result_files(
             [t.outfile_output for t in self.tasks_to_accumulate], accumulator
         )
 
+        total_accumulated_events = 0
         for t in self.tasks_to_accumulate:
+            total_accumulated_events += len(t)
+            print(t.itemid)
+            print(self.empty())
             t.cleanup_outputs()
             t.task_accum_log(self.executor.tasks_accum_log, "accumulated", 0)
 
-        self.bars["Accumulated"].update(1)
+        stats = self.stats_coffea
+        if stats.get("events_processed") != stats.get("events_total"):
+            self.console.printf("\nWARNING: Number of events processed is different from total!\n")
+
+        if total_accumulated_events != stats.get("events_processed"):
+            self.console.printf("\nWARNING: Number of events accumulated is different from processed!\n")
+
         return accumulator
 
     def _processing(self, items, function, accumulator):
@@ -279,10 +282,10 @@ class CoffeaWQ(WorkQueue):
 
         # if not dynamic_chunksize, ensure that the items looks like a generator
         if isinstance(items, list):
-            stats.set("chunks_total", len(items))
             items = iter(items)
 
         # Keep track of total tasks in each state.
+        stats.set("events_processed", 0)
         stats.set("events_queued", 0)
         stats.set("events_processed", 0)
         stats.set("events_total", executor.events_total)
@@ -291,20 +294,18 @@ class CoffeaWQ(WorkQueue):
         stats.set("chunksize_current", executor.chunksize)
         self.chunksize_current = executor.chunksize
 
-        self._make_bars()
+        self._make_process_bars()
 
         signal.signal(signal.SIGINT, _handle_early_terminate)
 
         self._process_events(infile_procc_fn, infile_accum_fn, items)
-        if stats.get("events_processed") < stats.get("events_total"):
-            self.console.printf("\nWARNING: Not all items were processed.\n")
 
         # merge results with original accumulator given by the executor
         accumulator = self._final_accumulation(accumulator)
 
-        self._update_bars(final_update=True)
-
         self.console("final chunksize {}", self.chunksize_current)
+
+        self._update_bars(final_update=True)
         return accumulator
 
     def _process_events(self, infile_procc_fn, infile_accum_fn, items):
@@ -333,11 +334,13 @@ class CoffeaWQ(WorkQueue):
 
             if re.match("processing", task.category):
                 self._add_task_report(task)
-                stats.inc("events_processed", len(task))
-                self.bars["Processed"].update(1)
+                s.inc("events_processed", len(task))
+                s.inc("chunks_processed", 1)
                 self._update_chunksize()
+            elif task.category == "accumulating":
+                s.inc("accumulations_done", 1)
             else:
-                self.bars["Accumulated"].update(1)
+                raise RuntimeError(f"Unrecognized task category {task.category}")
 
             self._submit_accum_tasks(infile_accum_fn)
             self._update_bars()
@@ -484,45 +487,49 @@ class CoffeaWQ(WorkQueue):
             f.write(contents.format(proxy=proxy_basename).encode())
             return f.name
 
-    def _make_bars(self):
-        self.bars = {}
-        for desc in ["Submitted", "Processed", "Accumulated"]:
-            self.bars[desc] = tqdm(
-                desc=desc,
-                total=self.executor.events_total,
-                disable=not self.executor.status,
-                unit=self.executor.unit,
-                bar_format=self.executor.bar_format,
-            )
-        self.bars["Submitted"].unit = "events"
+    def _make_process_bars(self):
+        chunks = math.ceil(self.executor.events_total / self.chunksize_current)
+        accums = self._estimate_accum_tasks(chunks)
+
+        self.bar.add_task("Submitted", total=self.executor.events_total, unit=self.executor.unit)
+        self.bar.add_task("Processed", total=self.executor.events_total, unit=self.executor.unit)
+        self.bar.add_task("Accumulated", total=math.ceil(accums), unit="tasks")
+
+        self.stats_coffea.set("chunks_processed", 0)
+        self.stats_coffea.set("accumulations_done", 0)
+        self.stats_coffea.set("estimated_total_chunks", chunks)
+        self.stats_coffea.set("estimated_total_accumulations", accums)
+
         self._update_bars()
 
-    def _update_bars(self, final_update=False):
-        total = self.stats_coffea.get("events_total")
-        procc = self.stats_coffea.get("events_processed")
-        accum = self.stats_category("accumulating").tasks_submitted
+    def _estimate_accum_tasks(self, chunks_total):
+        accums = 0
+        step = chunks_total
+        while True:
+            step = math.ceil(step / self.executor.chunks_per_accum)
+            accums += step
+            if step < 2:
+                return accums
 
-        if self.stats_coffea.has("chunks"):
-            chunks = self.stats_coffea.get("chunks")
-        elif procc > 0:
-            chunks = math.ceil(self.bars["Processed"].n * total / procc)
+    def _update_bars(self, final_update=False):
+        s = self.stats_coffea
+        total = s["events_total"]
+        procc = s["events_processed"]
+
+        if procc > 0:
+            chunks = math.ceil(s["chunks_processed"] * total / procc)
         else:
             chunks = math.ceil(total / self.chunksize_current)
 
-        if accum > 0:
-            accum_total = math.ceil(accum * total / procc)
-        else:
-            accum_total = math.ceil(chunks / self.executor.chunks_per_accum)
+        accum = self._estimate_accum_tasks(chunks)
 
-        self.bars["Processed"].total = chunks
-        self.bars["Accumulated"].total = accum_total
+        self.bar.update("Submitted", completed=s["events_queued"])
+        self.bar.update("Processed", completed=s["events_processed"])
+        self.bar.update("Accumulated", completed=s["accumulations_done"], total=accum)
 
-        for bar in self.bars.values():
-            bar.refresh()
-
+        self.bar.refresh()
         if final_update:
-            for bar in _wq_queue.bars.values():
-                bar.close()
+            self.bar.stop()
 
 
 class CoffeaWQTask(Task):
@@ -959,6 +966,8 @@ def run(executor, items, function, accumulator):
     if executor.chunks_per_accum < 2:
         executor.chunks_per_accum = 2
 
+    executor.verbose = executor.verbose or executor.print_stdout
+
     executor.x509_proxy = _get_x509_proxy(executor.x509_proxy)
 
     global _wq_queue
@@ -1059,7 +1068,8 @@ class Stats(dict):
 
 
 class VerbosePrint:
-    def __init__(self, status_mode=True, verbose_mode=True):
+    def __init__(self, console, status_mode=True, verbose_mode=True):
+        self.console = console
         self.status_mode = status_mode
         self.verbose_mode = verbose_mode
 
@@ -1069,13 +1079,42 @@ class VerbosePrint:
 
     def print(self, msg):
         if self.status_mode:
-            tqdm.write(msg)
+            self.console.print(msg)
         else:
             print(msg)
 
     def printf(self, format_str, *args, **kwargs):
         msg = format_str.format(*args, **kwargs)
         self.print(msg)
+
+
+# Support for rich_bar so that we can keep track of bars by their names, rather
+# than the changing bar ids.
+class StatusBar:
+    def __init__(self, enabled=True):
+        self._prog = rich_bar()
+        self._ids = {}
+        if enabled:
+            self._prog.start()
+
+    def add_task(self, desc, *args, **kwargs):
+        b = self._prog.add_task(desc, *args, **kwargs)
+        self._ids[desc] = b
+        self._prog.start_task(self._ids[desc])
+        return b
+
+    def stop_task(self, desc, *args, **kwargs):
+        return self._prog.stop_task(self._ids[desc], *args, **kwargs)
+
+    def update(self, desc, *args, **kwargs):
+        return self._prog.update(self._ids[desc], *args, **kwargs)
+
+    def advance(self, desc, *args, **kwargs):
+        return self._prog.advance(self._ids[desc], *args, **kwargs)
+
+    # redirect anything else to rich_bar
+    def __getattr__(self, name):
+        return getattr(self._prog, name)
 
 
 # Functions related to dynamic chunksize, independent of Work Queue
