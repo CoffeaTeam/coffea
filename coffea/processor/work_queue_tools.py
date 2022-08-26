@@ -103,7 +103,7 @@ class CoffeaWQ(WorkQueue):
             ssl=self.executor.ssl,
         )
 
-        self.bar = StatusBar()
+        self.bar = StatusBar(enabled=executor.status)
         self.console = VerbosePrint(self.bar.console, executor.status, executor.verbose)
 
         self._declare_resources()
