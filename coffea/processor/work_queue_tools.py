@@ -285,7 +285,8 @@ class CoffeaWQ(WorkQueue):
 
     def _final_accumulation(self, accumulator):
         if len(self.tasks_to_accumulate) < 1:
-            raise RuntimeError("No results available.")
+            self.console.warn("No results available.")
+            return accumulator
 
         self.console("Merging with local final accumulator...")
         self.console(f"{len(self.tasks_to_accumulate)}")
@@ -670,7 +671,7 @@ class CoffeaWQTask(Task):
 
         resubmissions = []
         if self.result == wq.WORK_QUEUE_RESULT_RESOURCE_EXHAUSTION:
-            queue.console("splitting {} to reduce resource consumption.", self.itemid)
+            queue.console.printf(f"[red]splitting[/red] task id {self.id} after resource exhaustion.")
             resubmissions = self.split(queue)
         else:
             t = self.clone(queue)
@@ -718,7 +719,7 @@ class CoffeaWQTask(Task):
         )
 
         queue.console.printf(
-            "    allocated cores: {}, memory: {} MB, disk: {} MB, gpus: {}",
+            "    allocated cores: {:.1f}, memory: {:.0f} MB, disk {:.0f} MB, gpus: {:.1f}",
             self.resources_allocated.cores,
             self.resources_allocated.memory,
             self.resources_allocated.disk,
@@ -727,7 +728,7 @@ class CoffeaWQTask(Task):
 
         if queue.executor.resource_monitor and queue.executor.resource_monitor != "off":
             queue.console.printf(
-                "    measured cores: {}, memory: {} MB, disk {} MB, gpus: {}, runtime {}",
+                "    measured cores: {:.1f}, memory: {:.0f} MB, disk {:.0f} MB, gpus: {:.1f}, runtime {:.1f} s",
                 self.resources_measured.cores,
                 self.resources_measured.memory,
                 self.resources_measured.disk,
@@ -735,22 +736,26 @@ class CoffeaWQTask(Task):
                 (self.cmd_execution_time) / 1e6,
             )
 
-        if queue.executor.print_stdout or (not self.successful()):
+        if queue.executor.print_stdout:
             if self.std_output:
                 queue.console.print("    output:")
                 queue.console.print(self.std_output)
 
-        if not self.successful():
+        if not self.successful() and self.result != wq.WORK_QUEUE_RESULT_RESOURCE_EXHAUSTION:
             # Note that WQ already retries internal failures.
-            # If we get to this point, it's a badly formed task
+            # If we get to this point, it's a badly formed task, and we
+            # terminate the workflow.
             info = self.debug_info()
             queue.console.printf(
-                "task id {} item {} failed: {}\n    {}",
+                "task id {} item {} failed: [red]{}[/red]\n    {}\noutput:{}",
                 self.id,
                 self.itemid,
-                self.result_str,
+                self.result_str.lower().replace("_", " "),
                 info,
+                self.std_output
             )
+            if not early_terminate:
+                _handle_early_terminate(0, None, raise_on_repeat=False)
 
         return self.successful()
 
@@ -1019,17 +1024,17 @@ def run(executor, items, function, accumulator):
     return result
 
 
-def _handle_early_terminate(signum, frame):
+def _handle_early_terminate(signum, frame, raise_on_repeat=True):
     global early_terminate
 
-    if early_terminate:
+    if early_terminate and raise_on_repeat:
         raise KeyboardInterrupt
     else:
         _wq_queue.console.printf(
             "********************************************************************************"
         )
         _wq_queue.console.printf("Canceling processing tasks for final accumulation.")
-        _wq_queue.console.printf("C-c again to immediately terminate.")
+        _wq_queue.console.printf("C-c now to immediately terminate.")
         _wq_queue.console.printf(
             "********************************************************************************"
         )
