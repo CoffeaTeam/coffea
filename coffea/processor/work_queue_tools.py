@@ -208,6 +208,15 @@ class CoffeaWQ(WorkQueue):
     def staging_dir(self):
         return self._staging_dir_obj.name
 
+    @property
+    def chunksize_current(self):
+        return self._chunksize_current
+
+    @chunksize_current.setter
+    def chunksize_current(self, new_value):
+        self._chunksize_current = new_value
+        self.stats_coffea.set("chunksize_current", self._chunksize_current)
+
     def function_to_file(self, function, name=None):
         with NamedTemporaryFile(
             prefix=name, suffix=".p", dir=self.staging_dir, delete=False
@@ -322,7 +331,6 @@ class CoffeaWQ(WorkQueue):
         stats.set("events_total", executor.events_total)
 
         stats.set("chunksize_original", executor.chunksize)
-        stats.set("chunksize_current", executor.chunksize)
         self.chunksize_current = executor.chunksize
 
         self._make_process_bars()
@@ -334,7 +342,8 @@ class CoffeaWQ(WorkQueue):
         # merge results with original accumulator given by the executor
         accumulator = self._final_accumulation(accumulator)
 
-        self.console("final chunksize {}", self.chunksize_current)
+        if self.chunksize_current != self.stats_coffea["chunksize_original"]:
+            self.console.printf(f"final chunksize {self.chunksize_current}")
 
         self._update_bars(final_update=True)
         return accumulator
@@ -414,8 +423,7 @@ class CoffeaWQ(WorkQueue):
                 ex.chunksize, ex.dynamic_chunksize, self.task_reports
             )
             self.chunksize_current = chunksize
-            self.stats_coffea.set("chunksize_current", chunksize)
-            self.console("current chunksize {}", chunksize)
+            self.console("current chunksize {}", self.chunksize_current)
         return self.chunksize_current
 
     def _declare_resources(self):
@@ -548,11 +556,14 @@ class CoffeaWQ(WorkQueue):
         else:
             chunks = math.ceil(total / self.chunksize_current)
 
-        accum = self._estimate_accum_tasks(chunks)
+        accums = self._estimate_accum_tasks(chunks)
 
         self.bar.update("Submitted", completed=s["events_queued"])
         self.bar.update("Processed", completed=s["events_processed"])
-        self.bar.update("Accumulated", completed=s["accumulations_done"], total=accum)
+        self.bar.update("Accumulated", completed=s["accumulations_done"], total=accums)
+
+        self.stats_coffea.set("estimated_total_chunks", chunks)
+        self.stats_coffea.set("estimated_total_accumulations", accums)
 
         self.bar.refresh()
         if final_update:
@@ -859,16 +870,16 @@ class ProcCoffeaWQTask(CoffeaWQTask):
             raise RuntimeError("processing task cannot be split any further.")
 
         # if the chunksize was updated to be less than total, then use that.
-        # Otherwise, just partition the task in two.
+        # Otherwise, partition the task in two and update the current chunksize.
         chunksize_target = queue.chunksize_current
         if total <= chunksize_target:
             chunksize_target = math.ceil(total / 2)
+            queue.chunksize_current = chunksize_target
 
         n = max(math.ceil(total / chunksize_target), 1)
         chunksize_actual = int(math.ceil(total / n))
 
         queue.stats_coffea.inc("chunks_split")
-        queue.stats_coffea.min("min_chunksize_after_split", chunksize_actual)
 
         splits = []
         start = self.item.entrystart
