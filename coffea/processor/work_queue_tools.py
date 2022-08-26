@@ -13,7 +13,7 @@ import numpy
 import scipy
 import random
 
-from coffea.util import rich_bar
+from coffea.util import rich_bar, deprecate
 
 import cloudpickle
 
@@ -84,19 +84,18 @@ class CoffeaWQ(WorkQueue):
         self,
         executor,
     ):
-        self.executor = executor
         self._staging_dir_obj = TemporaryDirectory("wq-tmp-", dir=executor.filepath)
+
+        self._check_executor_parameters(executor)
+        self.executor = executor
         self.stats_coffea = Stats()
 
         self.tasks_to_accumulate = []
         self.task_reports = []
 
-        if not self.executor.port:
-            self.executor.port = 0 if self.executor.master_name else 9123
-
         super().__init__(
             port=self.executor.port,
-            name=self.executor.master_name,
+            name=self.executor.manager_name,
             debug_log=self.executor.debug_log,
             stats_log=self.executor.stats_log,
             transactions_log=self.executor.transactions_log,
@@ -130,6 +129,40 @@ class CoffeaWQ(WorkQueue):
             self._staging_dir_obj.cleanup()
         finally:
             super().__del__()
+
+    def _check_executor_parameters(self, executor):
+        if executor.environment_file and not executor.wrapper:
+            raise ValueError(
+                "WorkQueueExecutor: Could not find poncho_package_run. Use 'wrapper' argument."
+            )
+
+        if executor.chunks_per_accum < 2:
+            raise ValueError(
+                "WorkQueueExecutor: chunks_per_accum should be at least 2."
+            )
+
+        if not executor.manager_name and executor.master_name:
+            deprecate(RuntimeError(f"master_name is deprecated. Use manager_name."), "v0.8.0", "31 Dec 2022")
+
+        if not executor.port:
+            executor.port = 0 if executor.manager_name else 9123
+
+        # wq always needs serializaiton to files, thus compression is always on
+        if executor.compression is None:
+            executor.compression = 1
+
+        # activate monitoring if it has not been explicitely activated and we are
+        # using an automatic resource allocation.
+        if executor.resources_mode != "fixed" and executor.resource_monitor == "off":
+            executor.resource_monitor = "watchdog"
+
+        deprecated = ["master_name", "chunks_accum_in_mem", "bar_format"]
+        for field in deprecated:
+            if getattr(executor, field):
+                deprecate(RuntimeError(f"{field} is deprecated"), "v0.8.0", "31 Dec 2022")
+
+        executor.verbose = executor.verbose or executor.print_stdout
+        executor.x509_proxy = _get_x509_proxy(executor.x509_proxy)
 
     def submit(self, task):
         taskid = super().submit(task)
@@ -948,25 +981,6 @@ def run(executor, items, function, accumulator):
         print("You must have Work Queue installed to use WorkQueueExecutor!")
         # raise an import error for work queue
         import work_queue  # noqa
-
-    if executor.environment_file and not executor.wrapper:
-        raise ValueError(
-            "Location of poncho_package_run could not be determined automatically.\nUse 'wrapper' argument to the work_queue_executor."
-        )
-
-    if executor.compression is None:
-        executor.compression = 1
-
-    if executor.chunks_per_accum < 2:
-        executor.chunks_per_accum = 2
-
-    # activate monitoring if it has not been explicitely activated and we are
-    # using an automatic resource allocation.
-    if executor.resources_mode != "fixed" and executor.resource_monitor == "off":
-        executor.resource_monitor = "watchdog"
-
-    executor.verbose = executor.verbose or executor.print_stdout
-    executor.x509_proxy = _get_x509_proxy(executor.x509_proxy)
 
     global _wq_queue
     if _wq_queue is None:

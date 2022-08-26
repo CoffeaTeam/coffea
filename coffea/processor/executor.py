@@ -483,7 +483,7 @@ class WorkQueueExecutor(ExecutorBase):
             Number of GPUs to allocate to each task.  If unset, use zero.
         resource_monitor : str
             If given, one of 'off', 'measure', or 'watchdog'. Default is 'off'.
-            - 'off': turns off resource monitoring. Overriden if resources_mode
+            - 'off': turns off resource monitoring. Overriden to 'watchdog' if resources_mode
                      is not set to 'fixed'.
             - 'measure': turns on resource monitoring for Work Queue. The
                         resources used per task are measured.
@@ -513,16 +513,16 @@ class WorkQueueExecutor(ExecutorBase):
             legitimately slow tasks, no task may trigger fast termination in
             two distinct workers. Less than 1 disables it.
 
-        master_name : str
-            Name to refer to this work queue master.
+        manager_name : str
+            Name to refer to this work queue manager.
             Sets port to 0 (any available port) if port not given.
         port : int
-            Port number for work queue master program. Defaults to 9123 if
-            master_name not given.
+            Port number for work queue manager program. Defaults to 9123 if
+            manager_name not given.
         password_file: str
             Location of a file containing a password used to authenticate workers.
         ssl: bool or tuple(str, str)
-            Enable ssl encryption between master and workers. If a tuple, then it
+            Enable ssl encryption between manager and workers. If a tuple, then it
             should be of the form (key, cert), where key and cert are paths to the files
             containing the key and certificate in pem format. If True, auto-signed temporary
             key and cert are generated for the session.
@@ -547,6 +547,9 @@ class WorkQueueExecutor(ExecutorBase):
         verbose : bool
             If true, emit a message on each task submission and completion.
             Default is false.
+        print_stdout : bool
+            If true (default), print the standard output of work queue task on completion.
+
         debug_log : str
             Filename for debug output
         stats_log : str
@@ -555,8 +558,6 @@ class WorkQueueExecutor(ExecutorBase):
             Filename for tasks lifetime reports output
         tasks_accum_log : str
             Filename for the log of tasks that have been processed and accumulated.
-        print_stdout : bool
-            If true (default), print the standard output of work queue task on completion.
 
         custom_init : function, optional
             A function that takes as an argument the queue's WorkQueue object.
@@ -568,7 +569,7 @@ class WorkQueueExecutor(ExecutorBase):
     compression: Optional[int] = 9  # as recommended by lz4
     retries: int = 2  # task executes at most 3 times
     # wq executor options:
-    master_name: Optional[str] = None
+    manager_name: Optional[str] = None
     port: Optional[int] = None
     filepath: str = "."
     events_total: Optional[int] = None
@@ -576,7 +577,6 @@ class WorkQueueExecutor(ExecutorBase):
     verbose: bool = False
     print_stdout: bool = False
     status_display_interval: Optional[int] = 10
-    bar_format: str = "{desc:<14}{percentage:3.0f}%|{bar}{r_bar:<55}"
     debug_log: Optional[str] = None
     stats_log: Optional[str] = None
     transactions_log: Optional[str] = None
@@ -595,10 +595,14 @@ class WorkQueueExecutor(ExecutorBase):
     disk: Optional[int] = None
     gpus: Optional[int] = None
     chunks_per_accum: int = 25
-    chunks_accum_in_mem: Optional[int] = None
     chunksize: int = 100000
     dynamic_chunksize: Optional[Dict] = None
     custom_init: Optional[Callable] = None
+
+    # deprecated
+    bar_format: Optional[str] = None
+    chunks_accum_in_mem: Optional[int] = None
+    master_name: Optional[str] = None
 
     def __call__(
         self,
@@ -607,15 +611,6 @@ class WorkQueueExecutor(ExecutorBase):
         accumulator: Accumulatable,
     ):
         from .work_queue_tools import run
-
-        if self.chunks_accum_in_mem:
-            from coffea.util import deprecate
-
-            deprecate(
-                RuntimeError("chunks_accum_in_mem is deprecated"),
-                "v0.8.0",
-                "31 Dec 2022",
-            )
 
         return (
             run(
