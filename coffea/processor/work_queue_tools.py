@@ -142,7 +142,11 @@ class CoffeaWQ(WorkQueue):
             )
 
         if not executor.manager_name and executor.master_name:
-            deprecate(RuntimeError(f"master_name is deprecated. Use manager_name."), "v0.8.0", "31 Dec 2022")
+            deprecate(
+                RuntimeError("master_name is deprecated. Use manager_name."),
+                "v0.8.0",
+                "31 Dec 2022",
+            )
 
         if not executor.port:
             executor.port = 0 if executor.manager_name else 9123
@@ -159,7 +163,9 @@ class CoffeaWQ(WorkQueue):
         deprecated = ["master_name", "chunks_accum_in_mem", "bar_format"]
         for field in deprecated:
             if getattr(executor, field):
-                deprecate(RuntimeError(f"{field} is deprecated"), "v0.8.0", "31 Dec 2022")
+                deprecate(
+                    RuntimeError(f"{field} is deprecated"), "v0.8.0", "31 Dec 2022"
+                )
 
         executor.verbose = executor.verbose or executor.print_stdout
         executor.x509_proxy = _get_x509_proxy(executor.x509_proxy)
@@ -259,15 +265,11 @@ class CoffeaWQ(WorkQueue):
                 return
             if not self.hungry():
                 return
-            if self.stats_coffea.get("events_queued") >= self.stats_coffea.get(
-                "events_total"
-            ):
+            sc = self.stats_coffea
+            if sc["events_queued"] >= sc["events_total"]:
                 return
 
-            if (
-                self.executor.dynamic_chunksize
-                and self.stats_coffea.get("events_queued") > 0
-            ):
+            if self.executor.dynamic_chunksize and sc["events_queued"] > 0:
                 # can't send if generator not initialized first with a next
                 chunksize = self.chunksize_current
                 if self.executor.dynamic_chunksize:
@@ -300,12 +302,16 @@ class CoffeaWQ(WorkQueue):
             t.cleanup_outputs()
             t.task_accum_log(self.executor.tasks_accum_log, "accumulated", 0)
 
-        stats = self.stats_coffea
-        if stats.get("events_processed") != stats.get("events_total"):
-            self.console.printf("\nWARNING: Number of events processed is different from total!\n")
+        sc = self.stats_coffea
+        if sc["events_processed"] != sc["events_total"]:
+            self.console.printf(
+                "\nWARNING: Number of events processed is different from total!\n"
+            )
 
-        if total_accumulated_events != stats.get("events_processed"):
-            self.console.printf("\nWARNING: Number of events accumulated is different from processed!\n")
+        if total_accumulated_events != sc["events_processed"]:
+            self.console.printf(
+                "\nWARNING: Number of events accumulated is different from processed!\n"
+            )
 
         return accumulator
 
@@ -319,19 +325,19 @@ class CoffeaWQ(WorkQueue):
         infile_accum_fn = self.function_to_file(accumulate_fn, "accum")
 
         executor = self.executor
-        stats = self.stats_coffea
+        sc = self.stats_coffea
 
         # if not dynamic_chunksize, ensure that the items looks like a generator
         if isinstance(items, list):
             items = iter(items)
 
         # Keep track of total tasks in each state.
-        stats.set("events_processed", 0)
-        stats.set("events_queued", 0)
-        stats.set("events_processed", 0)
-        stats.set("events_total", executor.events_total)
+        sc.set("events_processed", 0)
+        sc.set("events_queued", 0)
+        sc.set("events_processed", 0)
+        sc.set("events_total", executor.events_total)
+        sc.set("chunksize_original", executor.chunksize)
 
-        stats.set("chunksize_original", executor.chunksize)
         self.chunksize_current = executor.chunksize
 
         self._make_process_bars()
@@ -343,19 +349,19 @@ class CoffeaWQ(WorkQueue):
         # merge results with original accumulator given by the executor
         accumulator = self._final_accumulation(accumulator)
 
-        if self.chunksize_current != self.stats_coffea["chunksize_original"]:
+        if self.chunksize_current != sc["chunksize_original"]:
             self.console.printf(f"final chunksize {self.chunksize_current}")
 
         self._update_bars(final_update=True)
         return accumulator
 
     def _process_events(self, infile_procc_fn, infile_accum_fn, items):
-        s = self.stats_coffea
+        sc = self.stats_coffea
         while True:
             if self.empty():
                 if early_terminate:
                     break
-                if s.get("events_total") <= s.get("events_processed"):
+                if sc["events_total"] <= sc["events_processed"]:
                     break
 
             self._submit_processing_tasks(infile_procc_fn, items)
@@ -374,11 +380,11 @@ class CoffeaWQ(WorkQueue):
 
             if re.match("processing", task.category):
                 self._add_task_report(task)
-                s.inc("events_processed", len(task))
-                s.inc("chunks_processed", 1)
+                sc.inc("events_processed", len(task))
+                sc.inc("chunks_processed", 1)
                 self._update_chunksize()
             elif task.category == "accumulating":
-                s.inc("accumulations_done", 1)
+                sc.inc("accumulations_done", 1)
             else:
                 raise RuntimeError(f"Unrecognized task category {task.category}")
 
@@ -388,9 +394,9 @@ class CoffeaWQ(WorkQueue):
     def _submit_accum_tasks(self, infile_accum_fn):
         chunks_per_accum = self.executor.chunks_per_accum
 
-        stats = self.stats_coffea
+        sc = self.stats_coffea
         force = early_terminate
-        force |= stats.get("events_processed") >= stats.get("events_total")
+        force |= sc["events_processed"] >= sc["events_total"]
 
         if len(self.tasks_to_accumulate) < (2 * chunks_per_accum) - 1 and (not force):
             return
@@ -407,8 +413,8 @@ class CoffeaWQ(WorkQueue):
                 break
 
             end = min(len(self.tasks_to_accumulate), chunks_per_accum)
-            next_to_accum = self.tasks_to_accumulate[0 : end]
-            self.tasks_to_accumulate = self.tasks_to_accumulate[end : ]
+            next_to_accum = self.tasks_to_accumulate[0:end]
+            self.tasks_to_accumulate = self.tasks_to_accumulate[end:]
 
             accum_task = AccumCoffeaWQTask(self, infile_accum_fn, next_to_accum)
             self.submit(accum_task)
@@ -468,6 +474,7 @@ class CoffeaWQ(WorkQueue):
         for category in "default preprocessing processing accumulating".split():
             self.specify_category_max_resources(category, default_resources)
             self.specify_category_mode(category, mode)
+
         # use auto mode max-throughput only for processing tasks
         if executor.resources_mode == "max-throughput":
             self.specify_category_mode(
@@ -527,8 +534,12 @@ class CoffeaWQ(WorkQueue):
         chunks = math.ceil(self.executor.events_total / self.chunksize_current)
         accums = self._estimate_accum_tasks(chunks)
 
-        self.bar.add_task("Submitted", total=self.executor.events_total, unit=self.executor.unit)
-        self.bar.add_task("Processed", total=self.executor.events_total, unit=self.executor.unit)
+        self.bar.add_task(
+            "Submitted", total=self.executor.events_total, unit=self.executor.unit
+        )
+        self.bar.add_task(
+            "Processed", total=self.executor.events_total, unit=self.executor.unit
+        )
         self.bar.add_task("Accumulated", total=math.ceil(accums), unit="tasks")
 
         self.stats_coffea.set("chunks_processed", 0)
@@ -548,23 +559,23 @@ class CoffeaWQ(WorkQueue):
                 return accums
 
     def _update_bars(self, final_update=False):
-        s = self.stats_coffea
-        total = s["events_total"]
-        procc = s["events_processed"]
+        sc = self.stats_coffea
+        total = sc["events_total"]
+        procc = sc["events_processed"]
 
         if procc > 0:
-            chunks = math.ceil(s["chunks_processed"] * total / procc)
+            chunks = math.ceil(sc["chunks_processed"] * total / procc)
         else:
             chunks = math.ceil(total / self.chunksize_current)
 
         accums = self._estimate_accum_tasks(chunks)
 
-        self.bar.update("Submitted", completed=s["events_queued"])
-        self.bar.update("Processed", completed=s["events_processed"])
-        self.bar.update("Accumulated", completed=s["accumulations_done"], total=accums)
+        self.bar.update("Submitted", completed=sc["events_queued"])
+        self.bar.update("Processed", completed=sc["events_processed"])
+        self.bar.update("Accumulated", completed=sc["accumulations_done"], total=accums)
 
-        self.stats_coffea.set("estimated_total_chunks", chunks)
-        self.stats_coffea.set("estimated_total_accumulations", accums)
+        sc.set("estimated_total_chunks", chunks)
+        sc.set("estimated_total_accumulations", accums)
 
         self.bar.refresh()
         if final_update:
@@ -671,7 +682,9 @@ class CoffeaWQTask(Task):
 
         resubmissions = []
         if self.result == wq.WORK_QUEUE_RESULT_RESOURCE_EXHAUSTION:
-            queue.console.printf(f"[red]splitting[/red] task id {self.id} after resource exhaustion.")
+            queue.console.printf(
+                f"[red]splitting[/red] task id {self.id} after resource exhaustion."
+            )
             resubmissions = self.split(queue)
         else:
             t = self.clone(queue)
@@ -741,7 +754,10 @@ class CoffeaWQTask(Task):
                 queue.console.print("    output:")
                 queue.console.print(self.std_output)
 
-        if not self.successful() and self.result != wq.WORK_QUEUE_RESULT_RESOURCE_EXHAUSTION:
+        if (
+            not self.successful()
+            and self.result != wq.WORK_QUEUE_RESULT_RESOURCE_EXHAUSTION
+        ):
             # Note that WQ already retries internal failures.
             # If we get to this point, it's a badly formed task, and we
             # terminate the workflow.
@@ -752,7 +768,7 @@ class CoffeaWQTask(Task):
                 self.itemid,
                 self.result_str.lower().replace("_", " "),
                 info,
-                self.std_output
+                self.std_output,
             )
             if not early_terminate:
                 _handle_early_terminate(0, None, raise_on_repeat=False)
