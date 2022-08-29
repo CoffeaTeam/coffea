@@ -457,7 +457,7 @@ class WorkQueueExecutor(ExecutorBase):
 
     Parameters
     ----------
-        items : list or generator
+        items : sequence or generator
             Sequence of input arguments
         function : callable
             A function to be called on each input, which returns an accumulator instance
@@ -474,11 +474,11 @@ class WorkQueueExecutor(ExecutorBase):
             `None`` sets level to 1 (minimal compression)
         # work queue specific options:
         cores : int
-            Number of cores for work queue task. If unset, use a whole worker.
+            Maximum number of cores for work queue task. If unset, use a whole worker.
         memory : int
-            Amount of memory (in MB) for work queue task. If unset, use a whole worker.
+            Maximum amount of memory (in MB) for work queue task. If unset, use a whole worker.
         disk : int
-            Amount of disk space (in MB) for work queue task. If unset, use a whole worker.
+            Maximum amount of disk space (in MB) for work queue task. If unset, use a whole worker.
         gpus : int
             Number of GPUs to allocate to each task.  If unset, use zero.
         resource_monitor : str
@@ -558,6 +558,10 @@ class WorkQueueExecutor(ExecutorBase):
             Filename for tasks lifetime reports output
         tasks_accum_log : str
             Filename for the log of tasks that have been processed and accumulated.
+
+        filepath: str
+            Path to the parent directory where to create the staging directory.
+            Default is "." (current working directory).
 
         custom_init : function, optional
             A function that takes as an argument the queue's WorkQueue object.
