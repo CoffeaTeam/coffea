@@ -516,9 +516,9 @@ class WorkQueueExecutor(ExecutorBase):
         manager_name : str
             Name to refer to this work queue manager.
             Sets port to 0 (any available port) if port not given.
-        port : int
-            Port number for work queue manager program. Defaults to 9123 if
-            manager_name not given.
+        port : int or tuple(int, int)
+            Port number or range (inclusive of ports )for work queue manager program.
+            Defaults to 9123 if manager_name not given.
         password_file: str
             Location of a file containing a password used to authenticate workers.
         ssl: bool or tuple(str, str)
@@ -570,7 +570,7 @@ class WorkQueueExecutor(ExecutorBase):
     retries: int = 2  # task executes at most 3 times
     # wq executor options:
     manager_name: Optional[str] = None
-    port: Optional[int] = None
+    port: Optional[Union[int, Tuple[int, int]]] = None
     filepath: str = "."
     events_total: Optional[int] = None
     x509_proxy: Optional[str] = None
