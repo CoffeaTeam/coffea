@@ -541,8 +541,8 @@ class WorkQueueExecutor(ExecutorBase):
         wrapper : str
             Wrapper script to run/open python environment tarball. Defaults to python_package_run found in PATH.
 
-        chunks_per_accum : int
-            Number of processed chunks per accumulation task. Defaults is 25.
+        treereduction : int
+            Number of processed chunks per accumulation task. Defaults is 20.
 
         verbose : bool
             If true, emit a message on each task submission and completion.
@@ -598,7 +598,7 @@ class WorkQueueExecutor(ExecutorBase):
     memory: Optional[int] = None
     disk: Optional[int] = None
     gpus: Optional[int] = None
-    chunks_per_accum: int = 25
+    treereduction: int = 20
     chunksize: int = 100000
     dynamic_chunksize: Optional[Dict] = None
     custom_init: Optional[Callable] = None
@@ -607,6 +607,7 @@ class WorkQueueExecutor(ExecutorBase):
     bar_format: Optional[str] = None
     chunks_accum_in_mem: Optional[int] = None
     master_name: Optional[str] = None
+    chunks_per_accum: Optional[int] = None
 
     def __call__(
         self,

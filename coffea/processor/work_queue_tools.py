@@ -146,10 +146,16 @@ class CoffeaWQ(WorkQueue):
                 "WorkQueueExecutor: Could not find poncho_package_run. Use 'wrapper' argument."
             )
 
-        if executor.chunks_per_accum < 2:
-            raise ValueError(
-                "WorkQueueExecutor: chunks_per_accum should be at least 2."
+        if not executor.treereduction and executor.chunks_per_accum:
+            deprecate(
+                RuntimeError("chunks_per_accum is deprecated. Use treereduction."),
+                "v0.8.0",
+                "31 Dec 2022",
             )
+            executor.treereduction = executor.chunks_per_accum
+
+        if executor.treereduction < 2:
+            raise ValueError("WorkQueueExecutor: treereduction should be at least 2.")
 
         if not executor.manager_name and executor.master_name:
             deprecate(
@@ -437,27 +443,27 @@ class CoffeaWQ(WorkQueue):
             self._update_bars()
 
     def _submit_accum_tasks(self, infile_accum_fn):
-        chunks_per_accum = self.executor.chunks_per_accum
+        treereduction = self.executor.treereduction
 
         sc = self.stats_coffea
         force = early_terminate
         force |= sc["events_processed"] >= sc["events_total"]
 
-        if len(self.tasks_to_accumulate) < (2 * chunks_per_accum) - 1 and (not force):
+        if len(self.tasks_to_accumulate) < (2 * treereduction) - 1 and (not force):
             return
 
         if force:
             min_accum = 2
         else:
-            min_accum = chunks_per_accum
+            min_accum = treereduction
 
         self.tasks_to_accumulate.sort(key=lambda t: t.fout_size)
 
-        for start in range(0, len(self.tasks_to_accumulate), chunks_per_accum):
+        for start in range(0, len(self.tasks_to_accumulate), treereduction):
             if len(self.tasks_to_accumulate) < min_accum:
                 break
 
-            end = min(len(self.tasks_to_accumulate), chunks_per_accum)
+            end = min(len(self.tasks_to_accumulate), treereduction)
             next_to_accum = self.tasks_to_accumulate[0:end]
             self.tasks_to_accumulate = self.tasks_to_accumulate[end:]
 
@@ -598,7 +604,7 @@ class CoffeaWQ(WorkQueue):
         accums = 0
         step = chunks_total
         while True:
-            step = math.ceil(step / self.executor.chunks_per_accum)
+            step = math.ceil(step / self.executor.treereduction)
             accums += step
             if step < 2:
                 return accums
