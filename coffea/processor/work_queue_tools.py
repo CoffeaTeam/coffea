@@ -157,6 +157,7 @@ class CoffeaWQ(WorkQueue):
                 "v0.8.0",
                 "31 Dec 2022",
             )
+            executor.manager_name = executor.master_name
 
         if not executor.port:
             executor.port = 0 if executor.manager_name else 9123
