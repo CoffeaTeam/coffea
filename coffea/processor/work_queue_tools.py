@@ -291,7 +291,6 @@ class CoffeaWQ(WorkQueue):
             return accumulator
 
         self.console("Merging with local final accumulator...")
-        self.console(f"{len(self.tasks_to_accumulate)}")
         accumulator = accumulate_result_files(
             [t.outfile_output for t in self.tasks_to_accumulate], accumulator
         )
@@ -304,13 +303,13 @@ class CoffeaWQ(WorkQueue):
 
         sc = self.stats_coffea
         if sc["events_processed"] != sc["events_total"]:
-            self.console.printf(
-                "\nWARNING: Number of events processed is different from total!\n"
+            self.console.warn(
+                f"Number of events processed ({sc['events_processed']}) is different from total ({sc['events_total']})!"
             )
 
         if total_accumulated_events != sc["events_processed"]:
-            self.console.printf(
-                "\nWARNING: Number of events accumulated is different from processed!\n"
+            self.console.warn(
+                f"Number of events accumulated ({total_accumulated_events}) is different from processed ({sc['events_processed']})!"
             )
 
         return accumulator
@@ -634,9 +633,7 @@ class CoffeaWQTask(Task):
         command = fn_command
 
         if env_file:
-            wrap = (
-                './py_wrapper -d -e env_file -u "$WORK_QUEUE_SANDBOX"/{}-env-{} -- {}'
-            )
+            wrap = './py_wrapper -e env_file -u "$WORK_QUEUE_SANDBOX"/{}-env-{} -- {}'
             command = wrap.format(basename(env_file), os.getpid(), fn_command)
 
         return command
@@ -656,7 +653,7 @@ class CoffeaWQTask(Task):
             self.py_result is None or isinstance(self.py_result, ResultUnavailable)
         )
 
-    # use output to return python result, rathern than stdout as regular wq
+    # use output to return python result, rather than stdout as regular wq
     @property
     def output(self):
         if not self._has_result():
@@ -885,7 +882,9 @@ class ProcCoffeaWQTask(CoffeaWQTask):
         )
 
     def split(self, queue):
-        total = len(self.item)
+        queue.console.warn(
+            f"trying to split task id {self.id} after resource exhaustion."
+        )
 
         if total < 2:
             raise RuntimeError("processing task cannot be split any further.")
@@ -1130,6 +1129,10 @@ class VerbosePrint:
     def printf(self, format_str, *args, **kwargs):
         msg = format_str.format(*args, **kwargs)
         self.print(msg)
+
+    def warn(self, format_str, *args, **kwargs):
+        format_str = "[red]WARNING:[/red] " + format_str
+        self.printf(format_str, *args, **kwargs)
 
 
 # Support for rich_bar so that we can keep track of bars by their names, rather
