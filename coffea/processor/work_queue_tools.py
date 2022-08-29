@@ -90,7 +90,17 @@ class CoffeaWQ(WorkQueue):
         self.executor = executor
         self.stats_coffea = Stats()
 
+        # set to keep track of the final work items the workflow consists of.
+        # When a work item needs to be split, it is replaced from this set by
+        # its constituents.
+        self.known_workitems = set()
+
+        # list that keeps results as they finish to construct accumulation
+        # tasks.
         self.tasks_to_accumulate = []
+
+        # list of TaskReport tuples with the statistics to compute the dynamic
+        # chunksize
         self.task_reports = []
 
         super().__init__(
@@ -185,6 +195,7 @@ class CoffeaWQ(WorkQueue):
     def wait(self, timeout=None):
         task = super().wait(timeout)
         if task:
+            task.report(self)
             # Evaluate and display details of the completed task
             if task.successful():
                 task.fout_size = getsize(task.outfile_output) / 1e6
@@ -192,10 +203,9 @@ class CoffeaWQ(WorkQueue):
                     # record only if task used any intermediate inputs
                     self.stats_coffea.max("size_max_input", task.fin_size)
                 self.stats_coffea.max("size_max_output", task.fout_size)
-            task.report(self)
-            # Remove input files as we go to avoid unbounded disk we do not
-            # remove outputs, as they are used by further accumulate tasks
-            task.cleanup_inputs()
+                # Remove input files as we go to avoid unbounded disk we do not
+                # remove outputs, as they are used by further accumulate tasks
+                task.cleanup_inputs()
             return task
         return None
 
@@ -230,6 +240,14 @@ class CoffeaWQ(WorkQueue):
             cloudpickle.dump(function, f)
             return f.name
 
+    def soft_terminate(self, task=None):
+        if task:
+            self.console.warn(f"item {task.itemid} failed permanently.")
+
+        if not early_terminate:
+            # trigger soft termination
+            _handle_early_terminate(0, None, raise_on_repeat=False)
+
     def _add_task_report(self, task):
         r = TaskReport(
             len(task), task.cmd_execution_time / 1e6, task.resources_measured.memory
@@ -261,7 +279,7 @@ class CoffeaWQ(WorkQueue):
 
     def _submit_processing_tasks(self, infile_procc_fn, items):
         while True:
-            if early_terminate:
+            if early_terminate or self._items_empty:
                 return
             if not self.hungry():
                 return
@@ -269,18 +287,21 @@ class CoffeaWQ(WorkQueue):
             if sc["events_queued"] >= sc["events_total"]:
                 return
 
-            if self.executor.dynamic_chunksize and sc["events_queued"] > 0:
-                # can't send if generator not initialized first with a next
-                chunksize = self.chunksize_current
-                if self.executor.dynamic_chunksize:
+            try:
+                if sc["events_queued"] > 0:
+                    # can't send if generator not initialized first with a next
                     chunksize = _sample_chunksize(self.chunksize_current)
-                item = items.send(chunksize)
-            else:
-                item = next(items)
-
-            self._submit_processing_task(infile_procc_fn, item)
+                    item = items.send(chunksize)
+                else:
+                    item = next(items)
+                self._submit_processing_task(infile_procc_fn, item)
+            except StopIteration:
+                self.console.warn("Ran out of items to process.")
+                self._items_empty = True
+                return
 
     def _submit_processing_task(self, infile_procc_fn, item):
+        self.known_workitems.add(item)
         t = ProcCoffeaWQTask(self, infile_procc_fn, item)
         self.submit(t)
         self.stats_coffea.inc("events_queued", len(t))
@@ -314,6 +335,24 @@ class CoffeaWQ(WorkQueue):
 
         return accumulator
 
+    def _fill_unprocessed_items(self, accumulator, items):
+        chunksize = max(self.chunksize_current, self.executor.chunksize)
+        try:
+            while True:
+                if chunksize != self.executor.chunksize:
+                    item = items.send(chunksize)
+                else:
+                    item = next(items)
+                self.known_workitems.add(item)
+        except StopIteration:
+            pass
+
+        unproc = self.known_workitems - accumulator["processed"]
+        accumulator["unprocessed"] = unproc
+        if unproc:
+            count = sum(len(item) for item in unproc)
+            self.console.warn(f"{len(unproc)} unprocessed item(s) ({count} event(s)).")
+
     def _processing(self, items, function, accumulator):
         function = _compression_wrapper(self.executor.compression, function)
         accumulate_fn = _compression_wrapper(
@@ -328,7 +367,7 @@ class CoffeaWQ(WorkQueue):
 
         # if not dynamic_chunksize, ensure that the items looks like a generator
         if isinstance(items, list):
-            items = iter(items)
+            items = (item for item in items)
 
         # Keep track of total tasks in each state.
         sc.set("events_processed", 0)
@@ -348,6 +387,9 @@ class CoffeaWQ(WorkQueue):
         # merge results with original accumulator given by the executor
         accumulator = self._final_accumulation(accumulator)
 
+        # compute the set of unprocessed work items, if any
+        self._fill_unprocessed_items(accumulator, items)
+
         if self.chunksize_current != sc["chunksize_original"]:
             self.console.printf(f"final chunksize {self.chunksize_current}")
 
@@ -355,10 +397,13 @@ class CoffeaWQ(WorkQueue):
         return accumulator
 
     def _process_events(self, infile_procc_fn, infile_accum_fn, items):
+        self.known_workitems = set()
         sc = self.stats_coffea
+        self._items_empty = False
+
         while True:
             if self.empty():
-                if early_terminate:
+                if early_terminate or self._items_empty:
                     break
                 if sc["events_total"] <= sc["events_processed"]:
                     break
@@ -569,8 +614,8 @@ class CoffeaWQ(WorkQueue):
 
         accums = self._estimate_accum_tasks(chunks)
 
-        self.bar.update("Submitted", completed=sc["events_queued"])
-        self.bar.update("Processed", completed=sc["events_processed"])
+        self.bar.update("Submitted", completed=sc["events_queued"], total=total)
+        self.bar.update("Processed", completed=sc["events_processed"], total=total)
         self.bar.update("Accumulated", completed=sc["accumulations_done"], total=accums)
 
         sc.set("estimated_total_chunks", chunks)
@@ -671,38 +716,30 @@ class CoffeaWQTask(Task):
     def cleanup_outputs(self):
         os.remove(self.outfile_output)
 
-    def resubmit(self, queue):
-        if self.retries_to_go < 1 or not queue.executor.split_on_exhaustion:
-            raise RuntimeError(
-                "item {} failed permanently. No more retries left.".format(self.itemid)
-            )
-
-        resubmissions = []
-        if self.result == wq.WORK_QUEUE_RESULT_RESOURCE_EXHAUSTION:
-            queue.console.printf(
-                f"[red]splitting[/red] task id {self.id} after resource exhaustion."
-            )
-            resubmissions = self.split(queue)
-        else:
-            t = self.clone(queue)
-            t.retries_to_go = self.retries_to_go - 1
-            resubmissions = [t]
-
-        for t in resubmissions:
-            queue.console(
-                "resubmitting {} partly as {} with {} events. {} attempt(s) left.",
-                self.itemid,
-                t.itemid,
-                len(t),
-                t.retries_to_go,
-            )
-            queue.submit(t)
-
     def clone(self, queue):
         raise NotImplementedError
 
+    def resubmit(self, queue):
+        if self.retries_to_go < 1:
+            return queue.soft_terminate(self)
+
+        t = self.clone(queue)
+        t.retries_to_go = self.retries_to_go - 1
+
+        queue.console(
+            "resubmitting {} as {} with {} events. {} attempt(s) left.",
+            self.itemid,
+            t.itemid,
+            len(t),
+            t.retries_to_go,
+        )
+
+        queue.submit(t)
+
     def split(self, queue):
-        raise RuntimeError("task cannot be split any further.")
+        # if tasks do not overwrite this method, then is is assumed they cannot
+        # be split.
+        queue.soft_terminate(self)
 
     def debug_info(self):
         self.output  # load results, if needed
@@ -714,18 +751,26 @@ class CoffeaWQTask(Task):
     def successful(self):
         return (self.result == 0) and (self.return_status == 0)
 
+    def exhausted(self):
+        return self.result == wq.WORK_QUEUE_RESULT_RESOURCE_EXHAUSTION
+
     def report(self, queue):
         if (not queue.console.verbose_mode) and self.successful():
             return self.successful()
 
+        result_str = self.result_str.lower().replace("_", " ")
+        if not self.successful() and self.result == 0:
+            result_str = "task error"
+
         queue.console.printf(
-            "{} task id {} item {} with {} events completed on {}. return code {}",
+            "{} task id {} item {} with {} events on {}. return code {} ({})",
             self.category,
             self.id,
             self.itemid,
             len(self),
             self.hostname,
             self.return_status,
+            result_str,
         )
 
         queue.console.printf(
@@ -746,34 +791,24 @@ class CoffeaWQTask(Task):
                 (self.cmd_execution_time) / 1e6,
             )
 
-        if queue.executor.print_stdout:
+        if queue.executor.print_stdout or not (self.successful() or self.exhausted()):
             if self.std_output:
                 queue.console.print("    output:")
                 queue.console.print(self.std_output)
 
-        if (
-            not self.successful()
-            and self.result != wq.WORK_QUEUE_RESULT_RESOURCE_EXHAUSTION
-        ):
-            # Note that WQ already retries internal failures.
-            # If we get to this point, it's a badly formed task, and we
-            # terminate the workflow.
+        if not (self.successful() or self.exhausted()):
             info = self.debug_info()
             queue.console.printf(
-                "task id {} item {} failed: [red]{}[/red]\n    {}\noutput:{}",
+                "task id {} item {} failed: [red]{}[/red]\n    {}",
                 self.id,
                 self.itemid,
-                self.result_str.lower().replace("_", " "),
+                result_str,
                 info,
-                self.std_output,
             )
-            if not early_terminate:
-                _handle_early_terminate(0, None, raise_on_repeat=False)
-
         return self.successful()
 
     def task_accum_log(self, log_filename, accum_parent, status):
-        # Should call write_task_accum_log with the appropiate arguments
+        # Should call write_task_accum_log with the appropriate arguments
         return NotImplementedError
 
     def write_task_accum_log(
@@ -881,13 +916,24 @@ class ProcCoffeaWQTask(CoffeaWQTask):
             self.itemid,
         )
 
-    def split(self, queue):
-        queue.console.warn(
-            f"trying to split task id {self.id} after resource exhaustion."
-        )
+    def resubmit(self, queue):
+        if self.retries_to_go < 1:
+            return queue.soft_terminate(self)
 
+        if self.exhausted():
+            if queue.executor.split_on_exhaustion:
+                return self.split(queue)
+            else:
+                return queue.soft_terminate(self)
+        else:
+            return super().resubmit(queue)
+
+    def split(self, queue):
+        queue.console.warn(f"spliting task id {self.id} after resource exhaustion.")
+
+        total = len(self.item)
         if total < 2:
-            raise RuntimeError("processing task cannot be split any further.")
+            return queue.soft_terminate()
 
         # if the chunksize was updated to be less than total, then use that.
         # Otherwise, partition the task in two and update the current chunksize.
@@ -901,27 +947,30 @@ class ProcCoffeaWQTask(CoffeaWQTask):
 
         queue.stats_coffea.inc("chunks_split")
 
-        splits = []
-        start = self.item.entrystart
+        # remove the original item from the known work items, as it is being
+        # split into two or more work items.
+        queue.known_workitems.remove(self.item)
+
+        i = self.item
+        start = i.entrystart
         while start < self.item.entrystop:
-            stop = min(self.item.entrystop, start + chunksize_actual)
-
+            stop = min(i.entrystop, start + chunksize_actual)
             w = WorkItem(
-                self.item.dataset,
-                self.item.filename,
-                self.item.treename,
-                start,
-                stop,
-                self.item.fileuuid,
-                self.item.usermeta,
+                i.dataset, i.filename, i.treename, start, stop, i.fileuuid, i.usermeta
             )
-
             t = self.__class__(queue, self.infile_procc_fn, w)
-
             start = stop
-            splits.append(t)
 
-        return splits
+            queue.submit(t)
+            queue.known_workitems.add(w)
+
+            queue.console(
+                "resubmitting {} partly as {} with {} events. {} attempt(s) left.",
+                self.itemid,
+                t.itemid,
+                len(t),
+                t.retries_to_go,
+            )
 
     def debug_info(self):
         i = self.item
