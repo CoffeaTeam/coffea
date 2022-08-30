@@ -1,28 +1,18 @@
-from coffea import hist, processor
+from coffea import processor
+import hist
 import awkward as ak
 import numpy as np
 from coffea.nanoevents.methods import vector
+from collections import defaultdict
 
 
 class NanoTestProcessor(processor.ProcessorABC):
     def __init__(self, columns=[]):
         self._columns = columns
-        dataset_axis = hist.Cat("dataset", "Primary dataset")
-        mass_axis = hist.Bin("mass", r"$m_{\mu\mu}$ [GeV]", 30000, 0.25, 300)
-        pt_axis = hist.Bin("pt", r"$p_{T}$ [GeV]", 30000, 0.25, 300)
-
         self.expected_usermeta = {
             "ZJets": ("someusermeta", "hello"),
             "Data": ("someusermeta2", "world"),
         }
-
-        self._accumulator = processor.dict_accumulator(
-            {
-                "mass": hist.Hist("Counts", dataset_axis, mass_axis),
-                "pt": hist.Hist("Counts", dataset_axis, pt_axis),
-                "cutflow": processor.defaultdict_accumulator(int),
-            }
-        )
 
     @property
     def columns(self):
@@ -30,11 +20,25 @@ class NanoTestProcessor(processor.ProcessorABC):
 
     @property
     def accumulator(self):
-        return self._accumulator
+        dataset_axis = hist.axis.StrCategory(
+            [], growth=True, name="dataset", label="Primary dataset"
+        )
+        mass_axis = hist.axis.Regular(
+            30000, 0.25, 300, name="mass", label=r"$m_{\mu\mu}$ [GeV]"
+        )
+        pt_axis = hist.axis.Regular(30000, 0.24, 300, name="pt", label=r"$p_{T}$ [GeV]")
+
+        accumulator = {
+            "mass": hist.Hist(dataset_axis, mass_axis, name="Counts"),
+            "pt": hist.Hist(dataset_axis, pt_axis, name="Counts"),
+            "cutflow": defaultdict(int),
+        }
+
+        return accumulator
 
     def process(self, df):
         ak.behavior.update(vector.behavior)
-        output = self.accumulator.identity()
+        output = self.accumulator
 
         dataset = df.metadata["dataset"]
         if "checkusermeta" in df.metadata:
