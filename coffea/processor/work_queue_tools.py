@@ -86,7 +86,6 @@ class CoffeaWQ(WorkQueue):
     ):
         self._staging_dir_obj = TemporaryDirectory("wq-tmp-", dir=executor.filepath)
 
-        self._check_executor_parameters(executor)
         self.executor = executor
         self.stats_coffea = Stats()
 
@@ -239,6 +238,15 @@ class CoffeaWQ(WorkQueue):
     def chunksize_current(self, new_value):
         self._chunksize_current = new_value
         self.stats_coffea.set("chunksize_current", self._chunksize_current)
+
+    @property
+    def executor(self):
+        return self._executor
+
+    @executor.setter
+    def executor(self, new_value):
+        self._executor = new_value
+        self._check_executor_parameters(self._executor)
 
     def function_to_file(self, function, name=None):
         with NamedTemporaryFile(
