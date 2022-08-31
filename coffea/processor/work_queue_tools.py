@@ -813,8 +813,8 @@ class CoffeaWQTask(Task):
 
         if not (self.successful() or self.exhausted()):
             info = self.debug_info()
-            queue.console.printf(
-                "task id {} item {} failed: [red]{}[/red]\n    {}",
+            queue.console.warn(
+                "task id {} item {} failed: {}\n    {}",
                 self.id,
                 self.itemid,
                 result_str,
@@ -1195,7 +1195,10 @@ class VerbosePrint:
         self.print(msg)
 
     def warn(self, format_str, *args, **kwargs):
-        format_str = "[red]WARNING:[/red] " + format_str
+        if self.status_mode:
+            format_str = "[red]WARNING:[/red] " + format_str
+        else:
+            format_str = "WARNING: " + format_str
         self.printf(format_str, *args, **kwargs)
 
 
