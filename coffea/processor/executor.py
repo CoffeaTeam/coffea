@@ -1475,7 +1475,7 @@ class Runner:
                         nchunks[filemeta.dataset] += 1
                         if nchunks[filemeta.dataset] >= self.maxchunks:
                             break
-                yield from iter(chunks)
+                yield from (c for c in chunks)
         else:
             if self.use_skyhook and not config.get("skyhook", None):
                 print("No skyhook config found, using defaults")
@@ -1790,7 +1790,7 @@ class Runner:
                 processor_instance=pi_to_send,
             )
 
-        if self.format == "root" and self.dynamic_chunksize:
+        if self.format == "root" and isinstance(self.executor, WorkQueueExecutor):
             # keep chunks in generator, use a copy to count number of events
             # this is cheap, as we are reading from the cache
             chunks_to_count = self.preprocess(fileset, treename)
