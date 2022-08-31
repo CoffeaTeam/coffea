@@ -6,7 +6,7 @@ import signal
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from os.path import basename, join, getsize
 
-from collections import namedtuple
+import collections
 
 import math
 import numpy
@@ -76,7 +76,7 @@ except ImportError:
             raise ImportError("work_queue not available")
 
 
-TaskReport = namedtuple("TaskReport", ["events_count", "wall_time", "memory"])
+TaskReport = collections.namedtuple("TaskReport", ["events_count", "wall_time", "memory"])
 
 
 class CoffeaWQ(WorkQueue):
@@ -380,8 +380,8 @@ class CoffeaWQ(WorkQueue):
         executor = self.executor
         sc = self.stats_coffea
 
-        # if not dynamic_chunksize, ensure that the items looks like a generator
-        if isinstance(items, list):
+        # Ensure that the items looks like a generator
+        if not isinstance(items, collections.Generator):
             items = (item for item in items)
 
         # Keep track of total tasks in each state.
