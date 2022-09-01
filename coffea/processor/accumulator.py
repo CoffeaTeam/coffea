@@ -46,12 +46,15 @@ def add(a: Accumulatable, b: Accumulatable) -> Accumulatable:
             )
         out.clear()
         lhs, rhs = set(a), set(b)
-        for key in lhs & rhs:
-            out[key] = add(a[key], b[key])
-        for key in lhs - rhs:
-            out[key] = copy.deepcopy(a[key])
-        for key in rhs - lhs:
-            out[key] = copy.deepcopy(b[key])
+        # Keep the order of elements as far as possible
+        for key in a:
+            if key in rhs:
+                out[key] = add(a[key], b[key])
+            else:
+                out[key] = copy.deepcopy(a[key])
+        for key in b:
+            if key not in lhs:
+                out[key] = copy.deepcopy(b[key])
         return out
     raise ValueError(
         f"Cannot add accumulators of incompatible type ({type(a)} vs. {type(b)})"
@@ -70,10 +73,13 @@ def iadd(a: Accumulatable, b: Accumulatable) -> Accumulatable:
                 f"Cannot add two mappings of incompatible type ({type(a)} vs. {type(b)})"
             )
         lhs, rhs = set(a), set(b)
-        for key in lhs & rhs:
-            a[key] = iadd(a[key], b[key])
-        for key in rhs - lhs:
-            a[key] = copy.deepcopy(b[key])
+        # Keep the order of elements as far as possible
+        for key in a:
+            if key in rhs:
+                a[key] = iadd(a[key], b[key])
+        for key in b:
+            if key not in lhs:
+                a[key] = copy.deepcopy(b[key])
         return a
     raise ValueError(
         f"Cannot add accumulators of incompatible type ({type(a)} vs. {type(b)})"
