@@ -43,6 +43,7 @@ class LocalExecutor(Executor):
         data_type: str,
         meta_data: Dict[str, str],
         process_func: Callable,
+        schema,
     ):
         # TODO: Do we need a second routine here? Can we just use this one?
         return self._async_analysis(
@@ -51,10 +52,11 @@ class LocalExecutor(Executor):
             data_type=data_type,
             meta_data=meta_data,
             process_func=process_func,
+            schema=schema,
         )
 
     async def _async_analysis(
-        self, events_url, tree_name, data_type, meta_data, process_func
+        self, events_url, tree_name, data_type, meta_data, process_func, schema
     ):
         return run_coffea_processor(
             events_url=events_url,
@@ -62,4 +64,5 @@ class LocalExecutor(Executor):
             data_type=data_type,
             meta_data=meta_data,
             proc=process_func,
+            schema=schema,
         )
