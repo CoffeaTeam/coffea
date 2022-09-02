@@ -41,7 +41,7 @@ class NanoEventsProcessor(processor.ProcessorABC):
         return accumulator
 
     def process(self, events):
-        output = self.accumulator.identity()
+        output = self.accumulator
 
         dataset = events.metadata["dataset"]
         print(events.metadata)
