@@ -1,5 +1,4 @@
 import sys
-import os
 
 try:
     import work_queue as wq
@@ -60,51 +59,11 @@ def work_queue_example(environment_file):
         template_analysis(environment_file, filelist, WorkQueueExecutor, compression=2)
 
 
-def create_conda_environment(env_file, py_version):
-    """Generate a conda environment file 'env_file' to send along the tasks."""
-
-    if os.path.exists(env_file):
-        print(
-            "conda environment file '{}' already exists. Not generating again.".format(
-                env_file
-            )
-        )
-        return
-
-    print("creating conda environment file '{}'...".format(env_file))
-    import subprocess
-    import tempfile
-
-    with tempfile.NamedTemporaryFile(
-        mode="w"
-    ) as conda_recipe, tempfile.TemporaryDirectory() as tmp_env:
-        conda_recipe.write(
-            """
-#! /bin/bash
-set -e
-conda create -y --prefix {tmp_env} python={py_version} conda six dill
-source {tmp_env}/bin/activate
-conda install -y -c conda-forge xrootd conda-pack
-pip install --ignore-installed ..
-python -c 'import conda_pack; conda_pack.pack(prefix="{tmp_env}", output="{env_file}")'
-""".format(
-                env_file=env_file, tmp_env=tmp_env, py_version=py_version
-            )
-        )
-
-        conda_recipe.flush()
-
-        subprocess.check_call(["/bin/bash", conda_recipe.name])
-        print("done creating conda environment '{}'".format(env_file))
-
-
 if __name__ == "__main__":
-    py_version = "{}.{}".format(
-        sys.version_info[0], sys.version_info[1]
-    )  # 3.6 or 3.7, or etc.
-
-    environment_file = "conda-coffea-wq-env-py{}.tar.gz".format(py_version)
-
-    create_conda_environment(environment_file, py_version)
-
+    try:
+        # see https://coffeateam.github.io/coffea/wq.html for constructing an
+        # environment that can be shipped with a task.
+        environment_file = sys.argv[1]
+    except IndexError:
+        environment_file = None
     work_queue_example(environment_file)
