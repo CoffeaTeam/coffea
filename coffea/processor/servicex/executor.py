@@ -52,13 +52,17 @@ class Executor(ABC):
     def get_result_file_stream(self, datasource, title: Optional[str] = None):
         return datasource.stream_result_file_uris(title)
 
-    async def execute(self, analysis, datasource, title: Optional[str] = None):
+    async def execute(
+        self, analysis, datasource, title: Optional[str] = None, schema=None
+    ):
         """
         Launch an analysis against the given dataset on the implementation's task framework
         :param analysis:
             The analysis to run
         :param datasource:
             The datasource to run against
+        :param schema:
+            The schema to apply to data, defaults to None (will then use auto_schema).
         :return:
             Stream of up to date histograms. Grows as each result is received
         """
@@ -67,7 +71,7 @@ class Executor(ABC):
 
         # Launch a task against this file
         func_results = self.launch_analysis_tasks_from_stream(
-            result_file_stream, datasource.metadata, analysis.process
+            result_file_stream, datasource.metadata, analysis.process, schema=schema
         )
 
         # Wait for all the data to show up
@@ -88,6 +92,7 @@ class Executor(ABC):
         result_file_stream: AsyncGenerator[Tuple[str, str, StreamInfoUrl], None],
         meta_data: Dict[str, str],
         process_func: Callable,
+        schema,
     ) -> AsyncGenerator[Any, None]:
         """
         Invoke the implementation's task runner on each file from the serviceX stream.
@@ -96,6 +101,8 @@ class Executor(ABC):
         :param result_file_stream:
         :param accumulator:
         :param process_func:
+        :param schema:
+            The schema to apply to data.
         :return:
         """
         tree_name = None
@@ -117,6 +124,7 @@ class Executor(ABC):
                 data_type=data_type,
                 meta_data=sample_md,
                 process_func=process_func,
+                schema=schema,
             )
 
             # Pass this down to the next item in the stream.
@@ -124,7 +132,7 @@ class Executor(ABC):
 
 
 def run_coffea_processor(
-    events_url: str, tree_name: Optional[str], proc, data_type, meta_data
+    events_url: str, tree_name: Optional[str], proc, data_type, meta_data, schema
 ):
     """
     Process a single file from a tree via a coffea processor on the remote node
@@ -139,12 +147,18 @@ def run_coffea_processor(
         Analysis function to execute. Must have signature
     :param data_type:
         What datatype is the data (root, parquet?)
+    :param schema:
+        The schema to apply to data (if None, will use auto_schema).
     :return:
         Populated accumulator
     """
     # Since we execute remotely, explicitly include everything we need.
     from coffea.nanoevents import NanoEventsFactory
-    from coffea.nanoevents.schemas.schema import auto_schema
+
+    if schema is None:
+        from coffea.nanoevents.schemas.schema import auto_schema
+
+        schema = auto_schema
 
     if data_type == "root":
         # Use NanoEvents to build a 4-vector
@@ -152,14 +166,14 @@ def run_coffea_processor(
         events = NanoEventsFactory.from_root(
             file=str(events_url),
             treepath=f"/{tree_name}",
-            schemaclass=auto_schema,
+            schemaclass=schema,
             metadata=dict(meta_data, filename=str(events_url)),
         ).events()
     elif data_type == "parquet":
         events = NanoEventsFactory.from_parquet(
             file=str(events_url),
             treepath="/",
-            schemaclass=auto_schema,
+            schemaclass=schema,
             metadata=dict(meta_data, filename=str(events_url)),
         ).events()
     else:
