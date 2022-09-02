@@ -132,7 +132,7 @@ jobs:
         conda create --name coffea-env python=3.7
         conda activate coffea-env
         conda install -c conda-forge ndcctools dill
-        python -m pip install .
+        python -m pip install --ignore-installed .
         cd tests
         python wq.py
 

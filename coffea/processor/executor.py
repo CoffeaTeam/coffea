@@ -109,11 +109,7 @@ class FileMeta(object):
             return False
         return True
 
-    def chunks(self, target_chunksize, align_clusters, dynamic_chunksize):
-        if align_clusters and dynamic_chunksize:
-            raise RuntimeError(
-                "align_clusters cannot be used with a dynamic chunksize."
-            )
+    def chunks(self, target_chunksize, align_clusters):
         if not self.populated(clusters=align_clusters):
             raise RuntimeError
         user_keys = set(self.metadata.keys()) - _PROTECTED_NAMES
@@ -137,12 +133,14 @@ class FileMeta(object):
                 )
             return target_chunksize
         else:
-            n = max(round(self.metadata["numentries"] / target_chunksize), 1)
-            actual_chunksize = math.ceil(self.metadata["numentries"] / n)
-
+            numentries = self.metadata["numentries"]
+            update = True
             start = 0
-            while start < self.metadata["numentries"]:
-                stop = min(self.metadata["numentries"], start + actual_chunksize)
+            while start < numentries:
+                if update:
+                    n = max(round((numentries - start) / target_chunksize), 1)
+                    actual_chunksize = math.ceil((numentries - start) / n)
+                stop = min(numentries, start + actual_chunksize)
                 next_chunksize = yield WorkItem(
                     self.dataset,
                     self.filename,
@@ -153,20 +151,12 @@ class FileMeta(object):
                     user_meta,
                 )
                 start = stop
-                if dynamic_chunksize and next_chunksize:
-                    n = max(
-                        math.ceil(
-                            (self.metadata["numentries"] - start) / next_chunksize
-                        ),
-                        1,
-                    )
-                    actual_chunksize = math.ceil(
-                        (self.metadata["numentries"] - start) / n
-                    )
-            if dynamic_chunksize and next_chunksize:
-                return next_chunksize
-            else:
-                return target_chunksize
+                if next_chunksize and next_chunksize != target_chunksize:
+                    target_chunksize = next_chunksize
+                    update = True
+                else:
+                    update = False
+            return target_chunksize
 
 
 @dataclass(unsafe_hash=True, frozen=True)
@@ -1472,7 +1462,6 @@ class Runner:
                     last_chunksize = yield from filemeta.chunks(
                         last_chunksize,
                         self.align_clusters,
-                        self.dynamic_chunksize,
                     )
             else:
                 # get just enough file info to compute chunking
@@ -1481,14 +1470,12 @@ class Runner:
                 for filemeta in fileset:
                     if nchunks[filemeta.dataset] >= self.maxchunks:
                         continue
-                    for chunk in filemeta.chunks(
-                        self.chunksize, self.align_clusters, dynamic_chunksize=None
-                    ):
+                    for chunk in filemeta.chunks(self.chunksize, self.align_clusters):
                         chunks.append(chunk)
                         nchunks[filemeta.dataset] += 1
                         if nchunks[filemeta.dataset] >= self.maxchunks:
                             break
-                yield from iter(chunks)
+                yield from (c for c in chunks)
         else:
             if self.use_skyhook and not config.get("skyhook", None):
                 print("No skyhook config found, using defaults")
@@ -1803,7 +1790,7 @@ class Runner:
                 processor_instance=pi_to_send,
             )
 
-        if self.format == "root" and self.dynamic_chunksize:
+        if self.format == "root" and isinstance(self.executor, WorkQueueExecutor):
             # keep chunks in generator, use a copy to count number of events
             # this is cheap, as we are reading from the cache
             chunks_to_count = self.preprocess(fileset, treename)
