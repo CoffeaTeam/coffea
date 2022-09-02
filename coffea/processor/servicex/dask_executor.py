@@ -71,6 +71,7 @@ class DaskExecutor(Executor):
         data_type: str,
         meta_data: Dict[str, str],
         process_func: Callable,
+        schema,
     ):
         """Create a dask future for a dask task to run the analysis."""
         data_result = self.dask.submit(
@@ -80,6 +81,7 @@ class DaskExecutor(Executor):
             data_type=data_type,
             meta_data=meta_data,
             proc=process_func,
+            schema=schema,
         )
 
         return data_result
