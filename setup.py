@@ -74,7 +74,7 @@ INSTALL_REQUIRES = [
     "mplhep>=0.1.18",
     "packaging",
     "pandas",
-    "hist>=2.5",
+    "hist>=2",
     'typing-extensions;python_version<"3.8"',
     "cachetools",
     'dataclasses;python_version<"3.7"',
