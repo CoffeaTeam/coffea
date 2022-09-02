@@ -34,7 +34,7 @@ import getpass
 wq_manager_name = "coffea-wq-{}".format(getpass.getuser())
 wq_port = 9123
 
-print("Master Name: -M " + wq_manager_name)
+print("Manager Name: -M " + wq_manager_name)
 print("------------------------------------------------")
 
 
@@ -42,8 +42,10 @@ print("------------------------------------------------")
 # Define a custom Coffea processor
 ###############################################################################
 
-from coffea import hist, processor
+from coffea import processor
 from coffea.nanoevents.methods import candidate
+import hist
+from collections import defaultdict
 import awkward as ak
 
 # register our candidate behaviors
@@ -51,28 +53,25 @@ ak.behavior.update(candidate.behavior)
 
 
 class MyProcessor(processor.ProcessorABC):
-    def __init__(self):
-        self._accumulator = processor.dict_accumulator(
-            {
-                "sumw": processor.defaultdict_accumulator(float),
-                "mass": hist.Hist(
-                    "Events",
-                    hist.Cat("dataset", "Dataset"),
-                    hist.Bin("mass", r"$m_{\mu\mu}$ [GeV]", 60, 60, 120),
-                ),
-            }
-        )
-
     @property
     def accumulator(self):
-        return self._accumulator
+        return {
+            "sumw": defaultdict(float),
+            "mass": hist.Hist(
+                hist.axis.StrCategory([], name="dataset", label="Dataset"),
+                hist.axis.Regular(
+                    60, 60, 120, name="mass", label=r"$m_{\mu\mu}$ [GeV]"
+                ),
+                name="Events",
+            ),
+        }
 
     def process(self, events):
         # Note: This is required to ensure that behaviors are registered
         # when running this code in a remote task.
         ak.behavior.update(candidate.behavior)
 
-        output = self.accumulator.identity()
+        output = self.accumulator
 
         dataset = events.metadata["dataset"]
         muons = ak.zip(
@@ -118,28 +117,35 @@ fileset = {
 # Configuration of the Work Queue Executor
 ###############################################################################
 
+# secret passed between manager and workers for authentication
+my_password_file = "password.txt"
+with open(my_password_file, "w") as f:
+    f.write("my_secret_password")
+
 work_queue_executor_args = {
-    # Additional files needed by the processor, such as local code libraries.
-    # 'extra-input-files' : [ 'myproc.py', 'config.dat' ],
-    # Resources to allocate per task.
-    "resources_mode": "auto",  # Adapt task resources to what's observed.
-    "resource_monitor": True,  # Measure actual resource consumption
-    # With resources set to auto, these are the max values for any task.
-    "cores": 2,  # Cores needed per task.
-    "memory": 500,  # Memory needed per task (MB)
-    "disk": 1000,  # Disk needed per task (MB)
-    "gpus": 0,  # GPUs needed per task.
+    # Automatically allocate cores, memory and disk to tasks. Adjusts to
+    # maximum values measured. Initially, tasks use whole workers.
+    "resources_mode": "auto",
+    # Split a processing task in half according to its chunksize when it
+    # exhausts the resources allocated to it.
+    "split_on_exhaustion": True,
     # Options to control how workers find this manager.
     "master_name": wq_manager_name,
-    "port": wq_port,  # Port for manager to listen on: if zero, will choose automatically.
+    # Port for manager to listen on: if zero, will choose automatically.
+    "port": wq_port,
+    # Secret passed between manager and workers
+    "password_file": my_password_file,
     # The named conda environment tarball will be transferred to each worker,
     # and activated. This is useful when coffea is not installed in the remote
-    # machines.
-    # 'environment_file': wq_env_tarball,
-    # Debugging: Display output of task if not empty.
-    "print_stdout": False,
+    # machines. conda enviroments are created with conda-pack, and should at
+    # least include coffea, ndcctools (both from conda-forge channel)
+    # and their dependencies.
+    #
+    # "environment_file": "coffea-env.tar.gz",
     # Debugging: Display notes about each task submitted/complete.
     "verbose": True,
+    # Debugging: Display output of task if not empty.
+    "print_stdout": False,
     # Debugging: Produce a lot at the manager side of things.
     "debug_log": "coffea-wq.log",
 }
@@ -168,8 +174,20 @@ workers = wq.Factory(
 workers.max_workers = 2
 workers.min_workers = 1
 workers.cores = 2
-workers.memory = 1000  # MB.
+workers.memory = 1000  # MB
 workers.disk = 2000  # MB
+workers.password = my_password_file
+
+# Instead of declaring the python environment per task, you can set it in
+# the factory directly. This is useful if you are going to run a workflow
+# several times using the same set of workers. It also ensures that the worker
+# itself executes in a friendly environment.
+# workers.python_package = "coffea-env.tar.gz"
+#
+# The factory tries to write temporary files to $TMPDIR (usually /tmp). When
+# this is not available, or causes errors, this scracth directory can be
+# manually set.
+# workers.scratch_dir = "./my-scratch-dir"
 
 with workers:
     # define the Runner instance
