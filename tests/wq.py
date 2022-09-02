@@ -85,7 +85,7 @@ set -e
 conda create -y --prefix {tmp_env} python={py_version} conda six dill
 source {tmp_env}/bin/activate
 conda install -y -c conda-forge xrootd conda-pack
-pip install ..
+pip install --ignore-installed ..
 python -c 'import conda_pack; conda_pack.pack(prefix="{tmp_env}", output="{env_file}")'
 """.format(
                 env_file=env_file, tmp_env=tmp_env, py_version=py_version
