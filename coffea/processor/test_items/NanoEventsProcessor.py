@@ -29,8 +29,11 @@ class NanoEventsProcessor(processor.ProcessorABC):
         pt_axis = hist.axis.Regular(30000, 0.24, 300, name="pt", label=r"$p_{T}$ [GeV]")
 
         accumulator = {
-            "mass": hist.Hist(dataset_axis, mass_axis, name="Counts"),
-            "pt": hist.Hist(dataset_axis, pt_axis, name="Counts"),
+            # replace when py3.6 is dropped
+            # "mass": hist.Hist(dataset_axis, mass_axis, name="Counts"),
+            # "pt": hist.Hist(dataset_axis, pt_axis, name="Counts"),
+            "mass": hist.Hist(dataset_axis, mass_axis),
+            "pt": hist.Hist(dataset_axis, pt_axis),
             "cutflow": defaultdict(int),
             "worker": set(),
         }
