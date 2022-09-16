@@ -799,7 +799,7 @@ class CoffeaWQTask(Task):
         if queue.executor.resource_monitor and queue.executor.resource_monitor != "off":
             queue.console.printf(
                 "    measured cores: {:.1f}, memory: {:.0f} MB, disk {:.0f} MB, gpus: {:.1f}, runtime {:.1f} s",
-                self.resources_measured.cores,
+                self.resources_measured.cores + 0.0,  # +0.0 trick to clear any -0.0
                 self.resources_measured.memory,
                 self.resources_measured.disk,
                 self.resources_measured.gpus,
