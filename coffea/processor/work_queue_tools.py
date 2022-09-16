@@ -646,7 +646,7 @@ class CoffeaWQ(WorkQueue):
 class CoffeaWQTask(Task):
     tasks_counter = 0
 
-    def __init__(self, queue, infile_procc_fn, item_args, itemid):
+    def __init__(self, queue, infile_fn, item_args, itemid):
         CoffeaWQTask.tasks_counter += 1
 
         self.itemid = itemid
@@ -654,7 +654,7 @@ class CoffeaWQTask(Task):
         self.py_result = ResultUnavailable()
         self._stdout = None
 
-        self.infile_procc_fn = infile_procc_fn
+        self.infile_fn = infile_fn
 
         self.infile_args = join(queue.staging_dir, "args_{}.p".format(self.itemid))
         self.outfile_output = join(queue.staging_dir, "out_{}.p".format(self.itemid))
@@ -668,8 +668,8 @@ class CoffeaWQTask(Task):
 
         super().__init__(self.remote_command(env_file=executor.environment_file))
 
-        self.specify_input_file(queue.function_wrapper, "fn_wrapper", cache=False)
-        self.specify_input_file(infile_procc_fn, "function.p", cache=False)
+        self.specify_input_file(queue.function_wrapper, "fn_wrapper", cache=True)
+        self.specify_input_file(infile_fn, "function.p", cache=True)
         self.specify_input_file(self.infile_args, "args.p", cache=False)
         self.specify_output_file(self.outfile_output, "output.p", cache=False)
         self.specify_output_file(self.outfile_stdout, "stdout.log", cache=False)
@@ -858,16 +858,14 @@ class CoffeaWQTask(Task):
 
 
 class PreProcCoffeaWQTask(CoffeaWQTask):
-    infile_procc_fn = None
-
-    def __init__(self, queue, infile_procc_fn, item, itemid=None):
+    def __init__(self, queue, infile_fn, item, itemid=None):
         if not itemid:
             itemid = "pre_{}".format(CoffeaWQTask.tasks_counter)
 
         self.item = item
 
         self.size = 1
-        super().__init__(queue, infile_procc_fn, [item], itemid)
+        super().__init__(queue, infile_fn, [item], itemid)
 
         self.specify_category("preprocessing")
 
@@ -885,7 +883,7 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
     def clone(self, queue):
         return PreProcCoffeaWQTask(
             queue,
-            self.infile_procc_fn,
+            self.infile_fn,
             self.item,
             self.itemid,
         )
@@ -904,7 +902,7 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
 
 
 class ProcCoffeaWQTask(CoffeaWQTask):
-    def __init__(self, queue, infile_procc_fn, item, itemid=None):
+    def __init__(self, queue, infile_fn, item, itemid=None):
         self.size = len(item)
 
         if not itemid:
@@ -912,7 +910,7 @@ class ProcCoffeaWQTask(CoffeaWQTask):
 
         self.item = item
 
-        super().__init__(queue, infile_procc_fn, [item], itemid)
+        super().__init__(queue, infile_fn, [item], itemid)
 
         self.specify_category("processing")
 
@@ -930,7 +928,7 @@ class ProcCoffeaWQTask(CoffeaWQTask):
     def clone(self, queue):
         return ProcCoffeaWQTask(
             queue,
-            self.infile_procc_fn,
+            self.infile_fn,
             self.item,
             self.itemid,
         )
@@ -977,7 +975,7 @@ class ProcCoffeaWQTask(CoffeaWQTask):
             w = WorkItem(
                 i.dataset, i.filename, i.treename, start, stop, i.fileuuid, i.usermeta
             )
-            t = self.__class__(queue, self.infile_procc_fn, w)
+            t = self.__class__(queue, self.infile_fn, w)
             start = stop
 
             queue.submit(t)
@@ -1015,7 +1013,7 @@ class AccumCoffeaWQTask(CoffeaWQTask):
     def __init__(
         self,
         queue,
-        infile_procc_fn,
+        infile_fn,
         tasks_to_accumulate,
         itemid=None,
     ):
@@ -1027,7 +1025,7 @@ class AccumCoffeaWQTask(CoffeaWQTask):
 
         args = [[basename(t.outfile_output) for t in self.tasks_to_accumulate]]
 
-        super().__init__(queue, infile_procc_fn, args, itemid)
+        super().__init__(queue, infile_fn, args, itemid)
 
         self.specify_category("accumulating")
 
@@ -1045,7 +1043,7 @@ class AccumCoffeaWQTask(CoffeaWQTask):
     def clone(self, queue):
         return AccumCoffeaWQTask(
             queue,
-            self.infile_procc_fn,
+            self.infile_fn,
             self.tasks_to_accumulate,
             self.itemid,
         )
