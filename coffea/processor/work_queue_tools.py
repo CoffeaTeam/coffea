@@ -76,7 +76,9 @@ except ImportError:
             raise ImportError("work_queue not available")
 
 
-TaskReport = collections.namedtuple("TaskReport", ["events_count", "wall_time", "memory"])
+TaskReport = collections.namedtuple(
+    "TaskReport", ["events_count", "wall_time", "memory"]
+)
 
 
 class CoffeaWQ(WorkQueue):
@@ -693,7 +695,9 @@ class CoffeaWQTask(Task):
         command = fn_command
 
         if env_file:
-            wrap = './py_wrapper -e env_file -u "$WORK_QUEUE_SANDBOX"/{}-env-{} -- {}'
+            wrap = (
+                './py_wrapper -d -e env_file -u "$WORK_QUEUE_SANDBOX"/{}-env-{} -- {}'
+            )
             command = wrap.format(basename(env_file), os.getpid(), fn_command)
 
         return command
