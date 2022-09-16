@@ -1448,7 +1448,7 @@ class Runner:
             if filemeta.populated(clusters=self.align_clusters):
                 final_fileset.append(filemeta)
             elif not self.skipbadfiles:
-                raise RuntimeError("Metadata for file {} could not be accessed.")
+                raise RuntimeError(f"Metadata for file {filemeta.filename} could not be accessed.")
         return final_fileset
 
     def _chunk_generator(self, fileset: Dict, treename: str) -> Generator:
