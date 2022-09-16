@@ -383,7 +383,7 @@ class CoffeaWQ(WorkQueue):
         sc = self.stats_coffea
 
         # Ensure that the items looks like a generator
-        if not isinstance(items, collections.Generator):
+        if not isinstance(items, collections.abc.Generator):
             items = (item for item in items)
 
         # Keep track of total tasks in each state.
