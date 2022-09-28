@@ -191,7 +191,7 @@ class CoffeaWQ(WorkQueue):
     def submit(self, task):
         taskid = super().submit(task)
         self.console(
-            "submitted {category} task id {id} item {item}, with {size} {unit}",
+            "submitted {category} task id {id} item {item}, with {size} {unit}(s)",
             category=task.category,
             id=taskid,
             item=task.itemid,
