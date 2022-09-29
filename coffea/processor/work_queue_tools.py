@@ -605,6 +605,7 @@ class CoffeaWQ(WorkQueue):
 
         self.stats_coffea["chunks_processed"] = 0
         self.stats_coffea["accumulations_done"] = 0
+        self.stats_coffea["accumulations_submitted"] = 0
         self.stats_coffea["estimated_total_accumulations"] = accums
 
         self._update_bars()
@@ -617,8 +618,7 @@ class CoffeaWQ(WorkQueue):
             if sc["accumulations_submitted"] <= sc["accumulations_done"]:
                 return sc["accumulations_done"]
 
-        items_to_accum = sc["accumulations_done"]
-        items_to_accum += sc["chunks_processed"]
+        items_to_accum = sc["chunks_processed"]
         items_to_accum += sc["accumulations_submitted"]
 
         events_left = sc["events_total"] - sc["events_processed"]
