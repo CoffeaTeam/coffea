@@ -301,11 +301,11 @@ class CoffeaWQ(WorkQueue):
             if not self.hungry():
                 return
             sc = self.stats_coffea
-            if sc["events_queued"] >= sc["events_total"]:
+            if sc["events_submitted"] >= sc["events_total"]:
                 return
 
             try:
-                if sc["events_queued"] > 0:
+                if sc["events_submitted"] > 0:
                     # can't send if generator not initialized first with a next
                     chunksize = _sample_chunksize(self.chunksize_current)
                     item = items.send(chunksize)
@@ -321,7 +321,7 @@ class CoffeaWQ(WorkQueue):
         self.known_workitems.add(item)
         t = ProcCoffeaWQTask(self, infile_procc_fn, item)
         self.submit(t)
-        self.stats_coffea.inc("events_queued", len(t))
+        self.stats_coffea.inc("events_submitted", len(t))
 
     def _final_accumulation(self, accumulator):
         if len(self.tasks_to_accumulate) < 1:
@@ -388,9 +388,9 @@ class CoffeaWQ(WorkQueue):
 
         # Keep track of total tasks in each state.
         sc.set("events_processed", 0)
-        sc.set("events_queued", 0)
-        sc.set("events_processed", 0)
+        sc.set("events_submitted", 0)
         sc.set("events_total", executor.events_total)
+        sc.set("accumulations_submitted", 0)
         sc.set("chunksize_original", executor.chunksize)
 
         self.chunksize_current = executor.chunksize
@@ -479,6 +479,7 @@ class CoffeaWQ(WorkQueue):
 
             accum_task = AccumCoffeaWQTask(self, infile_accum_fn, next_to_accum)
             self.submit(accum_task)
+            sc.inc("accumulations_submitted", 1)
 
             # log the input tasks to this accumulation task
             for t in next_to_accum:
@@ -592,8 +593,7 @@ class CoffeaWQ(WorkQueue):
             return f.name
 
     def _make_process_bars(self):
-        chunks = math.ceil(self.executor.events_total / self.chunksize_current)
-        accums = self._estimate_accum_tasks(chunks)
+        accums = self._estimate_accum_tasks()
 
         self.bar.add_task(
             "Submitted", total=self.executor.events_total, unit=self.executor.unit
@@ -605,37 +605,46 @@ class CoffeaWQ(WorkQueue):
 
         self.stats_coffea.set("chunks_processed", 0)
         self.stats_coffea.set("accumulations_done", 0)
-        self.stats_coffea.set("estimated_total_chunks", chunks)
         self.stats_coffea.set("estimated_total_accumulations", accums)
 
         self._update_bars()
 
-    def _estimate_accum_tasks(self, chunks_total):
+    def _estimate_accum_tasks(self):
+        sc = self.stats_coffea
+
+        # return immediately if there is no more work to do
+        if sc["events_total"] <= sc["events_processed"]:
+            if sc["accumulations_submitted"] <= sc["accumulations_done"]:
+                return sc["accumulations_done"]
+
+        items_to_accum = sc["accumulations_done"]
+        items_to_accum += sc["chunks_processed"]
+        items_to_accum += sc["accumulations_submitted"]
+
+        events_left = sc["events_total"] - sc["events_processed"]
+        chunks_left = math.ceil(events_left / sc["chunksize_current"])
+        items_to_accum += chunks_left
+
         accums = 0
-        step = chunks_total
         while True:
-            step = math.ceil(step / self.executor.treereduction)
+            if items_to_accum <= self.executor.treereduction:
+                accums += 1
+                break
+            step = math.floor(items_to_accum / self.executor.treereduction)
             accums += step
-            if step < 2:
-                return accums
+            items_to_accum -= step * self.executor.treereduction
+        return accums
 
     def _update_bars(self, final_update=False):
         sc = self.stats_coffea
         total = sc["events_total"]
-        procc = sc["events_processed"]
 
-        if procc > 0:
-            chunks = math.ceil(sc["chunks_processed"] * total / procc)
-        else:
-            chunks = math.ceil(total / self.chunksize_current)
+        accums = self._estimate_accum_tasks()
 
-        accums = self._estimate_accum_tasks(chunks)
-
-        self.bar.update("Submitted", completed=sc["events_queued"], total=total)
+        self.bar.update("Submitted", completed=sc["events_submitted"], total=total)
         self.bar.update("Processed", completed=sc["events_processed"], total=total)
         self.bar.update("Accumulated", completed=sc["accumulations_done"], total=accums)
 
-        sc.set("estimated_total_chunks", chunks)
         sc.set("estimated_total_accumulations", accums)
 
         self.bar.refresh()
