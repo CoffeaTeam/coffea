@@ -239,7 +239,7 @@ class CoffeaWQ(WorkQueue):
     @chunksize_current.setter
     def chunksize_current(self, new_value):
         self._chunksize_current = new_value
-        self.stats_coffea.set("chunksize_current", self._chunksize_current)
+        self.stats_coffea["chunksize_current"] = self._chunksize_current
 
     @property
     def executor(self):
@@ -321,7 +321,7 @@ class CoffeaWQ(WorkQueue):
         self.known_workitems.add(item)
         t = ProcCoffeaWQTask(self, infile_procc_fn, item)
         self.submit(t)
-        self.stats_coffea.inc("events_submitted", len(t))
+        self.stats_coffea["events_submitted"] += len(t)
 
     def _final_accumulation(self, accumulator):
         if len(self.tasks_to_accumulate) < 1:
@@ -387,11 +387,11 @@ class CoffeaWQ(WorkQueue):
             items = (item for item in items)
 
         # Keep track of total tasks in each state.
-        sc.set("events_processed", 0)
-        sc.set("events_submitted", 0)
-        sc.set("events_total", executor.events_total)
-        sc.set("accumulations_submitted", 0)
-        sc.set("chunksize_original", executor.chunksize)
+        sc["events_processed"] = 0
+        sc["events_submitted"] = 0
+        sc["events_total"] = executor.events_total
+        sc["accumulations_submitted"] = 0
+        sc["chunksize_original"] = executor.chunksize
 
         self.chunksize_current = executor.chunksize
 
@@ -441,11 +441,11 @@ class CoffeaWQ(WorkQueue):
 
             if re.match("processing", task.category):
                 self._add_task_report(task)
-                sc.inc("events_processed", len(task))
-                sc.inc("chunks_processed", 1)
+                sc["events_processed"] += len(task)
+                sc["chunks_processed"] += 1
                 self._update_chunksize()
             elif task.category == "accumulating":
-                sc.inc("accumulations_done", 1)
+                sc["accumulations_done"] += 1
             else:
                 raise RuntimeError(f"Unrecognized task category {task.category}")
 
@@ -479,7 +479,7 @@ class CoffeaWQ(WorkQueue):
 
             accum_task = AccumCoffeaWQTask(self, infile_accum_fn, next_to_accum)
             self.submit(accum_task)
-            sc.inc("accumulations_submitted", 1)
+            sc["accumulations_submitted"] += 1
 
             # log the input tasks to this accumulation task
             for t in next_to_accum:
@@ -603,9 +603,9 @@ class CoffeaWQ(WorkQueue):
         )
         self.bar.add_task("Accumulated", total=math.ceil(accums), unit="tasks")
 
-        self.stats_coffea.set("chunks_processed", 0)
-        self.stats_coffea.set("accumulations_done", 0)
-        self.stats_coffea.set("estimated_total_accumulations", accums)
+        self.stats_coffea["chunks_processed"] = 0
+        self.stats_coffea["accumulations_done"] = 0
+        self.stats_coffea["estimated_total_accumulations"] = accums
 
         self._update_bars()
 
@@ -645,7 +645,7 @@ class CoffeaWQ(WorkQueue):
         self.bar.update("Processed", completed=sc["events_processed"], total=total)
         self.bar.update("Accumulated", completed=sc["accumulations_done"], total=accums)
 
-        sc.set("estimated_total_accumulations", accums)
+        sc["estimated_total_accumulations"] = accums
 
         self.bar.refresh()
         if final_update:
@@ -971,7 +971,7 @@ class ProcCoffeaWQTask(CoffeaWQTask):
         n = max(math.ceil(total / chunksize_target), 1)
         chunksize_actual = int(math.ceil(total / n))
 
-        queue.stats_coffea.inc("chunks_split")
+        queue.stats_coffea["chunks_split"] += 1
 
         # remove the original item from the known work items, as it is being
         # split into two or more work items.
@@ -1153,24 +1153,9 @@ class ResultUnavailable(Exception):
     pass
 
 
-class Stats(dict):
+class Stats(collections.defaultdict):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def inc(self, stat, delta=1):
-        try:
-            self[stat] += delta
-        except KeyError:
-            self[stat] = delta
-
-    def has(self, stat):
-        return stat in self
-
-    def set(self, stat, value):
-        self[stat] = value
-
-    def get(self, stat, default=None):
-        return self.setdefault(stat, 0)
+        super().__init__(int, *args, **kwargs)
 
     def min(self, stat, value):
         try:
