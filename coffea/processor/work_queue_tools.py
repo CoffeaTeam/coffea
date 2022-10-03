@@ -625,7 +625,7 @@ class CoffeaWQ(WorkQueue):
         chunks_left = math.ceil(events_left / sc["chunksize_current"])
         items_to_accum += chunks_left
 
-        accums = 0
+        accums = 1
         while True:
             if items_to_accum <= self.executor.treereduction:
                 accums += 1
