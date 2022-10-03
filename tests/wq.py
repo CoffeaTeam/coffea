@@ -9,18 +9,16 @@ except ImportError:
     sys.exit(0)
 
 
-def template_analysis(environment_file, filelist, executor, compression):
+def template_analysis(environment_file, filelist, executor):
     from coffea.processor import Runner
     from coffea.processor.test_items import NanoTestProcessor
 
     executor = executor(
-        compression=compression,
         environment_file=environment_file,
-        resources_mode="fixed",
         cores=2,
         memory=500,  # MB
         disk=1000,  # MB
-        master_name="coffea_test",
+        manager_name="coffea_test",
         port=work_queue_port,
         print_stdout=True,
     )
@@ -55,8 +53,7 @@ def work_queue_example(environment_file):
     workers.disk = 4000  # MB
 
     with workers:
-        # template_analysis(environment_file, filelist, work_queue_executor, compression=0)
-        template_analysis(environment_file, filelist, WorkQueueExecutor, compression=2)
+        template_analysis(environment_file, filelist, WorkQueueExecutor)
 
 
 if __name__ == "__main__":
