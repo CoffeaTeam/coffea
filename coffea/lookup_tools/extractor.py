@@ -122,9 +122,9 @@ class extractor(object):
             thetype = "default"
             if len(file_dots) > 2:
                 thetype = file_dots[-2]
-            if "pileup" in thefile:
+            if "pileup" in thefile and "pileup" in file_converters[theformat]:
                 thetype = "pileup"
-            if "_SF_" in thefile:
+            if "_SF_" in thefile and "jersf" in file_converters[theformat]:
                 thetype = "jersf"
             self._filecache[thefile] = file_converters[theformat][thetype](thefile)
 
