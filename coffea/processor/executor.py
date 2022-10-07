@@ -74,6 +74,7 @@ _PROTECTED_NAMES = {
 class UprootMissTreeError(uproot.exceptions.KeyInFileError):
     pass
 
+
 class FileMeta(object):
     __slots__ = ["dataset", "filename", "treename", "metadata"]
 
@@ -1403,7 +1404,7 @@ class Runner:
                 tree = file[item.treename]
             except uproot.exceptions.KeyInFileError as e:
                 raise UprootMissTreeError(str(e)) from e
-            
+
             metadata = {}
             if item.metadata:
                 metadata.update(item.metadata)
@@ -1829,17 +1830,16 @@ class Runner:
         )
 
         executor = self.executor.copy(**exe_args)
-        
+
         if chunks != []:
             wrapped_out, e = executor(chunks, closure, None)
         else:
-        #if wrapped_out is None:
             raise ValueError(
                 "No chunks returned results, verify ``processor`` instance structure.\n\
                 if you used skipbadfiles=True, it is possible all your files are bad."
             )
         wrapped_out["exception"] = e
-        
+
         if not self.use_dataframes:
             processor_instance.postprocess(wrapped_out["out"])
 
