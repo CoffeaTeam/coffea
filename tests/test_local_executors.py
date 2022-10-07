@@ -63,9 +63,14 @@ def test_nanoevents_analysis(executor, compression, maxchunks, skipbadfiles, fil
     from coffea.processor.test_items import NanoEventsProcessor
 
     filelist = {
-        "DummyBad": {
+        "DummyBadMissingFile": {
             "treename": "Events",
             "files": [osp.abspath(f"tests/samples/non_existent.{filetype}")],
+        },
+        "DummyBadMissingTree": {
+            "treename": "NotEvents",
+            "files": [osp.abspath(f"tests/samples/nano_dy.{filetype}")],
+            "metadata": {"checkusermeta": True, "someusermeta": "hello"},
         },
         "ZJets": {
             "treename": "Events",
