@@ -1340,7 +1340,8 @@ class Runner:
             except Exception as e:
                 chain = _exception_chain(e)
                 if skipbadfiles and any(
-                    isinstance(c, (FileNotFoundError, UprootMissTreeError)) for c in chain
+                    isinstance(c, (FileNotFoundError, UprootMissTreeError))
+                    for c in chain
                 ):
                     warnings.warn(str(e))
                     break
