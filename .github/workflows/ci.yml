@@ -41,7 +41,7 @@ jobs:
     needs: linter
     strategy:
       matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
+        os: [ubuntu-latest, macOS-latest] #, windows-latest]
         java-version: [1.8]
         python-version: ["3.6", "3.10"]
         exclude:
