@@ -12,14 +12,14 @@ from coffea.nanoevents.methods import vector
 behavior = dict(vector.behavior)
 
 
-@awkward.mixin_class(behavior)
+@awkward.behaviors.mixins.mixin_class(behavior)
 class Candidate(vector.LorentzVector):
     """A Lorentz vector with charge
 
     This mixin class requires the parent class to provide items `x`, `y`, `z`, `t`, and `charge`.
     """
 
-    @awkward.mixin_class_method(numpy.add, {"Candidate"})
+    @awkward.behaviors.mixins.mixin_class_method(numpy.add, {"Candidate"})
     def add(self, other):
         """Add two candidates together elementwise using `x`, `y`, `z`, `t`, and `charge` components"""
         return awkward.zip(
@@ -49,7 +49,7 @@ class Candidate(vector.LorentzVector):
         )
 
 
-@awkward.mixin_class(behavior)
+@awkward.behaviors.mixins.mixin_class(behavior)
 class PtEtaPhiMCandidate(Candidate, vector.PtEtaPhiMLorentzVector):
     """A Lorentz vector in eta, mass coordinates with charge
 
@@ -59,7 +59,7 @@ class PtEtaPhiMCandidate(Candidate, vector.PtEtaPhiMLorentzVector):
     pass
 
 
-@awkward.mixin_class(behavior)
+@awkward.behaviors.mixins.mixin_class(behavior)
 class PtEtaPhiECandidate(Candidate, vector.PtEtaPhiELorentzVector):
     """A Lorentz vector in eta, energy coordinates with charge
 

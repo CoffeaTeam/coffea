@@ -17,7 +17,7 @@ from typing import (
 behavior = {}
 
 
-@awkward.mixin_class(behavior)
+@awkward.behaviors.mixins.mixin_class(behavior)
 class Systematic:
     """A base mixin class to describe and build variations on a feature of an nanoevents object."""
 
@@ -148,7 +148,7 @@ for kind in systematics.__all__:
     Systematic.add_kind(kind)
 
 
-@awkward.mixin_class(behavior)
+@awkward.behaviors.mixins.mixin_class(behavior)
 class NanoEvents(Systematic):
     """NanoEvents mixin class
 
@@ -164,7 +164,7 @@ class NanoEvents(Systematic):
 behavior[("__typestr__", "NanoEvents")] = "event"
 
 
-@awkward.mixin_class(behavior)
+@awkward.behaviors.mixins.mixin_class(behavior)
 class NanoCollection:
     """A NanoEvents collection
 

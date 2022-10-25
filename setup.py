@@ -56,10 +56,8 @@ def get_description():
 
 
 INSTALL_REQUIRES = [
-    "awkward>=1.10.3,<2",
-    "uproot>=4.1.6,==4.*,!=4.2.4,!=4.3.0,!=4.3.1",
-    "uproot3-methods>=0.10.0",
-    "uproot3>=3.14.1",
+    "awkward>=2.0.0rc1",
+    "uproot>=5.0.0rc4",
     "correctionlib>=2.0.0",
     "pyarrow>=1.0.0",
     "fsspec",
