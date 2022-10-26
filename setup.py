@@ -58,14 +58,14 @@ def get_description():
 INSTALL_REQUIRES = [
     "awkward>=2.0.0rc1",
     "uproot>=5.0.0rc4",
+    "dask[array]",
+    "dask-awkward>=2022.9a0",
     "correctionlib>=2.0.0",
     "pyarrow>=1.0.0",
     "fsspec",
     "matplotlib>=3",
-    'numba>=0.50.0;python_version<"3.7"',
-    'numba>=0.56.0;python_version>"3.6"',
-    'numpy>=1.16.0,<1.22;python_version<"3.7"',  # <1.22 for numba version restrictions with 1.55 series
-    'numpy>=1.18.0,<1.24;python_version>"3.6"',  # numba 1.56 available for python > 3.6, upper requirement for higher python versions
+    "numba>=0.56.0",
+    "numpy>=1.18.0",  # >1.18 for numba version restrictions with numba 0.56 series
     "scipy>=1.1.0",
     "tqdm>=4.27.0",
     "lz4",
