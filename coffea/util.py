@@ -73,9 +73,9 @@ def _ensure_flat(array, allow_missing=False):
     aktype = ak.type(array)
     if not isinstance(aktype, ak.types.ArrayType):
         raise ValueError("Expected an array type, received: %r" % aktype)
-    isprimitive = isinstance(aktype.type, ak.types.PrimitiveType)
-    isoptionprimitive = isinstance(aktype.type, ak.types.OptionType) and isinstance(
-        aktype.type.type, ak.types.PrimitiveType
+    isprimitive = isinstance(aktype.content, ak.types.NumpyType)
+    isoptionprimitive = isinstance(aktype.content, ak.types.OptionType) and isinstance(
+        aktype.content.content, ak.types.NumpyType
     )
     if allow_missing and not (isprimitive or isoptionprimitive):
         raise ValueError(
