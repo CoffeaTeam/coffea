@@ -30,8 +30,8 @@ def test_BTagScalefactor():
     offsets = numpy.zeros(len(counts) + 1)
     offsets[1:] = numpy.cumsum(counts)
     test_jets = ak.Array(
-        ak.layout.ListOffsetArray64(
-            ak.layout.Index64(offsets),
+        ak.contents.ListOffsetArray(
+            ak.index.Index64(offsets),
             ak.zip(
                 {
                     "pt": test_pt,

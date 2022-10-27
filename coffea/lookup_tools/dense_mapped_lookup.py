@@ -38,7 +38,7 @@ class dense_mapped_lookup(lookup_base):
             numpy.searchsorted(axis, values, side="right") - 1, 0, len(axis) - 2
         )
 
-    def _evaluate(self, *args, ignore_missing=False):
+    def _evaluate(self, *args, ignore_missing=False, **kwargs):
         if len(args) != len(self._axes):
             raise ValueError(
                 "Incorrect number of arguments specified (expected %d got %d)"

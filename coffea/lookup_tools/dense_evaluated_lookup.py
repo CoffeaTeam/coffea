@@ -67,7 +67,7 @@ class dense_evaluated_lookup(lookup_base):
             )
         self._feval_dim = feval_dim[0]
 
-    def _evaluate(self, *args):
+    def _evaluate(self, *args, **kwargs):
         indices = []
         if self._dimension == 1:
             indices.append(
