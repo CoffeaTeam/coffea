@@ -1832,7 +1832,7 @@ class Runner:
 
         executor = self.executor.copy(**exe_args)
 
-        if chunks != []:
+        if len(chunks) != 0:
             wrapped_out, e = executor(chunks, closure, None)
         else:
             raise ValueError(
