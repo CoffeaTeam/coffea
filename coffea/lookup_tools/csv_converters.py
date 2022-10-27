@@ -1,13 +1,14 @@
 import numpy
 import sys
 import warnings
+from coffea.util import deprecate
 
 # pt except for reshaping, then discriminant
 btag_feval_dims = {0: [1], 1: [1], 2: [1], 3: [2]}
 
 
 def convert_btag_csv_file(csvFilePath):
-    deprecate(ImportError("Auto-conversion of btag CSV files is deprecated and will be removed. Try coffea.btag_tools.BTagScaleFactor or correctionlib!"), "v0.8.0", "31 Dec 2022")
+    deprecate(RuntimeError("Auto-conversion of btag CSV files is deprecated and will be removed. Try coffea.btag_tools.BTagScaleFactor or correctionlib!"), "v0.8.0", "31 Dec 2022")
 
     fopen = open
     fmode = "rt"
