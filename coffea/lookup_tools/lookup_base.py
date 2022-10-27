@@ -18,33 +18,27 @@ class lookup_base(object):
                 " numpy arrays, or numbers!"
             )
 
-        def getfunction(inputs, depth):
+        def getfunction(layout, **kwargs):
             if all(
-                isinstance(x, awkward.layout.NumpyArray)
-                or not isinstance(
-                    x, (awkward.layout.Content, awkward.partition.PartitionedArray)
-                )
-                for x in inputs
+                isinstance(x, awkward.contents.NumpyArray)
+                or not isinstance(x, (awkward.contents.Content))
+                for x in layout
             ):
-                nplike = awkward.nplike.of(*inputs)
-                if not isinstance(nplike, awkward.nplike.Numpy):
+                nplike = awkward.nplikes.nplike_of(*layout)
+                if not isinstance(nplike, awkward.nplikes.Numpy):
                     raise NotImplementedError(
                         "support for cupy/jax/etc. numpy extensions"
                     )
-                result = self._evaluate(*[nplike.asarray(x) for x in inputs], **kwargs)
-                return lambda: (awkward.layout.NumpyArray(result),)
+                result = self._evaluate(*[nplike.asarray(x) for x in layout], **kwargs)
+                return awkward.contents.NumpyArray(result)
             return None
 
-        behavior = awkward._util.behaviorof(*args)
+        behavior = awkward._util.behavior_of(*args)
         args = [
-            awkward.operations.convert.to_layout(
-                arg, allow_record=False, allow_other=True
-            )
-            for arg in args
+            awkward.to_layout(arg, allow_record=False, allow_other=True) for arg in args
         ]
-        out = awkward._util.broadcast_and_apply(args, getfunction, behavior)
-        assert isinstance(out, tuple) and len(out) == 1
-        return awkward._util.wrap(out[0], behavior=behavior)
+        out = awkward.transform(getfunction, *args, behavior=behavior)
+        return out
 
     def _evaluate(self, *args, **kwargs):
         raise NotImplementedError

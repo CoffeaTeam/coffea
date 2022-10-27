@@ -54,7 +54,7 @@ class LumiData(object):
 
         if isinstance(runlumis, LumiList):
             runlumis = runlumis.array
-        tot_lumi = np.zeros((1,), dtype=np.float64)
+        tot_lumi = np.zeros((1,), dtype=np.dtype("float64"))
         LumiData._get_lumi_kernel(runlumis[:, 0], runlumis[:, 1], self.index, tot_lumi)
         return tot_lumi[0]
 

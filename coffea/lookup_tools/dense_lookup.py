@@ -29,7 +29,7 @@ class dense_lookup(lookup_base):
             raise Exception("dense_lookup cannot handle string values!")
         self._values = deepcopy(values)
 
-    def _evaluate(self, *args):
+    def _evaluate(self, *args, **kwargs):
         if len(args) != self._dimension:
             raise ValueError(f"Insufficient arguments for correction {self}")
         indices = []
