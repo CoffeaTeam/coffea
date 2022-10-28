@@ -1831,9 +1831,13 @@ class Runner:
         )
 
         executor = self.executor.copy(**exe_args)
-	
-        if meta: check_chunks = lambda x: next(x, None) is not None
-        else:    check_chunks = lambda x: len(x) != 0
+
+        def check_chunks(x):
+            if meta:
+                return next(x, None) is not None
+            else:
+                return len(x) != 0
+
         if check_chunks(chunks):
             wrapped_out, e = executor(chunks, closure, None)
         else:
