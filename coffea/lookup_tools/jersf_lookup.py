@@ -65,7 +65,7 @@ class jersf_lookup(lookup_base):
             if argname in self._dim_args.keys():
                 self._eval_args[argname] = self._dim_args[argname]
 
-    def _evaluate(self, *args):
+    def _evaluate(self, *args, **kwargs):
         """SFs = f(args)"""
         bin_vals = {
             argname: args[self._dim_args[argname]] for argname in self._dim_order
