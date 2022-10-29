@@ -6,7 +6,7 @@ class correctionlib_wrapper(lookup_base):
         super(correctionlib_wrapper, self).__init__()
         self._corr = payload
 
-    def _evaluate(self, *args):
+    def _evaluate(self, *args, **kwargs):
         return self._corr.evaluate(*args)
 
     def __repr__(self):
