@@ -335,7 +335,7 @@ class PackedSelection:
         selection = coffea.util._ensure_flat(selection, allow_missing=True)
         if isinstance(selection, numpy.ma.MaskedArray):
             selection = selection.filled(fill_value)
-        if selection.dtype != numpy.bool:
+        if selection.dtype != bool:
             raise ValueError(f"Expected a boolean array, received {selection.dtype}")
         if len(self._names) == 0:
             self._data = numpy.zeros(len(selection), dtype=self._dtype)
