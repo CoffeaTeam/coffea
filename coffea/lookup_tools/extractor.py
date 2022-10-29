@@ -4,7 +4,6 @@ import os
 from coffea.lookup_tools.evaluator import evaluator
 
 from coffea.lookup_tools.root_converters import convert_histo_root_file
-from coffea.lookup_tools.csv_converters import convert_btag_csv_file
 from coffea.lookup_tools.json_converters import (
     convert_histo_json_file,
     convert_correctionlib_file,
@@ -14,7 +13,6 @@ from coffea.lookup_tools.txt_converters import *
 
 file_converters = {
     "root": {"default": convert_histo_root_file, "histo": convert_histo_root_file},
-    "csv": {"default": convert_btag_csv_file, "btag": convert_btag_csv_file},
     "json": {
         "default": convert_histo_json_file,
         "histo": convert_histo_json_file,
@@ -48,7 +46,6 @@ class extractor(object):
     The extractor class supports a number of useful file formats by default:
         - **.histo.root** : 1,2, and 3 dimensional histograms in root files.
         - **.histo.json** : N-dimensional histograms stored in JSON format.
-        - **.btag.csv**   : CMS BTV b-tagging weights in csv files.
         - **.ea.txt**     : CMS EGM effective area text files.
         - **'.[jec, jersf, jr, junc].txt'** : CMS JME jet energy corrections and systematic error text files.
 
