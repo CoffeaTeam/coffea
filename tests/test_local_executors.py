@@ -3,6 +3,7 @@ import os.path as osp
 import pytest
 from coffea import processor
 from coffea.nanoevents import schemas
+from coffea.processor.executor import UprootMissTreeError
 
 if sys.platform.startswith("win"):
     pytest.skip("skipping tests that only function in linux", allow_module_level=True)
@@ -63,7 +64,7 @@ def test_nanoevents_analysis(executor, compression, maxchunks, skipbadfiles, fil
     from coffea.processor.test_items import NanoEventsProcessor
 
     filelist = {
-        "DummyBad": {
+        "DummyBadMissingFile": {
             "treename": "Events",
             "files": [osp.abspath(f"tests/samples/non_existent.{filetype}")],
         },
@@ -76,6 +77,14 @@ def test_nanoevents_analysis(executor, compression, maxchunks, skipbadfiles, fil
             "treename": "Events",
             "files": [osp.abspath(f"tests/samples/nano_dimuon.{filetype}")],
             "metadata": {"checkusermeta": True, "someusermeta2": "world"},
+        },
+    }
+
+    badtree_filelist = {
+        "DummyBadMissingTree": {
+            "treename": "NotEvents",
+            "files": [osp.abspath(f"tests/samples/nano_dy.{filetype}")],
+            "metadata": {"checkusermeta": False, "someusermeta": "hello"},
         },
     }
 
@@ -97,3 +106,10 @@ def test_nanoevents_analysis(executor, compression, maxchunks, skipbadfiles, fil
     else:
         with pytest.raises(FileNotFoundError):
             hists = run(filelist, "Events", processor_instance=NanoEventsProcessor())
+        if filetype == "root":
+            with pytest.raises(UprootMissTreeError):
+                hists = run(
+                    badtree_filelist,
+                    "NotEvents",
+                    processor_instance=NanoEventsProcessor(),
+                )
