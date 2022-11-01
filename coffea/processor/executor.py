@@ -1766,9 +1766,8 @@ class Runner:
             chunks = fileset
         else:
             chunks = self.preprocess(fileset, treename)
-        
-        chunks = list(chunks)
-        
+    
+
         if self.processor_compression is None:
             pi_to_send = processor_instance
         else:
