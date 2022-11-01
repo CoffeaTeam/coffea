@@ -1766,7 +1766,9 @@ class Runner:
             chunks = fileset
         else:
             chunks = self.preprocess(fileset, treename)
-
+        
+        chunks = list(chunks)
+        
         if self.processor_compression is None:
             pi_to_send = processor_instance
         else:
@@ -1809,9 +1811,10 @@ class Runner:
             # materialize chunks to list, then count that list
             chunks = list(chunks)
             chunks_to_count = chunks
-
+        
+        
         events_total = sum(len(c) for c in chunks_to_count)
-
+        
         exe_args = {
             "unit": "chunk",
             "function_name": type(processor_instance).__name__,
@@ -1831,16 +1834,8 @@ class Runner:
         )
 
         executor = self.executor.copy(**exe_args)
-
-        def check_chunks(x):
-            if meta:
-                return next(x, None) is not None
-            else:
-                return len(x) != 0
-
-        if check_chunks(chunks):
-            wrapped_out, e = executor(chunks, closure, None)
-        else:
+        wrapped_out, e = executor(chunks, closure, None)
+        if wrapped_out is None:
             raise ValueError(
                 "No chunks returned results, verify ``processor`` instance structure.\n\
                 if you used skipbadfiles=True, it is possible all your files are bad."
