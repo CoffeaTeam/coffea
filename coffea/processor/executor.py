@@ -1766,7 +1766,6 @@ class Runner:
             chunks = fileset
         else:
             chunks = self.preprocess(fileset, treename)
-    
 
         if self.processor_compression is None:
             pi_to_send = processor_instance
@@ -1810,10 +1809,9 @@ class Runner:
             # materialize chunks to list, then count that list
             chunks = list(chunks)
             chunks_to_count = chunks
-        
-        
+
         events_total = sum(len(c) for c in chunks_to_count)
-        
+
         exe_args = {
             "unit": "chunk",
             "function_name": type(processor_instance).__name__,
