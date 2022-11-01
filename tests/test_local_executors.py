@@ -70,7 +70,7 @@ def test_nanoevents_analysis(executor, compression, maxchunks, skipbadfiles, fil
         },
         "ZJetsBadMissingTree": {
             "treename": "NotEvents",
-            "files": [osp.abspath(f"tests/samples/nano_dy.{filetype}"),osp.abspath(f"tests/samples/nano_dy_SpecialTree.{filetype}")],
+            "files": [osp.abspath(f"tests/samples/nano_dy.{filetype}"), osp.abspath(f"tests/samples/nano_dy_SpecialTree.{filetype}")],
         },
         "ZJets": {
             "treename": "Events",
@@ -81,14 +81,6 @@ def test_nanoevents_analysis(executor, compression, maxchunks, skipbadfiles, fil
             "treename": "Events",
             "files": [osp.abspath(f"tests/samples/nano_dimuon.{filetype}")],
             "metadata": {"checkusermeta": True, "someusermeta2": "world"},
-        },
-    }
-
-    badtree_filelist = {
-        "DummyBadMissingTree": {
-            "treename": "NotEvents",
-            "files": [osp.abspath(f"tests/samples/nano_dy.{filetype}"), osp.abspath(f"tests/samples/nano_dy_SpecialTree.{filetype}")],
-            "metadata": {"checkusermeta": False, "someusermeta": "hello"},
         },
     }
 
