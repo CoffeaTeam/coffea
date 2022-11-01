@@ -68,6 +68,17 @@ def test_nanoevents_analysis(executor, compression, maxchunks, skipbadfiles, fil
             "treename": "Events",
             "files": [osp.abspath(f"tests/samples/non_existent.{filetype}")],
         },
+        "ZJetsBadMissingTree": {
+            "treename": "NotEvents",
+            "files": [
+                osp.abspath(f"tests/samples/nano_dy.{filetype}"),
+                osp.abspath(f"tests/samples/nano_dy_SpecialTree.{filetype}"),
+            ],
+        },
+        "ZJetsBadMissingTreeAllFiles": {
+            "treename": "NotEvents",
+            "files": [osp.abspath(f"tests/samples/nano_dy.{filetype}")],
+        },
         "ZJets": {
             "treename": "Events",
             "files": [osp.abspath(f"tests/samples/nano_dy.{filetype}")],
@@ -77,14 +88,6 @@ def test_nanoevents_analysis(executor, compression, maxchunks, skipbadfiles, fil
             "treename": "Events",
             "files": [osp.abspath(f"tests/samples/nano_dimuon.{filetype}")],
             "metadata": {"checkusermeta": True, "someusermeta2": "world"},
-        },
-    }
-
-    badtree_filelist = {
-        "DummyBadMissingTree": {
-            "treename": "NotEvents",
-            "files": [osp.abspath(f"tests/samples/nano_dy.{filetype}")],
-            "metadata": {"checkusermeta": False, "someusermeta": "hello"},
         },
     }
 
@@ -101,15 +104,14 @@ def test_nanoevents_analysis(executor, compression, maxchunks, skipbadfiles, fil
         hists = run(filelist, "Events", processor_instance=NanoEventsProcessor())
         assert hists["cutflow"]["ZJets_pt"] == 18
         assert hists["cutflow"]["ZJets_mass"] == 6
+        assert hists["cutflow"]["ZJetsBadMissingTree_pt"] == 18
+        assert hists["cutflow"]["ZJetsBadMissingTree_mass"] == 6
         assert hists["cutflow"]["Data_pt"] == 84
         assert hists["cutflow"]["Data_mass"] == 66
+
     else:
-        with pytest.raises(FileNotFoundError):
+        LookForError = (FileNotFoundError, UprootMissTreeError)
+        with pytest.raises(LookForError):
             hists = run(filelist, "Events", processor_instance=NanoEventsProcessor())
-        if filetype == "root":
-            with pytest.raises(UprootMissTreeError):
-                hists = run(
-                    badtree_filelist,
-                    "NotEvents",
-                    processor_instance=NanoEventsProcessor(),
-                )
+        with pytest.raises(LookForError):
+            hists = run(filelist, "NotEvents", processor_instance=NanoEventsProcessor())

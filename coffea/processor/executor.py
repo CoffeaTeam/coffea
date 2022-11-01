@@ -1831,16 +1831,8 @@ class Runner:
         )
 
         executor = self.executor.copy(**exe_args)
-
-        def check_chunks(x):
-            if meta:
-                return next(x, None) is not None
-            else:
-                return len(x) != 0
-
-        if check_chunks(chunks):
-            wrapped_out, e = executor(chunks, closure, None)
-        else:
+        wrapped_out, e = executor(chunks, closure, None)
+        if wrapped_out is None:
             raise ValueError(
                 "No chunks returned results, verify ``processor`` instance structure.\n\
                 if you used skipbadfiles=True, it is possible all your files are bad."
