@@ -71,6 +71,10 @@ def test_nanoevents_analysis(executor, compression, maxchunks, skipbadfiles, fil
         "ZJetsBadMissingTree": {
             "treename": "NotEvents",
             "files": [osp.abspath(f"tests/samples/nano_dy.{filetype}"), osp.abspath(f"tests/samples/nano_dy_SpecialTree.{filetype}")],
+        }, 
+        "ZJetsBadMissingTreeAllFiles": {
+            "treename": "NotEvents",
+            "files": [osp.abspath(f"tests/samples/nano_dy.{filetype}")],
         },
         "ZJets": {
             "treename": "Events",
