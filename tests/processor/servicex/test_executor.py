@@ -48,6 +48,7 @@ class TestableExecutor(Executor):
         data_type: str,
         meta_data: Dict[str, str],
         process_func: Callable,
+        schema,
     ):
 
         # Record the tree name so we can verify it later

@@ -3,6 +3,7 @@ import os.path as osp
 import pytest
 from coffea import processor
 from coffea.nanoevents import schemas
+from coffea.processor.executor import UprootMissTreeError
 
 if sys.platform.startswith("win"):
     pytest.skip("skipping tests that only function in linux", allow_module_level=True)
@@ -63,9 +64,20 @@ def test_nanoevents_analysis(executor, compression, maxchunks, skipbadfiles, fil
     from coffea.processor.test_items import NanoEventsProcessor
 
     filelist = {
-        "DummyBad": {
+        "DummyBadMissingFile": {
             "treename": "Events",
             "files": [osp.abspath(f"tests/samples/non_existent.{filetype}")],
+        },
+        "ZJetsBadMissingTree": {
+            "treename": "NotEvents",
+            "files": [
+                osp.abspath(f"tests/samples/nano_dy.{filetype}"),
+                osp.abspath(f"tests/samples/nano_dy_SpecialTree.{filetype}"),
+            ],
+        },
+        "ZJetsBadMissingTreeAllFiles": {
+            "treename": "NotEvents",
+            "files": [osp.abspath(f"tests/samples/nano_dy.{filetype}")],
         },
         "ZJets": {
             "treename": "Events",
@@ -92,8 +104,14 @@ def test_nanoevents_analysis(executor, compression, maxchunks, skipbadfiles, fil
         hists = run(filelist, "Events", processor_instance=NanoEventsProcessor())
         assert hists["cutflow"]["ZJets_pt"] == 18
         assert hists["cutflow"]["ZJets_mass"] == 6
+        assert hists["cutflow"]["ZJetsBadMissingTree_pt"] == 18
+        assert hists["cutflow"]["ZJetsBadMissingTree_mass"] == 6
         assert hists["cutflow"]["Data_pt"] == 84
         assert hists["cutflow"]["Data_mass"] == 66
+
     else:
-        with pytest.raises(FileNotFoundError):
+        LookForError = (FileNotFoundError, UprootMissTreeError)
+        with pytest.raises(LookForError):
             hists = run(filelist, "Events", processor_instance=NanoEventsProcessor())
+        with pytest.raises(LookForError):
+            hists = run(filelist, "NotEvents", processor_instance=NanoEventsProcessor())

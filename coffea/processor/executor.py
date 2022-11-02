@@ -71,6 +71,10 @@ _PROTECTED_NAMES = {
 }
 
 
+class UprootMissTreeError(uproot.exceptions.KeyInFileError):
+    pass
+
+
 class FileMeta(object):
     __slots__ = ["dataset", "filename", "treename", "metadata"]
 
@@ -109,11 +113,7 @@ class FileMeta(object):
             return False
         return True
 
-    def chunks(self, target_chunksize, align_clusters, dynamic_chunksize):
-        if align_clusters and dynamic_chunksize:
-            raise RuntimeError(
-                "align_clusters cannot be used with a dynamic chunksize."
-            )
+    def chunks(self, target_chunksize, align_clusters):
         if not self.populated(clusters=align_clusters):
             raise RuntimeError
         user_keys = set(self.metadata.keys()) - _PROTECTED_NAMES
@@ -137,12 +137,14 @@ class FileMeta(object):
                 )
             return target_chunksize
         else:
-            n = max(round(self.metadata["numentries"] / target_chunksize), 1)
-            actual_chunksize = math.ceil(self.metadata["numentries"] / n)
-
+            numentries = self.metadata["numentries"]
+            update = True
             start = 0
-            while start < self.metadata["numentries"]:
-                stop = min(self.metadata["numentries"], start + actual_chunksize)
+            while start < numentries:
+                if update:
+                    n = max(round((numentries - start) / target_chunksize), 1)
+                    actual_chunksize = math.ceil((numentries - start) / n)
+                stop = min(numentries, start + actual_chunksize)
                 next_chunksize = yield WorkItem(
                     self.dataset,
                     self.filename,
@@ -153,20 +155,12 @@ class FileMeta(object):
                     user_meta,
                 )
                 start = stop
-                if dynamic_chunksize and next_chunksize:
-                    n = max(
-                        math.ceil(
-                            (self.metadata["numentries"] - start) / next_chunksize
-                        ),
-                        1,
-                    )
-                    actual_chunksize = math.ceil(
-                        (self.metadata["numentries"] - start) / n
-                    )
-            if dynamic_chunksize and next_chunksize:
-                return next_chunksize
-            else:
-                return target_chunksize
+                if next_chunksize and next_chunksize != target_chunksize:
+                    target_chunksize = next_chunksize
+                    update = True
+                else:
+                    update = False
+            return target_chunksize
 
 
 @dataclass(unsafe_hash=True, frozen=True)
@@ -467,7 +461,7 @@ class WorkQueueExecutor(ExecutorBase):
 
     Parameters
     ----------
-        items : list or generator
+        items : sequence or generator
             Sequence of input arguments
         function : callable
             A function to be called on each input, which returns an accumulator instance
@@ -481,19 +475,19 @@ class WorkQueueExecutor(ExecutorBase):
             Label of progress bar description
         compression : int, optional
             Compress accumulator outputs in flight with LZ4, at level specified (default 9)
-            Set to ``None`` for no compression.
+            `None`` sets level to 1 (minimal compression)
         # work queue specific options:
         cores : int
-            Number of cores for work queue task. If unset, use a whole worker.
+            Maximum number of cores for work queue task. If unset, use a whole worker.
         memory : int
-            Amount of memory (in MB) for work queue task. If unset, use a whole worker.
+            Maximum amount of memory (in MB) for work queue task. If unset, use a whole worker.
         disk : int
-            Amount of disk space (in MB) for work queue task. If unset, use a whole worker.
+            Maximum amount of disk space (in MB) for work queue task. If unset, use a whole worker.
         gpus : int
             Number of GPUs to allocate to each task.  If unset, use zero.
         resource_monitor : str
             If given, one of 'off', 'measure', or 'watchdog'. Default is 'off'.
-            - 'off': turns off resource monitoring. Overriden if resources_mode
+            - 'off': turns off resource monitoring. Overriden to 'watchdog' if resources_mode
                      is not set to 'fixed'.
             - 'measure': turns on resource monitoring for Work Queue. The
                         resources used per task are measured.
@@ -523,14 +517,19 @@ class WorkQueueExecutor(ExecutorBase):
             legitimately slow tasks, no task may trigger fast termination in
             two distinct workers. Less than 1 disables it.
 
-        master_name : str
-            Name to refer to this work queue master.
+        manager_name : str
+            Name to refer to this work queue manager.
             Sets port to 0 (any available port) if port not given.
-        port : int
-            Port number for work queue master program. Defaults to 9123 if
-            master_name not given.
+        port : int or tuple(int, int)
+            Port number or range (inclusive of ports )for work queue manager program.
+            Defaults to 9123 if manager_name not given.
         password_file: str
             Location of a file containing a password used to authenticate workers.
+        ssl: bool or tuple(str, str)
+            Enable ssl encryption between manager and workers. If a tuple, then it
+            should be of the form (key, cert), where key and cert are paths to the files
+            containing the key and certificate in pem format. If True, auto-signed temporary
+            key and cert are generated for the session.
 
         extra_input_files: list
             A list of files in the current working directory to send along with each task.
@@ -546,14 +545,15 @@ class WorkQueueExecutor(ExecutorBase):
         wrapper : str
             Wrapper script to run/open python environment tarball. Defaults to python_package_run found in PATH.
 
-        chunks_per_accum : int
-            Number of processed chunks per accumulation task. Defaults is 10.
-        chunks_accum_in_mem : int
-            Maximum number of chunks to keep in memory at each accumulation step in an accumulation task. Default is 2.
+        treereduction : int
+            Number of processed chunks per accumulation task. Defaults is 20.
 
         verbose : bool
             If true, emit a message on each task submission and completion.
             Default is false.
+        print_stdout : bool
+            If true (default), print the standard output of work queue task on completion.
+
         debug_log : str
             Filename for debug output
         stats_log : str
@@ -562,8 +562,10 @@ class WorkQueueExecutor(ExecutorBase):
             Filename for tasks lifetime reports output
         tasks_accum_log : str
             Filename for the log of tasks that have been processed and accumulated.
-        print_stdout : bool
-            If true (default), print the standard output of work queue task on completion.
+
+        filepath: str
+            Path to the parent directory where to create the staging directory.
+            Default is "." (current working directory).
 
         custom_init : function, optional
             A function that takes as an argument the queue's WorkQueue object.
@@ -575,19 +577,20 @@ class WorkQueueExecutor(ExecutorBase):
     compression: Optional[int] = 9  # as recommended by lz4
     retries: int = 2  # task executes at most 3 times
     # wq executor options:
-    master_name: Optional[str] = None
-    port: Optional[int] = None
+    manager_name: Optional[str] = None
+    port: Optional[Union[int, Tuple[int, int]]] = None
     filepath: str = "."
     events_total: Optional[int] = None
     x509_proxy: Optional[str] = None
     verbose: bool = False
     print_stdout: bool = False
-    bar_format: str = "{desc:<14}{percentage:3.0f}%|{bar}{r_bar:<55}"
+    status_display_interval: Optional[int] = 10
     debug_log: Optional[str] = None
     stats_log: Optional[str] = None
     transactions_log: Optional[str] = None
     tasks_accum_log: Optional[str] = None
     password_file: Optional[str] = None
+    ssl: Union[bool, Tuple[str, str]] = False
     environment_file: Optional[str] = None
     extra_input_files: List = field(default_factory=list)
     wrapper: Optional[str] = shutil.which("poncho_package_run")
@@ -599,11 +602,16 @@ class WorkQueueExecutor(ExecutorBase):
     memory: Optional[int] = None
     disk: Optional[int] = None
     gpus: Optional[int] = None
-    chunks_per_accum: int = 25
-    chunks_accum_in_mem: int = 2
+    treereduction: int = 20
     chunksize: int = 100000
     dynamic_chunksize: Optional[Dict] = None
     custom_init: Optional[Callable] = None
+
+    # deprecated
+    bar_format: Optional[str] = None
+    chunks_accum_in_mem: Optional[int] = None
+    master_name: Optional[str] = None
+    chunks_per_accum: Optional[int] = None
 
     def __call__(
         self,
@@ -611,27 +619,14 @@ class WorkQueueExecutor(ExecutorBase):
         function: Callable,
         accumulator: Accumulatable,
     ):
-        try:
-            import work_queue  # noqa
-            import dill  # noqa
-            from .work_queue_tools import work_queue_main
-        except ImportError as e:
-            print(
-                "You must have Work Queue and dill installed to use WorkQueueExecutor!"
-            )
-            raise e
-
-        from .work_queue_tools import _get_x509_proxy
-
-        if self.x509_proxy is None:
-            self.x509_proxy = _get_x509_proxy()
+        from .work_queue_tools import run
 
         return (
-            work_queue_main(
+            run(
+                self,
                 items,
                 function,
                 accumulator,
-                **self.__dict__,
             ),
             0,
         )
@@ -1345,7 +1340,8 @@ class Runner:
             except Exception as e:
                 chain = _exception_chain(e)
                 if skipbadfiles and any(
-                    isinstance(c, FileNotFoundError) for c in chain
+                    isinstance(c, (FileNotFoundError, UprootMissTreeError))
+                    for c in chain
                 ):
                     warnings.warn(str(e))
                     break
@@ -1404,18 +1400,21 @@ class Runner:
     def metadata_fetcher(
         xrootdtimeout: int, align_clusters: bool, item: FileMeta
     ) -> Accumulatable:
-        out = set_accumulator()
-        file = uproot.open(item.filename, timeout=xrootdtimeout)
-        tree = file[item.treename]
-        metadata = {}
-        if item.metadata:
-            metadata.update(item.metadata)
-        metadata.update({"numentries": tree.num_entries, "uuid": file.file.fUUID})
-        if align_clusters:
-            metadata["clusters"] = tree.common_entry_offsets()
-        out = set_accumulator(
-            [FileMeta(item.dataset, item.filename, item.treename, metadata)]
-        )
+        with uproot.open(item.filename, timeout=xrootdtimeout) as file:
+            try:
+                tree = file[item.treename]
+            except uproot.exceptions.KeyInFileError as e:
+                raise UprootMissTreeError(str(e)) from e
+
+            metadata = {}
+            if item.metadata:
+                metadata.update(item.metadata)
+            metadata.update({"numentries": tree.num_entries, "uuid": file.file.fUUID})
+            if align_clusters:
+                metadata["clusters"] = tree.common_entry_offsets()
+            out = set_accumulator(
+                [FileMeta(item.dataset, item.filename, item.treename, metadata)]
+            )
         return out
 
     def _preprocess_fileset(self, fileset: Dict) -> None:
@@ -1458,7 +1457,9 @@ class Runner:
             if filemeta.populated(clusters=self.align_clusters):
                 final_fileset.append(filemeta)
             elif not self.skipbadfiles:
-                raise RuntimeError("Metadata for file {} could not be accessed.")
+                raise RuntimeError(
+                    f"Metadata for file {filemeta.filename} could not be accessed."
+                )
         return final_fileset
 
     def _chunk_generator(self, fileset: Dict, treename: str) -> Generator:
@@ -1472,7 +1473,6 @@ class Runner:
                     last_chunksize = yield from filemeta.chunks(
                         last_chunksize,
                         self.align_clusters,
-                        self.dynamic_chunksize,
                     )
             else:
                 # get just enough file info to compute chunking
@@ -1481,14 +1481,12 @@ class Runner:
                 for filemeta in fileset:
                     if nchunks[filemeta.dataset] >= self.maxchunks:
                         continue
-                    for chunk in filemeta.chunks(
-                        self.chunksize, self.align_clusters, dynamic_chunksize=None
-                    ):
+                    for chunk in filemeta.chunks(self.chunksize, self.align_clusters):
                         chunks.append(chunk)
                         nchunks[filemeta.dataset] += 1
                         if nchunks[filemeta.dataset] >= self.maxchunks:
                             break
-                yield from iter(chunks)
+                yield from (c for c in chunks)
         else:
             if self.use_skyhook and not config.get("skyhook", None):
                 print("No skyhook config found, using defaults")
@@ -1803,26 +1801,25 @@ class Runner:
                 processor_instance=pi_to_send,
             )
 
-        if self.format == "root":
-            if self.dynamic_chunksize:
-                # chunks stay as generator
-                events_total = sum(f.metadata["numentries"] for f in fileset)
-            else:
-                # materialize to list
-                chunks = [c for c in chunks]
-                events_total = sum(len(c) for c in chunks)
+        if self.format == "root" and isinstance(self.executor, WorkQueueExecutor):
+            # keep chunks in generator, use a copy to count number of events
+            # this is cheap, as we are reading from the cache
+            chunks_to_count = self.preprocess(fileset, treename)
         else:
-            chunks = [c for c in chunks]
+            # materialize chunks to list, then count that list
+            chunks = list(chunks)
+            chunks_to_count = chunks
+
+        events_total = sum(len(c) for c in chunks_to_count)
 
         exe_args = {
-            "unit": "event"
-            if isinstance(self.executor, WorkQueueExecutor)
-            else "chunk",  # fmt: skip
+            "unit": "chunk",
             "function_name": type(processor_instance).__name__,
         }
-        if self.format == "root" and isinstance(self.executor, WorkQueueExecutor):
+        if isinstance(self.executor, WorkQueueExecutor):
             exe_args.update(
                 {
+                    "unit": "event",
                     "events_total": events_total,
                     "dynamic_chunksize": self.dynamic_chunksize,
                     "chunksize": self.chunksize,
@@ -1834,13 +1831,14 @@ class Runner:
         )
 
         executor = self.executor.copy(**exe_args)
-
         wrapped_out, e = executor(chunks, closure, None)
         if wrapped_out is None:
             raise ValueError(
-                "No chunks returned results, verify ``processor`` instance structure."
+                "No chunks returned results, verify ``processor`` instance structure.\n\
+                if you used skipbadfiles=True, it is possible all your files are bad."
             )
         wrapped_out["exception"] = e
+
         if not self.use_dataframes:
             processor_instance.postprocess(wrapped_out["out"])
 

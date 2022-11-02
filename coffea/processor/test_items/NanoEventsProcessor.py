@@ -1,29 +1,18 @@
 import awkward as ak
-from coffea import hist, processor
-from coffea import nanoevents
+from coffea import processor, nanoevents
+import hist
+from collections import defaultdict
 
 
 class NanoEventsProcessor(processor.ProcessorABC):
     def __init__(self, columns=[], canaries=[]):
         self._columns = columns
         self._canaries = canaries
-        dataset_axis = hist.Cat("dataset", "Primary dataset")
-        mass_axis = hist.Bin("mass", r"$m_{\mu\mu}$ [GeV]", 30000, 0.25, 300)
-        pt_axis = hist.Bin("pt", r"$p_{T}$ [GeV]", 30000, 0.25, 300)
 
         self.expected_usermeta = {
             "ZJets": ("someusermeta", "hello"),
             "Data": ("someusermeta2", "world"),
         }
-
-        self._accumulator = processor.dict_accumulator(
-            {
-                "mass": hist.Hist("Counts", dataset_axis, mass_axis),
-                "pt": hist.Hist("Counts", dataset_axis, pt_axis),
-                "cutflow": processor.defaultdict_accumulator(int),
-                "worker": processor.set_accumulator(),
-            }
-        )
 
     @property
     def columns(self):
@@ -31,10 +20,28 @@ class NanoEventsProcessor(processor.ProcessorABC):
 
     @property
     def accumulator(self):
-        return self._accumulator
+        dataset_axis = hist.axis.StrCategory(
+            [], growth=True, name="dataset", label="Primary dataset"
+        )
+        mass_axis = hist.axis.Regular(
+            30000, 0.25, 300, name="mass", label=r"$m_{\mu\mu}$ [GeV]"
+        )
+        pt_axis = hist.axis.Regular(30000, 0.24, 300, name="pt", label=r"$p_{T}$ [GeV]")
+
+        accumulator = {
+            # replace when py3.6 is dropped
+            # "mass": hist.Hist(dataset_axis, mass_axis, name="Counts"),
+            # "pt": hist.Hist(dataset_axis, pt_axis, name="Counts"),
+            "mass": hist.Hist(dataset_axis, mass_axis),
+            "pt": hist.Hist(dataset_axis, pt_axis),
+            "cutflow": defaultdict(int),
+            "worker": set(),
+        }
+
+        return accumulator
 
     def process(self, events):
-        output = self.accumulator.identity()
+        output = self.accumulator
 
         dataset = events.metadata["dataset"]
         print(events.metadata)

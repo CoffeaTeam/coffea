@@ -28,7 +28,9 @@ class CannotBeNanoEvents(Exception):
 def _lazify_form(form, prefix, docstr=None):
     if not isinstance(form, dict) or "class" not in form:
         raise RuntimeError("form should have been normalized by now")
-    elif form["class"].startswith("ListOffset"):
+
+    parameters = _lazify_parameters(form.get("parameters", {}), docstr=docstr)
+    if form["class"].startswith("ListOffset"):
         # awkward will add !offsets
         form["form_key"] = quote(prefix)
         form["content"] = _lazify_form(
@@ -36,14 +38,14 @@ def _lazify_form(form, prefix, docstr=None):
         )
     elif form["class"] == "NumpyArray":
         form["form_key"] = quote(prefix)
-        if docstr is not None:
-            form["parameters"] = {"__doc__": docstr}
+        if parameters:
+            form["parameters"] = parameters
     elif form["class"] == "RegularArray":
         form["content"] = _lazify_form(
             form["content"], prefix + ",!content", docstr=docstr
         )
-        if docstr is not None:
-            form["parameters"] = {"__doc__": docstr}
+        if parameters:
+            form["parameters"] = parameters
     elif form["class"] == "RecordArray":
         for field in list(form["contents"]):
             if "," in field or "!" in field:
@@ -53,11 +55,20 @@ def _lazify_form(form, prefix, docstr=None):
             form["contents"][field] = _lazify_form(
                 form["contents"][field], prefix + f",{field},!item"
             )
-        if docstr is not None:
-            form["parameters"] = {"__doc__": docstr}
+        if parameters:
+            form["parameters"] = parameters
     else:
         raise CannotBeNanoEvents("Unknown form")
     return form
+
+
+def _lazify_parameters(form_parameters, docstr=None):
+    parameters = {}
+    if "__array__" in form_parameters:
+        parameters["__array__"] = form_parameters["__array__"]
+    if docstr is not None:
+        parameters["__doc__"] = docstr
+    return parameters
 
 
 class UprootSourceMapping(BaseSourceMapping):

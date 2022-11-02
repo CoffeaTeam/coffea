@@ -10,7 +10,7 @@ def test_loadsave():
         save(aprocessor, filename)
         newprocessor = load(filename)
         assert "pt" in newprocessor.accumulator
-        assert newprocessor.accumulator["pt"].compatible(aprocessor.accumulator["pt"])
+        assert newprocessor.accumulator["pt"].axes == aprocessor.accumulator["pt"].axes
     finally:
         if os.path.exists(filename):
             os.remove(filename)

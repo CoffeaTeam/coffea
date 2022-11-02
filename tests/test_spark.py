@@ -130,8 +130,8 @@ def test_spark_hist_adders():
 
     proc = NanoTestProcessor()
 
-    one = proc.accumulator.identity()
-    two = proc.accumulator.identity()
+    one = proc.accumulator
+    two = proc.accumulator
     hlist1 = [lz4f.compress(pkl.dumps(one))]
     hlist2 = [lz4f.compress(pkl.dumps(one)), lz4f.compress(pkl.dumps(two))]
     harray1 = np.array(hlist1, dtype="O")
