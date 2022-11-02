@@ -67,7 +67,7 @@ INSTALL_REQUIRES = [
     "numba>=0.50.0;python_version<3.7",
     "numba>=0.56.0;python_version>3.6",
     "numpy>=1.16.0,<1.22;python_version<3.7",  # <1.22 for numba version restrictions with 1.55 series
-    "numpy>=1.18.0;python_version>3.6", # numba 1.56 available for python > 3.6, no upper numpy requirement
+    "numpy>=1.18.0;python_version>3.6",  # numba 1.56 available for python > 3.6, no upper numpy requirement
     "scipy>=1.1.0",
     "tqdm>=4.27.0",
     "lz4",
