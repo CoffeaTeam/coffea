@@ -433,7 +433,7 @@ def test_dense_lookup():
     )
 
     with pytest.raises(ValueError):
-        lookup(ak.Array([]))
+        print(lookup(ak.Array([])))
 
     assert ak.to_list(lookup(ak.Array([]), ak.Array([]))) == []
     assert lookup(0.1, 0.3) == 1.0

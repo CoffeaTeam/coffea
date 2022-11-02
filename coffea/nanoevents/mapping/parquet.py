@@ -160,7 +160,7 @@ class ParquetSourceMapping(BaseSourceMapping):
             else:
                 schema = field.type
                 form = arrow_schema_to_awkward_form(schema)
-                form = json.loads(form.tojson())
+                form = json.loads(form.to_json())
 
             if (
                 form["class"].startswith("ListOffset")

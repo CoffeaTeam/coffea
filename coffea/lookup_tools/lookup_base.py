@@ -18,25 +18,26 @@ class lookup_base(object):
                 " numpy arrays, or numbers!"
             )
 
-        def getfunction(layout, **kwargs):
+        def getfunction(args, **kwargs):
+            if type(args) is not list:
+                args = [args]
             if all(
-                isinstance(x, awkward.contents.NumpyArray)
+                isinstance(
+                    x, (awkward.contents.NumpyArray, awkward.contents.EmptyArray)
+                )
                 or not isinstance(x, (awkward.contents.Content))
-                for x in layout
+                for x in args
             ):
-                nplike = awkward.nplikes.nplike_of(*layout)
+                nplike = awkward.nplikes.nplike_of(*args)
                 if not isinstance(nplike, awkward.nplikes.Numpy):
                     raise NotImplementedError(
                         "support for cupy/jax/etc. numpy extensions"
                     )
-                result = self._evaluate(*[nplike.asarray(x) for x in layout], **kwargs)
+                result = self._evaluate(*[awkward.to_numpy(x) for x in args], **kwargs)
                 return awkward.contents.NumpyArray(result)
             return None
 
         behavior = awkward._util.behavior_of(*args)
-        args = [
-            awkward.to_layout(arg, allow_record=False, allow_other=True) for arg in args
-        ]
         out = awkward.transform(getfunction, *args, behavior=behavior)
         return out
 

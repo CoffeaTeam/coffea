@@ -39,7 +39,7 @@ class PreloadedSourceMapping(BaseSourceMapping):
                     f"Skipping {key} because it contains characters that NanoEvents cannot accept [,!]"
                 )
                 continue
-            form = json.loads(branch.layout.form.tojson())
+            form = json.loads(branch.layout.form.to_json())
             if (
                 form["class"].startswith("ListOffset")
                 and form["content"]["class"] == "NumpyArray"  # noqa
