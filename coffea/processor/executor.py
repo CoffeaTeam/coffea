@@ -71,6 +71,10 @@ _PROTECTED_NAMES = {
 }
 
 
+class UprootMissTreeError(uproot.exceptions.KeyInFileError):
+    pass
+
+
 class FileMeta(object):
     __slots__ = ["dataset", "filename", "treename", "metadata"]
 
@@ -1336,7 +1340,8 @@ class Runner:
             except Exception as e:
                 chain = _exception_chain(e)
                 if skipbadfiles and any(
-                    isinstance(c, FileNotFoundError) for c in chain
+                    isinstance(c, (FileNotFoundError, UprootMissTreeError))
+                    for c in chain
                 ):
                     warnings.warn(str(e))
                     break
@@ -1396,7 +1401,11 @@ class Runner:
         xrootdtimeout: int, align_clusters: bool, item: FileMeta
     ) -> Accumulatable:
         with uproot.open(item.filename, timeout=xrootdtimeout) as file:
-            tree = file[item.treename]
+            try:
+                tree = file[item.treename]
+            except uproot.exceptions.KeyInFileError as e:
+                raise UprootMissTreeError(str(e)) from e
+
             metadata = {}
             if item.metadata:
                 metadata.update(item.metadata)
@@ -1822,13 +1831,14 @@ class Runner:
         )
 
         executor = self.executor.copy(**exe_args)
-
         wrapped_out, e = executor(chunks, closure, None)
         if wrapped_out is None:
             raise ValueError(
-                "No chunks returned results, verify ``processor`` instance structure."
+                "No chunks returned results, verify ``processor`` instance structure.\n\
+                if you used skipbadfiles=True, it is possible all your files are bad."
             )
         wrapped_out["exception"] = e
+
         if not self.use_dataframes:
             processor_instance.postprocess(wrapped_out["out"])
 
