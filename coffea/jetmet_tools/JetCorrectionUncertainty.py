@@ -154,16 +154,14 @@ class JetCorrectionUncertainty(object):
             #in a zip iterator
 
         """
-        cache = kwargs.pop("lazy_cache", None)
+        # cache = kwargs.pop("lazy_cache", None)
         uncs = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
             args = tuple(kwargs[input] for input in sig)
 
             if isinstance(args[0], awkward.highlevel.Array):
-                uncs.append(
-                    awkward.virtual(func, args=args, length=len(args[0]), cache=cache)
-                )
+                uncs.append(func(*args))  # upgrade this with dask laziness
             elif isinstance(args[0], numpy.ndarray):
                 uncs.append(func(*args))  # np is non-lazy
             else:

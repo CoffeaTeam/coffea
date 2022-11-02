@@ -143,8 +143,8 @@ class FactorizedJetCorrector(object):
             jecs = corrector.getCorrection(JetProperty1=jet.property1,...)
 
         """
-        cache = kwargs.get("lazy_cache", None)
-        form = kwargs.get("form", None)
+        # cache = kwargs.get("lazy_cache", None)
+        # form = kwargs.get("form", None)
         first_arg = kwargs[self.signature[0]]
 
         def total_corr(jec, **kwargs):
@@ -153,14 +153,9 @@ class FactorizedJetCorrector(object):
 
         out = None
         if isinstance(first_arg, awkward.highlevel.Array):
-            out = awkward.virtual(
-                total_corr,
-                args=(self,),
-                kwargs=kwargs,
-                length=len(first_arg),
-                form=form,
-                cache=cache,
-            )
+            out = total_corr(
+                self, **kwargs
+            )  # this should be updated with dask laziness
         elif isinstance(first_arg, numpy.ndarray):
             out = total_corr(self, **kwargs)  # np is non-lazy
         else:
@@ -178,8 +173,8 @@ class FactorizedJetCorrector(object):
             #'jecs' will be formatted like [[jec_jet1 jec_jet2 ...] ...]
 
         """
-        cache = kwargs.pop("lazy_cache", None)
-        form = kwargs.pop("form", None)
+        # cache = kwargs.pop("lazy_cache", None)
+        # form = kwargs.pop("form", None)
         corrVars = {}
         if "JetPt" in kwargs.keys():
             corrVars["JetPt"] = kwargs["JetPt"]
@@ -200,11 +195,7 @@ class FactorizedJetCorrector(object):
             )
 
             if isinstance(fargs[0], awkward.highlevel.Array):
-                corrections.append(
-                    awkward.virtual(
-                        func, args=fargs, length=len(fargs[0]), form=form, cache=cache
-                    )
-                )
+                corrections.append(func(*fargs))  # this should be updated with dask
             elif isinstance(fargs[0], numpy.ndarray):
                 corrections.append(func(*fargs))  # np is non-lazy
             else:

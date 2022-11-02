@@ -52,6 +52,8 @@ def _lazify_form(form, prefix, docstr=None):
                 raise CannotBeNanoEvents(
                     f"A subform contains a field with invalid characters: {field}"
                 )
+            print(form["contents"])
+            print(form["fields"])
             form["contents"][field] = _lazify_form(
                 form["contents"][field], prefix + f",{field},!item"
             )
@@ -72,8 +74,8 @@ def _lazify_parameters(form_parameters, docstr=None):
 
 
 class UprootSourceMapping(BaseSourceMapping):
-    _debug = False
-    _fix_awkward_form_of_iter = True
+    _debug = True
+    _fix_awkward_form_of_iter = False
 
     def __init__(self, fileopener, cache=None, access_log=None):
         super(UprootSourceMapping, self).__init__(fileopener, cache, access_log)
@@ -113,9 +115,8 @@ class UprootSourceMapping(BaseSourceMapping):
                 form = uproot._util.recursively_fix_awkward_form_of_iter(
                     awkward, branch.interpretation, form
                 )
-            form = uproot._util.awkward_form_remove_uproot(awkward, form)
             form = json.loads(
-                form.tojson()
+                form.to_json()
             )  # normalizes form (expand NumpyArray classes)
             try:
                 form = _lazify_form(form, f"{key},!load", docstr=branch.title)

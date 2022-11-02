@@ -20,8 +20,9 @@ from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema
 from coffea.nanoevents.util import key_to_tuple, tuple_to_key
 
 
-def _key_formatter(prefix, partition, form_key, attribute):
-    return prefix + f"/{partition}/{form_key}/{attribute}"
+def _key_formatter(prefix, form_key, form, attribute):
+    print(form)
+    return prefix + f"/{form_key}/{attribute}"
 
 
 class NanoEventsFactory:
@@ -389,9 +390,7 @@ class NanoEventsFactory:
                 self._schema.form,
                 len(self),
                 self._mapping,
-                key_format=partial(_key_formatter, self._partition_key),
-                lazy=True,
-                lazy_cache="new" if self._cache is None else self._cache,
+                buffer_key=partial(_key_formatter, self._partition_key),
                 behavior=behavior,
             )
             self._events = weakref.ref(events)
