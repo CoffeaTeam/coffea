@@ -108,6 +108,7 @@ EXTRAS_REQUIRE["dev"] = [
     "nbsphinx",
     "sphinx-rtd-theme",
     "sphinx-automodapi",
+    "sphinx-copybutton>=0.3.2",
     "pyinstrument",
     "ipython",
 ]
