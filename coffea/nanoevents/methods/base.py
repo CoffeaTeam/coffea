@@ -179,15 +179,15 @@ class NanoCollection:
     def _getlistarray(self):
         """Do some digging to find the initial listarray"""
 
-        def descend(layout, depth):
+        def descend(layout, depth, **kwargs):
             islistarray = isinstance(
                 layout,
-                (awkward.layout.ListOffsetArray32, awkward.layout.ListOffsetArray64),
+                awkward.contents.ListOffsetArray,
             )
             if islistarray and layout.content.parameter("collection_name") is not None:
-                return lambda: layout
+                return layout
 
-        return awkward._util.recursively_apply(self.layout, descend)
+        return awkward.transform(descend, self.layout, highlevel=False)
 
     def _content(self):
         """Internal method to get jagged collection content
@@ -210,12 +210,12 @@ class NanoCollection:
             idx = awkward.Array(layout)
             return self._content()[idx.mask[idx >= 0]]
 
-        def descend(layout, depth):
+        def descend(layout, depth, **kwargs):
             if layout.purelist_depth == 1:
-                return lambda: flat_take(layout)
+                return flat_take(layout)
 
         (index,) = awkward.broadcast_arrays(index)
-        out = awkward._util.recursively_apply(index.layout, descend)
+        out = awkward.transform(descend, index.layout, highlevel=False)
         return awkward.Array(out, behavior=self.behavior)
 
     def _events(self):

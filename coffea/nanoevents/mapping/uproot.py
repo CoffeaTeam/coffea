@@ -74,11 +74,13 @@ def _lazify_parameters(form_parameters, docstr=None):
 
 
 class UprootSourceMapping(BaseSourceMapping):
-    _debug = True
+    _debug = False
     _fix_awkward_form_of_iter = False
 
-    def __init__(self, fileopener, cache=None, access_log=None):
-        super(UprootSourceMapping, self).__init__(fileopener, cache, access_log)
+    def __init__(self, fileopener, start, stop, cache=None, access_log=None):
+        super(UprootSourceMapping, self).__init__(
+            fileopener, start, stop, cache, access_log
+        )
 
     @classmethod
     def _extract_base_form(cls, tree, iteritems_options={}):
@@ -129,9 +131,10 @@ class UprootSourceMapping(BaseSourceMapping):
 
         return {
             "class": "RecordArray",
-            "contents": branch_forms,
+            "contents": [item for item in branch_forms.values()],
+            "fields": [key for key in branch_forms.keys()],
             "parameters": {"__doc__": tree.title},
-            "form_key": "",
+            "form_key": None,
         }
 
     def key_root(self):
@@ -155,7 +158,7 @@ class UprootSourceMapping(BaseSourceMapping):
         )
 
     def __len__(self):
-        raise NotImplementedError
+        return self._stop - self._start
 
     def __iter__(self):
         raise NotImplementedError

@@ -21,8 +21,9 @@ from coffea.nanoevents.util import key_to_tuple, tuple_to_key
 
 
 def _key_formatter(prefix, form_key, form, attribute):
-    print(form)
-    return prefix + f"/{form_key}/{attribute}"
+    if attribute == "offsets":
+        form_key += "%2C%21offsets"
+    return prefix + f"/{attribute}/{form_key}"
 
 
 class NanoEventsFactory:
@@ -117,6 +118,8 @@ class NanoEventsFactory:
         uuidpfn = {partition_key[0]: tree.file.file_path}
         mapping = UprootSourceMapping(
             TrivialUprootOpener(uuidpfn, uproot_options),
+            entry_start,
+            entry_stop,
             cache={},
             access_log=access_log,
         )
@@ -220,7 +223,10 @@ class NanoEventsFactory:
         )
         uuidpfn = {partition_key[0]: pqobj_path}
         mapping = ParquetSourceMapping(
-            TrivialParquetOpener(uuidpfn, parquet_options), access_log=access_log
+            TrivialParquetOpener(uuidpfn, parquet_options),
+            entry_start,
+            entry_stop,
+            access_log=access_log,
         )
 
         format_ = "parquet"
@@ -314,7 +320,7 @@ class NanoEventsFactory:
         )
         uuidpfn = {uuid: array_source}
         mapping = PreloadedSourceMapping(
-            PreloadedOpener(uuidpfn), access_log=access_log
+            PreloadedOpener(uuidpfn), entry_start, entry_stop, access_log=access_log
         )
         mapping.preload_column_source(partition_key[0], partition_key[1], array_source)
 

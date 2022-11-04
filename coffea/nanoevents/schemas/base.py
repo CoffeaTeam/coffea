@@ -6,10 +6,10 @@ def listarray_form(content, offsets):
     if offsets["class"] != "NumpyArray":
         raise ValueError
     if offsets["primitive"] == "int32":
-        arrayclass = "ListOffsetArray32"
+        arrayclass = "ListOffsetArray"
         offsetstype = "i32"
     elif offsets["primitive"] == "int64":
-        arrayclass = "ListOffsetArray64"
+        arrayclass = "ListOffsetArray"
         offsetstype = "i64"
     else:
         raise ValueError("Unrecognized offsets data type")
@@ -32,7 +32,8 @@ def zip_forms(forms, name, record_name=None, offsets=None, bypass=False):
             raise ValueError
         record = {
             "class": "RecordArray",
-            "contents": {k: form["content"] for k, form in forms.items()},
+            "fields": [k for k in forms.keys()],
+            "contents": [form["content"] for form in forms.values()],
             "form_key": quote("!invalid," + name),
         }
         if record_name is not None:
@@ -99,9 +100,10 @@ class BaseSchema:
         params.setdefault("metadata", {})
         self._form = {
             "class": "RecordArray",
+            "fields": base_form["fields"],
             "contents": base_form["contents"],
             "parameters": params,
-            "form_key": "",
+            "form_key": None,
         }
 
     @property
