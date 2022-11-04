@@ -56,7 +56,7 @@ def get_description():
 
 
 INSTALL_REQUIRES = [
-    "awkward>=2.0.0rc2",
+    "awkward>=2.0.0rc3",
     "uproot>=5.0.0rc6",
     "dask[array]",
     "dask-awkward>=2022.9a0",

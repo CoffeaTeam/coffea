@@ -18,10 +18,12 @@ class UUIDOpener:
 class BaseSourceMapping(Mapping):
     _debug = False
 
-    def __init__(self, fileopener, cache=None, access_log=None):
+    def __init__(self, fileopener, start, stop, cache=None, access_log=None):
         self._fileopener = fileopener
         self._cache = cache
         self._access_log = access_log
+        self._start = start
+        self._stop = stop
         self.setup()
 
     def setup(self):
@@ -70,7 +72,7 @@ class BaseSourceMapping(Mapping):
     def __getitem__(self, key):
         uuid, treepath, start, stop, nodes = self.interpret_key(key)
         if self._debug:
-            print("Gettting:", uuid, treepath, start, stop, nodes)
+            print("Gettting (", key, ") :", uuid, treepath, start, stop, nodes)
         stack = []
         skip = False
         for node in nodes:

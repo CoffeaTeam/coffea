@@ -64,6 +64,8 @@ class NanoEventsProcessor(processor.ProcessorABC):
                     pass
 
         dimuon = ak.combinations(events.Muon, 2)
+        print(events.Muon.behavior)
+        print(dimuon["0"].behavior)
         dimuon = dimuon["0"] + dimuon["1"]
 
         output["pt"].fill(dataset=dataset, pt=ak.flatten(muon_pt))

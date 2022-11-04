@@ -27,8 +27,10 @@ class PreloadedOpener(UUIDOpener):
 class PreloadedSourceMapping(BaseSourceMapping):
     _debug = False
 
-    def __init__(self, array_source, cache=None, access_log=None):
-        super(PreloadedSourceMapping, self).__init__(array_source, cache, access_log)
+    def __init__(self, array_source, start, stop, cache=None, access_log=None):
+        super(PreloadedSourceMapping, self).__init__(
+            array_source, start, stop, cache, access_log
+        )
 
     @classmethod
     def _extract_base_form(cls, column_source):
@@ -59,7 +61,8 @@ class PreloadedSourceMapping(BaseSourceMapping):
 
         return {
             "class": "RecordArray",
-            "contents": branch_forms,
+            "fields": [key for key in branch_forms.keys()],
+            "contents": [value for value in branch_forms.values()],
             "parameters": {"__doc__": "preloaded column source"},
             "form_key": "",
         }
@@ -80,7 +83,7 @@ class PreloadedSourceMapping(BaseSourceMapping):
         return columnhandle[start:stop]
 
     def __len__(self):
-        raise NotImplementedError
+        raise self._stop - self.start
 
     def __iter__(self):
         raise NotImplementedError
