@@ -46,7 +46,7 @@ import numbers
 import numpy
 import awkward
 import numba
-from awkward.util import deprecate
+from coffea.util import deprecate
 
 deprecate(
     RuntimeError(
