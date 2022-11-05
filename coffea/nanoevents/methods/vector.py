@@ -46,7 +46,16 @@ import numbers
 import numpy
 import awkward
 import numba
+from awkward.util import deprecate
 
+deprecate(
+        RuntimeError(
+            """nanoevents.methods.vector is deprecated will be replaced by the vector package,
+            there are minor differences, please vet your analysis code."""
+        ),
+        "v0.8.0",
+        "31 Dec 2022",
+    )
 
 @numba.vectorize(
     [
