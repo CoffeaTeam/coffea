@@ -48,8 +48,14 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx_automodapi.automodapi',
     'sphinx_automodapi.smart_resolver',
+    'sphinx_copybutton',
     # 'IPython.sphinxext.ipython_console_highlighting',
 ]
+
+# sphinx-copybutton configuration
+copybutton_prompt_text = r">>> |\.\.\. |\$ "
+copybutton_prompt_is_regexp = True
+copybutton_here_doc_delimiter = "EOF"
 
 numpydoc_show_class_members = False
 nbsphinx_execute = 'never'
