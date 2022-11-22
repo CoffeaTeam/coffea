@@ -94,22 +94,7 @@ class Weights:
         self._weight = self._weight * weight
         if self._storeIndividual:
             self._weights[name] = weight
-        if weightUp is not None:
-            weightUp = coffea.util._ensure_flat(weightUp, allow_missing=True)
-            if isinstance(weightUp, numpy.ma.MaskedArray):
-                weightUp = weightUp.filled(1.0)
-            if shift:
-                weightUp += weight
-            weightUp[weight != 0.0] /= weight[weight != 0.0]
-            self._modifiers[name + "Up"] = weightUp
-        if weightDown is not None:
-            weightDown = coffea.util._ensure_flat(weightDown, allow_missing=True)
-            if isinstance(weightDown, numpy.ma.MaskedArray):
-                weightDown = weightDown.filled(1.0)
-            if shift:
-                weightDown = weight - weightDown
-            weightDown[weight != 0.0] /= weight[weight != 0.0]
-            self._modifiers[name + "Down"] = weightDown
+        self.__add_variation(name, weight, weightUp, weightDown, shift)
         self._weightStats[name] = WeightStatistics(
             weight.sum(),
             (weight**2).sum(),
@@ -170,22 +155,8 @@ class Weights:
         for modifier, weightUp, weightDown in zip(
             modifierNames, weightsUp, weightsDown
         ):
-            if weightUp is not None:
-                weightUp = coffea.util._ensure_flat(weightUp, allow_missing=True)
-                if isinstance(weightUp, numpy.ma.MaskedArray):
-                    weightUp = weightUp.filled(1.0)
-                if shift:
-                    weightUp += weight
-                weightUp[weight != 0.0] /= weight[weight != 0.0]
-                self._modifiers[name + "_" + modifier + "Up"] = weightUp
-            if weightDown is not None:
-                weightDown = coffea.util._ensure_flat(weightDown, allow_missing=True)
-                if isinstance(weightDown, numpy.ma.MaskedArray):
-                    weightDown = weightDown.filled(1.0)
-                if shift:
-                    weightDown = weight - weightDown
-                weightDown[weight != 0.0] /= weight[weight != 0.0]
-                self._modifiers[name + "_" + modifier + "Down"] = weightDown
+            systName = f"{name}_{modifier}"
+            self.__add_variation(systName, weight, weightUp, weightDown, shift)
         self._weightStats[name] = WeightStatistics(
             weight.sum(),
             (weight**2).sum(),
@@ -193,6 +164,47 @@ class Weights:
             weight.max(),
             weight.size,
         )
+
+    def __add_variation(
+        self, name, weight, weightUp=None, weightDown=None, shift=False
+    ):
+        """Helper function to add a weight variation.
+
+        Parameters
+        ----------
+            name : str
+                name of systematic variation (just the name of the weight if only
+                one variation is added, or `name_syst` for multiple variations)
+            weight : numpy.ndarray
+                the nominal event weight associated with the correction
+            weightUp : numpy.ndarray, optional
+                weight with correction uncertainty shifted up (if available)
+            weightDown : numpy.ndarray, optional
+                weight with correction uncertainty shifted down. If ``weightUp`` is supplied, and
+                the correction uncertainty is symmetric, this can be set to None to auto-calculate
+                the down shift as ``1 / weightUp``.
+            shift : bool, optional
+                if True, interpret weightUp and weightDown as a realtive difference (additive) to the
+                nominal value
+
+        .. note:: ``weightUp`` and ``weightDown`` are assumed to be rvalue-like and may be modified in-place by this function
+        """
+        if weightUp is not None:
+            weightUp = coffea.util._ensure_flat(weightUp, allow_missing=True)
+            if isinstance(weightUp, numpy.ma.MaskedArray):
+                weightUp = weightUp.filled(1.0)
+            if shift:
+                weightUp += weight
+            weightUp[weight != 0.0] /= weight[weight != 0.0]
+            self._modifiers[name + "Up"] = weightUp
+        if weightDown is not None:
+            weightDown = coffea.util._ensure_flat(weightDown, allow_missing=True)
+            if isinstance(weightDown, numpy.ma.MaskedArray):
+                weightDown = weightDown.filled(1.0)
+            if shift:
+                weightDown = weight - weightDown
+            weightDown[weight != 0.0] /= weight[weight != 0.0]
+            self._modifiers[name + "Down"] = weightDown
 
     def weight(self, modifier=None):
         """Current event weight vector
