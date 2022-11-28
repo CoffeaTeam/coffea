@@ -53,6 +53,56 @@ def test_weights():
     assert np.all(np.abs(test_shift_down - (exp_down)) < 1e-6)
 
 
+def test_weights_multivariation():
+    from coffea.analysis_tools import Weights
+
+    counts, test_eta, test_pt = dummy_jagged_eta_pt()
+    scale_central = np.random.normal(loc=1.0, scale=0.01, size=counts.size)
+    scale_up = scale_central * 1.10
+    scale_down = scale_central * 0.95
+    scale_up_2 = scale_central * 1.2
+    scale_down_2 = scale_central * 0.90
+
+    weight = Weights(counts.size)
+    weight.add_multivariation(
+        "test",
+        scale_central,
+        modifierNames=["A", "B"],
+        weightsUp=[scale_up, scale_up_2],
+        weightsDown=[scale_down, scale_down_2],
+    )
+
+    var_names = weight.variations
+    expected_names = ["test_AUp", "test_ADown", "test_BUp", "test_BDown"]
+    for name in expected_names:
+        assert name in var_names
+
+    test_central = weight.weight()
+    exp_weight = scale_central
+
+    assert np.all(np.abs(test_central - (exp_weight)) < 1e-6)
+
+    test_up = weight.weight("test_AUp")
+    exp_up = scale_central * 1.10
+
+    assert np.all(np.abs(test_up - (exp_up)) < 1e-6)
+
+    test_down = weight.weight("test_ADown")
+    exp_down = scale_central * 0.95
+
+    assert np.all(np.abs(test_down - (exp_down)) < 1e-6)
+
+    test_up_2 = weight.weight("test_BUp")
+    exp_up = scale_central * 1.2
+
+    assert np.all(np.abs(test_up_2 - (exp_up)) < 1e-6)
+
+    test_down_2 = weight.weight("test_BDown")
+    exp_down = scale_central * 0.90
+
+    assert np.all(np.abs(test_down_2 - (exp_down)) < 1e-6)
+
+
 def test_weights_partial():
     from coffea.analysis_tools import Weights
 
