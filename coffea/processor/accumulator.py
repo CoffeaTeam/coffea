@@ -94,7 +94,9 @@ def accumulate(
         if accum is None:
             accum = next(gen)
             # we want to produce a new object so that the input is not mutated
-            accum = add(accum, next(gen))
+            # skip this for histograms since it is memory intensive to copy them
+            if not isinstance(accum, hist.hist.Hist):
+                accum = add(accum, next(gen))
         while True:
             # subsequent additions can happen in-place, which may be more performant
             accum = iadd(accum, next(gen))
