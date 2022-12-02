@@ -4,13 +4,17 @@ from coffea.nanoevents import NanoEventsFactory, DelphesSchema
 import awkward as ak
 
 
-@pytest.fixture(scope="module")
-def events():
+def _events():
     path = os.path.abspath("tests/samples/delphes.root")
     factory = NanoEventsFactory.from_root(
         path, treepath="Delphes", schemaclass=DelphesSchema
     )
     return factory.events()
+
+
+@pytest.fixture(scope="module")
+def events():
+    return _events()
 
 
 def test_listify(events):
