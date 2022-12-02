@@ -1,4 +1,5 @@
 import copy
+import hist
 import operator
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
