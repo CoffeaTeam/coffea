@@ -1,5 +1,6 @@
 from coffea.nanoevents import transforms
 from coffea.nanoevents.util import quote, concat
+import json
 
 
 def listarray_form(content, offsets):
@@ -50,7 +51,8 @@ def zip_forms(forms, name, record_name=None, offsets=None, bypass=False):
     elif all(form["class"] == "NumpyArray" for form in forms.values()):
         record = {
             "class": "RecordArray",
-            "contents": {k: form for k, form in forms.items()},
+            "fields": [key for key in forms.keys()],
+            "contents": [value for value in forms.values()],
             "form_key": quote("!invalid," + name),
         }
         if record_name is not None:
@@ -60,7 +62,8 @@ def zip_forms(forms, name, record_name=None, offsets=None, bypass=False):
     elif all("class" in form for form in forms.values()) and not bypass:
         record = {
             "class": "RecordArray",
-            "contents": {k: form for k, form in forms.items()},
+            "fields": [key for key in forms.keys()],
+            "contents": [value for value in forms.values()],
             "form_key": quote("!invalid," + name),
         }
         if record_name is not None:
@@ -105,6 +108,18 @@ class BaseSchema:
             "parameters": params,
             "form_key": None,
         }
+
+    @classmethod
+    def apply_to_dask(cls, dask_record):
+        from coffea.nanoevents.methods import base
+        import dask_awkward
+
+        dask_record = dask_awkward.with_name(
+            dask_record, "NanoEvents", behavior=base.behavior
+        )
+        return dask_awkward.with_parameter(dask_record, "metadata", {}), cls(
+            json.loads(dask_record.form.to_json())
+        )
 
     @property
     def form(self):

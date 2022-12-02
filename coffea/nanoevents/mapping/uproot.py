@@ -47,15 +47,14 @@ def _lazify_form(form, prefix, docstr=None):
         if parameters:
             form["parameters"] = parameters
     elif form["class"] == "RecordArray":
-        for field in list(form["contents"]):
+        for index, field in enumerate(form["fields"]):
             if "," in field or "!" in field:
                 raise CannotBeNanoEvents(
                     f"A subform contains a field with invalid characters: {field}"
                 )
-            print(form["contents"])
-            print(form["fields"])
-            form["contents"][field] = _lazify_form(
-                form["contents"][field], prefix + f",{field},!item"
+
+            form["contents"][index] = _lazify_form(
+                form["contents"][index], prefix + f",{field},!item"
             )
         if parameters:
             form["parameters"] = parameters
@@ -128,7 +127,6 @@ class UprootSourceMapping(BaseSourceMapping):
                 )
                 continue
             branch_forms[key] = form
-
         return {
             "class": "RecordArray",
             "contents": [item for item in branch_forms.values()],

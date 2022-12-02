@@ -1,6 +1,7 @@
 import warnings
 from coffea.nanoevents import transforms
 from coffea.nanoevents.schemas.base import BaseSchema, zip_forms
+import json
 
 
 class NanoAODSchema(BaseSchema):
@@ -178,6 +179,19 @@ class NanoAODSchema(BaseSchema):
     def v5(cls, base_form):
         """Build the NanoEvents assuming NanoAODv5"""
         return cls(base_form, version="5")
+
+    @classmethod
+    def apply_to_dask(cls, dask_array, version="latest"):
+        import dask_awkward
+
+        dask_array, _ = super().apply_to_dask(dask_array)
+        schema_instance = cls(json.loads(dask_array.form.to_json()), version)
+
+        meta = dask_awkward.typetracer_from_form(schema_instance._form)
+        dask_array = dask_awkward.map_partitions(lambda x: x, dask_array, meta=meta)
+        dask_array.layout.behavior = schema_instance.behavior
+
+        return dask_array, schema_instance
 
     def _build_collections(self, field_names, input_contents):
         branch_forms = {k: v for k, v in zip(field_names, input_contents)}
