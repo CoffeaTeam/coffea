@@ -81,10 +81,12 @@ def nest_jagged_forms(parent, child, counts_name, name):
         raise ValueError
     if not child["class"].startswith("ListOffsetArray"):
         raise ValueError
-    counts = parent["content"]["contents"][counts_name]
+    counts_idx = parent["content"]["fields"].index(counts_name)
+    counts = parent["content"]["contents"][counts_idx]
     offsets = transforms.counts2offsets_form(counts)
     inner = listarray_form(child["content"], offsets)
-    parent["content"]["contents"][name] = inner
+    parent["content"]["fields"].append(name)
+    parent["content"]["contents"].append(inner)
 
 
 class BaseSchema:
