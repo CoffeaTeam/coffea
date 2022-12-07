@@ -43,7 +43,9 @@ def test_collection_exists(events, collection):
 )
 def test_lorentzvector_behavior(collection, arr_type, events):
     assert ak.type(events[collection])
-    assert ak.type(events[collection]).type.type.__str__().startswith(arr_type)
+    assert (
+        events[collection].layout.content.parameters["__record__"].startswith(arr_type)
+    )
 
 
 @pytest.mark.parametrize(
@@ -56,11 +58,16 @@ def test_lorentzvector_behavior(collection, arr_type, events):
 def test_nested_collection(collection, subcollection, arr_type, element, events):
     assert ak.type(events[collection][subcollection])
     assert ak.type(events[collection][subcollection + "Counts"])
-    assert (
-        ak.type(events[collection][subcollection])
-        .type.type.type.__str__()
-        .startswith(arr_type)
-    )
+    if subcollection == "subjets":
+        assert (
+            events[collection][subcollection]
+            .layout.content.content.parameters["__record__"]
+            .startswith(arr_type)
+        )
+    if subcollection == "hitPattern":
+        assert ak.type(
+            events[collection][subcollection].layout.content.content
+        ).primitive.startswith(arr_type)
     if element is None:
         assert ak.all(
             events[collection][subcollection + "Counts"]

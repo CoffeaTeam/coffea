@@ -36,7 +36,12 @@ class TreeMakerSchema(BaseSchema):
 
     def __init__(self, base_form):
         super().__init__(base_form)
-        self._form["contents"] = self._build_collections(self._form["contents"])
+        old_style_form = {
+            k: v for k, v in zip(self._form["fields"], self._form["contents"])
+        }
+        output = self._build_collections(old_style_form)
+        self._form["fields"] = [k for k in output.keys()]
+        self._form["contents"] = [v for v in output.values()]
 
     def _build_collections(self, branch_forms):
         # Turn any special classes into the appropriate awkward form
@@ -142,10 +147,11 @@ class TreeMakerSchema(BaseSchema):
                         f"{cname} isn't a jagged array, not sure what to do"
                     )
                 for item in items:
-                    itemname = item[len(cname) + 1 :]
-                    collection["content"]["contents"][itemname] = branch_forms.pop(
-                        item
-                    )["content"]
+                    Itemname = item[len(cname) + 1 :]
+                    collection["content"]["fields"].append(Itemname)
+                    collection["content"]["contents"].append(
+                        branch_forms.pop(item)["content"]
+                    )
 
         for sub in subcollections:
             nest_jagged_forms(
