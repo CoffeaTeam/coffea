@@ -1,4 +1,4 @@
-from coffea.nanoevents.schemas.schema import auto_schema
+from coffea.nanoevents.schemas.auto import auto_schema
 
 
 def test_auto_empty():
