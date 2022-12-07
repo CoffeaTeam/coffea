@@ -89,7 +89,6 @@ class BaseSourceMapping(Mapping):
                 handle = self.get_column_handle(
                     self._column_source(uuid, treepath), handle_name
                 )
-                print(handle_name, handle)
                 stack.append(self.extract_column(handle, start, stop))
             elif node.startswith("!"):
                 tname = node[1:]

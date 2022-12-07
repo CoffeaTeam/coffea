@@ -19,8 +19,8 @@ class lookup_base(object):
             )
 
         def getfunction(args, **kwargs):
-            if type(args) is not list:
-                args = [args]
+            if not isinstance(args, (list, tuple)):
+                args = (args,)
             if all(
                 isinstance(
                     x, (awkward.contents.NumpyArray, awkward.contents.EmptyArray)
@@ -28,8 +28,8 @@ class lookup_base(object):
                 or not isinstance(x, (awkward.contents.Content))
                 for x in args
             ):
-                nplike = awkward.nplikes.nplike_of(*args)
-                if not isinstance(nplike, awkward.nplikes.Numpy):
+                nplike = awkward._nplikes.nplike_of(*args)
+                if not isinstance(nplike, awkward._nplikes.Numpy):
                     raise NotImplementedError(
                         "support for cupy/jax/etc. numpy extensions"
                     )
