@@ -18,7 +18,8 @@ def _build_record_array(
     }
     record = {
         "class": "RecordArray",
-        "contents": items,
+        "contents": items.values(),
+        "fields": items.keys(),
         "form_key": urllib.parse.quote("!invalid," + name, safe=""),
         "parameters": {"__record__": record_name},
     }
@@ -50,7 +51,10 @@ class auto_schema(BaseSchema):
         super().__init__(base_form)
 
         # Get the collection names - anything with a common name before the "_".
-        contents = self._form["contents"]
+        contents = {
+            field: content
+            for field, content in zip(self._form["fields"], self._form["contents"])
+        }
         collections = set(k.split("_")[0] for k in contents if "_" in k)
 
         output = {}
@@ -98,7 +102,9 @@ class auto_schema(BaseSchema):
         for item_name in single_items:
             output[item_name] = contents[item_name]
 
-        self._form["contents"] = output
+        self._form["fields"], self._form["contents"] = [k for k in output.keys()], [
+            v for v in output.values()
+        ]
 
     @property
     def behavior(self):
