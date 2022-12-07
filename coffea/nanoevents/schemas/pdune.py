@@ -34,7 +34,12 @@ class PDUNESchema(BaseSchema):
     def __init__(self, base_form):
         super().__init__(base_form)
         # print(self.branch_behavior_dict)
-        self._form["contents"] = self._build_collections(self._form["contents"])
+        old_style_contents = {
+            k: v for k, v in zip(self._form["fields"], self._form["contents"])
+        }
+        output = self._build_collections(old_style_contents)
+        self._form["fields"] = [k for k in output.keys()]
+        self._form["contents"] = [v for v in output.values()]
 
     # build a dictionary of hierarchy i.e.
     # dict["RecoBeam"]["start"]["x/y/z"]=form
