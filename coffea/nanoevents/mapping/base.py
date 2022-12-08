@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from cachetools import LRUCache
 from collections.abc import Mapping
+import awkward
 import numpy
 from coffea.nanoevents import transforms
 from coffea.nanoevents.util import key_to_tuple, tuple_to_key
@@ -79,6 +80,9 @@ class BaseSourceMapping(Mapping):
             if skip:
                 skip = False
                 continue
+            elif node[0] == "@":
+                skip = True
+                continue
             elif node == "!skip":
                 skip = True
                 continue
@@ -103,7 +107,7 @@ class BaseSourceMapping(Mapping):
             raise RuntimeError(f"Syntax error in form key {nodes}")
         out = stack.pop()
         try:
-            out = numpy.array(out)
+            out = numpy.array(awkward.Array(out))
         except ValueError:
             if self._debug:
                 print(out)

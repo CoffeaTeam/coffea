@@ -192,9 +192,12 @@ class DelphesSchema(BaseSchema):
             pass
         else:
             pass
-        self._form["fields"], self._form["contents"] = self._build_collections(
-            self._form["fields"], self._form["contents"]
-        )
+        old_style_form = {
+            k: v for k, v in zip(self._form["fields"], self._form["contents"])
+        }
+        output = self._build_collections(old_style_form)
+        self._form["fields"] = [k for k in output.keys()]
+        self._form["contents"] = [v for v in output.values()]
         self._form["parameters"]["metadata"]["version"] = self._version
 
     @classmethod
@@ -206,19 +209,24 @@ class DelphesSchema(BaseSchema):
         """
         return cls(base_form, version="1")
 
-    def _build_collections(self, branch_fields, branch_forms):
-        zipped_branch_forms = {k: v for k, v in zip(branch_fields, branch_forms)}
-
+    def _build_collections(self, branch_forms):
         def _tlorentz_vectorize(objname, form):
             # first handle RecordArray
-            if {"fE", "fP"} == form.get("fields", []):
-                print(form)
+            if {
+                "@instance_version",
+                "@num_bytes",
+                "@fUniqueID",
+                "@fBits",
+                "@pidf",
+                "fE",
+                "fP",
+            } == set(form.get("fields", [])):
                 return zip_forms(
                     {
-                        "x": form["contents"][0]["contents"][0],
-                        "y": form["contents"][0]["contents"][1],
-                        "z": form["contents"][0]["contents"][2],
-                        "t": form["contents"][1],
+                        "x": form["contents"][5]["contents"][0],
+                        "y": form["contents"][5]["contents"][1],
+                        "z": form["contents"][5]["contents"][2],
+                        "t": form["contents"][6],
                     },
                     objname,
                     "LorentzVector",
@@ -232,30 +240,30 @@ class DelphesSchema(BaseSchema):
             return form
 
         # preprocess lorentz vectors properly (and recursively)
-        for objname, form in zipped_branch_forms.items():
-            zipped_branch_forms[objname] = _tlorentz_vectorize(objname, form)
+        for objname, form in branch_forms.items():
+            branch_forms[objname] = _tlorentz_vectorize(objname, form)
 
         # parse into high-level records (collections, list collections, and singletons)
-        collections = set(k.split("/")[0] for k in zipped_branch_forms)
+        collections = set(k.split("/")[0] for k in branch_forms)
         collections -= set(k for k in collections if k.endswith("_size"))
 
         # Create offsets virtual arrays
         for name in collections:
-            if f"{name}_size" in zipped_branch_forms:
-                zipped_branch_forms[f"o{name}"] = transforms.counts2offsets_form(
-                    zipped_branch_forms[f"{name}_size"]
+            if f"{name}_size" in branch_forms:
+                branch_forms[f"o{name}"] = transforms.counts2offsets_form(
+                    branch_forms[f"{name}_size"]
                 )
 
         output = {}
         for name in collections:
-            output[f"{name}.offsets"] = zipped_branch_forms[f"o{name}"]
+            output[f"{name}.offsets"] = branch_forms[f"o{name}"]
             mixin = self.mixins.get(name, "NanoCollection")
 
             # Every delphes collection is a list
-            offsets = zipped_branch_forms["o" + name]
+            offsets = branch_forms["o" + name]
             content = {
-                k[2 * len(name) + 2 :]: zipped_branch_forms[k]
-                for k in zipped_branch_forms
+                k[2 * len(name) + 2 :]: branch_forms[k]
+                for k in branch_forms
                 if k.startswith(name + "/" + name)
             }
             output[name] = zip_forms(content, name, record_name=mixin, offsets=offsets)
@@ -263,7 +271,6 @@ class DelphesSchema(BaseSchema):
             # update docstrings as needed
             # NB: must be before flattening for easier logic
             for index, parameter in enumerate(output[name]["content"]["fields"]):
-                print(output[name]["content"]["contents"][index])
                 if "parameters" not in output[name]["content"]["contents"][index]:
                     continue
                 output[name]["content"]["contents"][index]["parameters"][
@@ -276,10 +283,10 @@ class DelphesSchema(BaseSchema):
                 )
 
             # handle branches named like [4] and [5]
-            output[name]["content"]["fields"] = {
+            output[name]["content"]["fields"] = [
                 k.replace("[", "_").replace("]", "")
                 for k in output[name]["content"]["fields"]
-            }
+            ]
             output[name]["content"]["parameters"].update(
                 {
                     "__doc__": offsets["parameters"]["__doc__"],
@@ -292,7 +299,7 @@ class DelphesSchema(BaseSchema):
                 # upwards, effectively hiding one nested dimension
                 output[name] = output[name]["content"]
 
-        return output.keys(), output.values()
+        return output
 
     @property
     def behavior(self):
