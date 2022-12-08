@@ -80,7 +80,7 @@ INSTALL_REQUIRES = [
     'dataclasses;python_version<"3.7"',
 ]
 EXTRAS_REQUIRE = {}
-EXTRAS_REQUIRE["spark"] = ["ipywidgets", "pyspark>=2.4.1,<3.0.0", "jinja2"]
+EXTRAS_REQUIRE["spark"] = ["ipywidgets", "pyspark>=3.3.0", "jinja2"]
 EXTRAS_REQUIRE["parsl"] = ["parsl>=1.1"]
 EXTRAS_REQUIRE["dask"] = [
     "dask[dataframe]>=2.6.0",
