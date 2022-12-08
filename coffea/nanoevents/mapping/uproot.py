@@ -148,7 +148,10 @@ class UprootSourceMapping(BaseSourceMapping):
 
     def extract_column(self, columnhandle, start, stop):
         # make sure uproot is single-core since our calling context might not be
+        interp = columnhandle.interpretation
+        interp._forth = False
         return columnhandle.array(
+            interp,
             entry_start=start,
             entry_stop=stop,
             decompression_executor=uproot.source.futures.TrivialExecutor(),

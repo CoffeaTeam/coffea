@@ -1,6 +1,7 @@
 """Mixins for the ATLAS PHYSLITE schema - work in progress."""
 import awkward
 import numpy
+from numbers import Number
 from coffea.nanoevents.methods import base, vector
 
 
@@ -63,20 +64,21 @@ def _element_link_multiple(events, obj, link_field, with_name=None):
 
 
 def _get_target_offsets(offsets, event_index):
-    if isinstance(event_index, int):
+    if isinstance(event_index, Number):
         return offsets[event_index]
 
-    def descend(layout, depth):
+    def descend(layout, depth, **kwargs):
         if layout.purelist_depth == 1:
-            return lambda: awkward.layout.NumpyArray(offsets)[layout]
+            return awkward.contents.NumpyArray(offsets)[layout]
 
-    return awkward._util.recursively_apply(event_index.layout, descend)
+    return awkward.transform(descend, event_index)
 
 
 def _get_global_index(target, eventindex, index):
-    load_column = awkward.materialized(
-        target[target.fields[0]]
-    )  # need to load one column to extract the offsets
+    load_column = target[
+        target.fields[0]
+    ]  # awkward is eager-mode now (will need to dask this)
+    print("<><><><>", load_column)
     target_offsets = _get_target_offsets(load_column.layout.offsets, eventindex)
     return target_offsets + index
 
