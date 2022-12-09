@@ -36,12 +36,7 @@ class CorrectedMETFactory(object):
 
         self.name_map = name_map
 
-    def build(self, MET, corrected_jets, lazy_cache):
-        if lazy_cache is None:
-            raise Exception(
-                "CorrectedMETFactory requires a awkward-array cache to function correctly."
-            )
-        lazy_cache = awkward._util.MappingProxy.maybe_wrap(lazy_cache)
+    def build(self, MET, corrected_jets):
         if not isinstance(MET, awkward.highlevel.Array) or not isinstance(
             corrected_jets, awkward.highlevel.Array
         ):
@@ -49,35 +44,11 @@ class CorrectedMETFactory(object):
                 "'MET' and 'corrected_jets' must be an awkward array of some kind!"
             )
 
-        length = len(MET)
-        form = awkward.forms.RecordForm(
-            {
-                "pt": MET[self.name_map["METpt"]].layout.form,
-                "phi": MET[self.name_map["METphi"]].layout.form,
-            },
-        )
-
         def make_variant(*args):
             variant = copy(MET)
-            corrected_met = awkward.virtual(
-                corrected_polar_met,
-                args=args,
-                length=length,
-                form=form,
-                cache=lazy_cache,
-            )
-            variant[self.name_map["METpt"]] = awkward.virtual(
-                lambda: awkward.materialized(corrected_met.pt),
-                length=length,
-                form=form.contents["pt"],
-                cache=lazy_cache,
-            )
-            variant[self.name_map["METphi"]] = awkward.virtual(
-                lambda: awkward.materialized(corrected_met.phi),
-                length=length,
-                form=form.contents["phi"],
-                cache=lazy_cache,
-            )
+            corrected_met = corrected_polar_met(*args)
+            variant[self.name_map["METpt"]] = corrected_met.pt
+            variant[self.name_map["METphi"]] = corrected_met.phi
             return variant
 
         def lazy_variant(unc, metpt, metphi, jetpt, jetphi, jetptraw):
@@ -148,18 +119,13 @@ class CorrectedMETFactory(object):
         for unc in filter(
             lambda x: x.startswith(("JER", "JES")), awkward.fields(corrected_jets)
         ):
-            out_dict[unc] = awkward.virtual(
-                lazy_variant,
-                args=(
-                    unc,
-                    self.name_map["METpt"],
-                    self.name_map["METphi"],
-                    self.name_map["JetPt"],
-                    self.name_map["JetPhi"],
-                    self.name_map["ptRaw"],
-                ),
-                length=length,
-                cache={},
+            out_dict[unc] = lazy_variant(
+                unc,
+                self.name_map["METpt"],
+                self.name_map["METphi"],
+                self.name_map["JetPt"],
+                self.name_map["JetPhi"],
+                self.name_map["ptRaw"],
             )
 
         out_parms = out.layout.parameters

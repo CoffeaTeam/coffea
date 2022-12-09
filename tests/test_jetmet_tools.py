@@ -1,11 +1,11 @@
 from __future__ import print_function
 
-import cachetools
 import awkward as ak
 from coffea.util import numpy as np
 
 import time
 import pyinstrument
+import pytest
 
 from dummy_distributions import dummy_jagged_eta_pt
 
@@ -568,8 +568,6 @@ def test_corrected_jets_factory():
     name_map["massRaw"] = "mass_raw"
     name_map["Rho"] = "rho"
 
-    jec_cache = cachetools.Cache(np.inf)
-
     print(name_map)
 
     tic = time.time()
@@ -581,7 +579,7 @@ def test_corrected_jets_factory():
     tic = time.time()
     prof = pyinstrument.Profiler()
     prof.start()
-    corrected_jets = jet_factory.build(jets, lazy_cache=jec_cache)
+    corrected_jets = jet_factory.build(jets)
     prof.stop()
     toc = time.time()
 
@@ -626,13 +624,12 @@ def test_corrected_jets_factory():
         Rho=jets["rho"],
         JetPt=jets["pt_raw"],
         form=scalar_form,
-        lazy_cache=jec_cache,
     )
     resosf = JetResolutionScaleFactor(
         **{name: evaluator[name] for name in jec_stack_names[5:6]}
     )
     jets["jet_energy_resolution_scale_factor"] = resosf.getScaleFactor(
-        JetEta=jets["eta"], lazy_cache=jec_cache
+        JetEta=jets["eta"]
     )
 
     # Filter out the non-deterministic (no gen pt) jets
@@ -696,7 +693,7 @@ def test_corrected_jets_factory():
     tic = time.time()
     # prof = pyinstrument.Profiler()
     # prof.start()
-    corrected_met = met_factory.build(met, corrected_jets, lazy_cache=jec_cache)
+    corrected_met = met_factory.build(met, corrected_jets)
     # prof.stop()
     toc = time.time()
 
@@ -721,6 +718,7 @@ def test_corrected_jets_factory():
     print(prof.output_text(unicode=True, color=True, show_all=True))
 
 
+@pytest.mark.skip(reason="this test may not make sense with dask awkward")
 def test_factory_lifecycle():
     import os
     from coffea.jetmet_tools import CorrectedJetsFactory, CorrectedMETFactory, JECStack
@@ -755,7 +753,6 @@ def test_factory_lifecycle():
     met_factory = CorrectedMETFactory(name_map)
 
     from coffea.nanoevents.mapping import ArrayLifecycleMapping
-    import weakref
     import threading
 
     array_log = ArrayLifecycleMapping()
@@ -774,10 +771,8 @@ def test_factory_lifecycle():
             ak.fill_none(jets.matched_gen.pt, 0.0), np.float32
         )
         jets["rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
-        jec_cache = cachetools.Cache(np.inf)
-        weakref.finalize(jec_cache, jec_finalized.set)
-        corrected_jets = jet_factory.build(jets, lazy_cache=jec_cache)
-        corrected_met = met_factory.build(met, corrected_jets, lazy_cache=jec_cache)
+        corrected_jets = jet_factory.build(jets)
+        corrected_met = met_factory.build(met, corrected_jets)
         print(corrected_met.pt_orig)
         print(corrected_met.pt)
         for unc in jet_factory.uncertainties() + met_factory.uncertainties():
