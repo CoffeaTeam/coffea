@@ -3,9 +3,6 @@ from packaging import version
 import pytest
 import sys
 
-if version.parse(sys.version.split()[0]) >= version.parse("3.8"):
-    pytest.skip("pyspark not yet functional in python >=3.8", allow_module_level=True)
-
 
 def test_spark_imports():
     pytest.importorskip("pyspark", minversion="2.4.1")
