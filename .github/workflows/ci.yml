@@ -79,8 +79,6 @@ jobs:
         python -m pip install -q -e '.[dev]'
         python -m pip list
     - name: Test with pytest
-      env:
-        ARROW_PRE_0_15_IPC_FORMAT: 1
       run: |
         pytest --cov-report=xml --cov=coffea tests
     - name: Upload codecov

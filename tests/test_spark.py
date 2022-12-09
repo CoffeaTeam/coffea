@@ -2,6 +2,8 @@ import pytest
 
 
 def test_spark_imports():
+    pytest.importorskip("pyspark", minversion="3.3.0")
+
     from coffea.processor.spark.detail import (
         _spark_initialize,
         _spark_stop,
@@ -13,6 +15,7 @@ def test_spark_imports():
 
 @pytest.mark.skip(reason="pyspark executor work currently in progress")
 def test_spark_executor():
+    pyspark = pytest.importorskip("pyspark", minversion="3.3.0")
     from pyarrow.util import guid
 
     from coffea.processor.spark.detail import (
@@ -110,6 +113,8 @@ def test_spark_executor():
 
 
 def test_spark_hist_adders():
+    pytest.importorskip("pyspark", minversion="3.3.0")
+
     import pandas as pd
     import pickle as pkl
     import lz4.frame as lz4f
