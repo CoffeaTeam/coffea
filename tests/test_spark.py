@@ -1,7 +1,4 @@
-from packaging import version
-
 import pytest
-import sys
 
 
 def test_spark_imports():
