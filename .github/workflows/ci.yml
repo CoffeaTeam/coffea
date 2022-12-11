@@ -55,7 +55,6 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Set up JDK ${{ matrix.java-distribution }}/${{ matrix.java-version }}
-      if: matrix.os != 'windows-latest'
       uses: actions/setup-java@v3
       with:
         java-version: ${{ matrix.java-version }}
@@ -65,19 +64,27 @@ jobs:
       run: |
         echo "INSTALL_EXTRAS='[dev,parsl,dask,servicex]'" >> $GITHUB_ENV
 
-    - name: Install dependencies (Linux/MacOS)
-      if: matrix.os != 'windows-latest'
+    - name: Install dependencies (Linux)
+      if: matrix.os == 'ubuntu-latest'
       run: |
         python -m pip install --upgrade pip setuptools wheel
         python -m pip install -q -e '.[dev,parsl,dask,spark]'
+        python -m pip list
+        java -version
+    - name: Install dependencies (MacOS)
+      if: matrix.os == 'macOS-latest'
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        python -m pip install -q -e '.[dev,dask,spark]'
         python -m pip list
         java -version
     - name: Install dependencies (Windows)
       if: matrix.os == 'windows-latest'
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        python -m pip install -q -e '.[dev]'
+        python -m pip install -q -e '.[dev,dask]'
         python -m pip list
+        java -version
     - name: Test with pytest
       run: |
         pytest --cov-report=xml --cov=coffea tests
