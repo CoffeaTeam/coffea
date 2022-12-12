@@ -78,7 +78,7 @@ class PreloadedSourceMapping(BaseSourceMapping):
     def get_column_handle(self, columnsource, name):
         return columnsource[name]
 
-    def extract_column(self, columnhandle, start, stop):
+    def extract_column(self, columnhandle, start, stop, **kwargs):
         # make sure uproot is single-core since our calling context might not be
         return columnhandle[start:stop]
 

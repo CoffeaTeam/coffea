@@ -200,7 +200,7 @@ class ParquetSourceMapping(BaseSourceMapping):
     def get_column_handle(self, columnsource, name):
         return ParquetSourceMapping.UprootLikeShim(columnsource, name)
 
-    def extract_column(self, columnhandle, start, stop):
+    def extract_column(self, columnhandle, start, stop, **kwargs):
         return columnhandle.array(entry_start=start, entry_stop=stop)
 
     def __len__(self):
