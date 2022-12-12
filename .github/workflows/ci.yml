@@ -42,7 +42,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
-        java-version: [1.8]
+        java-version: [8]
         java-distribution: ["corretto"]
         python-version: ["3.7", "3.10"]
     name: test coffea (${{ matrix.os }}) - python ${{ matrix.python-version }}, JDK${{ matrix.java-version }}
