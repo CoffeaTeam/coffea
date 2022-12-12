@@ -64,6 +64,7 @@ class NanoEventsFactory:
         uproot_options={},
         access_log=None,
         iteritems_options={},
+        use_ak_forth=False,
     ):
         """Quickly build NanoEvents from a root file
 
@@ -92,6 +93,8 @@ class NanoEventsFactory:
                 Any options to pass to ``uproot.open``
             access_log : list, optional
                 Pass a list instance to record which branches were lazily accessed by this instance
+            use_ak_forth:
+                Toggle using awkward_forth to interpret branches in root file.
         """
         if isinstance(file, str):
             tree = uproot.open({file: None}, **uproot_options)[treepath]
@@ -122,6 +125,7 @@ class NanoEventsFactory:
             entry_stop,
             cache={},
             access_log=access_log,
+            use_ak_forth=use_ak_forth,
         )
         mapping.preload_column_source(partition_key[0], partition_key[1], tree)
 

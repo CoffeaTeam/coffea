@@ -76,9 +76,11 @@ class UprootSourceMapping(BaseSourceMapping):
     _debug = False
     _fix_awkward_form_of_iter = False
 
-    def __init__(self, fileopener, start, stop, cache=None, access_log=None):
+    def __init__(
+        self, fileopener, start, stop, cache=None, access_log=None, use_ak_forth=False
+    ):
         super(UprootSourceMapping, self).__init__(
-            fileopener, start, stop, cache, access_log
+            fileopener, start, stop, cache, access_log, use_ak_forth
         )
 
     @classmethod
@@ -146,10 +148,10 @@ class UprootSourceMapping(BaseSourceMapping):
     def get_column_handle(self, columnsource, name):
         return columnsource[name]
 
-    def extract_column(self, columnhandle, start, stop):
+    def extract_column(self, columnhandle, start, stop, use_ak_forth=False):
         # make sure uproot is single-core since our calling context might not be
         interp = columnhandle.interpretation
-        interp._forth = False
+        interp._forth = use_ak_forth
         return columnhandle.array(
             interp,
             entry_start=start,
