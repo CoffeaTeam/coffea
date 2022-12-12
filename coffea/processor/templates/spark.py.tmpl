@@ -1,7 +1,7 @@
 global coffea_udf
 
-@fn.pandas_udf(BinaryType(), fn.PandasUDFType.SCALAR)
-def coffea_udf(dataset, {% for col in cols %}{{col}}{{ "," if not loop.last }}{% endfor %}):
+@fn.pandas_udf(BinaryType())
+def coffea_udf(dataset: pd.Series, {% for col in cols %}{{col: pd.Series}}{{ "," if not loop.last }}{% endfor %}):
     global processor_instance, lz4_clevel, nano_schema
 
     columns = [{% for col in cols %}awkward.Array({{col}}){{ "," if not loop.last }}{% endfor %}]

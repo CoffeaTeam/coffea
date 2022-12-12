@@ -1,8 +1,8 @@
-import awkward
-import numpy
 import warnings
 from functools import partial
 
+import awkward
+import numpy
 
 _stack_parts = ["jec", "junc", "jer", "jersf"]
 _MIN_JET_ENERGY = numpy.array(1e-2, dtype=numpy.float32)
@@ -94,7 +94,7 @@ def jer_smear(
     return smearfact
 
 
-class CorrectedJetsFactory(object):
+class CorrectedJetsFactory:
     def __init__(self, name_map, jec_stack):
         # from PhysicsTools/PatUtils/interface/SmearedJetProducerT.h#L283
         self.forceStochastic = False
@@ -141,7 +141,7 @@ class CorrectedJetsFactory(object):
     def uncertainties(self):
         out = ["JER"] if self.jec_stack.jer is not None else []
         if self.jec_stack.junc is not None:
-            out.extend(["JES_{0}".format(unc) for unc in self.jec_stack.junc.levels])
+            out.extend([f"JES_{unc}" for unc in self.jec_stack.junc.levels])
         return out
 
     def build(self, jets):

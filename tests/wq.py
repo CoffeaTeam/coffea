@@ -5,7 +5,7 @@ try:
 
     work_queue_port = 9123
 except ImportError:
-    print("work_queue is not installed. Omiting test.")
+    print("work_queue is not installed. Omitting test.")
     sys.exit(0)
 
 
@@ -44,7 +44,7 @@ def work_queue_example(environment_file):
     }
 
     workers = wq.Factory(
-        batch_type="local", manager_host_port="localhost:{}".format(work_queue_port)
+        batch_type="local", manager_host_port=f"localhost:{work_queue_port}"
     )
     workers.max_workers = 1
     workers.min_workers = 1

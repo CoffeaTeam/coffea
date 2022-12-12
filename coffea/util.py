@@ -1,31 +1,34 @@
 """Utility functions
 
 """
-from typing import List, Optional, Any
-import awkward
 import hashlib
-import numpy
+from typing import Any, List, Optional
+
+import awkward
 import numba
-import coffea
+import numpy
 from rich.progress import (
-    Progress,
     BarColumn,
+    Column,
+    Progress,
+    ProgressColumn,
+    Text,
     TextColumn,
     TimeElapsedColumn,
     TimeRemainingColumn,
-    Column,
-    ProgressColumn,
-    Text,
 )
+
+import coffea
 
 ak = awkward
 np = numpy
 nb = numba
 
-import lz4.frame
-import cloudpickle
 import warnings
 from functools import partial
+
+import cloudpickle
+import lz4.frame
 
 
 def load(filename):
@@ -49,7 +52,7 @@ def _hex(string):
     try:
         return string.hex()
     except AttributeError:
-        return "".join("{:02x}".format(ord(c)) for c in string)
+        return "".join(f"{ord(c):02x}" for c in string)
 
 
 def _ascii(maybebytes):
@@ -146,9 +149,9 @@ def deprecate(exception, version, date=None):
             date = ""
         else:
             date = " (target date: " + date + ")"
-        message = """In coffea version {0}{1}, this will be an error.
+        message = """In coffea version {}{}, this will be an error.
 (Set coffea.deprecations_as_errors = True to get a stack trace now.)
-{2}: {3}""".format(
+{}: {}""".format(
             version, date, type(exception).__name__, str(exception)
         )
         warnings.warn(message, FutureWarning)

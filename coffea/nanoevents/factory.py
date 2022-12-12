@@ -3,10 +3,11 @@ import pathlib
 import weakref
 from collections.abc import Mapping
 from functools import partial
-import fsspec
 
 import awkward
+import fsspec
 import uproot
+
 from coffea.nanoevents.mapping import (
     CachedMapping,
     ParquetSourceMapping,
@@ -116,7 +117,7 @@ class NanoEventsFactory:
         partition_key = (
             str(tree.file.uuid),
             tree.object_path,
-            "{0}-{1}".format(entry_start, entry_stop),
+            f"{entry_start}-{entry_stop}",
         )
         uuidpfn = {partition_key[0]: tree.file.file_path}
         mapping = UprootSourceMapping(
@@ -223,7 +224,7 @@ class NanoEventsFactory:
         partition_key = (
             str(None) if pquuid is None else pquuid.decode("ascii"),
             str(None) if pqobj_path is None else pqobj_path.decode("ascii"),
-            "{0}-{1}".format(entry_start, entry_stop),
+            f"{entry_start}-{entry_stop}",
         )
         uuidpfn = {partition_key[0]: pqobj_path}
         mapping = ParquetSourceMapping(
@@ -320,7 +321,7 @@ class NanoEventsFactory:
         partition_key = (
             str(uuid),
             obj_path,
-            "{0}-{1}".format(entry_start, entry_stop),
+            f"{entry_start}-{entry_stop}",
         )
         uuidpfn = {uuid: array_source}
         mapping = PreloadedSourceMapping(

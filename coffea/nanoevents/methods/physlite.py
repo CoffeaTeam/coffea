@@ -1,9 +1,10 @@
 """Mixins for the ATLAS PHYSLITE schema - work in progress."""
+from numbers import Number
+
 import awkward
 import numpy
-from numbers import Number
-from coffea.nanoevents.methods import base, vector
 
+from coffea.nanoevents.methods import base, vector
 
 behavior = {}
 behavior.update(base.behavior)
@@ -83,7 +84,7 @@ def _get_global_index(target, eventindex, index):
     return target_offsets + index
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Particle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     """Generic particle collection that has Lorentz vector properties"""
 
@@ -95,7 +96,7 @@ class Particle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
 _set_repr_name("Particle")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class TrackParticle(vector.LorentzVector, base.NanoCollection):
     """Collection of track particles, following `xAOD::TrackParticle_v1
     <https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODTracking/Root/TrackParticle_v1.cxx#L82>`_.
@@ -133,7 +134,7 @@ class TrackParticle(vector.LorentzVector, base.NanoCollection):
 _set_repr_name("TrackParticle")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Muon(Particle):
     """Muon collection, following `xAOD::Muon_v1
     <https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODMuon/Root/Muon_v1.cxx>`_.
@@ -152,7 +153,7 @@ class Muon(Particle):
 _set_repr_name("Muon")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Electron(Particle):
     """Electron collection, following `xAOD::Electron_v1
     <https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODEgamma/Root/Electron_v1.cxx>`_.
@@ -179,7 +180,7 @@ class Electron(Particle):
 _set_repr_name("Electron")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class TruthParticle(vector.LorentzVector, base.NanoCollection):
     """Truth particle collection, following `xAOD::TruthParticle_v1
     <https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODTruth/Root/TruthParticle_v1.cxx>`_.

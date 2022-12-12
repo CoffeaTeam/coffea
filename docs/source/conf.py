@@ -6,16 +6,17 @@
 
 # -- Path setup --------------------------------------------------------------
 
+import importlib
+import inspect
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
-import sys
-import importlib
-from functools import reduce
-import inspect
 import subprocess
+import sys
+from functools import reduce
+
 import coffea
 
 print("sys.path:", sys.path)
@@ -71,7 +72,7 @@ def linkcode_resolve(domain, info):
     mod = importlib.import_module(info["module"])
     modpath = [p for p in sys.path if mod.__file__.startswith(p)]
     if len(modpath) < 1:
-        raise RuntimeException("Cannot deduce module path")
+        raise RuntimeError("Cannot deduce module path")
     modpath = modpath[0]
     obj = reduce(getattr, [mod] + info["fullname"].split("."))
     try:

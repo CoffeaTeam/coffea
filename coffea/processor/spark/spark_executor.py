@@ -1,29 +1,22 @@
+import pickle  # noqa: F401
 from concurrent.futures import ThreadPoolExecutor
 
-from tqdm import tqdm
-
-from coffea.processor.executor import _futures_handler, _decompress, _reduce
-from coffea.processor.accumulator import accumulate
-
-import pyspark.sql.functions as fn
-
-from jinja2 import Environment, PackageLoader, select_autoescape
+import awkward  # noqa: F401
+import lz4.frame  # noqa: F401
 
 # must preload these for exec calls
 import numpy  # noqa: F401
 import pandas  # noqa: F401
-import awkward  # noqa: F401
-from pyspark.sql.types import (  # noqa: F401
-    BinaryType,
-    StringType,
-    StructType,
-    StructField,
-)
+import pyspark.sql.functions as fn
+from jinja2 import Environment, PackageLoader, select_autoescape
+from pyspark.sql.types import StringType  # noqa: F401
+from pyspark.sql.types import BinaryType, StructField, StructType
+from tqdm import tqdm
+
 from coffea.nanoevents import NanoEventsFactory, schemas  # noqa: F401
 from coffea.nanoevents.mapping import SimplePreloadedColumnSource  # noqa: F401
-import pickle  # noqa: F401
-import lz4.frame  # noqa: F401
-
+from coffea.processor.accumulator import accumulate
+from coffea.processor.executor import _decompress, _futures_handler, _reduce
 
 lz4_clevel = 1
 
@@ -37,8 +30,8 @@ def agg_histos_raw(series, lz4_clevel):
     return _reduce(lz4_clevel)(goodlines)
 
 
-@fn.pandas_udf(BinaryType(), fn.PandasUDFType.GROUPED_AGG)
-def agg_histos(series):
+@fn.pandas_udf(BinaryType())
+def agg_histos(series: pandas.Series) -> bytes:
     global lz4_clevel
     return agg_histos_raw(series, lz4_clevel)
 
@@ -51,9 +44,8 @@ def reduce_histos_raw(df, lz4_clevel):
 
 @fn.pandas_udf(
     StructType([StructField("histos", BinaryType(), True)]),
-    fn.PandasUDFType.GROUPED_MAP,
 )
-def reduce_histos(df):
+def reduce_histos(df: pandas.DataFrame) -> pandas.DataFrame:
     global lz4_clevel
     return reduce_histos_raw(df, lz4_clevel)
 
@@ -77,7 +69,7 @@ def _get_ds_bistream(item):
     return out
 
 
-class SparkExecutor(object):
+class SparkExecutor:
     _template_name = "spark.py.tmpl"
 
     def __init__(self):
@@ -122,6 +114,7 @@ class SparkExecutor(object):
         # make our udf
         tmpl = self._env.get_template(self._template_name)
         render = tmpl.render(cols=columns)
+        print(render)
         exec(render)
 
         # cache the input datasets if it's not already done

@@ -1,8 +1,8 @@
 """Mixins for the CMS NanoAOD schema"""
 import awkward
 import warnings
-from coffea.nanoevents.methods import base, vector, candidate
 
+from coffea.nanoevents.methods import base, candidate, vector
 
 behavior = {}
 behavior.update(base.behavior)
@@ -26,14 +26,14 @@ def _set_repr_name(classname):
     behavior[classname].__repr__ = namefcn
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class PtEtaPhiMCollection(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     """Generic collection that has Lorentz vector properties"""
 
     pass
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class GenParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     """NanoAOD generator-level particle object, including parent and child self-references
 
@@ -113,7 +113,7 @@ class GenParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
 _set_repr_name("GenParticle")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class GenVisTau(candidate.PtEtaPhiMCandidate, base.NanoCollection):
     """NanoAOD visible tau object"""
 
@@ -126,7 +126,7 @@ class GenVisTau(candidate.PtEtaPhiMCandidate, base.NanoCollection):
 _set_repr_name("GenVisTau")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Electron(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
     """NanoAOD electron object"""
 
@@ -178,7 +178,7 @@ class Electron(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systemati
 _set_repr_name("Electron")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Muon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
     """NanoAOD muon object"""
 
@@ -198,7 +198,7 @@ class Muon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
 _set_repr_name("Muon")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Tau(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
     """NanoAOD tau object"""
 
@@ -214,7 +214,7 @@ class Tau(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
 _set_repr_name("Tau")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Photon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
     """NanoAOD photon object"""
 
@@ -260,7 +260,7 @@ class Photon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic)
 _set_repr_name("Photon")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class FsrPhoton(candidate.PtEtaPhiMCandidate, base.NanoCollection):
     """NanoAOD fsr photon object"""
 
@@ -272,7 +272,7 @@ class FsrPhoton(candidate.PtEtaPhiMCandidate, base.NanoCollection):
 _set_repr_name("FsrPhoton")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Jet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic):
     """NanoAOD narrow radius jet object"""
 
@@ -320,7 +320,7 @@ class Jet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic):
 _set_repr_name("Jet")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class FatJet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic):
     """NanoAOD large radius jet object"""
 
@@ -364,7 +364,7 @@ class FatJet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic
 _set_repr_name("FatJet")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class MissingET(vector.PolarTwoVector, base.NanoCollection, base.Systematic):
     """NanoAOD Missing transverse energy object"""
 
@@ -376,7 +376,7 @@ class MissingET(vector.PolarTwoVector, base.NanoCollection, base.Systematic):
 _set_repr_name("MissingET")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Vertex(base.NanoCollection):
     """NanoAOD vertex object"""
 
@@ -397,7 +397,7 @@ class Vertex(base.NanoCollection):
 _set_repr_name("Vertex")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class SecondaryVertex(Vertex):
     """NanoAOD secondary vertex object"""
 
@@ -419,7 +419,7 @@ class SecondaryVertex(Vertex):
 _set_repr_name("SecondaryVertex")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class AssociatedPFCand(base.NanoCollection):
     """PFNano PF candidate to jet association object"""
 
@@ -444,7 +444,7 @@ class AssociatedPFCand(base.NanoCollection):
 _set_repr_name("AssociatedPFCand")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class AssociatedSV(base.NanoCollection):
     """PFNano secondary vertex to jet association object"""
 
@@ -470,7 +470,7 @@ class AssociatedSV(base.NanoCollection):
 _set_repr_name("AssociatedSV")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class PFCand(candidate.PtEtaPhiMCandidate, base.NanoCollection):
     """PFNano particle flow candidate object"""
 

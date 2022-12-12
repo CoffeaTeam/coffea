@@ -1,13 +1,12 @@
-from __future__ import print_function, division
-
 import os
-from coffea import lookup_tools
+
 import awkward as ak
 import pytest
-from coffea.util import numpy as np
-from coffea.nanoevents import NanoEventsFactory
-
 from dummy_distributions import dummy_jagged_eta_pt
+
+from coffea import lookup_tools
+from coffea.nanoevents import NanoEventsFactory
+from coffea.util import numpy as np
 
 # From make_expected_lookup.py
 _testSF2d_expected_output = np.array(
@@ -95,7 +94,7 @@ def test_extractor_exceptions():
             == '"testSF2d testSF2d asdfgh tests/samples/testSF2d.histo.root" not formatted as "<local name> <name> <weights file>"'
         )
 
-    # test not existant file entry
+    # test non-existent file entry
     try:
         extractor.add_weight_sets(["testSF2d asdfgh tests/samples/testSF2d.histo.root"])
     except Exception as e:
@@ -425,8 +424,9 @@ def test_rochester():
 
 
 def test_dense_lookup():
-    from coffea.lookup_tools.dense_lookup import dense_lookup
     import numpy
+
+    from coffea.lookup_tools.dense_lookup import dense_lookup
 
     a = ak.Array([[0.1, 0.2], [0.3]])
     lookup = dense_lookup(
@@ -444,6 +444,7 @@ def test_dense_lookup():
 
 def test_549():
     import awkward as ak
+
     from coffea.lookup_tools import extractor
 
     ext = extractor()
@@ -459,6 +460,7 @@ def test_549():
 
 def test_554():
     import uproot
+
     from coffea.lookup_tools.root_converters import convert_histo_root_file
 
     f_in = "tests/samples/PR554_SkipReadOnlyDirectory.root"
@@ -470,7 +472,7 @@ def test_554():
     out = convert_histo_root_file(f_in)
     assert out
     # check that output does not contain any Directory-like keys
-    rfkeys = set(k.rsplit(";")[0] for k in rf.keys())
+    rfkeys = {k.rsplit(";")[0] for k in rf.keys()}
     assert all(
         not isinstance(rf[k], uproot.ReadOnlyDirectory)
         for k, _ in out.keys()

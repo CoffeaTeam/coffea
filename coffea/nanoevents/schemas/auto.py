@@ -1,6 +1,7 @@
-from typing import Any, Dict
-from . import BaseSchema
 import urllib.parse
+from typing import Any, Dict
+
+from . import BaseSchema
 
 
 def _build_record_array(
@@ -40,7 +41,7 @@ class auto_schema(BaseSchema):
         """Create an auto schema by parsing the names of the incoming columns
 
         Notes:
-            - There is a recursiveness to this defintion, as there is to any data structure,
+            - There is a recursiveness to this definition, as there is to any data structure,
               that is not matched with this. This should be made much more flexible. Perhaps
               with something like python type-hints so editors can also take advantage of this.
             - Any `_` is inerpreted as going down a level in the structure.
@@ -55,7 +56,7 @@ class auto_schema(BaseSchema):
             field: content
             for field, content in zip(self._form["fields"], self._form["contents"])
         }
-        collections = set(k.split("_")[0] for k in contents if "_" in k)
+        collections = {k.split("_")[0] for k in contents if "_" in k}
 
         output = {}
         for c_name in collections:

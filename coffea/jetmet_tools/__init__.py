@@ -3,14 +3,13 @@
 These classes provide computation of CMS jet energy scale and jet energy resolution
 corrections and uncertainties on columnar data.
 """
-from .FactorizedJetCorrector import FactorizedJetCorrector
-from .JetResolution import JetResolution
-from .JetResolutionScaleFactor import JetResolutionScaleFactor
-from .JetCorrectionUncertainty import JetCorrectionUncertainty
-
-from .JECStack import JECStack
 from .CorrectedJetsFactory import CorrectedJetsFactory
 from .CorrectedMETFactory import CorrectedMETFactory
+from .FactorizedJetCorrector import FactorizedJetCorrector
+from .JECStack import JECStack
+from .JetCorrectionUncertainty import JetCorrectionUncertainty
+from .JetResolution import JetResolution
+from .JetResolutionScaleFactor import JetResolutionScaleFactor
 
 __all__ = [
     "FactorizedJetCorrector",

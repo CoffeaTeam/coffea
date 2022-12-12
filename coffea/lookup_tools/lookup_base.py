@@ -1,9 +1,10 @@
-import numpy
-import awkward
 import numbers
 
+import awkward
+import numpy
 
-class lookup_base(object):
+
+class lookup_base:
     """Base class for all objects that do some sort of value or function lookup"""
 
     def __init__(self):
@@ -28,8 +29,7 @@ class lookup_base(object):
                 or not isinstance(x, (awkward.contents.Content))
                 for x in args
             ):
-                nplike = awkward._nplikes.nplike_of(*args)
-                if not isinstance(nplike, awkward._nplikes.Numpy):
+                if awkward.backend(*args) != "cpu":
                     raise NotImplementedError(
                         "support for cupy/jax/etc. numpy extensions"
                     )
@@ -37,8 +37,8 @@ class lookup_base(object):
                 return awkward.contents.NumpyArray(result)
             return None
 
-        behavior = awkward._util.behavior_of(*args)
-        out = awkward.transform(getfunction, *args, behavior=behavior)
+        # behavior = awkward._util.behavior_of(*args)
+        out = awkward.transform(getfunction, *args)
         return out
 
     def _evaluate(self, *args, **kwargs):

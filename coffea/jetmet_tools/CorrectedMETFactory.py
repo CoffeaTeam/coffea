@@ -1,6 +1,7 @@
+from copy import copy
+
 import awkward
 import numpy
-from copy import copy
 
 
 def corrected_polar_met(met_pt, met_phi, jet_pt, jet_phi, jet_pt_orig, deltas=None):
@@ -18,7 +19,7 @@ def corrected_polar_met(met_pt, met_phi, jet_pt, jet_phi, jet_pt_orig, deltas=No
     return awkward.zip({"pt": numpy.hypot(x, y), "phi": numpy.arctan2(y, x)})
 
 
-class CorrectedMETFactory(object):
+class CorrectedMETFactory:
     def __init__(self, name_map):
         for name in [
             "METpt",

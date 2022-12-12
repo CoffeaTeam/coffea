@@ -1,14 +1,14 @@
 from concurrent.futures import ThreadPoolExecutor
 
-from tqdm import tqdm
 import pyspark.sql
 import pyspark.sql.functions as fn
 from pyarrow.util import guid
+from tqdm import tqdm
 
 try:
     from collections.abc import Sequence
 except ImportError:
-    from collections import Sequence
+    from collections.abc import Sequence
 
 from coffea.processor.executor import _futures_handler
 
@@ -33,13 +33,6 @@ def _spark_initialize(config=_default_config, **kwargs):
     )
     if not spark_progress:
         cfg_actual = cfg_actual.config("spark.ui.showConsoleProgress", "false")
-
-    # always load laurelin even if we may not use it
-    kwargs.setdefault("laurelin_version", "0.3.0")
-    laurelin = kwargs["laurelin_version"]
-    cfg_actual = cfg_actual.config(
-        "spark.jars.packages", "edu.vanderbilt.accre:laurelin:%s" % laurelin
-    )
 
     kwargs.setdefault("bindAddress", None)
     if kwargs["bindAddress"] is not None:
@@ -115,12 +108,12 @@ def _spark_make_dfs(
     ana_cols = set(columns)
 
     with ThreadPoolExecutor(max_workers=thread_workers) as executor:
-        futures = set(
+        futures = {
             executor.submit(
                 _read_df, spark, ds, files, ana_cols, partitionsize, file_type, treeName
             )
             for ds, files in fileset.items()
-        )
+        }
 
         for df, ds, count in tqdm(
             _futures_handler(futures, timeout=None),

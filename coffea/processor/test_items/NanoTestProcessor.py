@@ -1,9 +1,11 @@
-from coffea import processor
-import hist
-import awkward as ak
-import numpy as np
-from coffea.nanoevents.methods import vector
 from collections import defaultdict
+
+import awkward as ak
+import hist
+import numpy as np
+
+from coffea import processor
+from coffea.nanoevents.methods import vector
 
 
 class NanoTestProcessor(processor.ProcessorABC):

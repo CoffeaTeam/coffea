@@ -215,7 +215,7 @@ class value_accumulator(AccumulatorABC):
             defrepr = self.default_factory.__name__
         else:
             defrepr = repr(self.default_factory)
-        return "value_accumulator(%s, %r)" % (defrepr, self.value)
+        return f"value_accumulator({defrepr}, {self.value!r})"
 
     def identity(self):
         return value_accumulator(self.default_factory)

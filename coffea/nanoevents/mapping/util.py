@@ -1,5 +1,6 @@
 import weakref
 from collections.abc import Mapping, MutableMapping
+
 from coffea.nanoevents.util import key_to_tuple
 
 

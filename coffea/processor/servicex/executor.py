@@ -26,15 +26,16 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from abc import ABC, abstractmethod
-from typing import Any, Callable, AsyncGenerator, Dict, Optional, Tuple
-
-# from urllib.parse import urlparse, unquote
-# from urllib.request import url2pathname
+from typing import Any, AsyncGenerator, Callable, Dict, Optional, Tuple
 
 import aiostream
 import uproot
 from servicex import StreamInfoUrl
+
 from ..accumulator import async_accumulate
+
+# from urllib.parse import urlparse, unquote
+# from urllib.request import url2pathname
 
 
 class Executor(ABC):

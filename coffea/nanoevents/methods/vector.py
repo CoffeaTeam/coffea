@@ -1,6 +1,6 @@
 """2D, 3D, and Lorentz vector class mixins
 
-These mixins will eventually be superceded by the `vector <https://github.com/scikit-hep/vector>`__ library,
+These mixins will eventually be superseded by the `vector <https://github.com/scikit-hep/vector>`__ library,
 which will hopefully be feature-compatible. The 2D vector provides cartesian and polar coordinate attributes,
 where ``r`` represents the polar distance from the origin..  The 3D vector provides cartesian and spherical coordinates,
 where ``rho`` represents the 3D distance from the origin and ``r`` is the axial distance from the z axis, so that it can
@@ -43,9 +43,10 @@ A small example::
 
 """
 import numbers
-import numpy
+
 import awkward
 import numba
+import numpy
 
 
 @numba.vectorize(
@@ -71,7 +72,7 @@ def _deltaphi_kernel(a, b):
 behavior = {}
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class TwoVector:
     """A cartesian 2-dimensional vector
 
@@ -122,7 +123,7 @@ class TwoVector:
         """Alias for `r`"""
         return self.r
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.absolute)
+    @awkward.mixin_class_method(numpy.absolute)
     def absolute(self):
         """Returns magnitude of the 2D vector
 
@@ -130,7 +131,7 @@ class TwoVector:
         """
         return self.r
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.negative)
+    @awkward.mixin_class_method(numpy.negative)
     def negative(self):
         """Returns the negative of the vector"""
         return awkward.zip(
@@ -139,7 +140,7 @@ class TwoVector:
             behavior=self.behavior,
         )
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.add, {"TwoVector"})
+    @awkward.mixin_class_method(numpy.add, {"TwoVector"})
     def add(self, other):
         """Add two vectors together elementwise using `x` and `y` components"""
         return awkward.zip(
@@ -148,7 +149,7 @@ class TwoVector:
             behavior=self.behavior,
         )
 
-    @awkward.behaviors.mixins.mixin_class_method(
+    @awkward.mixin_class_method(
         numpy.subtract,
         {
             "TwoVector",
@@ -161,7 +162,7 @@ class TwoVector:
         transpose=False,
     )
     def subtract(self, other):
-        """Substract a vector from another elementwise using `x` and `y` compontents"""
+        """Subtract a vector from another elementwise using `x` and `y` components"""
         return awkward.zip(
             {"x": self.x - other.x, "y": self.y - other.y},
             with_name="TwoVector",
@@ -179,7 +180,7 @@ class TwoVector:
             behavior=self.behavior,
         )
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.multiply, {numbers.Number})
+    @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
         """Multiply this vector by a scalar elementwise using `x` and `y` components"""
         return awkward.zip(
@@ -188,7 +189,7 @@ class TwoVector:
             behavior=self.behavior,
         )
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.divide, {numbers.Number})
+    @awkward.mixin_class_method(numpy.divide, {numbers.Number})
     def divide(self, other):
         """Divide this vector by a scalar elementwise using its cartesian components
 
@@ -212,7 +213,7 @@ class TwoVector:
         return self / self.r
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class PolarTwoVector(TwoVector):
     """A polar coordinate 2-dimensional vector
 
@@ -257,7 +258,7 @@ class PolarTwoVector(TwoVector):
         """Squared `r`"""
         return self.r * self.r
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.multiply, {numbers.Number})
+    @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
         """Multiply this vector by a scalar elementwise using using `x` and `y` components
 
@@ -272,7 +273,7 @@ class PolarTwoVector(TwoVector):
             behavior=self.behavior,
         )
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.negative)
+    @awkward.mixin_class_method(numpy.negative)
     def negative(self):
         """Returns the negative of the vector"""
         return awkward.zip(
@@ -282,7 +283,7 @@ class PolarTwoVector(TwoVector):
         )
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class ThreeVector(TwoVector):
     """A cartesian 3-dimensional vector
 
@@ -326,7 +327,7 @@ class ThreeVector(TwoVector):
         """Alias for `rho`"""
         return self.rho
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.absolute)
+    @awkward.mixin_class_method(numpy.absolute)
     def absolute(self):
         """Returns magnitude of the 3D vector
 
@@ -334,7 +335,7 @@ class ThreeVector(TwoVector):
         """
         return self.p
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.negative)
+    @awkward.mixin_class_method(numpy.negative)
     def negative(self):
         """Returns the negative of the vector"""
         return awkward.zip(
@@ -343,7 +344,7 @@ class ThreeVector(TwoVector):
             behavior=self.behavior,
         )
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.add, {"ThreeVector"})
+    @awkward.mixin_class_method(numpy.add, {"ThreeVector"})
     def add(self, other):
         """Add two vectors together elementwise using `x`, `y`, and `z` components"""
         return awkward.zip(
@@ -352,7 +353,7 @@ class ThreeVector(TwoVector):
             behavior=self.behavior,
         )
 
-    @awkward.behaviors.mixins.mixin_class_method(
+    @awkward.mixin_class_method(
         numpy.subtract,
         {
             "ThreeVector",
@@ -383,7 +384,7 @@ class ThreeVector(TwoVector):
             behavior=self.behavior,
         )
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.multiply, {numbers.Number})
+    @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
         """Multiply this vector by a scalar elementwise using `x`, `y`, and `z` components"""
         return awkward.zip(
@@ -414,7 +415,7 @@ class ThreeVector(TwoVector):
         return self / self.rho
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class SphericalThreeVector(ThreeVector, PolarTwoVector):
     """A spherical coordinate 3-dimensional vector
 
@@ -464,7 +465,7 @@ class SphericalThreeVector(ThreeVector, PolarTwoVector):
         """Squared `p`"""
         return self.rho * self.rho
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.multiply, {numbers.Number})
+    @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
         """Multiply this vector by a scalar elementwise using `x`, `y`, and `z` components
 
@@ -480,7 +481,7 @@ class SphericalThreeVector(ThreeVector, PolarTwoVector):
             behavior=self.behavior,
         )
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.negative)
+    @awkward.mixin_class_method(numpy.negative)
     def negative(self):
         """Returns the negative of the vector"""
         return awkward.zip(
@@ -494,7 +495,7 @@ class SphericalThreeVector(ThreeVector, PolarTwoVector):
         )
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class LorentzVector(ThreeVector):
     """A cartesian Lorentz vector
 
@@ -529,7 +530,7 @@ class LorentzVector(ThreeVector):
         """
         return numpy.sqrt(self.mass2)
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.absolute)
+    @awkward.mixin_class_method(numpy.absolute)
     def absolute(self):
         """Magnitude of this Lorentz vector
 
@@ -537,7 +538,7 @@ class LorentzVector(ThreeVector):
         """
         return self.mass
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.add, {"LorentzVector"})
+    @awkward.mixin_class_method(numpy.add, {"LorentzVector"})
     def add(self, other):
         """Add two vectors together elementwise using `x`, `y`, `z`, and `t` components"""
         return awkward.zip(
@@ -551,9 +552,7 @@ class LorentzVector(ThreeVector):
             behavior=self.behavior,
         )
 
-    @awkward.behaviors.mixins.mixin_class_method(
-        numpy.subtract, {"LorentzVector"}, transpose=False
-    )
+    @awkward.mixin_class_method(numpy.subtract, {"LorentzVector"}, transpose=False)
     def subtract(self, other):
         """Subtract a vector from another elementwise using `x`, `y`, `z`, and `t` components"""
         return awkward.zip(
@@ -580,7 +579,7 @@ class LorentzVector(ThreeVector):
             behavior=self.behavior,
         )
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.multiply, {numbers.Number})
+    @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
         """Multiply this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components"""
         return awkward.zip(
@@ -607,7 +606,7 @@ class LorentzVector(ThreeVector):
         """
         return numpy.hypot(self.eta - other.eta, self.delta_phi(other))
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.negative)
+    @awkward.mixin_class_method(numpy.negative)
     def negative(self):
         """Returns the negative of the vector"""
         return awkward.zip(
@@ -618,7 +617,7 @@ class LorentzVector(ThreeVector):
 
     @property
     def pvec(self):
-        """The `x`, `y` and `z` compontents as a `ThreeVector`"""
+        """The `x`, `y` and `z` components as a `ThreeVector`"""
         return awkward.zip(
             {"x": self.x, "y": self.y, "z": self.z},
             with_name="ThreeVector",
@@ -627,7 +626,7 @@ class LorentzVector(ThreeVector):
 
     @property
     def boostvec(self):
-        """The `x`, `y` and `z` compontents divided by `t` as a `ThreeVector`
+        """The `x`, `y` and `z` components divided by `t` as a `ThreeVector`
 
         This can be used for boosting. For cases where `|t| <= rho`, this
         returns the unit vector.
@@ -743,7 +742,7 @@ class LorentzVector(ThreeVector):
         return out
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
     """A Lorentz vector using pseudorapidity and mass
 
@@ -835,7 +834,7 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
         """Squared `mass`"""
         return self.mass * self.mass
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.multiply, {numbers.Number})
+    @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
         """Multiply this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components
 
@@ -853,7 +852,7 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
             behavior=self.behavior,
         )
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.negative)
+    @awkward.mixin_class_method(numpy.negative)
     def negative(self):
         """Returns the negative of the vector"""
         return awkward.zip(
@@ -868,7 +867,7 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
         )
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
     """A Lorentz vector using pseudorapidity and energy
 
@@ -952,7 +951,7 @@ class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
         """Squared `rho`"""
         return self.rho * self.rho
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.multiply, {numbers.Number})
+    @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
         """Multiply this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components
 
@@ -969,7 +968,7 @@ class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
             behavior=self.behavior,
         )
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.negative)
+    @awkward.mixin_class_method(numpy.negative)
     def negative(self):
         """Returns the negative of the vector"""
         return awkward.zip(

@@ -1,7 +1,9 @@
-from threading import Lock
 import numbers
-import numpy
+from threading import Lock
+
 import numba
+import numpy
+
 from coffea.lookup_tools.lookup_base import lookup_base
 
 
@@ -68,9 +70,9 @@ class dense_mapped_lookup(lookup_base):
         return out
 
     def __repr__(self):
-        myrepr = "{} dimensional histogram with axes:\n".format(self._dimension)
+        myrepr = f"{self._dimension} dimensional histogram with axes:\n"
         temp = ""
         for idim, axis in enumerate(self._axes):
-            temp += "\t{}: {}\n".format(idim + 1, axis)
+            temp += f"\t{idim + 1}: {axis}\n"
         myrepr += temp
         return myrepr

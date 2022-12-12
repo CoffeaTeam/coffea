@@ -1,14 +1,13 @@
 import os
-import shutil
 import os.path as osp
-
-from parsl.providers import SlurmProvider
-from parsl.channels import LocalChannel
-from parsl.launchers import SrunLauncher
-from parsl.config import Config
-from parsl.executors import HighThroughputExecutor
+import shutil
 
 from parsl.addresses import address_by_hostname
+from parsl.channels import LocalChannel
+from parsl.config import Config
+from parsl.executors import HighThroughputExecutor
+from parsl.launchers import SrunLauncher
+from parsl.providers import SlurmProvider
 
 x509_proxy = "x509up_u%s" % (os.getuid())
 

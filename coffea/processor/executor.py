@@ -1,46 +1,45 @@
-from __future__ import print_function, division
 import concurrent.futures
-from functools import partial
-from itertools import repeat
-import os
-import time
-import pickle
-import sys
-import math
 import json
-import cloudpickle
-import toml
-import uproot
+import math
+import os
+import pickle
+import shutil
+import sys
+import time
+import traceback
 import uuid
 import warnings
-import traceback
-import shutil
 from collections import defaultdict
-from cachetools import LRUCache
-from io import BytesIO
-import lz4.frame as lz4f
-from contextlib import ExitStack
-from .processor import ProcessorABC
-from .accumulator import accumulate, set_accumulator, Accumulatable
-from .dataframe import LazyDataFrame
-from ..nanoevents import NanoEventsFactory, schemas
-from ..util import _hash, _exception_chain, rich_bar
-
 from collections.abc import Mapping, MutableMapping
-from dataclasses import dataclass, field, asdict
+from contextlib import ExitStack
+from dataclasses import asdict, dataclass, field
+from functools import partial
+from io import BytesIO
+from itertools import repeat
 from typing import (
-    Iterable,
-    Callable,
-    Optional,
-    List,
-    Set,
-    Generator,
-    Dict,
-    Union,
-    Tuple,
     Awaitable,
+    Callable,
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
 )
 
+import cloudpickle
+import lz4.frame as lz4f
+import toml
+import uproot
+from cachetools import LRUCache
+
+from ..nanoevents import NanoEventsFactory, schemas
+from ..util import _exception_chain, _hash, rich_bar
+from .accumulator import Accumulatable, accumulate, set_accumulator
+from .dataframe import LazyDataFrame
+from .processor import ProcessorABC
 
 try:
     from typing import Literal
@@ -75,7 +74,7 @@ class UprootMissTreeError(uproot.exceptions.KeyInFileError):
     pass
 
 
-class FileMeta(object):
+class FileMeta:
     __slots__ = ["dataset", "filename", "treename", "metadata"]
 
     def __init__(self, dataset, filename, treename, metadata=None):
@@ -85,7 +84,7 @@ class FileMeta(object):
         self.metadata = metadata
 
     def __str__(self):
-        return "FileMeta(%s:%s)" % (self.filename, self.treename)
+        return f"FileMeta({self.filename}:{self.treename})"
 
     def __hash__(self):
         # As used to lookup metadata, no need for dataset
@@ -199,7 +198,7 @@ def _decompress(item):
         return item
 
 
-class _compression_wrapper(object):
+class _compression_wrapper:
     def __init__(self, level, function, name=None):
         self.level = level
         self.function = function
@@ -487,7 +486,7 @@ class WorkQueueExecutor(ExecutorBase):
             Number of GPUs to allocate to each task.  If unset, use zero.
         resource_monitor : str
             If given, one of 'off', 'measure', or 'watchdog'. Default is 'off'.
-            - 'off': turns off resource monitoring. Overriden to 'watchdog' if resources_mode
+            - 'off': turns off resource monitoring. Overridden to 'watchdog' if resources_mode
                      is not set to 'fixed'.
             - 'measure': turns on resource monitoring for Work Queue. The
                         resources used per task are measured.
@@ -724,8 +723,8 @@ class FuturesExecutor(ExecutorBase):
         maxred : int, optional
             maximum number of items to merge in one job. Also pass via ``merging(..., ..., X)''
         mergepool : concurrent.futures.Executor class or instance | int, optional
-            Supply an additional executor to process merge jobs indepedently.
-            An ``int`` will be interpretted as ``ProcessPoolExecutor(max_workers=int)``.
+            Supply an additional executor to process merge jobs independently.
+            An ``int`` will be interpreted as ``ProcessPoolExecutor(max_workers=int)``.
         tailtimeout : int, optional
             Timeout requirement on job tails. Cancel all remaining jobs if none have finished
             in the timeout window.
@@ -778,7 +777,7 @@ class FuturesExecutor(ExecutorBase):
 
         def _processwith(pool, mergepool):
             FH = _FuturesHolder(
-                set(pool.submit(function, item) for item in items), refresh=2
+                {pool.submit(function, item) for item in items}, refresh=2
             )
 
             try:
@@ -791,7 +790,7 @@ class FuturesExecutor(ExecutorBase):
             except Exception as e:
                 traceback.print_exc()
                 if self.recoverable:
-                    print("Exception occured, recovering progress...")
+                    print("Exception occurred, recovering progress...")
                     for job in FH.futures:
                         job.cancel()
 
@@ -1068,6 +1067,7 @@ class ParslExecutor(ExecutorBase):
             return accumulator
         import parsl
         from parsl.app.app import python_app
+
         from .parsl.timeout import timeout
 
         if self.compression is not None:
@@ -1117,7 +1117,7 @@ class ParslExecutor(ExecutorBase):
         except Exception as e:
             traceback.print_exc()
             if self.recoverable:
-                print("Exception occured, recovering progress...")
+                print("Exception occurred, recovering progress...")
                 # for job in FH.futures:  # NotImplemented in parsl
                 #     job.cancel()
 
@@ -1159,9 +1159,9 @@ class ParquetFileContext:
 
         if self.filehandle is None:
             self.filehandle = pq.ParquetFile(self.filename)
-            self.branchnames = set(
+            self.branchnames = {
                 item.path.split(".")[0] for item in self.filehandle.schema
-            )
+            }
 
     @property
     def num_entries(self):
@@ -1313,6 +1313,7 @@ class Runner:
         cache = None
         if cachestrategy == "dask-worker":
             from distributed import get_worker
+
             from coffea.processor.dask import ColumnCache
 
             worker = get_worker()
@@ -1433,11 +1434,11 @@ class Runner:
 
     def _preprocess_fileset(self, fileset: Dict) -> None:
         # this is a bit of an abuse of map-reduce but ok
-        to_get = set(
+        to_get = {
             filemeta
             for filemeta in fileset
             if not filemeta.populated(clusters=self.align_clusters)
-        )
+        }
         if len(to_get) > 0:
             out = set_accumulator()
             pre_arg_override = {
@@ -1673,8 +1674,8 @@ class Runner:
                         metrics["columns"] = set(events.materialized)
                         metrics["entries"] = events.size
                     metrics["processtime"] = toc - tic
-                    return {"out": out, "metrics": metrics, "processed": set([item])}
-                return {"out": out, "processed": set([item])}
+                    return {"out": out, "metrics": metrics, "processed": {item}}
+                return {"out": out, "processed": {item}}
 
     def __call__(
         self,
@@ -1918,9 +1919,10 @@ def run_spark_job(
         )
         raise e
 
-    from packaging import version
-    import pyarrow as pa
     import warnings
+
+    import pyarrow as pa
+    from packaging import version
 
     arrow_env = ("ARROW_PRE_0_15_IPC_FORMAT", "1")
     if version.parse(pa.__version__) >= version.parse("0.15.0") and version.parse(
@@ -1935,8 +1937,9 @@ def run_spark_job(
             )
 
     import pyspark.sql
+
+    from .spark.detail import _spark_initialize, _spark_make_dfs, _spark_stop
     from .spark.spark_executor import SparkExecutor
-    from .spark.detail import _spark_initialize, _spark_stop, _spark_make_dfs
 
     if not isinstance(fileset, Mapping):
         raise ValueError("Expected fileset to be a mapping dataset: list(files)")

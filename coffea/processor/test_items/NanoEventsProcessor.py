@@ -1,7 +1,9 @@
-import awkward as ak
-from coffea import processor, nanoevents
-import hist
 from collections import defaultdict
+
+import awkward as ak
+import hist
+
+from coffea import nanoevents, processor
 
 
 class NanoEventsProcessor(processor.ProcessorABC):

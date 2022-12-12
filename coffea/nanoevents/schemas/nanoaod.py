@@ -1,7 +1,8 @@
+import json
 import warnings
+
 from coffea.nanoevents import transforms
 from coffea.nanoevents.schemas.base import BaseSchema, zip_forms
-import json
 
 
 class NanoAODSchema(BaseSchema):
@@ -196,10 +197,10 @@ class NanoAODSchema(BaseSchema):
     def _build_collections(self, field_names, input_contents):
         branch_forms = {k: v for k, v in zip(field_names, input_contents)}
         # parse into high-level records (collections, list collections, and singletons)
-        collections = set(k.split("_")[0] for k in branch_forms)
-        collections -= set(
+        collections = {k.split("_")[0] for k in branch_forms}
+        collections -= {
             k for k in collections if k.startswith("n") and k[1:] in collections
-        )
+        }
         isData = "GenPart" not in collections
 
         # Create offsets virtual arrays

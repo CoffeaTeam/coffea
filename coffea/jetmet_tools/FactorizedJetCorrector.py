@@ -1,8 +1,10 @@
-from ..lookup_tools.jme_standard_function import jme_standard_function
 import re
+from functools import reduce
+
 import awkward
 import numpy
-from functools import reduce
+
+from ..lookup_tools.jme_standard_function import jme_standard_function
 
 
 def _checkConsistency(against, tocheck):
@@ -23,7 +25,7 @@ _levelre = re.compile("[L1-7]+")
 def _getLevel(levelName):
     matches = _levelre.findall(levelName)
     if len(matches) > 1:
-        raise Exception("Malformed JEC level name: {}".format(levelName))
+        raise Exception(f"Malformed JEC level name: {levelName}")
     return matches[0]
 
 
@@ -35,7 +37,7 @@ def _sorting_key(name_and_func):
     return _level_order.index(this_level)
 
 
-class FactorizedJetCorrector(object):
+class FactorizedJetCorrector:
     """
     This class is a columnar implementation of the FactorizedJetCorrector tool in
     CMSSW and FWLite. It applies a series of JECs in ascending order as defined by

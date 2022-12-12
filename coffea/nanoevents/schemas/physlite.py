@@ -1,6 +1,7 @@
+import copy
 import warnings
 from collections import defaultdict
-import copy
+
 from coffea.nanoevents.schemas.base import BaseSchema, zip_forms
 from coffea.nanoevents.util import quote
 

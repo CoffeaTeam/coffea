@@ -1,12 +1,13 @@
-from coffea.lookup_tools.lookup_base import lookup_base
+from copy import deepcopy
 
 import numpy
-from copy import deepcopy
+
+from coffea.lookup_tools.lookup_base import lookup_base
 
 
 class dense_lookup(lookup_base):
     def __init__(self, values, dims, feval_dim=None):
-        super(dense_lookup, self).__init__()
+        super().__init__()
         self._dimension = 0
         whattype = type(dims)
         if whattype == numpy.ndarray:
@@ -14,7 +15,7 @@ class dense_lookup(lookup_base):
         else:
             self._dimension = len(dims)
         if self._dimension == 0:
-            raise Exception("Could not define dimension for {}".format(whattype))
+            raise Exception(f"Could not define dimension for {whattype}")
         self._axes = deepcopy(dims)
         self._feval_dim = None
         vals_are_strings = (
@@ -57,13 +58,13 @@ class dense_lookup(lookup_base):
         return self._values[tuple(indices)]
 
     def __repr__(self):
-        myrepr = "{} dimensional histogram with axes:\n".format(self._dimension)
+        myrepr = f"{self._dimension} dimensional histogram with axes:\n"
         temp = ""
         if self._dimension == 1:
-            temp = "\t1: {}\n".format(self._axes)
+            temp = f"\t1: {self._axes}\n"
         else:
-            temp = "\t1: {}\n".format(self._axes[0])
+            temp = f"\t1: {self._axes[0]}\n"
         for idim in range(1, self._dimension):
-            temp += "\t{}: {}\n".format(idim + 1, self._axes[idim])
+            temp += f"\t{idim + 1}: {self._axes[idim]}\n"
         myrepr += temp
         return myrepr

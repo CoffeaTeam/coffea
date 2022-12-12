@@ -1,7 +1,9 @@
-from coffea.lookup_tools.jec_uncertainty_lookup import jec_uncertainty_lookup
 import re
+
 import awkward
 import numpy
+
+from coffea.lookup_tools.jec_uncertainty_lookup import jec_uncertainty_lookup
 
 
 def _checkConsistency(against, tocheck):
@@ -38,7 +40,7 @@ def split_jec_name(name):
         info[3] = lvl
 
     if len(info) != 5:
-        raise Exception("Corrector name {0} is not properly formatted!".format(name))
+        raise Exception(f"Corrector name {name} is not properly formatted!")
 
     campaign = _checkConsistency(None, info[0])
     dataera = _checkConsistency(None, info[1])
@@ -51,7 +53,7 @@ def split_jec_name(name):
     return campaign, dataera, datatype, level, jettype
 
 
-class JetCorrectionUncertainty(object):
+class JetCorrectionUncertainty:
     """
     This class is a columnar implementation of the JetCorrectionUncertainty tool in
     CMSSW and FWLite. It calculates the jet energy scale uncertainty for a corrected jet

@@ -1,6 +1,8 @@
-import sys
 import os.path as osp
+import sys
+
 import pytest
+
 from coffea import processor
 from coffea.nanoevents import schemas
 from coffea.processor.executor import UprootMissTreeError

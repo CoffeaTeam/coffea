@@ -1,6 +1,7 @@
-from coffea.nanoevents import transforms
-from coffea.nanoevents.util import quote, concat
 import json
+
+from coffea.nanoevents import transforms
+from coffea.nanoevents.util import concat, quote
 
 
 def listarray_form(content, offsets):
@@ -113,8 +114,9 @@ class BaseSchema:
 
     @classmethod
     def apply_to_dask(cls, dask_record):
-        from coffea.nanoevents.methods import base
         import dask_awkward
+
+        from coffea.nanoevents.methods import base
 
         dask_record = dask_awkward.with_name(
             dask_record, "NanoEvents", behavior=base.behavior
