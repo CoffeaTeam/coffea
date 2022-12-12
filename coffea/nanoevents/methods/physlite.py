@@ -79,7 +79,6 @@ def _get_global_index(target, eventindex, index):
     load_column = target[
         target.fields[0]
     ]  # awkward is eager-mode now (will need to dask this)
-    print("<><><><>", load_column)
     target_offsets = _get_target_offsets(load_column.layout.offsets, eventindex)
     return target_offsets + index
 
