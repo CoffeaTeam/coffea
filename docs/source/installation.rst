@@ -32,7 +32,7 @@ Install coffea
 --------------
 To install coffea, there are several mostly-equivalent options:
 
-   - install coffea system-wide using ``pip install coffea``; 
+   - install coffea system-wide using ``pip install coffea``;
    - if you do not have administrator permissions, install as local user with ``pip install --user coffea``;
    - if you prefer to not place coffea in your global environment, you can set up a `Virtual environment`_;
    - if you use `Conda <https://docs.conda.io/projects/conda/en/latest/index.html>`_,  simply ``conda install coffea``;
@@ -181,7 +181,7 @@ An example batch job wrapper script is:
 
   echo "Running command:" $@
   time $@ || exit $?
-  
+
 Note that this environment only functions from the working directory of the wrapper script due to having relative paths.
 Unless you install jupyter into this environment (which may bloat the tarball--LCG98 jupyter is reasonably recent), it is not visible inside the LCG jupyter server. From a shell with the virtual environment activated, you can execute::
 

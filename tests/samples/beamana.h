@@ -841,7 +841,7 @@ public :
 #endif
 
 #ifdef beamana_cxx
-beamana::beamana(TTree *tree) : fChain(0) 
+beamana::beamana(TTree *tree) : fChain(0)
 {
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
