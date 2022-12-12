@@ -17,7 +17,7 @@ quantities or summary statistics in the form of histograms. In contrast, columna
 columns of data spanning a *chunk* (partition, batch) of rows using `array programming <https://en.wikipedia.org/wiki/Array_programming>`_
 primitives in turn, to compute derived quantities and summary statistics. Array programming is widely used within
 the `scientific python ecosystem <https://www.scipy.org/about.html>`_, supported by the `numpy <https://numpy.org/>`_ library.
-However, although the existing scientific python stack is fully capable of analyzing rectangular arrays (i.e. 
+However, although the existing scientific python stack is fully capable of analyzing rectangular arrays (i.e.
 no variable-length array dimensions), HEP data is very irregular, and manipulating it can become awkward without
 first generalizing array structure a bit. The `awkward <https://awkward-array.org>`_ package does this,
 extending array programming capabilities to the complexity of HEP data.
@@ -64,7 +64,7 @@ Currently, coffea supports four types of distributed executors:
 
    - the `parsl <http://parsl-project.org/>`_ distributed executor, accessed via `parsl_executor`,
    - the `dask <https://distributed.dask.org/en/latest/>`_ distributed executor, accessed via `dask_executor`,
-   - the Apache `Spark <https://spark.apache.org/>`_ distributed executor, accessed via `run_spark_job`, 
+   - the Apache `Spark <https://spark.apache.org/>`_ distributed executor, accessed via `run_spark_job`,
    - and the :ref:`intro-coffea-wq` distributed executor, accessed via `work_queue_executor`.
 
 These executors use their respective underlying libraries to distribute processing tasks over multiple machines.

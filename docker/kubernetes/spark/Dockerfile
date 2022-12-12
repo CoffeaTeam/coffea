@@ -54,7 +54,7 @@ RUN python -m ensurepip && \
     rm -r /usr/lib/python*/ensurepip && \
     pip install --no-cache-dir --upgrade pip setuptools
 
-RUN pip install --no-cache-dir numpy six pytest numpy cython 
+RUN pip install --no-cache-dir numpy six pytest numpy cython
 RUN pip install --no-cache-dir pandas
 
 ARG ARROW_VERSION=0.12.0
@@ -88,7 +88,7 @@ RUN mkdir /arrow \
     && rm -rf /arrow /tmp/apache-arrow.tar.gz
 
 RUN pip install --no-cache-dir py4j
-RUN pip install --no-cache-dir scipy 
+RUN pip install --no-cache-dir scipy
 RUN pip install --no-cache-dir jinja2
 RUN pip install --no-cache-dir cloudpickle
 RUN pip install --no-cache-dir lz4
@@ -106,7 +106,7 @@ RUN wget http://releases.llvm.org/8.0.0/llvm-8.0.0.src.tar.xz && \
 
 RUN pip install --no-cache-dir numba
 
-RUN pip install --no-cache-dir coffea 
+RUN pip install --no-cache-dir coffea
 
 COPY python/pyspark ${SPARK_HOME}/python/pyspark
 COPY python/lib ${SPARK_HOME}/python/lib
