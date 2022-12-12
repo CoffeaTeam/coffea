@@ -1,12 +1,11 @@
-from __future__ import print_function, division
-from coffea import processor
-
 import pytest
+
+from coffea import processor
 
 
 def do_dask_pandas_job(client, filelist):
-    from coffea.processor.test_items import NanoTestProcessorPandas
     from coffea import nanoevents
+    from coffea.processor.test_items import NanoTestProcessorPandas
 
     executor = processor.DaskExecutor(client=client, use_dataframes=True)
     run = processor.Runner(executor=executor, schema=nanoevents.NanoAODSchema)

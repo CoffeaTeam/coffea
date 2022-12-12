@@ -1,6 +1,8 @@
 import os
-import pytest
+
 import numpy as np
+import pytest
+
 from coffea.nanoevents import NanoEventsFactory, PHYSLITESchema
 
 

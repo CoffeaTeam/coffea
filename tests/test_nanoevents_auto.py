@@ -2,7 +2,7 @@ from coffea.nanoevents.schemas.auto import auto_schema
 
 
 def test_auto_empty():
-    "Test an empy incoming form"
+    "Test an empty incoming form"
 
     b = auto_schema({"fields": [], "contents": []})
 

@@ -1,7 +1,6 @@
-from __future__ import print_function, division
-
-import sys
 import os.path as osp
+import sys
+
 import pytest
 
 
@@ -36,6 +35,7 @@ def test_processorabc():
 )
 def test_lazy_dataframe():
     import uproot
+
     from coffea.processor import LazyDataFrame
 
     tree = uproot.open(osp.abspath("tests/samples/nano_dy.root"))["Events"]
@@ -65,6 +65,7 @@ def test_lazy_dataframe():
 )
 def test_lazy_dataframe_getattr():
     import uproot
+
     from coffea.processor import LazyDataFrame
 
     tree = uproot.open(osp.abspath("tests/samples/nano_dy.root"))["Events"]
@@ -97,8 +98,8 @@ def test_lazy_dataframe_getattr():
 
 def test_processor_newaccumulator():
     from coffea.processor import (
-        ProcessorABC,
         IterativeExecutor,
+        ProcessorABC,
         defaultdict_accumulator,
     )
 

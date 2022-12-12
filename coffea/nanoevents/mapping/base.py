@@ -1,8 +1,10 @@
 from abc import abstractmethod
-from cachetools import LRUCache
 from collections.abc import Mapping
+
 import awkward
 import numpy
+from cachetools import LRUCache
+
 from coffea.nanoevents import transforms
 from coffea.nanoevents.util import key_to_tuple, tuple_to_key
 
@@ -76,7 +78,7 @@ class BaseSourceMapping(Mapping):
     def __getitem__(self, key):
         uuid, treepath, start, stop, nodes = self.interpret_key(key)
         if self._debug:
-            print("Gettting (", key, ") :", uuid, treepath, start, stop, nodes)
+            print("Getting (", key, ") :", uuid, treepath, start, stop, nodes)
         stack = []
         skip = False
         for node in nodes:

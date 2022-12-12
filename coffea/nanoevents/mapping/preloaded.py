@@ -1,6 +1,7 @@
-import warnings
 import json
-from coffea.nanoevents.mapping.base import UUIDOpener, BaseSourceMapping
+import warnings
+
+from coffea.nanoevents.mapping.base import BaseSourceMapping, UUIDOpener
 from coffea.nanoevents.util import quote, tuple_to_key
 
 
@@ -13,7 +14,7 @@ class SimplePreloadedColumnSource(dict):
 
 class PreloadedOpener(UUIDOpener):
     def __init__(self, uuid_pfnmap):
-        super(PreloadedOpener, self).__init__(uuid_pfnmap)
+        super().__init__(uuid_pfnmap)
 
     def open_uuid(self, uuid):
         pcs = self._uuid_pfnmap[uuid]
@@ -28,9 +29,7 @@ class PreloadedSourceMapping(BaseSourceMapping):
     _debug = False
 
     def __init__(self, array_source, start, stop, cache=None, access_log=None):
-        super(PreloadedSourceMapping, self).__init__(
-            array_source, start, stop, cache, access_log
-        )
+        super().__init__(array_source, start, stop, cache, access_log)
 
     @classmethod
     def _extract_base_form(cls, column_source):

@@ -1,13 +1,11 @@
-from __future__ import print_function
+import time
 
 import awkward as ak
-from coffea.util import numpy as np
-
-import time
 import pyinstrument
 import pytest
-
 from dummy_distributions import dummy_jagged_eta_pt
+
+from coffea.util import numpy as np
 
 
 def jetmet_evaluator():
@@ -528,6 +526,7 @@ def test_jet_resolution_sf_2d():
 
 def test_corrected_jets_factory():
     import os
+
     from coffea.jetmet_tools import CorrectedJetsFactory, CorrectedMETFactory, JECStack
 
     events = None
@@ -721,6 +720,7 @@ def test_corrected_jets_factory():
 @pytest.mark.skip(reason="this test may not make sense with dask awkward")
 def test_factory_lifecycle():
     import os
+
     from coffea.jetmet_tools import CorrectedJetsFactory, CorrectedMETFactory, JECStack
     from coffea.nanoevents import NanoEventsFactory
 
@@ -752,8 +752,9 @@ def test_factory_lifecycle():
     jet_factory = CorrectedJetsFactory(name_map, jec_stack)
     met_factory = CorrectedMETFactory(name_map)
 
-    from coffea.nanoevents.mapping import ArrayLifecycleMapping
     import threading
+
+    from coffea.nanoevents.mapping import ArrayLifecycleMapping
 
     array_log = ArrayLifecycleMapping()
     jec_finalized = threading.Event()  # just using this as a flag object

@@ -1,7 +1,6 @@
-from __future__ import print_function, division
-from coffea import processor
-
 import pytest
+
+from coffea import processor
 
 
 def do_dask_job(client, filelist, compression=0):
@@ -20,8 +19,8 @@ def do_dask_job(client, filelist, compression=0):
 
 def do_dask_cached(client, filelist, cachestrategy=None):
     from coffea.nanoevents import schemas
-    from coffea.processor.test_items import NanoEventsProcessor
     from coffea.processor.dask import register_columncache
+    from coffea.processor.test_items import NanoEventsProcessor
 
     register_columncache(client)
 

@@ -1,11 +1,11 @@
+import json
 import warnings
+
 import awkward
 import numpy
-import json
-
 from fsspec.core import OpenFile
 
-from coffea.nanoevents.mapping.base import UUIDOpener, BaseSourceMapping
+from coffea.nanoevents.mapping.base import BaseSourceMapping, UUIDOpener
 from coffea.nanoevents.util import quote, tuple_to_key
 
 
@@ -49,7 +49,7 @@ class TrivialParquetOpener(UUIDOpener):
             return self.file
 
     def __init__(self, uuid_pfnmap, parquet_options={}):
-        super(TrivialParquetOpener, self).__init__(uuid_pfnmap)
+        super().__init__(uuid_pfnmap)
         self._parquet_options = parquet_options
         self._schema_map = None
 
@@ -132,9 +132,7 @@ class ParquetSourceMapping(BaseSourceMapping):
             return awkward.Array(out)
 
     def __init__(self, fileopener, start, stop, cache=None, access_log=None):
-        super(ParquetSourceMapping, self).__init__(
-            fileopener, start, stop, cache, access_log
-        )
+        super().__init__(fileopener, start, stop, cache, access_log)
 
     @classmethod
     def _extract_base_form(cls, arrow_schema):

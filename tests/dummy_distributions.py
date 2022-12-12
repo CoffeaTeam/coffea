@@ -30,7 +30,7 @@ def dummy_events():
     counts, px, py, pz, energy = dummy_four_momenta()
     thep4 = np.stack((px, py, pz, energy)).T
 
-    class obj(object):
+    class obj:
         def __init__(self):
             self.p4 = thep4
             self.px = px
@@ -44,7 +44,7 @@ def dummy_events():
             self.blah = energy * px
             self.count = counts
 
-    class events(object):
+    class events:
         def __init__(self):
             self.thing = obj()
 

@@ -1,6 +1,8 @@
-import awkward
 from copy import copy
-from coffea.nanoevents.methods.base import behavior, Systematic
+
+import awkward
+
+from coffea.nanoevents.methods.base import Systematic, behavior
 
 
 @awkward.behaviors.mixins.mixin_class(behavior)

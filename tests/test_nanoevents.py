@@ -3,6 +3,7 @@ from pathlib import Path
 
 import awkward as ak
 import pytest
+
 from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 
 

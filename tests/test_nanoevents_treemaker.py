@@ -1,7 +1,9 @@
 import os
-import pytest
-from coffea.nanoevents import NanoEventsFactory, TreeMakerSchema
+
 import awkward as ak
+import pytest
+
+from coffea.nanoevents import NanoEventsFactory, TreeMakerSchema
 
 
 @pytest.fixture(scope="module")

@@ -1,6 +1,7 @@
-from coffea import processor
 import awkward as ak
 import pandas as pd
+
+from coffea import processor
 
 
 class NanoTestProcessorPandas(processor.ProcessorABC):

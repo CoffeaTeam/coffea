@@ -29,8 +29,8 @@
 
 from typing import AsyncGenerator, Dict, List, Optional, Tuple
 
-from servicex import ServiceXDataset, StreamInfoPath, StreamInfoUrl
 from func_adl import ObjectStream, find_EventDataset
+from servicex import ServiceXDataset, StreamInfoPath, StreamInfoUrl
 
 
 class DataSource:

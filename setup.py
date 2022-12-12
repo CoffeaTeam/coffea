@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 # Copyright (c) 2018, Fermilab
 # All rights reserved.
@@ -31,8 +30,7 @@
 
 import os.path
 
-from setuptools import find_packages
-from setuptools import setup
+from setuptools import find_packages, setup
 
 
 def get_version():
@@ -95,6 +93,7 @@ EXTRAS_REQUIRE["servicex"] = [
     "func-adl_servicex",
 ]
 EXTRAS_REQUIRE["dev"] = [
+    "pre-commit",
     "flake8",
     "black",
     "pytest",
@@ -112,44 +111,12 @@ EXTRAS_REQUIRE["dev"] = [
 ]
 
 setup(
-    name="coffea",
     version=get_version(),
     packages=find_packages(exclude=["tests"]),
     scripts=[],
     include_package_data=True,
-    description="Tools for doing Collider HEP style analysis with columnar operations",
     long_description=get_description(),
-    author="Lindsey Gray (Fermilab)",
-    author_email="lagray@fnal.gov",
-    maintainer="Lindsey Gray (Fermilab)",
-    maintainer_email="lagray@fnal.gov",
-    url="https://github.com/CoffeaTeam/coffea",
-    download_url="https://github.com/CoffeaTeam/coffea/releases",
-    license="BSD 3-clause",
     test_suite="tests",
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,
-    classifiers=[
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
-        "Intended Audience :: Information Technology",
-        "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: BSD License",
-        "Operating System :: MacOS",
-        "Operating System :: POSIX",
-        "Operating System :: Unix",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Topic :: Scientific/Engineering",
-        "Topic :: Scientific/Engineering :: Information Analysis",
-        "Topic :: Scientific/Engineering :: Mathematics",
-        "Topic :: Scientific/Engineering :: Physics",
-        "Topic :: Software Development",
-        "Topic :: Utilities",
-    ],
-    platforms="Any",
 )

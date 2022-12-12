@@ -3,7 +3,7 @@ from coffea.lookup_tools.lookup_base import lookup_base
 
 class correctionlib_wrapper(lookup_base):
     def __init__(self, payload):
-        super(correctionlib_wrapper, self).__init__()
+        super().__init__()
         self._corr = payload
 
     def _evaluate(self, *args, **kwargs):

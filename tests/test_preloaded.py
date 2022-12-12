@@ -1,9 +1,11 @@
-import pytest
 import os
+
+import pytest
 import uproot
-from coffea.processor.test_items import NanoEventsProcessor
+
 from coffea.nanoevents import NanoEventsFactory
 from coffea.nanoevents.mapping import SimplePreloadedColumnSource
+from coffea.processor.test_items import NanoEventsProcessor
 
 
 def test_preloaded_nanoevents():

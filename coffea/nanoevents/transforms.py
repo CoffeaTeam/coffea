@@ -1,7 +1,9 @@
 import copy
-import numpy
-import numba
+
 import awkward
+import numba
+import numpy
+
 from coffea.nanoevents.util import concat
 
 

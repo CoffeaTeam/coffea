@@ -1,11 +1,11 @@
-from coffea.lookup_tools.dense_lookup import dense_lookup
-from coffea.lookup_tools.dense_evaluated_lookup import dense_evaluated_lookup
-from coffea.lookup_tools.jme_standard_function import jme_standard_function
-from coffea.lookup_tools.jersf_lookup import jersf_lookup
-from coffea.lookup_tools.jec_uncertainty_lookup import jec_uncertainty_lookup
-from coffea.lookup_tools.rochester_lookup import rochester_lookup
-from coffea.lookup_tools.json_lookup import json_lookup
 from coffea.lookup_tools.correctionlib_wrapper import correctionlib_wrapper
+from coffea.lookup_tools.dense_evaluated_lookup import dense_evaluated_lookup
+from coffea.lookup_tools.dense_lookup import dense_lookup
+from coffea.lookup_tools.jec_uncertainty_lookup import jec_uncertainty_lookup
+from coffea.lookup_tools.jersf_lookup import jersf_lookup
+from coffea.lookup_tools.jme_standard_function import jme_standard_function
+from coffea.lookup_tools.json_lookup import json_lookup
+from coffea.lookup_tools.rochester_lookup import rochester_lookup
 
 lookup_types = {
     "dense_lookup": dense_lookup,
@@ -19,9 +19,9 @@ lookup_types = {
 }
 
 
-class evaluator(object):
+class evaluator:
     """
-    The evaluator class serves as a single point of extry for
+    The evaluator class serves as a single point of entry for
     looking up values of histograms and other functions read in
     with the extractor class. Stored look ups can be indexed by
     name and then called through an overloaded __call__ function.
@@ -37,7 +37,7 @@ class evaluator(object):
 
     The returned value has the same shape as the input arguments.
 
-    lookup_types is a map of possible contructors for extracted data
+    lookup_types is a map of possible constructors for extracted data
     """
 
     def __init__(self, names, types, primitives):

@@ -1,14 +1,13 @@
 import os
 import os.path as osp
 
-from parsl.providers import CondorProvider
+from parsl.addresses import address_by_hostname
 from parsl.channels import LocalChannel
 from parsl.config import Config
 from parsl.executors import HighThroughputExecutor
+from parsl.providers import CondorProvider
 
-from parsl.addresses import address_by_hostname
-
-x509_proxy = "x509up_u%s" % (os.getuid(),)
+x509_proxy = f"x509up_u{os.getuid()}"
 
 
 def condor_config(
@@ -16,7 +15,7 @@ def condor_config(
     mem_per_core=2048,
     total_workers=24,
     max_workers=200,
-    pyenv_dir="%s/.local" % (os.environ["HOME"],),
+    pyenv_dir="{}/.local".format(os.environ["HOME"]),
     grid_proxy_dir="/tmp",
     htex_label="coffea_parsl_condor_htex",
     wrk_init=None,
@@ -27,12 +26,12 @@ def condor_config(
     if wrk_init is None:
         wrk_init = """
         source /cvmfs/sft.cern.ch/lcg/views/LCG_95apython3/x86_64-centos7-gcc7-opt/setup.sh
-        export PATH=`pwd`/%s:$PATH
-        export PYTHONPATH=`pwd`/%s:$PYTHONPATH
+        export PATH=`pwd`/{}:$PATH
+        export PYTHONPATH=`pwd`/{}:$PYTHONPATH
 
-        export X509_USER_PROXY=`pwd`/%s
-        mkdir -p ./%s
-        """ % (
+        export X509_USER_PROXY=`pwd`/{}
+        mkdir -p ./{}
+        """.format(
             "%s/bin" % pyenv_relpath,
             "%s/lib/python3.6/site-packages" % pyenv_relpath,
             x509_proxy,

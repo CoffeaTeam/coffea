@@ -1,7 +1,9 @@
-from coffea.lookup_tools.jme_standard_function import jme_standard_function
 import re
+
 import awkward
 import numpy
+
+from coffea.lookup_tools.jme_standard_function import jme_standard_function
 
 
 def _checkConsistency(against, tocheck):
@@ -22,14 +24,14 @@ _levelre = re.compile("Resolution")
 def _getLevel(levelName):
     matches = _levelre.findall(levelName)
     if len(matches) > 1:
-        raise Exception("Malformed JEC level name: {}".format(levelName))
+        raise Exception(f"Malformed JEC level name: {levelName}")
     return matches[0]
 
 
 _level_order = ["Resolution"]
 
 
-class JetResolution(object):
+class JetResolution:
     """
     This class is a columnar implementation of the JetResolution tool in
     CMSSW and FWLite. It calculates the jet energy resolution for a corrected jet

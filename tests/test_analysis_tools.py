@@ -1,7 +1,6 @@
 import numpy as np
-from dummy_distributions import dummy_jagged_eta_pt
-
 import pytest
+from dummy_distributions import dummy_jagged_eta_pt
 
 
 def test_weights():

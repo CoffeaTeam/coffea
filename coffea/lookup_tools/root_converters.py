@@ -1,6 +1,9 @@
-from ..util import numpy as np, deprecate
-import uproot
 import re
+
+import uproot
+
+from ..util import deprecate
+from ..util import numpy as np
 
 cycle = re.compile(r";\d+")
 

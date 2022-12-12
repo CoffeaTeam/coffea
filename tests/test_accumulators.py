@@ -1,8 +1,10 @@
-import pytest
 from collections import defaultdict
-from coffea import processor
 from functools import partial
+
 import numpy as np
+import pytest
+
+from coffea import processor
 
 
 def test_accumulators():

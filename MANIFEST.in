@@ -1,3 +1,33 @@
-include README.rst
 include LICENSE
+include .flake8
 include coffea/processor/templates/*.tmpl
+include docker/kubernetes/spark/Dockerfile
+include docker/skyhook/Dockerfile
+include *.md
+include *.yaml
+include *.yml
+recursive-include binder *.ipynb
+recursive-include binder *.yml
+recursive-include docker *.md
+recursive-include docker *.sh
+recursive-include docker *.yml
+recursive-include docs *.ipynb
+recursive-include docs *.png
+recursive-include docs *.py
+recursive-include docs *.rst
+recursive-include docs Makefile
+recursive-include tests *.C
+recursive-include tests *.coffea
+recursive-include tests *.csv
+recursive-include tests *.gz
+recursive-include tests *.h
+recursive-include tests *.json
+recursive-include tests *.npy
+recursive-include tests *.parquet
+recursive-include tests *.png
+recursive-include tests *.py
+recursive-include tests *.root
+recursive-include tests *.sh
+recursive-include tests *.txt
+recursive-include validation *.py
+recursive-include validation *.sh

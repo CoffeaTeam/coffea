@@ -1,14 +1,16 @@
-import warnings
-import uproot
-import awkward
 import json
-from coffea.nanoevents.mapping.base import UUIDOpener, BaseSourceMapping
+import warnings
+
+import awkward
+import uproot
+
+from coffea.nanoevents.mapping.base import BaseSourceMapping, UUIDOpener
 from coffea.nanoevents.util import quote, tuple_to_key
 
 
 class TrivialUprootOpener(UUIDOpener):
     def __init__(self, uuid_pfnmap, uproot_options={}):
-        super(TrivialUprootOpener, self).__init__(uuid_pfnmap)
+        super().__init__(uuid_pfnmap)
         self._uproot_options = uproot_options
 
     def open_uuid(self, uuid):
@@ -79,9 +81,7 @@ class UprootSourceMapping(BaseSourceMapping):
     def __init__(
         self, fileopener, start, stop, cache=None, access_log=None, use_ak_forth=False
     ):
-        super(UprootSourceMapping, self).__init__(
-            fileopener, start, stop, cache, access_log, use_ak_forth
-        )
+        super().__init__(fileopener, start, stop, cache, access_log, use_ak_forth)
 
     @classmethod
     def _extract_base_form(cls, tree, iteritems_options={}):

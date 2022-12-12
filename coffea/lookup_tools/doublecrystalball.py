@@ -1,10 +1,10 @@
 import numpy as np
 from scipy.stats._continuous_distns import (
-    rv_continuous,
-    _norm_pdf_C,
-    _norm_cdf,
-    _norm_ppf,
     _lazywhere,
+    _norm_cdf,
+    _norm_pdf_C,
+    _norm_ppf,
+    rv_continuous,
 )
 
 

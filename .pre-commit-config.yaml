@@ -30,11 +30,6 @@ repos:
   - id: requirements-txt-fixer
   - id: trailing-whitespace
 
-- repo: https://github.com/PyCQA/isort
-  rev: 5.10.1
-  hooks:
-  - id: isort
-
 - repo: https://github.com/asottile/pyupgrade
   rev: v3.3.1
   hooks:
@@ -56,7 +51,7 @@ repos:
   rev: v2.2.2
   hooks:
   - id: codespell
-    args: [--skip=*.ipynb, -L hist,Hist,nd,SubJet,subjet,Subjet,PTD]
+    args: ["--skip=*.ipynb","-L hist,Hist,nd,SubJet,subjet,Subjet,PTD,ptd"]
 
 - repo: https://github.com/mgedmin/check-manifest
   rev: "0.46"

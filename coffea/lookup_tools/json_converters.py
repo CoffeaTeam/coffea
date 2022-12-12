@@ -1,6 +1,8 @@
-from ..util import numpy
-import correctionlib
 import json
+
+import correctionlib
+
+from ..util import numpy
 
 
 def is_gz_file(filename):
@@ -61,7 +63,7 @@ def convert_histo_json_file(filename):
             val_names = set()
             extract_json_histo_structure(info[dir][htitle], axis_order, axes)
             extract_json_histo_values(info[dir][htitle], [], bins_and_values, val_names)
-            histname = "%s/%s" % (dir, htitle)
+            histname = f"{dir}/{htitle}"
             names_and_axes[histname] = axes
             names_and_orders[histname] = axis_order
             names_and_binvalues[histname] = bins_and_values

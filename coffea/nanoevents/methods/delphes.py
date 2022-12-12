@@ -2,9 +2,10 @@
 
 See https://cp3.irmp.ucl.ac.be/projects/delphes/wiki/WorkBook/RootTreeDescription for details.
 """
-import numpy
 import awkward
-from coffea.nanoevents.methods import base, vector, candidate
+import numpy
+
+from coffea.nanoevents.methods import base, candidate, vector
 
 behavior = {}
 behavior.update(base.behavior)
@@ -28,7 +29,7 @@ def _set_repr_name(classname):
     behavior[classname].__repr__ = namefcn
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Event:
     ...
 
@@ -36,7 +37,7 @@ class Event:
 _set_repr_name("Event")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class LHEFEvent(Event):
     ...
 
@@ -44,7 +45,7 @@ class LHEFEvent(Event):
 _set_repr_name("LHEFEvent")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class HepMCEvent(Event):
     ...
 
@@ -52,7 +53,7 @@ class HepMCEvent(Event):
 _set_repr_name("HepMCEvent")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class LHCOEvent(Event):
     ...
 
@@ -60,7 +61,7 @@ class LHCOEvent(Event):
 _set_repr_name("LHCOEvent")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Weight(base.NanoCollection):
     ...
 
@@ -68,7 +69,7 @@ class Weight(base.NanoCollection):
 _set_repr_name("Weight")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class WeightLHEF(Event):
     ...
 
@@ -76,7 +77,7 @@ class WeightLHEF(Event):
 _set_repr_name("WeightLHEF")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Rho(base.NanoCollection):
     ...
 
@@ -84,7 +85,7 @@ class Rho(base.NanoCollection):
 _set_repr_name("Rho")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class ScalarHT(base.NanoCollection):
     ...
 
@@ -92,7 +93,7 @@ class ScalarHT(base.NanoCollection):
 _set_repr_name("ScalarHT")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class MissingET(vector.SphericalThreeVector, base.NanoCollection):
     @property
     def rho(self):
@@ -114,7 +115,7 @@ class MissingET(vector.SphericalThreeVector, base.NanoCollection):
 _set_repr_name("MissingET")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Vertex(vector.LorentzVector):
     """Generic vertex collection that has Lorentz vector properties"""
 
@@ -138,7 +139,7 @@ class Vertex(vector.LorentzVector):
 _set_repr_name("Vertex")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Particle(vector.PtEtaPhiMLorentzVector):
     """Generic particle collection that has Lorentz vector properties
 
@@ -178,7 +179,7 @@ class Particle(vector.PtEtaPhiMLorentzVector):
 _set_repr_name("Particle")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class MasslessParticle(Particle, base.NanoCollection):
     @property
     def mass(self):
@@ -188,7 +189,7 @@ class MasslessParticle(Particle, base.NanoCollection):
 _set_repr_name("MasslessParticle")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Photon(MasslessParticle, base.NanoCollection):
     ...
 
@@ -196,7 +197,7 @@ class Photon(MasslessParticle, base.NanoCollection):
 _set_repr_name("Photon")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Electron(MasslessParticle, base.NanoCollection):
     ...
 
@@ -204,7 +205,7 @@ class Electron(MasslessParticle, base.NanoCollection):
 _set_repr_name("Electron")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Muon(MasslessParticle, base.NanoCollection):
     ...
 
@@ -212,7 +213,7 @@ class Muon(MasslessParticle, base.NanoCollection):
 _set_repr_name("Muon")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Jet(Particle, base.NanoCollection):
     ...
 
@@ -220,7 +221,7 @@ class Jet(Particle, base.NanoCollection):
 _set_repr_name("Jet")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Track(Particle, base.NanoCollection):
     ...
 
@@ -228,7 +229,7 @@ class Track(Particle, base.NanoCollection):
 _set_repr_name("Track")
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Tower(MasslessParticle, base.NanoCollection):
     @property
     def pt(self):

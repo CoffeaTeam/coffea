@@ -4,8 +4,9 @@ These helper classes were previously part of ``coffea.processor``
 but have been migrated and updated to be compatible with awkward-array 1.0
 """
 import numpy
-import coffea.util
+
 import coffea.processor
+import coffea.util
 
 
 class WeightStatistics(coffea.processor.AccumulatorABC):
@@ -76,7 +77,7 @@ class Weights:
                 the correction uncertainty is symmetric, this can be set to None to auto-calculate
                 the down shift as ``1 / weightUp``.
             shift : bool, optional
-                if True, interpret weightUp and weightDown as a realtive difference (additive) to the
+                if True, interpret weightUp and weightDown as a relative difference (additive) to the
                 nominal value
 
         .. note:: ``weightUp`` and ``weightDown`` are assumed to be rvalue-like and may be modified in-place by this function
@@ -126,7 +127,7 @@ class Weights:
                 the correction uncertainty is symmetric, this can be set to None to auto-calculate
                 the down shift as ``1 / weightUp``.
             shift : bool, optional
-                if True, interpret weightUp and weightDown as a realtive difference (additive) to the
+                if True, interpret weightUp and weightDown as a relative difference (additive) to the
                 nominal value
 
         .. note:: ``weightUp`` and ``weightDown`` are assumed to be rvalue-like and may be modified in-place by this function
@@ -184,7 +185,7 @@ class Weights:
                 the correction uncertainty is symmetric, this can be set to None to auto-calculate
                 the down shift as ``1 / weightUp``.
             shift : bool, optional
-                if True, interpret weightUp and weightDown as a realtive difference (additive) to the
+                if True, interpret weightUp and weightDown as a relative difference (additive) to the
                 nominal value
 
         .. note:: ``weightUp`` and ``weightDown`` are assumed to be rvalue-like and may be modified in-place by this function

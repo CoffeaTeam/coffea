@@ -1,5 +1,6 @@
-import pandas
 import numpy
+import pandas
+
 from coffea.lookup_tools.dense_mapped_lookup import dense_mapped_lookup
 
 
@@ -116,7 +117,7 @@ class BTagScaleFactor:
             corr = df.loc[syst]
             allbins = list(corr.index)
             edges_eta = numpy.array(
-                sorted(set(x for tup in corr.index.levels[1] for x in tup))
+                sorted({x for tup in corr.index.levels[1] for x in tup})
             )
             if numpy.all(edges_eta >= 0):
                 assert (
@@ -124,10 +125,10 @@ class BTagScaleFactor:
                 ), "BTV correction doesn't cover the middle of the detector!"
                 edges_eta = numpy.concatenate([-edges_eta[:0:-1], edges_eta])
             edges_pt = numpy.array(
-                sorted(set(x for tup in corr.index.levels[2] for x in tup))
+                sorted({x for tup in corr.index.levels[2] for x in tup})
             )
             edges_discr = numpy.array(
-                sorted(set(x for tup in corr.index.levels[3] for x in tup))
+                sorted({x for tup in corr.index.levels[3] for x in tup})
             )
             bin_low_edges = numpy.meshgrid(
                 self._flavor[:-1],

@@ -1,15 +1,12 @@
 import parsl
-
 from parsl.app.app import python_app
-
-from parsl.providers import LocalProvider
 from parsl.channels import LocalChannel
 from parsl.config import Config
 from parsl.executors import HighThroughputExecutor
+from parsl.providers import LocalProvider
 
 from ..executor import _futures_handler
 from .timeout import timeout
-
 
 _default_cfg = Config(
     executors=[
@@ -40,8 +37,9 @@ def _parsl_stop():
 @timeout
 @python_app
 def derive_chunks(filename, treename, chunksize, ds, timeout=10):
-    import uproot
     from collections.abc import Sequence
+
+    import uproot
 
     uproot.XRootDSource.defaults["parallel"] = False
 
@@ -73,9 +71,9 @@ def derive_chunks(filename, treename, chunksize, ds, timeout=10):
 
 
 def _parsl_get_chunking(filelist, chunksize, status=True, timeout=10):
-    futures = set(
+    futures = {
         derive_chunks(fn, tn, chunksize, ds, timeout=timeout) for ds, fn, tn in filelist
-    )
+    }
 
     items = []
 

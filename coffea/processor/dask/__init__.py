@@ -1,9 +1,10 @@
 import os
-import blosc
-from threading import Lock
 from collections.abc import MutableMapping
+from threading import Lock
+
+import blosc
 from distributed import WorkerPlugin, get_worker
-from zict import Buffer, Func, LRU, File
+from zict import LRU, Buffer, File, Func
 
 
 class ColumnCache(WorkerPlugin, MutableMapping):

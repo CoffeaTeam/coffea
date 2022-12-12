@@ -1,6 +1,7 @@
-from coffea.util import load, save
-from coffea.processor.test_items import NanoEventsProcessor
 import os
+
+from coffea.processor.test_items import NanoEventsProcessor
+from coffea.util import load, save
 
 
 def test_loadsave():

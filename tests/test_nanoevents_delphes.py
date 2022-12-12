@@ -1,7 +1,9 @@
 import os
-import pytest
-from coffea.nanoevents import NanoEventsFactory, DelphesSchema
+
 import awkward as ak
+import pytest
+
+from coffea.nanoevents import DelphesSchema, NanoEventsFactory
 
 
 def _events():

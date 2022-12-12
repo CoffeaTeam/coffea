@@ -172,7 +172,7 @@ class DelphesSchema(BaseSchema):
         "Trigger": "trigger word",
         "TrimmedP4[5]": "first entry (i = 0) is the total Trimmed Jet 4-momenta and from i = 1 to 4 are the trimmed subjets 4-momenta",
         "Tx": "angle of the momentum in the horizontal (x,z) plane [urad]",
-        "Ty": "angle of the momentum in the verical (y,z) plane [urad]",
+        "Ty": "angle of the momentum in the vertical (y,z) plane [urad]",
         "VertexIndex": "reference to vertex",
         "Weight": "weight for the event",
         "X1": 'fraction of beam momentum carried by first parton ("beam side")',
@@ -244,8 +244,8 @@ class DelphesSchema(BaseSchema):
             branch_forms[objname] = _tlorentz_vectorize(objname, form)
 
         # parse into high-level records (collections, list collections, and singletons)
-        collections = set(k.split("/")[0] for k in branch_forms)
-        collections -= set(k for k in collections if k.endswith("_size"))
+        collections = {k.split("/")[0] for k in branch_forms}
+        collections -= {k for k in collections if k.endswith("_size")}
 
         # Create offsets virtual arrays
         for name in collections:

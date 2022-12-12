@@ -1,25 +1,25 @@
 """Physics object candidate mixin
 
 This provides just a Lorentz vector with charge, but maybe
-in the future it will provide some sort of composite candiate building tool
+in the future it will provide some sort of composite candidate building tool
 that automatically resolves duplicates in the chain.
 """
-import numpy
 import awkward
-from coffea.nanoevents.methods import vector
+import numpy
 
+from coffea.nanoevents.methods import vector
 
 behavior = dict(vector.behavior)
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Candidate(vector.LorentzVector):
     """A Lorentz vector with charge
 
     This mixin class requires the parent class to provide items `x`, `y`, `z`, `t`, and `charge`.
     """
 
-    @awkward.behaviors.mixins.mixin_class_method(numpy.add, {"Candidate"})
+    @awkward.mixin_class_method(numpy.add, {"Candidate"})
     def add(self, other):
         """Add two candidates together elementwise using `x`, `y`, `z`, `t`, and `charge` components"""
         return awkward.zip(
@@ -49,7 +49,7 @@ class Candidate(vector.LorentzVector):
         )
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class PtEtaPhiMCandidate(Candidate, vector.PtEtaPhiMLorentzVector):
     """A Lorentz vector in eta, mass coordinates with charge
 
@@ -59,7 +59,7 @@ class PtEtaPhiMCandidate(Candidate, vector.PtEtaPhiMLorentzVector):
     pass
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class PtEtaPhiECandidate(Candidate, vector.PtEtaPhiELorentzVector):
     """A Lorentz vector in eta, energy coordinates with charge
 

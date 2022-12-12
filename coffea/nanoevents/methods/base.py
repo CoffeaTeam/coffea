@@ -1,23 +1,19 @@
 """Basic NanoEvents and NanoCollection mixins"""
-import awkward
-import numpy
+import re
 from abc import abstractmethod
 from functools import partial
-import re
-import coffea
-from coffea.util import rewrap_recordarray, awkward_rewrap
-from typing import (
-    List,
-    Union,
-    Tuple,
-    Callable,
-)
+from typing import Callable, List, Tuple, Union
 
+import awkward
+import numpy
+
+import coffea
+from coffea.util import awkward_rewrap, rewrap_recordarray
 
 behavior = {}
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class Systematic:
     """A base mixin class to describe and build variations on a feature of an nanoevents object."""
 
@@ -26,7 +22,7 @@ class Systematic:
     @classmethod
     def add_kind(cls, kind: str):
         """
-        Register a type of systematic variation, it must fullfil the base class interface.
+        Register a type of systematic variation, it must fulfill the base class interface.
         """
         cls._systematic_kinds.add(kind)
 
@@ -148,7 +144,7 @@ for kind in systematics.__all__:
     Systematic.add_kind(kind)
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class NanoEvents(Systematic):
     """NanoEvents mixin class
 
@@ -164,7 +160,7 @@ class NanoEvents(Systematic):
 behavior[("__typestr__", "NanoEvents")] = "event"
 
 
-@awkward.behaviors.mixins.mixin_class(behavior)
+@awkward.mixin_class(behavior)
 class NanoCollection:
     """A NanoEvents collection
 

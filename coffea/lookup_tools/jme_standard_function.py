@@ -1,15 +1,17 @@
-from coffea.lookup_tools.lookup_base import lookup_base
-
-import numpy
-import awkward
 from copy import deepcopy
 
-# we need to import these ahead of time for function parsing
-from scipy.special import erf  # noqa: F401
-from numpy import sqrt, log, log10, exp, abs  # noqa: F401
+import awkward
+import numpy
+from numpy import sqrt  # noqa: F401
+from numpy import abs, exp, log, log10  # noqa: F401
 from numpy import maximum as max  # noqa: F401
 from numpy import minimum as min  # noqa: F401
 from numpy import power as pow  # noqa: F401
+
+# we need to import these ahead of time for function parsing
+from scipy.special import erf  # noqa: F401
+
+from coffea.lookup_tools.lookup_base import lookup_base
 
 
 def wrap_formula(fstr, varlist):
@@ -20,10 +22,10 @@ def wrap_formula(fstr, varlist):
     val = fstr
     try:
         val = float(fstr)
-        fstr = "numpy.full_like(%s,%f)" % (varlist[0], val)
+        fstr = f"numpy.full_like({varlist[0]},{val:f})"
     except ValueError:
         val = fstr
-    lstr = "lambda %s: %s" % (",".join(varlist), fstr)
+    lstr = "lambda {}: {}".format(",".join(varlist), fstr)
     func = eval(lstr)
     return func
 
@@ -85,21 +87,21 @@ class jme_standard_function(lookup_base):
     The list of required jet properties are given in jersf_lut.signature
     """
 
-    def __init__(self, formula, bins_and_orders, clamps_and_vars, parms_and_orders):
+    def __init__(self, formula, bins_and_orders, clamps_and_vars, params_and_orders):
         """
         The constructor takes the output of the "convert_jec(jr)_txt_file"
         text file converter, which returns a formula, bins, and parameter values.
         """
-        super(jme_standard_function, self).__init__()
+        super().__init__()
         self._dim_order = bins_and_orders[1]
         self._bins = bins_and_orders[0]
         self._eval_vars = clamps_and_vars[2]
         self._eval_clamp_mins = clamps_and_vars[0]
         self._eval_clamp_maxs = clamps_and_vars[1]
-        self._parm_order = parms_and_orders[1]
-        self._parms = parms_and_orders[0]
+        self._param_order = params_and_orders[1]
+        self._params = params_and_orders[0]
         self._formula_str = formula
-        self._formula = wrap_formula(formula, self._parm_order + self._eval_vars)
+        self._formula = wrap_formula(formula, self._param_order + self._eval_vars)
 
         for binname in self._dim_order[1:]:
             binsaslists = self._bins[binname].tolist()
@@ -114,7 +116,7 @@ class jme_standard_function(lookup_base):
             )
 
         # compile the formula
-        argsize = len(self._parm_order) + len(self._eval_vars)
+        argsize = len(self._param_order) + len(self._eval_vars)
         some_ones = tuple([50 * numpy.ones(argsize) for i in range(argsize)])
         _ = self._formula(*some_ones)
 
@@ -181,13 +183,13 @@ class jme_standard_function(lookup_base):
             eval_values.append(numpy.clip(eval_vals[eval_name], clamp_mins, clamp_maxs))
 
         # get parameter values
-        parm_values = []
-        if len(self._parms) > 0:
-            parm_values = [
-                numpy.array(parm[bin_tuple]).flatten() for parm in self._parms
+        param_values = []
+        if len(self._params) > 0:
+            param_values = [
+                numpy.array(param[bin_tuple]).flatten() for param in self._params
             ]
 
-        raw_eval = self._formula(*tuple(parm_values + eval_values))
+        raw_eval = self._formula(*tuple(param_values + eval_values))
         return numpy.where(overflows, numpy.ones_like(raw_eval), raw_eval)
 
     @property
@@ -198,7 +200,7 @@ class jme_standard_function(lookup_base):
     def __repr__(self):
         out = "binned dims: %s\n" % (self._dim_order)
         out += "eval vars  : %s\n" % (self._eval_vars)
-        out += "parameters : %s\n" % (self._parm_order)
+        out += "parameters : %s\n" % (self._param_order)
         out += "formula    : %s\n" % (self._formula_str)
         out += "signature  : (%s)\n" % (",".join(self._signature))
         return out

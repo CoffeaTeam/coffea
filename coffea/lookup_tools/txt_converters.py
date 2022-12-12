@@ -1,8 +1,9 @@
-import awkward
-import numpy
 import os
 import sys
 import warnings
+
+import awkward
+import numpy
 
 try:
     import cStringIO as io
@@ -10,7 +11,7 @@ except ImportError:
     import io
 
 # for later
-# func = numbaize(formula,['p%i'%i for i in range(nParms)]+[varnames[i] for i in range(nEvalVars)])
+# func = numbaize(formula,['p%i'%i for i in range(nParams)]+[varnames[i] for i in range(nEvalVars)])
 
 
 def is_gz_file(filename):
@@ -19,7 +20,7 @@ def is_gz_file(filename):
 
 
 def _parse_jme_formatted_file(
-    jmeFilePath, interpolatedFunc=False, parmsFromColumns=False, jme_f=None
+    jmeFilePath, interpolatedFunc=False, paramsFromColumns=False, jme_f=None
 ):
     if jme_f is None:
         fopen = open
@@ -47,10 +48,10 @@ def _parse_jme_formatted_file(
     nBinColumns = 2 * nBinnedVars
     nEvalVars = int(layout[nBinnedVars + 1])
     formula = layout[nBinnedVars + nEvalVars + 2]
-    nParms = 0
-    while formula.count("[%i]" % nParms):
-        formula = formula.replace("[%i]" % nParms, "p%i" % nParms)
-        nParms += 1
+    nParams = 0
+    while formula.count("[%i]" % nParams):
+        formula = formula.replace("[%i]" % nParams, "p%i" % nParams)
+        nParams += 1
     # get rid of TMath
     tmath = {
         "TMath::Max": "max",
@@ -68,21 +69,19 @@ def _parse_jme_formatted_file(
     columns = []
     dtypes = []
     offset = 1
-    prefix = "" if parmsFromColumns else "binned_"
+    prefix = "" if paramsFromColumns else "binned_"
     for i in range(nBinnedVars):
-        columns.extend(["%s%s%s" % (prefix, layout[i + offset], mm) for mm in minMax])
+        columns.extend([f"{prefix}{layout[i + offset]}{mm}" for mm in minMax])
         dtypes.extend(["<f4", "<f4"])
     columns.append("NVars")
     dtypes.append("<i8")
     offset += nBinnedVars + 1
-    prefix = "" if parmsFromColumns else "eval_"
+    prefix = "" if paramsFromColumns else "eval_"
     if not interpolatedFunc:
         for i in range(nEvalVars):
-            columns.extend(
-                ["%s%s%s" % (prefix, layout[i + offset], mm) for mm in minMax]
-            )
+            columns.extend([f"{prefix}{layout[i + offset]}{mm}" for mm in minMax])
             dtypes.extend(["<f4", "<f4"])
-    for i in range(nParms):
+    for i in range(nParams):
         columns.append("p%i" % i)
         dtypes.append("<f4")
 
@@ -98,12 +97,12 @@ def _parse_jme_formatted_file(
     for f in funcs_to_cap:
         formula = formula.replace(f.upper(), f)
 
-    if parmsFromColumns:
+    if paramsFromColumns:
         pars = numpy.genfromtxt(jme_f, encoding="ascii")
         if len(pars.shape) == 1:
             pars = pars[numpy.newaxis, :]
-        nParms = pars.shape[1] - len(columns)
-        for i in range(nParms):
+        nParams = pars.shape[1] - len(columns)
+        for i in range(nParams):
             columns.append("p%i" % i)
             dtypes.append("<f4")
         pars = numpy.core.records.fromarrays(
@@ -127,7 +126,7 @@ def _parse_jme_formatted_file(
         nBinColumns,
         nEvalVars,
         formula,
-        nParms,
+        nParams,
         columns,
         dtypes,
     ]
@@ -143,7 +142,7 @@ def _build_standard_jme_lookup(
     nBinColumns,
     nEvalVars,
     formula,
-    nParms,
+    nParams,
     columns,
     dtypes,
     interpolatedFunc=False,
@@ -226,21 +225,21 @@ def _build_standard_jme_lookup(
             offset_col += 1
 
     # now get the parameters, which we will look up with the clamped values
-    parms = []
-    parm_order = []
+    params = []
+    param_order = []
     offset_col = 2 * nBinnedVars + 1 + int(not interpolatedFunc) * 2 * nEvalVars
-    for i in range(nParms):
+    for i in range(nParams):
         jag = awkward.unflatten(pars[columns[i + offset_col]], jagged_counts)
         assert awkward.is_valid(jag)
-        parms.append(jag)
-        parm_order.append("p%i" % (i))
+        params.append(jag)
+        param_order.append("p%i" % (i))
 
     wrapped_up = {}
     wrapped_up[(name, "jme_standard_function")] = (
         formula,
         (bins, bin_order),
         (clamp_mins, clamp_maxs, var_order),
-        (parms, parm_order),
+        (params, param_order),
     )
     return wrapped_up
 
@@ -262,10 +261,10 @@ def convert_jersf_txt_file(jersfFilePath):
         nBinColumns,
         nEvalVars,
         formula,
-        nParms,
+        nParams,
         columns,
         dtypes,
-    ) = _parse_jme_formatted_file(jersfFilePath, parmsFromColumns=True)
+    ) = _parse_jme_formatted_file(jersfFilePath, paramsFromColumns=True)
 
     temp = _build_standard_jme_lookup(
         name,
@@ -275,7 +274,7 @@ def convert_jersf_txt_file(jersfFilePath):
         nBinColumns,
         nEvalVars,
         formula,
-        nParms,
+        nParams,
         columns,
         dtypes,
     )
@@ -317,7 +316,7 @@ def convert_junc_txt_file(juncFilePath):
                 continue
             elif line.startswith("["):
                 component_name = line.strip()[1:-1]  # remove leading and trailing []
-                cname = "just/sum/dummy/dir/{0}_{1}.junc.txt".format(
+                cname = "just/sum/dummy/dir/{}_{}.junc.txt".format(
                     basename, component_name
                 )
                 components.append((cname, []))
@@ -346,11 +345,11 @@ def convert_junc_txt_component(juncFilePath, uncFile):
         nBinColumns,
         nEvalVars,
         formula,
-        nParms,
+        nParams,
         columns,
         dtypes,
     ) = _parse_jme_formatted_file(
-        juncFilePath, interpolatedFunc=True, parmsFromColumns=True, jme_f=uncFile
+        juncFilePath, interpolatedFunc=True, paramsFromColumns=True, jme_f=uncFile
     )
 
     temp = _build_standard_jme_lookup(
@@ -361,7 +360,7 @@ def convert_junc_txt_component(juncFilePath, uncFile):
         nBinColumns,
         nEvalVars,
         formula,
-        nParms,
+        nParams,
         columns,
         dtypes,
         interpolatedFunc=True,
@@ -420,7 +419,7 @@ def convert_effective_area_file(eaFilePath):
     dtypes = []
     offset = 1
     for i in range(nBinnedVars):
-        columns.extend(["%s%s" % (layout[i + offset], mm) for mm in minMax])
+        columns.extend([f"{layout[i + offset]}{mm}" for mm in minMax])
         dtypes.extend(["<f4", "<f4"])
     offset += nBinnedVars + 1
     for i in range(nEvalVars):

@@ -1,7 +1,9 @@
-from coffea.lookup_tools.jersf_lookup import jersf_lookup
 import re
+
 import awkward
 import numpy
+
+from coffea.lookup_tools.jersf_lookup import jersf_lookup
 
 
 def _checkConsistency(against, tocheck):
@@ -22,14 +24,14 @@ _levelre = re.compile("SF+")
 def _getLevel(levelName):
     matches = _levelre.findall(levelName)
     if len(matches) > 1:
-        raise Exception("Malformed JERSF level name: {}".format(levelName))
+        raise Exception(f"Malformed JERSF level name: {levelName}")
     return matches[0]
 
 
 _level_order = ["SF"]
 
 
-class JetResolutionScaleFactor(object):
+class JetResolutionScaleFactor:
     """
     This class is a columnar implementation of the JetResolutionScaleFactor tool in
     CMSSW and FWLite. It calculates the jet energy resolution scale factor for a
@@ -59,9 +61,7 @@ class JetResolutionScaleFactor(object):
         dataera = None
         for name, func in kwargs.items():
             if not isinstance(func, jersf_lookup):
-                raise Exception(
-                    "{} is a {} and not a jersf_lookup!".format(name, type(func))
-                )
+                raise Exception(f"{name} is a {type(func)} and not a jersf_lookup!")
             info = name.split("_")
             if len(info) != 5:
                 raise Exception("Corrector name is not properly formatted!")
