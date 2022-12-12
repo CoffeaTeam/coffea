@@ -58,7 +58,7 @@ jobs:
       uses: actions/setup-java@v3
       with:
         java-version: ${{ matrix.java-version }}
-        java-distribution: ${{ matrix.java-distribution }}
+        distribution: ${{ matrix.java-distribution }}
 
     - name: Set python 3.6 test settings
       run: |
