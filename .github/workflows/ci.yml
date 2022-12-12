@@ -47,7 +47,7 @@ jobs:
     name: test coffea (${{ matrix.os }}) - python ${{ matrix.python-version }}, JDK${{ matrix.java-version }}
 
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@3
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
@@ -120,7 +120,7 @@ jobs:
     name: test coffea-workqueue
 
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@3
     - name: Set up Conda
       uses: conda-incubator/setup-miniconda@v2.0.0
       with:
@@ -142,7 +142,7 @@ jobs:
 #    name: test coffea-skyhook-job
 #
 #    steps:
-#    - uses: actions/checkout@master
+#    - uses: actions/checkout@3
 #    - name: Test Coffea Skyhook Bindings
 #      shell: bash -l {0}
 #      run: |
@@ -167,7 +167,7 @@ jobs:
     name: deploy release
 
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@3
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
