@@ -122,7 +122,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Set up Conda
-      uses: conda-incubator/setup-miniconda@v2.0.0
+      uses: conda-incubator/setup-miniconda@v2.2.0
       with:
         auto-update-conda: true
         python-version: ${{ matrix.python-version }}
