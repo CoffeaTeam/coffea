@@ -96,7 +96,7 @@ jobs:
       uses: kamiazya/setup-graphviz@v1 
     - name: Install pandoc
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.10
-      uses: r-lib/actions/setup-pandoc@v1
+      uses: r-lib/actions/setup-pandoc@v2
     - name: Build documentation
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.10
       run: |
