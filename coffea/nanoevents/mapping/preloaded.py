@@ -82,7 +82,7 @@ class PreloadedSourceMapping(BaseSourceMapping):
         return columnhandle[start:stop]
 
     def __len__(self):
-        raise self._stop - self.start
+        return self._stop - self._start
 
     def __iter__(self):
         raise NotImplementedError
