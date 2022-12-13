@@ -46,7 +46,7 @@ class NanoEventsProcessor(processor.ProcessorABC):
         output = self.accumulator
 
         dataset = events.metadata["dataset"]
-        print(events.metadata)
+        # print(events.metadata)
         if "checkusermeta" in events.metadata:
             metaname, metavalue = self.expected_usermeta[dataset]
             assert metavalue == events.metadata[metaname]
@@ -66,8 +66,8 @@ class NanoEventsProcessor(processor.ProcessorABC):
                     pass
 
         dimuon = ak.combinations(events.Muon, 2)
-        print(events.Muon.behavior)
-        print(dimuon["0"].behavior)
+        # print(events.Muon.behavior)
+        # print(dimuon["0"].behavior)
         dimuon = dimuon["0"] + dimuon["1"]
 
         output["pt"].fill(dataset=dataset, pt=ak.flatten(muon_pt))
