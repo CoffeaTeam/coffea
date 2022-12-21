@@ -1,7 +1,6 @@
 from abc import abstractmethod
 from collections.abc import Mapping
 
-import awkward
 import numpy
 from cachetools import LRUCache
 
