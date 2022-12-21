@@ -57,7 +57,7 @@ INSTALL_REQUIRES = [
     "awkward>=2",
     "uproot>=5",
     "dask[array]>=2022.02.1",
-    "dask-awkward>=2022.12a1",
+    "dask-awkward>=2022.12",
     "correctionlib>=2.0.0",
     "pyarrow>=1.0.0",
     "fsspec",
