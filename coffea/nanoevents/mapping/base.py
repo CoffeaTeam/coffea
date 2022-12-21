@@ -116,7 +116,7 @@ class BaseSourceMapping(Mapping):
             raise RuntimeError(f"Syntax error in form key {nodes}")
         out = stack.pop()
         try:
-            out = numpy.array(awkward.Array(out))
+            out = numpy.array(out)
         except ValueError:
             if self._debug:
                 print(out)
