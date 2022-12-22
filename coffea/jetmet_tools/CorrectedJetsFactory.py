@@ -275,7 +275,7 @@ class CorrectedJetsFactory:
             )
             init_mass_jer = (
                 up["jet_energy_resolution_correction"]
-                * out_dict[jer_name_map["JetMass"]],
+                * out_dict[jer_name_map["JetMass"]]
             )
 
             up[self.name_map["JetPt"]] = init_pt_jer
