@@ -49,15 +49,21 @@ def _lazify_form(form, prefix, docstr=None):
         if parameters:
             form["parameters"] = parameters
     elif form["class"] == "RecordArray":
-        for index, field in enumerate(form["fields"]):
+        newfields, newcontents = [], []
+        for field, value in zip(form["fields"], form["contents"]):
             if "," in field or "!" in field:
+                # Could also skip here
                 raise CannotBeNanoEvents(
                     f"A subform contains a field with invalid characters: {field}"
                 )
+            elif field.startswith("@"):
+                # workaround uproot5 bug
+                continue
 
-            form["contents"][index] = _lazify_form(
-                form["contents"][index], prefix + f",{field},!item"
-            )
+            newfields.append(field)
+            newcontents.append(_lazify_form(value, prefix + f",{field},!item"))
+        form["fields"] = newfields
+        form["contents"] = newcontents
         if parameters:
             form["parameters"] = parameters
     else:

@@ -84,9 +84,6 @@ class BaseSourceMapping(Mapping):
             if skip:
                 skip = False
                 continue
-            elif node[0] == "@":
-                skip = True
-                continue
             elif node == "!skip":
                 skip = True
                 continue

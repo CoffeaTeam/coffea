@@ -210,38 +210,32 @@ class DelphesSchema(BaseSchema):
         return cls(base_form, version="1")
 
     def _build_collections(self, branch_forms):
-        def _tlorentz_vectorize(objname, form):
-            # first handle RecordArray
-            if {
-                "@instance_version",
-                "@num_bytes",
-                "@fUniqueID",
-                "@fBits",
-                "@pidf",
-                "fE",
-                "fP",
-            } == set(form.get("fields", [])):
+        def _preprocess_branch_form(objname, form):
+            if (
+                form.get("class", "") == "RecordArray"
+                and len({"fE", "fP"} & set(form["fields"])) == 2
+            ):
+                # Match TLorentzVector RecordArrays and convert
+                fP = form["contents"][form["fields"].index("fP")]
+                fE = form["contents"][form["fields"].index("fE")]
                 return zip_forms(
                     {
-                        "x": form["contents"][5]["contents"][0],
-                        "y": form["contents"][5]["contents"][1],
-                        "z": form["contents"][5]["contents"][2],
-                        "t": form["contents"][6],
+                        "x": fP["contents"][fP["fields"].index("fX")],
+                        "y": fP["contents"][fP["fields"].index("fY")],
+                        "z": fP["contents"][fP["fields"].index("fZ")],
+                        "t": fE,
                     },
                     objname,
                     "LorentzVector",
                 )
-            # If there's no "content", like a NumpyArray, just return.
-            # Note: this comes after checking for RecordArray.
-            if "content" not in form:
-                return form
-            # Then recursively go through and update the form's content.
-            form["content"] = _tlorentz_vectorize(objname, form["content"])
+            elif "content" in form:
+                # List*Array: recurse
+                form["content"] = _preprocess_branch_form(objname, form["content"])
             return form
 
         # preprocess lorentz vectors properly (and recursively)
         for objname, form in branch_forms.items():
-            branch_forms[objname] = _tlorentz_vectorize(objname, form)
+            branch_forms[objname] = _preprocess_branch_form(objname, form)
 
         # parse into high-level records (collections, list collections, and singletons)
         collections = {k.split("/")[0] for k in branch_forms}
