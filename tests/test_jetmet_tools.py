@@ -73,7 +73,9 @@ def test_factorized_jet_corrector():
     # Check that the corrector can be evaluated for jagges arrays
     corrs_jag = corrector.getCorrection(
         JetEta=test_eta_jag, Rho=test_Rho_jag, JetPt=test_pt_jag, JetA=test_A_jag
-    )
+    ).compute()
+
+    print(corrs_jag)
 
     assert ak.all(np.abs(pt_copy - ak.flatten(test_pt_jag)) < 1e-6)
     assert ak.all(np.abs(corrs - ak.flatten(corrs_jag)) < 1e-6)
@@ -98,7 +100,7 @@ def test_factorized_jet_corrector():
     )
     corrs_L1_jag = corrector.getCorrection(
         JetEta=test_eta_jag, Rho=test_Rho_jag, JetPt=test_pt_jag, JetA=test_A_jag
-    )
+    ).compute()
     print("Reference L1 corrections:", corrs_L1_jag_ref)
     print("Calculated L1 corrections:", corrs_L1_jag)
     assert ak.all(
@@ -138,7 +140,9 @@ def test_factorized_jet_corrector():
     corrector = FactorizedJetCorrector(
         **{name: evaluator[name] for name in jec_names[1:2]}
     )
-    corrs_L2_jag = corrector.getCorrection(JetEta=test_eta_jag, JetPt=test_pt_jag)
+    corrs_L2_jag = corrector.getCorrection(
+        JetEta=test_eta_jag, JetPt=test_pt_jag
+    ).compute()
     print("Reference L2 corrections:", corrs_L2_jag_ref.tolist())
     print("Calculated L2 corrections:", corrs_L2_jag.tolist())
     assert ak.all(
@@ -175,7 +179,7 @@ def test_factorized_jet_corrector():
     )
     corrs_L1L2L3_jag = corrector.getCorrection(
         JetEta=test_eta_jag, Rho=test_Rho_jag, JetPt=test_pt_jag, JetA=test_A_jag
-    )
+    ).compute()
     print("Reference L1L2L3 corrections:", corrs_L1L2L3_jag_ref)
     print("Calculated L1L2L3 corrections:", corrs_L1L2L3_jag)
     assert ak.all(
