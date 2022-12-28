@@ -2,9 +2,10 @@ import re
 from functools import reduce
 
 import awkward
+import dask_awkward
 import numpy
 
-from ..lookup_tools.jme_standard_function import jme_standard_function
+from coffea.lookup_tools.jme_standard_function import jme_standard_function
 
 
 def _checkConsistency(against, tocheck):
@@ -178,26 +179,49 @@ class FactorizedJetCorrector:
         # cache = kwargs.pop("lazy_cache", None)
         # form = kwargs.pop("form", None)
         corrVars = {}
+        thetype = None
         if "JetPt" in kwargs.keys():
             corrVars["JetPt"] = kwargs["JetPt"]
+            thetype = type(corrVars["JetPt"])
             kwargs.pop("JetPt")
         if "JetE" in kwargs.keys():
             corrVars["JetE"] = kwargs["JetE"]
+            thetype = type(corrVars["JetE"])
             kwargs.pop("JetE")
         if len(corrVars) == 0:
             raise Exception("No variable to correct, need JetPt or JetE in inputs!")
 
+        newkwargs = {}
+        one = 1.0
+        if thetype is dask_awkward.Array:
+            one = dask_awkward.from_awkward(
+                awkward.Array(numpy.array(1.0, dtype=numpy.float32)), 1
+            )
+        elif thetype is awkward.highlevel.Array:
+            for k, v in corrVars.items():
+                corrVars[k] = dask_awkward.from_awkward(v, 1)
+            for k, v in kwargs.items():
+                newkwargs[k] = dask_awkward.from_awkward(v, 1)
+            one = dask_awkward.from_awkward(
+                awkward.Array(numpy.array(1.0, dtype=numpy.float32)), 1
+            )
+        else:
+            newkwargs = kwargs
+
         corrections = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
-            cumCorr = reduce(lambda x, y: y * x, corrections, 1.0)
+            cumCorr = reduce(lambda x, y: y * x, corrections, one)
+
             fargs = tuple(
-                (cumCorr * corrVars[arg]) if arg in corrVars.keys() else kwargs[arg]
+                (cumCorr * corrVars[arg]) if arg in corrVars.keys() else newkwargs[arg]
                 for arg in sig
             )
 
-            if isinstance(fargs[0], awkward.highlevel.Array):
-                corrections.append(func(*fargs))  # this should be updated with dask
+            if isinstance(fargs[0], (awkward.highlevel.Array, dask_awkward.Array)):
+                corrections.append(
+                    dask_awkward.map_partitions(func, *fargs, meta=fargs[0]._meta)
+                )
             elif isinstance(fargs[0], numpy.ndarray):
                 corrections.append(func(*fargs))  # np is non-lazy
             else:
