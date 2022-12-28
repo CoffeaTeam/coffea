@@ -213,7 +213,7 @@ def test_jet_resolution():
     resos = reso.getResolution(JetEta=test_eta, Rho=test_Rho, JetPt=test_pt)
     resos_jag = reso.getResolution(
         JetEta=test_eta_jag, Rho=test_Rho_jag, JetPt=test_pt_jag
-    )
+    ).compute()
     assert ak.all(np.abs(resos - ak.flatten(resos_jag)) < 1e-6)
 
     test_pt_jag = test_pt_jag[0:3]
@@ -245,7 +245,7 @@ def test_jet_resolution():
     )
     resos_jag = reso.getResolution(
         JetEta=test_eta_jag, Rho=test_Rho_jag, JetPt=test_pt_jag
-    )
+    ).compute()
     print("Reference Resolution (jagged):", resos_jag_ref)
     print("Resolution (jagged):", resos_jag)
     # NB: 5e-4 tolerance was agreed upon by lgray and aperloff, if the differences get bigger over time
