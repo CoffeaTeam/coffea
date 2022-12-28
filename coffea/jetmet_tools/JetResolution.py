@@ -1,6 +1,7 @@
 import re
 
 import awkward
+import dask_awkward
 import numpy
 
 from coffea.lookup_tools.jme_standard_function import jme_standard_function
@@ -147,15 +148,23 @@ class JetResolution:
             jrs = reso.getResolution(JetProperty1=jet.property1,...)
 
         """
-        # cache = kwargs.pop("lazy_cache", None)
-        # form = kwargs.pop("form", None)
+        thetype = type(kwargs[self.signature[0]])
+        newkwargs = {}
+        if thetype is awkward.highlevel.Array:
+            for k, v in kwargs.items():
+                newkwargs[k] = dask_awkward.from_awkward(v, 1)
+        else:
+            newkwargs = kwargs
+
         resos = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
-            args = tuple(kwargs[input] for input in sig)
+            args = tuple(newkwargs[inp] for inp in sig)
 
-            if isinstance(args[0], awkward.highlevel.Array):
-                resos.append(func(*args))  # update with dask laziness
+            if isinstance(args[0], dask_awkward.Array):
+                resos.append(
+                    dask_awkward.map_partitions(func, *args, meta=args[0]._meta)
+                )
             elif isinstance(args[0], numpy.ndarray):
                 resos.append(func(*args))  # np is non-lazy
             else:

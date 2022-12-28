@@ -197,6 +197,7 @@ class FactorizedJetCorrector:
             one = dask_awkward.from_awkward(
                 awkward.Array(numpy.array(1.0, dtype=numpy.float32)), 1
             )
+            newkwargs = kwargs
         elif thetype is awkward.highlevel.Array:
             for k, v in corrVars.items():
                 corrVars[k] = dask_awkward.from_awkward(v, 1)
@@ -218,7 +219,7 @@ class FactorizedJetCorrector:
                 for arg in sig
             )
 
-            if isinstance(fargs[0], (awkward.highlevel.Array, dask_awkward.Array)):
+            if isinstance(fargs[0], dask_awkward.Array):
                 corrections.append(
                     dask_awkward.map_partitions(func, *fargs, meta=fargs[0]._meta)
                 )
