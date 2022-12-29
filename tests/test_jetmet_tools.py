@@ -604,21 +604,25 @@ def test_corrected_jets_factory():
     print("corrected_jets build time =", toc - tic)
 
     print(prof.output_text(unicode=True, color=True, show_all=True))
-
     tic = time.time()
-    print("Generated jet pt:", corrected_jets.pt_gen)
-    print("Original jet pt:", corrected_jets.pt_orig)
+    prof = pyinstrument.Profiler()
+    prof.start()
+    print("Generated jet pt:", corrected_jets.pt_gen.compute())
+    print("Original jet pt:", corrected_jets.pt_orig.compute())
     print("Raw jet pt:", jets.pt_raw)
-    print("Corrected jet pt:", corrected_jets.pt)
-    print("Original jet mass:", corrected_jets.mass_orig)
+    print("Corrected jet pt:", corrected_jets.pt.compute())
+    print("Original jet mass:", corrected_jets.mass_orig.compute())
     print("Raw jet mass:", jets["mass_raw"])
-    print("Corrected jet mass:", corrected_jets.mass)
+    print("Corrected jet mass:", corrected_jets.mass.compute())
     print("jet eta:", jets.eta)
     for unc in jet_factory.uncertainties():
         print(unc)
-        print(corrected_jets[unc].up.pt)
-        print(corrected_jets[unc].down.pt)
+        print(corrected_jets[unc].up.pt.compute())
+        print(corrected_jets[unc].down.pt.compute())
+    prof.stop()
     toc = time.time()
+
+    print(prof.output_text(unicode=True, color=True, show_all=True))
 
     print("build all jet variations =", toc - tic)
 
@@ -629,26 +633,24 @@ def test_corrected_jets_factory():
         JetResolutionScaleFactor,
     )
 
-    scalar_form = ak.without_parameters(jets["pt_raw"]).layout.form
     corrector = FactorizedJetCorrector(
         **{name: evaluator[name] for name in jec_stack_names[0:4]}
     )
     corrs = corrector.getCorrection(
         JetEta=jets["eta"], Rho=jets["rho"], JetPt=jets["pt_raw"], JetA=jets["area"]
-    )
+    ).compute()
     reso = JetResolution(**{name: evaluator[name] for name in jec_stack_names[4:5]})
     jets["jet_energy_resolution"] = reso.getResolution(
         JetEta=jets["eta"],
         Rho=jets["rho"],
         JetPt=jets["pt_raw"],
-        form=scalar_form,
-    )
+    ).compute()
     resosf = JetResolutionScaleFactor(
         **{name: evaluator[name] for name in jec_stack_names[5:6]}
     )
     jets["jet_energy_resolution_scale_factor"] = resosf.getScaleFactor(
         JetEta=jets["eta"]
-    )
+    ).compute()
 
     # Filter out the non-deterministic (no gen pt) jets
     def smear_factor(jetPt, pt_gen, jersf):
@@ -658,10 +660,15 @@ def test_corrected_jets_factory():
         )
 
     test_gen_pt = ak.concatenate(
-        [corrected_jets.pt_gen[0, :-2], corrected_jets.pt_gen[-1, :-1]]
+        [
+            corrected_jets.pt_gen.compute()[0, :-2],
+            corrected_jets.pt_gen.compute()[-1, :-1],
+        ]
     )
     test_raw_pt = ak.concatenate([jets.pt_raw[0, :-2], jets.pt_raw[-1, :-1]])
-    test_pt = ak.concatenate([corrected_jets.pt[0, :-2], corrected_jets.pt[-1, :-1]])
+    test_pt = ak.concatenate(
+        [corrected_jets.pt.compute()[0, :-2], corrected_jets.pt.compute()[-1, :-1]]
+    )
     test_eta = ak.concatenate([jets.eta[0, :-2], jets.eta[-1, :-1]])
     test_jer = ak.concatenate(
         [jets.jet_energy_resolution[0, :-2], jets.jet_energy_resolution[-1, :-1]]
@@ -674,7 +681,7 @@ def test_corrected_jets_factory():
     )
     test_jec = ak.concatenate([corrs[0, :-2], corrs[-1, :-1]])
     test_corrected_pt = ak.concatenate(
-        [corrected_jets.pt[0, :-2], corrected_jets.pt[-1, :-1]]
+        [corrected_jets.pt.compute()[0, :-2], corrected_jets.pt.compute()[-1, :-1]]
     )
     test_corr_pt = test_raw_pt * test_jec
     test_pt_smear_corr = test_corr_pt * smear_factor(
@@ -720,14 +727,14 @@ def test_corrected_jets_factory():
     print("corrected_met build time =", toc - tic)
 
     tic = time.time()
-    print(corrected_met.pt_orig)
-    print(corrected_met.pt)
+    print(corrected_met.pt_orig.compute())
+    print(corrected_met.pt.compute())
     prof = pyinstrument.Profiler()
     prof.start()
     for unc in jet_factory.uncertainties() + met_factory.uncertainties():
         print(unc)
-        print(corrected_met[unc].up.pt)
-        print(corrected_met[unc].down.pt)
+        print(corrected_met[unc].up.pt.compute())
+        print(corrected_met[unc].down.pt.compute())
     prof.stop()
     toc = time.time()
 

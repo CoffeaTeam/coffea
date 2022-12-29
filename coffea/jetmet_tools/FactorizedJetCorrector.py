@@ -146,25 +146,8 @@ class FactorizedJetCorrector:
             jecs = corrector.getCorrection(JetProperty1=jet.property1,...)
 
         """
-        # cache = kwargs.get("lazy_cache", None)
-        # form = kwargs.get("form", None)
-        first_arg = kwargs[self.signature[0]]
-
-        def total_corr(jec, **kwargs):
-            corrs = jec.getSubCorrections(**kwargs)
-            return reduce(lambda x, y: y * x, corrs, 1.0)
-
-        out = None
-        if isinstance(first_arg, awkward.highlevel.Array):
-            out = total_corr(
-                self, **kwargs
-            )  # this should be updated with dask laziness
-        elif isinstance(first_arg, numpy.ndarray):
-            out = total_corr(self, **kwargs)  # np is non-lazy
-        else:
-            raise Exception("Unknown array library for inputs.")
-
-        return out
+        corrs = self.getSubCorrections(**kwargs)
+        return reduce(lambda x, y: y * x, corrs, 1.0)
 
     def getSubCorrections(self, **kwargs):
         """
