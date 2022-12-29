@@ -221,7 +221,12 @@ class FactorizedJetCorrector:
 
             if isinstance(fargs[0], dask_awkward.Array):
                 corrections.append(
-                    dask_awkward.map_partitions(func, *fargs, meta=fargs[0]._meta)
+                    dask_awkward.map_partitions(
+                        func,
+                        *fargs,
+                        label=f"{self._campaign}-{self._dataera}-{self._datatype}-{self._levels[i]}-{self._jettype}",
+                        meta=fargs[0]._meta,
+                    )
                 )
             elif isinstance(fargs[0], numpy.ndarray):
                 corrections.append(func(*fargs))  # np is non-lazy

@@ -101,6 +101,7 @@ def test_factorized_jet_corrector():
     corrs_L1_jag = corrector.getCorrection(
         JetEta=test_eta_jag, Rho=test_Rho_jag, JetPt=test_pt_jag, JetA=test_A_jag
     ).compute()
+
     print("Reference L1 corrections:", corrs_L1_jag_ref)
     print("Calculated L1 corrections:", corrs_L1_jag)
     assert ak.all(
@@ -180,6 +181,7 @@ def test_factorized_jet_corrector():
     corrs_L1L2L3_jag = corrector.getCorrection(
         JetEta=test_eta_jag, Rho=test_Rho_jag, JetPt=test_pt_jag, JetA=test_A_jag
     ).compute()
+
     print("Reference L1L2L3 corrections:", corrs_L1L2L3_jag_ref)
     print("Calculated L1L2L3 corrections:", corrs_L1L2L3_jag)
     assert ak.all(
@@ -272,7 +274,7 @@ def test_jet_correction_uncertainty():
 
     for i, (level, corrs) in enumerate(juncs):
         assert corrs.shape[0] == test_eta.shape[0]
-        assert ak.all(corrs == ak.flatten(juncs_jag[i][1]))
+        assert ak.all(corrs == ak.flatten(juncs_jag[i][1].compute()))
 
     test_pt_jag = test_pt_jag[0:3]
     test_eta_jag = test_eta_jag[0:3]
@@ -299,11 +301,14 @@ def test_jet_correction_uncertainty():
     juncs_jag = list(junc.getUncertainty(JetEta=test_eta_jag, JetPt=test_pt_jag))
 
     for i, (level, corrs) in enumerate(juncs_jag):
+        materialized_corrs = corrs.compute()
         print("Index:", i)
         print("Correction level:", level)
         print("Reference Uncertainties (jagged):", juncs_jag_ref)
-        print("Uncertainties (jagged):", corrs)
-        assert ak.all(np.abs(ak.flatten(juncs_jag_ref) - ak.flatten(corrs)) < 1e-6)
+        print("Uncertainties (jagged):", materialized_corrs)
+        assert ak.all(
+            np.abs(ak.flatten(juncs_jag_ref) - ak.flatten(materialized_corrs)) < 1e-6
+        )
 
 
 def test_jet_correction_uncertainty_sources():
@@ -335,7 +340,7 @@ def test_jet_correction_uncertainty_sources():
     for i, (level, corrs) in enumerate(juncs):
         assert level in levels
         assert corrs.shape[0] == test_eta.shape[0]
-        assert ak.all(corrs == ak.flatten(juncs_jag[i][1]))
+        assert ak.all(corrs == ak.flatten(juncs_jag[i][1].compute()))
 
     test_pt_jag = test_pt_jag[0:3]
     test_eta_jag = test_eta_jag[0:3]
@@ -363,11 +368,14 @@ def test_jet_correction_uncertainty_sources():
     for i, (level, corrs) in enumerate(juncs_jag):
         if level != "Total":
             continue
+        materialized_corrs = corrs.compute()
         print("Index:", i)
         print("Correction level:", level)
         print("Reference Uncertainties (jagged):", juncs_jag_ref)
-        print("Uncertainties (jagged):", corrs, "\n")
-        assert ak.all(np.abs(ak.flatten(juncs_jag_ref) - ak.flatten(corrs)) < 1e-6)
+        print("Uncertainties (jagged):", materialized_corrs, "\n")
+        assert ak.all(
+            np.abs(ak.flatten(juncs_jag_ref) - ak.flatten(materialized_corrs)) < 1e-6
+        )
 
 
 def test_jet_correction_regrouped_uncertainty_sources():
@@ -396,7 +404,7 @@ def test_jet_correction_regrouped_uncertainty_sources():
     for i, tpl in enumerate(list(junc.getUncertainty(JetEta=test_eta, JetPt=test_pt))):
         assert tpl[0] in levels
         assert tpl[1].shape[0] == test_eta.shape[0]
-        assert ak.all(tpl[1] == ak.flatten(juncs_jag[i][1]))
+        assert ak.all(tpl[1] == ak.flatten(juncs_jag[i][1].compute()))
 
     test_pt_jag = test_pt_jag[0:3]
     test_eta_jag = test_eta_jag[0:3]
@@ -424,11 +432,14 @@ def test_jet_correction_regrouped_uncertainty_sources():
     for i, (level, corrs) in enumerate(juncs_jag):
         if level != "Total":
             continue
+        materialized_corrs = corrs.compute()
         print("Index:", i)
         print("Correction level:", level)
         print("Reference Uncertainties (jagged):", juncs_jag_ref)
-        print("Uncertainties (jagged):", corrs, "\n")
-        assert ak.all(np.abs(ak.flatten(juncs_jag_ref) - ak.flatten(corrs)) < 1e-6)
+        print("Uncertainties (jagged):", materialized_corrs, "\n")
+        assert ak.all(
+            np.abs(ak.flatten(juncs_jag_ref) - ak.flatten(materialized_corrs)) < 1e-6
+        )
 
 
 def test_jet_resolution_sf():
@@ -448,7 +459,7 @@ def test_jet_resolution_sf():
     assert resosf.getScaleFactor(JetEta=test_eta[:0]).shape == (0, 3)
 
     resosfs = resosf.getScaleFactor(JetEta=test_eta)
-    resosfs_jag = resosf.getScaleFactor(JetEta=test_eta_jag)
+    resosfs_jag = resosf.getScaleFactor(JetEta=test_eta_jag).compute()
     assert ak.all(resosfs == ak.flatten(resosfs_jag))
 
     test_pt_jag = test_pt_jag[0:3]
@@ -473,7 +484,7 @@ def test_jet_resolution_sf():
         ),
         counts,
     )
-    resosfs_jag = resosf.getScaleFactor(JetEta=test_eta_jag)
+    resosfs_jag = resosf.getScaleFactor(JetEta=test_eta_jag).compute()
     print("Reference Resolution SF (jagged):", resosfs_jag_ref)
     print("Resolution SF (jagged):", resosfs_jag)
     assert ak.all(np.abs(ak.flatten(resosfs_jag_ref) - ak.flatten(resosfs_jag)) < 1e-6)
@@ -497,7 +508,9 @@ def test_jet_resolution_sf_2d():
     assert resosf.getScaleFactor(JetPt=test_pt[:0], JetEta=test_eta[:0]).shape == (0, 3)
 
     resosfs = resosf.getScaleFactor(JetPt=test_pt, JetEta=test_eta)
-    resosfs_jag = resosf.getScaleFactor(JetPt=test_pt_jag, JetEta=test_eta_jag)
+    resosfs_jag = resosf.getScaleFactor(
+        JetPt=test_pt_jag, JetEta=test_eta_jag
+    ).compute()
     assert ak.all(resosfs == ak.flatten(resosfs_jag))
 
     test_pt_jag = test_pt_jag[0:3]
@@ -522,7 +535,9 @@ def test_jet_resolution_sf_2d():
         ),
         counts,
     )
-    resosfs_jag = resosf.getScaleFactor(JetPt=test_pt_jag, JetEta=test_eta_jag)
+    resosfs_jag = resosf.getScaleFactor(
+        JetPt=test_pt_jag, JetEta=test_eta_jag
+    ).compute()
     print("Reference Resolution SF (jagged):", resosfs_jag_ref)
     print("Resolution SF (jagged):", resosfs_jag)
     assert ak.all(np.abs(ak.flatten(resosfs_jag_ref) - ak.flatten(resosfs_jag)) < 1e-6)
