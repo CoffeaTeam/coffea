@@ -163,7 +163,12 @@ class JetResolution:
 
             if isinstance(args[0], dask_awkward.Array):
                 resos.append(
-                    dask_awkward.map_partitions(func, *args, meta=args[0]._meta)
+                    dask_awkward.map_partitions(
+                        func,
+                        *args,
+                        label=f"{self._campaign}-{self._dataera}-{self._datatype}-{self._levels[i]}-{self._jettype}-resolution",
+                        meta=args[0]._meta,
+                    )
                 )
             elif isinstance(args[0], numpy.ndarray):
                 resos.append(func(*args))  # np is non-lazy
