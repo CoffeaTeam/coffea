@@ -65,7 +65,7 @@ class NanoEventsFactory:
         uproot_options={},
         access_log=None,
         iteritems_options={},
-        use_ak_forth=False,
+        use_ak_forth=True,
     ):
         """Quickly build NanoEvents from a root file
 
