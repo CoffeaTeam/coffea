@@ -56,6 +56,10 @@ def _lazify_form(form, prefix, docstr=None):
                 raise CannotBeNanoEvents(
                     f"A subform contains a field with invalid characters: {field}"
                 )
+            elif field.startswith("@"):
+                # workaround uproot5 bug
+                continue
+
             newfields.append(field)
             newcontents.append(_lazify_form(value, prefix + f",{field},!item"))
         form["fields"] = newfields
