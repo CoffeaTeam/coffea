@@ -56,10 +56,6 @@ def _lazify_form(form, prefix, docstr=None):
                 raise CannotBeNanoEvents(
                     f"A subform contains a field with invalid characters: {field}"
                 )
-            elif field.startswith("@"):
-                # workaround uproot5 bug
-                continue
-
             newfields.append(field)
             newcontents.append(_lazify_form(value, prefix + f",{field},!item"))
         form["fields"] = newfields
@@ -154,7 +150,7 @@ class UprootSourceMapping(BaseSourceMapping):
     def get_column_handle(self, columnsource, name):
         return columnsource[name]
 
-    def extract_column(self, columnhandle, start, stop, use_ak_forth=False):
+    def extract_column(self, columnhandle, start, stop, use_ak_forth=True):
         # make sure uproot is single-core since our calling context might not be
         interp = columnhandle.interpretation
         interp._forth = use_ak_forth
