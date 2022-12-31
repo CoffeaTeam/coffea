@@ -10,7 +10,7 @@ from coffea.nanoevents import NanoEventsFactory, PHYSLITESchema
 def events():
     path = os.path.abspath("tests/samples/DAOD_PHYSLITE_21.2.108.0.art.pool.root")
     factory = NanoEventsFactory.from_root(
-        path, treepath="CollectionTree", schemaclass=PHYSLITESchema
+        path, treepath="CollectionTree", schemaclass=PHYSLITESchema, use_ak_forth=False,
     )
     return factory.events()
 
