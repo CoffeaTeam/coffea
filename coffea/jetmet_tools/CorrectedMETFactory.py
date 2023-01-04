@@ -137,6 +137,7 @@ class CorrectedMETFactory:
             None,
             None,
             True,
+            label="nominal_corrected_met",
         )
 
         out_dict = {field: out[field] for field in dask_awkward.fields(out)}
@@ -147,6 +148,7 @@ class CorrectedMETFactory:
             corrected_jets,
             MET[self.name_map["UnClusteredEnergyDeltaX"]],
             MET[self.name_map["UnClusteredEnergyDeltaY"]],
+            label="UnclusteredEnergy_met",
         )
 
         for unc in filter(
@@ -158,6 +160,7 @@ class CorrectedMETFactory:
                 corrected_jets[unc],
                 None,
                 None,
+                label=f"{unc}_met",
             )
 
         out_parms = out._meta.layout.parameters
