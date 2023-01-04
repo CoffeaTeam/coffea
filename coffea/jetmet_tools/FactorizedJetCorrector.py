@@ -33,6 +33,17 @@ def _getLevel(levelName):
 _level_order = ["L1", "L2", "L3", "L2L3"]
 
 
+class _getCorrectionFn:
+    def __init__(self, jec, **kwargs):
+        self.jec = jec
+        self.kwarg_keys = list(kwargs.keys())
+
+    def __call__(self, *args):
+        kwargs = {k: v for k, v in zip(self.kwarg_keys, args)}
+        corrs = self.jec.getSubCorrections(**kwargs)
+        return reduce(lambda x, y: y * x, corrs, 1.0)
+
+
 class FactorizedJetCorrector:
     """
     This class is a columnar implementation of the FactorizedJetCorrector tool in
@@ -151,8 +162,28 @@ class FactorizedJetCorrector:
             jecs = corrector.getCorrection(JetProperty1=jet.property1,...)
 
         """
-        corrs = self.getSubCorrections(**kwargs)
-        return reduce(lambda x, y: y * x, corrs, 1.0)
+        first_kwarg = kwargs[list(kwargs.keys())[0]]
+        if type(first_kwarg) is dask_awkward.Array:
+            levels = "/".join(self._levels)
+            func = _getCorrectionFn(self, **kwargs)
+            meta = dask_awkward.typetracer_from_form(
+                func(
+                    *tuple(
+                        arg._meta.layout.form.length_zero_array()
+                        for arg in kwargs.values()
+                    )
+                ).layout.form
+            )
+
+            return dask_awkward.map_partitions(
+                func,
+                *tuple(kwargs.values()),
+                label=f"{self._campaign}-{self._dataera}-{self._datatype}-{levels}-{self._jettype}",
+                meta=meta,
+            )
+        else:
+            corrs = self.getSubCorrections(**kwargs)
+            return reduce(lambda x, y: y * x, corrs, 1.0)
 
     def getSubCorrections(self, **kwargs):
         """
@@ -179,23 +210,11 @@ class FactorizedJetCorrector:
         if len(corrVars) == 0:
             raise Exception("No variable to correct, need JetPt or JetE in inputs!")
 
-        newkwargs = {}
         one = 1.0
         if thetype is dask_awkward.Array:
             one = dask_awkward.from_awkward(
                 awkward.Array(numpy.array(1.0, dtype=numpy.float32)), 1
             )
-            newkwargs = kwargs
-        elif thetype is awkward.highlevel.Array:
-            for k, v in corrVars.items():
-                corrVars[k] = dask_awkward.from_awkward(v, 1)
-            for k, v in kwargs.items():
-                newkwargs[k] = dask_awkward.from_awkward(v, 1)
-            one = dask_awkward.from_awkward(
-                awkward.Array(numpy.array(1.0, dtype=numpy.float32)), 1
-            )
-        else:
-            newkwargs = kwargs
 
         corrections = []
         for i, func in enumerate(self._funcs):
@@ -203,21 +222,20 @@ class FactorizedJetCorrector:
             cumCorr = reduce(lambda x, y: y * x, corrections, one)
 
             fargs = tuple(
-                (cumCorr * corrVars[arg]) if arg in corrVars.keys() else newkwargs[arg]
+                (cumCorr * corrVars[arg]) if arg in corrVars.keys() else kwargs[arg]
                 for arg in sig
             )
 
-            if isinstance(fargs[0], dask_awkward.Array):
+            # lookup_base handles dask/awkward/numpy
+            if isinstance(
+                fargs[0], (dask_awkward.Array, awkward.highlevel.Array, numpy.ndarray)
+            ):
                 corrections.append(
-                    dask_awkward.map_partitions(
-                        func,
+                    func(
                         *fargs,
-                        label=f"{self._campaign}-{self._dataera}-{self._datatype}-{self._levels[i]}-{self._jettype}",
-                        meta=fargs[0]._meta,
+                        dask_label=f"{self._campaign}-{self._dataera}-{self._datatype}-{self._levels[i]}-{self._jettype}",
                     )
                 )
-            elif isinstance(fargs[0], numpy.ndarray):
-                corrections.append(func(*fargs))  # np is non-lazy
             else:
                 raise Exception("Unknown array library for inputs.")
 

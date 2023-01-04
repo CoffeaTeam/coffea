@@ -144,36 +144,20 @@ class JetResolutionScaleFactor:
             jersfs = jersf.getScaleFactor(JetProperty1=jet.property1,...)
 
         """
-
-        thetype = type(kwargs[self.signature[0]])
-        newkwargs = {}
-        if thetype is awkward.highlevel.Array:
-            for k, v in kwargs.items():
-                newkwargs[k] = dask_awkward.from_awkward(v, 1)
-        else:
-            newkwargs = kwargs
-
-        out_form = awkward.forms.ListOffsetForm(
-            "i64", awkward.forms.NumpyForm("float32", inner_shape=(3,))
-        )
-        out_meta = dask_awkward.typetracer_from_form(out_form)
-
         sfs = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
-            args = tuple(newkwargs[inp] for inp in sig)
+            args = tuple(kwargs[inp] for inp in sig)
 
-            if isinstance(args[0], dask_awkward.Array):
+            if isinstance(
+                args[0], (dask_awkward.Array, awkward.highlevel.Array, numpy.ndarray)
+            ):
                 sfs.append(
-                    dask_awkward.map_partitions(
-                        func,
+                    func(
                         *args,
-                        label=f"{self._campaign}-{self._dataera}-{self._datatype}-{self._levels[i]}-{self._jettype}-resolution-scale-factor",
-                        meta=out_meta,
+                        dask_label=f"{self._campaign}-{self._dataera}-{self._datatype}-{self._levels[i]}-{self._jettype}",
                     )
                 )
-            elif isinstance(args[0], numpy.ndarray):
-                sfs.append(func(*args))  # np is non-lazy
             else:
                 raise Exception("Unknown array library for inputs.")
 
