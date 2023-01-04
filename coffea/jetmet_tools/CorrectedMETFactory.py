@@ -3,29 +3,17 @@ import dask_awkward
 import numpy
 
 
-def corrected_polar_met(met_pt, met_phi, jet_pt, jet_phi, jet_pt_orig, deltas=None):
+def corrected_polar_met(
+    met_pt, met_phi, jet_pt, jet_phi, jet_pt_orig, positive=None, dx=None, dy=None
+):
     sj, cj = numpy.sin(jet_phi), numpy.cos(jet_phi)
-    projx = jet_pt * cj - jet_pt_orig * cj
-    x = met_pt * numpy.cos(met_phi) + dask_awkward.map_partitions(
-        awkward.sum,
-        projx,
-        axis=1,
-        output_divisions=1,
-        meta=awkward.flatten(projx._meta, axis=1),
-    )
-    projy = jet_pt * sj - jet_pt_orig * sj
-    y = met_pt * numpy.sin(met_phi) + dask_awkward.map_partitions(
-        awkward.sum,
-        projy,
-        axis=1,
-        output_divisions=1,
-        meta=awkward.flatten(projy._meta, axis=1),
-    )
-    if deltas:
-        positive, dx, dy = deltas
+    x = met_pt * numpy.cos(met_phi) + awkward.sum((jet_pt - jet_pt_orig) * cj, axis=1)
+    y = met_pt * numpy.sin(met_phi) + awkward.sum((jet_pt - jet_pt_orig) * sj, axis=1)
+    if positive is not None and dx is not None and dy is not None:
         x = x + dx if positive else x - dx
         y = y + dy if positive else y - dy
-    return dask_awkward.zip(
+
+    return awkward.zip(
         {"pt": numpy.hypot(x, y), "phi": numpy.arctan2(y, x)}, depth_limit=1
     )
 
@@ -66,92 +54,110 @@ class CorrectedMETFactory:
         if isinstance(in_corrected_jets, awkward.highlevel.Array):
             corrected_jets = dask_awkward.from_awkward(in_corrected_jets, 1)
 
-        def make_variant(*args):
-            variant = MET
-            corrected_met = corrected_polar_met(*args)
-            variant = dask_awkward.with_field(variant, corrected_met.pt, "METpt")
-            variant = dask_awkward.with_field(variant, corrected_met.phi, "METphi")
-            return variant
-
-        def lazy_variant(unc, metpt, metphi, jetpt, jetphi, jetptraw):
-            return dask_awkward.zip(
-                {
-                    "up": make_variant(
-                        MET[metpt],
-                        MET[metphi],
-                        corrected_jets[unc].up[jetpt],
-                        corrected_jets[unc].up[jetphi],
-                        corrected_jets[unc].up[jetptraw],
-                    ),
-                    "down": make_variant(
-                        MET[metpt],
-                        MET[metphi],
-                        corrected_jets[unc].down[jetpt],
-                        corrected_jets[unc].down[jetphi],
-                        corrected_jets[unc].down[jetptraw],
-                    ),
-                },
-                depth_limit=1,
-                with_name="METSystematic",
+        def switch_properties(raw_met, corrected_jets, dx, dy, positive, save_orig):
+            variation = corrected_polar_met(
+                raw_met[self.name_map["METpt"]],
+                raw_met[self.name_map["METphi"]],
+                corrected_jets[self.name_map["JetPt"]],
+                corrected_jets[self.name_map["JetPhi"]],
+                corrected_jets[self.name_map["ptRaw"]],
+                positive=positive,
+                dx=dx,
+                dy=dy,
             )
+            out = awkward.with_field(raw_met, variation.pt, self.name_map["METpt"])
+            out = awkward.with_field(out, variation.phi, self.name_map["METphi"])
+            if save_orig:
+                out = awkward.with_field(
+                    out,
+                    raw_met[self.name_map["METpt"]],
+                    self.name_map["METpt"] + "_orig",
+                )
+                out = awkward.with_field(
+                    out,
+                    raw_met[self.name_map["METphi"]],
+                    self.name_map["METphi"] + "_orig",
+                )
 
-        out = make_variant(
-            MET[self.name_map["METpt"]],
-            MET[self.name_map["METphi"]],
-            corrected_jets[self.name_map["JetPt"]],
-            corrected_jets[self.name_map["JetPhi"]],
-            corrected_jets[self.name_map["ptRaw"]],
-        )
-        out = dask_awkward.with_field(
-            out, MET[self.name_map["METpt"]], self.name_map["METpt"] + "_orig"
-        )
-        out = dask_awkward.with_field(
-            out, MET[self.name_map["METphi"]], self.name_map["METphi"] + "_orig"
+            return out
+
+        def create_variants(raw_met, corrected_jets_or_variants, dx, dy):
+            if dx is not None and dy is not None:
+                return awkward.zip(
+                    {
+                        "up": switch_properties(
+                            raw_met,
+                            corrected_jets_or_variants,
+                            dx,
+                            dy,
+                            True,
+                            False,
+                        ),
+                        "down": switch_properties(
+                            raw_met,
+                            corrected_jets_or_variants,
+                            dx,
+                            dy,
+                            False,
+                            False,
+                        ),
+                    },
+                    depth_limit=1,
+                    with_name="METSystematic",
+                )
+            else:
+                return awkward.zip(
+                    {
+                        "up": switch_properties(
+                            raw_met,
+                            corrected_jets_or_variants.up,
+                            dx,
+                            dy,
+                            True,
+                            False,
+                        ),
+                        "down": switch_properties(
+                            raw_met,
+                            corrected_jets_or_variants.down,
+                            None,
+                            None,
+                            None,
+                            False,
+                        ),
+                    },
+                    depth_limit=1,
+                    with_name="METSystematic",
+                )
+
+        out = dask_awkward.map_partitions(
+            switch_properties,
+            MET,
+            corrected_jets,
+            None,
+            None,
+            None,
+            True,
         )
 
         out_dict = {field: out[field] for field in dask_awkward.fields(out)}
 
-        out_dict["MET_UnclusteredEnergy"] = dask_awkward.zip(
-            {
-                "up": make_variant(
-                    MET[self.name_map["METpt"]],
-                    MET[self.name_map["METphi"]],
-                    corrected_jets[self.name_map["JetPt"]],
-                    corrected_jets[self.name_map["JetPhi"]],
-                    corrected_jets[self.name_map["ptRaw"]],
-                    (
-                        True,
-                        MET[self.name_map["UnClusteredEnergyDeltaX"]],
-                        MET[self.name_map["UnClusteredEnergyDeltaY"]],
-                    ),
-                ),
-                "down": make_variant(
-                    MET[self.name_map["METpt"]],
-                    MET[self.name_map["METphi"]],
-                    corrected_jets[self.name_map["JetPt"]],
-                    corrected_jets[self.name_map["JetPhi"]],
-                    corrected_jets[self.name_map["ptRaw"]],
-                    (
-                        False,
-                        MET[self.name_map["UnClusteredEnergyDeltaX"]],
-                        MET[self.name_map["UnClusteredEnergyDeltaY"]],
-                    ),
-                ),
-            },
-            depth_limit=1,
-            with_name="METSystematic",
+        out_dict["MET_UnclusteredEnergy"] = dask_awkward.map_partitions(
+            create_variants,
+            MET,
+            corrected_jets,
+            MET[self.name_map["UnClusteredEnergyDeltaX"]],
+            MET[self.name_map["UnClusteredEnergyDeltaY"]],
         )
 
         for unc in filter(
             lambda x: x.startswith(("JER", "JES")), dask_awkward.fields(corrected_jets)
         ):
-            out_dict[unc] = lazy_variant(
-                unc,
-                self.name_map["METpt"],
-                self.name_map["METphi"],
-                self.name_map["JetPt"],
-                self.name_map["JetPhi"],
-                self.name_map["ptRaw"],
+            out_dict[unc] = dask_awkward.map_partitions(
+                create_variants,
+                MET,
+                corrected_jets[unc],
+                None,
+                None,
             )
 
         out_parms = out._meta.layout.parameters

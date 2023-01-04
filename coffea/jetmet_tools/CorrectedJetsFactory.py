@@ -39,7 +39,10 @@ class _AwkwardRewrapFn:
         return awkward.transform(func, like_what, behavior=like_what.behavior)
 
 
-def rand_gauss(item, randomstate):
+def rand_gauss(item):
+    seeds = numpy.array(item)[[0, -1]].view("i4")
+    randomstate = numpy.random.Generator(numpy.random.PCG64(seeds))
+
     def getfunction(layout, depth, **kwargs):
         if isinstance(layout, awkward.contents.NumpyArray) or not isinstance(
             layout, (awkward.contents.Content, awkward.partition.PartitionedArray)
@@ -233,14 +236,9 @@ class CorrectedJetsFactory:
                 "jet_energy_resolution_scale_factor"
             ] = self.jec_stack.jersf.getScaleFactor(**jersfargs)
 
-            seeds = int.from_bytes(
-                bytes(out_dict[self.name_map["JetPt"] + "_orig"].name[-8:], "ascii"),
-                "little",
-            )
             out_dict["jet_resolution_rand_gauss"] = dask_awkward.map_partitions(
                 rand_gauss,
                 out_dict[self.name_map["JetPt"] + "_orig"],
-                numpy.random.Generator(numpy.random.PCG64(seeds)),
                 meta=out_dict[self.name_map["JetPt"] + "_orig"]._meta,
             )
 
@@ -360,8 +358,12 @@ class CorrectedJetsFactory:
             def junc_smeared_val(uncvals, up_down, variable):
                 return uncvals[:, up_down] * variable
 
-            def build_variation(unc, jetpt, jetpt_orig, jetmass, jetmass_orig, updown):
-                var_dict = dict(in_dict)
+            def build_variation(
+                unc, template, jetpt, jetpt_orig, jetmass, jetmass_orig, updown
+            ):
+                var_dict = {
+                    field: template[field] for field in awkward.fields(template)
+                }
                 var_dict[jetpt] = junc_smeared_val(
                     unc,
                     updown,
@@ -372,28 +374,35 @@ class CorrectedJetsFactory:
                     updown,
                     jetmass_orig,
                 )
-                return dask_awkward.zip(
+                return awkward.zip(
                     var_dict,
                     depth_limit=1,
-                    parameters=out._meta.layout.parameters,
-                    behavior=out.behavior,
+                    parameters=template.layout.parameters,
+                    behavior=template.behavior,
                 )
 
-            def build_variant(unc, jetpt, jetpt_orig, jetmass, jetmass_orig):
-                up = build_variation(unc, jetpt, jetpt_orig, jetmass, jetmass_orig, 0)
-                down = build_variation(unc, jetpt, jetpt_orig, jetmass, jetmass_orig, 1)
-                return dask_awkward.zip(
+            def build_variant(unc, template, jetpt, jetpt_orig, jetmass, jetmass_orig):
+                up = build_variation(
+                    unc, template, jetpt, jetpt_orig, jetmass, jetmass_orig, 0
+                )
+                down = build_variation(
+                    unc, template, jetpt, jetpt_orig, jetmass, jetmass_orig, 1
+                )
+                return awkward.zip(
                     {"up": up, "down": down}, depth_limit=1, with_name="JetSystematic"
                 )
 
             for name, func in juncs:
                 out_dict[f"jet_energy_uncertainty_{name}"] = func
-                out_dict[f"JES_{name}"] = build_variant(
+                out_dict[f"JES_{name}"] = dask_awkward.map_partitions(
+                    build_variant,
                     func,
+                    out,
                     self.name_map["JetPt"],
                     out_dict[juncnames["JetPt"]],
                     self.name_map["JetMass"],
                     out_dict[juncnames["JetMass"]],
+                    label=f"{name}",
                 )
 
         out_parms = out._meta.layout.parameters
