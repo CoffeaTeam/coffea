@@ -56,10 +56,11 @@ def get_description():
 INSTALL_REQUIRES = [
     "awkward>=2",
     "uproot>=5",
-    "dask[array]>=2022.02.1",
-    "dask-awkward>=2022.12",
+    "dask[array]>=2022.12.1",
+    "dask-awkward>=2023.1",
+    "dask-histogram>=2022.12",
     "correctionlib>=2.0.0",
-    "pyarrow>=1.0.0",
+    "pyarrow>=6.0.0",
     "fsspec",
     "matplotlib>=3",
     "numba>=0.56.0",
@@ -73,16 +74,14 @@ INSTALL_REQUIRES = [
     "packaging",
     "pandas",
     "hist>=2",
-    'typing-extensions;python_version<"3.8"',
     "cachetools",
-    'dataclasses;python_version<"3.7"',
 ]
 EXTRAS_REQUIRE = {}
 EXTRAS_REQUIRE["spark"] = ["ipywidgets", "pyspark>=3.3.0", "jinja2"]
-EXTRAS_REQUIRE["parsl"] = ["parsl>=1.1"]
+EXTRAS_REQUIRE["parsl"] = ["parsl>=2022.12.1"]
 EXTRAS_REQUIRE["dask"] = [
-    "dask[dataframe]>=2.6.0",
-    "distributed>=2.6.0",
+    "dask[dataframe]>=2022.12.1",
+    "distributed>=2022.12.1",
     "bokeh>=1.3.4",
     "blosc",
 ]

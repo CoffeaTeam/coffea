@@ -1,6 +1,7 @@
 import os
 
 import awkward as ak
+import dask_awkward as dak
 import pytest
 from dummy_distributions import dummy_jagged_eta_pt
 
@@ -163,8 +164,18 @@ def test_correctionlib():
         test_eta_jagged, test_pt_jagged
     )
 
+    # test lazy eval
+    test_eta_dak = dak.from_awkward(test_eta_jagged, 1)
+    test_pt_dak = dak.from_awkward(test_pt_jagged, 1)
+    test_out_dak = evaluator["scalefactors_Tight_Electron"](
+        test_eta_dak, test_pt_dak, dask_label="scalefactors_Tight_Electron"
+    )
+
+    print(test_out_dak)
+
     assert ak.all(ak.num(test_out_jagged) == counts)
     assert ak.all(ak.flatten(test_out_jagged) == test_out)
+    assert ak.all(ak.flatten(test_out_dak.compute()) == test_out)
 
     print(test_out)
 
@@ -200,8 +211,18 @@ def test_root_scalefactors():
     test_pt_jagged = ak.unflatten(test_pt, counts)
     test_out_jagged = evaluator["testSF2d"](test_eta_jagged, test_pt_jagged)
 
+    # test lazy eval
+    test_eta_dak = dak.from_awkward(test_eta_jagged, 1)
+    test_pt_dak = dak.from_awkward(test_pt_jagged, 1)
+    test_out_dak = evaluator["testSF2d"](
+        test_eta_dak, test_pt_dak, dask_label="testSF2d"
+    )
+
+    print(test_out_dak)
+
     assert ak.all(ak.num(test_out_jagged) == counts)
     assert ak.all(ak.flatten(test_out_jagged) == test_out)
+    assert ak.all(ak.flatten(test_out_dak.compute()) == test_out)
 
     print(test_out)
 
