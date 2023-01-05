@@ -743,17 +743,16 @@ def test_corrected_jets_factory():
     prof = pyinstrument.Profiler()
     prof.start()
 
-    tocompute = []
+    tocompute = {
+        unc: {"up": corrected_jets[unc].up.pt, "down": corrected_jets[unc].down.pt}
+        for unc in jet_factory.uncertainties()
+    }
+    computed_uncs = dask.compute(tocompute)[0]
+
     for unc in jet_factory.uncertainties():
-        tocompute.append(corrected_jets[unc].up.pt)
-        tocompute.append(corrected_jets[unc].down.pt)
-
-    computed_uncs = dask.compute(*tuple(tocompute))
-
-    for i, unc in enumerate(jet_factory.uncertainties()):
         print(unc)
-        print(computed_uncs[2 * i])
-        print(computed_uncs[2 * i + 1])
+        print(computed_uncs[unc]["up"])
+        print(computed_uncs[unc]["down"])
     prof.stop()
     toc = time.time()
 
@@ -872,17 +871,16 @@ def test_corrected_jets_factory():
     prof = pyinstrument.Profiler()
     prof.start()
 
-    tocompute = []
+    tocompute = {
+        unc: {"up": corrected_met[unc].up.pt, "down": corrected_met[unc].down.pt}
+        for unc in (jet_factory.uncertainties() + met_factory.uncertainties())
+    }
+    computed_uncs = dask.compute(tocompute)[0]
+
     for unc in jet_factory.uncertainties() + met_factory.uncertainties():
-        tocompute.append(corrected_met[unc].up.pt)
-        tocompute.append(corrected_met[unc].down.pt)
-
-    computed_uncs = dask.compute(*tuple(tocompute))
-
-    for i, unc in enumerate(jet_factory.uncertainties() + met_factory.uncertainties()):
         print(unc)
-        print(computed_uncs[2 * i])
-        print(computed_uncs[2 * i + 1])
+        print(computed_uncs[unc]["up"])
+        print(computed_uncs[unc]["down"])
     prof.stop()
     toc = time.time()
 
