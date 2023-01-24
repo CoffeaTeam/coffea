@@ -1,6 +1,8 @@
 import json
 import warnings
 
+import awkward
+
 from coffea.nanoevents import transforms
 from coffea.nanoevents.schemas.base import BaseSchema, zip_forms
 
@@ -188,7 +190,9 @@ class NanoAODSchema(BaseSchema):
         dask_array, _ = super().apply_to_dask(dask_array)
         schema_instance = cls(json.loads(dask_array.form.to_json()), version)
 
-        meta = dask_awkward.typetracer_from_form(schema_instance._form)
+        meta = dask_awkward.typetracer_from_form(
+            awkward.forms.from_dict(schema_instance.form)
+        )
         dask_array = dask_awkward.map_partitions(lambda x: x, dask_array, meta=meta)
         dask_array.layout.behavior = schema_instance.behavior
 
@@ -267,7 +271,7 @@ class NanoAODSchema(BaseSchema):
                 )
                 output[name]["content"]["parameters"].update(
                     {
-                        "__doc__": offsets["parameters"]["__doc__"],
+                        # "__doc__": offsets["parameters"]["__doc__"],
                         "collection_name": name,
                     }
                 )
