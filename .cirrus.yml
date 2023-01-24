@@ -19,7 +19,7 @@ task:
       install_script: |
         . ../venv/bin/activate
         python -m pip install --upgrade pip setuptools wheel
-        python -m pip install --verbose .[dev,parsl,dask,servicex]
+        python -m pip install --verbose .[dev,parsl,dask]
         python -m pip list
       pytest_script: |
         . ../venv/bin/activate
