@@ -5,6 +5,8 @@ from collections import defaultdict
 from collections.abc import MutableMapping, MutableSet
 from typing import Iterable, Optional, TypeVar, Union
 
+from dask.base import DaskMethodsMixin
+
 try:
     from typing import Protocol, runtime_checkable  # type: ignore
 except ImportError:
@@ -51,10 +53,18 @@ def add(a: Accumulatable, b: Accumulatable) -> Accumulatable:
             if key in rhs:
                 out[key] = add(a[key], b[key])
             else:
-                out[key] = copy.deepcopy(a[key])
+                out[key] = (
+                    copy.deepcopy(a[key])
+                    if not isinstance(a[key], DaskMethodsMixin)
+                    else copy.copy(a[key])
+                )
         for key in b:
             if key not in lhs:
-                out[key] = copy.deepcopy(b[key])
+                out[key] = (
+                    copy.deepcopy(b[key])
+                    if not isinstance(b[key], DaskMethodsMixin)
+                    else copy.copy(b[key])
+                )
         return out
     raise ValueError(
         f"Cannot add accumulators of incompatible type ({type(a)} vs. {type(b)})"
@@ -79,7 +89,11 @@ def iadd(a: Accumulatable, b: Accumulatable) -> Accumulatable:
                 a[key] = iadd(a[key], b[key])
         for key in b:
             if key not in lhs:
-                a[key] = copy.deepcopy(b[key])
+                a[key] = (
+                    copy.deepcopy(b[key])
+                    if not isinstance(b[key], DaskMethodsMixin)
+                    else copy.copy(b[key])
+                )
         return a
     raise ValueError(
         f"Cannot add accumulators of incompatible type ({type(a)} vs. {type(b)})"
