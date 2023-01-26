@@ -91,23 +91,19 @@ def test_collection_exists(events, collection):
 def test_lorentz_vectorization(collection, events):
     mask = ak.num(events[collection]) > 0
     assert (
-        ak.type(events[collection][mask][0, 0].Area).parameters["__record__"]
+        ak.parameters(events[collection][mask][0, 0].Area)["__record__"]
         == "LorentzVector"
     )
     assert (
-        ak.type(events[collection][mask][0, 0].SoftDroppedJet).parameters["__record__"]
+        ak.parameters(events[collection][mask][0, 0].SoftDroppedJet)["__record__"]
         == "LorentzVector"
     )
     assert (
-        ak.type(events[collection][mask][0, 0].SoftDroppedSubJet1).parameters[
-            "__record__"
-        ]
+        ak.parameters(events[collection][mask][0, 0].SoftDroppedSubJet1)["__record__"]
         == "LorentzVector"
     )
     assert (
-        ak.type(events[collection][mask][0, 0].SoftDroppedSubJet2).parameters[
-            "__record__"
-        ]
+        ak.parameters(events[collection][mask][0, 0].SoftDroppedSubJet2)["__record__"]
         == "LorentzVector"
     )
 
@@ -139,20 +135,18 @@ def test_nested_lorentz_vectorization(collection, events):
     mask = ak.num(events[collection]) > 0
     assert ak.all(ak.num(events[collection].PrunedP4_5, axis=2) == 5)
     assert (
-        ak.type(events[collection][mask].PrunedP4_5[0, 0, 0]).parameters["__record__"]
+        ak.parameters(events[collection][mask].PrunedP4_5[0, 0, 0])["__record__"]
         == "LorentzVector"
     )
 
     assert ak.all(ak.num(events[collection].SoftDroppedP4_5, axis=2) == 5)
     assert (
-        ak.type(events[collection][mask].SoftDroppedP4_5[0, 0, 0]).parameters[
-            "__record__"
-        ]
+        ak.parameters(events[collection][mask].SoftDroppedP4_5[0, 0, 0])["__record__"]
         == "LorentzVector"
     )
 
     assert ak.all(ak.num(events[collection].TrimmedP4_5, axis=2) == 5)
     assert (
-        ak.type(events[collection][mask].TrimmedP4_5[0, 0, 0]).parameters["__record__"]
+        ak.parameters(events[collection][mask].TrimmedP4_5[0, 0, 0])["__record__"]
         == "LorentzVector"
     )
