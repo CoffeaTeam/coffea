@@ -1,5 +1,6 @@
 """Mixins for the CMS NanoAOD schema"""
 import awkward
+import warnings
 from coffea.nanoevents.methods import base, vector, candidate
 
 
@@ -103,6 +104,7 @@ class GenParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     @property
     def distinctChildrenDeep(self):
         """Accessor to distinct child particles with different PDG id, or last ones in the chain"""
+        warnings.warn("distinctChildrenDeep may not give correct answers for all generators!")
         return self._events().GenPart._apply_global_index(self.distinctChildrenDeepIdxG)
 
 
