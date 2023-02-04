@@ -554,7 +554,8 @@ class CoffeaWQ(WorkQueue):
         The wrapper takes as arguments the name of three files: function, argument, and output.
         The files function and argument have the serialized function and argument, respectively.
         The file output is created (or overwritten), with the serialized result of the function call.
-        The wrapper created is created/deleted according to the lifetime of the WorkQueueExecutor."""
+        The wrapper created is created/deleted according to the lifetime of the WorkQueueExecutor.
+        """
 
         proxy_basename = ""
         if self.executor.x509_proxy:
@@ -1286,7 +1287,7 @@ def _compute_chunksize_target(target, pairs):
 
     # remove outliers below the 25%
     pairs_filtered = []
-    for (i, avg) in enumerate(avgs):
+    for i, avg in enumerate(avgs):
         if avg >= quantiles[0]:
             pairs_filtered.append(pairs[i])
 

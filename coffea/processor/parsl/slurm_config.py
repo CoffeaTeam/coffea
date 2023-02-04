@@ -25,7 +25,6 @@ def slurm_config(
     walltime="02:00:00",
     htex_label="coffea_parsl_slurm_htex",
 ):
-
     shutil.copy2(osp.join(grid_proxy_dir, x509_proxy), osp.join(work_dir, x509_proxy))
 
     wrk_init = """
