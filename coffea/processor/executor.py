@@ -798,7 +798,6 @@ class FuturesExecutor(ExecutorBase):
                     merged = _wait_for_merges(FH, self)
                     return accumulate([_decompress(merged), accumulator]), e
                 else:
-
                     raise e from None
 
         if isinstance(self.pool, concurrent.futures.Executor):
