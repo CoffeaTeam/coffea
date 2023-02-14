@@ -1346,6 +1346,16 @@ class Runner:
                     warnings.warn(str(e))
                     break
                 if (
+                    skipbadfiles
+                    and (retries == retry_count)
+                    and any(
+                        e in str(c)
+                        for c in chain for e in ["Invalid redirect URL", "Operation expired", "Socket timeout"]
+                    )
+                ):
+                    warnings.warn(str(e))
+                    break
+                if (
                     not skipbadfiles
                     or any("Auth failed" in str(c) for c in chain)
                     or retries == retry_count
