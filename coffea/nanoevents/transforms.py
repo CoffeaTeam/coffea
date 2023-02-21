@@ -374,10 +374,10 @@ def distinctChildrenDeep_form(offsets, global_parents, global_pdgs):
     if not global_pdgs["class"].startswith("ListOffset"):
         raise RuntimeError
     form = {
-        "class": "ListOffsetArray64",
+        "class": "ListOffsetArray",
         "offsets": "i64",
         "content": {
-            "class": "ListOffsetArray64",
+            "class": "ListOffsetArray",
             "offsets": "i64",
             "content": {
                 "class": "NumpyArray",
@@ -414,9 +414,9 @@ def distinctChildrenDeep(stack):
         awkward.Array(global_pdgs),
     )
     out = awkward.Array(
-        awkward.layout.ListOffsetArray64(
-            awkward.layout.Index64(coffsets),
-            awkward.layout.NumpyArray(ccontent),
+        awkward.contents.ListOffsetArray(
+            awkward.index.Index64(coffsets),
+            awkward.contents.NumpyArray(ccontent),
         )
     )
     stack.append(out)
