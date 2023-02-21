@@ -48,6 +48,8 @@ import awkward
 import numba
 import numpy
 
+from coffea.nanoevents.methods import base
+
 
 @numba.vectorize(
     [
@@ -124,16 +126,24 @@ class TwoVector:
         return self.r
 
     @awkward.mixin_class_method(numpy.absolute)
-    def absolute(self):
+    def absolute(self, __dask_array__=None):
         """Returns magnitude of the 2D vector
 
         Alias for `r`
         """
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("absolute"),
+            )
         return self.r
 
     @awkward.mixin_class_method(numpy.negative)
-    def negative(self):
+    def negative(self, __dask_array__=None):
         """Returns the negative of the vector"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("negative"),
+            )
         return awkward.zip(
             {"x": -self.x, "y": -self.y},
             with_name="TwoVector",
@@ -141,8 +151,13 @@ class TwoVector:
         )
 
     @awkward.mixin_class_method(numpy.add, {"TwoVector"})
-    def add(self, other):
+    def add(self, other, __dask_array__=None):
         """Add two vectors together elementwise using `x` and `y` components"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("add"),
+                other,
+            )
         return awkward.zip(
             {"x": self.x + other.x, "y": self.y + other.y},
             with_name="TwoVector",
@@ -161,16 +176,30 @@ class TwoVector:
         },
         transpose=False,
     )
-    def subtract(self, other):
+    def subtract(self, other, __dask_array__=None):
         """Subtract a vector from another elementwise using `x` and `y` components"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("subtract"),
+                other,
+            )
         return awkward.zip(
             {"x": self.x - other.x, "y": self.y - other.y},
             with_name="TwoVector",
             behavior=self.behavior,
         )
 
-    def sum(self, axis=-1):
+    def sum(self, axis=-1, __dask_array__=None):
         """Sum an array of vectors elementwise using `x` and `y` components"""
+        if __dask_array__ is not None:
+            if axis == 0:
+                raise ValueError(
+                    "sum over axis == 0 is not yet allowed in dask-mode nanoevents"
+                )
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("sum"),
+                axis=axis,
+            )
         return awkward.zip(
             {
                 "x": awkward.sum(self.x, axis=axis),
@@ -181,8 +210,10 @@ class TwoVector:
         )
 
     @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
-    def multiply(self, other):
+    def multiply(self, other, __dask_array__=None):
         """Multiply this vector by a scalar elementwise using `x` and `y` components"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(base._ClassMethodFn("multiply"), other)
         return awkward.zip(
             {"x": self.x * other, "y": self.y * other},
             with_name="TwoVector",
@@ -190,21 +221,36 @@ class TwoVector:
         )
 
     @awkward.mixin_class_method(numpy.divide, {numbers.Number})
-    def divide(self, other):
+    def divide(self, other, __dask_array__=None):
         """Divide this vector by a scalar elementwise using its cartesian components
 
         This is realized by using the multiplication functionality"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("divide"),
+                other,
+            )
         return self.multiply(1 / other)
 
-    def delta_phi(self, other):
+    def delta_phi(self, other, __dask_array__=None):
         """Compute difference in angle between two vectors
 
         Returns a value within [-pi, pi)
         """
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("delta_phi"),
+                other,
+            )
         return _deltaphi_kernel(self.phi, other.phi)
 
-    def dot(self, other):
+    def dot(self, other, __dask_array__=None):
         """Compute the dot product of two vectors"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("dot"),
+                other,
+            )
         return self.x * other.x + self.y * other.y
 
     @property
@@ -259,11 +305,16 @@ class PolarTwoVector(TwoVector):
         return self.r * self.r
 
     @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
-    def multiply(self, other):
+    def multiply(self, other, __dask_array__=None):
         """Multiply this vector by a scalar elementwise using using `x` and `y` components
 
         In reality, this directly adjusts `r` and `phi` for performance
         """
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("multiply"),
+                other,
+            )
         return awkward.zip(
             {
                 "r": self.r * abs(other),
@@ -274,8 +325,10 @@ class PolarTwoVector(TwoVector):
         )
 
     @awkward.mixin_class_method(numpy.negative)
-    def negative(self):
+    def negative(self, __dask_array__=None):
         """Returns the negative of the vector"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(base._ClassMethodFn("negative"))
         return awkward.zip(
             {"r": self.r, "phi": self.phi % (2 * numpy.pi) - numpy.pi},
             with_name="PolarTwoVector",
@@ -328,16 +381,22 @@ class ThreeVector(TwoVector):
         return self.rho
 
     @awkward.mixin_class_method(numpy.absolute)
-    def absolute(self):
+    def absolute(self, __dask_array__=None):
         """Returns magnitude of the 3D vector
 
         Alias for `rho`
         """
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("absolute"),
+            )
         return self.p
 
     @awkward.mixin_class_method(numpy.negative)
-    def negative(self):
+    def negative(self, __dask_array__=None):
         """Returns the negative of the vector"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(base._ClassMethodFn("negative"))
         return awkward.zip(
             {"x": -self.x, "y": -self.y, "z": -self.z},
             with_name="ThreeVector",
@@ -345,8 +404,13 @@ class ThreeVector(TwoVector):
         )
 
     @awkward.mixin_class_method(numpy.add, {"ThreeVector"})
-    def add(self, other):
+    def add(self, other, __dask_array__=None):
         """Add two vectors together elementwise using `x`, `y`, and `z` components"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("add"),
+                other,
+            )
         return awkward.zip(
             {"x": self.x + other.x, "y": self.y + other.y, "z": self.z + other.z},
             with_name="ThreeVector",
@@ -364,16 +428,30 @@ class ThreeVector(TwoVector):
         },
         transpose=False,
     )
-    def subtract(self, other):
+    def subtract(self, other, __dask_array__=None):
         """Subtract a vector from another elementwise using `x`, `y`, and `z` components"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("subtract"),
+                other,
+            )
         return awkward.zip(
             {"x": self.x - other.x, "y": self.y - other.y, "z": self.z - other.z},
             with_name="ThreeVector",
             behavior=self.behavior,
         )
 
-    def sum(self, axis=-1):
+    def sum(self, axis=-1, __dask_array__=None):
         """Sum an array of vectors elementwise using `x`, `y`, and `z` components"""
+        if __dask_array__ is not None:
+            if axis == 0:
+                raise ValueError(
+                    "sum over axis == 0 is not yet allowed in dask-mode nanoevents"
+                )
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("sum"),
+                axis=axis,
+            )
         return awkward.zip(
             {
                 "x": awkward.sum(self.x, axis=axis),
@@ -385,20 +463,32 @@ class ThreeVector(TwoVector):
         )
 
     @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
-    def multiply(self, other):
+    def multiply(self, other, __dask_array__=None):
         """Multiply this vector by a scalar elementwise using `x`, `y`, and `z` components"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("multiply"),
+                other,
+            )
         return awkward.zip(
             {"x": self.x * other, "y": self.y * other, "z": self.z * other},
             with_name="ThreeVector",
             behavior=self.behavior,
         )
 
-    def dot(self, other):
+    def dot(self, other, __dask_array__=None):
         """Compute the dot product of two vectors"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(base._ClassMethodFn("dot"), other)
         return self.x * other.x + self.y * other.y + self.z * other.z
 
-    def cross(self, other):
+    def cross(self, other, __dask_array__=None):
         """Compute the cross product of two vectors"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("cross"),
+                other,
+            )
         return awkward.zip(
             {
                 "x": self.y * other.z - self.z * other.y,
@@ -466,11 +556,16 @@ class SphericalThreeVector(ThreeVector, PolarTwoVector):
         return self.rho * self.rho
 
     @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
-    def multiply(self, other):
+    def multiply(self, other, __dask_array__=None):
         """Multiply this vector by a scalar elementwise using `x`, `y`, and `z` components
 
         In reality, this directly adjusts `r`, `theta` and `phi` for performance
         """
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("multiply"),
+                other,
+            )
         return awkward.zip(
             {
                 "rho": self.rho * abs(other),
@@ -482,8 +577,12 @@ class SphericalThreeVector(ThreeVector, PolarTwoVector):
         )
 
     @awkward.mixin_class_method(numpy.negative)
-    def negative(self):
+    def negative(self, __dask_array__=None):
         """Returns the negative of the vector"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("negative"),
+            )
         return awkward.zip(
             {
                 "rho": self.rho,
@@ -531,16 +630,23 @@ class LorentzVector(ThreeVector):
         return numpy.sqrt(self.mass2)
 
     @awkward.mixin_class_method(numpy.absolute)
-    def absolute(self):
+    def absolute(self, __dask_array__=None):
         """Magnitude of this Lorentz vector
 
         Alias for `mass`
         """
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(base._ClassMethodFn("absolute"))
         return self.mass
 
     @awkward.mixin_class_method(numpy.add, {"LorentzVector"})
-    def add(self, other):
+    def add(self, other, __dask_array__=None):
         """Add two vectors together elementwise using `x`, `y`, `z`, and `t` components"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("add"),
+                other,
+            )
         return awkward.zip(
             {
                 "x": self.x + other.x,
@@ -553,8 +659,13 @@ class LorentzVector(ThreeVector):
         )
 
     @awkward.mixin_class_method(numpy.subtract, {"LorentzVector"}, transpose=False)
-    def subtract(self, other):
+    def subtract(self, other, __dask_array__=None):
         """Subtract a vector from another elementwise using `x`, `y`, `z`, and `t` components"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("subtract"),
+                other,
+            )
         return awkward.zip(
             {
                 "x": self.x - other.x,
@@ -566,8 +677,17 @@ class LorentzVector(ThreeVector):
             behavior=self.behavior,
         )
 
-    def sum(self, axis=-1):
+    def sum(self, axis=-1, __dask_array__=None):
         """Sum an array of vectors elementwise using `x`, `y`, `z`, and `t` components"""
+        if __dask_array__ is not None:
+            if axis == 0:
+                raise ValueError(
+                    "sum over axis == 0 is not yet allowed in dask-mode nanoevents"
+                )
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("sum"),
+                axis=axis,
+            )
         return awkward.zip(
             {
                 "x": awkward.sum(self.x, axis=axis),
@@ -580,8 +700,13 @@ class LorentzVector(ThreeVector):
         )
 
     @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
-    def multiply(self, other):
+    def multiply(self, other, __dask_array__=None):
         """Multiply this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("multiply"),
+                other,
+            )
         return awkward.zip(
             {
                 "x": self.x * other,
@@ -593,22 +718,36 @@ class LorentzVector(ThreeVector):
             behavior=self.behavior,
         )
 
-    def delta_r2(self, other):
+    def delta_r2(self, other, __dask_array__=None):
         """Squared `delta_r`"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("delta_r2"),
+                other,
+            )
         deta = self.eta - other.eta
         dphi = self.delta_phi(other)
         return deta * deta + dphi * dphi
 
-    def delta_r(self, other):
+    def delta_r(self, other, __dask_array__=None):
         r"""Distance between two Lorentz vectors in (eta,phi) plane
 
         :math:`\sqrt{\Delta\eta^2 + \Delta\phi^2}`
         """
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("delta_r"),
+                other,
+            )
         return numpy.hypot(self.eta - other.eta, self.delta_phi(other))
 
     @awkward.mixin_class_method(numpy.negative)
-    def negative(self):
+    def negative(self, __dask_array__=None):
         """Returns the negative of the vector"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("negative"),
+            )
         return awkward.zip(
             {"x": -self.x, "y": -self.y, "z": -self.z, "t": -self.t},
             with_name="LorentzVector",
@@ -639,12 +778,17 @@ class LorentzVector(ThreeVector):
             )
         return out
 
-    def boost(self, other):
+    def boost(self, other, __dask_array__=None):
         """Apply a Lorentz boost given by the `ThreeVector` `other` and return it
 
         Note that this follows the convention that, for example in order to boost
         a vector into its own rest frame, one needs to use the negative of its `boostvec`
         """
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("boost"),
+                other,
+            )
         b2 = other.rho2
         gamma = (1 - b2) ** (-0.5)
         mask = b2 == 0
@@ -667,7 +811,12 @@ class LorentzVector(ThreeVector):
         )
 
     def metric_table(
-        self, other, axis=1, metric=lambda a, b: a.delta_r(b), return_combinations=False
+        self,
+        other,
+        axis=1,
+        metric=lambda a, b: a.delta_r(b),
+        return_combinations=False,
+        __dask_array__=None,
     ):
         """Return a list of a metric evaluated between this object and another.
 
@@ -688,6 +837,14 @@ class LorentzVector(ThreeVector):
             return_combinations : bool
                 If True return the combinations of inputs as well as an unzipped tuple
         """
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("metric_table"),
+                other,
+                axis=axis,
+                metric=metric,
+                return_combinations=return_combinations,
+            )
         if axis is None:
             a, b = self, other
         else:
@@ -706,6 +863,7 @@ class LorentzVector(ThreeVector):
         metric=lambda a, b: a.delta_r(b),
         return_metric=False,
         threshold=None,
+        __dask_array__=None,
     ):
         """Return nearest object to this one
 
@@ -728,6 +886,15 @@ class LorentzVector(ThreeVector):
             threshold : Number, optional
                 If set, any objects with ``metric > threshold`` will be masked from the result
         """
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("nearest"),
+                other,
+                axis=axis,
+                metric=metric,
+                return_metric=return_metric,
+                threshold=threshold,
+            )
         mval, (a, b) = self.metric_table(other, axis, metric, return_combinations=True)
         if axis is None:
             # NotImplementedError: awkward.firsts with axis=-1
@@ -835,11 +1002,16 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
         return self.mass * self.mass
 
     @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
-    def multiply(self, other):
+    def multiply(self, other, __dask_array__=None):
         """Multiply this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components
 
         In reality, this directly adjusts `pt`, `eta`, `phi` and `mass` for performance
         """
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("multiply"),
+                other,
+            )
         absother = abs(other)
         return awkward.zip(
             {
@@ -853,8 +1025,12 @@ class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
         )
 
     @awkward.mixin_class_method(numpy.negative)
-    def negative(self):
+    def negative(self, __dask_array__=None):
         """Returns the negative of the vector"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("negative"),
+            )
         return awkward.zip(
             {
                 "pt": self.pt,
@@ -952,11 +1128,16 @@ class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
         return self.rho * self.rho
 
     @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
-    def multiply(self, other):
+    def multiply(self, other, __dask_array__=None):
         """Multiply this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components
 
         In reality, this directly adjusts `pt`, `eta`, `phi` and `energy` for performance
         """
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("multiply"),
+                other,
+            )
         return awkward.zip(
             {
                 "pt": self.pt * abs(other),
@@ -969,8 +1150,12 @@ class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
         )
 
     @awkward.mixin_class_method(numpy.negative)
-    def negative(self):
+    def negative(self, __dask_array__=None):
         """Returns the negative of the vector"""
+        if __dask_array__ is not None:
+            return __dask_array__.map_partitions(
+                base._ClassMethodFn("negative"),
+            )
         return awkward.zip(
             {
                 "pt": self.pt,

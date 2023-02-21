@@ -427,7 +427,7 @@ class Jet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic):
             )
         return self._events().Muon._apply_global_index(self.muonIdxG)
 
-    matched_muon = property(get_matched_muons)
+    matched_muons = property(get_matched_muons)
 
     def get_matched_gen(self, __dask_array__=None):
         if __dask_array__ is not None:
