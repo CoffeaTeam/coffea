@@ -1,5 +1,3 @@
-import json
-
 from coffea.nanoevents import transforms
 from coffea.nanoevents.util import concat, quote
 
@@ -111,19 +109,6 @@ class BaseSchema:
             "parameters": params,
             "form_key": None,
         }
-
-    @classmethod
-    def apply_to_dask(cls, dask_record):
-        import dask_awkward
-
-        from coffea.nanoevents.methods import base
-
-        dask_record = dask_awkward.with_name(
-            dask_record, "NanoEvents", behavior=base.behavior
-        )
-        return dask_awkward.with_parameter(dask_record, "metadata", {}), cls(
-            json.loads(dask_record.form.to_json())
-        )
 
     @property
     def form(self):
