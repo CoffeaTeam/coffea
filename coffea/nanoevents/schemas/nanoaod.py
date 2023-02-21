@@ -39,6 +39,7 @@ class NanoAODSchema(BaseSchema):
     target is encountered a warning will be issued. Regardless, the cross-reference is dropped.
     """
 
+    __dask_capable__ = True
     warn_missing_crossrefs = True
 
     mixins = {

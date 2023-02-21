@@ -96,6 +96,7 @@ class BaseSchema:
     form is accessible as a direct descendant.
     """
 
+    __dask_capable__ = True
     behavior = {}
 
     def __init__(self, base_form):

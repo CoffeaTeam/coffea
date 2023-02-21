@@ -37,6 +37,8 @@ def _build_record_array(
 class auto_schema(BaseSchema):
     """Build a schema using heuristics to imply a structure"""
 
+    __dask_capable__ = False
+
     def __init__(self, base_form: Dict[str, Any]):
         """Create an auto schema by parsing the names of the incoming columns
 
