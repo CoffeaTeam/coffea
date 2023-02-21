@@ -25,6 +25,8 @@ class PHYSLITESchema(BaseSchema):
     each collection.
     """
 
+    __dask_capable__ = False
+
     truth_collections = [
         "TruthPhotons",
         "TruthMuons",

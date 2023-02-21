@@ -11,6 +11,8 @@ class DelphesSchema(BaseSchema):
     - Any branches named ``{name}_size`` are assumed to be counts branches and converted to offsets ``o{name}``
     """
 
+    __dask_capable__ = False
+
     warn_missing_crossrefs = True
 
     mixins = {

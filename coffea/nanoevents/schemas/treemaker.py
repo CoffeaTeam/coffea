@@ -34,6 +34,8 @@ class TreeMakerSchema(BaseSchema):
     returned.
     """
 
+    __dask_capable__ = False
+
     def __init__(self, base_form):
         super().__init__(base_form)
         old_style_form = {

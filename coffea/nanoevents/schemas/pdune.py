@@ -9,6 +9,7 @@ from coffea.nanoevents.schemas.base import BaseSchema, zip_forms
 
 
 class PDUNESchema(BaseSchema):
+    __dask_capable__ = False
     mixins = {
         # branch tag : obj. class
         "RecoBeam": "Beam",
