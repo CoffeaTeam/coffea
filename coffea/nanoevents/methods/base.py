@@ -2,15 +2,24 @@
 import re
 from abc import abstractmethod
 from functools import partial
-from typing import Callable, List, Tuple, Union
+from typing import Any, Callable, List, Tuple, Union
 
 import awkward
+import dask_awkward
 import numpy
 
 import coffea
 from coffea.util import awkward_rewrap, rewrap_recordarray
 
 behavior = {}
+
+
+class _ClassMethodFn:
+    def __init__(self, attr: str, **kwargs: Any) -> None:
+        self.attr = attr
+
+    def __call__(self, coll: awkward.Array, *args: Any, **kwargs: Any) -> awkward.Array:
+        return getattr(coll, self.attr)(*args, **kwargs)
 
 
 @awkward.mixin_class(behavior)
@@ -192,7 +201,7 @@ class NanoCollection:
         Used with global indexes to resolve cross-references"""
         return self._getlistarray().content
 
-    def _apply_global_index(self, index):
+    def _apply_global_index(self, index, __dask_array__=None):
         """Internal method to take from a collection using a flat index
 
         This is often necessary to be able to still resolve cross-references on
@@ -210,9 +219,20 @@ class NanoCollection:
             if layout.purelist_depth == 1:
                 return flat_take(layout)
 
-        (index,) = awkward.broadcast_arrays(index)
-        out = awkward.transform(descend, index.layout, highlevel=False)
-        return awkward.Array(out, behavior=self.behavior)
+        (index_out,) = awkward.broadcast_arrays(
+            index._meta if isinstance(index, dask_awkward.Array) else index
+        )
+        layout_out = awkward.transform(descend, index_out.layout, highlevel=False)
+        out = awkward.Array(layout_out, behavior=self.behavior)
+
+        if isinstance(index, dask_awkward.Array):
+            return __dask_array__.map_partitions(
+                _ClassMethodFn("_apply_global_index"),
+                index,
+                label="_apply_global_index",
+                meta=out,
+            )
+        return out
 
     def _events(self):
         """Internal method to get the originally-constructed NanoEvents

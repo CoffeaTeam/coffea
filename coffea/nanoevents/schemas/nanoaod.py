@@ -1,20 +1,7 @@
-import json
 import warnings
-from functools import partial
-
-import awkward
-from dask_awkward import typetracer_from_form
 
 from coffea.nanoevents import transforms
-
-# TODO: REMOVE
-from coffea.nanoevents.mapping import (
-    PreloadedOpener,
-    PreloadedSourceMapping,
-    SimplePreloadedColumnSource,
-)
 from coffea.nanoevents.schemas.base import BaseSchema, zip_forms
-from coffea.nanoevents.util import tuple_to_key
 
 
 def _key_formatter(prefix, form_key, form, attribute):
@@ -202,69 +189,6 @@ class NanoAODSchema(BaseSchema):
         """Build the NanoEvents assuming NanoAODv5"""
         return cls(base_form, version="5")
 
-    @classmethod
-    def apply_to_dask(cls, dask_array, version="latest"):
-        import dask_awkward
-
-        dask_array, _ = super().apply_to_dask(dask_array)
-        schema_instance = cls(json.loads(dask_array.form.to_json()), version)
-
-        meta = typetracer_from_form(awkward.forms.from_dict(schema_instance.form))
-
-        class _SchemaHolder:
-            def __init__(self, form, behavior):
-                self.form = form
-                self.behavior = behavior
-
-            def __call__(self, array):
-                array_source = SimplePreloadedColumnSource(
-                    {field: array[field] for field in awkward.fields(array)},
-                    "NOPE",
-                    len(array),
-                    "/Events",
-                )
-                uuid = array_source.metadata["uuid"]
-                obj_path = array_source.metadata["object_path"]
-
-                entry_start = 0
-                entry_stop = len(array)
-
-                partition_key = (
-                    str(uuid),
-                    obj_path,
-                    f"{entry_start}-{entry_stop}",
-                )
-                uuidpfn = {uuid: array_source}
-                mapping = PreloadedSourceMapping(
-                    PreloadedOpener(uuidpfn), entry_start, entry_stop, access_log=None
-                )
-                mapping.preload_column_source(
-                    partition_key[0], partition_key[1], array_source
-                )
-
-                if awkward.backend(array) == "typetracer":
-                    actual = typetracer_from_form(self.form)
-                else:
-                    actual = awkward.from_buffers(
-                        self.form,
-                        len(array),
-                        mapping,
-                        buffer_key=partial(_key_formatter, tuple_to_key(partition_key)),
-                        behavior=self.behavior,
-                    )
-
-                return actual
-
-        dask_array = dask_awkward.map_partitions(
-            _SchemaHolder(meta.layout.form, schema_instance.behavior),
-            dask_array,
-            label="apply-NanoAODSchema",
-            meta=meta,
-        )
-        dask_array.layout.behavior = schema_instance.behavior
-
-        return dask_array, schema_instance
-
     def _build_collections(self, field_names, input_contents):
         branch_forms = {k: v for k, v in zip(field_names, input_contents)}
         # parse into high-level records (collections, list collections, and singletons)
@@ -338,7 +262,7 @@ class NanoAODSchema(BaseSchema):
                 )
                 output[name]["content"]["parameters"].update(
                     {
-                        # "__doc__": offsets["parameters"]["__doc__"],
+                        "__doc__": offsets["parameters"]["__doc__"],
                         "collection_name": name,
                     }
                 )
