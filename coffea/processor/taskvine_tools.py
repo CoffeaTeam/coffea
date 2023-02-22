@@ -110,7 +110,6 @@ class CoffeaTaskvine(Manager):
             debug_log=self.executor.debug_log,
             stats_log=self.executor.stats_log,
             transactions_log=self.executor.transactions_log,
-            status_display_interval=self.executor.status_display_interval,
             ssl=self.executor.ssl,
         )
 
@@ -267,7 +266,7 @@ class CoffeaTaskvine(Manager):
 
     def _add_task_report(self, task):
         r = TaskReport(
-            len(task), task.wall_time / 1e6, task.resources_measured.memory # FIXME
+            len(task), task.resources_measured.wall_time / 1e6, task.resources_measured.memory # FIXME
         )
         self.task_reports.append(r)
 
@@ -786,9 +785,9 @@ class CoffeaTaskvineTask(Task):
         if (not queue.console.verbose_mode) and self.successful():
             return self.successful()
 
-        result_str = self.result_str.lower().replace("_", " ")
+        result_string = self.result_string.lower().replace("_", " ")
         if not self.successful() and self.result == 0:
-            result_str = "task error"
+            result_string = "task error"
 
         queue.console.printf(
             "{} task id {} item {} with {} events on {}. return code {} ({})",
@@ -798,7 +797,7 @@ class CoffeaTaskvineTask(Task):
             len(self),
             self.hostname,
             self.exit_code,
-            result_str,
+            result_string,
         )
 
         queue.console.printf(
@@ -816,7 +815,7 @@ class CoffeaTaskvineTask(Task):
                 self.resources_measured.memory,
                 self.resources_measured.disk,
                 self.resources_measured.gpus,
-                (self.wall_time) / 1e6,
+                (self.resources_measured.wall_time) / 1e6,
             )
 
         if queue.executor.print_stdout or not (self.successful() or self.exhausted()):
@@ -830,7 +829,7 @@ class CoffeaTaskvineTask(Task):
                 "task id {} item {} failed: {}\n    {}",
                 self.id,
                 self.itemid,
-                result_str,
+                result_string,
                 info,
             )
         return self.successful()

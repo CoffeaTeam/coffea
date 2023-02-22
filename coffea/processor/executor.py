@@ -454,10 +454,10 @@ def _wait_for_merges(FH: _FuturesHolder, executor: ExecutorBase) -> Accumulatabl
 
 
 @dataclass
-class WorkQueueExecutor(ExecutorBase):
-    """Execute using Work Queue
+class TaskvineExecutor(ExecutorBase):
+    """Execute using Taskvine
 
-    For more information, see :ref:`intro-coffea-wq`
+    For more information, see :ref:`intro-coffea-vine`
 
     Parameters
     ----------
@@ -476,20 +476,20 @@ class WorkQueueExecutor(ExecutorBase):
         compression : int, optional
             Compress accumulator outputs in flight with LZ4, at level specified (default 9)
             `None`` sets level to 1 (minimal compression)
-        # work queue specific options:
+        # tasvine specific options:
         cores : int
-            Maximum number of cores for work queue task. If unset, use a whole worker.
+            Maximum number of cores for taskvine task. If unset, use a whole worker.
         memory : int
-            Maximum amount of memory (in MB) for work queue task. If unset, use a whole worker.
+            Maximum amount of memory (in MB) for taskvine task. If unset, use a whole worker.
         disk : int
-            Maximum amount of disk space (in MB) for work queue task. If unset, use a whole worker.
+            Maximum amount of disk space (in MB) for taskvine task. If unset, use a whole worker.
         gpus : int
             Number of GPUs to allocate to each task.  If unset, use zero.
         resource_monitor : str
             If given, one of 'off', 'measure', or 'watchdog'. Default is 'off'.
             - 'off': turns off resource monitoring. Overriden to 'watchdog' if resources_mode
                      is not set to 'fixed'.
-            - 'measure': turns on resource monitoring for Work Queue. The
+            - 'measure': turns on resource monitoring for taskvine. The
                         resources used per task are measured.
             - 'watchdog': in addition to measuring resources, tasks are terminated if they
                         go above the cores, memory, or disk specified.
@@ -518,10 +518,10 @@ class WorkQueueExecutor(ExecutorBase):
             two distinct workers. Less than 1 disables it.
 
         manager_name : str
-            Name to refer to this work queue manager.
+            Name to refer to this taskvine manager.
             Sets port to 0 (any available port) if port not given.
         port : int or tuple(int, int)
-            Port number or range (inclusive of ports )for work queue manager program.
+            Port number or range (inclusive of ports )for taskvine manager program.
             Defaults to 9123 if manager_name not given.
         password_file: str
             Location of a file containing a password used to authenticate workers.
@@ -552,7 +552,7 @@ class WorkQueueExecutor(ExecutorBase):
             If true, emit a message on each task submission and completion.
             Default is false.
         print_stdout : bool
-            If true (default), print the standard output of work queue task on completion.
+            If true (default), print the standard output of taskvine task on completion.
 
         debug_log : str
             Filename for debug output
@@ -568,7 +568,7 @@ class WorkQueueExecutor(ExecutorBase):
             Default is "." (current working directory).
 
         custom_init : function, optional
-            A function that takes as an argument the queue's WorkQueue object.
+            A function that takes as an argument the queue's Taskvine object.
             The function is called just before the first work unit is submitted
             to the queue.
     """
@@ -576,7 +576,7 @@ class WorkQueueExecutor(ExecutorBase):
     # Standard executor options:
     compression: Optional[int] = 9  # as recommended by lz4
     retries: int = 2  # task executes at most 3 times
-    # wq executor options:
+    # vine executor options:
     manager_name: Optional[str] = None
     port: Optional[Union[int, Tuple[int, int]]] = None
     filepath: str = "."
@@ -619,7 +619,7 @@ class WorkQueueExecutor(ExecutorBase):
         function: Callable,
         accumulator: Accumulatable,
     ):
-        from .work_queue_tools import run
+        from .taskvine_tools import run
 
         return (
             run(
@@ -1225,7 +1225,7 @@ class Runner:
             Currently supported are 'wall_time' (in seconds), and 'memory' (in MB).
             E.g., with {"wall_time": 120, "memory": 2048}, the chunksize will
             be dynamically adapted so that processing jobs each run in about
-            two minutes, using two GB of memory. (Currently only for the WorkQueueExecutor.)
+            two minutes, using two GB of memory. (Currently only for the TaskvineExecutor.)
     """
 
     executor: ExecutorBase
@@ -1286,9 +1286,9 @@ class Runner:
             raise RuntimeError(
                 "maxchunks and dynamic_chunksize cannot be used simultaneously"
             )
-        if self.dynamic_chunksize and not isinstance(self.executor, WorkQueueExecutor):
+        if self.dynamic_chunksize and not isinstance(self.executor, TaskvineExecutor):
             raise RuntimeError(
-                "dynamic_chunksize currently only supported by the WorkQueueExecutor"
+                "dynamic_chunksize currently only supported by the TaskvineExecutor"
             )
 
         assert self.format in ("root", "parquet")
@@ -1801,7 +1801,7 @@ class Runner:
                 processor_instance=pi_to_send,
             )
 
-        if self.format == "root" and isinstance(self.executor, WorkQueueExecutor):
+        if self.format == "root" and isinstance(self.executor, TaskvineExecutor):
             # keep chunks in generator, use a copy to count number of events
             # this is cheap, as we are reading from the cache
             chunks_to_count = self.preprocess(fileset, treename)
@@ -1816,7 +1816,7 @@ class Runner:
             "unit": "chunk",
             "function_name": type(processor_instance).__name__,
         }
-        if isinstance(self.executor, WorkQueueExecutor):
+        if isinstance(self.executor, TaskvineExecutor):
             exe_args.update(
                 {
                     "unit": "event",

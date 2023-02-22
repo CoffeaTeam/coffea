@@ -12,7 +12,7 @@ from .executor import (
     FuturesExecutor,
     DaskExecutor,
     ParslExecutor,
-    WorkQueueExecutor,
+    TaskvineExecutor,
     Runner,
     run_spark_job,
 )
@@ -115,7 +115,7 @@ iterative_executor = IterativeExecutor
 futures_executor = FuturesExecutor
 dask_executor = DaskExecutor
 parsl_executor = ParslExecutor
-work_queue_executor = WorkQueueExecutor
+taskvine_executor = TaskvineExecutor
 
 
 __all__ = [
@@ -127,7 +127,7 @@ __all__ = [
     "FuturesExecutor",
     "DaskExecutor",
     "ParslExecutor",
-    "WorkQueueExecutor",
+    "TaskvineExecutor",
     "Runner",
     "run_spark_job",
     "accumulate",
@@ -148,5 +148,5 @@ __all__ = [
     "futures_executor",
     "dask_executor",
     "parsl_executor",
-    "work_queue_executor",
+    "taskvine_executor",
 ]
