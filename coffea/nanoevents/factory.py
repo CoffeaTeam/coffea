@@ -1,5 +1,6 @@
 import io
 import pathlib
+import urllib.parse
 import weakref
 from collections.abc import Mapping
 from functools import partial
@@ -7,6 +8,7 @@ from functools import partial
 import awkward
 import fsspec
 import uproot
+from dask_awkward import ImplementsFormTransformation
 
 from coffea.nanoevents.mapping import (
     CachedMapping,
@@ -25,6 +27,89 @@ def _key_formatter(prefix, form_key, form, attribute):
     if attribute == "offsets":
         form_key += "%2C%21offsets"
     return prefix + f"/{attribute}/{form_key}"
+
+
+class _map_schema_base(ImplementsFormTransformation):
+    def __init__(
+        self, schemaclass=BaseSchema, metadata=None, behavior=None, version=None
+    ):
+        self.schemaclass = schemaclass
+        self.behavior = behavior
+        self.metadata = metadata
+        self.version = version
+
+    def extract_form_keys_base_columns(self, form_keys):
+        base_columns = []
+        for form_key in form_keys:
+            base_columns.extend(
+                [
+                    acolumn
+                    for acolumn in urllib.parse.unquote(form_key).split(",")
+                    if not acolumn.startswith("!")
+                ]
+            )
+        return list(set(base_columns))
+
+    def _key_formatter(self, prefix, form_key, form, attribute):
+        if attribute == "offsets":
+            form_key += "%2C%21offsets"
+        return prefix + f"/{attribute}/{form_key}"
+
+
+class _map_schema_uproot(_map_schema_base):
+    def __init__(
+        self, schemaclass=BaseSchema, metadata=None, behavior=None, version=None
+    ):
+        super().__init__(
+            schemaclass=schemaclass,
+            metadata=metadata,
+            behavior=behavior,
+            version=version,
+        )
+
+    def __call__(self, form):
+        from coffea.nanoevents.mapping.uproot import _lazify_form
+
+        branch_forms = {}
+        for ifield, field in enumerate(form.fields):
+            iform = form.contents[ifield].to_dict()
+            branch_forms[field] = _lazify_form(
+                iform, f"{field},!load", docstr=iform["parameters"]["__doc__"]
+            )
+        lform = {
+            "class": "RecordArray",
+            "contents": [item for item in branch_forms.values()],
+            "fields": [key for key in branch_forms.keys()],
+            "parameters": {
+                "__doc__": form.parameters["__doc__"],
+                "metadata": self.metadata,
+            },
+            "form_key": None,
+        }
+        return awkward.forms.form.from_dict(self.schemaclass(lform, self.version).form)
+
+    def create_column_mapping_and_key(self, tree, start, stop, interp_options):
+        from functools import partial
+
+        from coffea.nanoevents.util import tuple_to_key
+
+        partition_key = (
+            str(tree.file.uuid),
+            tree.object_path,
+            f"{start}-{stop}",
+        )
+        uuidpfn = {partition_key[0]: tree.file.file_path}
+        mapping = UprootSourceMapping(
+            TrivialUprootOpener(uuidpfn, interp_options),
+            start,
+            stop,
+            cache={},
+            access_log=None,
+            use_ak_forth=True,
+        )
+        mapping.preload_column_source(partition_key[0], partition_key[1], tree)
+
+        return mapping, partial(self._key_formatter, tuple_to_key(partition_key))
 
 
 class NanoEventsFactory:
@@ -66,6 +151,7 @@ class NanoEventsFactory:
         access_log=None,
         iteritems_options={},
         use_ak_forth=True,
+        permit_dask=False,
     ):
         """Quickly build NanoEvents from a root file
 
@@ -96,7 +182,36 @@ class NanoEventsFactory:
                 Pass a list instance to record which branches were lazily accessed by this instance
             use_ak_forth:
                 Toggle using awkward_forth to interpret branches in root file.
+            permit_dask:
+                Allow nanoevents to use dask as a backend.
         """
+        if permit_dask and schemaclass.__dask_capable__:
+            behavior = None
+            if schemaclass is BaseSchema:
+                from coffea.nanoevents.methods import base
+
+                behavior = base.behavior
+            elif schemaclass is NanoAODSchema:
+                from coffea.nanoevents.methods import nanoaod
+
+                behavior = nanoaod.behavior
+
+            map_schema = _map_schema_uproot(
+                schemaclass=schemaclass,
+                behavior=behavior,
+                metadata=metadata,
+                version="latest",
+            )
+            events = uproot.dask(
+                {file: treepath},
+                open_files=False,
+                ak_add_doc=True,
+                form_mapping=map_schema,
+            )
+            events.behavior["__original_array__"] = weakref.ref(events)
+
+            return events
+
         if isinstance(file, str):
             tree = uproot.open(file, **uproot_options)[treepath]
         elif isinstance(file, uproot.reading.ReadOnlyDirectory):
