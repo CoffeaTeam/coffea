@@ -202,6 +202,7 @@ class NanoEventsFactory:
                 metadata=metadata,
                 version="latest",
             )
+
             events = uproot.dask(
                 {file: treepath},
                 open_files=False,
