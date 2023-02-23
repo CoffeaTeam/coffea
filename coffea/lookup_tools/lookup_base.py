@@ -14,10 +14,25 @@ def getfunction(args, thelookup=None, **kwargs):
         or not isinstance(x, (awkward.contents.Content))
         for x in args
     ):
-        if awkward.backend(*args) != "cpu":
+        result = None
+        backend = awkward.backend(*args)
+        if backend == "cpu":
+            result = thelookup._evaluate(
+                *[awkward.to_numpy(arg) for arg in args], **kwargs
+            )
+        elif backend == "typetracer":
+            zlargs = tuple(arg.form.length_zero_array() for arg in args)
+            result = thelookup._evaluate(
+                *[awkward.to_numpy(zlarg) for zlarg in zlargs], **kwargs
+            )
+        else:
             raise NotImplementedError("support for cupy/jax/etc. numpy extensions")
-        result = thelookup._evaluate(*[awkward.to_numpy(x) for x in args], **kwargs)
-        return awkward.contents.NumpyArray(result)
+
+        out = awkward.contents.NumpyArray(result)
+        if backend == "typetracer":
+            out = awkward.contents.NumpyArray(result)
+            return dask_awkward.typetracer_from_form(out.form).layout
+        return out
     return None
 
 
