@@ -6,7 +6,7 @@ import dask_awkward
 import numpy
 
 
-def getfunction(args, thelookup=None, **kwargs):
+def getfunction(args, thelookup=None, __pre_args__=tuple(), **kwargs):
     if not isinstance(args, (list, tuple)):
         args = (args,)
     if all(
@@ -18,12 +18,14 @@ def getfunction(args, thelookup=None, **kwargs):
         backend = awkward.backend(*args)
         if backend == "cpu":
             result = thelookup._evaluate(
-                *[awkward.to_numpy(arg) for arg in args], **kwargs
+                *(list(__pre_args__) + [awkward.to_numpy(arg) for arg in args]),
+                **kwargs,
             )
         elif backend == "typetracer":
             zlargs = tuple(arg.form.length_zero_array() for arg in args)
             result = thelookup._evaluate(
-                *[awkward.to_numpy(zlarg) for zlarg in zlargs], **kwargs
+                *(list(__pre_args__) + [awkward.to_numpy(zlarg) for zlarg in zlargs]),
+                **kwargs,
             )
         else:
             raise NotImplementedError("support for cupy/jax/etc. numpy extensions")
@@ -37,8 +39,10 @@ def getfunction(args, thelookup=None, **kwargs):
 
 
 class _LookupXformFn:
-    def __init__(self, thelookup, **kwargs):
-        self.func = partial(getfunction, thelookup=thelookup, **kwargs)
+    def __init__(self, *args, thelookup, **kwargs):
+        self.func = partial(
+            getfunction, thelookup=thelookup, __pre_args__=args, **kwargs
+        )
 
     def __call__(self, *args):
         return awkward.transform(self.func, *args)
@@ -53,24 +57,30 @@ class lookup_base:
     def __call__(self, *args, **kwargs):
         dask_label = kwargs.pop("dask_label", None)
         # if our inputs are all dask_awkward arrays, then we should map_partitions
-        if all(isinstance(x, (dask_awkward.Array)) for x in args):
-            tomap = _LookupXformFn(self, **kwargs)
+        if any(isinstance(x, (dask_awkward.Array)) for x in args):
+            delay_args = tuple(
+                arg for arg in args if not isinstance(arg, dask_awkward.Array)
+            )
+            actual_args = tuple(
+                arg for arg in args if isinstance(arg, dask_awkward.Array)
+            )
+            tomap = _LookupXformFn(*delay_args, thelookup=self, **kwargs)
 
-            zlargs = [arg._meta.layout.form.length_zero_array() for arg in args]
+            zlargs = [arg._meta.layout.form.length_zero_array() for arg in actual_args]
             zlout = tomap(*zlargs)
             meta = dask_awkward.typetracer_from_form(zlout.layout.form)
 
             if dask_label:
                 return dask_awkward.map_partitions(
                     tomap,
-                    *args,
+                    *actual_args,
                     label=dask_label,
                     meta=meta,
                 )
             else:
                 return dask_awkward.map_partitions(
                     tomap,
-                    *args,
+                    *actual_args,
                     meta=meta,
                 )
 
