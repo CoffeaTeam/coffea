@@ -296,6 +296,45 @@ def convert_jersf_txt_file(jersfFilePath):
 
     return wrapped_up
 
+def convert_l5flavor_jes_txt_file(juncFilePath):
+    components = []
+    basename = os.path.basename(juncFilePath).split(".")[0]
+    fopen = open
+    fmode = "rt"
+    if is_gz_file(juncFilePath):
+        import gzip
+
+        fopen = gzip.open
+        fmode = (
+            "r"
+            if sys.platform.startswith("win") and sys.version_info.major < 3
+            else fmode
+        )
+    with fopen(juncFilePath, fmode) as uncfile:
+        for line in uncfile:
+            if line.startswith("#"):
+                continue
+            elif line.startswith("["):
+                component_name = line.strip()[1:-1]  # remove leading and trailing []
+                cname = "{0}_{1}.txt".format(
+                    basename, component_name
+                )
+                components.append((cname, []))
+            elif components:
+                components[-1][1].append(line)
+            else:
+                continue
+    if not components:  # there are no components in the file
+        components.append((juncFilePath, None))
+    else:
+        components = [(i, io.StringIO("".join(j))) for i, j in components]
+
+    retval = {}
+#     return components
+    for name, ifile in components:
+        wrapped_up = _build_standard_jme_lookup(*_parse_jme_formatted_file(name, interpolatedFunc=False, parmsFromColumns=False, jme_f=ifile ))
+        retval.update(wrapped_up)
+    return retval
 
 def convert_junc_txt_file(juncFilePath):
     components = []

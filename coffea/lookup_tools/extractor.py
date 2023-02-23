@@ -29,6 +29,7 @@ file_converters = {
         "junc": convert_junc_txt_file,
         "ea": convert_effective_area_file,
         "pileup": convert_pileup_json_file,
+        "l5flavor": convert_l5flavor_jes_txt_file,
     },
 }
 
@@ -126,6 +127,8 @@ class extractor(object):
                 thetype = "pileup"
             if "_SF_" in thefile and "jersf" in file_converters[theformat]:
                 thetype = "jersf"
+            if "_L5Flavor_" in thefile and "l5flavor" in file_converters[theformat]:
+                thetype = "l5flavor"
             self._filecache[thefile] = file_converters[theformat][thetype](thefile)
 
     def extract_from_file(self, thefile, name):
