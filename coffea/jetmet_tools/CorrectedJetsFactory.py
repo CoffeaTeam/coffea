@@ -40,7 +40,16 @@ class _AwkwardRewrapFn:
 
 
 def rand_gauss(item):
-    seeds = numpy.array(item)[[0, -1]].view("i4")
+    seeds = None
+    backend = awkward.backend(item)
+    if backend == "cpu":
+        seeds = numpy.array(item)[[0, -1]].view("i4")
+    elif backend == "typetracer":
+        olitem = item.layout.form.length_one_array()
+        seeds = numpy.array(olitem)[[0, -1]].view("i4")
+    else:
+        raise ValueError("rand_gauss received an unsupported awkward backend!")
+
     randomstate = numpy.random.Generator(numpy.random.PCG64(seeds))
 
     def getfunction(layout, depth, **kwargs):
@@ -52,11 +61,22 @@ def rand_gauss(item):
             )
         return None
 
-    out = awkward.transform(
-        getfunction,
-        item,
-        behavior=item.behavior,
-    )
+    out = None
+    if backend == "cpu":
+        out = awkward.transform(
+            getfunction,
+            item,
+            behavior=item.behavior,
+        )
+    elif backend == "typetracer":
+        zlitem = item.layout.form.length_zero_array()
+        out = awkward.transform(
+            getfunction,
+            zlitem,
+            behavior=zlitem.behavior,
+        )
+        out = dask_awkward.typetracer_from_form(out.layout.form)
+
     assert out is not None
     return out
 
@@ -95,6 +115,12 @@ def jer_smear(
         (smearfact * jetPt) < min_jet_pt, min_jet_pt_corr, smearfact
     )
 
+    backend = awkward.backend(smearfact, jetPt)
+
+    if backend == "typetracer":
+        smearfact = smearfact.layout.form.length_zero_array()
+        jetPt = smearfact.layout.form.length_zero_array()
+
     def getfunction(layout, depth, **kwargs):
         if isinstance(layout, awkward.contents.NumpyArray) or not isinstance(
             layout, awkward.contents.Content
@@ -103,6 +129,10 @@ def jer_smear(
         return None
 
     smearfact = awkward.transform(getfunction, jetPt, behavior=jetPt.behavior)
+
+    if backend == "typetracer":
+        jetPt = dask_awkward.typetracer_from_form(jetPt.layout.form)
+        smearfact = dask_awkward.typetracer_from_form(smearfact.layout.form)
 
     return smearfact
 
@@ -239,7 +269,6 @@ class CorrectedJetsFactory:
             out_dict["jet_resolution_rand_gauss"] = dask_awkward.map_partitions(
                 rand_gauss,
                 out_dict[self.name_map["JetPt"] + "_orig"],
-                meta=out_dict[self.name_map["JetPt"] + "_orig"]._meta,
             )
 
             init_jerc = dask_awkward.map_partitions(
@@ -252,7 +281,6 @@ class CorrectedJetsFactory:
                 out_dict["jet_energy_resolution_scale_factor"],
                 0,
                 self.forceStochastic,
-                meta=out_dict[jer_name_map["JetPt"]]._meta,
             )
             out_dict["jet_energy_resolution_correction"] = init_jerc
 
@@ -284,7 +312,6 @@ class CorrectedJetsFactory:
                 out_dict["jet_energy_resolution_scale_factor"],
                 1,
                 self.forceStochastic,
-                meta=out_dict[jer_name_map["JetPt"]]._meta,
             )
             up = dask_awkward.flatten(jets)
             up = dask_awkward.with_field(
@@ -314,7 +341,6 @@ class CorrectedJetsFactory:
                 out_dict["jet_energy_resolution_scale_factor"],
                 2,
                 self.forceStochastic,
-                meta=out_dict[jer_name_map["JetPt"]]._meta,
             )
             down = dask_awkward.flatten(jets)
             down = dask_awkward.with_field(
