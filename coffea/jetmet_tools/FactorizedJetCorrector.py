@@ -198,28 +198,19 @@ class FactorizedJetCorrector:
         # cache = kwargs.pop("lazy_cache", None)
         # form = kwargs.pop("form", None)
         corrVars = {}
-        thetype = None
         if "JetPt" in kwargs.keys():
             corrVars["JetPt"] = kwargs["JetPt"]
-            thetype = type(corrVars["JetPt"])
             kwargs.pop("JetPt")
         if "JetE" in kwargs.keys():
             corrVars["JetE"] = kwargs["JetE"]
-            thetype = type(corrVars["JetE"])
             kwargs.pop("JetE")
         if len(corrVars) == 0:
             raise Exception("No variable to correct, need JetPt or JetE in inputs!")
 
-        one = 1.0
-        if thetype is dask_awkward.Array:
-            one = dask_awkward.from_awkward(
-                awkward.Array(numpy.array(1.0, dtype=numpy.float32)), 1
-            )
-
         corrections = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
-            cumCorr = reduce(lambda x, y: y * x, corrections, one)
+            cumCorr = reduce(lambda x, y: y * x, corrections, 1.0)
 
             fargs = tuple(
                 (cumCorr * corrVars[arg]) if arg in corrVars.keys() else kwargs[arg]
