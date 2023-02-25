@@ -3,6 +3,9 @@
 These helper classes were previously part of ``coffea.processor``
 but have been migrated and updated to be compatible with awkward-array 1.0
 """
+import awkward
+import dask.array
+import dask_awkward
 import numpy
 
 import coffea.processor
@@ -325,7 +328,7 @@ class PackedSelection:
         ----------
             name : str
                 name of the selection
-            selection : numpy.ndarray or awkward.Array
+            selection : numpy.ndarray, awkward.Array, dask.array.Array, or dask_awkward.Array
                 a flat array of type ``bool`` or ``?bool``.
                 If this is not the first selection added, it must also have
                 the same shape as previously added selections. If the array
@@ -333,13 +336,30 @@ class PackedSelection:
             fill_value : bool, optional
                 All masked entries will be filled as specified (default: ``False``)
         """
-        selection = coffea.util._ensure_flat(selection, allow_missing=True)
-        if isinstance(selection, numpy.ma.MaskedArray):
-            selection = selection.filled(fill_value)
+        array_lib = numpy
+        if isinstance(selection, (dask.array.Array, dask_awkward.Array)):
+            array_lib = dask.array
+            selection = (
+                selection
+                if isinstance(selection, dask.array.Array)
+                else dask_awkward.to_dask_array(selection)
+            )
+            if isinstance(selection._meta, numpy.ma.MaskedArray):
+                selection = dask.array.ma.filled(selection, fill_value)
+        elif isinstance(selection, (numpy.ndarray, awkward.Array)):
+            selection = coffea.util._ensure_flat(selection, allow_missing=True)
+            if isinstance(selection, numpy.ma.MaskedArray):
+                selection = selection.filled(fill_value)
+        else:
+            raise TypeError(
+                "selection is not a numpy.ndarray, awkward.Array, dask.array.Array, or dask_awkward.Array"
+            )
         if selection.dtype != bool:
-            raise ValueError(f"Expected a boolean array, received {selection.dtype}")
+            raise ValueError(
+                f"Expected a boolean dask array, received {selection.dtype}"
+            )
         if len(self._names) == 0:
-            self._data = numpy.zeros(len(selection), dtype=self._dtype)
+            self._data = array_lib.zeros(len(selection), dtype=self._dtype)
         elif len(self._names) == self.maxitems:
             raise RuntimeError(
                 f"Exhausted all slots in {self}, consider a larger dtype or fewer selections"
@@ -348,7 +368,7 @@ class PackedSelection:
             raise ValueError(
                 f"New selection '{name}' has a different shape than existing selections ({selection.shape} vs. {self._data.shape})"
             )
-        numpy.bitwise_or(
+        array_lib.bitwise_or(
             self._data,
             self._dtype.type(1 << len(self._names)),
             where=selection,
@@ -389,6 +409,8 @@ class PackedSelection:
             idx = self._names.index(name)
             consider |= 1 << idx
             require |= int(val) << idx
+        if isinstance(self._data, dask.array.Array):
+            return dask_awkward.from_dask_array((self._data & consider) == require)
         return (self._data & consider) == require
 
     def all(self, *names):
@@ -422,4 +444,6 @@ class PackedSelection:
         for name in names:
             idx = self._names.index(name)
             consider |= 1 << idx
+        if isinstance(self._data, dask.array.Array):
+            return dask_awkward.from_dask_array((self._data & consider) != 0)
         return (self._data & consider) != 0
