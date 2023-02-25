@@ -15,3 +15,6 @@ class correctionlib_wrapper(lookup_base):
             for i, inp in enumerate(self._corr._base.inputs)
         )
         return f"correctionlib Correction: {self._corr.name}({signature})"
+
+    def __dask_tokenize__(self):
+        return (correctionlib_wrapper, self._corr.name, self._corr.version)

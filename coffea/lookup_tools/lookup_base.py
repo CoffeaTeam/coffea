@@ -47,6 +47,9 @@ class _LookupXformFn:
     def __call__(self, *args):
         return awkward.transform(self.func, *args)
 
+    def __dask_tokenize__(self):
+        return (_LookupXformFn, self.func)
+
 
 class lookup_base:
     """Base class for all objects that do some sort of value or function lookup"""
@@ -96,6 +99,9 @@ class lookup_base:
         func = partial(getfunction, thelookup=self, **kwargs)
         out = awkward.transform(func, *args)
         return out
+
+    def __dask_tokenize__(self):
+        return (lookup_base, self)
 
     def _evaluate(self, *args, **kwargs):
         raise NotImplementedError
