@@ -1,3 +1,4 @@
+import dask.array as da
 import numpy as np
 import pytest
 from dummy_distributions import dummy_jagged_eta_pt
@@ -160,39 +161,65 @@ def test_weights_partial():
     assert error_raised
 
 
-def test_packed_selection():
+@pytest.mark.parametrize("array_lib", [np, da])
+def test_packed_selection(array_lib):
     from coffea.analysis_tools import PackedSelection
 
     sel = PackedSelection()
 
     shape = (10,)
-    all_true = np.full(shape=shape, fill_value=True, dtype=bool)
-    all_false = np.full(shape=shape, fill_value=False, dtype=bool)
-    fizz = np.arange(shape[0]) % 3 == 0
-    buzz = np.arange(shape[0]) % 5 == 0
-    ones = np.ones(shape=shape, dtype=np.uint64)
-    wrong_shape = ones = np.ones(shape=(shape[0] - 5,), dtype=bool)
+    all_true = array_lib.full(shape=shape, fill_value=True, dtype=bool)
+    all_false = array_lib.full(shape=shape, fill_value=False, dtype=bool)
+    fizz = array_lib.arange(shape[0]) % 3 == 0
+    buzz = array_lib.arange(shape[0]) % 5 == 0
+    ones = array_lib.ones(shape=shape, dtype=np.uint64)
+    wrong_shape = ones = array_lib.ones(shape=(shape[0] - 5,), dtype=bool)
 
     sel.add("all_true", all_true)
     sel.add("all_false", all_false)
     sel.add("fizz", fizz)
     sel.add("buzz", buzz)
 
-    assert np.all(sel.require(all_true=True, all_false=False) == all_true)
-    # allow truthy values
-    assert np.all(sel.require(all_true=1, all_false=0) == all_true)
-    assert np.all(sel.all("all_true", "all_false") == all_false)
-    assert np.all(sel.any("all_true", "all_false") == all_true)
-    assert np.all(
-        sel.all("fizz", "buzz")
-        == np.array(
-            [True, False, False, False, False, False, False, False, False, False]
+    if array_lib == np:
+        assert np.all(sel.require(all_true=True, all_false=False) == all_true)
+        # allow truthy values
+        assert np.all(sel.require(all_true=1, all_false=0) == all_true)
+        assert np.all(sel.all("all_true", "all_false") == all_false)
+        assert np.all(sel.any("all_true", "all_false") == all_true)
+        assert np.all(
+            sel.all("fizz", "buzz")
+            == np.array(
+                [True, False, False, False, False, False, False, False, False, False]
+            )
         )
-    )
-    assert np.all(
-        sel.any("fizz", "buzz")
-        == np.array([True, False, False, True, False, True, True, False, False, True])
-    )
+        assert np.all(
+            sel.any("fizz", "buzz")
+            == np.array(
+                [True, False, False, True, False, True, True, False, False, True]
+            )
+        )
+    else:
+        assert np.all(
+            sel.require(all_true=True, all_false=False).compute() == all_true.compute()
+        )
+        # allow truthy values
+        assert np.all(
+            sel.require(all_true=1, all_false=0).compute() == all_true.compute()
+        )
+        assert np.all(sel.all("all_true", "all_false").compute() == all_false.compute())
+        assert np.all(sel.any("all_true", "all_false").compute() == all_true.compute())
+        assert np.all(
+            sel.all("fizz", "buzz").compute()
+            == np.array(
+                [True, False, False, False, False, False, False, False, False, False]
+            )
+        )
+        assert np.all(
+            sel.any("fizz", "buzz").compute()
+            == np.array(
+                [True, False, False, True, False, True, True, False, False, True]
+            )
+        )
 
     with pytest.raises(ValueError):
         sel.add("wrong_shape", wrong_shape)
