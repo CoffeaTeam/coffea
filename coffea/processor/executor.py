@@ -1350,7 +1350,12 @@ class Runner:
                     and (retries == retry_count)
                     and any(
                         e in str(c)
-                        for c in chain for e in ["Invalid redirect URL", "Operation expired", "Socket timeout"]
+                        for c in chain
+                        for e in [
+                            "Invalid redirect URL",
+                            "Operation expired",
+                            "Socket timeout",
+                        ]
                     )
                 ):
                     warnings.warn(str(e))
