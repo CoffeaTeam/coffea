@@ -17,91 +17,102 @@ from functools import reduce
 import inspect
 import subprocess
 import coffea
+
 print("sys.path:", sys.path)
 print("coffea version:", coffea.__version__)
 
 # -- Project information -----------------------------------------------------
 
-project = 'coffea'
-copyright = '2019, Fermi National Accelerator Laboratory'
-author = 'L. Gray, N. Smith, et al. (The Coffea Team)'
+project = "coffea"
+copyright = "2019, Fermi National Accelerator Laboratory"
+author = "L. Gray, N. Smith, et al. (The Coffea Team)"
 
-version = coffea.__version__.rsplit('.', 1)[0]
+version = coffea.__version__.rsplit(".", 1)[0]
 release = coffea.__version__
-githash = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('ascii')
+githash = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode("ascii")
 
 language = None
 
 # -- General configuration ---------------------------------------------------
 
-source_suffix = '.rst'
+source_suffix = ".rst"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'nbsphinx',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.linkcode',
-    'sphinx.ext.napoleon',
-    'sphinx_automodapi.automodapi',
-    'sphinx_automodapi.smart_resolver',
+    "nbsphinx",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.linkcode",
+    "sphinx.ext.napoleon",
+    "sphinx_automodapi.automodapi",
+    "sphinx_automodapi.smart_resolver",
+    "sphinx_copybutton",
     # 'IPython.sphinxext.ipython_console_highlighting',
 ]
 
+# sphinx-copybutton configuration
+copybutton_prompt_text = r">>> |\.\.\. |\$ "
+copybutton_prompt_is_regexp = True
+copybutton_here_doc_delimiter = "EOF"
+
 numpydoc_show_class_members = False
-nbsphinx_execute = 'never'
+nbsphinx_execute = "never"
 autosummary_generate = True
 
+
 def linkcode_resolve(domain, info):
-    if domain != 'py':
+    if domain != "py":
         return None
-    if not info['module']:
+    if not info["module"]:
         return None
-    mod = importlib.import_module(info['module'])
+    mod = importlib.import_module(info["module"])
     modpath = [p for p in sys.path if mod.__file__.startswith(p)]
     if len(modpath) < 1:
-        raise RuntimeException('Cannot deduce module path')
+        raise RuntimeException("Cannot deduce module path")
     modpath = modpath[0]
-    obj = reduce(getattr, [mod] + info['fullname'].split('.'))
+    obj = reduce(getattr, [mod] + info["fullname"].split("."))
     try:
         path = inspect.getsourcefile(obj)
-        relpath = path[len(modpath) + 1:]
+        relpath = path[len(modpath) + 1 :]
         _, lineno = inspect.getsourcelines(obj)
     except TypeError:
         # skip property or other type that inspect doesn't like
         return None
-    return "http://github.com/CoffeaTeam/coffea/blob/{}/{}#L{}".format(githash, relpath, lineno)
+    return "http://github.com/CoffeaTeam/coffea/blob/{}/{}#L{}".format(
+        githash, relpath, lineno
+    )
+
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None),
-    'numpy': ('http://docs.scipy.org/doc/numpy', None),
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("http://docs.scipy.org/doc/numpy", None),
 }
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = "index"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
-default_role = 'any'
+default_role = "any"
 
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-pygments_style = 'sphinx'
-html_theme = 'sphinx_rtd_theme'
+pygments_style = "sphinx"
+html_theme = "sphinx_rtd_theme"
 todo_include_todos = False
-htmlhelp_basename = 'coffeadoc'
+htmlhelp_basename = "coffeadoc"
 
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -112,30 +123,26 @@ htmlhelp_basename = 'coffeadoc'
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#
-# 'papersize': 'letterpaper',
-
-# The font size ('10pt', '11pt' or '12pt').
-#
-# 'pointsize': '10pt',
-
-# Additional stuff for the LaTeX preamble.
-#
-# 'preamble': '',
-
-# Latex figure (float) alignment
-#
-# 'figure_align': 'htbp',
+    # The paper size ('letterpaper' or 'a4paper').
+    #
+    # 'papersize': 'letterpaper',
+    # The font size ('10pt', '11pt' or '12pt').
+    #
+    # 'pointsize': '10pt',
+    # Additional stuff for the LaTeX preamble.
+    #
+    # 'preamble': '',
+    # Latex figure (float) alignment
+    #
+    # 'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-                   (master_doc, 'coffea.tex', 'Coffea Documentation',
-                    'The Coffea Team', 'manual'),
-                   ]
+    (master_doc, "coffea.tex", "Coffea Documentation", "The Coffea Team", "manual"),
+]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
@@ -174,10 +181,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-             (master_doc, 'coffea', 'Coffea Documentation',
-              [author], 1)
-             ]
+man_pages = [(master_doc, "coffea", "Coffea Documentation", [author], 1)]
 
 # If true, show URL addresses after external links.
 #
@@ -190,10 +194,16 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-                     (master_doc, 'Coffea', 'Coffea Documentation',
-                      author, 'Coffea', 'Efficient columnar HEP analysis in python.',
-                      'Miscellaneous'),
-                     ]
+    (
+        master_doc,
+        "Coffea",
+        "Coffea Documentation",
+        author,
+        "Coffea",
+        "Efficient columnar HEP analysis in python.",
+        "Miscellaneous",
+    ),
+]
 
 # Documents to append as an appendix to all manuals.
 #
