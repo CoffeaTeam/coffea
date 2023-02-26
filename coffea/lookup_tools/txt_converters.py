@@ -296,6 +296,7 @@ def convert_jersf_txt_file(jersfFilePath):
 
     return wrapped_up
 
+
 def convert_l5flavor_jes_txt_file(juncFilePath):
     components = []
     basename = os.path.basename(juncFilePath).split(".")[0]
@@ -332,9 +333,10 @@ def convert_l5flavor_jes_txt_file(juncFilePath):
     retval = {}
 #     return components
     for name, ifile in components:
-        wrapped_up = _build_standard_jme_lookup(*_parse_jme_formatted_file(name, interpolatedFunc=False, parmsFromColumns=False, jme_f=ifile ))
+        wrapped_up = _build_standard_jme_lookup(*_parse_jme_formatted_file(name, interpolatedFunc=False, parmsFromColumns=False, jme_f=ifile))
         retval.update(wrapped_up)
     return retval
+
 
 def convert_junc_txt_file(juncFilePath):
     components = []
