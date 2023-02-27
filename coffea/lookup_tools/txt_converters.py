@@ -317,9 +317,7 @@ def convert_l5flavor_jes_txt_file(juncFilePath):
                 continue
             elif line.startswith("["):
                 component_name = line.strip()[1:-1]  # remove leading and trailing []
-                cname = "{0}_{1}.txt".format(
-                    basename, component_name
-                )
+                cname = "{0}_{1}.txt".format(basename, component_name)
                 components.append((cname, []))
             elif components:
                 components[-1][1].append(line)
@@ -331,9 +329,13 @@ def convert_l5flavor_jes_txt_file(juncFilePath):
         components = [(i, io.StringIO("".join(j))) for i, j in components]
 
     retval = {}
-#     return components
+    #     return components
     for name, ifile in components:
-        wrapped_up = _build_standard_jme_lookup(*_parse_jme_formatted_file(name, interpolatedFunc=False, parmsFromColumns=False, jme_f=ifile))
+        wrapped_up = _build_standard_jme_lookup(
+            *_parse_jme_formatted_file(
+                name, interpolatedFunc=False, parmsFromColumns=False, jme_f=ifile
+            )
+        )
         retval.update(wrapped_up)
     return retval
 
