@@ -94,6 +94,101 @@ class Weights:
         self._weight = self._weight * weight
         if self._storeIndividual:
             self._weights[name] = weight
+        self.__add_variation(name, weight, weightUp, weightDown, shift)
+        self._weightStats[name] = WeightStatistics(
+            weight.sum(),
+            (weight**2).sum(),
+            weight.min(),
+            weight.max(),
+            weight.size,
+        )
+
+    def add_multivariation(
+        self, name, weight, modifierNames, weightsUp, weightsDown, shift=False
+    ):
+        """Add a new weight with multiple variations
+
+        Each variation of a single weight is given a different modifier name.
+        This is particularly useful e.g. for btag SF variations.
+
+        Parameters
+        ----------
+            name : str
+                name of correction
+            weight : numpy.ndarray
+                the nominal event weight associated with the correction
+            modifierNames: list of str
+                list of modifiers for each set of weights variation
+            weightsUp : list of numpy.ndarray
+                weight with correction uncertainty shifted up (if available)
+            weightsDown : list of numpy.ndarray
+                weight with correction uncertainty shifted down. If ``weightUp`` is supplied, and
+                the correction uncertainty is symmetric, this can be set to None to auto-calculate
+                the down shift as ``1 / weightUp``.
+            shift : bool, optional
+                if True, interpret weightUp and weightDown as a realtive difference (additive) to the
+                nominal value
+
+        .. note:: ``weightUp`` and ``weightDown`` are assumed to be rvalue-like and may be modified in-place by this function
+        """
+        if name.endswith("Up") or name.endswith("Down"):
+            raise ValueError(
+                "Avoid using 'Up' and 'Down' in weight names, instead pass appropriate shifts to add() call"
+            )
+        weight = coffea.util._ensure_flat(weight, allow_missing=True)
+        if isinstance(weight, numpy.ma.MaskedArray):
+            # TODO what to do with option-type? is it representative of unknown weight
+            # and we default to one or is it an invalid weight and we should never use this
+            # event in the first place (0) ?
+            weight = weight.filled(1.0)
+        self._weight = self._weight * weight
+        if self._storeIndividual:
+            self._weights[name] = weight
+        # Now loop on the variations
+        if len(modifierNames) > 0:
+            if len(modifierNames) != len(weightsUp) or len(modifierNames) != len(
+                weightsDown
+            ):
+                raise ValueError(
+                    "Provide the same number of modifier names related to the list of modified weights"
+                )
+        for modifier, weightUp, weightDown in zip(
+            modifierNames, weightsUp, weightsDown
+        ):
+            systName = f"{name}_{modifier}"
+            self.__add_variation(systName, weight, weightUp, weightDown, shift)
+        self._weightStats[name] = WeightStatistics(
+            weight.sum(),
+            (weight**2).sum(),
+            weight.min(),
+            weight.max(),
+            weight.size,
+        )
+
+    def __add_variation(
+        self, name, weight, weightUp=None, weightDown=None, shift=False
+    ):
+        """Helper function to add a weight variation.
+
+        Parameters
+        ----------
+            name : str
+                name of systematic variation (just the name of the weight if only
+                one variation is added, or `name_syst` for multiple variations)
+            weight : numpy.ndarray
+                the nominal event weight associated with the correction
+            weightUp : numpy.ndarray, optional
+                weight with correction uncertainty shifted up (if available)
+            weightDown : numpy.ndarray, optional
+                weight with correction uncertainty shifted down. If ``weightUp`` is supplied, and
+                the correction uncertainty is symmetric, this can be set to None to auto-calculate
+                the down shift as ``1 / weightUp``.
+            shift : bool, optional
+                if True, interpret weightUp and weightDown as a realtive difference (additive) to the
+                nominal value
+
+        .. note:: ``weightUp`` and ``weightDown`` are assumed to be rvalue-like and may be modified in-place by this function
+        """
         if weightUp is not None:
             weightUp = coffea.util._ensure_flat(weightUp, allow_missing=True)
             if isinstance(weightUp, numpy.ma.MaskedArray):
@@ -110,13 +205,6 @@ class Weights:
                 weightDown = weight - weightDown
             weightDown[weight != 0.0] /= weight[weight != 0.0]
             self._modifiers[name + "Down"] = weightDown
-        self._weightStats[name] = WeightStatistics(
-            weight.sum(),
-            (weight**2).sum(),
-            weight.min(),
-            weight.max(),
-            weight.size,
-        )
 
     def weight(self, modifier=None):
         """Current event weight vector

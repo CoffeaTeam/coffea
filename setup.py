@@ -108,6 +108,7 @@ EXTRAS_REQUIRE["dev"] = [
     "nbsphinx",
     "sphinx-rtd-theme",
     "sphinx-automodapi",
+    "sphinx-copybutton>=0.3.2",
     "pyinstrument",
     "ipython",
 ]
@@ -144,6 +145,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Topic :: Scientific/Engineering",
         "Topic :: Scientific/Engineering :: Information Analysis",
         "Topic :: Scientific/Engineering :: Mathematics",
