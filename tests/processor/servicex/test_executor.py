@@ -50,7 +50,6 @@ class TestableExecutor(Executor):
         process_func: Callable,
         schema,
     ):
-
         # Record the tree name so we can verify it later
         self.tree_name = tree_name
         self.data_type = data_type

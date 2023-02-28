@@ -798,7 +798,6 @@ class FuturesExecutor(ExecutorBase):
                     merged = _wait_for_merges(FH, self)
                     return accumulate([_decompress(merged), accumulator]), e
                 else:
-
                     raise e from None
 
         if isinstance(self.pool, concurrent.futures.Executor):
@@ -1342,6 +1341,21 @@ class Runner:
                 if skipbadfiles and any(
                     isinstance(c, (FileNotFoundError, UprootMissTreeError))
                     for c in chain
+                ):
+                    warnings.warn(str(e))
+                    break
+                if (
+                    skipbadfiles
+                    and (retries == retry_count)
+                    and any(
+                        e in str(c)
+                        for c in chain
+                        for e in [
+                            "Invalid redirect URL",
+                            "Operation expired",
+                            "Socket timeout",
+                        ]
+                    )
                 ):
                     warnings.warn(str(e))
                     break

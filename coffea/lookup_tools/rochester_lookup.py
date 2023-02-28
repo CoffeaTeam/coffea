@@ -13,7 +13,6 @@ class rochester_lookup:
         self._build(wrapped_values)
 
     def _build(self, wrapped_values):
-
         self._nsets = wrapped_values["nsets"]
         self._members = wrapped_values["members"]
 

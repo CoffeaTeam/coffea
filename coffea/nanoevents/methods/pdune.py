@@ -63,7 +63,6 @@ def _element_link_multiple(events, obj, link_field, with_name=None):
 
 
 def _get_target_offsets(offsets, event_index):
-
     if isinstance(event_index, int):
         return offsets[event_index]
 
@@ -97,7 +96,8 @@ _set_repr_name("Particle")
 @awkward.mixin_class(behavior)
 class TrackParticle(vector.LorentzVector, base.NanoCollection):
     """Collection of track particles, following `xAOD::TrackParticle_v1
-    <https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODTracking/Root/TrackParticle_v1.cxx#L82>`_."""
+    <https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODTracking/Root/TrackParticle_v1.cxx#L82>`_.
+    """
 
     @property
     def theta(self):
@@ -180,7 +180,8 @@ _set_repr_name("Electron")
 @awkward.mixin_class(behavior)
 class TruthParticle(vector.LorentzVector, base.NanoCollection):
     """Truth particle collection, following `xAOD::TruthParticle_v1
-    <https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODTruth/Root/TruthParticle_v1.cxx>`_."""
+    <https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODTruth/Root/TruthParticle_v1.cxx>`_.
+    """
 
     @property
     def x(self):
