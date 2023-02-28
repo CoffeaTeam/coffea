@@ -589,6 +589,7 @@ class TaskvineExecutor(ExecutorBase):
     stats_log: Optional[str] = None
     transactions_log: Optional[str] = None
     tasks_accum_log: Optional[str] = None
+    run_info_path: Optional[str] = None
     password_file: Optional[str] = None
     ssl: Union[bool, Tuple[str, str]] = False
     environment_file: Optional[str] = None

@@ -107,9 +107,7 @@ class CoffeaTaskvine(Manager):
         super().__init__(
             port=self.executor.port,
             name=self.executor.manager_name,
-            debug_log=self.executor.debug_log,
-            stats_log=self.executor.stats_log,
-            transactions_log=self.executor.transactions_log,
+            run_info_path=self.executor.run_info_path,
             ssl=self.executor.ssl,
         )
 
