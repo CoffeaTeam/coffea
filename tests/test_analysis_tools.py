@@ -4,17 +4,20 @@ import pytest
 from dummy_distributions import dummy_jagged_eta_pt
 
 
-def test_weights():
+@pytest.mark.parametrize("array_lib", [np, da])
+def test_weights(array_lib):
     from coffea.analysis_tools import Weights
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
-    scale_central = np.random.normal(loc=1.0, scale=0.01, size=counts.size)
+    scale_central = array_lib.random.normal(loc=1.0, scale=0.01, size=counts.size)
     scale_up = scale_central * 1.10
     scale_down = scale_central * 0.95
     scale_up_shift = 0.10 * scale_central
     scale_down_shift = 0.05 * scale_central
 
-    weight = Weights(counts.size)
+    weight = Weights(
+        counts.size if array_lib == np else None, return_dask_awkward=False
+    )
     weight.add("test", scale_central, weightUp=scale_up, weightDown=scale_down)
     weight.add(
         "testShift",
@@ -32,38 +35,46 @@ def test_weights():
     test_central = weight.weight()
     exp_weight = scale_central * scale_central
 
-    assert np.all(np.abs(test_central - (exp_weight)) < 1e-6)
+    diff_central = np.all(np.abs(test_central - (exp_weight)) < 1e-6)
+    assert diff_central if array_lib == np else diff_central.compute()
 
     test_up = weight.weight("testUp")
     exp_up = scale_central * scale_central * 1.10
 
-    assert np.all(np.abs(test_up - (exp_up)) < 1e-6)
+    diff_up = np.all(np.abs(test_up - (exp_up)) < 1e-6)
+    assert diff_up if array_lib == np else diff_up.compute()
 
     test_down = weight.weight("testDown")
     exp_down = scale_central * scale_central * 0.95
 
-    assert np.all(np.abs(test_down - (exp_down)) < 1e-6)
+    diff_down = np.all(np.abs(test_down - (exp_down)) < 1e-6)
+    assert diff_down if array_lib == np else diff_down.compute()
 
-    test_shift_up = weight.weight("testUp")
+    test_shift_up = weight.weight("testShiftUp")
 
-    assert np.all(np.abs(test_shift_up - (exp_up)) < 1e-6)
+    diff_shift_up = np.all(np.abs(test_shift_up - (exp_up)) < 1e-6)
+    assert diff_shift_up if array_lib == np else diff_shift_up.compute()
 
-    test_shift_down = weight.weight("testDown")
+    test_shift_down = weight.weight("testShiftDown")
 
-    assert np.all(np.abs(test_shift_down - (exp_down)) < 1e-6)
+    diff_shift_down = np.all(np.abs(test_shift_down - (exp_down)) < 1e-6)
+    assert diff_shift_down if array_lib == np else diff_shift_down.compute()
 
 
-def test_weights_multivariation():
+@pytest.mark.parametrize("array_lib", [np, da])
+def test_weights_multivariation(array_lib):
     from coffea.analysis_tools import Weights
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
-    scale_central = np.random.normal(loc=1.0, scale=0.01, size=counts.size)
+    scale_central = array_lib.random.normal(loc=1.0, scale=0.01, size=counts.size)
     scale_up = scale_central * 1.10
     scale_down = scale_central * 0.95
     scale_up_2 = scale_central * 1.2
     scale_down_2 = scale_central * 0.90
 
-    weight = Weights(counts.size)
+    weight = Weights(
+        counts.size if array_lib == np else None, return_dask_awkward=False
+    )
     weight.add_multivariation(
         "test",
         scale_central,
@@ -80,57 +91,75 @@ def test_weights_multivariation():
     test_central = weight.weight()
     exp_weight = scale_central
 
-    assert np.all(np.abs(test_central - (exp_weight)) < 1e-6)
+    diff_central = np.all(np.abs(test_central - (exp_weight)) < 1e-6)
+    if array_lib == da:
+        print(np.abs(test_central - (exp_weight)).compute())
+    assert diff_central if array_lib == np else diff_central.compute()
 
     test_up = weight.weight("test_AUp")
     exp_up = scale_central * 1.10
 
-    assert np.all(np.abs(test_up - (exp_up)) < 1e-6)
+    diff_up = np.all(np.abs(test_up - (exp_up)) < 1e-6)
+    assert diff_up if array_lib == np else diff_up.compute()
 
     test_down = weight.weight("test_ADown")
     exp_down = scale_central * 0.95
 
-    assert np.all(np.abs(test_down - (exp_down)) < 1e-6)
+    diff_down = np.all(np.abs(test_down - (exp_down)) < 1e-6)
+    assert diff_down if array_lib == np else diff_down.compute()
 
     test_up_2 = weight.weight("test_BUp")
     exp_up = scale_central * 1.2
 
-    assert np.all(np.abs(test_up_2 - (exp_up)) < 1e-6)
+    diff_up_2 = np.all(np.abs(test_up_2 - (exp_up)) < 1e-6)
+    assert diff_up_2 if array_lib == np else diff_up_2.compute()
 
     test_down_2 = weight.weight("test_BDown")
     exp_down = scale_central * 0.90
 
-    assert np.all(np.abs(test_down_2 - (exp_down)) < 1e-6)
+    diff_down_2 = np.all(np.abs(test_down_2 - (exp_down)) < 1e-6)
+    assert diff_down_2 if array_lib == np else diff_down_2.compute()
 
 
-def test_weights_partial():
+@pytest.mark.parametrize("array_lib", [np, da])
+def test_weights_partial(array_lib):
     from coffea.analysis_tools import Weights
 
     counts, _, _ = dummy_jagged_eta_pt()
-    w1 = np.random.normal(loc=1.0, scale=0.01, size=counts.size)
-    w2 = np.random.normal(loc=1.3, scale=0.05, size=counts.size)
+    w1 = array_lib.random.normal(loc=1.0, scale=0.01, size=counts.size)
+    w2 = array_lib.random.normal(loc=1.3, scale=0.05, size=counts.size)
 
-    weights = Weights(counts.size, storeIndividual=True)
+    weights = Weights(
+        counts.size if array_lib == np else None,
+        storeIndividual=True,
+        return_dask_awkward=False,
+    )
     weights.add("w1", w1)
     weights.add("w2", w2)
 
     test_exclude_none = weights.weight()
-    assert np.all(np.abs(test_exclude_none - w1 * w2) < 1e-6)
+    diff_exclude_none = np.all(np.abs(test_exclude_none - w1 * w2) < 1e-6)
+    assert diff_exclude_none if array_lib == np else diff_exclude_none.compute()
 
     test_exclude1 = weights.partial_weight(exclude=["w1"])
-    assert np.all(np.abs(test_exclude1 - w2) < 1e-6)
+    diff_exclude1 = np.all(np.abs(test_exclude1 - w2) < 1e-6)
+    assert diff_exclude1 if array_lib == np else diff_exclude1.compute()
 
     test_include1 = weights.partial_weight(include=["w1"])
-    assert np.all(np.abs(test_include1 - w1) < 1e-6)
+    diff_include1 = np.all(np.abs(test_include1 - w1) < 1e-6)
+    assert diff_include1 if array_lib == np else diff_include1.compute()
 
     test_exclude2 = weights.partial_weight(exclude=["w2"])
-    assert np.all(np.abs(test_exclude2 - w1) < 1e-6)
+    diff_exclude2 = np.all(np.abs(test_exclude2 - w1) < 1e-6)
+    assert diff_exclude2 if array_lib == np else diff_exclude2.compute()
 
     test_include2 = weights.partial_weight(include=["w2"])
-    assert np.all(np.abs(test_include2 - w2) < 1e-6)
+    diff_include2 = np.all(np.abs(test_include2 - w2) < 1e-6)
+    assert diff_include2 if array_lib == np else diff_include2.compute()
 
     test_include_both = weights.partial_weight(include=["w1", "w2"])
-    assert np.all(np.abs(test_include_both - w1 * w2) < 1e-6)
+    diff_include_both = np.all(np.abs(test_include_both - w1 * w2) < 1e-6)
+    assert diff_include_both if array_lib == np else diff_include_both.compute()
 
     # Check that exception is thrown if arguments are incompatible
     error_raised = False
