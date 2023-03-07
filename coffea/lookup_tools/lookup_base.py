@@ -22,6 +22,10 @@ def getfunction(args, thelookup=None, __pre_args__=tuple(), **kwargs):
                 **kwargs,
             )
         elif backend == "typetracer":
+            zlargs = []
+            for arg in args:
+                arg._touch_data(recursive=True)
+                zlargs.append(arg.form.length_zero_array())
             zlargs = tuple(arg.form.length_zero_array() for arg in args)
             result = thelookup._evaluate(
                 *(list(__pre_args__) + [awkward.to_numpy(zlarg) for zlarg in zlargs]),
