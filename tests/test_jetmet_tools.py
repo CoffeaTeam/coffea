@@ -672,8 +672,12 @@ def test_corrected_jets_factory():
     events = None
     from coffea.nanoevents import NanoEventsFactory
 
-    factory = NanoEventsFactory.from_root(os.path.abspath("tests/samples/nano_dy.root"))
-    events = factory.events()
+    events = NanoEventsFactory.from_root(
+        os.path.abspath("tests/samples/nano_dy.root"),
+        treepath="Events",
+        metadata={},
+        permit_dask=True,
+    )
 
     jec_stack_names = [
         "Summer16_23Sep2016V3_MC_L1FastJet_AK4PFPuppi",
@@ -698,18 +702,22 @@ def test_corrected_jets_factory():
 
     jets = events.Jet
 
-    jets["pt_raw"] = (1 - jets["rawFactor"]) * jets["pt"]
-    jets["mass_raw"] = (1 - jets["rawFactor"]) * jets["mass"]
-    jets["pt_gen"] = ak.values_astype(ak.fill_none(jets.matched_gen.pt, 0), np.float32)
-    jets["rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
+    jets = dak.with_field(jets, (1 - jets["rawFactor"]) * jets.pt, "pt_raw")
+    jets = dak.with_field(jets, (1 - jets["rawFactor"]) * jets.mass, "mass_raw")
+    jets = dak.with_field(
+        jets,
+        dak.values_astype(dak.fill_none(jets.matched_gen.pt, 0), np.float32),
+        "pt_gen",
+    )
+    jets = dak.with_field(
+        jets, dak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0], "rho"
+    )
     name_map["ptGenJet"] = "pt_gen"
     name_map["ptRaw"] = "pt_raw"
     name_map["massRaw"] = "mass_raw"
     name_map["Rho"] = "rho"
 
     print(name_map)
-
-    jets_dak = dak.from_awkward(jets, 1)
 
     tic = time.time()
     jet_factory = CorrectedJetsFactory(name_map, jec_stack)
@@ -730,7 +738,7 @@ def test_corrected_jets_factory():
 
     print(corrected_jets.dask)
 
-    print("Generated jet pt:", corrected_jets.pt_gen.compute(optimize_graph=False))
+    print("Generated jet pt:", corrected_jets.pt_gen.compute())
     print("Original jet pt:", corrected_jets.pt_orig.compute())
     print("Raw jet pt:", jets.pt_raw)
     print("Corrected jet pt:", corrected_jets.pt.compute())
@@ -770,23 +778,34 @@ def test_corrected_jets_factory():
     corrector = FactorizedJetCorrector(
         **{name: evaluator[name] for name in jec_stack_names[0:4]}
     )
-    corrs = corrector.getCorrection(
-        JetEta=jets_dak["eta"],
-        Rho=jets_dak["rho"],
-        JetPt=jets_dak["pt_raw"],
-        JetA=jets_dak["area"],
+
+    check_corrs = corrector.getCorrection(
+        JetEta=jets.eta,
+        Rho=jets.rho,
+        JetPt=jets.pt_raw,
+        JetA=jets.area,
     ).compute()
     reso = JetResolution(**{name: evaluator[name] for name in jec_stack_names[4:5]})
-    jets["jet_energy_resolution"] = reso.getResolution(
-        JetEta=jets_dak["eta"],
-        Rho=jets_dak["rho"],
-        JetPt=jets_dak["pt_raw"],
+    check_resos = reso.getResolution(
+        JetEta=jets.eta,
+        Rho=jets.rho,
+        JetPt=jets.pt_raw,
     ).compute()
     resosf = JetResolutionScaleFactor(
         **{name: evaluator[name] for name in jec_stack_names[5:6]}
     )
-    jets["jet_energy_resolution_scale_factor"] = resosf.getScaleFactor(
-        JetEta=jets_dak["eta"]
+
+    print(dak.necessary_columns(jets.eta))
+    print(
+        dak.necessary_columns(
+            resosf.getScaleFactor(
+                JetEta=jets.eta,
+            )
+        )
+    )
+
+    check_resosfs = resosf.getScaleFactor(
+        JetEta=jets.eta,
     ).compute()
 
     # Filter out the non-deterministic (no gen pt) jets
@@ -802,21 +821,21 @@ def test_corrected_jets_factory():
             corrected_jets.pt_gen.compute()[-1, :-1],
         ]
     )
-    test_raw_pt = ak.concatenate([jets.pt_raw[0, :-2], jets.pt_raw[-1, :-1]])
+    test_raw_pt = ak.concatenate(
+        [jets.pt_raw.compute()[0, :-2], jets.pt_raw.compute()[-1, :-1]]
+    )
     test_pt = ak.concatenate(
         [corrected_jets.pt.compute()[0, :-2], corrected_jets.pt.compute()[-1, :-1]]
     )
-    test_eta = ak.concatenate([jets.eta[0, :-2], jets.eta[-1, :-1]])
-    test_jer = ak.concatenate(
-        [jets.jet_energy_resolution[0, :-2], jets.jet_energy_resolution[-1, :-1]]
-    )
+    test_eta = ak.concatenate([jets.eta.compute()[0, :-2], jets.eta.compute()[-1, :-1]])
+    test_jer = ak.concatenate([check_resos[0, :-2], check_resos[-1, :-1]])
     test_jer_sf = ak.concatenate(
         [
-            jets.jet_energy_resolution_scale_factor[0, :-2],
-            jets.jet_energy_resolution_scale_factor[-1, :-1],
+            check_resosfs[0, :-2],
+            check_resosfs[-1, :-1],
         ]
     )
-    test_jec = ak.concatenate([corrs[0, :-2], corrs[-1, :-1]])
+    test_jec = ak.concatenate([check_corrs[0, :-2], check_corrs[-1, :-1]])
     test_corrected_pt = ak.concatenate(
         [corrected_jets.pt.compute()[0, :-2], corrected_jets.pt.compute()[-1, :-1]]
     )
