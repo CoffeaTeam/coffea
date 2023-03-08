@@ -1,23 +1,19 @@
-import dask.array as da
 import numpy as np
 import pytest
 from dummy_distributions import dummy_jagged_eta_pt
 
 
-@pytest.mark.parametrize("array_lib", [np, da])
-def test_weights(array_lib):
+def test_weights():
     from coffea.analysis_tools import Weights
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
-    scale_central = array_lib.random.normal(loc=1.0, scale=0.01, size=counts.size)
+    scale_central = np.random.normal(loc=1.0, scale=0.01, size=counts.size)
     scale_up = scale_central * 1.10
     scale_down = scale_central * 0.95
     scale_up_shift = 0.10 * scale_central
     scale_down_shift = 0.05 * scale_central
 
-    weight = Weights(
-        counts.size if array_lib == np else None, return_dask_awkward=False
-    )
+    weight = Weights(counts.size)
     weight.add("test", scale_central, weightUp=scale_up, weightDown=scale_down)
     weight.add(
         "testShift",
@@ -35,46 +31,38 @@ def test_weights(array_lib):
     test_central = weight.weight()
     exp_weight = scale_central * scale_central
 
-    diff_central = np.all(np.abs(test_central - (exp_weight)) < 1e-6)
-    assert diff_central if array_lib == np else diff_central.compute()
+    assert np.all(np.abs(test_central - (exp_weight)) < 1e-6)
 
     test_up = weight.weight("testUp")
     exp_up = scale_central * scale_central * 1.10
 
-    diff_up = np.all(np.abs(test_up - (exp_up)) < 1e-6)
-    assert diff_up if array_lib == np else diff_up.compute()
+    assert np.all(np.abs(test_up - (exp_up)) < 1e-6)
 
     test_down = weight.weight("testDown")
     exp_down = scale_central * scale_central * 0.95
 
-    diff_down = np.all(np.abs(test_down - (exp_down)) < 1e-6)
-    assert diff_down if array_lib == np else diff_down.compute()
+    assert np.all(np.abs(test_down - (exp_down)) < 1e-6)
 
-    test_shift_up = weight.weight("testShiftUp")
+    test_shift_up = weight.weight("testUp")
 
-    diff_shift_up = np.all(np.abs(test_shift_up - (exp_up)) < 1e-6)
-    assert diff_shift_up if array_lib == np else diff_shift_up.compute()
+    assert np.all(np.abs(test_shift_up - (exp_up)) < 1e-6)
 
-    test_shift_down = weight.weight("testShiftDown")
+    test_shift_down = weight.weight("testDown")
 
-    diff_shift_down = np.all(np.abs(test_shift_down - (exp_down)) < 1e-6)
-    assert diff_shift_down if array_lib == np else diff_shift_down.compute()
+    assert np.all(np.abs(test_shift_down - (exp_down)) < 1e-6)
 
 
-@pytest.mark.parametrize("array_lib", [np, da])
-def test_weights_multivariation(array_lib):
+def test_weights_multivariation():
     from coffea.analysis_tools import Weights
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
-    scale_central = array_lib.random.normal(loc=1.0, scale=0.01, size=counts.size)
+    scale_central = np.random.normal(loc=1.0, scale=0.01, size=counts.size)
     scale_up = scale_central * 1.10
     scale_down = scale_central * 0.95
     scale_up_2 = scale_central * 1.2
     scale_down_2 = scale_central * 0.90
 
-    weight = Weights(
-        counts.size if array_lib == np else None, return_dask_awkward=False
-    )
+    weight = Weights(counts.size)
     weight.add_multivariation(
         "test",
         scale_central,
@@ -91,75 +79,57 @@ def test_weights_multivariation(array_lib):
     test_central = weight.weight()
     exp_weight = scale_central
 
-    diff_central = np.all(np.abs(test_central - (exp_weight)) < 1e-6)
-    if array_lib == da:
-        print(np.abs(test_central - (exp_weight)).compute())
-    assert diff_central if array_lib == np else diff_central.compute()
+    assert np.all(np.abs(test_central - (exp_weight)) < 1e-6)
 
     test_up = weight.weight("test_AUp")
     exp_up = scale_central * 1.10
 
-    diff_up = np.all(np.abs(test_up - (exp_up)) < 1e-6)
-    assert diff_up if array_lib == np else diff_up.compute()
+    assert np.all(np.abs(test_up - (exp_up)) < 1e-6)
 
     test_down = weight.weight("test_ADown")
     exp_down = scale_central * 0.95
 
-    diff_down = np.all(np.abs(test_down - (exp_down)) < 1e-6)
-    assert diff_down if array_lib == np else diff_down.compute()
+    assert np.all(np.abs(test_down - (exp_down)) < 1e-6)
 
     test_up_2 = weight.weight("test_BUp")
     exp_up = scale_central * 1.2
 
-    diff_up_2 = np.all(np.abs(test_up_2 - (exp_up)) < 1e-6)
-    assert diff_up_2 if array_lib == np else diff_up_2.compute()
+    assert np.all(np.abs(test_up_2 - (exp_up)) < 1e-6)
 
     test_down_2 = weight.weight("test_BDown")
     exp_down = scale_central * 0.90
 
-    diff_down_2 = np.all(np.abs(test_down_2 - (exp_down)) < 1e-6)
-    assert diff_down_2 if array_lib == np else diff_down_2.compute()
+    assert np.all(np.abs(test_down_2 - (exp_down)) < 1e-6)
 
 
-@pytest.mark.parametrize("array_lib", [np, da])
-def test_weights_partial(array_lib):
+def test_weights_partial():
     from coffea.analysis_tools import Weights
 
     counts, _, _ = dummy_jagged_eta_pt()
-    w1 = array_lib.random.normal(loc=1.0, scale=0.01, size=counts.size)
-    w2 = array_lib.random.normal(loc=1.3, scale=0.05, size=counts.size)
+    w1 = np.random.normal(loc=1.0, scale=0.01, size=counts.size)
+    w2 = np.random.normal(loc=1.3, scale=0.05, size=counts.size)
 
-    weights = Weights(
-        counts.size if array_lib == np else None,
-        storeIndividual=True,
-        return_dask_awkward=False,
-    )
+    weights = Weights(counts.size, storeIndividual=True)
     weights.add("w1", w1)
     weights.add("w2", w2)
 
     test_exclude_none = weights.weight()
-    diff_exclude_none = np.all(np.abs(test_exclude_none - w1 * w2) < 1e-6)
-    assert diff_exclude_none if array_lib == np else diff_exclude_none.compute()
+    assert np.all(np.abs(test_exclude_none - w1 * w2) < 1e-6)
 
     test_exclude1 = weights.partial_weight(exclude=["w1"])
-    diff_exclude1 = np.all(np.abs(test_exclude1 - w2) < 1e-6)
-    assert diff_exclude1 if array_lib == np else diff_exclude1.compute()
+    assert np.all(np.abs(test_exclude1 - w2) < 1e-6)
 
     test_include1 = weights.partial_weight(include=["w1"])
-    diff_include1 = np.all(np.abs(test_include1 - w1) < 1e-6)
-    assert diff_include1 if array_lib == np else diff_include1.compute()
+    assert np.all(np.abs(test_include1 - w1) < 1e-6)
 
     test_exclude2 = weights.partial_weight(exclude=["w2"])
-    diff_exclude2 = np.all(np.abs(test_exclude2 - w1) < 1e-6)
-    assert diff_exclude2 if array_lib == np else diff_exclude2.compute()
+    assert np.all(np.abs(test_exclude2 - w1) < 1e-6)
 
     test_include2 = weights.partial_weight(include=["w2"])
-    diff_include2 = np.all(np.abs(test_include2 - w2) < 1e-6)
-    assert diff_include2 if array_lib == np else diff_include2.compute()
+    assert np.all(np.abs(test_include2 - w2) < 1e-6)
 
     test_include_both = weights.partial_weight(include=["w1", "w2"])
-    diff_include_both = np.all(np.abs(test_include_both - w1 * w2) < 1e-6)
-    assert diff_include_both if array_lib == np else diff_include_both.compute()
+    assert np.all(np.abs(test_include_both - w1 * w2) < 1e-6)
 
     # Check that exception is thrown if arguments are incompatible
     error_raised = False
@@ -190,65 +160,39 @@ def test_weights_partial(array_lib):
     assert error_raised
 
 
-@pytest.mark.parametrize("array_lib", [np, da])
-def test_packed_selection(array_lib):
+def test_packed_selection():
     from coffea.analysis_tools import PackedSelection
 
     sel = PackedSelection()
 
     shape = (10,)
-    all_true = array_lib.full(shape=shape, fill_value=True, dtype=bool)
-    all_false = array_lib.full(shape=shape, fill_value=False, dtype=bool)
-    fizz = array_lib.arange(shape[0]) % 3 == 0
-    buzz = array_lib.arange(shape[0]) % 5 == 0
-    ones = array_lib.ones(shape=shape, dtype=np.uint64)
-    wrong_shape = ones = array_lib.ones(shape=(shape[0] - 5,), dtype=bool)
+    all_true = np.full(shape=shape, fill_value=True, dtype=np.bool)
+    all_false = np.full(shape=shape, fill_value=False, dtype=np.bool)
+    fizz = np.arange(shape[0]) % 3 == 0
+    buzz = np.arange(shape[0]) % 5 == 0
+    ones = np.ones(shape=shape, dtype=np.uint64)
+    wrong_shape = ones = np.ones(shape=(shape[0] - 5,), dtype=np.bool)
 
     sel.add("all_true", all_true)
     sel.add("all_false", all_false)
     sel.add("fizz", fizz)
     sel.add("buzz", buzz)
 
-    if array_lib == np:
-        assert np.all(sel.require(all_true=True, all_false=False) == all_true)
-        # allow truthy values
-        assert np.all(sel.require(all_true=1, all_false=0) == all_true)
-        assert np.all(sel.all("all_true", "all_false") == all_false)
-        assert np.all(sel.any("all_true", "all_false") == all_true)
-        assert np.all(
-            sel.all("fizz", "buzz")
-            == np.array(
-                [True, False, False, False, False, False, False, False, False, False]
-            )
+    assert np.all(sel.require(all_true=True, all_false=False) == all_true)
+    # allow truthy values
+    assert np.all(sel.require(all_true=1, all_false=0) == all_true)
+    assert np.all(sel.all("all_true", "all_false") == all_false)
+    assert np.all(sel.any("all_true", "all_false") == all_true)
+    assert np.all(
+        sel.all("fizz", "buzz")
+        == np.array(
+            [True, False, False, False, False, False, False, False, False, False]
         )
-        assert np.all(
-            sel.any("fizz", "buzz")
-            == np.array(
-                [True, False, False, True, False, True, True, False, False, True]
-            )
-        )
-    else:
-        assert np.all(
-            sel.require(all_true=True, all_false=False).compute() == all_true.compute()
-        )
-        # allow truthy values
-        assert np.all(
-            sel.require(all_true=1, all_false=0).compute() == all_true.compute()
-        )
-        assert np.all(sel.all("all_true", "all_false").compute() == all_false.compute())
-        assert np.all(sel.any("all_true", "all_false").compute() == all_true.compute())
-        assert np.all(
-            sel.all("fizz", "buzz").compute()
-            == np.array(
-                [True, False, False, False, False, False, False, False, False, False]
-            )
-        )
-        assert np.all(
-            sel.any("fizz", "buzz").compute()
-            == np.array(
-                [True, False, False, True, False, True, True, False, False, True]
-            )
-        )
+    )
+    assert np.all(
+        sel.any("fizz", "buzz")
+        == np.array([True, False, False, True, False, True, True, False, False, True])
+    )
 
     with pytest.raises(ValueError):
         sel.add("wrong_shape", wrong_shape)

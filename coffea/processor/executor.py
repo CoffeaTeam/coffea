@@ -1600,30 +1600,33 @@ class Runner:
             if schema is None:
                 # To deprecate
                 tree = None
+                events = None
                 if format == "root":
                     tree = file[item.treename]
+                    events = uproot.dask(tree, ak_add_doc=True)[
+                        item.entrystart : item.entrystop
+                    ]
+                    setattr(events, "metadata", metadata)
                 elif format == "parquet":
                     tree = file
+                    events = LazyDataFrame(
+                        tree, item.entrystart, item.entrystop, metadata=metadata
+                    )
                 else:
                     raise ValueError("Format can only be root or parquet!")
-                events = LazyDataFrame(
-                    tree, item.entrystart, item.entrystop, metadata=metadata
-                )
             elif issubclass(schema, schemas.BaseSchema):
                 # change here
                 if format == "root":
                     materialized = []
-                    factory = NanoEventsFactory.from_root(
+                    events = NanoEventsFactory.from_root(
                         file=file,
                         treepath=item.treename,
-                        entry_start=item.entrystart,
-                        entry_stop=item.entrystop,
                         persistent_cache=cache_function(),
                         schemaclass=schema,
                         metadata=metadata,
                         access_log=materialized,
-                    )
-                    events = factory.events()
+                        permit_dask=True,
+                    )[item.entrystart : item.entrystop]
                 elif format == "parquet":
                     skyhook_options = {}
                     if ":" in item.filename:
@@ -1652,7 +1655,15 @@ class Runner:
                 )
             tic = time.time()
             try:
-                out = processor_instance.process(events)
+                out = None
+                if isinstance(events, LazyDataFrame):
+                    out = processor_instance.process(events)
+                else:
+                    import dask
+
+                    out = dask.compute(
+                        processor_instance.process(events), scheduler="single-threaded"
+                    )[0]
             except Exception as e:
                 raise Exception(f"Failed processing file: {item!r}") from e
             if out is None:

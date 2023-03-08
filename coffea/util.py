@@ -5,8 +5,6 @@ import hashlib
 from typing import Any, List, Optional
 
 import awkward
-import dask.array
-import dask_awkward
 import numba
 import numpy
 from rich.progress import (
@@ -23,8 +21,6 @@ from rich.progress import (
 import coffea
 
 ak = awkward
-da = dask.array
-dak = dask_awkward
 np = numpy
 nb = numba
 
@@ -73,28 +69,6 @@ def _hash(items):
 
 
 def _ensure_flat(array, allow_missing=False):
-    array_lib = numpy
-    if isinstance(array, (dask.array.Array, dask_awkward.Array)):
-        array_lib = dask.array
-        array = (
-            array
-            if isinstance(array, dask.array.Array)
-            else dask_awkward.to_dask_array(array)
-        )
-        if not allow_missing and isinstance(array._meta, numpy.ma.MaskedArray):
-            raise ValueError(
-                "Expected an unmasked dask_awkward or dask array, received a masked array!"
-            )
-    elif isinstance(array, (numpy.ndarray, awkward.Array)):
-        array = coffea.util._ensure_flat_eager(array, allow_missing=allow_missing)
-    else:
-        raise TypeError(
-            "array is not a numpy.ndarray, awkward.Array, dask.array.Array, or dask_awkward.Array"
-        )
-    return array, array_lib
-
-
-def _ensure_flat_eager(array, allow_missing=False):
     """Normalize an array to a flat numpy array or raise ValueError"""
     if not isinstance(array, (ak.Array, numpy.ndarray)):
         raise ValueError("Expected a numpy or awkward array, received: %r" % array)
@@ -102,9 +76,9 @@ def _ensure_flat_eager(array, allow_missing=False):
     aktype = ak.type(array)
     if not isinstance(aktype, ak.types.ArrayType):
         raise ValueError("Expected an array type, received: %r" % aktype)
-    isprimitive = isinstance(aktype.content, ak.types.NumpyType)
-    isoptionprimitive = isinstance(aktype.content, ak.types.OptionType) and isinstance(
-        aktype.content.content, ak.types.NumpyType
+    isprimitive = isinstance(aktype.type, ak.types.PrimitiveType)
+    isoptionprimitive = isinstance(aktype.type, ak.types.OptionType) and isinstance(
+        aktype.type.type, ak.types.PrimitiveType
     )
     if allow_missing and not (isprimitive or isoptionprimitive):
         raise ValueError(

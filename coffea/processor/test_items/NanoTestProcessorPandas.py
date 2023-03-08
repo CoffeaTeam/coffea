@@ -1,5 +1,4 @@
-import awkward as ak
-import pandas as pd
+import dask_awkward as dak
 
 from coffea import processor
 
@@ -17,25 +16,22 @@ class NanoTestProcessorPandas(processor.ProcessorABC):
         return self._accumulator
 
     def process(self, events):
-        output = pd.DataFrame()
-
-        events = events[ak.any(events.Muon.pt > 20, axis=-1)]
-
-        output["run"] = ak.to_numpy(events.run)
-        output["event"] = ak.to_numpy(events.event)
-        output["dataset"] = events.metadata["dataset"]
-
-        output["mu1_pt"] = -999.0
-        output["mu2_pt"] = -999.0
+        events = events[dak.any(events.Muon.pt > 20, axis=1)]
 
         muons = events.Muon[events.Muon.pt > 20]
 
-        counts = ak.num(muons)
-        one_muon = ak.to_numpy(counts > 0)
-        two_muons = ak.to_numpy(counts > 1)
+        muon_pts = dak.pad_none(muons.pt, 2, clip=True)
 
-        output.loc[one_muon, "mu1_pt"] = ak.to_numpy(muons[one_muon][:, 0].pt)
-        output.loc[two_muons, "mu2_pt"] = ak.to_numpy(muons[two_muons][:, 1].pt)
+        output = dak.zip(
+            {
+                "run": events.run,
+                "lumi": events.luminosityBlock,
+                "event": events.event,
+                "mu1_pt": muon_pts[:, 0],
+                "mu2_pt": muon_pts[:, 1],
+            }
+        )
+
         return output
 
     def postprocess(self, accumulator):

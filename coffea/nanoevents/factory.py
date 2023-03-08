@@ -203,12 +203,21 @@ class NanoEventsFactory:
                 version="latest",
             )
 
-            events = uproot.dask(
-                {file: treepath},
-                open_files=False,
-                ak_add_doc=True,
-                form_mapping=map_schema,
-            )
+            events = None
+            if isinstance(file, uproot.reading.ReadOnlyDirectory):
+                events = uproot.dask(
+                    file[treepath],
+                    open_files=False,
+                    ak_add_doc=True,
+                    form_mapping=map_schema,
+                )
+            else:
+                events = uproot.dask(
+                    {file: treepath},
+                    open_files=False,
+                    ak_add_doc=True,
+                    form_mapping=map_schema,
+                )
             events.behavior["__original_array__"] = weakref.ref(events)
 
             return events
