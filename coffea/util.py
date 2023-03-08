@@ -5,6 +5,7 @@ import hashlib
 from typing import Any, List, Optional
 
 import awkward
+import dask_awkward
 import numba
 import numpy
 from rich.progress import (
@@ -21,6 +22,7 @@ from rich.progress import (
 import coffea
 
 ak = awkward
+dak = dask_awkward
 np = numpy
 nb = numba
 
@@ -69,16 +71,18 @@ def _hash(items):
 
 
 def _ensure_flat(array, allow_missing=False):
-    """Normalize an array to a flat numpy array or raise ValueError"""
-    if not isinstance(array, (ak.Array, numpy.ndarray)):
+    """Normalize an array to a flat numpy array, or ensure it is a flat dask-awkward array, or raise ValueError"""
+    if not isinstance(array, (dak.Array, ak.Array, numpy.ndarray)):
         raise ValueError("Expected a numpy or awkward array, received: %r" % array)
 
-    aktype = ak.type(array)
+    aktype = (
+        ak.type(array) if not isinstance(array, dak.Array) else ak.type(array._meta)
+    )
     if not isinstance(aktype, ak.types.ArrayType):
         raise ValueError("Expected an array type, received: %r" % aktype)
-    isprimitive = isinstance(aktype.type, ak.types.PrimitiveType)
-    isoptionprimitive = isinstance(aktype.type, ak.types.OptionType) and isinstance(
-        aktype.type.type, ak.types.PrimitiveType
+    isprimitive = isinstance(aktype.content, ak.types.NumpyType)
+    isoptionprimitive = isinstance(aktype.content, ak.types.OptionType) and isinstance(
+        aktype.content.content, ak.types.NumpyType
     )
     if allow_missing and not (isprimitive or isoptionprimitive):
         raise ValueError(

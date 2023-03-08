@@ -3,6 +3,8 @@
 These helper classes were previously part of ``coffea.processor``
 but have been migrated and updated to be compatible with awkward-array 1.0
 """
+import awkward
+import dask_awkward
 import numpy
 
 import coffea.processor
@@ -318,6 +320,68 @@ class PackedSelection:
     def maxitems(self):
         return PackedSelection._supported_types[self._dtype]
 
+    def __add_delayed(self, name, selection, fill_value):
+        """Add a new delayed boolean array"""
+        selection = coffea.util._ensure_flat(selection, allow_missing=True)
+        sel_type = dask_awkward.type(selection)
+        if isinstance(sel_type, awkward.types.OptionType):
+            selection = dask_awkward.fill_none(selection, fill_value)
+            sel_type = dask_awkward.type(selection)
+        if sel_type.primitive != "bool":
+            raise ValueError(f"Expected a boolean array, received {selection.dtype}")
+        if len(self._names) == 0:
+            self._data = dask_awkward.zeros_like(selection, dtype=self._dtype)
+        if isinstance(selection, dask_awkward.Array) and not isinstance(
+            self._data, dask_awkward.Array
+        ):
+            raise ValueError(
+                f"New selection '{name}' is not eager while PackedSelection is!"
+            )
+        elif len(self._names) == self.maxitems:
+            raise RuntimeError(
+                f"Exhausted all slots in {self}, consider a larger dtype or fewer selections"
+            )
+        elif not dask_awkward.lib.core.compatible_partitions(self._data, selection):
+            raise ValueError(
+                f"New selection '{name}' has a different partition structure than existing selections"
+            )
+        self._data = numpy.bitwise_or(
+            self._data,
+            selection * self._dtype.type(1 << len(self._names)),
+        )
+        self._names.append(name)
+
+    def __add_eager(self, name, selection, fill_value):
+        """Add a new eager boolean array"""
+        selection = coffea.util._ensure_flat(selection, allow_missing=True)
+        if isinstance(selection, numpy.ma.MaskedArray):
+            selection = selection.filled(fill_value)
+        if selection.dtype != bool:
+            raise ValueError(f"Expected a boolean array, received {selection.dtype}")
+        if len(self._names) == 0:
+            self._data = numpy.zeros(len(selection), dtype=self._dtype)
+        if isinstance(selection, numpy.ndarray) and not isinstance(
+            self._data, numpy.ndarray
+        ):
+            raise ValueError(
+                f"New selection '{name}' is not eager while PackedSelection is!"
+            )
+        elif len(self._names) == self.maxitems:
+            raise RuntimeError(
+                f"Exhausted all slots in {self}, consider a larger dtype or fewer selections"
+            )
+        elif self._data.shape != selection.shape:
+            raise ValueError(
+                f"New selection '{name}' has a different shape than existing selections ({selection.shape} vs. {self._data.shape})"
+            )
+        numpy.bitwise_or(
+            self._data,
+            self._dtype.type(1 << len(self._names)),
+            where=selection,
+            out=self._data,
+        )
+        self._names.append(name)
+
     def add(self, name, selection, fill_value=False):
         """Add a new boolean array
 
@@ -334,27 +398,10 @@ class PackedSelection:
                 All masked entries will be filled as specified (default: ``False``)
         """
         selection = coffea.util._ensure_flat(selection, allow_missing=True)
-        if isinstance(selection, numpy.ma.MaskedArray):
-            selection = selection.filled(fill_value)
-        if selection.dtype != numpy.bool:
-            raise ValueError(f"Expected a boolean array, received {selection.dtype}")
-        if len(self._names) == 0:
-            self._data = numpy.zeros(len(selection), dtype=self._dtype)
-        elif len(self._names) == self.maxitems:
-            raise RuntimeError(
-                f"Exhausted all slots in {self}, consider a larger dtype or fewer selections"
-            )
-        elif self._data.shape != selection.shape:
-            raise ValueError(
-                f"New selection '{name}' has a different shape than existing selections ({selection.shape} vs. {self._data.shape})"
-            )
-        numpy.bitwise_or(
-            self._data,
-            self._dtype.type(1 << len(self._names)),
-            where=selection,
-            out=self._data,
-        )
-        self._names.append(name)
+        if isinstance(selection, numpy.ndarray):
+            self.__add_eager(name, selection, fill_value)
+        elif isinstance(selection, dask_awkward.Array):
+            self.__add_delayed(name, selection, fill_value)
 
     def require(self, **names):
         """Return a mask vector corresponding to specific requirements
