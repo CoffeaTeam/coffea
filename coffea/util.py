@@ -81,6 +81,7 @@ def _ensure_flat(array, allow_missing=False):
             if isinstance(array, dask.array.Array)
             else dask_awkward.to_dask_array(array)
         )
+        array.compute_chunk_sizes()
         if not allow_missing and isinstance(array._meta, numpy.ma.MaskedArray):
             raise ValueError(
                 "Expected an unmasked dask_awkward or dask array, received a masked array!"
