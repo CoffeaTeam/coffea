@@ -114,7 +114,7 @@ class Executor(ABC):
             # Determine the tree name if we've not gotten it already
             if data_type == "root":
                 if tree_name is None:
-                    with uproot.open(file_url) as sample:
+                    with uproot.open({file_url: None}) as sample:
                         tree_name = sample.keys()[0]
 
             # Invoke the implementation's task launcher

@@ -13,7 +13,7 @@ class TrivialUprootOpener(UUIDOpener):
 
     def open_uuid(self, uuid):
         pfn = self._uuid_pfnmap[uuid]
-        rootdir = uproot.open(pfn, **self._uproot_options)
+        rootdir = uproot.open({pfn: None}, **self._uproot_options)
         if str(rootdir.file.uuid) != uuid:
             raise RuntimeError(
                 f"UUID of file {pfn} does not match expected value ({uuid})"
