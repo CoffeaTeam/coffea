@@ -105,7 +105,7 @@ class TestExecutor:
 
         hist_stream = [f async for f in executor.execute(analysis, datasource)]
         assert len(hist_stream) == 2
-        mock_uproot_open.assert_called_with("http://foo.bar/foo")
+        mock_uproot_open.assert_called_with({"http://foo.bar/foo": None})
         assert executor.tree_name == "myTree"
         assert executor.data_type == "root"
         assert executor.meta_data == {"dataset": "dataset1", "item": "value"}
@@ -182,9 +182,9 @@ class TestExecutor:
         hist_stream = [f async for f in executor.execute(analysis, datsource)]
 
         if os.name != "nt":
-            mock_uproot_open.assert_called_with("file:///foo/root1.ROOT")
+            mock_uproot_open.assert_called_with({"file:///foo/root1.ROOT": None})
         else:
-            mock_uproot_open.assert_called_with("file:///c:/foo/root1.ROOT")
+            mock_uproot_open.assert_called_with({"file:///c:/foo/root1.ROOT": None})
 
         assert len(hist_stream) == 2
 
