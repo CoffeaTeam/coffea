@@ -45,7 +45,7 @@ def derive_chunks(filename, treename, chunksize, ds, timeout=10):
 
     uproot.XRootDSource.defaults["parallel"] = False
 
-    afile = uproot.open(filename)
+    afile = uproot.open({filename: None})
 
     tree = None
     if isinstance(treename, str):
