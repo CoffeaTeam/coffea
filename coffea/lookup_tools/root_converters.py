@@ -15,7 +15,7 @@ graphTypes = ["TGraphAsymmErrors", "TGraph2D"]
 
 def convert_histo_root_file(file):
     converted_file = {}
-    fin = uproot.open(file.strip())
+    fin = uproot.open({file.strip(): None})
     for path, item in fin.iteritems(recursive=True):
         if isinstance(item, uproot.ReadOnlyDirectory):
             continue

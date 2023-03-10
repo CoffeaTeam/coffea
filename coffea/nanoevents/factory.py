@@ -92,7 +92,7 @@ class NanoEventsFactory:
                 Pass a list instance to record which branches were lazily accessed by this instance
         """
         if isinstance(file, str):
-            tree = uproot.open(file, **uproot_options)[treepath]
+            tree = uproot.open({file: None}, **uproot_options)[treepath]
         elif isinstance(file, uproot.reading.ReadOnlyDirectory):
             tree = file[treepath]
         elif "<class 'uproot.rootio.ROOTDirectory'>" == str(type(file)):
