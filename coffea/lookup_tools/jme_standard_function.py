@@ -23,7 +23,7 @@ def wrap_formula(fstr, varlist):
         fstr = "numpy.full_like(%s,%f)" % (varlist[0], val)
     except ValueError:
         val = fstr
-    lstr = "lambda %s: %s" % (",".join(varlist), fstr.replace("^", "**"))
+    lstr = "lambda %s: %s" % (",".join(varlist), fstr)
     func = eval(lstr)
     return func
 
