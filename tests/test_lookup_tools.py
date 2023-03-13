@@ -273,6 +273,7 @@ def test_jec_txt_scalefactors():
             "* * tests/samples/Autumn18_V7b_DATA_SF_AK4PF.jersf.txt",
             "* * tests/samples/Autumn18_RunC_V19_DATA_L2Relative_AK8PFchs.jec.txt.gz",
             "* * tests/samples/Autumn18_RunA_V19_DATA_L2Relative_AK4Calo.jec.txt",
+            "* * tests/samples/Winter14_V8_MC_L5Flavor_AK5Calo.txt",
         ]
     )
     extractor.finalize()
