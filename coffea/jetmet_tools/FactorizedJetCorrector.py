@@ -27,7 +27,12 @@ def _getLevel(levelName):
     return matches[0]
 
 
-_level_order = ["L1", "L2", "L3", "L2L3"]
+_level_order = ["L1", "L2", "L3", "L2L3", "L4", "L5", "L6", "L7"]
+
+
+def _sorting_key(name_and_func):
+    this_level = _getLevel(name_and_func[0])
+    return _level_order.index(this_level)
 
 
 class FactorizedJetCorrector(object):
@@ -103,19 +108,9 @@ class FactorizedJetCorrector(object):
         else:
             self._jettype = jettype
 
-        n_levels = len(self._levels)
-        for i, level in enumerate(self._levels):
-            this_level = _getLevel(level)
-            ord_idx = _level_order.index(this_level)
-            if i != this_level and n_levels > 1:
-                self._levels[i], self._levels[ord_idx] = (
-                    self._levels[ord_idx],
-                    self._levels[i],
-                )
-                self._funcs[i], self._funcs[ord_idx] = (
-                    self._funcs[ord_idx],
-                    self._funcs[i],
-                )
+        temp = list(zip(*sorted(zip(self._levels, self._funcs), key=_sorting_key)))
+        self._levels = list(temp[0])
+        self._funcs = list(temp[1])
 
         # now we setup the call signature for this factorized JEC
         self._signature = []
