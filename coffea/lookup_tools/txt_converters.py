@@ -316,7 +316,7 @@ def convert_l5flavor_jes_txt_file(juncFilePath):
                 continue
             elif line.startswith("["):
                 component_name = line.strip()[1:-1]  # remove leading and trailing []
-                cname = "{0}_{1}.txt".format(basename, component_name)
+                cname = f"{basename}_{component_name}.txt"
                 components.append((cname, []))
             elif components:
                 components[-1][1].append(line)
