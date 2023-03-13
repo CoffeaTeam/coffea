@@ -9,10 +9,10 @@ from coffea.nanoevents import NanoEventsFactory, TreeMakerSchema
 @pytest.fixture(scope="module")
 def events():
     path = os.path.abspath("tests/samples/treemaker.root")
-    factory = NanoEventsFactory.from_root(
-        path, treepath="PreSelection", schemaclass=TreeMakerSchema
+    events = NanoEventsFactory.from_root(
+        path, treepath="PreSelection", schemaclass=TreeMakerSchema, permit_dask=True
     )
-    return factory.events()
+    return events
 
 
 def test_listify(events):

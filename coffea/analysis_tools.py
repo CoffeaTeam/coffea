@@ -60,6 +60,44 @@ class Weights:
     def weightStatistics(self):
         return self._weightStats
 
+    def __add_eager(self, name, weight, weightUp, weightDown, shift):
+        """Add a new weight with eager calculation"""
+        if isinstance(weight, numpy.ma.MaskedArray):
+            # TODO what to do with option-type? is it representative of unknown weight
+            # and we default to one or is it an invalid weight and we should never use this
+            # event in the first place (0) ?
+            weight = weight.filled(1.0)
+        self._weight = self._weight * weight
+        if self._storeIndividual:
+            self._weights[name] = weight
+        self.__add_variation(name, weight, weightUp, weightDown, shift)
+        self._weightStats[name] = WeightStatistics(
+            weight.sum(),
+            (weight**2).sum(),
+            weight.min(),
+            weight.max(),
+            weight.size,
+        )
+
+    def __add_delayed(self, name, weight, weightUp, weightDown, shift):
+        """Add a new weight with delayed calculation"""
+        if isinstance(dask_awkward.type(weight), awkward.types.OptionType):
+            # TODO what to do with option-type? is it representative of unknown weight
+            # and we default to one or is it an invalid weight and we should never use this
+            # event in the first place (0) ?
+            weight = dask_awkward.fill_none(weight, 1.0)
+        self._weight = self._weight * weight
+        if self._storeIndividual:
+            self._weights[name] = weight
+        self.__add_variation(name, weight, weightUp, weightDown, shift)
+        self._weightStats[name] = WeightStatistics(
+            weight.sum(),
+            (weight**2).sum(),
+            weight.min(),
+            weight.max(),
+            weight.size,
+        )
+
     def add(self, name, weight, weightUp=None, weightDown=None, shift=False):
         """Add a new weight
 
@@ -89,11 +127,11 @@ class Weights:
                 "Avoid using 'Up' and 'Down' in weight names, instead pass appropriate shifts to add() call"
             )
         weight = coffea.util._ensure_flat(weight, allow_missing=True)
-        if isinstance(weight, numpy.ma.MaskedArray):
-            # TODO what to do with option-type? is it representative of unknown weight
-            # and we default to one or is it an invalid weight and we should never use this
-            # event in the first place (0) ?
-            weight = weight.filled(1.0)
+        if isinstance(weight, numpy.ndarray):
+            self.__add_eager(name, weight, weightUp, weightDown, shift)
+        elif isinstance(weight, dask_awkward.Array):
+            self.__add_delayed(name, weight, weightUp, weightDown, shift)
+
         self._weight = self._weight * weight
         if self._storeIndividual:
             self._weights[name] = weight
@@ -168,6 +206,46 @@ class Weights:
             weight.size,
         )
 
+    def __add_variation_eager(self, name, weight, weightUp, weightDown, shift):
+        """Helper function to add an eagerly calculated weight variation."""
+        if weightUp is not None:
+            weightUp = coffea.util._ensure_flat(weightUp, allow_missing=True)
+            if isinstance(weightUp, numpy.ma.MaskedArray):
+                weightUp = weightUp.filled(1.0)
+            if shift:
+                weightUp += weight
+            weightUp[weight != 0.0] /= weight[weight != 0.0]
+            self._modifiers[name + "Up"] = weightUp
+        if weightDown is not None:
+            weightDown = coffea.util._ensure_flat(weightDown, allow_missing=True)
+            if isinstance(weightDown, numpy.ma.MaskedArray):
+                weightDown = weightDown.filled(1.0)
+            if shift:
+                weightDown = weight - weightDown
+            weightDown[weight != 0.0] /= weight[weight != 0.0]
+            self._modifiers[name + "Down"] = weightDown
+
+    def __add_variation_delayed(self, name, weight, weightUp, weightDown, shift):
+        """Helper function to add a delayed-calculation weight variation."""
+        if weightUp is not None:
+            weightUp = coffea.util._ensure_flat(weightUp, allow_missing=True)
+            if isinstance(dask_awkward.type(weightUp), awkward.types.OptionType):
+                weightUp = dask_awkward.fill_none(weightUp, 1.0)
+            if shift:
+                weightUp = weightUp + weight
+            weightUp = dask_awkward.where(weight != 0.0, weightUp / weight, weightUp)
+            self._modifiers[name + "Up"] = weightUp
+        if weightDown is not None:
+            weightDown = coffea.util._ensure_flat(weightDown, allow_missing=True)
+            if isinstance(dask_awkward.type(weightDown), awkward.types.OptionType):
+                weightDown = dask_awkward.fill_none(weightDown, 1.0)
+            if shift:
+                weightDown = weight - weightDown
+            weightDown = dask_awkward.where(
+                weight != 0.0, weightDown / weight, weightDown
+            )
+            self._modifiers[name + "Down"] = weightDown
+
     def __add_variation(
         self, name, weight, weightUp=None, weightDown=None, shift=False
     ):
@@ -192,22 +270,10 @@ class Weights:
 
         .. note:: ``weightUp`` and ``weightDown`` are assumed to be rvalue-like and may be modified in-place by this function
         """
-        if weightUp is not None:
-            weightUp = coffea.util._ensure_flat(weightUp, allow_missing=True)
-            if isinstance(weightUp, numpy.ma.MaskedArray):
-                weightUp = weightUp.filled(1.0)
-            if shift:
-                weightUp += weight
-            weightUp[weight != 0.0] /= weight[weight != 0.0]
-            self._modifiers[name + "Up"] = weightUp
-        if weightDown is not None:
-            weightDown = coffea.util._ensure_flat(weightDown, allow_missing=True)
-            if isinstance(weightDown, numpy.ma.MaskedArray):
-                weightDown = weightDown.filled(1.0)
-            if shift:
-                weightDown = weight - weightDown
-            weightDown[weight != 0.0] /= weight[weight != 0.0]
-            self._modifiers[name + "Down"] = weightDown
+        if isinstance(weight, numpy.ndarray):
+            self.__add_variation_eager(name, weight, weightUp, weightDown, shift)
+        elif isinstance(weight, dask_awkward.Array):
+            self.__add_variation_delayed(name, weight, weightUp, weightDown, shift)
 
     def weight(self, modifier=None):
         """Current event weight vector

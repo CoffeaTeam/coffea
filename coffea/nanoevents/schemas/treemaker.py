@@ -34,10 +34,10 @@ class TreeMakerSchema(BaseSchema):
     returned.
     """
 
-    __dask_capable__ = False
+    __dask_capable__ = True
 
-    def __init__(self, base_form):
-        super().__init__(base_form)
+    def __init__(self, base_form, *args, **kwargs):
+        super().__init__(base_form, *args, **kwargs)
         old_style_form = {
             k: v for k, v in zip(self._form["fields"], self._form["contents"])
         }
@@ -143,6 +143,7 @@ class TreeMakerSchema(BaseSchema):
             else:
                 collection = branch_forms[cname]
                 if not collection["class"].startswith("ListOffsetArray"):
+                    print(collection["class"])
                     raise NotImplementedError(
                         f"{cname} isn't a jagged array, not sure what to do"
                     )

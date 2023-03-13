@@ -19,7 +19,7 @@ from coffea.nanoevents.mapping import (
     TrivialUprootOpener,
     UprootSourceMapping,
 )
-from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema
+from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema, TreeMakerSchema
 from coffea.nanoevents.util import key_to_tuple, tuple_to_key
 
 
@@ -195,6 +195,12 @@ class NanoEventsFactory:
                 from coffea.nanoevents.methods import nanoaod
 
                 behavior = nanoaod.behavior
+            elif schemaclass is TreeMakerSchema:
+                from coffea.nanoevents.methods import base, vector
+
+                behavior = {}
+                behavior.update(base.behavior)
+                behavior.update(vector.behavior)
 
             map_schema = _map_schema_uproot(
                 schemaclass=schemaclass,
