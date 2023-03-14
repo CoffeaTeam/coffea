@@ -56,7 +56,7 @@ def get_description():
 
 
 INSTALL_REQUIRES = [
-    "awkward>=1.5.1,<2",
+    "awkward>=1.10.3,<2",
     "uproot>=4.1.6,==4.*,!=4.2.4,!=4.3.0,!=4.3.1",
     "uproot3-methods>=0.10.0",
     "uproot3>=3.14.1",
@@ -67,7 +67,7 @@ INSTALL_REQUIRES = [
     'numba>=0.50.0;python_version<"3.7"',
     'numba>=0.56.0;python_version>"3.6"',
     'numpy>=1.16.0,<1.22;python_version<"3.7"',  # <1.22 for numba version restrictions with 1.55 series
-    'numpy>=1.18.0;python_version>"3.6"',  # numba 1.56 available for python > 3.6, no upper numpy requirement
+    'numpy>=1.18.0,<1.24;python_version>"3.6"',  # numba 1.56 available for python > 3.6, upper requirement for higher python versions
     "scipy>=1.1.0",
     "tqdm>=4.27.0",
     "lz4",
