@@ -592,6 +592,7 @@ class TaskvineExecutor(ExecutorBase):
     run_info_path: Optional[str] = None
     password_file: Optional[str] = None
     ssl: Union[bool, Tuple[str, str]] = False
+    environment_file_path: Optional[str] = None
     environment_file: Optional[str] = None
     extra_input_files: List = field(default_factory=list)
     wrapper: Optional[str] = shutil.which("poncho_package_run")

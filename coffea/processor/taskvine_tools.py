@@ -252,7 +252,7 @@ class CoffeaTaskvine(Manager):
             prefix=name, suffix=".p", dir=self.staging_dir, delete=False
         ) as f:
             cloudpickle.dump(function, f)
-            return f.name
+            return _vine_queue.declare_file(f.name)
 
     def soft_terminate(self, task=None):
         if task:
@@ -264,14 +264,14 @@ class CoffeaTaskvine(Manager):
 
     def _add_task_report(self, task):
         r = TaskReport(
-            len(task), task.resources_measured.wall_time / 1e6, task.resources_measured.memory # FIXME
+            len(task), task.resources_measured.wall_time / 1e6, task.resources_measured.memory
         )
         self.task_reports.append(r)
 
     def _preprocessing(self, items, function, accumulator):
         function = _compression_wrapper(self.executor.compression, function)
         infile_pre_fn = self.function_to_file(function, "preproc")
-        for item in items:
+        for item in items: 
             task = PreProcCoffeaTaskvineTask(self, infile_pre_fn, item)
             self.submit(task)
 
@@ -587,7 +587,7 @@ class CoffeaTaskvine(Manager):
             prefix="fn_wrapper", dir=self.staging_dir, delete=False
         ) as f:
             f.write(contents.format(proxy=proxy_basename).encode())
-            return f.name
+            return self.declare_file(f.name)
 
     def _make_process_bars(self):
         accums = self._estimate_accum_tasks()
@@ -672,10 +672,11 @@ class CoffeaTaskvineTask(Task):
         executor = queue.executor
         self.retries_to_go = executor.retries
 
-        super().__init__(self.remote_command(env_file=executor.environment_file))
+        super().__init__(self.remote_command(env_file=executor.environment_file_path))
 
-        self.add_input_file(queue.function_wrapper, "fn_wrapper", cache=True)
-        self.add_input_file(infile_fn, "function.p", cache=True)
+        self.add_input(queue.function_wrapper, "fn_wrapper", cache=True)
+        self.add_input(infile_fn, "function.p", cache=True)
+        
         self.add_input_file(self.infile_args, "args.p", cache=False)
         self.add_output_file(self.outfile_output, "output.p", cache=False)
         self.add_output_file(self.outfile_stdout, "stdout.log", cache=False)
@@ -684,12 +685,12 @@ class CoffeaTaskvineTask(Task):
             self.add_input_file(f, cache=True)
 
         if executor.x509_proxy:
-            self.add_input_file(executor.x509_proxy, cache=True)
+            self.add_input(executor.x509_proxy, None, cache=True)
 
         if executor.wrapper and executor.environment_file:
-            self.add_input_file(executor.wrapper, "py_wrapper", cache=True)
-            self.add_input_file(executor.environment_file, "env_file", cache=True)
-
+            self.add_input(executor.wrapper, "py_wrapper", cache=True)
+            self.add_input(executor.environment_file, "env_file", cache=True)
+    
     def __len__(self):
         return self.size
 
@@ -874,13 +875,13 @@ class PreProcCoffeaTaskvineTask(CoffeaTaskvineTask):
         super().__init__(queue, infile_fn, [item], itemid)
 
         self.set_category("preprocessing")
-
+        
         if re.search("://", item.filename) or os.path.isabs(item.filename):
             # This looks like an URL or an absolute path (assuming shared
             # filesystem). Not transfering file.
             pass
         else:
-            self.add_input_file(
+            self.add_input(
                 item.filename, remote_name=item.filename, cache=True
             )
 
@@ -925,7 +926,7 @@ class ProcCoffeaTaskvineTask(CoffeaTaskvineTask):
             # filesystem). Not transfering file.
             pass
         else:
-            self.add_input_file(
+            self.add_input(
                 item.filename, remote_name=item.filename, cache=True
             )
 
@@ -1096,6 +1097,16 @@ def run(executor, items, function, accumulator):
     try:
         if executor.custom_init:
             executor.custom_init(_vine_queue)
+        
+        if executor.x509_proxy:
+            executor.x509_proxy = _vine_queue.declare_file(executor.x509_proxy)
+        
+        if executor.wrapper:
+            executor.wrapper = _vine_queue.declare_file(executor.wrapper)
+        
+        if executor.environment_file:
+            executor.environment_file_path = executor.environment_file
+            executor.environment_file = _vine_queue.declare_file(executor.environment_file)
 
         if executor.desc == "Preprocessing":
             result = _vine_queue._preprocessing(items, function, accumulator)
