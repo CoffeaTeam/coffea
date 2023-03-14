@@ -30,7 +30,7 @@ from .export import export1d
 
 from coffea.util import deprecate
 
-deprecate(ImportError("coffea.hist is deprecated"), "v0.8.0", "31 Dec 2022")
+deprecate(ImportError("coffea.hist is deprecated"), "v2023.3.0", "31 Mar 2023")
 
 __all__ = [
     "Hist",
