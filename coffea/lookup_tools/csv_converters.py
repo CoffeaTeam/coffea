@@ -12,7 +12,7 @@ def convert_btag_csv_file(csvFilePath):
         RuntimeError(
             "Auto-conversion of btag CSV files is deprecated and will be removed. Try coffea.btag_tools.BTagScaleFactor or correctionlib!"
         ),
-        "v2023.4.0",
+        "v2023.3.0",
         "31 Mar 2023",
     )
 
