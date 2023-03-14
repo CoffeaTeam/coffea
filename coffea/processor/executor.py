@@ -1618,7 +1618,7 @@ class Runner:
                 # change here
                 if format == "root":
                     materialized = []
-                    events = NanoEventsFactory.from_root(
+                    factory = NanoEventsFactory.from_root(
                         file=file,
                         treepath=item.treename,
                         persistent_cache=cache_function(),
@@ -1626,7 +1626,8 @@ class Runner:
                         metadata=metadata,
                         access_log=materialized,
                         permit_dask=True,
-                    )[item.entrystart : item.entrystop]
+                    )
+                    events = factory.events()[item.entrystart : item.entrystop]
                 elif format == "parquet":
                     skyhook_options = {}
                     if ":" in item.filename:
@@ -1660,10 +1661,11 @@ class Runner:
                     out = processor_instance.process(events)
                 else:
                     import dask
+                    import dask_awkward
 
-                    out = dask.compute(
-                        processor_instance.process(events), scheduler="single-threaded"
-                    )[0]
+                    to_compute = processor_instance.process(events)
+                    materialized = dask_awkward.necessary_columns(to_compute)
+                    out = dask.compute(to_compute, scheduler="single-threaded")[0]
             except Exception as e:
                 raise Exception(f"Failed processing file: {item!r}") from e
             if out is None:
@@ -1682,7 +1684,7 @@ class Runner:
                         metrics["columns"] = set(materialized)
                         metrics["entries"] = len(events)
                     else:
-                        metrics["columns"] = set(events.materialized)
+                        metrics["columns"] = set(materialized)
                         metrics["entries"] = events.size
                     metrics["processtime"] = toc - tic
                     return {"out": out, "metrics": metrics, "processed": {item}}

@@ -1,6 +1,7 @@
 import io
 import pathlib
 import urllib.parse
+import warnings
 import weakref
 from collections.abc import Mapping
 from functools import partial
@@ -115,7 +116,8 @@ class _map_schema_uproot(_map_schema_base):
 class NanoEventsFactory:
     """A factory class to build NanoEvents objects"""
 
-    def __init__(self, schema, mapping, partition_key, cache=None):
+    def __init__(self, schema, mapping, partition_key, cache=None, is_dask=False):
+        self._is_dask = is_dask
         self._schema = schema
         self._mapping = mapping
         self._partition_key = partition_key
@@ -209,24 +211,26 @@ class NanoEventsFactory:
                 version="latest",
             )
 
-            events = None
+            opener = None
             if isinstance(file, uproot.reading.ReadOnlyDirectory):
-                events = uproot.dask(
+                opener = partial(
+                    uproot.dask,
                     file[treepath],
                     open_files=False,
                     ak_add_doc=True,
-                    form_mapping=map_schema,
                 )
             else:
-                events = uproot.dask(
+                opener = partial(
+                    uproot.dask,
                     {file: treepath},
                     open_files=False,
                     ak_add_doc=True,
-                    form_mapping=map_schema,
                 )
-            events.behavior["__original_array__"] = weakref.ref(events)
-
-            return events
+            return cls(map_schema, opener, None, cache=None, is_dask=True)
+        elif permit_dask and not schemaclass.__dask_capable__:
+            warnings.warn(
+                f"{schemaclass} is not dask capable despite allowing dask, generating non-dask nanoevents"
+            )
 
         if isinstance(file, str):
             tree = uproot.open({file: None}, **uproot_options)[treepath]
@@ -524,6 +528,11 @@ class NanoEventsFactory:
 
     def events(self):
         """Build events"""
+        if self._is_dask:
+            events = self._mapping(form_mapping=self._schema)
+            events.behavior["__original_array__"] = weakref.ref(events)
+            return events
+
         events = self._events()
         if events is None:
             behavior = dict(self._schema.behavior)
