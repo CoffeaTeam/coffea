@@ -42,15 +42,16 @@ class Weights:
 
     Parameters
     ----------
-        size : int
+        size : int | None
             size of the weight arrays to be handled (i.e. the number of events / instances).
+            If None then we expect to operate in delayed mode.
         storeIndividual : bool, optional
             store not only the total weight + variations, but also each individual weight.
             Default is false.
     """
 
     def __init__(self, size, storeIndividual=False):
-        self._weight = numpy.ones(size)
+        self._weight = None if size is None else numpy.ones(size)
         self._weights = {}
         self._modifiers = {}
         self._weightStats = coffea.processor.dict_accumulator()
@@ -86,17 +87,21 @@ class Weights:
             # and we default to one or is it an invalid weight and we should never use this
             # event in the first place (0) ?
             weight = dask_awkward.fill_none(weight, 1.0)
-        self._weight = self._weight * weight
+        if self._weight is None:
+            self._weight = weight
+        else:
+            self._weight = self._weight * weight
         if self._storeIndividual:
             self._weights[name] = weight
         self.__add_variation(name, weight, weightUp, weightDown, shift)
-        self._weightStats[name] = WeightStatistics(
-            weight.sum(),
-            (weight**2).sum(),
-            weight.min(),
-            weight.max(),
-            weight.size,
-        )
+        if isinstance(self._weightStats, coffea.processor.dict_accumulator):
+            self._weightStats = {}
+        self._weightStats[name] = {
+            "sumw": dask_awkward.to_dask_array(weight).sum(),
+            "sumw2": dask_awkward.to_dask_array(weight**2).sum(),
+            "minw": dask_awkward.to_dask_array(weight).min(),
+            "maxw": dask_awkward.to_dask_array(weight).max(),
+        }
 
     def add(self, name, weight, weightUp=None, weightDown=None, shift=False):
         """Add a new weight
@@ -127,15 +132,44 @@ class Weights:
                 "Avoid using 'Up' and 'Down' in weight names, instead pass appropriate shifts to add() call"
             )
         weight = coffea.util._ensure_flat(weight, allow_missing=True)
-        if isinstance(weight, numpy.ndarray):
+        if isinstance(weight, numpy.ndarray) and isinstance(
+            self._weight, numpy.ndarray
+        ):
             self.__add_eager(name, weight, weightUp, weightDown, shift)
-        elif isinstance(weight, dask_awkward.Array):
+        elif isinstance(weight, dask_awkward.Array) and isinstance(
+            self._weight, (dask_awkward.Array, type(None))
+        ):
             self.__add_delayed(name, weight, weightUp, weightDown, shift)
+        else:
+            raise ValueError(
+                f"Incompatible weights: self._weight={type(self.weight)}, weight={type(weight)}"
+            )
 
+    def __add_multivariation_eager(
+        self, name, weight, modifierNames, weightsUp, weightsDown, shift=False
+    ):
+        """Add a new weight with multiple variations in eager mode"""
+        if isinstance(weight, numpy.ma.MaskedArray):
+            # TODO what to do with option-type? is it representative of unknown weight
+            # and we default to one or is it an invalid weight and we should never use this
+            # event in the first place (0) ?
+            weight = weight.filled(1.0)
         self._weight = self._weight * weight
         if self._storeIndividual:
             self._weights[name] = weight
-        self.__add_variation(name, weight, weightUp, weightDown, shift)
+        # Now loop on the variations
+        if len(modifierNames) > 0:
+            if len(modifierNames) != len(weightsUp) or len(modifierNames) != len(
+                weightsDown
+            ):
+                raise ValueError(
+                    "Provide the same number of modifier names related to the list of modified weights"
+                )
+        for modifier, weightUp, weightDown in zip(
+            modifierNames, weightsUp, weightsDown
+        ):
+            systName = f"{name}_{modifier}"
+            self.__add_variation(systName, weight, weightUp, weightDown, shift)
         self._weightStats[name] = WeightStatistics(
             weight.sum(),
             (weight**2).sum(),
@@ -143,6 +177,41 @@ class Weights:
             weight.max(),
             weight.size,
         )
+
+    def __add_multivariation_delayed(
+        self, name, weight, modifierNames, weightsUp, weightsDown, shift=False
+    ):
+        """Add a new weight with multiple variations in delayed mode"""
+        if isinstance(weight, awkward.types.OptionType):
+            # TODO what to do with option-type? is it representative of unknown weight
+            # and we default to one or is it an invalid weight and we should never use this
+            # event in the first place (0) ?
+            weight = dask_awkward.fill_none(weight, 1.0)
+        if self._weight is None:
+            self._weight = weight
+        else:
+            self._weight = self._weight * weight
+        if self._storeIndividual:
+            self._weights[name] = weight
+        # Now loop on the variations
+        if len(modifierNames) > 0:
+            if len(modifierNames) != len(weightsUp) or len(modifierNames) != len(
+                weightsDown
+            ):
+                raise ValueError(
+                    "Provide the same number of modifier names related to the list of modified weights"
+                )
+        for modifier, weightUp, weightDown in zip(
+            modifierNames, weightsUp, weightsDown
+        ):
+            systName = f"{name}_{modifier}"
+            self.__add_variation(systName, weight, weightUp, weightDown, shift)
+        self._weightStats[name] = {
+            "sumw": dask_awkward.to_dask_array(weight).sum(),
+            "sumw2": dask_awkward.to_dask_array(weight**2).sum(),
+            "minw": dask_awkward.to_dask_array(weight).min(),
+            "maxw": dask_awkward.to_dask_array(weight).max(),
+        }
 
     def add_multivariation(
         self, name, weight, modifierNames, weightsUp, weightsDown, shift=False
@@ -177,34 +246,22 @@ class Weights:
                 "Avoid using 'Up' and 'Down' in weight names, instead pass appropriate shifts to add() call"
             )
         weight = coffea.util._ensure_flat(weight, allow_missing=True)
-        if isinstance(weight, numpy.ma.MaskedArray):
-            # TODO what to do with option-type? is it representative of unknown weight
-            # and we default to one or is it an invalid weight and we should never use this
-            # event in the first place (0) ?
-            weight = weight.filled(1.0)
-        self._weight = self._weight * weight
-        if self._storeIndividual:
-            self._weights[name] = weight
-        # Now loop on the variations
-        if len(modifierNames) > 0:
-            if len(modifierNames) != len(weightsUp) or len(modifierNames) != len(
-                weightsDown
-            ):
-                raise ValueError(
-                    "Provide the same number of modifier names related to the list of modified weights"
-                )
-        for modifier, weightUp, weightDown in zip(
-            modifierNames, weightsUp, weightsDown
+        if isinstance(weight, numpy.ndarray) and isinstance(
+            self._weight, numpy.ndarray
         ):
-            systName = f"{name}_{modifier}"
-            self.__add_variation(systName, weight, weightUp, weightDown, shift)
-        self._weightStats[name] = WeightStatistics(
-            weight.sum(),
-            (weight**2).sum(),
-            weight.min(),
-            weight.max(),
-            weight.size,
-        )
+            self.__add_multivariation_eager(
+                name, weight, modifierNames, weightsUp, weightsDown, shift
+            )
+        elif isinstance(weight, dask_awkward.Array) and isinstance(
+            self._weight, (dask_awkward.Array, type(None))
+        ):
+            self.__add_multivariation_delayed(
+                name, weight, modifierNames, weightsUp, weightsDown, shift
+            )
+        else:
+            raise ValueError(
+                f"Incompatible weights: self._weight={type(self.weight)}, weight={type(weight)}"
+            )
 
     def __add_variation_eager(self, name, weight, weightUp, weightDown, shift):
         """Helper function to add an eagerly calculated weight variation."""
@@ -331,9 +388,14 @@ class Weights:
         if exclude:
             names = names - set(exclude)
 
-        w = numpy.ones(self._weight.size)
+        w = None
+        if isinstance(self._weight, numpy.ndarray):
+            w = numpy.ones(self._weight.size)
+        elif isinstance(self._weight, dask_awkward.Array):
+            w = dask_awkward.ones_like(self._weight)
+
         for name in names:
-            w *= self._weights[name]
+            w = w * self._weights[name]
 
         return w
 

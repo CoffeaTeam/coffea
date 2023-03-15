@@ -677,7 +677,7 @@ def test_corrected_jets_factory():
         treepath="Events",
         metadata={},
         permit_dask=True,
-    )
+    ).events()
 
     jec_stack_names = [
         "Summer16_23Sep2016V3_MC_L1FastJet_AK4PFPuppi",
