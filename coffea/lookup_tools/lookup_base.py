@@ -74,6 +74,8 @@ class lookup_base:
         dask_label = kwargs.pop("dask_label", None)
         # if our inputs are all dask_awkward arrays, then we should map_partitions
         if any(isinstance(x, (dask_awkward.Array)) for x in args):
+            import dask
+
             delay_args = tuple(
                 arg for arg in args if not isinstance(arg, dask_awkward.Array)
             )
@@ -96,12 +98,14 @@ class lookup_base:
                     tomap,
                     *actual_args,
                     label=dask_label,
+                    token=dask.base.tokenize(self._dask_future.name, *args),
                     meta=meta,
                 )
             else:
                 return dask_awkward.map_partitions(
                     tomap,
                     *actual_args,
+                    token=dask.base.tokenize(self._dask_future.name, *args),
                     meta=meta,
                 )
 
