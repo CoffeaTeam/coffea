@@ -25,7 +25,7 @@ class PHYSLITESchema(BaseSchema):
     each collection.
     """
 
-    __dask_capable__ = False
+    __dask_capable__ = True
 
     truth_collections = [
         "TruthPhotons",
@@ -62,7 +62,7 @@ class PHYSLITESchema(BaseSchema):
     for _k in truth_collections:
         mixins[_k] = "TruthParticle"
 
-    def __init__(self, base_form):
+    def __init__(self, base_form, *args, **kwargs):
         super().__init__(base_form)
         form_dict = {
             key: form for key, form in zip(self._form["fields"], self._form["contents"])

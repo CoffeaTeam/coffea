@@ -20,8 +20,42 @@ from coffea.nanoevents.mapping import (
     TrivialUprootOpener,
     UprootSourceMapping,
 )
-from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema, TreeMakerSchema
+from coffea.nanoevents.schemas import (
+    BaseSchema,
+    NanoAODSchema,
+    PHYSLITESchema,
+    TreeMakerSchema,
+)
 from coffea.nanoevents.util import key_to_tuple, tuple_to_key
+
+
+def _remove_not_interpretable(branch):
+    if isinstance(
+        branch.interpretation, uproot.interpretation.identify.uproot.AsGrouped
+    ):
+        for name, interpretation in branch.interpretation.subbranches.items():
+            if isinstance(
+                interpretation, uproot.interpretation.identify.UnknownInterpretation
+            ):
+                warnings.warn(
+                    f"Skipping {branch.name} as it is not interpretable by Uproot"
+                )
+                return False
+    if isinstance(
+        branch.interpretation, uproot.interpretation.identify.UnknownInterpretation
+    ):
+        warnings.warn(f"Skipping {branch.name} as it is not interpretable by Uproot")
+        return False
+
+    try:
+        _ = branch.interpretation.awkward_form(None)
+    except uproot.interpretation.objects.CannotBeAwkward:
+        warnings.warn(
+            f"Skipping {branch.name} as it is it cannot be represented as an Awkward array"
+        )
+        return False
+    else:
+        return True
 
 
 def _key_formatter(prefix, form_key, form, attribute):
@@ -203,6 +237,10 @@ class NanoEventsFactory:
                 behavior = {}
                 behavior.update(base.behavior)
                 behavior.update(vector.behavior)
+            elif schemaclass is PHYSLITESchema:
+                from coffea.nanoevents.methods import physlite
+
+                behavior = physlite.behavior
 
             map_schema = _map_schema_uproot(
                 schemaclass=schemaclass,
@@ -219,6 +257,7 @@ class NanoEventsFactory:
                     full_paths=True,
                     open_files=False,
                     ak_add_doc=True,
+                    filter_branch=_remove_not_interpretable,
                 )
             else:
                 opener = partial(
@@ -227,6 +266,7 @@ class NanoEventsFactory:
                     full_paths=True,
                     open_files=False,
                     ak_add_doc=True,
+                    filter_branch=_remove_not_interpretable,
                 )
             return cls(map_schema, opener, None, cache=None, is_dask=True)
         elif permit_dask and not schemaclass.__dask_capable__:
