@@ -1,6 +1,7 @@
 import os
 
 import awkward as ak
+import dask_awkward as dak
 import pytest
 
 from coffea.nanoevents import DelphesSchema, NanoEventsFactory
@@ -9,7 +10,7 @@ from coffea.nanoevents import DelphesSchema, NanoEventsFactory
 def _events():
     path = os.path.abspath("tests/samples/delphes.root")
     factory = NanoEventsFactory.from_root(
-        path, treepath="Delphes", schemaclass=DelphesSchema
+        path, treepath="Delphes", schemaclass=DelphesSchema, permit_dask=True
     )
     return factory.events()
 
@@ -20,7 +21,7 @@ def events():
 
 
 def test_listify(events):
-    assert ak.to_list(events[0])
+    assert ak.to_list(events.CaloJet02[0].compute())
 
 
 @pytest.mark.parametrize(
@@ -89,21 +90,25 @@ def test_collection_exists(events, collection):
     ],
 )
 def test_lorentz_vectorization(collection, events):
-    mask = ak.num(events[collection]) > 0
+    mask = dak.num(events[collection], axis=1) > 0
     assert (
-        ak.parameters(events[collection][mask][0, 0].Area)["__record__"]
+        ak.parameters(events[collection][mask][0].Area._meta)["__record__"]
         == "LorentzVector"
     )
     assert (
-        ak.parameters(events[collection][mask][0, 0].SoftDroppedJet)["__record__"]
+        ak.parameters(events[collection][mask][0].SoftDroppedJet._meta)["__record__"]
         == "LorentzVector"
     )
     assert (
-        ak.parameters(events[collection][mask][0, 0].SoftDroppedSubJet1)["__record__"]
+        ak.parameters(events[collection][mask][0].SoftDroppedSubJet1._meta)[
+            "__record__"
+        ]
         == "LorentzVector"
     )
     assert (
-        ak.parameters(events[collection][mask][0, 0].SoftDroppedSubJet2)["__record__"]
+        ak.parameters(events[collection][mask][0].SoftDroppedSubJet2._meta)[
+            "__record__"
+        ]
         == "LorentzVector"
     )
 
@@ -132,21 +137,27 @@ def test_lorentz_vectorization(collection, events):
     ],
 )
 def test_nested_lorentz_vectorization(collection, events):
-    mask = ak.num(events[collection]) > 0
-    assert ak.all(ak.num(events[collection].PrunedP4_5, axis=2) == 5)
+    mask = dak.num(events[collection], axis=1) > 0
+    assert ak.all(ak.num(events[collection].PrunedP4_5.compute(), axis=2) == 5)
     assert (
-        ak.parameters(events[collection][mask].PrunedP4_5[0, 0, 0])["__record__"]
+        ak.parameters(events[collection][mask].PrunedP4_5[0, 0]._meta.layout.content)[
+            "__record__"
+        ]
         == "LorentzVector"
     )
 
-    assert ak.all(ak.num(events[collection].SoftDroppedP4_5, axis=2) == 5)
+    assert ak.all(ak.num(events[collection].SoftDroppedP4_5.compute(), axis=2) == 5)
     assert (
-        ak.parameters(events[collection][mask].SoftDroppedP4_5[0, 0, 0])["__record__"]
+        ak.parameters(
+            events[collection][mask].SoftDroppedP4_5[0, 0]._meta.layout.content
+        )["__record__"]
         == "LorentzVector"
     )
 
-    assert ak.all(ak.num(events[collection].TrimmedP4_5, axis=2) == 5)
+    assert ak.all(ak.num(events[collection].TrimmedP4_5.compute(), axis=2) == 5)
     assert (
-        ak.parameters(events[collection][mask].TrimmedP4_5[0, 0, 0])["__record__"]
+        ak.parameters(events[collection][mask].TrimmedP4_5[0, 0]._meta.layout.content)[
+            "__record__"
+        ]
         == "LorentzVector"
     )

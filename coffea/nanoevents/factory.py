@@ -22,6 +22,7 @@ from coffea.nanoevents.mapping import (
 )
 from coffea.nanoevents.schemas import (
     BaseSchema,
+    DelphesSchema,
     NanoAODSchema,
     PHYSLITESchema,
     TreeMakerSchema,
@@ -241,6 +242,10 @@ class NanoEventsFactory:
                 from coffea.nanoevents.methods import physlite
 
                 behavior = physlite.behavior
+            elif schemaclass is DelphesSchema:
+                from coffea.nanoevents.methods import delphes
+
+                behavior = delphes.behavior
 
             map_schema = _map_schema_uproot(
                 schemaclass=schemaclass,

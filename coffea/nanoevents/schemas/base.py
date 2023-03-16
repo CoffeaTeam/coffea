@@ -102,6 +102,8 @@ class BaseSchema:
     def __init__(self, base_form, *args, **kwargs):
         params = dict(base_form.get("parameters", {}))
         params["__record__"] = "NanoEvents"
+        if "metadata" in params and params["metadata"] is None:
+            params.pop("metadata")
         params.setdefault("metadata", {})
         self._form = {
             "class": "RecordArray",

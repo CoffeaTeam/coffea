@@ -11,7 +11,7 @@ class DelphesSchema(BaseSchema):
     - Any branches named ``{name}_size`` are assumed to be counts branches and converted to offsets ``o{name}``
     """
 
-    __dask_capable__ = False
+    __dask_capable__ = True
 
     warn_missing_crossrefs = True
 
@@ -187,7 +187,7 @@ class DelphesSchema(BaseSchema):
         "Zd": "Z coordinate of point of closest approach to vertex",
     }
 
-    def __init__(self, base_form, version="latest"):
+    def __init__(self, base_form, version="latest", *args, **kwargs):
         super().__init__(base_form)
         self._version = version
         if version == "latest":
