@@ -1,5 +1,6 @@
 from copy import deepcopy
 
+import dask
 import numpy
 
 from coffea.lookup_tools.lookup_base import lookup_base
@@ -32,7 +33,6 @@ class jersf_lookup(lookup_base):
         The constructor takes the output of the "convert_jersf_txt_file"
         text file converter, which returns a formula, bins, and values.
         """
-        super().__init__()
         self._dim_order = bins_and_orders[1]
         self._bins = bins_and_orders[0]
         self._eval_vars = clamps_and_vars[2]
@@ -65,6 +65,10 @@ class jersf_lookup(lookup_base):
             self._eval_args[argname] = i + len(self._dim_order)
             if argname in self._dim_args.keys():
                 self._eval_args[argname] = self._dim_args[argname]
+        dask_future = dask.delayed(
+            self, pure=True, name=f"jersflookup-{dask.base.tokenize(self)}"
+        ).persist()
+        super().__init__(dask_future)
 
     def _evaluate(self, *args, **kwargs):
         """SFs = f(args)"""

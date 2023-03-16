@@ -1,6 +1,7 @@
 from copy import deepcopy
 
 import awkward
+import dask
 import numpy
 from numpy import sqrt  # noqa: F401
 from numpy import abs, exp, log, log10  # noqa: F401
@@ -92,7 +93,6 @@ class jme_standard_function(lookup_base):
         The constructor takes the output of the "convert_jec(jr)_txt_file"
         text file converter, which returns a formula, bins, and parameter values.
         """
-        super().__init__()
         self._dim_order = bins_and_orders[1]
         self._bins = bins_and_orders[0]
         self._eval_vars = clamps_and_vars[2]
@@ -130,6 +130,10 @@ class jme_standard_function(lookup_base):
             self._eval_args[argname] = i + len(self._dim_order)
             if argname in self._dim_args.keys():
                 self._eval_args[argname] = self._dim_args[argname]
+        dask_future = dask.delayed(
+            self, pure=True, name=f"jmestandardlookup-{dask.base.tokenize(self)}"
+        ).persist()
+        super().__init__(dask_future)
 
     def _evaluate(self, *args, **kwargs):
         """jec/jer = f(args)"""

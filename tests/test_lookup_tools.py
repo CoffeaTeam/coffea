@@ -137,7 +137,7 @@ def test_evaluate_noimpl():
     from coffea.lookup_tools.lookup_base import lookup_base
 
     try:
-        lookup_base()._evaluate()
+        lookup_base(None)._evaluate()
     except NotImplementedError:
         pass
 

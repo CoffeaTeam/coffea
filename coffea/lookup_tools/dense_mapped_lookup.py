@@ -1,6 +1,7 @@
 import numbers
 from threading import Lock
 
+import dask
 import numba
 import numpy
 
@@ -16,6 +17,10 @@ class dense_mapped_lookup(lookup_base):
         self._mapping = mapping
         self._formulas = formulas
         self._feval_dim = feval_dim
+        dask_future = dask.delayed(
+            self, pure=True, name=f"densemappedlookup-{dask.base.tokenize(self)}"
+        ).persist()
+        super().__init__(dask_future)
 
     @classmethod
     def _compile(cls, formula):
