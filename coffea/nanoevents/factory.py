@@ -216,6 +216,7 @@ class NanoEventsFactory:
                 opener = partial(
                     uproot.dask,
                     file[treepath],
+                    full_paths=True,
                     open_files=False,
                     ak_add_doc=True,
                 )
@@ -223,6 +224,7 @@ class NanoEventsFactory:
                 opener = partial(
                     uproot.dask,
                     {file: treepath},
+                    full_paths=True,
                     open_files=False,
                     ak_add_doc=True,
                 )
