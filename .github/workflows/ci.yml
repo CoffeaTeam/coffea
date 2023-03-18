@@ -178,7 +178,7 @@ jobs:
         tag_name: ${{ github.ref }}
         release_name: Release ${{ github.ref }}
     - name: Publish package to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.7.1
+      uses: pypa/gh-action-pypi-publish@v1.8.1
       with:
         user: __token__
         password: ${{ secrets.PYPI_TOKEN }}
