@@ -43,8 +43,7 @@ def getfunction(
 
         out = awkward.contents.NumpyArray(result)
         if backend == "typetracer":
-            out = awkward.contents.NumpyArray(result)
-            return dask_awkward.typetracer_from_form(out.form).layout
+            return out.to_typetracer(forget_length=True)
         return out
     return None
 

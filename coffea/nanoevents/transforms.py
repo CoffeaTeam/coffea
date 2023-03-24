@@ -156,7 +156,7 @@ def counts2nestedindex_form(local_counts, target_offsets):
 
 
 def counts2nestedindex(stack):
-    """Turn jagged local counts into doubly-kagged global index into a target
+    """Turn jagged local counts into doubly-jagged global index into a target
 
     Signature: local_counts,target_offsets,!counts2nestedindex
     Outputs a jagged array with same axis-0 shape as counts axis-1
@@ -427,7 +427,7 @@ def nestedindex_form(indices):
         raise RuntimeError
     form = {
         "class": "ListOffsetArray",
-        "offsets": "i64",
+        "offsets": indices[0]["offsets"],
         "content": copy.deepcopy(indices[0]),
     }
     # steal offsets from first input

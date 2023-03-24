@@ -32,7 +32,7 @@ class PreloadedSourceMapping(BaseSourceMapping):
         super().__init__(array_source, start, stop, cache, access_log)
 
     @classmethod
-    def _extract_base_form(cls, column_source):
+    def _extract_base_form(cls, column_source, force_to_i64=False):
         branch_forms = {}
         for key, branch in column_source.items():
             if "," in key or "!" in key:
@@ -48,6 +48,8 @@ class PreloadedSourceMapping(BaseSourceMapping):
                 form["form_key"] = quote(f"{key},!load")
                 form["content"]["form_key"] = quote(f"{key},!load,!content")
                 form["content"]["parameters"] = {"__doc__": key}
+                if force_to_i64:
+                    form["offsets"] = "i64"
             elif form["class"] == "NumpyArray":
                 form["form_key"] = quote(f"{key},!load")
                 form["parameters"] = {"__doc__": key}

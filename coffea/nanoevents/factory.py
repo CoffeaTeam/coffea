@@ -3,10 +3,12 @@ import pathlib
 import urllib.parse
 import warnings
 import weakref
-from collections.abc import Mapping
 from functools import partial
+from types import FunctionType
+from typing import Mapping
 
 import awkward
+import dask_awkward
 import fsspec
 import uproot
 from dask_awkward import ImplementsFormTransformation
@@ -148,6 +150,51 @@ class _map_schema_uproot(_map_schema_base):
         return mapping, partial(self._key_formatter, tuple_to_key(partition_key))
 
 
+class _map_schema_parquet(_map_schema_base):
+    def __init__(
+        self, schemaclass=BaseSchema, metadata=None, behavior=None, version=None
+    ):
+        super().__init__(
+            schemaclass=schemaclass,
+            metadata=metadata,
+            behavior=behavior,
+            version=version,
+        )
+
+    def __call__(self, form):
+        # expecting a flat data source in so this is OK
+        lza = form.length_zero_array()
+        column_source = {key: lza[key] for key in awkward.fields(lza)}
+
+        lform = PreloadedSourceMapping._extract_base_form(column_source)
+        return awkward.forms.form.from_dict(self.schemaclass(lform, self.version).form)
+
+    def create_column_mapping_and_key(self, columns, start, stop, interp_options):
+        from functools import partial
+
+        from coffea.nanoevents.util import tuple_to_key
+
+        uuid = "NO_UUID"
+        obj_path = "NO_OBJECT_PATH"
+
+        partition_key = (
+            str(uuid),
+            obj_path,
+            f"{start}-{stop}",
+        )
+        uuidpfn = {uuid: columns}
+        mapping = PreloadedSourceMapping(
+            PreloadedOpener(uuidpfn),
+            start,
+            stop,
+            cache={},
+            access_log=None,
+        )
+        mapping.preload_column_source(partition_key[0], partition_key[1], columns)
+
+        return mapping, partial(self._key_formatter, tuple_to_key(partition_key))
+
+
 class NanoEventsFactory:
     """A factory class to build NanoEvents objects"""
 
@@ -222,7 +269,11 @@ class NanoEventsFactory:
             permit_dask:
                 Allow nanoevents to use dask as a backend.
         """
-        if permit_dask and schemaclass.__dask_capable__:
+        if (
+            permit_dask
+            and not isinstance(schemaclass, FunctionType)
+            and schemaclass.__dask_capable__
+        ):
             behavior = None
             if schemaclass is BaseSchema:
                 from coffea.nanoevents.methods import base
@@ -340,6 +391,7 @@ class NanoEventsFactory:
         parquet_options={},
         skyhook_options={},
         access_log=None,
+        permit_dask=False,
     ):
         """Quickly build NanoEvents from a parquet file
 
@@ -381,6 +433,55 @@ class NanoEventsFactory:
             io.RawIOBase,
             io.IOBase,
         )
+
+        if (
+            permit_dask
+            and not isinstance(schemaclass, FunctionType)
+            and schemaclass.__dask_capable__
+        ):
+            behavior = None
+            if schemaclass is BaseSchema:
+                from coffea.nanoevents.methods import base
+
+                behavior = base.behavior
+            elif schemaclass is NanoAODSchema:
+                from coffea.nanoevents.methods import nanoaod
+
+                behavior = nanoaod.behavior
+            elif schemaclass is TreeMakerSchema:
+                from coffea.nanoevents.methods import base, vector
+
+                behavior = {}
+                behavior.update(base.behavior)
+                behavior.update(vector.behavior)
+            elif schemaclass is PHYSLITESchema:
+                from coffea.nanoevents.methods import physlite
+
+                behavior = physlite.behavior
+            elif schemaclass is DelphesSchema:
+                from coffea.nanoevents.methods import delphes
+
+                behavior = delphes.behavior
+
+            map_schema = _map_schema_parquet(
+                schemaclass=schemaclass,
+                behavior=behavior,
+                metadata=metadata,
+                version="latest",
+            )
+
+            if isinstance(file, ftypes + (str,)):
+                opener = partial(
+                    dask_awkward.from_parquet,
+                    file,
+                )
+            else:
+                raise TypeError("Invalid file type (%s)" % (str(type(file))))
+            return cls(map_schema, opener, None, cache=None, is_dask=True)
+        elif permit_dask and not schemaclass.__dask_capable__:
+            warnings.warn(
+                f"{schemaclass} is not dask capable despite allowing dask, generating non-dask nanoevents"
+            )
 
         if isinstance(file, ftypes):
             table_file = pyarrow.parquet.ParquetFile(file, **parquet_options)

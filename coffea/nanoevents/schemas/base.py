@@ -27,8 +27,16 @@ def zip_forms(forms, name, record_name=None, offsets=None, bypass=False):
     if all(form["class"].startswith("ListOffsetArray") for form in forms.values()):
         first = next(iter(forms.values()))
         if not all(form["class"] == first["class"] for form in forms.values()):
+            print(
+                tuple((name, form["class"]) for name, form in forms.items()),
+                first["class"],
+            )
             raise ValueError
         if not all(form["offsets"] == first["offsets"] for form in forms.values()):
+            print(
+                tuple((name, form["offsets"]) for name, form in forms.items()),
+                first["offsets"],
+            )
             raise ValueError
         record = {
             "class": "RecordArray",

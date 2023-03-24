@@ -240,6 +240,8 @@ class NanoCollection:
 
         This can be called at any time from any collection, as long as
         the NanoEventsFactory instance exists."""
+        if "__original_array__" in self.behavior:
+            return self.behavior["__original_array__"]()
         return self.behavior["__events_factory__"].events()
 
 
