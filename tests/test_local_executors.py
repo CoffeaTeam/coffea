@@ -11,7 +11,7 @@ if sys.platform.startswith("win"):
     pytest.skip("skipping tests that only function in linux", allow_module_level=True)
 
 
-@pytest.mark.parametrize("filetype", ["root"])  # TODO re-enable parquet tests!
+@pytest.mark.parametrize("filetype", ["root", "parquet"])
 @pytest.mark.parametrize("skipbadfiles", [True, False])
 @pytest.mark.parametrize("maxchunks", [1, None])
 @pytest.mark.parametrize("chunksize", [100000, 5])
@@ -25,8 +25,8 @@ def test_dataframe_analysis(
     from coffea.processor.test_items import NanoTestProcessor
 
     filelist = {
-        "ZJets": [osp.abspath(f"tests/samples/nano_dy.{filetype}")],
-        "Data": [osp.abspath(f"tests/samples/nano_dimuon.{filetype}")],
+        "ZJets": {"files": [osp.abspath(f"tests/samples/nano_dy.{filetype}")]},
+        "Data": {"files": [osp.abspath(f"tests/samples/nano_dimuon.{filetype}")]},
     }
 
     executor = executor()
@@ -49,13 +49,13 @@ def test_dataframe_analysis(
     else:
         assert maxchunks == 1
         print(hists["cutflow"]["ZJets_pt"])
-        assert hists["cutflow"]["ZJets_pt"] == 18 if chunksize == 100_000 else 2
-        assert hists["cutflow"]["ZJets_mass"] == 6 if chunksize == 100_000 else 1
-        assert hists["cutflow"]["Data_pt"] == 84 if chunksize == 100_000 else 13
-        assert hists["cutflow"]["Data_mass"] == 66 if chunksize == 100_000 else 12
+        assert hists["cutflow"]["ZJets_pt"] == (18 if chunksize == 100_000 else 2)
+        assert hists["cutflow"]["ZJets_mass"] == (6 if chunksize == 100_000 else 1)
+        assert hists["cutflow"]["Data_pt"] == (84 if chunksize == 100_000 else 13)
+        assert hists["cutflow"]["Data_mass"] == (66 if chunksize == 100_000 else 12)
 
 
-@pytest.mark.parametrize("filetype", ["root"])  # TODO re-enable parquet tests!
+@pytest.mark.parametrize("filetype", ["root", "parquet"])
 @pytest.mark.parametrize("skipbadfiles", [True, False])
 @pytest.mark.parametrize("maxchunks", [None, 1000])
 @pytest.mark.parametrize("compression", [None, 0, 2])

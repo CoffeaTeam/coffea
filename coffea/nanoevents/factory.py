@@ -167,6 +167,8 @@ class _map_schema_parquet(_map_schema_base):
         column_source = {key: lza[key] for key in awkward.fields(lza)}
 
         lform = PreloadedSourceMapping._extract_base_form(column_source)
+        lform["parameters"]["metadata"] = self.metadata
+
         return awkward.forms.form.from_dict(self.schemaclass(lform, self.version).form)
 
     def create_column_mapping_and_key(self, columns, start, stop, interp_options):

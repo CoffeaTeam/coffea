@@ -1412,7 +1412,7 @@ class Runner:
                 yield FileMeta(dataset, filename, local_treename, user_meta)
 
     @staticmethod
-    def metadata_fetcher(
+    def metadata_fetcher_root(
         xrootdtimeout: int, align_clusters: bool, item: FileMeta
     ) -> Accumulatable:
         with uproot.open({item.filename: None}, timeout=xrootdtimeout) as file:
@@ -1432,7 +1432,21 @@ class Runner:
             )
         return out
 
-    def _preprocess_fileset(self, fileset: Dict) -> None:
+    @staticmethod
+    def metadata_fetcher_parquet(item: FileMeta):
+        with ParquetFileContext(item.filename) as file:
+            metadata = {}
+            if item.metadata:
+                metadata.update(item.metadata)
+            metadata.update(
+                {"numentries": file.num_entries, "uuid": b"NO_UUID_0000_000"}
+            )
+            out = set_accumulator(
+                [FileMeta(item.dataset, item.filename, item.treename, metadata)]
+            )
+        return out
+
+    def _preprocess_fileset_root(self, fileset: Dict) -> None:
         # this is a bit of an abuse of map-reduce but ok
         to_get = {
             filemeta
@@ -1457,7 +1471,43 @@ class Runner:
                 self.automatic_retries,
                 self.retries,
                 self.skipbadfiles,
-                partial(self.metadata_fetcher, self.xrootdtimeout, self.align_clusters),
+                partial(
+                    self.metadata_fetcher_root, self.xrootdtimeout, self.align_clusters
+                ),
+            )
+            out, _ = pre_executor(to_get, closure, out)
+            while out:
+                item = out.pop()
+                self.metadata_cache[item] = item.metadata
+            for filemeta in fileset:
+                filemeta.maybe_populate(self.metadata_cache)
+
+    def _preprocess_fileset_parquet(self, fileset: Dict) -> None:
+        # this is a bit of an abuse of map-reduce but ok
+        to_get = {
+            filemeta
+            for filemeta in fileset
+            if not filemeta.populated(clusters=self.align_clusters)
+        }
+        if len(to_get) > 0:
+            out = set_accumulator()
+            pre_arg_override = {
+                "function_name": "get_metadata",
+                "desc": "Preprocessing",
+                "unit": "file",
+                "compression": None,
+            }
+            if isinstance(self.pre_executor, (FuturesExecutor, ParslExecutor)):
+                pre_arg_override.update({"tailtimeout": None})
+            if isinstance(self.pre_executor, (DaskExecutor)):
+                self.pre_executor.heavy_input = None
+                pre_arg_override.update({"worker_affinity": False})
+            pre_executor = self.pre_executor.copy(**pre_arg_override)
+            closure = partial(
+                self.automatic_retries,
+                self.retries,
+                self.skipbadfiles,
+                self.metadata_fetcher_parquet,
             )
             out, _ = pre_executor(to_get, closure, out)
             while out:
@@ -1481,7 +1531,7 @@ class Runner:
         config = None
         if self.use_skyhook:
             config = Runner.read_coffea_config()
-        if self.format == "root":
+        if not self.use_skyhook and (self.format == "root" or self.format == "parquet"):
             if self.maxchunks is None:
                 last_chunksize = self.chunksize
                 for filemeta in fileset:
@@ -1608,10 +1658,13 @@ class Runner:
                     ]
                     setattr(events, "metadata", metadata)
                 elif format == "parquet":
+                    import dask_awkward
+
                     tree = file
-                    events = LazyDataFrame(
-                        tree, item.entrystart, item.entrystop, metadata=metadata
-                    )
+                    events = dask_awkward.from_parquet(item.filename)[
+                        item.entrystart : item.entrystop
+                    ]
+                    setattr(events, "metadata", metadata)
                 else:
                     raise ValueError("Format can only be root or parquet!")
             elif issubclass(schema, schemas.BaseSchema):
@@ -1647,8 +1700,9 @@ class Runner:
                         schemaclass=schema,
                         metadata=metadata,
                         skyhook_options=skyhook_options,
+                        permit_dask=True,
                     )
-                    events = factory.events()
+                    events = factory.events()[item.entrystart : item.entrystop]
             else:
                 raise ValueError(
                     "Expected schema to derive from nanoevents.BaseSchema, instead got %r"
@@ -1745,7 +1799,18 @@ class Runner:
             for filemeta in fileset:
                 filemeta.maybe_populate(self.metadata_cache)
 
-            self._preprocess_fileset(fileset)
+            self._preprocess_fileset_root(fileset)
+            fileset = self._filter_badfiles(fileset)
+
+            # reverse fileset list to match the order of files as presented in version
+            # v0.7.4. This fixes tests using maxchunks.
+            fileset.reverse()
+        elif self.format == "parquet":
+            fileset = list(self._normalize_fileset(fileset, treename))
+            for filemeta in fileset:
+                filemeta.maybe_populate(self.metadata_cache)
+
+            self._preprocess_fileset_parquet(fileset)
             fileset = self._filter_badfiles(fileset)
 
             # reverse fileset list to match the order of files as presented in version
