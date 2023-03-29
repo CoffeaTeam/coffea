@@ -111,6 +111,8 @@ class CoffeaTaskvine(Manager):
             ssl=self.executor.ssl,
         )
 
+        self.enable_peer_transfers()
+
         self.bar = StatusBar(enabled=executor.status)
         self.console = VerbosePrint(self.bar.console, executor.status, executor.verbose)
 
@@ -121,6 +123,7 @@ class CoffeaTaskvine(Manager):
             self.vine_set_password_file(self.executor.password_file)
 
         self.function_wrapper = self._write_fn_wrapper()
+        self.function_wrapper = self.declare_file(self.function_wrapper)
 
         if self.executor.tasks_accum_log:
             with open(self.executor.tasks_accum_log, "w") as f:
@@ -203,7 +206,8 @@ class CoffeaTaskvine(Manager):
             task.report(self)
             # Evaluate and display details of the completed task
             if task.successful():
-                task.fout_size = getsize(task.outfile_output) / 1e6
+                #task.fout_size = getsize(task.outfile_output) / 1e6
+                task.fout_size = len(task) 
                 if task.fin_size > 0:
                     # record only if task used any intermediate inputs
                     self.stats_coffea.max("size_max_input", task.fin_size)
@@ -252,7 +256,7 @@ class CoffeaTaskvine(Manager):
             prefix=name, suffix=".p", dir=self.staging_dir, delete=False
         ) as f:
             cloudpickle.dump(function, f)
-            return _vine_queue.declare_file(f.name)
+            return f.name
 
     def soft_terminate(self, task=None):
         if task:
@@ -555,7 +559,7 @@ class CoffeaTaskvine(Manager):
 
         proxy_basename = ""
         if self.executor.x509_proxy:
-            proxy_basename = basename(self.executor.x509_proxy)
+            proxy_basename = 'x509.pem' 
 
         contents = textwrap.dedent(
             """\
@@ -587,7 +591,7 @@ class CoffeaTaskvine(Manager):
             prefix="fn_wrapper", dir=self.staging_dir, delete=False
         ) as f:
             f.write(contents.format(proxy=proxy_basename).encode())
-            return self.declare_file(f.name)
+            return f.name 
 
     def _make_process_bars(self):
         accums = self._estimate_accum_tasks()
@@ -652,7 +656,7 @@ class CoffeaTaskvine(Manager):
 class CoffeaTaskvineTask(Task):
     tasks_counter = 0
 
-    def __init__(self, queue, infile_fn, item_args, itemid):
+    def __init__(self, queue, bring_back_file, infile_fn, item_args, itemid):
         CoffeaTaskvineTask.tasks_counter += 1
 
         self.itemid = itemid
@@ -660,11 +664,18 @@ class CoffeaTaskvineTask(Task):
         self.py_result = ResultUnavailable()
         self._stdout = None
 
-        self.infile_fn = infile_fn
+        self.infile_fn = queue.declare_file(infile_fn)
 
         self.infile_args = join(queue.staging_dir, "args_{}.p".format(self.itemid))
-        self.outfile_output = join(queue.staging_dir, "out_{}.p".format(self.itemid))
+        
+        if bring_back_file:
+            self.outfile_output = join(queue.staging_dir, "out_{}.p".format(self.itemid)) 
+            self.output_file = queue.declare_file(self.outfile_output)
+        else:
+            self.output_file = queue.declare_temp()
+
         self.outfile_stdout = join(queue.staging_dir, "stdout_{}.p".format(self.itemid))
+        self.stdout_file = queue.declare_file(self.outfile_stdout)
 
         with open(self.infile_args, "wb") as wf:
             cloudpickle.dump(item_args, wf)
@@ -675,17 +686,19 @@ class CoffeaTaskvineTask(Task):
         super().__init__(self.remote_command(env_file=executor.environment_file_path))
 
         self.add_input(queue.function_wrapper, "fn_wrapper", cache=True)
-        self.add_input(infile_fn, "function.p", cache=True)
+        self.add_input(self.infile_fn, "function.p", cache=True)
         
         self.add_input_file(self.infile_args, "args.p", cache=False)
-        self.add_output_file(self.outfile_output, "output.p", cache=False)
-        self.add_output_file(self.outfile_stdout, "stdout.log", cache=False)
+        #self.add_output_file(self.outfile_output, "output.p", cache=False)
+        self.add_output(self.output_file, "output.p", cache=False)
+        #self.add_output_file(self.outfile_stdout, "stdout.log", cache=False)
+        #self.add_output(self.stdout_file, "stdout.log", cache=False)
 
         for f in executor.extra_input_files:
             self.add_input_file(f, cache=True)
 
         if executor.x509_proxy:
-            self.add_input(executor.x509_proxy, None, cache=True)
+            self.add_input(executor.x509_proxy, 'x509.pem', cache=True)
 
         if executor.wrapper and executor.environment_file:
             self.add_input(executor.wrapper, "py_wrapper", cache=True)
@@ -699,6 +712,7 @@ class CoffeaTaskvineTask(Task):
 
     def remote_command(self, env_file=None):
         fn_command = "python fn_wrapper function.p args.p output.p >stdout.log 2>&1"
+        #fn_command = f"python fn_wrapper function.p args.p {self.outfile_output} >{self.outfile_stdout} 2>&1"
         command = fn_command
 
         if env_file:
@@ -724,7 +738,7 @@ class CoffeaTaskvineTask(Task):
             self.py_result is None or isinstance(self.py_result, ResultUnavailable)
         )
 
-    # use output to return python result, rather than stdout as regular wq
+    # use output to return python result, rather than stdout as regular tv 
     @property
     def output(self):
         if not self._has_result():
@@ -872,7 +886,7 @@ class PreProcCoffeaTaskvineTask(CoffeaTaskvineTask):
         self.item = item
 
         self.size = 1
-        super().__init__(queue, infile_fn, [item], itemid)
+        super().__init__(queue, True, infile_fn, [item], itemid)
 
         self.set_category("preprocessing")
         
@@ -917,7 +931,7 @@ class ProcCoffeaTaskvineTask(CoffeaTaskvineTask):
 
         self.item = item
 
-        super().__init__(queue, infile_fn, [item], itemid)
+        super().__init__(queue, False, infile_fn, [item], itemid)
 
         self.set_category("processing")
 
@@ -1030,15 +1044,17 @@ class AccumCoffeaTaskvineTask(CoffeaTaskvineTask):
         self.tasks_to_accumulate = tasks_to_accumulate
         self.size = sum(len(t) for t in self.tasks_to_accumulate)
 
-        args = [[basename(t.outfile_output) for t in self.tasks_to_accumulate]]
-
-        super().__init__(queue, infile_fn, args, itemid)
+        args = []
+        for i, t in enumerate(self.tasks_to_accumulate):
+            args.append(f'result.{i}')
+        
+        super().__init__(queue, False, infile_fn, args, itemid)
+        
+        for i, t in enumerate(self.tasks_to_accumulate):
+            self.add_input(t.output_file, f'result.{i}', cache=False) # remote name unique
 
         self.set_category("accumulating")
-
-        for t in self.tasks_to_accumulate:
-            self.add_input_file(t.outfile_output, cache=False)
-
+        
         self.fin_size = sum(t.fout_size for t in tasks_to_accumulate)
 
     def cleanup_inputs(self):
