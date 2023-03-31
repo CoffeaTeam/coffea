@@ -123,7 +123,7 @@ class CoffeaTaskvine(Manager):
             self.vine_set_password_file(self.executor.password_file)
 
         self.function_wrapper = self._write_fn_wrapper()
-        self.function_wrapper = self.declare_file(self.function_wrapper)
+        self.function_wrapper = self.declare_file(self.function_wrapper, cache=True)
 
         if self.executor.tasks_accum_log:
             with open(self.executor.tasks_accum_log, "w") as f:
@@ -664,7 +664,7 @@ class CoffeaTaskvineTask(Task):
         self.py_result = ResultUnavailable()
         self._stdout = None
 
-        self.infile_fn = queue.declare_file(infile_fn)
+        self.infile_fn = queue.declare_file(infile_fn, cache=True)
 
         self.infile_args = join(queue.staging_dir, "args_{}.p".format(self.itemid))
         
@@ -685,24 +685,26 @@ class CoffeaTaskvineTask(Task):
 
         super().__init__(self.remote_command(env_file=executor.environment_file_path))
 
-        self.add_input(queue.function_wrapper, "fn_wrapper", cache=True)
-        self.add_input(self.infile_fn, "function.p", cache=True)
+        self.add_input(queue.function_wrapper, "fn_wrapper")
+        self.add_input(self.infile_fn, "function.p")
         
-        self.add_input_file(self.infile_args, "args.p", cache=False)
+        self.infile_args = queue.declare_file(self.infile_args)
+        self.add_input(self.infile_args, "args.p")
         #self.add_output_file(self.outfile_output, "output.p", cache=False)
-        self.add_output(self.output_file, "output.p", cache=False)
+        self.add_output(self.output_file, "output.p")
         #self.add_output_file(self.outfile_stdout, "stdout.log", cache=False)
-        #self.add_output(self.stdout_file, "stdout.log", cache=False)
+        self.add_output(self.stdout_file, "stdout.log")
 
-        for f in executor.extra_input_files:
-            self.add_input_file(f, cache=True)
+        for i, f in enumerate(executor.extra_input_files):
+            extra_input_file = queue.declare_file(f, cache=True)
+            self.add_input(extra_input_file, f)
 
         if executor.x509_proxy:
-            self.add_input(executor.x509_proxy, 'x509.pem', cache=True)
+            self.add_input(executor.x509_proxy, 'x509.pem')
 
         if executor.wrapper and executor.environment_file:
-            self.add_input(executor.wrapper, "py_wrapper", cache=True)
-            self.add_input(executor.environment_file, "env_file", cache=True)
+            self.add_input(executor.wrapper, "py_wrapper")
+            self.add_input(executor.environment_file, "env_file")
     
     def __len__(self):
         return self.size
@@ -751,10 +753,12 @@ class CoffeaTaskvineTask(Task):
         return self.py_result
 
     def cleanup_inputs(self):
-        os.remove(self.infile_args)
+        #os.remove(self.infile_args)
+        pass
 
     def cleanup_outputs(self):
-        os.remove(self.outfile_output)
+        #os.remove(self.outfile_output)
+        pass
 
     def clone(self, queue):
         raise NotImplementedError
@@ -896,7 +900,7 @@ class PreProcCoffeaTaskvineTask(CoffeaTaskvineTask):
             pass
         else:
             self.add_input(
-                item.filename, remote_name=item.filename, cache=True
+                item.filename, remote_name=item.filename
             )
 
         self.fin_size = 0
@@ -941,7 +945,7 @@ class ProcCoffeaTaskvineTask(CoffeaTaskvineTask):
             pass
         else:
             self.add_input(
-                item.filename, remote_name=item.filename, cache=True
+                item.filename, remote_name=item.filename
             )
 
         self.fin_size = 0
@@ -1051,7 +1055,7 @@ class AccumCoffeaTaskvineTask(CoffeaTaskvineTask):
         super().__init__(queue, False, infile_fn, args, itemid)
         
         for i, t in enumerate(self.tasks_to_accumulate):
-            self.add_input(t.output_file, f'result.{i}', cache=False) # remote name unique
+            self.add_input(t.output_file, f'result.{i}') # remote name unique
 
         self.set_category("accumulating")
         
@@ -1115,14 +1119,14 @@ def run(executor, items, function, accumulator):
             executor.custom_init(_vine_queue)
         
         if executor.x509_proxy:
-            executor.x509_proxy = _vine_queue.declare_file(executor.x509_proxy)
+            executor.x509_proxy = _vine_queue.declare_file(executor.x509_proxy, cache=True)
         
         if executor.wrapper:
-            executor.wrapper = _vine_queue.declare_file(executor.wrapper)
+            executor.wrapper = _vine_queue.declare_file(executor.wrapper, cache=True)
         
         if executor.environment_file:
             executor.environment_file_path = executor.environment_file
-            executor.environment_file = _vine_queue.declare_file(executor.environment_file)
+            executor.environment_file = _vine_queue.declare_file(executor.environment_file, cache=True)
 
         if executor.desc == "Preprocessing":
             result = _vine_queue._preprocessing(items, function, accumulator)
