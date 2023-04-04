@@ -160,7 +160,7 @@ class NanoEvents(Systematic):
     This mixin class is used as the top-level type for NanoEvents objects.
     """
 
-    def get_metadata(self, __dask_array__=None):
+    def get_metadata(self, _dask_array_=None):
         """Arbitrary metadata"""
         return self.layout.purelist_parameter("metadata")
 
@@ -202,7 +202,7 @@ class NanoCollection:
         Used with global indexes to resolve cross-references"""
         return self._getlistarray().content
 
-    def _apply_global_index(self, index, __dask_array__=None):
+    def _apply_global_index(self, index, _dask_array_=None):
         """Internal method to take from a collection using a flat index
 
         This is often necessary to be able to still resolve cross-references on
@@ -227,7 +227,7 @@ class NanoCollection:
         out = awkward.Array(layout_out, behavior=self.behavior)
 
         if isinstance(index, dask_awkward.Array):
-            return __dask_array__.map_partitions(
+            return _dask_array_.map_partitions(
                 _ClassMethodFn("_apply_global_index"),
                 index,
                 label="_apply_global_index",
