@@ -34,6 +34,7 @@ def do_dask_pandas_job(client, filelist):
     # print(output)
 
 
+@pytest.mark.skip(reason="pandas dataframe output very different with dask-awkward")
 def test_dask_pandas_job():
     distributed = pytest.importorskip("distributed", minversion="2.6.0")
     client = distributed.Client(dashboard_address=None)

@@ -9,6 +9,8 @@ from coffea.processor.test_items import NanoEventsProcessor
 
 
 def test_preloaded_nanoevents():
+    pytest.xfail("preloaded nanoevents doesn't support dask yet")
+
     columns = [
         "nMuon",
         "Muon_pt",

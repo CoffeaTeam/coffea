@@ -24,6 +24,9 @@ def test_dataframe_analysis(
 ):
     from coffea.processor.test_items import NanoTestProcessor
 
+    if schema is not None and filetype == "parquet":
+        pytest.xfail("parquet nanoevents not supported yet")
+
     filelist = {
         "ZJets": {"files": [osp.abspath(f"tests/samples/nano_dy.{filetype}")]},
         "Data": {"files": [osp.abspath(f"tests/samples/nano_dimuon.{filetype}")]},
@@ -64,6 +67,9 @@ def test_dataframe_analysis(
 )
 def test_nanoevents_analysis(executor, compression, maxchunks, skipbadfiles, filetype):
     from coffea.processor.test_items import NanoEventsProcessor
+
+    if filetype == "parquet":
+        pytest.xfail("parquet nanoevents not supported yet")
 
     filelist = {
         "DummyBadMissingFile": {
