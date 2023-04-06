@@ -1,8 +1,9 @@
 """Mixins for the CMS NanoAOD schema"""
-import awkward
 import warnings
-from coffea.nanoevents.methods import base, vector, candidate
 
+import awkward
+
+from coffea.nanoevents.methods import base, candidate, vector
 
 behavior = {}
 behavior.update(base.behavior)
@@ -22,7 +23,7 @@ def _set_repr_name(classname):
     def namefcn(self):
         return classname
 
-    behavior[("__typestr__", classname)] = classname[0].lower() + classname[1:]
+    # behavior[("__typestr__", classname)] = classname[0].lower() + classname[1:]
     behavior[classname].__repr__ = namefcn
 
 
@@ -82,31 +83,52 @@ class GenParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
         return (self.statusFlags & mask) == mask
 
     @property
-    def parent(self):
-        """Accessor to the parent particle"""
+    def parent(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().GenPart
+            return original._apply_global_index(
+                _dask_array_.genPartIdxMotherG, _dask_array_=original
+            )
         return self._events().GenPart._apply_global_index(self.genPartIdxMotherG)
 
     @property
-    def distinctParent(self):
-        """Accessor to distinct (different PDG id) parent particle"""
+    def distinctParent(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().GenPart
+            return original._apply_global_index(
+                _dask_array_.distinctParentIdxG, _dask_array_=original
+            )
         return self._events().GenPart._apply_global_index(self.distinctParentIdxG)
 
     @property
-    def children(self):
-        """Accessor to child particles."""
+    def children(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().GenPart
+            return original._apply_global_index(
+                _dask_array_.childrenIdxG, _dask_array_=original
+            )
         return self._events().GenPart._apply_global_index(self.childrenIdxG)
 
     @property
-    def distinctChildren(self):
-        """Accessor to distinct (different PDG id) child particles"""
+    def distinctChildren(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().GenPart
+            return original._apply_global_index(
+                _dask_array_.distinctChildrenIdxG, _dask_array_=original
+            )
         return self._events().GenPart._apply_global_index(self.distinctChildrenIdxG)
 
     @property
-    def distinctChildrenDeep(self):
+    def distinctChildrenDeep(self, _dask_array_=None):
         """Accessor to distinct child particles with different PDG id, or last ones in the chain"""
         warnings.warn(
             "distinctChildrenDeep may not give correct answers for all generators!"
         )
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().GenPart
+            return original._apply_global_index(
+                _dask_array_.distinctChildrenDeepIdxG, _dask_array_=original
+            )
         return self._events().GenPart._apply_global_index(self.distinctChildrenDeepIdxG)
 
 
@@ -118,8 +140,13 @@ class GenVisTau(candidate.PtEtaPhiMCandidate, base.NanoCollection):
     """NanoAOD visible tau object"""
 
     @property
-    def parent(self):
+    def parent(self, _dask_array_=None):
         """Accessor to the parent particle"""
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().GenPart
+            return original._apply_global_index(
+                _dask_array_.genPartIdxMotherG, _dask_array_=original
+            )
         return self._events().GenPart._apply_global_index(self.genPartIdxMotherG)
 
 
@@ -163,15 +190,30 @@ class Electron(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systemati
         return self.cutBased >= self.TIGHT
 
     @property
-    def matched_gen(self):
+    def matched_gen(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().GenPart
+            return original._apply_global_index(
+                _dask_array_.genPartIdxG, _dask_array_=original
+            )
         return self._events().GenPart._apply_global_index(self.genPartIdxG)
 
     @property
-    def matched_jet(self):
+    def matched_jet(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().Jet
+            return original._apply_global_index(
+                _dask_array_.jetIdxG, _dask_array_=original
+            )
         return self._events().Jet._apply_global_index(self.jetIdxG)
 
     @property
-    def matched_photon(self):
+    def matched_photon(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().Photon
+            return original._apply_global_index(
+                _dask_array_.photonIdxG, _dask_array_=original
+            )
         return self._events().Photon._apply_global_index(self.photonIdxG)
 
 
@@ -183,15 +225,30 @@ class Muon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
     """NanoAOD muon object"""
 
     @property
-    def matched_fsrPhoton(self):
+    def matched_fsrPhoton(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().FsrPhoton
+            return original._apply_global_index(
+                _dask_array_.fsrPhotonIdxG, _dask_array_=original
+            )
         return self._events().FsrPhoton._apply_global_index(self.fsrPhotonIdxG)
 
     @property
-    def matched_gen(self):
+    def matched_gen(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().GenPart
+            return original._apply_global_index(
+                _dask_array_.genPartIdxG, _dask_array_=original
+            )
         return self._events().GenPart._apply_global_index(self.genPartIdxG)
 
     @property
-    def matched_jet(self):
+    def matched_jet(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().Jet
+            return original._apply_global_index(
+                _dask_array_.jetIdxG, _dask_array_=original
+            )
         return self._events().Jet._apply_global_index(self.jetIdxG)
 
 
@@ -203,11 +260,21 @@ class Tau(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
     """NanoAOD tau object"""
 
     @property
-    def matched_gen(self):
+    def matched_gen(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().GenPart
+            return original._apply_global_index(
+                _dask_array_.genPartIdxG, _dask_array_=original
+            )
         return self._events().GenPart._apply_global_index(self.genPartIdxG)
 
     @property
-    def matched_jet(self):
+    def matched_jet(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().Jet
+            return original._apply_global_index(
+                _dask_array_.jetIdxG, _dask_array_=original
+            )
         return self._events().Jet._apply_global_index(self.jetIdxG)
 
 
@@ -245,15 +312,30 @@ class Photon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic)
         return (self.cutBasedBitmap & (1 << self.TIGHT)) != 0
 
     @property
-    def matched_electron(self):
+    def matched_electron(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().Electron
+            return original._apply_global_index(
+                _dask_array_.electronIdxG, _dask_array_=original
+            )
         return self._events().Electron._apply_global_index(self.electronIdxG)
 
     @property
-    def matched_gen(self):
+    def matched_gen(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().GenPart
+            return original._apply_global_index(
+                _dask_array_.genPartIdxG, _dask_array_=original
+            )
         return self._events().GenPart._apply_global_index(self.genPartIdxG)
 
     @property
-    def matched_jet(self):
+    def matched_jet(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().Jet
+            return original._apply_global_index(
+                _dask_array_.jetIdxG, _dask_array_=original
+            )
         return self._events().Jet._apply_global_index(self.jetIdxG)
 
 
@@ -265,7 +347,12 @@ class FsrPhoton(candidate.PtEtaPhiMCandidate, base.NanoCollection):
     """NanoAOD fsr photon object"""
 
     @property
-    def matched_muon(self):
+    def matched_muon(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().Jet
+            return original._apply_global_index(
+                _dask_array_.muonIdxG, _dask_array_=original
+            )
         return self._events().Muon._apply_global_index(self.muonIdxG)
 
 
@@ -299,21 +386,41 @@ class Jet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic):
         return (self.jetId & (1 << self.TIGHTLEPVETO)) != 0
 
     @property
-    def matched_electrons(self):
+    def matched_electrons(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().Electron
+            return original._apply_global_index(
+                _dask_array_.electronIdxG, _dask_array_=original
+            )
         return self._events().Electron._apply_global_index(self.electronIdxG)
 
     @property
-    def matched_muons(self):
+    def matched_muons(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().Muon
+            return original._apply_global_index(
+                _dask_array_.muonIdxG, _dask_array_=original
+            )
         return self._events().Muon._apply_global_index(self.muonIdxG)
 
     @property
-    def matched_gen(self):
+    def matched_gen(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().GenJet
+            return original._apply_global_index(
+                _dask_array_.genJetIdxG, _dask_array_=original
+            )
         return self._events().GenJet._apply_global_index(self.genJetIdxG)
 
     @property
-    def constituents(self):
+    def constituents(self, _dask_array_=None):
         if "pFCandsIdxG" not in self.fields:
             raise RuntimeError("PF candidates are only available for PFNano")
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().JetPFCands
+            return original._apply_global_index(
+                _dask_array_.pFCandsIdxG, _dask_array_=original
+            )
         return self._events().JetPFCands._apply_global_index(self.pFCandsIdxG)
 
 
@@ -347,17 +454,32 @@ class FatJet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic
         return (self.jetId & (1 << self.TIGHTLEPVETO)) != 0
 
     @property
-    def subjets(self):
+    def subjets(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().SubJet
+            return original._apply_global_index(
+                _dask_array_.subJetIdxG, _dask_array_=original
+            )
         return self._events().SubJet._apply_global_index(self.subJetIdxG)
 
     @property
-    def matched_gen(self):
+    def matched_gen(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().GenJetAK8
+            return original._apply_global_index(
+                _dask_array_.genJetAK8IdxG, _dask_array_=original
+            )
         return self._events().GenJetAK8._apply_global_index(self.genJetAK8IdxG)
 
     @property
-    def constituents(self):
+    def constituents(self, _dask_array_=None):
         if "pFCandsIdxG" not in self.fields:
             raise RuntimeError("PF candidates are only available for PFNano")
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"]().FatJetPFCands
+            return original._apply_global_index(
+                _dask_array_.pFCandsIdxG, _dask_array_=original
+            )
         return self._events().FatJetPFCands._apply_global_index(self.pFCandsIdxG)
 
 
@@ -431,14 +553,24 @@ class AssociatedPFCand(base.NanoCollection):
     }
 
     @property
-    def jet(self):
-        collection = self._events()[self.collection_map[self._collection_name()][0]]
-        return collection._apply_global_index(self.jetIdxG)
+    def jet(self, _dask_array_=None):
+        collection = self.collection_map[self._collection_name()][0]
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"][collection]
+            return original._apply_global_index(
+                _dask_array_.jetIdxG, _dask_array_=original
+            )
+        return self._events()[collection]._apply_global_index(self.jetIdxG)
 
     @property
-    def pf(self):
-        collection = self._events()[self.collection_map[self._collection_name()][1]]
-        return collection._apply_global_index(self.pFCandsIdxG)
+    def pf(self, _dask_array_=None):
+        collection = self.collection_map[self._collection_name()][1]
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"][collection]
+            return original._apply_global_index(
+                _dask_array_.pFCandsIdxG, _dask_array_=original
+            )
+        return self._events()[collection]._apply_global_index(self.pFCandsIdxG)
 
 
 _set_repr_name("AssociatedPFCand")
@@ -457,14 +589,24 @@ class AssociatedSV(base.NanoCollection):
     }
 
     @property
-    def jet(self):
+    def jet(self, _dask_array_=None):
         collection = self._events()[self.collection_map[self._collection_name()][0]]
-        return collection._apply_global_index(self.jetIdxG)
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"][collection]
+            return original._apply_global_index(
+                _dask_array_.jetIdxG, _dask_array_=original
+            )
+        return self._events()[collection]._apply_global_index(self.jetIdxG)
 
     @property
-    def sv(self):
-        collection = self._events()[self.collection_map[self._collection_name()][1]]
-        return collection._apply_global_index(self.sVIdxG)
+    def sv(self, _dask_array_=None):
+        collection = self.collection_map[self._collection_name()][1]
+        if _dask_array_ is not None:
+            original = _dask_array_.behavior["__original_array__"][collection]
+            return original._apply_global_index(
+                _dask_array_.sVIdxG, _dask_array_=original
+            )
+        return self._events()[collection]._apply_global_index(self.sVIdxG)
 
 
 _set_repr_name("AssociatedSV")

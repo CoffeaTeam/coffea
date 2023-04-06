@@ -1,39 +1,27 @@
-from packaging import version
-
 import pytest
-import sys
-
-if version.parse(sys.version.split()[0]) >= version.parse("3.8"):
-    pytest.skip("pyspark not yet functional in python >=3.8", allow_module_level=True)
 
 
 def test_spark_imports():
-    pytest.importorskip("pyspark", minversion="2.4.1")
+    pytest.importorskip("pyspark", minversion="3.3.0")
 
-    from coffea.processor.spark.detail import (
-        _spark_initialize,
-        _spark_stop,
-    )
+    from coffea.processor.spark.detail import _spark_initialize, _spark_stop
 
     spark = _spark_initialize(bindAddress="127.0.0.1", host="127.0.0.1")
     _spark_stop(spark)
 
 
+@pytest.mark.skip(reason="pyspark executor work currently in progress")
 def test_spark_executor():
-    pyspark = pytest.importorskip("pyspark", minversion="2.4.1")
-    from pyarrow.util import guid
-
-    from coffea.processor.spark.detail import (
-        _spark_initialize,
-        _spark_stop,
-    )
-    from coffea.processor import run_spark_job
-    from coffea.nanoevents import schemas
-
+    pyspark = pytest.importorskip("pyspark", minversion="3.3.0")
     import os
     import os.path as osp
 
     import pyspark.sql
+    from pyarrow.util import guid
+
+    from coffea.nanoevents import schemas
+    from coffea.processor import run_spark_job
+    from coffea.processor.spark.detail import _spark_initialize, _spark_stop
 
     spark_config = (
         pyspark.sql.SparkSession.builder.appName("spark-executor-test-%s" % guid())
@@ -62,8 +50,8 @@ def test_spark_executor():
         },
     }
 
-    from coffea.processor.test_items import NanoTestProcessor, NanoEventsProcessor
     from coffea.processor.spark.spark_executor import spark_executor
+    from coffea.processor.test_items import NanoEventsProcessor, NanoTestProcessor
 
     columns = ["nMuon", "Muon_pt", "Muon_eta", "Muon_phi", "Muon_mass", "Muon_charge"]
     proc = NanoTestProcessor(columns=columns)
@@ -118,15 +106,16 @@ def test_spark_executor():
 
 
 def test_spark_hist_adders():
-    pytest.importorskip("pyspark", minversion="2.4.1")
+    pytest.importorskip("pyspark", minversion="3.3.0")
 
-    import pandas as pd
     import pickle as pkl
-    import lz4.frame as lz4f
 
-    from coffea.util import numpy as np
+    import lz4.frame as lz4f
+    import pandas as pd
+
     from coffea.processor.spark.spark_executor import agg_histos_raw, reduce_histos_raw
     from coffea.processor.test_items import NanoTestProcessor
+    from coffea.util import numpy as np
 
     proc = NanoTestProcessor()
 

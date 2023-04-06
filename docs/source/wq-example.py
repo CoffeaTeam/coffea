@@ -18,8 +18,7 @@
 ###############################################################################
 import work_queue as wq
 
-from coffea.processor import Runner
-from coffea.processor import WorkQueueExecutor
+from coffea.processor import Runner, WorkQueueExecutor
 
 ###############################################################################
 # Collect and display setup info.
@@ -31,7 +30,7 @@ print("------------------------------------------------")
 
 import getpass
 
-wq_manager_name = "coffea-wq-{}".format(getpass.getuser())
+wq_manager_name = f"coffea-wq-{getpass.getuser()}"
 wq_port = 9123
 
 print("Manager Name: -M " + wq_manager_name)
@@ -42,11 +41,13 @@ print("------------------------------------------------")
 # Define a custom Coffea processor
 ###############################################################################
 
+from collections import defaultdict
+
+import awkward as ak
+import hist
+
 from coffea import processor
 from coffea.nanoevents.methods import candidate
-import hist
-from collections import defaultdict
-import awkward as ak
 
 # register our candidate behaviors
 ak.behavior.update(candidate.behavior)
@@ -137,7 +138,7 @@ work_queue_executor_args = {
     "password_file": my_password_file,
     # The named conda environment tarball will be transferred to each worker,
     # and activated. This is useful when coffea is not installed in the remote
-    # machines. conda enviroments are created with conda-pack, and should at
+    # machines. conda environments are created with conda-pack, and should at
     # least include coffea, ndcctools (both from conda-forge channel)
     # and their dependencies.
     #
@@ -164,7 +165,7 @@ tstart = time.time()
 workers = wq.Factory(
     # local runs:
     batch_type="local",
-    manager_host_port="localhost:{}".format(wq_port)
+    manager_host_port=f"localhost:{wq_port}"
     # with a batch system, e.g., condor.
     # (If coffea not at the installation site, then a conda
     # environment_file should be defined in the work_queue_executor_args.)

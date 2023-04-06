@@ -16,35 +16,26 @@ on:
     - cron:  '1 0 * * *'
 
 jobs:
-  linter:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.10"]
-    name: linter - flake8/black - python ${{ matrix.python-version }}
-
+  pre-commit:
+    name: pre-commit
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+    - uses: actions/setup-python@v4
+    - uses: pre-commit/action@v3.0.0
       with:
-        python-version: ${{ matrix.python-version }}
-    - name: Lint with flake8 and black
-      run: |
-        python -m pip install -q flake8 black
-        flake8 coffea tests setup.py
-        black --check --diff coffea tests setup.py
+        extra_args: --hook-stage manual --all-files
 
   test:
     runs-on: ${{ matrix.os }}
-    needs: linter
+    needs: pre-commit
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
-        java-version: [8]
+        java-version: [17]
         java-distribution: ["corretto"]
-        python-version: ["3.7", "3.10"]
+        python-version: ["3.8", "3.10"]
+
     name: test coffea (${{ matrix.os }}) - python ${{ matrix.python-version }}, JDK${{ matrix.java-version }}
 
     steps:
@@ -53,39 +44,38 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Set up JDK ${{ matrix.java-version }}
-      if: matrix.os != 'windows-latest'
+    - name: Set up JDK ${{ matrix.java-distribution }}/${{ matrix.java-version }}
       uses: actions/setup-java@v3
       with:
         java-version: ${{ matrix.java-version }}
         distribution: ${{ matrix.java-distribution }}
 
-    - name: Set python 3.6 test settings
+    - name: Set python test settings
       run: |
-        echo "INSTALL_EXTRAS=[dev,parsl,dask,spark]" >> $GITHUB_ENV
-      if: matrix.python-version == 3.6
+        echo "INSTALL_EXTRAS='[dev,parsl,dask,servicex]'" >> $GITHUB_ENV
 
-    - name: Set python newer than 3.6 test settings
-      run: |
-        echo "INSTALL_EXTRAS=[dev,parsl,dask,spark,servicex]" >> $GITHUB_ENV
-      if: matrix.python-version != 3.6
-
-    - name: Install dependencies (Linux/MacOS)
-      if: matrix.os != 'windows-latest'
+    - name: Install dependencies (Linux)
+      if: matrix.os == 'ubuntu-latest'
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        python -m pip install -q -e .${{env.INSTALL_EXTRAS}}
+        python -m pip install -q -e '.[dev,parsl,dask,spark]'
+        python -m pip list
+        java -version
+    - name: Install dependencies (MacOS)
+      if: matrix.os == 'macOS-latest'
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        python -m pip install -q -e '.[dev,dask,spark]'
         python -m pip list
         java -version
     - name: Install dependencies (Windows)
       if: matrix.os == 'windows-latest'
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        python -m pip install -q -e .[dev]
+        python -m pip install -q -e '.[dev,dask]'
         python -m pip list
+        java -version
     - name: Test with pytest
-      env:
-        ARROW_PRE_0_15_IPC_FORMAT: 1
       run: |
         pytest --cov-report=xml --cov=coffea tests
     - name: Upload codecov
@@ -106,7 +96,7 @@ jobs:
         touch build/html/.nojekyll
     - name: Deploy documentation
       if: github.event_name == 'push' && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.10
-      uses: crazy-max/ghaction-github-pages@v3.1.0
+      uses: crazy-max/ghaction-github-pages@v3
       with:
         target_branch: gh-pages
         build_dir: docs/build/html
@@ -115,7 +105,7 @@ jobs:
 
   testwq:
     runs-on: ubuntu-latest
-    needs: linter
+    needs: pre-commit
     strategy:
       matrix:
         python-version: ["3.10"]
@@ -124,7 +114,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Set up Conda
-      uses: conda-incubator/setup-miniconda@v2.2.0
+      uses: conda-forge/setup-miniforge@v1
+      env:
+        ACTIONS_ALLOW_UNSECURE_COMMANDS: true
       with:
         auto-update-conda: true
         python-version: ${{ matrix.python-version }}
@@ -140,7 +132,7 @@ jobs:
 
 #  testskyhookjob:
 #    runs-on: ubuntu-latest
-#    needs: linter
+#    needs: pre-commit
 #    name: test coffea-skyhook-job
 #
 #    steps:

@@ -10,7 +10,7 @@ def unquote(x):
 
 
 def concat(*keys):
-    return quote(",".join(unquote(k) for k in keys))
+    return quote(",".join(unquote(k if k is not None else "") for k in keys))
 
 
 def tuple_to_key(tup):

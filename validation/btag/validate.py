@@ -4,14 +4,14 @@ ROOT.gROOT.SetBatch(True)
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gInterpreter.LoadFile("BTagCalibrationStandalone.cpp")
 
-from functools import partial
 import numpy
+
 from coffea.btag_tools import BTagScaleFactor
 
 
-def stdvec(l):
+def stdvec(stringlist):
     out = ROOT.std.vector("string")()
-    for item in l:
+    for item in stringlist:
         out.push_back(item)
     return out
 

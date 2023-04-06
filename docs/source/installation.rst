@@ -111,7 +111,7 @@ In some instances, it may be useful to have a self-contained environment that ca
 One use case is for users of coffea that do not have access to a distributed compute cluster that is compatible with
 one of the coffea distributed executors. Here, a fallback solution can be found by creating traditional batch jobs (e.g. condor)
 which then use coffea local executors, possibly multi-threaded. In this case, often the user-local python package directory
-is not available from batch workers, so a portable python enviroment needs to be created.
+is not available from batch workers, so a portable python environment needs to be created.
 Annoyingly, python virtual environments are not portable by default due to several hardcoded paths in specific locations, however
 there are two workarounds presented below. In both cases, we make a virtual environment that starts from a non-system base
 python environment to lower the amount of needed installations in the virtual environment. One can always start a venv from scratch,

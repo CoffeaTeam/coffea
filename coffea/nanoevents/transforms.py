@@ -1,12 +1,14 @@
 import copy
-import numpy
-import numba
+
 import awkward
+import numba
+import numpy
+
 from coffea.nanoevents.util import concat
 
 
 def to_layout(array):
-    if isinstance(array, awkward.layout.Content):
+    if isinstance(array, awkward.contents.Content):
         return array
     return array.layout
 
@@ -137,7 +139,7 @@ def counts2nestedindex_form(local_counts, target_offsets):
     if not target_offsets["class"] == "NumpyArray":
         raise RuntimeError
     form = {
-        "class": "ListOffsetArray64",
+        "class": "ListOffsetArray",
         "offsets": "i64",
         "content": copy.deepcopy(local_counts),
     }
@@ -154,7 +156,7 @@ def counts2nestedindex_form(local_counts, target_offsets):
 
 
 def counts2nestedindex(stack):
-    """Turn jagged local counts into doubly-kagged global index into a target
+    """Turn jagged local counts into doubly-jagged global index into a target
 
     Signature: local_counts,target_offsets,!counts2nestedindex
     Outputs a jagged array with same axis-0 shape as counts axis-1
@@ -191,7 +193,7 @@ def distinctParent_form(parents, pdg):
     if not pdg["class"].startswith("ListOffset"):
         raise RuntimeError
     form = {
-        "class": "ListOffsetArray64",
+        "class": "ListOffsetArray",
         "offsets": "i64",
         "content": {
             "class": "NumpyArray",
@@ -250,10 +252,10 @@ def children_form(offsets, globalparents):
     if not globalparents["class"].startswith("ListOffset"):
         raise RuntimeError
     form = {
-        "class": "ListOffsetArray64",
+        "class": "ListOffsetArray",
         "offsets": "i64",
         "content": {
-            "class": "ListOffsetArray64",
+            "class": "ListOffsetArray",
             "offsets": "i64",
             "content": {
                 "class": "NumpyArray",
@@ -280,9 +282,9 @@ def children(stack):
     offsets = stack.pop()
     coffsets, ccontent = _children_kernel(offsets, parents)
     out = awkward.Array(
-        awkward.layout.ListOffsetArray64(
-            awkward.layout.Index64(coffsets),
-            awkward.layout.NumpyArray(ccontent),
+        awkward.contents.ListOffsetArray(
+            awkward.index.Index64(coffsets),
+            awkward.contents.NumpyArray(ccontent),
         )
     )
     stack.append(out)
@@ -372,10 +374,10 @@ def distinctChildrenDeep_form(offsets, global_parents, global_pdgs):
     if not global_pdgs["class"].startswith("ListOffset"):
         raise RuntimeError
     form = {
-        "class": "ListOffsetArray64",
+        "class": "ListOffsetArray",
         "offsets": "i64",
         "content": {
-            "class": "ListOffsetArray64",
+            "class": "ListOffsetArray",
             "offsets": "i64",
             "content": {
                 "class": "NumpyArray",
@@ -412,9 +414,9 @@ def distinctChildrenDeep(stack):
         awkward.Array(global_pdgs),
     )
     out = awkward.Array(
-        awkward.layout.ListOffsetArray64(
-            awkward.layout.Index64(coffsets),
-            awkward.layout.NumpyArray(ccontent),
+        awkward.contents.ListOffsetArray(
+            awkward.index.Index64(coffsets),
+            awkward.contents.NumpyArray(ccontent),
         )
     )
     stack.append(out)
@@ -424,8 +426,8 @@ def nestedindex_form(indices):
     if not all(index["class"].startswith("ListOffset") for index in indices):
         raise RuntimeError
     form = {
-        "class": "ListOffsetArray64",
-        "offsets": "i64",
+        "class": "ListOffsetArray",
+        "offsets": indices[0]["offsets"],
         "content": copy.deepcopy(indices[0]),
     }
     # steal offsets from first input
@@ -456,9 +458,9 @@ def nestedindex(stack):
         out[i::n] = idx
     offsets = numpy.arange(0, len(out) + 1, n, dtype=numpy.int64)
     out = awkward.Array(
-        awkward.layout.ListOffsetArray64(
-            awkward.layout.Index64(offsets),
-            awkward.layout.NumpyArray(out),
+        awkward.contents.ListOffsetArray(
+            awkward.index.Index64(offsets),
+            awkward.contents.NumpyArray(out),
         )
     )
     stack.append(out)

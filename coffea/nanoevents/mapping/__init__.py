@@ -1,11 +1,11 @@
-from .uproot import TrivialUprootOpener, UprootSourceMapping
-from .parquet import TrivialParquetOpener, ParquetSourceMapping
+from .parquet import ParquetSourceMapping, TrivialParquetOpener
 from .preloaded import (
-    SimplePreloadedColumnSource,
     PreloadedOpener,
     PreloadedSourceMapping,
+    SimplePreloadedColumnSource,
 )
-from .util import CachedMapping, ArrayLifecycleMapping
+from .uproot import TrivialUprootOpener, UprootSourceMapping
+from .util import ArrayLifecycleMapping, CachedMapping
 
 __all__ = [
     "TrivialUprootOpener",

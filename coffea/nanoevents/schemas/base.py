@@ -1,15 +1,15 @@
 from coffea.nanoevents import transforms
-from coffea.nanoevents.util import quote, concat
+from coffea.nanoevents.util import concat, quote
 
 
 def listarray_form(content, offsets):
     if offsets["class"] != "NumpyArray":
         raise ValueError
     if offsets["primitive"] == "int32":
-        arrayclass = "ListOffsetArray32"
+        arrayclass = "ListOffsetArray"
         offsetstype = "i32"
     elif offsets["primitive"] == "int64":
-        arrayclass = "ListOffsetArray64"
+        arrayclass = "ListOffsetArray"
         offsetstype = "i64"
     else:
         raise ValueError("Unrecognized offsets data type")
@@ -27,12 +27,21 @@ def zip_forms(forms, name, record_name=None, offsets=None, bypass=False):
     if all(form["class"].startswith("ListOffsetArray") for form in forms.values()):
         first = next(iter(forms.values()))
         if not all(form["class"] == first["class"] for form in forms.values()):
+            print(
+                tuple((name, form["class"]) for name, form in forms.items()),
+                first["class"],
+            )
             raise ValueError
         if not all(form["offsets"] == first["offsets"] for form in forms.values()):
+            print(
+                tuple((name, form["offsets"]) for name, form in forms.items()),
+                first["offsets"],
+            )
             raise ValueError
         record = {
             "class": "RecordArray",
-            "contents": {k: form["content"] for k, form in forms.items()},
+            "fields": [k for k in forms.keys()],
+            "contents": [form["content"] for form in forms.values()],
             "form_key": quote("!invalid," + name),
         }
         if record_name is not None:
@@ -49,7 +58,8 @@ def zip_forms(forms, name, record_name=None, offsets=None, bypass=False):
     elif all(form["class"] == "NumpyArray" for form in forms.values()):
         record = {
             "class": "RecordArray",
-            "contents": {k: form for k, form in forms.items()},
+            "fields": [key for key in forms.keys()],
+            "contents": [value for value in forms.values()],
             "form_key": quote("!invalid," + name),
         }
         if record_name is not None:
@@ -59,7 +69,8 @@ def zip_forms(forms, name, record_name=None, offsets=None, bypass=False):
     elif all("class" in form for form in forms.values()) and not bypass:
         record = {
             "class": "RecordArray",
-            "contents": {k: form for k, form in forms.items()},
+            "fields": [key for key in forms.keys()],
+            "contents": [value for value in forms.values()],
             "form_key": quote("!invalid," + name),
         }
         if record_name is not None:
@@ -77,10 +88,12 @@ def nest_jagged_forms(parent, child, counts_name, name):
         raise ValueError
     if not child["class"].startswith("ListOffsetArray"):
         raise ValueError
-    counts = parent["content"]["contents"][counts_name]
+    counts_idx = parent["content"]["fields"].index(counts_name)
+    counts = parent["content"]["contents"][counts_idx]
     offsets = transforms.counts2offsets_form(counts)
     inner = listarray_form(child["content"], offsets)
-    parent["content"]["contents"][name] = inner
+    parent["content"]["fields"].append(name)
+    parent["content"]["contents"].append(inner)
 
 
 class BaseSchema:
@@ -91,17 +104,21 @@ class BaseSchema:
     form is accessible as a direct descendant.
     """
 
+    __dask_capable__ = True
     behavior = {}
 
-    def __init__(self, base_form):
+    def __init__(self, base_form, *args, **kwargs):
         params = dict(base_form.get("parameters", {}))
         params["__record__"] = "NanoEvents"
+        if "metadata" in params and params["metadata"] is None:
+            params.pop("metadata")
         params.setdefault("metadata", {})
         self._form = {
             "class": "RecordArray",
+            "fields": base_form["fields"],
             "contents": base_form["contents"],
             "parameters": params,
-            "form_key": "",
+            "form_key": None,
         }
 
     @property

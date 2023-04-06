@@ -1,4 +1,4 @@
-from coffea.nanoevents.schemas.base import BaseSchema, zip_forms, nest_jagged_forms
+from coffea.nanoevents.schemas.base import BaseSchema, nest_jagged_forms, zip_forms
 
 
 class TreeMakerSchema(BaseSchema):
@@ -34,24 +34,31 @@ class TreeMakerSchema(BaseSchema):
     returned.
     """
 
-    def __init__(self, base_form):
-        super().__init__(base_form)
-        self._form["contents"] = self._build_collections(self._form["contents"])
+    __dask_capable__ = True
+
+    def __init__(self, base_form, *args, **kwargs):
+        super().__init__(base_form, *args, **kwargs)
+        old_style_form = {
+            k: v for k, v in zip(self._form["fields"], self._form["contents"])
+        }
+        output = self._build_collections(old_style_form)
+        self._form["fields"] = [k for k in output.keys()]
+        self._form["contents"] = [v for v in output.values()]
 
     def _build_collections(self, branch_forms):
         # Turn any special classes into the appropriate awkward form
-        composite_objects = list(set(k.split("/")[0] for k in branch_forms if "/" in k))
+        composite_objects = list({k.split("/")[0] for k in branch_forms if "/" in k})
 
         composite_behavior = {  # Dictionary for overriding the default behavior
             "Tracks": "LorentzVector"
         }
         for objname in composite_objects:
             # grab the * from "objname/objname.*"
-            components = set(
+            components = {
                 k[2 * len(objname) + 2 :]
                 for k in branch_forms
                 if k.startswith(objname + "/")
-            )
+            }
             if components == {
                 "fCoordinates.fPt",
                 "fCoordinates.fEta",
@@ -97,14 +104,12 @@ class TreeMakerSchema(BaseSchema):
 
         # Generating collection from branch name
         collections = [k for k in branch_forms if "_" in k]
-        collections = set(
-            [
-                "_".join(k.split("_")[:-1])
-                for k in collections
-                if k.split("_")[-1] != "AK8"
-                # Excluding per-event variables with AK8 variants like Mjj and MT
-            ]
-        )
+        collections = {
+            "_".join(k.split("_")[:-1])
+            for k in collections
+            if k.split("_")[-1] != "AK8"
+            # Excluding per-event variables with AK8 variants like Mjj and MT
+        }
 
         subcollections = []
 
@@ -115,7 +120,7 @@ class TreeMakerSchema(BaseSchema):
 
             # Special pattern parsing for <collection>_<subcollection>Counts branches
             countitems = [x for x in items if x.endswith("Counts")]
-            subcols = set(x[:-6] for x in countitems)  # List of subcollection names
+            subcols = {x[:-6] for x in countitems}  # List of subcollection names
             for subcol in subcols:
                 items = [
                     k for k in items if not k.startswith(subcol) or k.endswith("Counts")
@@ -138,14 +143,16 @@ class TreeMakerSchema(BaseSchema):
             else:
                 collection = branch_forms[cname]
                 if not collection["class"].startswith("ListOffsetArray"):
+                    print(collection["class"])
                     raise NotImplementedError(
                         f"{cname} isn't a jagged array, not sure what to do"
                     )
                 for item in items:
-                    itemname = item[len(cname) + 1 :]
-                    collection["content"]["contents"][itemname] = branch_forms.pop(
-                        item
-                    )["content"]
+                    Itemname = item[len(cname) + 1 :]
+                    collection["content"]["fields"].append(Itemname)
+                    collection["content"]["contents"].append(
+                        branch_forms.pop(item)["content"]
+                    )
 
         for sub in subcollections:
             nest_jagged_forms(

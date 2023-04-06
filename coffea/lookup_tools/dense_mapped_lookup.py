@@ -1,7 +1,10 @@
-from threading import Lock
 import numbers
-import numpy
+from threading import Lock
+
+import dask
 import numba
+import numpy
+
 from coffea.lookup_tools.lookup_base import lookup_base
 
 
@@ -14,6 +17,10 @@ class dense_mapped_lookup(lookup_base):
         self._mapping = mapping
         self._formulas = formulas
         self._feval_dim = feval_dim
+        dask_future = dask.delayed(
+            self, pure=True, name=f"densemappedlookup-{dask.base.tokenize(self)}"
+        ).persist()
+        super().__init__(dask_future)
 
     @classmethod
     def _compile(cls, formula):
@@ -38,7 +45,7 @@ class dense_mapped_lookup(lookup_base):
             numpy.searchsorted(axis, values, side="right") - 1, 0, len(axis) - 2
         )
 
-    def _evaluate(self, *args, ignore_missing=False):
+    def _evaluate(self, *args, ignore_missing=False, **kwargs):
         if len(args) != len(self._axes):
             raise ValueError(
                 "Incorrect number of arguments specified (expected %d got %d)"
@@ -68,9 +75,9 @@ class dense_mapped_lookup(lookup_base):
         return out
 
     def __repr__(self):
-        myrepr = "{} dimensional histogram with axes:\n".format(self._dimension)
+        myrepr = f"{self._dimension} dimensional histogram with axes:\n"
         temp = ""
         for idim, axis in enumerate(self._axes):
-            temp += "\t{}: {}\n".format(idim + 1, axis)
+            temp += f"\t{idim + 1}: {axis}\n"
         myrepr += temp
         return myrepr

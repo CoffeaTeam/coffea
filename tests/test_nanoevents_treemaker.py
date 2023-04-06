@@ -1,16 +1,19 @@
 import os
-import pytest
-from coffea.nanoevents import NanoEventsFactory, TreeMakerSchema
+
 import awkward as ak
+import dask_awkward as dak
+import pytest
+
+from coffea.nanoevents import NanoEventsFactory, TreeMakerSchema
 
 
 @pytest.fixture(scope="module")
 def events():
     path = os.path.abspath("tests/samples/treemaker.root")
-    factory = NanoEventsFactory.from_root(
-        path, treepath="PreSelection", schemaclass=TreeMakerSchema
-    )
-    return factory.events()
+    events = NanoEventsFactory.from_root(
+        path, treepath="PreSelection", schemaclass=TreeMakerSchema, permit_dask=True
+    ).events()
+    return events
 
 
 def test_listify(events):
@@ -42,8 +45,10 @@ def test_collection_exists(events, collection):
     ],
 )
 def test_lorentzvector_behavior(collection, arr_type, events):
-    assert ak.type(events[collection])
-    assert ak.type(events[collection]).type.type.__str__().startswith(arr_type)
+    assert dak.type(events[collection])
+    assert ak.parameters(events[collection].compute().layout.content)[
+        "__record__"
+    ].startswith(arr_type)
 
 
 @pytest.mark.parametrize(
@@ -54,20 +59,23 @@ def test_lorentzvector_behavior(collection, arr_type, events):
     ],
 )
 def test_nested_collection(collection, subcollection, arr_type, element, events):
-    assert ak.type(events[collection][subcollection])
-    assert ak.type(events[collection][subcollection + "Counts"])
-    assert (
-        ak.type(events[collection][subcollection])
-        .type.type.type.__str__()
-        .startswith(arr_type)
-    )
+    assert dak.type(events[collection][subcollection])
+    assert dak.type(events[collection][subcollection + "Counts"])
+    if subcollection == "subjets":
+        assert ak.parameters(
+            events[collection][subcollection].compute().layout.content.content
+        )["__record__"].startswith(arr_type)
+    if subcollection == "hitPattern":
+        assert ak.type(
+            events[collection][subcollection].compute().layout.content.content
+        ).content.primitive.startswith(arr_type)
     if element is None:
         assert ak.all(
-            events[collection][subcollection + "Counts"]
-            == ak.count(events[collection][subcollection], axis=-1)
+            events[collection][subcollection + "Counts"].compute()
+            == dak.count(events[collection][subcollection], axis=-1).compute()
         )
     else:
         assert ak.all(
-            events[collection][subcollection + "Counts"]
-            == ak.count(events[collection][subcollection][element], axis=-1)
+            events[collection][subcollection + "Counts"].compute()
+            == dak.count(events[collection][subcollection][element], axis=-1).compute()
         )

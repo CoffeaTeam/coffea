@@ -1,27 +1,18 @@
-from __future__ import print_function, division
-from coffea import processor
-
 import multiprocessing
 import sys
+
 import pytest
 
-if (
-    sys.version_info.major == 3
-    and sys.version_info.minor >= 8
-    and sys.platform.startswith("darwin")
-):
-    pytest.skip(
-        "parsl not yet functional in python 3.8+ on macs", allow_module_level=True
-    )
+from coffea import processor
 
 
 def test_parsl_start_stop():
     pytest.importorskip("parsl", minversion="0.7.2")
 
     from coffea.processor.parsl.detail import (
+        _default_cfg,
         _parsl_initialize,
         _parsl_stop,
-        _default_cfg,
     )
 
     _parsl_initialize(config=_default_cfg)
@@ -50,10 +41,10 @@ def test_parsl_htex_executor():
     import os.path as osp
 
     import parsl
-    from parsl.providers import LocalProvider
     from parsl.channels import LocalChannel
-    from parsl.executors import HighThroughputExecutor
     from parsl.config import Config
+    from parsl.executors import HighThroughputExecutor
+    from parsl.providers import LocalProvider
 
     parsl_config = Config(
         executors=[
@@ -100,8 +91,9 @@ def test_parsl_htex_executor():
     sys.platform.startswith("win"), reason="signals are different on windows"
 )
 def test_timeout():
-    from coffea.processor.parsl.timeout import timeout
     import signal
+
+    from coffea.processor.parsl.timeout import timeout
 
     @timeout
     def too_long(timeout=None):

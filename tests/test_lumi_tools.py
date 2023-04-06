@@ -1,8 +1,6 @@
-from __future__ import print_function, division
-
 import cloudpickle
 
-from coffea.lumi_tools import LumiData, LumiMask, LumiList
+from coffea.lumi_tools import LumiData, LumiList, LumiMask
 from coffea.util import numpy as np
 
 

@@ -1,8 +1,9 @@
-import pytest
-from coffea.btag_tools import BTagScaleFactor
-from dummy_distributions import dummy_jagged_eta_pt
-import numpy
 import awkward as ak
+import numpy
+import pytest
+from dummy_distributions import dummy_jagged_eta_pt
+
+from coffea.btag_tools import BTagScaleFactor
 
 
 def test_BTagScalefactor():
@@ -30,8 +31,8 @@ def test_BTagScalefactor():
     offsets = numpy.zeros(len(counts) + 1)
     offsets[1:] = numpy.cumsum(counts)
     test_jets = ak.Array(
-        ak.layout.ListOffsetArray64(
-            ak.layout.Index64(offsets),
+        ak.contents.ListOffsetArray(
+            ak.index.Index64(offsets),
             ak.zip(
                 {
                     "pt": test_pt,

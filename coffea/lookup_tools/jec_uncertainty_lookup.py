@@ -1,9 +1,10 @@
-from coffea.lookup_tools.lookup_base import lookup_base
-
-import numpy
 from copy import deepcopy
 
+import dask
+import numpy
 from scipy.interpolate import interp1d
+
+from coffea.lookup_tools.lookup_base import lookup_base
 
 
 def masked_bin_eval(dim1_indices, dimN_bins, dimN_vals):
@@ -36,7 +37,6 @@ class jec_uncertainty_lookup(lookup_base):
         The constructor takes the output of the "convert_junc_txt_file"
         text file converter, which returns a formula, bins, and an interpolation table.
         """
-        super(jec_uncertainty_lookup, self).__init__()
         self._dim_order = bins_and_orders[1]
         self._bins = bins_and_orders[0]
         self._eval_vars = knots_and_vars[1]
@@ -78,8 +78,12 @@ class jec_uncertainty_lookup(lookup_base):
             self._eval_args[argname] = i + len(self._dim_order)
             if argname in self._dim_args.keys():
                 self._eval_args[argname] = self._dim_args[argname]
+        dask_future = dask.delayed(
+            self, pure=True, name=f"junclookup-{dask.base.tokenize(self)}"
+        ).persist()
+        super().__init__(dask_future)
 
-    def _evaluate(self, *args):
+    def _evaluate(self, *args, **kwargs):
         """uncertainties = f(args)"""
         bin_vals = {
             argname: args[self._dim_args[argname]] for argname in self._dim_order

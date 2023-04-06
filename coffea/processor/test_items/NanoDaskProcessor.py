@@ -1,3 +1,4 @@
+import awkward as ak
 import dask_awkward as dak
 import hist
 import hist.dask as dah
@@ -6,7 +7,7 @@ from coffea import processor
 from coffea.nanoevents.methods import vector
 
 
-class NanoTestProcessor(processor.ProcessorABC):
+class NanoDaskProcessor(processor.ProcessorABC):
     def __init__(self, columns=[]):
         self._columns = columns
         self.expected_usermeta = {
@@ -21,31 +22,37 @@ class NanoTestProcessor(processor.ProcessorABC):
     @property
     def accumulator(self):
         dataset_axis = hist.axis.StrCategory(
-            [], growth=True, name="dataset", label="Primary dataset"
+            [],
+            growth=True,
+            name="dataset",
         )
         mass_axis = hist.axis.Regular(
-            30000, 0.25, 300, name="mass", label=r"$m_{\mu\mu}$ [GeV]"
+            30000,
+            0.25,
+            300,
+            name="mass",
         )
-        pt_axis = hist.axis.Regular(30000, 0.24, 300, name="pt", label=r"$p_{T}$ [GeV]")
+        pt_axis = hist.axis.Regular(30000, 0.24, 300, name="pt")
 
         accumulator = {
             # replace when py3.6 is dropped
-            # "mass": hist.Hist(dataset_axis, mass_axis, name="Counts"),
-            # "pt": hist.Hist(dataset_axis, pt_axis, name="Counts"),
-            "mass": dah.Hist(dataset_axis, mass_axis),
-            "pt": dah.Hist(dataset_axis, pt_axis),
+            "mass": dah.Hist(dataset_axis, mass_axis, name="Counts"),
+            "pt": dah.Hist(dataset_axis, pt_axis, name="Counts"),
             "cutflow": {},
+            "skim": {},
         }
 
         return accumulator
 
     def process(self, df):
-        output = self.accumulator
+        ak.behavior.update(vector.behavior)
 
-        dataset = df.metadata["dataset"]
-        if "checkusermeta" in df.metadata:
+        metadata = df.layout.parameter("metadata")
+        dataset = metadata["dataset"]
+        output = self.accumulator
+        if "checkusermeta" in metadata:
             metaname, metavalue = self.expected_usermeta[dataset]
-            assert metavalue == df.metadata[metaname]
+            assert metavalue == metadata[metaname]
 
         muon = dak.zip(
             {
@@ -63,8 +70,13 @@ class NanoTestProcessor(processor.ProcessorABC):
 
         output["pt"].fill(dataset=dataset, pt=dak.flatten(muon.pt))
         output["mass"].fill(dataset=dataset, mass=dak.flatten(dimuon.mass))
+
         output["cutflow"]["%s_pt" % dataset] = dak.sum(dak.num(muon, axis=1))
         output["cutflow"]["%s_mass" % dataset] = dak.sum(dak.num(dimuon, axis=1))
+
+        output["skim"][dataset] = dak.to_parquet(
+            dimuon, f"test_skim/{dataset}", compute=False
+        )
 
         return output
 

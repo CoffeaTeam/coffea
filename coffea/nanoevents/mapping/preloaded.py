@@ -1,6 +1,7 @@
-import warnings
 import json
-from coffea.nanoevents.mapping.base import UUIDOpener, BaseSourceMapping
+import warnings
+
+from coffea.nanoevents.mapping.base import BaseSourceMapping, UUIDOpener
 from coffea.nanoevents.util import quote, tuple_to_key
 
 
@@ -13,7 +14,7 @@ class SimplePreloadedColumnSource(dict):
 
 class PreloadedOpener(UUIDOpener):
     def __init__(self, uuid_pfnmap):
-        super(PreloadedOpener, self).__init__(uuid_pfnmap)
+        super().__init__(uuid_pfnmap)
 
     def open_uuid(self, uuid):
         pcs = self._uuid_pfnmap[uuid]
@@ -27,11 +28,11 @@ class PreloadedOpener(UUIDOpener):
 class PreloadedSourceMapping(BaseSourceMapping):
     _debug = False
 
-    def __init__(self, array_source, cache=None, access_log=None):
-        super(PreloadedSourceMapping, self).__init__(array_source, cache, access_log)
+    def __init__(self, array_source, start, stop, cache=None, access_log=None):
+        super().__init__(array_source, start, stop, cache, access_log)
 
     @classmethod
-    def _extract_base_form(cls, column_source):
+    def _extract_base_form(cls, column_source, force_to_i64=False):
         branch_forms = {}
         for key, branch in column_source.items():
             if "," in key or "!" in key:
@@ -39,7 +40,7 @@ class PreloadedSourceMapping(BaseSourceMapping):
                     f"Skipping {key} because it contains characters that NanoEvents cannot accept [,!]"
                 )
                 continue
-            form = json.loads(branch.layout.form.tojson())
+            form = json.loads(branch.layout.form.to_json())
             if (
                 form["class"].startswith("ListOffset")
                 and form["content"]["class"] == "NumpyArray"  # noqa
@@ -47,6 +48,8 @@ class PreloadedSourceMapping(BaseSourceMapping):
                 form["form_key"] = quote(f"{key},!load")
                 form["content"]["form_key"] = quote(f"{key},!load,!content")
                 form["content"]["parameters"] = {"__doc__": key}
+                if force_to_i64:
+                    form["offsets"] = "i64"
             elif form["class"] == "NumpyArray":
                 form["form_key"] = quote(f"{key},!load")
                 form["parameters"] = {"__doc__": key}
@@ -59,7 +62,8 @@ class PreloadedSourceMapping(BaseSourceMapping):
 
         return {
             "class": "RecordArray",
-            "contents": branch_forms,
+            "fields": [key for key in branch_forms.keys()],
+            "contents": [value for value in branch_forms.values()],
             "parameters": {"__doc__": "preloaded column source"},
             "form_key": "",
         }
@@ -75,12 +79,12 @@ class PreloadedSourceMapping(BaseSourceMapping):
     def get_column_handle(self, columnsource, name):
         return columnsource[name]
 
-    def extract_column(self, columnhandle, start, stop):
+    def extract_column(self, columnhandle, start, stop, **kwargs):
         # make sure uproot is single-core since our calling context might not be
         return columnhandle[start:stop]
 
     def __len__(self):
-        raise NotImplementedError
+        return self._stop - self._start
 
     def __iter__(self):
         raise NotImplementedError

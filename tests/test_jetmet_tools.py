@@ -1,13 +1,11 @@
-from __future__ import print_function
-
-import cachetools
-import awkward as ak
-from coffea.util import numpy as np
-
 import time
-import pyinstrument
 
+import awkward as ak
+import dask_awkward as dak
+import pyinstrument
 from dummy_distributions import dummy_jagged_eta_pt
+
+from coffea.util import numpy as np
 
 
 def jetmet_evaluator():
@@ -72,13 +70,34 @@ def test_factorized_jet_corrector():
     test_Rho_jag = ak.unflatten(test_Rho, counts)
     test_A_jag = ak.unflatten(test_A, counts)
 
-    # Check that the corrector can be evaluated for jagges arrays
+    test_pt_dak = dak.from_awkward(test_pt_jag, 1)
+    test_eta_dak = dak.from_awkward(test_eta_jag, 1)
+    test_Rho_dak = dak.from_awkward(test_Rho_jag, 1)
+    test_A_dak = dak.from_awkward(test_A_jag, 1)
+
+    # Check that the corrector can be evaluated for jagged arrays
     corrs_jag = corrector.getCorrection(
-        JetEta=test_eta_jag, Rho=test_Rho_jag, JetPt=test_pt_jag, JetA=test_A_jag
+        JetEta=test_eta_jag,
+        Rho=test_Rho_jag,
+        JetPt=test_pt_jag,
+        JetA=test_A_jag,
     )
+
+    print(corrs_jag)
+
+    corrs_dak = corrector.getCorrection(
+        JetEta=test_eta_dak,
+        Rho=test_Rho_dak,
+        JetPt=test_pt_dak,
+        JetA=test_A_dak,
+    )
+
+    print(corrs_dak)
+    print(corrs_dak.dask)
 
     assert ak.all(np.abs(pt_copy - ak.flatten(test_pt_jag)) < 1e-6)
     assert ak.all(np.abs(corrs - ak.flatten(corrs_jag)) < 1e-6)
+    assert ak.all(np.abs(corrs - ak.flatten(corrs_dak.compute())) < 1e-6)
 
     # Check that the corrector returns the correct answers for each level of correction
     # Use a subset of the values so that we can check the corrections by hand
@@ -87,6 +106,10 @@ def test_factorized_jet_corrector():
     test_Rho_jag = test_Rho_jag[0:3]
     test_A_jag = test_A_jag[0:3]
     counts = counts[0:3]
+    test_pt_dak = test_pt_dak[0:3]
+    test_eta_dak = test_eta_dak[0:3]
+    test_Rho_dak = test_Rho_dak[0:3]
+    test_A_dak = test_A_dak[0:3]
     print("Raw jet values:")
     print("pT:", test_pt_jag)
     print("eta:", test_eta_jag)
@@ -101,16 +124,33 @@ def test_factorized_jet_corrector():
     corrs_L1_jag = corrector.getCorrection(
         JetEta=test_eta_jag, Rho=test_Rho_jag, JetPt=test_pt_jag, JetA=test_A_jag
     )
+
+    corrs_L1_dak = corrector.getCorrection(
+        JetEta=test_eta_dak, Rho=test_Rho_dak, JetPt=test_pt_dak, JetA=test_A_dak
+    )
+
+    print(corrs_L1_dak)
+    print(corrs_L1_dak.dask)
+
     print("Reference L1 corrections:", corrs_L1_jag_ref)
     print("Calculated L1 corrections:", corrs_L1_jag)
     assert ak.all(
         np.abs(ak.flatten(corrs_L1_jag_ref) - ak.flatten(corrs_L1_jag)) < 1e-6
+    )
+    assert ak.all(
+        np.abs(ak.flatten(corrs_L1_jag_ref) - ak.flatten(corrs_L1_dak.compute())) < 1e-6
     )
 
     # Apply the L1 corrections and save the result
     test_ptL1_jag = test_pt_jag * corrs_L1_jag
     print("L1 corrected pT values:", test_ptL1_jag, "\n")
     assert ak.all(np.abs(ak.flatten(test_pt_jag) - ak.flatten(test_ptL1_jag)) < 1e-6)
+
+    test_ptL1_dak = test_pt_dak * corrs_L1_dak
+    print(test_ptL1_dak)
+    assert ak.all(
+        np.abs(ak.flatten(test_pt_jag) - ak.flatten(test_ptL1_dak.compute())) < 1e-6
+    )
 
     # Check the L2 corrections on a subset of jets
     # Look up the parameters for the L2 corrections by hand and calculate the corrections
@@ -140,21 +180,39 @@ def test_factorized_jet_corrector():
     corrector = FactorizedJetCorrector(
         **{name: evaluator[name] for name in jec_names[1:2]}
     )
-    corrs_L2_jag = corrector.getCorrection(JetEta=test_eta_jag, JetPt=test_pt_jag)
+    corrs_L2_jag = corrector.getCorrection(
+        JetEta=test_eta_jag, JetPt=corrs_L1_jag * test_pt_jag
+    )
+    corrs_L2_dak = corrector.getCorrection(
+        JetEta=test_eta_dak, JetPt=corrs_L1_dak * test_pt_dak
+    )
     print("Reference L2 corrections:", corrs_L2_jag_ref.tolist())
     print("Calculated L2 corrections:", corrs_L2_jag.tolist())
     assert ak.all(
         np.abs(ak.flatten(corrs_L2_jag_ref) - ak.flatten(corrs_L2_jag)) < 1e-6
     )
+    assert ak.all(
+        np.abs(ak.flatten(corrs_L2_jag_ref) - ak.flatten(corrs_L2_dak.compute())) < 1e-6
+    )
 
     # Apply the L2 corrections and save the result
     test_ptL1L2_jag = test_ptL1_jag * corrs_L2_jag
     print("L1L2 corrected pT values:", test_ptL1L2_jag, "\n")
+    test_ptL1L2_dak = test_ptL1_dak * corrs_L2_dak
+    print("L1L2 corrected pT values:", test_ptL1L2_dak.compute(), "\n")
+    print(test_ptL1L2_dak)
+    print(test_ptL1L2_dak.dask)
 
     # Apply the L3 corrections and save the result
     corrs_L3_jag = ak.full_like(test_pt_jag, 1.0)
     test_ptL1L2L3_jag = test_ptL1L2_jag * corrs_L3_jag
     print("L1L2L3 corrected pT values:", test_ptL1L2L3_jag, "\n")
+
+    corrs_L3_dak = dak.ones_like(test_pt_dak)
+    test_ptL1L2L3_dak = test_ptL1L2_dak * corrs_L3_dak
+    print("L1L2L3 corrected pT values:", test_ptL1L2L3_dak.compute(), "\n")
+    print(test_ptL1L2L3_dak)
+    print(test_ptL1L2L3_dak.dask)
 
     # Check that the corrections can be chained together
     corrs_L1L2L3_jag_ref = ak.unflatten(
@@ -178,11 +236,25 @@ def test_factorized_jet_corrector():
     corrs_L1L2L3_jag = corrector.getCorrection(
         JetEta=test_eta_jag, Rho=test_Rho_jag, JetPt=test_pt_jag, JetA=test_A_jag
     )
+
+    corrs_L1L2L3_dak = corrector.getCorrection(
+        JetEta=test_eta_dak, Rho=test_Rho_dak, JetPt=test_pt_dak, JetA=test_A_dak
+    )
+
     print("Reference L1L2L3 corrections:", corrs_L1L2L3_jag_ref)
     print("Calculated L1L2L3 corrections:", corrs_L1L2L3_jag)
+    print("Calculated L1L2L3 corrections:", corrs_L1L2L3_dak.compute())
     assert ak.all(
         np.abs(ak.flatten(corrs_L1L2L3_jag_ref) - ak.flatten(corrs_L1L2L3_jag)) < 1e-6
     )
+    assert ak.all(
+        np.abs(
+            ak.flatten(corrs_L1L2L3_jag_ref) - ak.flatten(corrs_L1L2L3_dak.compute())
+        )
+        < 1e-6
+    )
+    print(corrs_L1L2L3_dak)
+    print(corrs_L1L2L3_dak.dask)
 
     # Apply the L1L2L3 corrections and save the result
     test_ptL1L2L3chain_jag = test_pt_jag * corrs_L1L2L3_jag
@@ -191,6 +263,17 @@ def test_factorized_jet_corrector():
         np.abs(ak.flatten(test_ptL1L2L3_jag) - ak.flatten(test_ptL1L2L3chain_jag))
         < 1e-6
     )
+
+    test_ptL1L2L3chain_dak = test_pt_dak * corrs_L1L2L3_dak
+    print("Chained L1L2L3 corrected pT values:", test_ptL1L2L3chain_dak.compute(), "\n")
+    assert ak.all(
+        np.abs(
+            ak.flatten(test_ptL1L2L3_jag) - ak.flatten(test_ptL1L2L3chain_dak.compute())
+        )
+        < 1e-6
+    )
+    print(test_ptL1L2L3chain_dak)
+    print(test_ptL1L2L3chain_dak.dask)
 
 
 def test_jet_resolution():
@@ -203,6 +286,10 @@ def test_jet_resolution():
     test_eta_jag = ak.unflatten(test_eta, counts)
     test_Rho_jag = ak.unflatten(test_Rho, counts)
 
+    test_pt_dak = dak.from_awkward(test_pt_jag, 1)
+    test_eta_dak = dak.from_awkward(test_eta_jag, 1)
+    test_Rho_dak = dak.from_awkward(test_Rho_jag, 1)
+
     jer_names = ["Spring16_25nsV10_MC_PtResolution_AK4PFPuppi"]
     reso = JetResolution(**{name: evaluator[name] for name in jer_names})
 
@@ -212,7 +299,13 @@ def test_jet_resolution():
     resos_jag = reso.getResolution(
         JetEta=test_eta_jag, Rho=test_Rho_jag, JetPt=test_pt_jag
     )
+    resos_dak = reso.getResolution(
+        JetEta=test_eta_dak, Rho=test_Rho_dak, JetPt=test_pt_dak
+    )
     assert ak.all(np.abs(resos - ak.flatten(resos_jag)) < 1e-6)
+    assert ak.all(np.abs(resos - ak.flatten(resos_dak.compute())) < 1e-6)
+    print(resos_dak)
+    print(resos_dak.dask)
 
     test_pt_jag = test_pt_jag[0:3]
     test_eta_jag = test_eta_jag[0:3]
@@ -259,6 +352,9 @@ def test_jet_correction_uncertainty():
     test_pt_jag = ak.unflatten(test_pt, counts)
     test_eta_jag = ak.unflatten(test_eta, counts)
 
+    test_pt_dak = dak.from_awkward(test_pt_jag, 1)
+    test_eta_dak = dak.from_awkward(test_eta_jag, 1)
+
     junc_names = ["Summer16_23Sep2016V3_MC_Uncertainty_AK4PFPuppi"]
     junc = JetCorrectionUncertainty(**{name: evaluator[name] for name in junc_names})
 
@@ -268,9 +364,16 @@ def test_jet_correction_uncertainty():
 
     juncs_jag = list(junc.getUncertainty(JetEta=test_eta_jag, JetPt=test_pt_jag))
 
+    juncs_dak = list(junc.getUncertainty(JetEta=test_eta_dak, JetPt=test_pt_dak))
+
     for i, (level, corrs) in enumerate(juncs):
         assert corrs.shape[0] == test_eta.shape[0]
         assert ak.all(corrs == ak.flatten(juncs_jag[i][1]))
+        assert ak.all(corrs == ak.flatten(juncs_dak[i][1].compute()))
+
+    zipped_dak = dak.zip({k: v for k, v in juncs_dak})
+    print(zipped_dak)
+    print(zipped_dak.dask)
 
     test_pt_jag = test_pt_jag[0:3]
     test_eta_jag = test_eta_jag[0:3]
@@ -312,6 +415,9 @@ def test_jet_correction_uncertainty_sources():
     test_pt_jag = ak.unflatten(test_pt, counts)
     test_eta_jag = ak.unflatten(test_eta, counts)
 
+    test_pt_dak = dak.from_awkward(test_pt_jag, 1)
+    test_eta_dak = dak.from_awkward(test_eta_jag, 1)
+
     junc_names = []
     levels = []
     for name in dir(evaluator):
@@ -330,10 +436,17 @@ def test_jet_correction_uncertainty_sources():
 
     juncs_jag = list(junc.getUncertainty(JetEta=test_eta_jag, JetPt=test_pt_jag))
 
+    juncs_dak = list(junc.getUncertainty(JetEta=test_eta_dak, JetPt=test_pt_dak))
+
     for i, (level, corrs) in enumerate(juncs):
         assert level in levels
         assert corrs.shape[0] == test_eta.shape[0]
         assert ak.all(corrs == ak.flatten(juncs_jag[i][1]))
+        assert ak.all(corrs == ak.flatten(juncs_dak[i][1].compute()))
+
+    zipped_dak = dak.zip({k: v for k, v in juncs_dak})
+    print(zipped_dak)
+    print(zipped_dak.dask)
 
     test_pt_jag = test_pt_jag[0:3]
     test_eta_jag = test_eta_jag[0:3]
@@ -376,6 +489,9 @@ def test_jet_correction_regrouped_uncertainty_sources():
     test_pt_jag = ak.unflatten(test_pt, counts)
     test_eta_jag = ak.unflatten(test_eta, counts)
 
+    test_pt_dak = dak.from_awkward(test_pt_jag, 1)
+    test_eta_dak = dak.from_awkward(test_eta_jag, 1)
+
     junc_names = []
     levels = []
     for name in dir(evaluator):
@@ -391,10 +507,17 @@ def test_jet_correction_regrouped_uncertainty_sources():
 
     juncs_jag = list(junc.getUncertainty(JetEta=test_eta_jag, JetPt=test_pt_jag))
 
+    juncs_dak = list(junc.getUncertainty(JetEta=test_eta_dak, JetPt=test_pt_dak))
+
     for i, tpl in enumerate(list(junc.getUncertainty(JetEta=test_eta, JetPt=test_pt))):
         assert tpl[0] in levels
         assert tpl[1].shape[0] == test_eta.shape[0]
         assert ak.all(tpl[1] == ak.flatten(juncs_jag[i][1]))
+        assert ak.all(tpl[1] == ak.flatten(juncs_dak[i][1].compute()))
+
+    zipped_dak = dak.zip({k: v for k, v in juncs_dak})
+    print(zipped_dak)
+    print(zipped_dak.dask)
 
     test_pt_jag = test_pt_jag[0:3]
     test_eta_jag = test_eta_jag[0:3]
@@ -437,6 +560,8 @@ def test_jet_resolution_sf():
     test_pt_jag = ak.unflatten(test_pt, counts)
     test_eta_jag = ak.unflatten(test_eta, counts)
 
+    test_eta_dak = dak.from_awkward(test_eta_jag, 1)
+
     jersf_names = ["Spring16_25nsV10_MC_SF_AK4PFPuppi"]
     resosf = JetResolutionScaleFactor(**{name: evaluator[name] for name in jersf_names})
 
@@ -447,7 +572,11 @@ def test_jet_resolution_sf():
 
     resosfs = resosf.getScaleFactor(JetEta=test_eta)
     resosfs_jag = resosf.getScaleFactor(JetEta=test_eta_jag)
+    resosfs_dak = resosf.getScaleFactor(JetEta=test_eta_dak)
     assert ak.all(resosfs == ak.flatten(resosfs_jag))
+    assert ak.all(resosfs == ak.flatten(resosfs_dak.compute()))
+    print(resosfs_dak)
+    print(resosfs_dak.dask)
 
     test_pt_jag = test_pt_jag[0:3]
     test_eta_jag = test_eta_jag[0:3]
@@ -485,6 +614,9 @@ def test_jet_resolution_sf_2d():
     test_pt_jag = ak.unflatten(test_pt, counts)
     test_eta_jag = ak.unflatten(test_eta, counts)
 
+    test_pt_dak = dak.from_awkward(test_pt_jag, 1)
+    test_eta_dak = dak.from_awkward(test_eta_jag, 1)
+
     resosf = JetResolutionScaleFactor(
         **{name: evaluator[name] for name in ["Autumn18_V7_MC_SF_AK4PFchs"]}
     )
@@ -496,7 +628,11 @@ def test_jet_resolution_sf_2d():
 
     resosfs = resosf.getScaleFactor(JetPt=test_pt, JetEta=test_eta)
     resosfs_jag = resosf.getScaleFactor(JetPt=test_pt_jag, JetEta=test_eta_jag)
+    resosfs_dak = resosf.getScaleFactor(JetPt=test_pt_dak, JetEta=test_eta_dak)
     assert ak.all(resosfs == ak.flatten(resosfs_jag))
+    assert ak.all(resosfs == ak.flatten(resosfs_dak.compute()))
+    print(resosfs_dak)
+    print(resosfs_dak.dask)
 
     test_pt_jag = test_pt_jag[0:3]
     test_eta_jag = test_eta_jag[0:3]
@@ -528,13 +664,20 @@ def test_jet_resolution_sf_2d():
 
 def test_corrected_jets_factory():
     import os
+
+    import dask
+
     from coffea.jetmet_tools import CorrectedJetsFactory, CorrectedMETFactory, JECStack
 
     events = None
     from coffea.nanoevents import NanoEventsFactory
 
-    factory = NanoEventsFactory.from_root(os.path.abspath("tests/samples/nano_dy.root"))
-    events = factory.events()
+    events = NanoEventsFactory.from_root(
+        os.path.abspath("tests/samples/nano_dy.root"),
+        treepath="Events",
+        metadata={},
+        permit_dask=True,
+    ).events()
 
     jec_stack_names = [
         "Summer16_23Sep2016V3_MC_L1FastJet_AK4PFPuppi",
@@ -559,16 +702,20 @@ def test_corrected_jets_factory():
 
     jets = events.Jet
 
-    jets["pt_raw"] = (1 - jets["rawFactor"]) * jets["pt"]
-    jets["mass_raw"] = (1 - jets["rawFactor"]) * jets["mass"]
-    jets["pt_gen"] = ak.values_astype(ak.fill_none(jets.matched_gen.pt, 0), np.float32)
-    jets["rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
+    jets = dak.with_field(jets, (1 - jets["rawFactor"]) * jets.pt, "pt_raw")
+    jets = dak.with_field(jets, (1 - jets["rawFactor"]) * jets.mass, "mass_raw")
+    jets = dak.with_field(
+        jets,
+        dak.values_astype(dak.fill_none(jets.matched_gen.pt, 0), np.float32),
+        "pt_gen",
+    )
+    jets = dak.with_field(
+        jets, dak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0], "rho"
+    )
     name_map["ptGenJet"] = "pt_gen"
     name_map["ptRaw"] = "pt_raw"
     name_map["massRaw"] = "mass_raw"
     name_map["Rho"] = "rho"
-
-    jec_cache = cachetools.Cache(np.inf)
 
     print(name_map)
 
@@ -581,7 +728,7 @@ def test_corrected_jets_factory():
     tic = time.time()
     prof = pyinstrument.Profiler()
     prof.start()
-    corrected_jets = jet_factory.build(jets, lazy_cache=jec_cache)
+    corrected_jets = jet_factory.build(jets)
     prof.stop()
     toc = time.time()
 
@@ -589,20 +736,35 @@ def test_corrected_jets_factory():
 
     print(prof.output_text(unicode=True, color=True, show_all=True))
 
-    tic = time.time()
-    print("Generated jet pt:", corrected_jets.pt_gen)
-    print("Original jet pt:", corrected_jets.pt_orig)
+    print(corrected_jets.dask)
+
+    print("Generated jet pt:", corrected_jets.pt_gen.compute())
+    print("Original jet pt:", corrected_jets.pt_orig.compute())
     print("Raw jet pt:", jets.pt_raw)
-    print("Corrected jet pt:", corrected_jets.pt)
-    print("Original jet mass:", corrected_jets.mass_orig)
+    print("Corrected jet pt:", corrected_jets.pt.compute())
+    print("Original jet mass:", corrected_jets.mass_orig.compute())
     print("Raw jet mass:", jets["mass_raw"])
-    print("Corrected jet mass:", corrected_jets.mass)
+    print("Corrected jet mass:", corrected_jets.mass.compute())
     print("jet eta:", jets.eta)
+
+    tic = time.time()
+    prof = pyinstrument.Profiler()
+    prof.start()
+
+    tocompute = {
+        unc: {"up": corrected_jets[unc].up.pt, "down": corrected_jets[unc].down.pt}
+        for unc in jet_factory.uncertainties()
+    }
+    computed_uncs = dask.compute(tocompute)[0]
+
     for unc in jet_factory.uncertainties():
         print(unc)
-        print(corrected_jets[unc].up.pt)
-        print(corrected_jets[unc].down.pt)
+        print(computed_uncs[unc]["up"])
+        print(computed_uncs[unc]["down"])
+    prof.stop()
     toc = time.time()
+
+    print(prof.output_text(unicode=True, color=True, show_all=True))
 
     print("build all jet variations =", toc - tic)
 
@@ -613,27 +775,38 @@ def test_corrected_jets_factory():
         JetResolutionScaleFactor,
     )
 
-    scalar_form = ak.without_parameters(jets["pt_raw"]).layout.form
     corrector = FactorizedJetCorrector(
         **{name: evaluator[name] for name in jec_stack_names[0:4]}
     )
-    corrs = corrector.getCorrection(
-        JetEta=jets["eta"], Rho=jets["rho"], JetPt=jets["pt_raw"], JetA=jets["area"]
-    )
+
+    check_corrs = corrector.getCorrection(
+        JetEta=jets.eta,
+        Rho=jets.rho,
+        JetPt=jets.pt_raw,
+        JetA=jets.area,
+    ).compute()
     reso = JetResolution(**{name: evaluator[name] for name in jec_stack_names[4:5]})
-    jets["jet_energy_resolution"] = reso.getResolution(
-        JetEta=jets["eta"],
-        Rho=jets["rho"],
-        JetPt=jets["pt_raw"],
-        form=scalar_form,
-        lazy_cache=jec_cache,
-    )
+    check_resos = reso.getResolution(
+        JetEta=jets.eta,
+        Rho=jets.rho,
+        JetPt=jets.pt_raw,
+    ).compute()
     resosf = JetResolutionScaleFactor(
         **{name: evaluator[name] for name in jec_stack_names[5:6]}
     )
-    jets["jet_energy_resolution_scale_factor"] = resosf.getScaleFactor(
-        JetEta=jets["eta"], lazy_cache=jec_cache
+
+    print(dak.necessary_columns(jets.eta))
+    print(
+        dak.necessary_columns(
+            resosf.getScaleFactor(
+                JetEta=jets.eta,
+            )
+        )
     )
+
+    check_resosfs = resosf.getScaleFactor(
+        JetEta=jets.eta,
+    ).compute()
 
     # Filter out the non-deterministic (no gen pt) jets
     def smear_factor(jetPt, pt_gen, jersf):
@@ -643,23 +816,28 @@ def test_corrected_jets_factory():
         )
 
     test_gen_pt = ak.concatenate(
-        [corrected_jets.pt_gen[0, :-2], corrected_jets.pt_gen[-1, :-1]]
-    )
-    test_raw_pt = ak.concatenate([jets.pt_raw[0, :-2], jets.pt_raw[-1, :-1]])
-    test_pt = ak.concatenate([corrected_jets.pt[0, :-2], corrected_jets.pt[-1, :-1]])
-    test_eta = ak.concatenate([jets.eta[0, :-2], jets.eta[-1, :-1]])
-    test_jer = ak.concatenate(
-        [jets.jet_energy_resolution[0, :-2], jets.jet_energy_resolution[-1, :-1]]
-    )
-    test_jer_sf = ak.concatenate(
         [
-            jets.jet_energy_resolution_scale_factor[0, :-2],
-            jets.jet_energy_resolution_scale_factor[-1, :-1],
+            corrected_jets.pt_gen.compute()[0, :-2],
+            corrected_jets.pt_gen.compute()[-1, :-1],
         ]
     )
-    test_jec = ak.concatenate([corrs[0, :-2], corrs[-1, :-1]])
+    test_raw_pt = ak.concatenate(
+        [jets.pt_raw.compute()[0, :-2], jets.pt_raw.compute()[-1, :-1]]
+    )
+    test_pt = ak.concatenate(
+        [corrected_jets.pt.compute()[0, :-2], corrected_jets.pt.compute()[-1, :-1]]
+    )
+    test_eta = ak.concatenate([jets.eta.compute()[0, :-2], jets.eta.compute()[-1, :-1]])
+    test_jer = ak.concatenate([check_resos[0, :-2], check_resos[-1, :-1]])
+    test_jer_sf = ak.concatenate(
+        [
+            check_resosfs[0, :-2],
+            check_resosfs[-1, :-1],
+        ]
+    )
+    test_jec = ak.concatenate([check_corrs[0, :-2], check_corrs[-1, :-1]])
     test_corrected_pt = ak.concatenate(
-        [corrected_jets.pt[0, :-2], corrected_jets.pt[-1, :-1]]
+        [corrected_jets.pt.compute()[0, :-2], corrected_jets.pt.compute()[-1, :-1]]
     )
     test_corr_pt = test_raw_pt * test_jec
     test_pt_smear_corr = test_corr_pt * smear_factor(
@@ -696,7 +874,7 @@ def test_corrected_jets_factory():
     tic = time.time()
     # prof = pyinstrument.Profiler()
     # prof.start()
-    corrected_met = met_factory.build(met, corrected_jets, lazy_cache=jec_cache)
+    corrected_met = met_factory.build(met, corrected_jets)
     # prof.stop()
     toc = time.time()
 
@@ -704,97 +882,27 @@ def test_corrected_jets_factory():
 
     print("corrected_met build time =", toc - tic)
 
+    print(corrected_met.dask)
+
+    print(corrected_met.pt_orig.compute())
+    print(corrected_met.pt.compute())
     tic = time.time()
-    print(corrected_met.pt_orig)
-    print(corrected_met.pt)
     prof = pyinstrument.Profiler()
     prof.start()
+
+    tocompute = {
+        unc: {"up": corrected_met[unc].up.pt, "down": corrected_met[unc].down.pt}
+        for unc in (jet_factory.uncertainties() + met_factory.uncertainties())
+    }
+    computed_uncs = dask.compute(tocompute)[0]
+
     for unc in jet_factory.uncertainties() + met_factory.uncertainties():
         print(unc)
-        print(corrected_met[unc].up.pt)
-        print(corrected_met[unc].down.pt)
+        print(computed_uncs[unc]["up"])
+        print(computed_uncs[unc]["down"])
     prof.stop()
     toc = time.time()
 
     print("build all met variations =", toc - tic)
 
     print(prof.output_text(unicode=True, color=True, show_all=True))
-
-
-def test_factory_lifecycle():
-    import os
-    from coffea.jetmet_tools import CorrectedJetsFactory, CorrectedMETFactory, JECStack
-    from coffea.nanoevents import NanoEventsFactory
-
-    jec_stack_names = [
-        "Summer16_23Sep2016V3_MC_L1FastJet_AK4PFPuppi",
-        "Summer16_23Sep2016V3_MC_L2Relative_AK4PFPuppi",
-        "Summer16_23Sep2016V3_MC_L2L3Residual_AK4PFPuppi",
-        "Summer16_23Sep2016V3_MC_L3Absolute_AK4PFPuppi",
-        "Spring16_25nsV10_MC_PtResolution_AK4PFPuppi",
-        "Spring16_25nsV10_MC_SF_AK4PFPuppi",
-        "Summer16_23Sep2016V3_MC_UncertaintySources_AK4PFPuppi_AbsoluteStat",
-    ]
-
-    jec_stack = JECStack({name: evaluator[name] for name in jec_stack_names})
-    name_map = jec_stack.blank_name_map
-    name_map["JetPt"] = "pt"
-    name_map["JetMass"] = "mass"
-    name_map["JetEta"] = "eta"
-    name_map["JetA"] = "area"
-    name_map["ptGenJet"] = "pt_gen"
-    name_map["ptRaw"] = "pt_raw"
-    name_map["massRaw"] = "mass_raw"
-    name_map["Rho"] = "rho"
-    name_map["METpt"] = "pt"
-    name_map["METphi"] = "phi"
-    name_map["JetPhi"] = "phi"
-    name_map["UnClusteredEnergyDeltaX"] = "MetUnclustEnUpDeltaX"
-    name_map["UnClusteredEnergyDeltaY"] = "MetUnclustEnUpDeltaY"
-    jet_factory = CorrectedJetsFactory(name_map, jec_stack)
-    met_factory = CorrectedMETFactory(name_map)
-
-    from coffea.nanoevents.mapping import ArrayLifecycleMapping
-    import weakref
-    import threading
-
-    array_log = ArrayLifecycleMapping()
-    jec_finalized = threading.Event()  # just using this as a flag object
-
-    def run():
-        events = NanoEventsFactory.from_root(
-            os.path.abspath("tests/samples/nano_dy.root"),
-            persistent_cache=array_log,
-        ).events()
-        jets = events.Jet
-        met = events.MET
-        jets["pt_raw"] = (1 - jets["rawFactor"]) * jets["pt"]
-        jets["mass_raw"] = (1 - jets["rawFactor"]) * jets["mass"]
-        jets["pt_gen"] = ak.values_astype(
-            ak.fill_none(jets.matched_gen.pt, 0.0), np.float32
-        )
-        jets["rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
-        jec_cache = cachetools.Cache(np.inf)
-        weakref.finalize(jec_cache, jec_finalized.set)
-        corrected_jets = jet_factory.build(jets, lazy_cache=jec_cache)
-        corrected_met = met_factory.build(met, corrected_jets, lazy_cache=jec_cache)
-        print(corrected_met.pt_orig)
-        print(corrected_met.pt)
-        for unc in jet_factory.uncertainties() + met_factory.uncertainties():
-            print(unc, corrected_met[unc].up.pt)
-            print(unc, corrected_met[unc].down.pt)
-        for unc in jet_factory.uncertainties():
-            print(unc, corrected_jets[unc].up.pt)
-        print("Finalized:", array_log.finalized)
-
-    run()
-    import gc
-
-    for _ in range(3):
-        gc.collect()
-    print("Accessed:", array_log.accessed)
-    print("Finalized:", array_log.finalized)
-    diff = set(array_log.accessed) - set(array_log.finalized)
-    print("Diff:", diff)
-    assert len(diff) == 0
-    assert jec_finalized.is_set()

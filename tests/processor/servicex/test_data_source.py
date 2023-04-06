@@ -27,8 +27,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import ast
 from typing import Any, Optional
-from func_adl.event_dataset import EventDataset
+
 import pytest
+from func_adl.event_dataset import EventDataset
+
 from coffea.processor.servicex import DataSource
 
 

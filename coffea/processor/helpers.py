@@ -1,8 +1,9 @@
-from coffea.util import deprecate
 import numpy
 
+from coffea.util import deprecate
 
-class Weights(object):
+
+class Weights:
     """Container for event weights and associated systematic shifts
 
     This container keeps track of correction factors and systematic
@@ -50,7 +51,7 @@ class Weights(object):
                 the correction uncertainty is symmetric, this can be set to None to auto-calculate
                 the down shift as ``1 / weightUp``.
             shift : bool, optional
-                if True, interpret weightUp and weightDown as a realtive difference (additive) to the
+                if True, interpret weightUp and weightDown as a relative difference (additive) to the
                 nominal value
 
         .. note:: ``weightUp`` and ``weightDown`` are assumed to be rvalue-like and may be modified in-place by this function
@@ -155,7 +156,7 @@ class Weights(object):
         return keys
 
 
-class PackedSelection(object):
+class PackedSelection:
     """Store boolean mask vectors in a compact manner
 
     This class can store several boolean masks (cuts, selections) and

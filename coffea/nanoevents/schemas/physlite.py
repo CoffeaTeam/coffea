@@ -1,6 +1,7 @@
+import copy
 import warnings
 from collections import defaultdict
-import copy
+
 from coffea.nanoevents.schemas.base import BaseSchema, zip_forms
 from coffea.nanoevents.util import quote
 
@@ -23,6 +24,8 @@ class PHYSLITESchema(BaseSchema):
     created dynamically, using an ``_eventindex`` field that is attached to
     each collection.
     """
+
+    __dask_capable__ = True
 
     truth_collections = [
         "TruthPhotons",
@@ -59,9 +62,14 @@ class PHYSLITESchema(BaseSchema):
     for _k in truth_collections:
         mixins[_k] = "TruthParticle"
 
-    def __init__(self, base_form):
+    def __init__(self, base_form, *args, **kwargs):
         super().__init__(base_form)
-        self._form["contents"] = self._build_collections(self._form["contents"])
+        form_dict = {
+            key: form for key, form in zip(self._form["fields"], self._form["contents"])
+        }
+        output = self._build_collections(form_dict)
+        self._form["fields"] = [k for k in output.keys()]
+        self._form["contents"] = [v for v in output.values()]
 
     def _build_collections(self, branch_forms):
         zip_groups = defaultdict(list)
@@ -89,9 +97,25 @@ class PHYSLITESchema(BaseSchema):
         # zip the forms
         contents = {}
         for objname, keys_and_form in zip_groups.items():
+            to_zip = {}
+            for (key, sub_key), form in keys_and_form:
+                if "." in sub_key:
+                    # we can skip fields with '.' in the name since they will come again as records
+                    # e.g. truthParticleLink.m_persKey will also appear in truthParticleLink
+                    # (record with fields m_persKey and m_persIndex)
+                    continue
+                if form["class"] == "RecordArray" and form["fields"]:
+                    # single-jagged ElementLinks come out as RecordArray(ListOffsetArray)
+                    # the zipping converts the forms to ListOffsetArray(RecordArray)
+                    fields = [field.split(".")[-1] for field in form["fields"]]
+                    form = zip_forms(
+                        dict(zip(fields, form["contents"])),
+                        sub_key,
+                    )
+                to_zip[sub_key] = form
             try:
                 contents[objname] = zip_forms(
-                    {sub_key: form for (key, sub_key), form in keys_and_form},
+                    to_zip,
                     objname,
                     self.mixins.get(objname, None),
                     bypass=True,

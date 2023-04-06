@@ -1,9 +1,9 @@
 import os
+
 import numpy as np
+import ROOT
 import uproot
 from awkward import JaggedArray
-
-import ROOT
 
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 

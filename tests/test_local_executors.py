@@ -1,6 +1,8 @@
-import sys
 import os.path as osp
+import sys
+
 import pytest
+
 from coffea import processor
 from coffea.nanoevents import schemas
 from coffea.processor.executor import UprootMissTreeError
@@ -22,9 +24,12 @@ def test_dataframe_analysis(
 ):
     from coffea.processor.test_items import NanoTestProcessor
 
+    if schema is not None and filetype == "parquet":
+        pytest.xfail("parquet nanoevents not supported yet")
+
     filelist = {
-        "ZJets": [osp.abspath(f"tests/samples/nano_dy.{filetype}")],
-        "Data": [osp.abspath(f"tests/samples/nano_dimuon.{filetype}")],
+        "ZJets": {"files": [osp.abspath(f"tests/samples/nano_dy.{filetype}")]},
+        "Data": {"files": [osp.abspath(f"tests/samples/nano_dimuon.{filetype}")]},
     }
 
     executor = executor()
@@ -47,10 +52,10 @@ def test_dataframe_analysis(
     else:
         assert maxchunks == 1
         print(hists["cutflow"]["ZJets_pt"])
-        assert hists["cutflow"]["ZJets_pt"] == 18 if chunksize == 100_000 else 2
-        assert hists["cutflow"]["ZJets_mass"] == 6 if chunksize == 100_000 else 1
-        assert hists["cutflow"]["Data_pt"] == 84 if chunksize == 100_000 else 13
-        assert hists["cutflow"]["Data_mass"] == 66 if chunksize == 100_000 else 12
+        assert hists["cutflow"]["ZJets_pt"] == (18 if chunksize == 100_000 else 2)
+        assert hists["cutflow"]["ZJets_mass"] == (6 if chunksize == 100_000 else 1)
+        assert hists["cutflow"]["Data_pt"] == (84 if chunksize == 100_000 else 13)
+        assert hists["cutflow"]["Data_mass"] == (66 if chunksize == 100_000 else 12)
 
 
 @pytest.mark.parametrize("filetype", ["root", "parquet"])
@@ -62,6 +67,9 @@ def test_dataframe_analysis(
 )
 def test_nanoevents_analysis(executor, compression, maxchunks, skipbadfiles, filetype):
     from coffea.processor.test_items import NanoEventsProcessor
+
+    if filetype == "parquet":
+        pytest.xfail("parquet nanoevents not supported yet")
 
     filelist = {
         "DummyBadMissingFile": {

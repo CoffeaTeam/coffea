@@ -1,13 +1,14 @@
-from ..util import numpy as np
 import json
-import awkward as ak
 
-from ..util import numba
+import awkward as ak
 from numba import types
 from numba.typed import Dict
 
+from ..util import numba
+from ..util import numpy as np
 
-class LumiData(object):
+
+class LumiData:
     r"""Holds per-lumiSection integrated lumi values
 
     Parameters
@@ -54,7 +55,7 @@ class LumiData(object):
 
         if isinstance(runlumis, LumiList):
             runlumis = runlumis.array
-        tot_lumi = np.zeros((1,), dtype=np.float64)
+        tot_lumi = np.zeros((1,), dtype=np.dtype("float64"))
         LumiData._get_lumi_kernel(runlumis[:, 0], runlumis[:, 1], self.index, tot_lumi)
         return tot_lumi[0]
 
@@ -79,7 +80,7 @@ class LumiData(object):
                 tot_lumi[0] += index.get(k, 0)
 
 
-class LumiMask(object):
+class LumiMask:
     """Holds a luminosity mask index, and provides vectorized lookup
 
     Parameters
@@ -145,7 +146,7 @@ class LumiMask(object):
                     mask_out[iev] = 1
 
 
-class LumiList(object):
+class LumiList:
     """Mergeable list of unique (run, lumiSection) values
 
     This list can be merged with another via ``+=``.

@@ -1,11 +1,11 @@
+import json
 import warnings
+
 import awkward
 import numpy
-import json
-
 from fsspec.core import OpenFile
 
-from coffea.nanoevents.mapping.base import UUIDOpener, BaseSourceMapping
+from coffea.nanoevents.mapping.base import BaseSourceMapping, UUIDOpener
 from coffea.nanoevents.util import quote, tuple_to_key
 
 
@@ -49,7 +49,7 @@ class TrivialParquetOpener(UUIDOpener):
             return self.file
 
     def __init__(self, uuid_pfnmap, parquet_options={}):
-        super(TrivialParquetOpener, self).__init__(uuid_pfnmap)
+        super().__init__(uuid_pfnmap)
         self._parquet_options = parquet_options
         self._schema_map = None
 
@@ -77,16 +77,14 @@ def arrow_schema_to_awkward_form(schema):
             offsets="i64",
             content=awkward.forms.NumpyForm(
                 inner_shape=[],
-                itemsize=dtype.dtype.itemsize,
-                format=dtype.dtype.char,
+                primitive=dtype.dtype.name,
             ),
         )
     elif isinstance(schema, pa.lib.DataType):
         dtype = schema.to_pandas_dtype()()
         return awkward.forms.NumpyForm(
             inner_shape=[],
-            itemsize=dtype.dtype.itemsize,
-            format=dtype.dtype.char,
+            primitive=dtype.dtype.name,
         )
     else:
         raise Exception("Unrecognized pyarrow array type")
@@ -118,28 +116,23 @@ class ParquetSourceMapping(BaseSourceMapping):
                         : len(aspa) + 1
                     ]
                     offsets = offsets.astype(numpy.int64)
-                offsets = awkward.layout.Index64(offsets)
+                offsets = awkward.index.Index64(offsets)
 
                 if not isinstance(value_type, pa.lib.DataType):
                     raise Exception(
                         "arrow only accepts single jagged arrays for now..."
                     )
-                dtype = value_type.to_pandas_dtype()
                 flat = aspa.flatten()
-                content = numpy.frombuffer(flat.buffers()[1], dtype=dtype)[: len(flat)]
-                content = awkward.layout.NumpyArray(content)
-                out = awkward.layout.ListOffsetArray64(offsets, content)
-            elif isinstance(aspa, pa.lib.NumericArray):
-                out = numpy.frombuffer(
-                    aspa.buffers()[1], dtype=aspa.type.to_pandas_dtype()
-                )[: len(aspa)]
-                out = awkward.layout.NumpyArray(out)
+                content = awkward.contents.NumpyArray(flat)
+                out = awkward.contents.ListOffsetArray(offsets, content)
+            elif isinstance(aspa, (pa.lib.NumericArray, pa.lib.BooleanArray)):
+                out = awkward.contents.NumpyArray(aspa)
             else:
                 raise Exception("array is not flat array or jagged list")
             return awkward.Array(out)
 
-    def __init__(self, fileopener, cache=None, access_log=None):
-        super(ParquetSourceMapping, self).__init__(fileopener, cache, access_log)
+    def __init__(self, fileopener, start, stop, cache=None, access_log=None):
+        super().__init__(fileopener, start, stop, cache, access_log)
 
     @classmethod
     def _extract_base_form(cls, arrow_schema):
@@ -160,7 +153,7 @@ class ParquetSourceMapping(BaseSourceMapping):
             else:
                 schema = field.type
                 form = arrow_schema_to_awkward_form(schema)
-                form = json.loads(form.tojson())
+                form = json.loads(form.to_json())
 
             if (
                 form["class"].startswith("ListOffset")
@@ -188,7 +181,8 @@ class ParquetSourceMapping(BaseSourceMapping):
             column_forms[key] = form
         return {
             "class": "RecordArray",
-            "contents": column_forms,
+            "contents": [item for item in column_forms.values()],
+            "fields": [key for key in column_forms.keys()],
             "parameters": {"__doc__": "parquetfile"},
             "form_key": "",
         }
@@ -204,11 +198,11 @@ class ParquetSourceMapping(BaseSourceMapping):
     def get_column_handle(self, columnsource, name):
         return ParquetSourceMapping.UprootLikeShim(columnsource, name)
 
-    def extract_column(self, columnhandle, start, stop):
+    def extract_column(self, columnhandle, start, stop, **kwargs):
         return columnhandle.array(entry_start=start, entry_stop=stop)
 
     def __len__(self):
-        raise NotImplementedError
+        return self._stop - self._start
 
     def __iter__(self):
         raise NotImplementedError

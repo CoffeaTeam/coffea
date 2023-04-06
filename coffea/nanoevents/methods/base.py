@@ -1,20 +1,25 @@
 """Basic NanoEvents and NanoCollection mixins"""
-import awkward
-import numpy
+import re
 from abc import abstractmethod
 from functools import partial
-import re
-import coffea
-from coffea.util import rewrap_recordarray, awkward_rewrap
-from typing import (
-    List,
-    Union,
-    Tuple,
-    Callable,
-)
+from typing import Any, Callable, List, Tuple, Union
 
+import awkward
+import dask_awkward
+import numpy
+
+import coffea
+from coffea.util import awkward_rewrap, rewrap_recordarray
 
 behavior = {}
+
+
+class _ClassMethodFn:
+    def __init__(self, attr: str, **kwargs: Any) -> None:
+        self.attr = attr
+
+    def __call__(self, coll: awkward.Array, *args: Any, **kwargs: Any) -> awkward.Array:
+        return getattr(coll, self.attr)(*args, **kwargs)
 
 
 @awkward.mixin_class(behavior)
@@ -26,7 +31,7 @@ class Systematic:
     @classmethod
     def add_kind(cls, kind: str):
         """
-        Register a type of systematic variation, it must fullfil the base class interface.
+        Register a type of systematic variation, it must fulfill the base class interface.
         """
         cls._systematic_kinds.add(kind)
 
@@ -155,10 +160,11 @@ class NanoEvents(Systematic):
     This mixin class is used as the top-level type for NanoEvents objects.
     """
 
-    @property
-    def metadata(self):
+    def get_metadata(self, _dask_array_=None):
         """Arbitrary metadata"""
         return self.layout.purelist_parameter("metadata")
+
+    metadata = property(get_metadata)
 
 
 behavior[("__typestr__", "NanoEvents")] = "event"
@@ -179,15 +185,15 @@ class NanoCollection:
     def _getlistarray(self):
         """Do some digging to find the initial listarray"""
 
-        def descend(layout, depth):
+        def descend(layout, depth, **kwargs):
             islistarray = isinstance(
                 layout,
-                (awkward.layout.ListOffsetArray32, awkward.layout.ListOffsetArray64),
+                awkward.contents.ListOffsetArray,
             )
             if islistarray and layout.content.parameter("collection_name") is not None:
-                return lambda: layout
+                return layout
 
-        return awkward._util.recursively_apply(self.layout, descend)
+        return awkward.transform(descend, self.layout, highlevel=False)
 
     def _content(self):
         """Internal method to get jagged collection content
@@ -196,7 +202,7 @@ class NanoCollection:
         Used with global indexes to resolve cross-references"""
         return self._getlistarray().content
 
-    def _apply_global_index(self, index):
+    def _apply_global_index(self, index, _dask_array_=None):
         """Internal method to take from a collection using a flat index
 
         This is often necessary to be able to still resolve cross-references on
@@ -210,19 +216,32 @@ class NanoCollection:
             idx = awkward.Array(layout)
             return self._content()[idx.mask[idx >= 0]]
 
-        def descend(layout, depth):
+        def descend(layout, depth, **kwargs):
             if layout.purelist_depth == 1:
-                return lambda: flat_take(layout)
+                return flat_take(layout)
 
-        (index,) = awkward.broadcast_arrays(index)
-        out = awkward._util.recursively_apply(index.layout, descend)
-        return awkward.Array(out, behavior=self.behavior)
+        (index_out,) = awkward.broadcast_arrays(
+            index._meta if isinstance(index, dask_awkward.Array) else index
+        )
+        layout_out = awkward.transform(descend, index_out.layout, highlevel=False)
+        out = awkward.Array(layout_out, behavior=self.behavior)
+
+        if isinstance(index, dask_awkward.Array):
+            return _dask_array_.map_partitions(
+                _ClassMethodFn("_apply_global_index"),
+                index,
+                label="_apply_global_index",
+                meta=out,
+            )
+        return out
 
     def _events(self):
         """Internal method to get the originally-constructed NanoEvents
 
         This can be called at any time from any collection, as long as
         the NanoEventsFactory instance exists."""
+        if "__original_array__" in self.behavior:
+            return self.behavior["__original_array__"]()
         return self.behavior["__events_factory__"].events()
 
 

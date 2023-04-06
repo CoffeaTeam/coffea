@@ -1,7 +1,10 @@
-from coffea.lookup_tools.jersf_lookup import jersf_lookup
 import re
+
 import awkward
+import dask_awkward
 import numpy
+
+from coffea.lookup_tools.jersf_lookup import jersf_lookup
 
 
 def _checkConsistency(against, tocheck):
@@ -22,14 +25,14 @@ _levelre = re.compile("SF+")
 def _getLevel(levelName):
     matches = _levelre.findall(levelName)
     if len(matches) > 1:
-        raise Exception("Malformed JERSF level name: {}".format(levelName))
+        raise Exception(f"Malformed JERSF level name: {levelName}")
     return matches[0]
 
 
 _level_order = ["SF"]
 
 
-class JetResolutionScaleFactor(object):
+class JetResolutionScaleFactor:
     """
     This class is a columnar implementation of the JetResolutionScaleFactor tool in
     CMSSW and FWLite. It calculates the jet energy resolution scale factor for a
@@ -59,9 +62,7 @@ class JetResolutionScaleFactor(object):
         dataera = None
         for name, func in kwargs.items():
             if not isinstance(func, jersf_lookup):
-                raise Exception(
-                    "{} is a {} and not a jersf_lookup!".format(name, type(func))
-                )
+                raise Exception(f"{name} is a {type(func)} and not a jersf_lookup!")
             info = name.split("_")
             if len(info) != 5:
                 raise Exception("Corrector name is not properly formatted!")
@@ -143,21 +144,20 @@ class JetResolutionScaleFactor(object):
             jersfs = jersf.getScaleFactor(JetProperty1=jet.property1,...)
 
         """
-        cache = kwargs.pop("lazy_cache", None)
-        form = kwargs.pop("form", None)
         sfs = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
-            args = tuple(kwargs[input] for input in sig)
+            args = tuple(kwargs[inp] for inp in sig)
 
-            if isinstance(args[0], awkward.highlevel.Array):
+            if isinstance(
+                args[0], (dask_awkward.Array, awkward.highlevel.Array, numpy.ndarray)
+            ):
                 sfs.append(
-                    awkward.virtual(
-                        func, args=args, length=len(args[0]), form=form, cache=cache
+                    func(
+                        *args,
+                        dask_label=f"{self._campaign}-{self._dataera}-{self._datatype}-{self._levels[i]}-{self._jettype}",
                     )
                 )
-            elif isinstance(args[0], numpy.ndarray):
-                sfs.append(func(*args))  # np is non-lazy
             else:
                 raise Exception("Unknown array library for inputs.")
 

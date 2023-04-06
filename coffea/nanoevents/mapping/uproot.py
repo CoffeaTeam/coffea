@@ -1,14 +1,16 @@
-import warnings
-import uproot
-import awkward
 import json
-from coffea.nanoevents.mapping.base import UUIDOpener, BaseSourceMapping
+import warnings
+
+import awkward
+import uproot
+
+from coffea.nanoevents.mapping.base import BaseSourceMapping, UUIDOpener
 from coffea.nanoevents.util import quote, tuple_to_key
 
 
 class TrivialUprootOpener(UUIDOpener):
     def __init__(self, uuid_pfnmap, uproot_options={}):
-        super(TrivialUprootOpener, self).__init__(uuid_pfnmap)
+        super().__init__(uuid_pfnmap)
         self._uproot_options = uproot_options
 
     def open_uuid(self, uuid):
@@ -47,14 +49,21 @@ def _lazify_form(form, prefix, docstr=None):
         if parameters:
             form["parameters"] = parameters
     elif form["class"] == "RecordArray":
-        for field in list(form["contents"]):
+        newfields, newcontents = [], []
+        for field, value in zip(form["fields"], form["contents"]):
             if "," in field or "!" in field:
+                # Could also skip here
                 raise CannotBeNanoEvents(
                     f"A subform contains a field with invalid characters: {field}"
                 )
-            form["contents"][field] = _lazify_form(
-                form["contents"][field], prefix + f",{field},!item"
-            )
+            elif field.startswith("@"):
+                # workaround uproot5 bug
+                continue
+
+            newfields.append(field)
+            newcontents.append(_lazify_form(value, prefix + f",{field},!item"))
+        form["fields"] = newfields
+        form["contents"] = newcontents
         if parameters:
             form["parameters"] = parameters
     else:
@@ -73,10 +82,12 @@ def _lazify_parameters(form_parameters, docstr=None):
 
 class UprootSourceMapping(BaseSourceMapping):
     _debug = False
-    _fix_awkward_form_of_iter = True
+    _fix_awkward_form_of_iter = False
 
-    def __init__(self, fileopener, cache=None, access_log=None):
-        super(UprootSourceMapping, self).__init__(fileopener, cache, access_log)
+    def __init__(
+        self, fileopener, start, stop, cache=None, access_log=None, use_ak_forth=False
+    ):
+        super().__init__(fileopener, start, stop, cache, access_log, use_ak_forth)
 
     @classmethod
     def _extract_base_form(cls, tree, iteritems_options={}):
@@ -113,9 +124,8 @@ class UprootSourceMapping(BaseSourceMapping):
                 form = uproot._util.recursively_fix_awkward_form_of_iter(
                     awkward, branch.interpretation, form
                 )
-            form = uproot._util.awkward_form_remove_uproot(awkward, form)
             form = json.loads(
-                form.tojson()
+                form.to_json()
             )  # normalizes form (expand NumpyArray classes)
             try:
                 form = _lazify_form(form, f"{key},!load", docstr=branch.title)
@@ -125,12 +135,12 @@ class UprootSourceMapping(BaseSourceMapping):
                 )
                 continue
             branch_forms[key] = form
-
         return {
             "class": "RecordArray",
-            "contents": branch_forms,
+            "contents": [item for item in branch_forms.values()],
+            "fields": [key for key in branch_forms.keys()],
             "parameters": {"__doc__": tree.title},
-            "form_key": "",
+            "form_key": None,
         }
 
     def key_root(self):
@@ -144,9 +154,12 @@ class UprootSourceMapping(BaseSourceMapping):
     def get_column_handle(self, columnsource, name):
         return columnsource[name]
 
-    def extract_column(self, columnhandle, start, stop):
+    def extract_column(self, columnhandle, start, stop, use_ak_forth=True):
         # make sure uproot is single-core since our calling context might not be
+        interp = columnhandle.interpretation
+        interp._forth = use_ak_forth
         return columnhandle.array(
+            interp,
             entry_start=start,
             entry_stop=stop,
             decompression_executor=uproot.source.futures.TrivialExecutor(),
@@ -154,7 +167,7 @@ class UprootSourceMapping(BaseSourceMapping):
         )
 
     def __len__(self):
-        raise NotImplementedError
+        return self._stop - self._start
 
     def __iter__(self):
         raise NotImplementedError

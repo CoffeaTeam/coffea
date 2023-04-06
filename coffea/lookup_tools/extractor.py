@@ -1,20 +1,16 @@
-from __future__ import print_function
 import os
 
 from coffea.lookup_tools.evaluator import evaluator
-
-from coffea.lookup_tools.root_converters import convert_histo_root_file
-from coffea.lookup_tools.csv_converters import convert_btag_csv_file
 from coffea.lookup_tools.json_converters import (
-    convert_histo_json_file,
     convert_correctionlib_file,
+    convert_histo_json_file,
+    convert_pileup_json_file,
 )
-from coffea.lookup_tools.json_converters import convert_pileup_json_file
+from coffea.lookup_tools.root_converters import convert_histo_root_file
 from coffea.lookup_tools.txt_converters import *
 
 file_converters = {
     "root": {"default": convert_histo_root_file, "histo": convert_histo_root_file},
-    "csv": {"default": convert_btag_csv_file, "btag": convert_btag_csv_file},
     "json": {
         "default": convert_histo_json_file,
         "histo": convert_histo_json_file,
@@ -34,7 +30,7 @@ file_converters = {
 }
 
 
-class extractor(object):
+class extractor:
     """
     This class defines a common entry point for defining functions that extract
     the inputs to build lookup tables from various kinds of files.
@@ -49,7 +45,6 @@ class extractor(object):
     The extractor class supports a number of useful file formats by default:
         - **.histo.root** : 1,2, and 3 dimensional histograms in root files.
         - **.histo.json** : N-dimensional histograms stored in JSON format.
-        - **.btag.csv**   : CMS BTV b-tagging weights in csv files.
         - **.ea.txt**     : CMS EGM effective area text files.
         - **'.[jec, jersf, jr, junc].txt'** : CMS JME jet energy corrections and systematic error text files.
 
@@ -74,7 +69,7 @@ class extractor(object):
         if self._finalized:
             raise Exception("extractor is finalized cannot add new weights!")
         if local_name in self._names.keys():
-            raise Exception('weights name "{}" already defined'.format(local_name))
+            raise Exception(f'weights name "{local_name}" already defined')
         self._names[local_name] = len(self._weights)
         self._types.append(thetype)
         self._weights.append(weights)
@@ -137,7 +132,7 @@ class extractor(object):
         weights = self._filecache[thefile]
         names = {key[0]: key[1] for key in weights.keys()}
         if name not in names.keys():
-            raise Exception('Weights named "{}" not in {}!'.format(name, thefile))
+            raise Exception(f'Weights named "{name}" not in {thefile}!')
         return (weights[(name, names[name])], names[name])
 
     def finalize(self, reduce_list=None):
@@ -154,7 +149,7 @@ class extractor(object):
             weights = []
             for i, name in enumerate(reduce_list):
                 if name not in self._names:
-                    raise Exception('Weights named "{}" not in extractor!'.format(name))
+                    raise Exception(f'Weights named "{name}" not in extractor!')
                 names[name] = i
                 types.append(self._types[self._names[name]])
                 weights.append(self._weights[self._names[name]])

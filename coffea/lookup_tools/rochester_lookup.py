@@ -1,11 +1,12 @@
+import awkward
 import numpy
+
+from coffea.lookup_tools.dense_lookup import dense_lookup
 
 # crystalball is single sided, local reimplementation of double-sided here until
 # the PR can be merged
 # from scipy.stats import crystalball
 from coffea.lookup_tools.doublecrystalball import doublecrystalball
-import awkward
-from coffea.lookup_tools.dense_lookup import dense_lookup
 
 
 class rochester_lookup:
@@ -136,7 +137,7 @@ class rochester_lookup:
         return self._error(self.kScaleMC, charge, pt, eta, phi)
 
     def kSpreadMC(self, charge, pt, eta, phi, genpt, s=0, m=0):
-        """Momentum scale correction for mc (if genpt not availble, use kSmearMC)
+        """Momentum scale correction for mc (if genpt not available, use kSmearMC)
         required:
             charge
             pt
@@ -151,7 +152,7 @@ class rochester_lookup:
         return k * self._kSpread(genpt, k * pt, eta, s, m)
 
     def kSpreadMCerror(self, charge, pt, eta, phi, genpt):
-        """Momentum scale correction uncertainty for mc (if genpt not availble, use kSmearMC)
+        """Momentum scale correction uncertainty for mc (if genpt not available, use kSmearMC)
         required:
             charge
             pt

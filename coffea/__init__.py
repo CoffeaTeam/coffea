@@ -44,4 +44,10 @@ if sys.version_info.major < 3:
 # control severity for utils.deprecate
 deprecations_as_errors = False
 
+import copyreg
+import weakref
+
+copyreg.pickle(weakref.ref, lambda x: (lambda y: y, (None,)))
+
+
 __all__ = ["deprecations_as_errors"]

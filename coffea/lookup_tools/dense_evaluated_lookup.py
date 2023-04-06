@@ -1,9 +1,10 @@
-from coffea.lookup_tools.lookup_base import lookup_base
-
-import numpy
-import numba
-
 from copy import deepcopy
+
+import dask
+import numba
+import numpy
+
+from coffea.lookup_tools.lookup_base import lookup_base
 
 
 # methods for dealing with b-tag SFs
@@ -21,7 +22,7 @@ def numbaize(fstr, varlist):
     Supports only simple math for now
     """
 
-    lstr = "lambda %s: %s" % (",".join(varlist), fstr)
+    lstr = "lambda {}: {}".format(",".join(varlist), fstr)
     func = eval(lstr, {"log": numpy.log, "sqrt": numpy.sqrt})
     nfunc = numba.njit(func)
     return nfunc
@@ -30,7 +31,6 @@ def numbaize(fstr, varlist):
 # methods for dealing with b-tag SFs
 class dense_evaluated_lookup(lookup_base):
     def __init__(self, values, dims, feval_dim=None):
-        super(dense_evaluated_lookup, self).__init__()
         self._dimension = 0
         whattype = type(dims)
         if whattype == numpy.ndarray:
@@ -38,7 +38,7 @@ class dense_evaluated_lookup(lookup_base):
         else:
             self._dimension = len(dims)
         if self._dimension == 0:
-            raise Exception("Could not define dimension for {}".format(whattype))
+            raise Exception(f"Could not define dimension for {whattype}")
         self._axes = deepcopy(dims)
         self._feval_dim = None
         vals_are_strings = (
@@ -66,8 +66,12 @@ class dense_evaluated_lookup(lookup_base):
                 "lookup_tools.evaluator only accepts 1D functions right now!"
             )
         self._feval_dim = feval_dim[0]
+        dask_future = dask.delayed(
+            self, pure=True, name=f"denseevallookup-{dask.base.tokenize(self)}"
+        ).persist()
+        super().__init__(dask_future)
 
-    def _evaluate(self, *args):
+    def _evaluate(self, *args, **kwargs):
         indices = []
         if self._dimension == 1:
             indices.append(
@@ -91,13 +95,13 @@ class dense_evaluated_lookup(lookup_base):
         return numba_apply_1d(self._values[tuple(indices)], args[self._feval_dim])
 
     def __repr__(self):
-        myrepr = "{} dimensional histogram with axes:\n".format(self._dimension)
+        myrepr = f"{self._dimension} dimensional histogram with axes:\n"
         temp = ""
         if self._dimension == 1:
-            temp = "\t1: {}\n".format(self._axes)
+            temp = f"\t1: {self._axes}\n"
         else:
-            temp = "\t1: {}\n".format(self._axes[0])
+            temp = f"\t1: {self._axes[0]}\n"
         for idim in range(1, self._dimension):
-            temp += "\t{}: {}\n".format(idim + 1, self._axes[idim])
+            temp += f"\t{idim + 1}: {self._axes[idim]}\n"
         myrepr += temp
         return myrepr

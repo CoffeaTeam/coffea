@@ -1,32 +1,21 @@
-import os
-import re
-import textwrap
-import signal
-
-from tempfile import NamedTemporaryFile, TemporaryDirectory
-from os.path import basename, join, getsize
-
 import collections
-
 import math
-import numpy
-import scipy
+import os
 import random
-
-from coffea.util import rich_bar, deprecate
+import re
+import signal
+import textwrap
+from os.path import basename, getsize, join
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 import cloudpickle
+import numpy
+import scipy
 
-from .executor import (
-    WorkItem,
-    _compression_wrapper,
-    _decompress,
-)
+from coffea.util import deprecate, rich_bar
 
-from .accumulator import (
-    accumulate,
-)
-
+from .accumulator import accumulate
+from .executor import WorkItem, _compression_wrapper, _decompress
 
 # The Work Queue object is global b/c we want to
 # retain state between runs of the executor, such
@@ -62,7 +51,7 @@ def accumulate_result_files(files_to_accumulate, accumulator=None):
 
 try:
     import work_queue as wq
-    from work_queue import WorkQueue, Task
+    from work_queue import Task, WorkQueue
 except ImportError:
     wq = None
     print("work_queue module not available")
@@ -173,7 +162,7 @@ class CoffeaWQ(WorkQueue):
         if executor.compression is None:
             executor.compression = 1
 
-        # activate monitoring if it has not been explicitely activated and we are
+        # activate monitoring if it has not been explicitly activated and we are
         # using an automatic resource allocation.
         if executor.resources_mode != "fixed" and executor.resource_monitor == "off":
             executor.resource_monitor = "watchdog"
@@ -666,9 +655,9 @@ class CoffeaWQTask(Task):
 
         self.infile_fn = infile_fn
 
-        self.infile_args = join(queue.staging_dir, "args_{}.p".format(self.itemid))
-        self.outfile_output = join(queue.staging_dir, "out_{}.p".format(self.itemid))
-        self.outfile_stdout = join(queue.staging_dir, "stdout_{}.p".format(self.itemid))
+        self.infile_args = join(queue.staging_dir, f"args_{self.itemid}.p")
+        self.outfile_output = join(queue.staging_dir, f"out_{self.itemid}.p")
+        self.outfile_stdout = join(queue.staging_dir, f"stdout_{self.itemid}.p")
 
         with open(self.infile_args, "wb") as wf:
             cloudpickle.dump(item_args, wf)
@@ -716,7 +705,7 @@ class CoffeaWQTask(Task):
     def std_output(self):
         if not self._stdout:
             try:
-                with open(self.outfile_stdout, "r") as rf:
+                with open(self.outfile_stdout) as rf:
                     self._stdout = rf.read()
             except Exception:
                 self._stdout = None
@@ -774,7 +763,7 @@ class CoffeaWQTask(Task):
         self.output  # load results, if needed
 
         has_output = "" if self._has_result() else "out"
-        msg = "{} with{} result.".format(self.itemid, has_output)
+        msg = f"{self.itemid} with{has_output} result."
         return msg
 
     def successful(self):
@@ -870,7 +859,7 @@ class CoffeaWQTask(Task):
 class PreProcCoffeaWQTask(CoffeaWQTask):
     def __init__(self, queue, infile_fn, item, itemid=None):
         if not itemid:
-            itemid = "pre_{}".format(CoffeaWQTask.tasks_counter)
+            itemid = f"pre_{CoffeaWQTask.tasks_counter}"
 
         self.item = item
 
@@ -881,7 +870,7 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
 
         if re.search("://", item.filename) or os.path.isabs(item.filename):
             # This looks like an URL or an absolute path (assuming shared
-            # filesystem). Not transfering file.
+            # filesystem). Not transferring file.
             pass
         else:
             self.specify_input_file(
@@ -901,7 +890,7 @@ class PreProcCoffeaWQTask(CoffeaWQTask):
     def debug_info(self):
         i = self.item
         msg = super().debug_info()
-        return "{} {}".format((i.dataset, i.filename, i.treename), msg)
+        return f"{(i.dataset, i.filename, i.treename)} {msg}"
 
     def task_accum_log(self, log_filename, accum_parent, status):
         meta = list(self.output)[0].metadata
@@ -916,7 +905,7 @@ class ProcCoffeaWQTask(CoffeaWQTask):
         self.size = len(item)
 
         if not itemid:
-            itemid = "p_{}".format(CoffeaWQTask.tasks_counter)
+            itemid = f"p_{CoffeaWQTask.tasks_counter}"
 
         self.item = item
 
@@ -926,7 +915,7 @@ class ProcCoffeaWQTask(CoffeaWQTask):
 
         if re.search("://", item.filename) or os.path.isabs(item.filename):
             # This looks like an URL or an absolute path (assuming shared
-            # filesystem). Not transfering file.
+            # filesystem). Not transferring file.
             pass
         else:
             self.specify_input_file(
@@ -956,7 +945,7 @@ class ProcCoffeaWQTask(CoffeaWQTask):
             return super().resubmit(queue)
 
     def split(self, queue):
-        queue.console.warn(f"spliting task id {self.id} after resource exhaustion.")
+        queue.console.warn(f"splitting task id {self.id} after resource exhaustion.")
 
         total = len(self.item)
         if total < 2:
@@ -1028,7 +1017,7 @@ class AccumCoffeaWQTask(CoffeaWQTask):
         itemid=None,
     ):
         if not itemid:
-            itemid = "accum_{}".format(CoffeaWQTask.tasks_counter)
+            itemid = f"accum_{CoffeaWQTask.tasks_counter}"
 
         self.tasks_to_accumulate = tasks_to_accumulate
         self.size = sum(len(t) for t in self.tasks_to_accumulate)
@@ -1141,9 +1130,7 @@ def _get_x509_proxy(x509_proxy=None):
     if x509_proxy:
         return x509_proxy
 
-    x509_proxy = join(
-        os.environ.get("TMPDIR", "/tmp"), "x509up_u{}".format(os.getuid())
-    )
+    x509_proxy = join(os.environ.get("TMPDIR", "/tmp"), f"x509up_u{os.getuid()}")
     if os.path.exists(x509_proxy):
         return x509_proxy
 

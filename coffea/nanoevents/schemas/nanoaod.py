@@ -1,6 +1,16 @@
 import warnings
+
 from coffea.nanoevents import transforms
 from coffea.nanoevents.schemas.base import BaseSchema, zip_forms
+
+
+def _key_formatter(prefix, form_key, form, attribute):
+    if attribute == "offsets":
+        form_key += "%2C%21offsets"
+    return prefix + f"/{attribute}/{form_key}"
+
+
+# REMOVE ABOVE
 
 
 class NanoAODSchema(BaseSchema):
@@ -29,6 +39,7 @@ class NanoAODSchema(BaseSchema):
     target is encountered a warning will be issued. Regardless, the cross-reference is dropped.
     """
 
+    __dask_capable__ = True
     warn_missing_crossrefs = True
 
     mixins = {
@@ -155,7 +166,9 @@ class NanoAODSchema(BaseSchema):
             if int(version) < 6:
                 del self.cross_references["FsrPhoton_muonIdx"]
                 del self.cross_references["Muon_fsrPhotonIdx"]
-        self._form["contents"] = self._build_collections(self._form["contents"])
+        self._form["fields"], self._form["contents"] = self._build_collections(
+            self._form["fields"], self._form["contents"]
+        )
         self._form["parameters"]["metadata"]["version"] = self._version
 
     @classmethod
@@ -177,12 +190,13 @@ class NanoAODSchema(BaseSchema):
         """Build the NanoEvents assuming NanoAODv5"""
         return cls(base_form, version="5")
 
-    def _build_collections(self, branch_forms):
+    def _build_collections(self, field_names, input_contents):
+        branch_forms = {k: v for k, v in zip(field_names, input_contents)}
         # parse into high-level records (collections, list collections, and singletons)
-        collections = set(k.split("_")[0] for k in branch_forms)
-        collections -= set(
+        collections = {k.split("_")[0] for k in branch_forms}
+        collections -= {
             k for k in collections if k.startswith("n") and k[1:] in collections
-        )
+        }
         isData = "GenPart" not in collections
 
         # Create offsets virtual arrays
@@ -277,7 +291,7 @@ class NanoAODSchema(BaseSchema):
                 output[name].setdefault("parameters", {})
                 output[name]["parameters"].update({"collection_name": name})
 
-        return output
+        return output.keys(), output.values()
 
     @property
     def behavior(self):

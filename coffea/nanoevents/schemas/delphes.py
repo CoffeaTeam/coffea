@@ -11,6 +11,8 @@ class DelphesSchema(BaseSchema):
     - Any branches named ``{name}_size`` are assumed to be counts branches and converted to offsets ``o{name}``
     """
 
+    __dask_capable__ = True
+
     warn_missing_crossrefs = True
 
     mixins = {
@@ -172,7 +174,7 @@ class DelphesSchema(BaseSchema):
         "Trigger": "trigger word",
         "TrimmedP4[5]": "first entry (i = 0) is the total Trimmed Jet 4-momenta and from i = 1 to 4 are the trimmed subjets 4-momenta",
         "Tx": "angle of the momentum in the horizontal (x,z) plane [urad]",
-        "Ty": "angle of the momentum in the verical (y,z) plane [urad]",
+        "Ty": "angle of the momentum in the vertical (y,z) plane [urad]",
         "VertexIndex": "reference to vertex",
         "Weight": "weight for the event",
         "X1": 'fraction of beam momentum carried by first parton ("beam side")',
@@ -185,14 +187,19 @@ class DelphesSchema(BaseSchema):
         "Zd": "Z coordinate of point of closest approach to vertex",
     }
 
-    def __init__(self, base_form, version="latest"):
+    def __init__(self, base_form, version="latest", *args, **kwargs):
         super().__init__(base_form)
         self._version = version
         if version == "latest":
             pass
         else:
             pass
-        self._form["contents"] = self._build_collections(self._form["contents"])
+        old_style_form = {
+            k: v for k, v in zip(self._form["fields"], self._form["contents"])
+        }
+        output = self._build_collections(old_style_form)
+        self._form["fields"] = [k for k in output.keys()]
+        self._form["contents"] = [v for v in output.values()]
         self._form["parameters"]["metadata"]["version"] = self._version
 
     @classmethod
@@ -205,34 +212,36 @@ class DelphesSchema(BaseSchema):
         return cls(base_form, version="1")
 
     def _build_collections(self, branch_forms):
-        def _tlorentz_vectorize(objname, form):
-            # first handle RecordArray
-            if {"fE", "fP"} == form.get("contents", {}).keys():
+        def _preprocess_branch_form(objname, form):
+            if (
+                form.get("class", "") == "RecordArray"
+                and len({"fE", "fP"} & set(form["fields"])) == 2
+            ):
+                # Match TLorentzVector RecordArrays and convert
+                fP = form["contents"][form["fields"].index("fP")]
+                fE = form["contents"][form["fields"].index("fE")]
                 return zip_forms(
                     {
-                        "x": form["contents"]["fP"]["contents"]["fX"],
-                        "y": form["contents"]["fP"]["contents"]["fY"],
-                        "z": form["contents"]["fP"]["contents"]["fZ"],
-                        "t": form["contents"]["fE"],
+                        "x": fP["contents"][fP["fields"].index("fX")],
+                        "y": fP["contents"][fP["fields"].index("fY")],
+                        "z": fP["contents"][fP["fields"].index("fZ")],
+                        "t": fE,
                     },
                     objname,
                     "LorentzVector",
                 )
-            # If there's no "content", like a NumpyArray, just return.
-            # Note: this comes after checking for RecordArray.
-            if "content" not in form:
-                return form
-            # Then recursively go through and update the form's content.
-            form["content"] = _tlorentz_vectorize(objname, form["content"])
+            elif "content" in form:
+                # List*Array: recurse
+                form["content"] = _preprocess_branch_form(objname, form["content"])
             return form
 
         # preprocess lorentz vectors properly (and recursively)
         for objname, form in branch_forms.items():
-            branch_forms[objname] = _tlorentz_vectorize(objname, form)
+            branch_forms[objname] = _preprocess_branch_form(objname, form)
 
         # parse into high-level records (collections, list collections, and singletons)
-        collections = set(k.split("/")[0] for k in branch_forms)
-        collections -= set(k for k in collections if k.endswith("_size"))
+        collections = {k.split("/")[0] for k in branch_forms}
+        collections -= {k for k in collections if k.endswith("_size")}
 
         # Create offsets virtual arrays
         for name in collections:
@@ -257,23 +266,23 @@ class DelphesSchema(BaseSchema):
 
             # update docstrings as needed
             # NB: must be before flattening for easier logic
-            for parameter in output[name]["content"]["contents"].keys():
-                if "parameters" not in output[name]["content"]["contents"][parameter]:
+            for index, parameter in enumerate(output[name]["content"]["fields"]):
+                if "parameters" not in output[name]["content"]["contents"][index]:
                     continue
-                output[name]["content"]["contents"][parameter]["parameters"][
+                output[name]["content"]["contents"][index]["parameters"][
                     "__doc__"
                 ] = self.docstrings.get(
                     parameter,
-                    output[name]["content"]["contents"][parameter]["parameters"].get(
+                    output[name]["content"]["contents"][index]["parameters"].get(
                         "__doc__", "no docstring available"
                     ),
                 )
 
             # handle branches named like [4] and [5]
-            output[name]["content"]["contents"] = {
-                k.replace("[", "_").replace("]", ""): v
-                for k, v in output[name]["content"]["contents"].items()
-            }
+            output[name]["content"]["fields"] = [
+                k.replace("[", "_").replace("]", "")
+                for k in output[name]["content"]["fields"]
+            ]
             output[name]["content"]["parameters"].update(
                 {
                     "__doc__": offsets["parameters"]["__doc__"],

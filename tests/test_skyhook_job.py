@@ -1,11 +1,12 @@
 import os
+
+import awkward as ak
 import toml
 import uproot
-import awkward as ak
-from coffea import processor
-from coffea.processor.test_items import NanoEventsProcessor
-from coffea.nanoevents import schemas
 
+from coffea import processor
+from coffea.nanoevents import schemas
+from coffea.processor.test_items import NanoEventsProcessor
 
 if __name__ == "__main__":
     config_dict = {

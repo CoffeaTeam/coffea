@@ -1,0 +1,26 @@
+task:
+  only_if: $CIRRUS_BRANCH == 'master' || $CIRRUS_TAG != '' || $CIRRUS_PR != ''
+  env:
+    CIRRUS_CLONE_SUBMODULES: true
+
+  matrix:
+    - name: Test build
+
+      # match the github actions resources
+      arm_container:
+        cpu: 2
+        memory: 7G
+        matrix:
+          - image: python:3.8
+          - image: python:3.10
+
+      create_venv_script: |
+        python -m venv ../venv
+      install_script: |
+        . ../venv/bin/activate
+        python -m pip install --upgrade pip setuptools wheel
+        python -m pip install --verbose .[dev,parsl,dask]
+        python -m pip list
+      pytest_script: |
+        . ../venv/bin/activate
+        pytest tests

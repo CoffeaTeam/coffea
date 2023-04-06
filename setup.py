@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 # Copyright (c) 2018, Fermilab
 # All rights reserved.
@@ -31,8 +30,7 @@
 
 import os.path
 
-from setuptools import find_packages
-from setuptools import setup
+from setuptools import find_packages, setup
 
 
 def get_version():
@@ -56,18 +54,17 @@ def get_description():
 
 
 INSTALL_REQUIRES = [
-    "awkward>=1.10.3,<2",
-    "uproot>=4.1.6,==4.*,!=4.2.4,!=4.3.0,!=4.3.1",
-    "uproot3-methods>=0.10.0",
-    "uproot3>=3.14.1",
+    "awkward>=2.1.0",
+    "uproot>=5.0.5",
+    "dask[array]>=2022.12.1",
+    "dask-awkward>=2023.3",
+    "dask-histogram>=2023.2",
     "correctionlib>=2.0.0",
-    "pyarrow>=1.0.0",
+    "pyarrow>=6.0.0",
     "fsspec",
     "matplotlib>=3",
-    'numba>=0.50.0;python_version<"3.7"',
-    'numba>=0.56.0;python_version>"3.6"',
-    'numpy>=1.16.0,<1.22;python_version<"3.7"',  # <1.22 for numba version restrictions with 1.55 series
-    'numpy>=1.18.0,<1.24;python_version>"3.6"',  # numba 1.56 available for python > 3.6, upper requirement for higher python versions
+    "numba>=0.56.0",
+    "numpy>=1.22.0,<1.24",  # < 1.24 for numba 0.56 series
     "scipy>=1.1.0",
     "tqdm>=4.27.0",
     "lz4",
@@ -77,16 +74,14 @@ INSTALL_REQUIRES = [
     "packaging",
     "pandas",
     "hist>=2",
-    'typing-extensions;python_version<"3.8"',
     "cachetools",
-    'dataclasses;python_version<"3.7"',
 ]
 EXTRAS_REQUIRE = {}
-EXTRAS_REQUIRE["spark"] = ["ipywidgets", "pyspark>=2.4.1,<3.0.0", "jinja2"]
-EXTRAS_REQUIRE["parsl"] = ["parsl>=1.1"]
+EXTRAS_REQUIRE["spark"] = ["ipywidgets", "pyspark>=3.3.0", "jinja2"]
+EXTRAS_REQUIRE["parsl"] = ["parsl>=2022.12.1"]
 EXTRAS_REQUIRE["dask"] = [
-    "dask[dataframe]>=2.6.0",
-    "distributed>=2.6.0",
+    "dask[dataframe]>=2022.12.1",
+    "distributed>=2022.12.1",
     "bokeh>=1.3.4",
     "blosc",
 ]
@@ -97,6 +92,7 @@ EXTRAS_REQUIRE["servicex"] = [
     "func-adl_servicex",
 ]
 EXTRAS_REQUIRE["dev"] = [
+    "pre-commit",
     "flake8",
     "black",
     "pytest",
@@ -114,44 +110,12 @@ EXTRAS_REQUIRE["dev"] = [
 ]
 
 setup(
-    name="coffea",
     version=get_version(),
     packages=find_packages(exclude=["tests"]),
     scripts=[],
     include_package_data=True,
-    description="Tools for doing Collider HEP style analysis with columnar operations",
     long_description=get_description(),
-    author="Lindsey Gray (Fermilab)",
-    author_email="lagray@fnal.gov",
-    maintainer="Lindsey Gray (Fermilab)",
-    maintainer_email="lagray@fnal.gov",
-    url="https://github.com/CoffeaTeam/coffea",
-    download_url="https://github.com/CoffeaTeam/coffea/releases",
-    license="BSD 3-clause",
     test_suite="tests",
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,
-    classifiers=[
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
-        "Intended Audience :: Information Technology",
-        "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: BSD License",
-        "Operating System :: MacOS",
-        "Operating System :: POSIX",
-        "Operating System :: Unix",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Topic :: Scientific/Engineering",
-        "Topic :: Scientific/Engineering :: Information Analysis",
-        "Topic :: Scientific/Engineering :: Mathematics",
-        "Topic :: Scientific/Engineering :: Physics",
-        "Topic :: Software Development",
-        "Topic :: Utilities",
-    ],
-    platforms="Any",
 )

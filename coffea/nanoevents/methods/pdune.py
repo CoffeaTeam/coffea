@@ -1,8 +1,8 @@
 """Mixins for the ATLAS PHYSLITE schema - work in progress."""
 import awkward
 import numpy
-from coffea.nanoevents.methods import base, vector
 
+from coffea.nanoevents.methods import base, vector
 
 behavior = {}
 behavior.update(base.behavior)

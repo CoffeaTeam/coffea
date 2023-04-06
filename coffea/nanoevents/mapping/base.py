@@ -1,7 +1,9 @@
 from abc import abstractmethod
-from cachetools import LRUCache
 from collections.abc import Mapping
+
 import numpy
+from cachetools import LRUCache
+
 from coffea.nanoevents import transforms
 from coffea.nanoevents.util import key_to_tuple, tuple_to_key
 
@@ -18,10 +20,15 @@ class UUIDOpener:
 class BaseSourceMapping(Mapping):
     _debug = False
 
-    def __init__(self, fileopener, cache=None, access_log=None):
+    def __init__(
+        self, fileopener, start, stop, cache=None, access_log=None, use_ak_forth=False
+    ):
         self._fileopener = fileopener
         self._cache = cache
         self._access_log = access_log
+        self._start = start
+        self._stop = stop
+        self._use_ak_forth = use_ak_forth
         self.setup()
 
     def setup(self):
@@ -53,7 +60,7 @@ class BaseSourceMapping(Mapping):
         pass
 
     @abstractmethod
-    def extract_column(self, columnhandle):
+    def extract_column(self, columnhandle, start, stop, **kwargs):
         pass
 
     @classmethod
@@ -70,7 +77,7 @@ class BaseSourceMapping(Mapping):
     def __getitem__(self, key):
         uuid, treepath, start, stop, nodes = self.interpret_key(key)
         if self._debug:
-            print("Gettting:", uuid, treepath, start, stop, nodes)
+            print("Getting (", key, ") :", uuid, treepath, start, stop, nodes)
         stack = []
         skip = False
         for node in nodes:
@@ -87,7 +94,11 @@ class BaseSourceMapping(Mapping):
                 handle = self.get_column_handle(
                     self._column_source(uuid, treepath), handle_name
                 )
-                stack.append(self.extract_column(handle, start, stop))
+                stack.append(
+                    self.extract_column(
+                        handle, start, stop, use_ak_forth=self._use_ak_forth
+                    )
+                )
             elif node.startswith("!"):
                 tname = node[1:]
                 if not hasattr(transforms, tname):

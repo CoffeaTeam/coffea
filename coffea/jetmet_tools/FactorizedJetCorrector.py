@@ -1,8 +1,11 @@
-from ..lookup_tools.jme_standard_function import jme_standard_function
 import re
-import awkward
-import numpy
 from functools import reduce
+
+import awkward
+import dask_awkward
+import numpy
+
+from coffea.lookup_tools.jme_standard_function import jme_standard_function
 
 
 def _checkConsistency(against, tocheck):
@@ -23,7 +26,7 @@ _levelre = re.compile("[L1-7]+")
 def _getLevel(levelName):
     matches = _levelre.findall(levelName)
     if len(matches) > 1:
-        raise Exception("Malformed JEC level name: {}".format(levelName))
+        raise Exception(f"Malformed JEC level name: {levelName}")
     return matches[0]
 
 
@@ -35,7 +38,18 @@ def _sorting_key(name_and_func):
     return _level_order.index(this_level)
 
 
-class FactorizedJetCorrector(object):
+class _getCorrectionFn:
+    def __init__(self, jec, **kwargs):
+        self.jec = jec
+        self.kwarg_keys = list(kwargs.keys())
+
+    def __call__(self, *args):
+        kwargs = {k: v for k, v in zip(self.kwarg_keys, args)}
+        corrs = self.jec.getSubCorrections(**kwargs)
+        return reduce(lambda x, y: y * x, corrs, 1.0)
+
+
+class FactorizedJetCorrector:
     """
     This class is a columnar implementation of the FactorizedJetCorrector tool in
     CMSSW and FWLite. It applies a series of JECs in ascending order as defined by
@@ -143,30 +157,28 @@ class FactorizedJetCorrector(object):
             jecs = corrector.getCorrection(JetProperty1=jet.property1,...)
 
         """
-        cache = kwargs.get("lazy_cache", None)
-        form = kwargs.get("form", None)
-        first_arg = kwargs[self.signature[0]]
-
-        def total_corr(jec, **kwargs):
-            corrs = jec.getSubCorrections(**kwargs)
-            return reduce(lambda x, y: y * x, corrs, 1.0)
-
-        out = None
-        if isinstance(first_arg, awkward.highlevel.Array):
-            out = awkward.virtual(
-                total_corr,
-                args=(self,),
-                kwargs=kwargs,
-                length=len(first_arg),
-                form=form,
-                cache=cache,
+        first_kwarg = kwargs[list(kwargs.keys())[0]]
+        if type(first_kwarg) is dask_awkward.Array:
+            levels = "/".join(self._levels)
+            func = _getCorrectionFn(self, **kwargs)
+            meta = dask_awkward.typetracer_from_form(
+                func(
+                    *tuple(
+                        arg._meta.layout.form.length_zero_array()
+                        for arg in kwargs.values()
+                    )
+                ).layout.form
             )
-        elif isinstance(first_arg, numpy.ndarray):
-            out = total_corr(self, **kwargs)  # np is non-lazy
-        else:
-            raise Exception("Unknown array library for inputs.")
 
-        return out
+            return dask_awkward.map_partitions(
+                func,
+                *tuple(kwargs.values()),
+                label=f"{self._campaign}-{self._dataera}-{self._datatype}-{levels}-{self._jettype}",
+                meta=meta,
+            )
+        else:
+            corrs = self.getSubCorrections(**kwargs)
+            return reduce(lambda x, y: y * x, corrs, 1.0)
 
     def getSubCorrections(self, **kwargs):
         """
@@ -178,8 +190,8 @@ class FactorizedJetCorrector(object):
             #'jecs' will be formatted like [[jec_jet1 jec_jet2 ...] ...]
 
         """
-        cache = kwargs.pop("lazy_cache", None)
-        form = kwargs.pop("form", None)
+        # cache = kwargs.pop("lazy_cache", None)
+        # form = kwargs.pop("form", None)
         corrVars = {}
         if "JetPt" in kwargs.keys():
             corrVars["JetPt"] = kwargs["JetPt"]
@@ -194,19 +206,22 @@ class FactorizedJetCorrector(object):
         for i, func in enumerate(self._funcs):
             sig = func.signature
             cumCorr = reduce(lambda x, y: y * x, corrections, 1.0)
+
             fargs = tuple(
                 (cumCorr * corrVars[arg]) if arg in corrVars.keys() else kwargs[arg]
                 for arg in sig
             )
 
-            if isinstance(fargs[0], awkward.highlevel.Array):
+            # lookup_base handles dask/awkward/numpy
+            if isinstance(
+                fargs[0], (dask_awkward.Array, awkward.highlevel.Array, numpy.ndarray)
+            ):
                 corrections.append(
-                    awkward.virtual(
-                        func, args=fargs, length=len(fargs[0]), form=form, cache=cache
+                    func(
+                        *fargs,
+                        dask_label=f"{self._campaign}-{self._dataera}-{self._datatype}-{self._levels[i]}-{self._jettype}",
                     )
                 )
-            elif isinstance(fargs[0], numpy.ndarray):
-                corrections.append(func(*fargs))  # np is non-lazy
             else:
                 raise Exception("Unknown array library for inputs.")
 

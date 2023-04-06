@@ -1,6 +1,6 @@
 """2D, 3D, and Lorentz vector class mixins
 
-These mixins will eventually be superceded by the `vector <https://github.com/scikit-hep/vector>`__ library,
+These mixins will eventually be superseded by the `vector <https://github.com/scikit-hep/vector>`__ library,
 which will hopefully be feature-compatible. The 2D vector provides cartesian and polar coordinate attributes,
 where ``r`` represents the polar distance from the origin..  The 3D vector provides cartesian and spherical coordinates,
 where ``rho`` represents the 3D distance from the origin and ``r`` is the axial distance from the z axis, so that it can
@@ -43,9 +43,10 @@ A small example::
 
 """
 import numbers
-import numpy
+
 import awkward
 import numba
+import numpy
 
 
 @numba.vectorize(
@@ -161,7 +162,7 @@ class TwoVector:
         transpose=False,
     )
     def subtract(self, other):
-        """Substract a vector from another elementwise using `x` and `y` compontents"""
+        """Subtract a vector from another elementwise using `x` and `y` components"""
         return awkward.zip(
             {"x": self.x - other.x, "y": self.y - other.y},
             with_name="TwoVector",
@@ -616,7 +617,7 @@ class LorentzVector(ThreeVector):
 
     @property
     def pvec(self):
-        """The `x`, `y` and `z` compontents as a `ThreeVector`"""
+        """The `x`, `y` and `z` components as a `ThreeVector`"""
         return awkward.zip(
             {"x": self.x, "y": self.y, "z": self.z},
             with_name="ThreeVector",
@@ -625,7 +626,7 @@ class LorentzVector(ThreeVector):
 
     @property
     def boostvec(self):
-        """The `x`, `y` and `z` compontents divided by `t` as a `ThreeVector`
+        """The `x`, `y` and `z` components divided by `t` as a `ThreeVector`
 
         This can be used for boosting. For cases where `|t| <= rho`, this
         returns the unit vector.
@@ -666,7 +667,11 @@ class LorentzVector(ThreeVector):
         )
 
     def metric_table(
-        self, other, axis=1, metric=lambda a, b: a.delta_r(b), return_combinations=False
+        self,
+        other,
+        axis=1,
+        metric=lambda a, b: a.delta_r(b),
+        return_combinations=False,
     ):
         """Return a list of a metric evaluated between this object and another.
 

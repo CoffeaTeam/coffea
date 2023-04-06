@@ -1,4 +1,5 @@
 from collections.abc import MutableMapping
+
 import uproot
 
 
@@ -67,8 +68,7 @@ class LazyDataFrame(MutableMapping):
             raise AttributeError(key)
 
     def __iter__(self):
-        for item in self._available:
-            yield item
+        yield from self._available
 
     def __len__(self):
         return len(self._dict)

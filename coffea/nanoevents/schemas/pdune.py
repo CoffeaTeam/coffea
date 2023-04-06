@@ -1,14 +1,15 @@
 # import warnings
 # from collections import defaultdict
 # import copy
-from coffea.nanoevents.schemas.base import BaseSchema, zip_forms
-
 # from coffea.nanoevents.util import quote
 import collections.abc
 import fnmatch
 
+from coffea.nanoevents.schemas.base import BaseSchema, zip_forms
+
 
 class PDUNESchema(BaseSchema):
+    __dask_capable__ = False
     mixins = {
         # branch tag : obj. class
         "RecoBeam": "Beam",
@@ -34,7 +35,12 @@ class PDUNESchema(BaseSchema):
     def __init__(self, base_form):
         super().__init__(base_form)
         # print(self.branch_behavior_dict)
-        self._form["contents"] = self._build_collections(self._form["contents"])
+        old_style_contents = {
+            k: v for k, v in zip(self._form["fields"], self._form["contents"])
+        }
+        output = self._build_collections(old_style_contents)
+        self._form["fields"] = [k for k in output.keys()]
+        self._form["contents"] = [v for v in output.values()]
 
     # build a dictionary of hierarchy i.e.
     # dict["RecoBeam"]["start"]["x/y/z"]=form
@@ -89,23 +95,19 @@ class PDUNESchema(BaseSchema):
         V4Var = ["Px", "Py", "Pz", "E"]
         # get suffix, check if it ends with X,Y, or Z
         V3Sets = [
-            set(
-                [
-                    b.split("_")[-1][:-1]
-                    for b in self._filter_branches(all_branches, "*%s" % V)
-                ]
-            )
+            {
+                b.split("_")[-1][:-1]
+                for b in self._filter_branches(all_branches, "*%s" % V)
+            }
             for V in V3Var
         ]
         V3Set = V3Sets[0].intersection(V3Sets[1], V3Sets[2])
 
         V4Sets = [
-            set(
-                [
-                    b.split("_")[-1][: -len(V)]
-                    for b in self._filter_branches(all_branches, "*%s" % V)
-                ]
-            )
+            {
+                b.split("_")[-1][: -len(V)]
+                for b in self._filter_branches(all_branches, "*%s" % V)
+            }
             for V in V4Var
         ]
         V4Set = V4Sets[0].intersection(V4Sets[1], V4Sets[2])

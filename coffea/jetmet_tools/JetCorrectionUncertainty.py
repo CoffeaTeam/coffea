@@ -1,7 +1,10 @@
-from coffea.lookup_tools.jec_uncertainty_lookup import jec_uncertainty_lookup
 import re
+
 import awkward
+import dask_awkward
 import numpy
+
+from coffea.lookup_tools.jec_uncertainty_lookup import jec_uncertainty_lookup
 
 
 def _checkConsistency(against, tocheck):
@@ -38,7 +41,7 @@ def split_jec_name(name):
         info[3] = lvl
 
     if len(info) != 5:
-        raise Exception("Corrector name {0} is not properly formatted!".format(name))
+        raise Exception(f"Corrector name {name} is not properly formatted!")
 
     campaign = _checkConsistency(None, info[0])
     dataera = _checkConsistency(None, info[1])
@@ -51,7 +54,7 @@ def split_jec_name(name):
     return campaign, dataera, datatype, level, jettype
 
 
-class JetCorrectionUncertainty(object):
+class JetCorrectionUncertainty:
     """
     This class is a columnar implementation of the JetCorrectionUncertainty tool in
     CMSSW and FWLite. It calculates the jet energy scale uncertainty for a corrected jet
@@ -154,18 +157,20 @@ class JetCorrectionUncertainty(object):
             #in a zip iterator
 
         """
-        cache = kwargs.pop("lazy_cache", None)
         uncs = []
         for i, func in enumerate(self._funcs):
             sig = func.signature
-            args = tuple(kwargs[input] for input in sig)
+            args = tuple(kwargs[inp] for inp in sig)
 
-            if isinstance(args[0], awkward.highlevel.Array):
+            if isinstance(
+                args[0], (dask_awkward.Array, awkward.highlevel.Array, numpy.ndarray)
+            ):
                 uncs.append(
-                    awkward.virtual(func, args=args, length=len(args[0]), cache=cache)
+                    func(
+                        *args,
+                        dask_label=f"{self._campaign}-{self._dataera}-{self._datatype}-{self._levels[i]}-{self._jettype}",
+                    )
                 )
-            elif isinstance(args[0], numpy.ndarray):
-                uncs.append(func(*args))  # np is non-lazy
             else:
                 raise Exception("Unknown array library for inputs.")
 

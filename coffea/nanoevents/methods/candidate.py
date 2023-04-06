@@ -1,13 +1,13 @@
 """Physics object candidate mixin
 
 This provides just a Lorentz vector with charge, but maybe
-in the future it will provide some sort of composite candiate building tool
+in the future it will provide some sort of composite candidate building tool
 that automatically resolves duplicates in the chain.
 """
-import numpy
 import awkward
-from coffea.nanoevents.methods import vector
+import numpy
 
+from coffea.nanoevents.methods import vector
 
 behavior = dict(vector.behavior)
 

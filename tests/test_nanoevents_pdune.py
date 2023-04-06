@@ -1,7 +1,9 @@
 # from coffea.nanoevents import NanoEventsFactory, PDUNESchema, PHYSLITESchema
 import os
-import pytest
+
 import awkward as ak
+import pytest
+
 from coffea.nanoevents import NanoEventsFactory, PDUNESchema
 
 # import numpy as np

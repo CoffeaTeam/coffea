@@ -1,46 +1,45 @@
-from __future__ import print_function, division
 import concurrent.futures
-from functools import partial
-from itertools import repeat
-import os
-import time
-import pickle
-import sys
-import math
 import json
-import cloudpickle
-import toml
-import uproot
+import math
+import os
+import pickle
+import shutil
+import sys
+import time
+import traceback
 import uuid
 import warnings
-import traceback
-import shutil
 from collections import defaultdict
-from cachetools import LRUCache
-from io import BytesIO
-import lz4.frame as lz4f
-from contextlib import ExitStack
-from .processor import ProcessorABC
-from .accumulator import accumulate, set_accumulator, Accumulatable
-from .dataframe import LazyDataFrame
-from ..nanoevents import NanoEventsFactory, schemas
-from ..util import _hash, _exception_chain, rich_bar
-
 from collections.abc import Mapping, MutableMapping
-from dataclasses import dataclass, field, asdict
+from contextlib import ExitStack
+from dataclasses import asdict, dataclass, field
+from functools import partial
+from io import BytesIO
+from itertools import repeat
 from typing import (
-    Iterable,
-    Callable,
-    Optional,
-    List,
-    Set,
-    Generator,
-    Dict,
-    Union,
-    Tuple,
     Awaitable,
+    Callable,
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
 )
 
+import cloudpickle
+import lz4.frame as lz4f
+import toml
+import uproot
+from cachetools import LRUCache
+
+from ..nanoevents import NanoEventsFactory, schemas
+from ..util import _exception_chain, _hash, rich_bar
+from .accumulator import Accumulatable, accumulate, set_accumulator
+from .dataframe import LazyDataFrame
+from .processor import ProcessorABC
 
 try:
     from typing import Literal
@@ -75,7 +74,7 @@ class UprootMissTreeError(uproot.exceptions.KeyInFileError):
     pass
 
 
-class FileMeta(object):
+class FileMeta:
     __slots__ = ["dataset", "filename", "treename", "metadata"]
 
     def __init__(self, dataset, filename, treename, metadata=None):
@@ -85,7 +84,7 @@ class FileMeta(object):
         self.metadata = metadata
 
     def __str__(self):
-        return "FileMeta(%s:%s)" % (self.filename, self.treename)
+        return f"FileMeta({self.filename}:{self.treename})"
 
     def __hash__(self):
         # As used to lookup metadata, no need for dataset
@@ -199,7 +198,7 @@ def _decompress(item):
         return item
 
 
-class _compression_wrapper(object):
+class _compression_wrapper:
     def __init__(self, level, function, name=None):
         self.level = level
         self.function = function
@@ -487,7 +486,7 @@ class WorkQueueExecutor(ExecutorBase):
             Number of GPUs to allocate to each task.  If unset, use zero.
         resource_monitor : str
             If given, one of 'off', 'measure', or 'watchdog'. Default is 'off'.
-            - 'off': turns off resource monitoring. Overriden to 'watchdog' if resources_mode
+            - 'off': turns off resource monitoring. Overridden to 'watchdog' if resources_mode
                      is not set to 'fixed'.
             - 'measure': turns on resource monitoring for Work Queue. The
                         resources used per task are measured.
@@ -724,8 +723,8 @@ class FuturesExecutor(ExecutorBase):
         maxred : int, optional
             maximum number of items to merge in one job. Also pass via ``merging(..., ..., X)''
         mergepool : concurrent.futures.Executor class or instance | int, optional
-            Supply an additional executor to process merge jobs indepedently.
-            An ``int`` will be interpretted as ``ProcessPoolExecutor(max_workers=int)``.
+            Supply an additional executor to process merge jobs independently.
+            An ``int`` will be interpreted as ``ProcessPoolExecutor(max_workers=int)``.
         tailtimeout : int, optional
             Timeout requirement on job tails. Cancel all remaining jobs if none have finished
             in the timeout window.
@@ -778,7 +777,7 @@ class FuturesExecutor(ExecutorBase):
 
         def _processwith(pool, mergepool):
             FH = _FuturesHolder(
-                set(pool.submit(function, item) for item in items), refresh=2
+                {pool.submit(function, item) for item in items}, refresh=2
             )
 
             try:
@@ -791,7 +790,7 @@ class FuturesExecutor(ExecutorBase):
             except Exception as e:
                 traceback.print_exc()
                 if self.recoverable:
-                    print("Exception occured, recovering progress...")
+                    print("Exception occurred, recovering progress...")
                     for job in FH.futures:
                         job.cancel()
 
@@ -1068,6 +1067,7 @@ class ParslExecutor(ExecutorBase):
             return accumulator
         import parsl
         from parsl.app.app import python_app
+
         from .parsl.timeout import timeout
 
         if self.compression is not None:
@@ -1117,7 +1117,7 @@ class ParslExecutor(ExecutorBase):
         except Exception as e:
             traceback.print_exc()
             if self.recoverable:
-                print("Exception occured, recovering progress...")
+                print("Exception occurred, recovering progress...")
                 # for job in FH.futures:  # NotImplemented in parsl
                 #     job.cancel()
 
@@ -1159,9 +1159,9 @@ class ParquetFileContext:
 
         if self.filehandle is None:
             self.filehandle = pq.ParquetFile(self.filename)
-            self.branchnames = set(
+            self.branchnames = {
                 item.path.split(".")[0] for item in self.filehandle.schema
-            )
+            }
 
     @property
     def num_entries(self):
@@ -1313,6 +1313,7 @@ class Runner:
         cache = None
         if cachestrategy == "dask-worker":
             from distributed import get_worker
+
             from coffea.processor.dask import ColumnCache
 
             worker = get_worker()
@@ -1411,7 +1412,7 @@ class Runner:
                 yield FileMeta(dataset, filename, local_treename, user_meta)
 
     @staticmethod
-    def metadata_fetcher(
+    def metadata_fetcher_root(
         xrootdtimeout: int, align_clusters: bool, item: FileMeta
     ) -> Accumulatable:
         with uproot.open({item.filename: None}, timeout=xrootdtimeout) as file:
@@ -1431,13 +1432,27 @@ class Runner:
             )
         return out
 
-    def _preprocess_fileset(self, fileset: Dict) -> None:
+    @staticmethod
+    def metadata_fetcher_parquet(item: FileMeta):
+        with ParquetFileContext(item.filename) as file:
+            metadata = {}
+            if item.metadata:
+                metadata.update(item.metadata)
+            metadata.update(
+                {"numentries": file.num_entries, "uuid": b"NO_UUID_0000_000"}
+            )
+            out = set_accumulator(
+                [FileMeta(item.dataset, item.filename, item.treename, metadata)]
+            )
+        return out
+
+    def _preprocess_fileset_root(self, fileset: Dict) -> None:
         # this is a bit of an abuse of map-reduce but ok
-        to_get = set(
+        to_get = {
             filemeta
             for filemeta in fileset
             if not filemeta.populated(clusters=self.align_clusters)
-        )
+        }
         if len(to_get) > 0:
             out = set_accumulator()
             pre_arg_override = {
@@ -1456,7 +1471,43 @@ class Runner:
                 self.automatic_retries,
                 self.retries,
                 self.skipbadfiles,
-                partial(self.metadata_fetcher, self.xrootdtimeout, self.align_clusters),
+                partial(
+                    self.metadata_fetcher_root, self.xrootdtimeout, self.align_clusters
+                ),
+            )
+            out, _ = pre_executor(to_get, closure, out)
+            while out:
+                item = out.pop()
+                self.metadata_cache[item] = item.metadata
+            for filemeta in fileset:
+                filemeta.maybe_populate(self.metadata_cache)
+
+    def _preprocess_fileset_parquet(self, fileset: Dict) -> None:
+        # this is a bit of an abuse of map-reduce but ok
+        to_get = {
+            filemeta
+            for filemeta in fileset
+            if not filemeta.populated(clusters=self.align_clusters)
+        }
+        if len(to_get) > 0:
+            out = set_accumulator()
+            pre_arg_override = {
+                "function_name": "get_metadata",
+                "desc": "Preprocessing",
+                "unit": "file",
+                "compression": None,
+            }
+            if isinstance(self.pre_executor, (FuturesExecutor, ParslExecutor)):
+                pre_arg_override.update({"tailtimeout": None})
+            if isinstance(self.pre_executor, (DaskExecutor)):
+                self.pre_executor.heavy_input = None
+                pre_arg_override.update({"worker_affinity": False})
+            pre_executor = self.pre_executor.copy(**pre_arg_override)
+            closure = partial(
+                self.automatic_retries,
+                self.retries,
+                self.skipbadfiles,
+                self.metadata_fetcher_parquet,
             )
             out, _ = pre_executor(to_get, closure, out)
             while out:
@@ -1480,7 +1531,7 @@ class Runner:
         config = None
         if self.use_skyhook:
             config = Runner.read_coffea_config()
-        if self.format == "root":
+        if not self.use_skyhook and (self.format == "root" or self.format == "parquet"):
             if self.maxchunks is None:
                 last_chunksize = self.chunksize
                 for filemeta in fileset:
@@ -1599,15 +1650,23 @@ class Runner:
             if schema is None:
                 # To deprecate
                 tree = None
+                events = None
                 if format == "root":
                     tree = file[item.treename]
+                    events = uproot.dask(tree, ak_add_doc=True)[
+                        item.entrystart : item.entrystop
+                    ]
+                    setattr(events, "metadata", metadata)
                 elif format == "parquet":
+                    import dask_awkward
+
                     tree = file
+                    events = dask_awkward.from_parquet(item.filename)[
+                        item.entrystart : item.entrystop
+                    ]
+                    setattr(events, "metadata", metadata)
                 else:
                     raise ValueError("Format can only be root or parquet!")
-                events = LazyDataFrame(
-                    tree, item.entrystart, item.entrystop, metadata=metadata
-                )
             elif issubclass(schema, schemas.BaseSchema):
                 # change here
                 if format == "root":
@@ -1615,14 +1674,13 @@ class Runner:
                     factory = NanoEventsFactory.from_root(
                         file=file,
                         treepath=item.treename,
-                        entry_start=item.entrystart,
-                        entry_stop=item.entrystop,
                         persistent_cache=cache_function(),
                         schemaclass=schema,
                         metadata=metadata,
                         access_log=materialized,
+                        permit_dask=True,
                     )
-                    events = factory.events()
+                    events = factory.events()[item.entrystart : item.entrystop]
                 elif format == "parquet":
                     skyhook_options = {}
                     if ":" in item.filename:
@@ -1642,8 +1700,9 @@ class Runner:
                         schemaclass=schema,
                         metadata=metadata,
                         skyhook_options=skyhook_options,
+                        permit_dask=True,
                     )
-                    events = factory.events()
+                    events = factory.events()[item.entrystart : item.entrystop]
             else:
                 raise ValueError(
                     "Expected schema to derive from nanoevents.BaseSchema, instead got %r"
@@ -1651,7 +1710,16 @@ class Runner:
                 )
             tic = time.time()
             try:
-                out = processor_instance.process(events)
+                out = None
+                if isinstance(events, LazyDataFrame):
+                    out = processor_instance.process(events)
+                else:
+                    import dask
+                    import dask_awkward
+
+                    to_compute = processor_instance.process(events)
+                    materialized = dask_awkward.necessary_columns(to_compute)
+                    out = dask.compute(to_compute, scheduler="single-threaded")[0]
             except Exception as e:
                 raise Exception(f"Failed processing file: {item!r}") from e
             if out is None:
@@ -1670,11 +1738,11 @@ class Runner:
                         metrics["columns"] = set(materialized)
                         metrics["entries"] = len(events)
                     else:
-                        metrics["columns"] = set(events.materialized)
+                        metrics["columns"] = set(materialized)
                         metrics["entries"] = events.size
                     metrics["processtime"] = toc - tic
-                    return {"out": out, "metrics": metrics, "processed": set([item])}
-                return {"out": out, "processed": set([item])}
+                    return {"out": out, "metrics": metrics, "processed": {item}}
+                return {"out": out, "processed": {item}}
 
     def __call__(
         self,
@@ -1731,7 +1799,18 @@ class Runner:
             for filemeta in fileset:
                 filemeta.maybe_populate(self.metadata_cache)
 
-            self._preprocess_fileset(fileset)
+            self._preprocess_fileset_root(fileset)
+            fileset = self._filter_badfiles(fileset)
+
+            # reverse fileset list to match the order of files as presented in version
+            # v0.7.4. This fixes tests using maxchunks.
+            fileset.reverse()
+        elif self.format == "parquet":
+            fileset = list(self._normalize_fileset(fileset, treename))
+            for filemeta in fileset:
+                filemeta.maybe_populate(self.metadata_cache)
+
+            self._preprocess_fileset_parquet(fileset)
             fileset = self._filter_badfiles(fileset)
 
             # reverse fileset list to match the order of files as presented in version
@@ -1918,9 +1997,10 @@ def run_spark_job(
         )
         raise e
 
-    from packaging import version
-    import pyarrow as pa
     import warnings
+
+    import pyarrow as pa
+    from packaging import version
 
     arrow_env = ("ARROW_PRE_0_15_IPC_FORMAT", "1")
     if version.parse(pa.__version__) >= version.parse("0.15.0") and version.parse(
@@ -1935,8 +2015,9 @@ def run_spark_job(
             )
 
     import pyspark.sql
+
+    from .spark.detail import _spark_initialize, _spark_make_dfs, _spark_stop
     from .spark.spark_executor import SparkExecutor
-    from .spark.detail import _spark_initialize, _spark_stop, _spark_make_dfs
 
     if not isinstance(fileset, Mapping):
         raise ValueError("Expected fileset to be a mapping dataset: list(files)")

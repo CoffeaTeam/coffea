@@ -1,31 +1,36 @@
 """Utility functions
 
 """
-from typing import List, Optional, Any
-import awkward
 import hashlib
-import numpy
+from typing import Any, List, Optional
+
+import awkward
+import dask_awkward
 import numba
-import coffea
+import numpy
 from rich.progress import (
-    Progress,
     BarColumn,
+    Column,
+    Progress,
+    ProgressColumn,
+    Text,
     TextColumn,
     TimeElapsedColumn,
     TimeRemainingColumn,
-    Column,
-    ProgressColumn,
-    Text,
 )
 
+import coffea
+
 ak = awkward
+dak = dask_awkward
 np = numpy
 nb = numba
 
-import lz4.frame
-import cloudpickle
 import warnings
 from functools import partial
+
+import cloudpickle
+import lz4.frame
 
 
 def load(filename):
@@ -49,7 +54,7 @@ def _hex(string):
     try:
         return string.hex()
     except AttributeError:
-        return "".join("{:02x}".format(ord(c)) for c in string)
+        return "".join(f"{ord(c):02x}" for c in string)
 
 
 def _ascii(maybebytes):
@@ -66,16 +71,18 @@ def _hash(items):
 
 
 def _ensure_flat(array, allow_missing=False):
-    """Normalize an array to a flat numpy array or raise ValueError"""
-    if not isinstance(array, (ak.Array, numpy.ndarray)):
+    """Normalize an array to a flat numpy array, or ensure it is a flat dask-awkward array, or raise ValueError"""
+    if not isinstance(array, (dak.Array, ak.Array, numpy.ndarray)):
         raise ValueError("Expected a numpy or awkward array, received: %r" % array)
 
-    aktype = ak.type(array)
+    aktype = (
+        ak.type(array) if not isinstance(array, dak.Array) else ak.type(array._meta)
+    )
     if not isinstance(aktype, ak.types.ArrayType):
         raise ValueError("Expected an array type, received: %r" % aktype)
-    isprimitive = isinstance(aktype.type, ak.types.PrimitiveType)
-    isoptionprimitive = isinstance(aktype.type, ak.types.OptionType) and isinstance(
-        aktype.type.type, ak.types.PrimitiveType
+    isprimitive = isinstance(aktype.content, ak.types.NumpyType)
+    isoptionprimitive = isinstance(aktype.content, ak.types.OptionType) and isinstance(
+        aktype.content.content, ak.types.NumpyType
     )
     if allow_missing and not (isprimitive or isoptionprimitive):
         raise ValueError(
@@ -146,9 +153,9 @@ def deprecate(exception, version, date=None):
             date = ""
         else:
             date = " (target date: " + date + ")"
-        message = """In coffea version {0}{1}, this will be an error.
+        message = """In coffea version {}{}, this will be an error.
 (Set coffea.deprecations_as_errors = True to get a stack trace now.)
-{2}: {3}""".format(
+{}: {}""".format(
             version, date, type(exception).__name__, str(exception)
         )
         warnings.warn(message, FutureWarning)

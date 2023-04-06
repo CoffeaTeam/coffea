@@ -1,13 +1,13 @@
 from coffea.jetmet_tools.FactorizedJetCorrector import FactorizedJetCorrector, _levelre
+from coffea.jetmet_tools.JetCorrectionUncertainty import JetCorrectionUncertainty
 from coffea.jetmet_tools.JetResolution import JetResolution
 from coffea.jetmet_tools.JetResolutionScaleFactor import JetResolutionScaleFactor
-from coffea.jetmet_tools.JetCorrectionUncertainty import JetCorrectionUncertainty
 
 _singletons = ["jer", "jersf"]
 _nicenames = ["Jet Resolution Calculator", "Jet Resolution Scale Factor Calculator"]
 
 
-class JECStack(object):
+class JECStack:
     def __init__(self, corrections, jec=None, junc=None, jer=None, jersf=None):
         """
         corrections is a dict-like of function names and functions
@@ -50,7 +50,7 @@ class JECStack(object):
             else:
                 raise Exception(
                     'JECStack needs a FactorizedJetCorrector passed as "jec"'
-                    + " got object of type {}".format(type(jec))
+                    + f" got object of type {type(jec)}"
                 )
 
         if junc is None:
@@ -64,7 +64,7 @@ class JECStack(object):
             else:
                 raise Exception(
                     'JECStack needs a JetCorrectionUncertainty passed as "junc"'
-                    + " got object of type {}".format(type(junc))
+                    + f" got object of type {type(junc)}"
                 )
 
         if jer is None:
@@ -77,8 +77,7 @@ class JECStack(object):
                 self._jer = jer
             else:
                 raise Exception(
-                    '"jer" must be of type "JetResolution"'
-                    + " got {}".format(type(jer))
+                    '"jer" must be of type "JetResolution"' + f" got {type(jer)}"
                 )
 
         if jersf is None:
@@ -92,7 +91,7 @@ class JECStack(object):
             else:
                 raise Exception(
                     '"jer" must be of type "JetResolutionScaleFactor"'
-                    + " got {}".format(type(jer))
+                    + f" got {type(jer)}"
                 )
 
         if (self.jer is None) != (self.jersf is None):

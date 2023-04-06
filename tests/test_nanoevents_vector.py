@@ -1,8 +1,8 @@
-import numpy as np
 import awkward as ak
-from coffea.nanoevents.methods import vector
-
+import numpy as np
 import pytest
+
+from coffea.nanoevents.methods import vector
 
 ATOL = 1e-8
 

@@ -2,9 +2,10 @@
 
 See https://cp3.irmp.ucl.ac.be/projects/delphes/wiki/WorkBook/RootTreeDescription for details.
 """
-import numpy
 import awkward
-from coffea.nanoevents.methods import base, vector, candidate
+import numpy
+
+from coffea.nanoevents.methods import base, candidate, vector
 
 behavior = {}
 behavior.update(base.behavior)
