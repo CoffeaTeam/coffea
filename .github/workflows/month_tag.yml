@@ -1,0 +1,25 @@
+on:
+  schedule:
+    - cron:  '0 0 1 * *'
+
+name: monthly-release
+jobs:
+  monthly-release:
+    name: monthly release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: format calver prefix
+        id: prefix
+        run: |
+          echo "::set-output name=date::$(date +'%Y.%-m')"
+      - name: extract tag message
+        id: tagmessage
+        run: |
+          echo "::set-output name=tagmessage::$(git log --pretty='format: - %s' --first-parent $(git describe --tags --abbrev=0)..HEAD)"
+      - uses: actions-ecosystem/action-push-tag@v1
+        with:
+          tag: ${{ steps.prefix.outputs.date }}.0.rc0
+          message: ${{ steps.tagmessage.outputs.tagmessage }}
