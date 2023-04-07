@@ -337,6 +337,10 @@ def test_weights_partial_dak():
 
 
 def test_packed_selection():
+    import awkward as ak
+    import dask.array as da
+    import dask_awkward as dak
+
     from coffea.analysis_tools import PackedSelection
 
     sel = PackedSelection()
@@ -347,12 +351,25 @@ def test_packed_selection():
     fizz = np.arange(shape[0]) % 3 == 0
     buzz = np.arange(shape[0]) % 5 == 0
     ones = np.ones(shape=shape, dtype=np.uint64)
-    wrong_shape = ones = np.ones(shape=(shape[0] - 5,), dtype=bool)
+    wrong_shape = np.ones(shape=(shape[0] - 5,), dtype=bool)
+    wrong_type = dak.from_awkward(ak.Array(np.arange(shape[0]) % 3 == 0), 1)
+    daskarray = da.arange(shape[0]) % 3 == 0
 
-    sel.add("all_true", all_true)
-    sel.add("all_false", all_false)
-    sel.add("fizz", fizz)
-    sel.add("buzz", buzz)
+    assert (
+        sel.delayed_mode
+        == "PackedSelection hasn't been initialized with a boolean array yet!"
+    )
+
+    sel.add_multiple(
+        {"all_true": all_true, "all_false": all_false, "fizz": fizz, "buzz": buzz}
+    )
+
+    assert sel.delayed_mode == False
+    with pytest.raises(
+        ValueError,
+        match="New selection 'wrong_type' is not eager while PackedSelection is!",
+    ):
+        sel.add("wrong_type", wrong_type)
 
     assert np.all(sel.require(all_true=True, all_false=False) == all_true)
     # allow truthy values
@@ -370,20 +387,33 @@ def test_packed_selection():
         == np.array([True, False, False, True, False, True, True, False, False, True])
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=r"New selection 'wrong_shape' has a different shape than existing selections \(\(5,\) vs. \(10,\)\)",
+    ):
         sel.add("wrong_shape", wrong_shape)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Expected a boolean array, received uint64"):
         sel.add("ones", ones)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(
+        RuntimeError,
+        match="Exhausted all slots in this PackedSelection, consider a larger dtype or fewer selections",
+    ):
         overpack = PackedSelection()
         for i in range(65):
             overpack.add("sel_%d", all_true)
 
+    with pytest.raises(
+        ValueError,
+        match="Dask arrays are not supported, please convert them to dask_awkward.Array by using dask_awkward.from_dask_array()",
+    ):
+        sel.add("dask_array", daskarray)
+
 
 def test_packed_selection_dak():
     import awkward as ak
+    import dask.array as da
     import dask_awkward as dak
 
     from coffea.analysis_tools import PackedSelection
@@ -400,14 +430,27 @@ def test_packed_selection_dak():
     fizz = dak.from_awkward(ak.Array(np.arange(shape[0]) % 3 == 0), 1)
     buzz = dak.from_awkward(ak.Array(np.arange(shape[0]) % 5 == 0), 1)
     ones = dak.from_awkward(ak.Array(np.ones(shape=shape, dtype=np.uint64)), 1)
-    wrong_shape = ones = dak.from_awkward(
+    wrong_shape = dak.from_awkward(
         ak.Array(np.ones(shape=(shape[0] - 5,), dtype=bool)), 1
     )
+    wrong_type = np.arange(shape[0]) % 3 == 0
+    daskarray = da.arange(shape[0]) % 3 == 0
 
-    sel.add("all_true", all_true)
-    sel.add("all_false", all_false)
-    sel.add("fizz", fizz)
-    sel.add("buzz", buzz)
+    assert (
+        sel.delayed_mode
+        == "PackedSelection hasn't been initialized with a boolean array yet!"
+    )
+
+    sel.add_multiple(
+        {"all_true": all_true, "all_false": all_false, "fizz": fizz, "buzz": buzz}
+    )
+
+    assert sel.delayed_mode == True
+    with pytest.raises(
+        ValueError,
+        match="New selection 'wrong_type' is not delayed while PackedSelection is!",
+    ):
+        sel.add("wrong_type", wrong_type)
 
     assert np.all(
         sel.require(all_true=True, all_false=False).compute() == all_true.compute()
@@ -427,13 +470,25 @@ def test_packed_selection_dak():
         == np.array([True, False, False, True, False, True, True, False, False, True])
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=f"New selection 'wrong_shape' has a different partition structure than existing selections",
+    ):
         sel.add("wrong_shape", wrong_shape)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Expected a boolean array, received uint64"):
         sel.add("ones", ones)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(
+        RuntimeError,
+        match="Exhausted all slots in this PackedSelection, consider a larger dtype or fewer selections",
+    ):
         overpack = PackedSelection()
         for i in range(65):
             overpack.add("sel_%d", all_true)
+
+    with pytest.raises(
+        ValueError,
+        match="Dask arrays are not supported, please convert them to dask_awkward.Array by using dask_awkward.from_dask_array()",
+    ):
+        sel.add("dask_array", daskarray)

@@ -4,11 +4,17 @@ These helper classes were previously part of ``coffea.processor``
 but have been migrated and updated to be compatible with awkward-array 1.0
 """
 import awkward
+import dask.array
 import dask_awkward
 import numpy
 
 import coffea.processor
 import coffea.util
+
+import hist
+import hist.dask
+
+from collections import namedtuple
 
 
 class WeightStatistics(coffea.processor.AccumulatorABC):
@@ -409,6 +415,350 @@ class Weights:
         return keys
 
 
+class NminusOne:
+    """Object to be returned by PackedSelection.nminusone()"""
+
+    def __init__(self, names, nev, masks, delayed_mode):
+        self._names = names
+        self._nev = nev
+        self._masks = masks
+        self._delayed_mode = delayed_mode
+
+    def __repr__(self):
+        return f"NminusOne(selections={self._names})"
+
+    def result(self):
+        """Returns the results of the N-1 selection as a namedtuple
+
+        Returns
+        -------
+            result : NminusOneResult
+                A namedtuple with the following attributes:
+
+                nev : list of integers or dask_awkward.lib.core.Scalar objects
+                    The number of events in each step of the N-1 selection as a list of integers or delayed integers
+                masks : list of boolean numpy.ndarray or dask_awkward.lib.core.Array objects
+                    The boolean mask vectors of which events pass the N-1 selection each time as a list of materialized or delayed boolean arrays
+
+        """
+        NminusOneResult = namedtuple("NminusOneResult", ["labels", "nev", "masks"])
+        labels = ["initial"] + [f"N - {i}" for i in self._names] + ["N"]
+        return NminusOneResult(labels, self._nev, self._masks)
+
+    def print(self):
+        """Prints the statistics of the N-1 selection"""
+
+        if self._delayed_mode:
+            self._nev = list(dask.compute(*self._nev))
+        nev = self._nev
+        print("N-1 selection stats:")
+        for i, name in enumerate(self._names):
+            print(
+                f"Ignoring {name:<20}: pass = {nev[i+1]:<20}\
+                all = {nev[0]:<20}\
+                -- eff = {nev[i+1]*100/nev[0]:.1f} %"
+            )
+
+        if True:
+            print(
+                f"All cuts {'':<20}: pass = {nev[-1]:<20}\
+                all = {nev[0]:<20}\
+                -- eff = {nev[-1]*100/nev[0]:.1f} %"
+            )
+
+    def yieldhist(self):
+        """Returns the N-1 selection yields as a ``hist.Hist`` object
+
+        Returns
+        -------
+            h : hist.Hist or hist.dask.Hist
+                Histogram of the number of events surviving the N-1 selection
+            labels : list of strings
+                The bin labels of the histogram
+        """
+        labels = ["initial"] + [f"N - {i}" for i in self._names] + ["N"]
+        if not self._delayed_mode:
+            h = hist.Hist(
+                hist.axis.IntCategory(
+                    numpy.arange(len(labels)), growth=True, name="N-1"
+                )
+            )
+            h.fill(numpy.arange(len(labels)), weight=self._nev)
+
+        elif self._delayed_mode:
+            h = hist.dask.Hist(
+                hist.axis.IntCategory(
+                    numpy.arange(len(labels)), growth=True, name="N-1"
+                )
+            )
+            for i, weight in enumerate(self._masks, 1):
+                h.fill(dask_awkward.full_like(weight, i, dtype=int), weight=weight)
+            h.fill(
+                dask_awkward.from_awkward(awkward.Array([0]), 1),
+                weight=dask_awkward.from_awkward(awkward.Array([len(weight)]), 1),
+            )
+        return h, labels
+
+    def plot_vars(self, vars):
+        """Plot the histograms of variables for each step of the N-1 selection
+
+        Parameters
+        ----------
+            vars : dict
+                A dictionary in the form ``{name: array}`` where ``name`` is the name of the variable,
+                and ``array`` is the corresponding array of values
+
+        Returns
+        -------
+            hists : list of hist.Hist or hist.dask.Hist objects
+                A list of 2D histograms of the variables for each step of the N-1 selection.
+                The first axis is the variable, the second axis is the N-1 selection step.
+            labels : list of strings
+                The bin labels of y axis of the histogram
+        """
+
+        hists = []
+        labels = ["initial"] + [f"N - {i}" for i in self._names] + ["N"]
+
+        if not self._delayed_mode:
+            for name, var in vars.items():
+                h = hist.Hist(
+                    hist.axis.Regular(
+                        20,
+                        awkward.min(var) - 1e-5,
+                        awkward.max(var) + 1e-5,
+                        name=name,
+                    ),
+                    hist.axis.IntCategory(numpy.arange(len(labels)), name="N-1"),
+                )
+                arr = awkward.flatten(var)
+                h.fill(arr, awkward.zeros_like(arr))
+                for i, mask in enumerate(self.result().masks, 1):
+                    arr = awkward.flatten(var[mask])
+                    h.fill(arr, awkward.full_like(arr, i, dtype=int))
+                hists.append(h)
+
+        elif self._delayed_mode:
+            for name, var in vars.items():
+                h = hist.dask.Hist(
+                    hist.axis.Regular(
+                        20,
+                        dask_awkward.min(var).compute() - 1e-5,
+                        dask_awkward.max(var).compute() + 1e-5,
+                        name=name,
+                    ),
+                    hist.axis.IntCategory(numpy.arange(len(labels)), name="N-1"),
+                )
+                arr = dask_awkward.flatten(var)
+                h.fill(arr, dask_awkward.zeros_like(arr))
+                for i, mask in enumerate(self.result().masks, 1):
+                    arr = dask_awkward.flatten(var[mask])
+                    h.fill(arr, dask_awkward.full_like(arr, i, dtype=int))
+                hists.append(h)
+
+        return hists, labels
+
+
+class Cutflow:
+    """Object to be returned by PackedSelection.cutflow()"""
+
+    def __init__(
+        self, names, nevonecut, nevcutflow, masksonecut, maskscutflow, delayed_mode
+    ):
+        self._names = names
+        self._nevonecut = nevonecut
+        self._nevcutflow = nevcutflow
+        self._masksonecut = masksonecut
+        self._maskscutflow = maskscutflow
+        self._delayed_mode = delayed_mode
+
+    def __repr__(self):
+        return f"Cutflow(selections={self._names})"
+
+    def result(self):
+        """Returns the results of the cutflow as a namedtuple
+
+        Returns
+        -------
+            result : CutflowResult
+                A namedtuple with the following attributes:
+
+                nevonecut : list of integers or dask_awkward.lib.core.Scalar objects
+                    The number of events that survive each cut alone as a list of integers or delayed integers
+                nevcutflow : list of integers or dask_awkward.lib.core.Scalar objects
+                    The number of events that survive the cumulative cutflow as a list of integers or delayed integers
+                masksonecut : list of boolean numpy.ndarray or dask_awkward.lib.core.Array objects
+                    The boolean mask vectors of which events pass each cut alone as a list of materialized or delayed boolean arrays
+                maskscutflow : list of boolean numpy.ndarray or dask_awkward.lib.core.Array objects
+                    The boolean mask vectors of which events pass the cumulative cutflow a list of materialized or delayed boolean arrays
+        """
+        CutflowResult = namedtuple(
+            "CutflowResult",
+            ["labels", "nevonecut", "nevcutflow", "masksonecut", "maskscutflow"],
+        )
+        labels = ["initial"] + list(self._names)
+        return CutflowResult(
+            labels,
+            self._nevonecut,
+            self._nevcutflow,
+            self._masksonecut,
+            self._maskscutflow,
+        )
+
+    def print(self):
+        """Prints the statistics of the Cutflow"""
+
+        if self._delayed_mode:
+            self._nevonecut = list(dask.compute(*self._nevonecut))
+            self._nevcutflow = list(dask.compute(*self._nevcutflow))
+        nevonecut = self._nevonecut
+        nevcutflow = self._nevcutflow
+        print("Cutflow stats:")
+        for i, name in enumerate(self._names):
+            print(
+                f"Cut {name:<20}: pass = {nevonecut[i+1]:<20}\
+                cumulative pass = {nevcutflow[i+1]:<20}\
+                all = {nevonecut[0]:<20}\
+                --  eff = {nevonecut[i+1]*100/nevonecut[0]:.1f} %\
+                -- cumulative eff = {nevcutflow[i+1]*100/nevcutflow[0]:.1f} %"
+            )
+
+    def yieldhist(self):
+        """Returns the cutflow yields as ``hist.Hist`` objects
+
+        Returns
+        -------
+            honecut : hist.Hist or hist.dask.Hist
+                Histogram of the number of events surviving each cut alone
+            hcutflow : hist.Hist or hist.dask.Hist
+                Histogram of the number of events surviving the cumulative cutflow
+            labels : list of strings
+                The bin labels of the histograms
+        """
+        labels = ["initial"] + list(self._names)
+
+        if not self._delayed_mode:
+            honecut = hist.Hist(
+                hist.axis.IntCategory(
+                    numpy.arange(len(labels)), growth=True, name="onecut"
+                )
+            )
+            hcutflow = honecut.copy()
+            hcutflow.axes.name = ("cutflow",)
+            honecut.fill(numpy.arange(len(labels)), weight=self._nevonecut)
+            hcutflow.fill(numpy.arange(len(labels)), weight=self._nevcutflow)
+
+        elif self._delayed_mode:
+            honecut = hist.dask.Hist(
+                hist.axis.IntCategory(
+                    numpy.arange(len(labels)), growth=True, name="onecut"
+                )
+            )
+            hcutflow = honecut.copy()
+            hcutflow.axes.name = ("cutflow",)
+
+            for i, weight in enumerate(self._masksonecut, 1):
+                honecut.fill(
+                    dask_awkward.full_like(weight, i, dtype=int), weight=weight
+                )
+            honecut.fill(
+                dask_awkward.from_awkward(awkward.Array([0]), 1),
+                weight=dask_awkward.from_awkward(awkward.Array([len(weight)]), 1),
+            )
+            for i, weight in enumerate(self._maskscutflow, 1):
+                hcutflow.fill(
+                    dask_awkward.full_like(weight, i, dtype=int), weight=weight
+                )
+            hcutflow.fill(
+                dask_awkward.from_awkward(awkward.Array([0]), 1),
+                weight=dask_awkward.from_awkward(awkward.Array([len(weight)]), 1),
+            )
+
+        return honecut, hcutflow, labels
+
+    def plot_vars(self, vars):
+        """Plot the histograms of variables for each step of the N-1 selection
+
+        Parameters
+        ----------
+            vars : dict
+                A dictionary in the form ``{name: array}`` where ``name`` is the name of the variable,
+                and ``array`` is the corresponding array of values
+
+        Returns
+        -------
+            histsonecut : list of hist.Hist or hist.dask.Hist objects
+                A list of 1D histograms of the variables of events surviving each cut alone.
+                The first axis is the variable, the second axis is the cuts.
+            histscutflow : list of hist.Hist or hist.dask.Hist objects
+                A list of 1D histograms of the variables of events surviving the cumulative cutflow.
+                The first axis is the variable, the second axis is the cuts.
+            labels : list of strings
+                The bin labels of the y axis of the histograms
+        """
+
+        histsonecut, histscutflow = [], []
+        labels = ["initial"] + list(self._names)
+
+        if not self._delayed_mode:
+            for name, var in vars.items():
+                honecut = hist.Hist(
+                    hist.axis.Regular(
+                        20,
+                        awkward.min(var) - 1e-5,
+                        awkward.max(var) + 1e-5,
+                        name=name,
+                    ),
+                    hist.axis.IntCategory(numpy.arange(len(labels)), name="onecut"),
+                )
+                hcutflow = honecut.copy()
+                hcutflow.axes.name = name, "cutflow"
+
+                arr = awkward.flatten(var)
+                honecut.fill(arr, awkward.zeros_like(arr))
+                hcutflow.fill(arr, awkward.zeros_like(arr))
+
+                for i, mask in enumerate(self.result().masksonecut, 1):
+                    arr = awkward.flatten(var[mask])
+                    honecut.fill(arr, awkward.full_like(arr, i, dtype=int))
+                histsonecut.append(honecut)
+
+                for i, mask in enumerate(self.result().maskscutflow, 1):
+                    arr = awkward.flatten(var[mask])
+                    hcutflow.fill(arr, awkward.full_like(arr, i, dtype=int))
+                histscutflow.append(hcutflow)
+
+        elif self._delayed_mode:
+            for name, var in vars.items():
+                honecut = hist.dask.Hist(
+                    hist.axis.Regular(
+                        20,
+                        dask_awkward.min(var).compute() - 1e-5,
+                        dask_awkward.max(var).compute() + 1e-5,
+                        name=name,
+                    ),
+                    hist.axis.IntCategory(numpy.arange(len(labels)), name="onecut"),
+                )
+                hcutflow = honecut.copy()
+                hcutflow.axes.name = name, "cutflow"
+
+                arr = dask_awkward.flatten(var)
+                honecut.fill(arr, dask_awkward.zeros_like(arr))
+                hcutflow.fill(arr, dask_awkward.zeros_like(arr))
+
+                for i, mask in enumerate(self.result().masksonecut, 1):
+                    arr = dask_awkward.flatten(var[mask])
+                    honecut.fill(arr, dask_awkward.full_like(arr, i, dtype=int))
+                histsonecut.append(honecut)
+
+                for i, mask in enumerate(self.result().maskscutflow, 1):
+                    arr = dask_awkward.flatten(var[mask])
+                    hcutflow.fill(arr, dask_awkward.full_like(arr, i, dtype=int))
+                histscutflow.append(hcutflow)
+
+        return histsonecut, histscutflow, labels
+
+
 class PackedSelection:
     """Store several boolean arrays in a compact manner
 
@@ -439,10 +789,23 @@ class PackedSelection:
         self._names = []
         self._data = None
 
+    def __repr__(self):
+        delayed_mode = None if self._data is None else self.delayed_mode
+        return f"PackedSelection(selections={tuple(self._names)}, delayed_mode={delayed_mode}, items={len(self._names)}, maxitems={self.maxitems})"
+
     @property
     def names(self):
         """Current list of mask names available"""
         return self._names
+
+    @property
+    def delayed_mode(self):
+        if isinstance(self._data, dask_awkward.Array):
+            return True
+        elif isinstance(self._data, numpy.ndarray):
+            return False
+        else:
+            return "PackedSelection hasn't been initialized with a boolean array yet!"
 
     @property
     def maxitems(self):
@@ -456,18 +819,16 @@ class PackedSelection:
             selection = dask_awkward.fill_none(selection, fill_value)
             sel_type = dask_awkward.type(selection)
         if sel_type.primitive != "bool":
-            raise ValueError(f"Expected a boolean array, received {selection.dtype}")
+            raise ValueError(f"Expected a boolean array, received {sel_type.primitive}")
         if len(self._names) == 0:
             self._data = dask_awkward.zeros_like(selection, dtype=self._dtype)
-        if isinstance(selection, dask_awkward.Array) and not isinstance(
-            self._data, dask_awkward.Array
-        ):
+        if isinstance(selection, dask_awkward.Array) and not self.delayed_mode:
             raise ValueError(
                 f"New selection '{name}' is not eager while PackedSelection is!"
             )
         elif len(self._names) == self.maxitems:
             raise RuntimeError(
-                f"Exhausted all slots in {self}, consider a larger dtype or fewer selections"
+                f"Exhausted all slots in this PackedSelection, consider a larger dtype or fewer selections"
             )
         elif not dask_awkward.lib.core.compatible_partitions(self._data, selection):
             raise ValueError(
@@ -488,15 +849,13 @@ class PackedSelection:
             raise ValueError(f"Expected a boolean array, received {selection.dtype}")
         if len(self._names) == 0:
             self._data = numpy.zeros(len(selection), dtype=self._dtype)
-        if isinstance(selection, numpy.ndarray) and not isinstance(
-            self._data, numpy.ndarray
-        ):
+        if isinstance(selection, numpy.ndarray) and self.delayed_mode:
             raise ValueError(
-                f"New selection '{name}' is not eager while PackedSelection is!"
+                f"New selection '{name}' is not delayed while PackedSelection is!"
             )
         elif len(self._names) == self.maxitems:
             raise RuntimeError(
-                f"Exhausted all slots in {self}, consider a larger dtype or fewer selections"
+                "Exhausted all slots in this PackedSelection, consider a larger dtype or fewer selections"
             )
         elif self._data.shape != selection.shape:
             raise ValueError(
@@ -525,11 +884,28 @@ class PackedSelection:
             fill_value : bool, optional
                 All masked entries will be filled as specified (default: ``False``)
         """
+        if isinstance(selection, dask.array.Array):
+            raise ValueError(
+                "Dask arrays are not supported, please convert them to dask_awkward.Array by using dask_awkward.from_dask_array()"
+            )
         selection = coffea.util._ensure_flat(selection, allow_missing=True)
         if isinstance(selection, numpy.ndarray):
             self.__add_eager(name, selection, fill_value)
         elif isinstance(selection, dask_awkward.Array):
             self.__add_delayed(name, selection, fill_value)
+
+    def add_multiple(self, selections, fill_value=False):
+        """Add multiple boolean arrays at once, see ``add`` for details
+
+        Parameters
+        ----------
+            selections : dict
+                a dictionary of selections, in the form ``{name: selection}``
+            fill_value : bool, optional
+                All masked entries will be filled as specified (default: ``False``)
+        """
+        for name, selection in selections.items():
+            self.add(name, selection, fill_value)
 
     def require(self, **names):
         """Return a mask vector corresponding to specific requirements
@@ -598,3 +974,110 @@ class PackedSelection:
             idx = self._names.index(name)
             consider |= 1 << idx
         return (self._data & consider) != 0
+
+    def nminusone(self, *names):
+        """Compute the "N-1" style selection for a set of selections
+
+        The N-1 style selection for a set of selections, returns an object which can return a list of the number of events
+        that pass all the other selections ignoring one at a time. The first element of the returned list
+        is the total number of events before any selections are applied.
+        The last element is the final number of events that pass if all selections are applied.
+        It also returns a list of boolean mask vectors of which events pass the N-1 selection each time.
+        Can also return a histogram as a ``hist.Hist`` object where the bin heights are the number of events of the N-1 selection list.
+        If the PackedSelection is in delayed mode, the elements of those lists will be dask_awkward Arrays that can be computed whenever the user wants.
+        If the histogram is requested, the delayed arrays of the number of events list will be computed in the process in order to set the bin heights.
+
+        Parameters
+        ----------
+            ``*names`` : args
+                The named selections to use, need to be a subset of the selections already added
+
+        Returns
+        -------
+            res: coffea.analysis_tools.NminusOne
+                A wrapper class for the results, see the documentation for that class for more details
+        """
+        for cut in names:
+            if not isinstance(cut, str) or cut not in self.names:
+                raise ValueError(
+                    "All arguments must be strings that refer to the names of existing selections"
+                )
+
+        masks = []
+        for i, cut in enumerate(names):
+            mask = self.all(*(names[:i] + names[i + 1 :]))
+            masks.append(mask)
+        mask = self.all(*names)
+        masks.append(mask)
+
+        if not self.delayed_mode:
+            nev = [len(self._data)]
+            nev.extend(numpy.sum(masks, axis=1))
+
+        elif self.delayed_mode:
+            nev = [
+                dask_awkward.sum(
+                    dask_awkward.from_awkward(awkward.Array([len(self._data)]), 1)
+                )
+            ]
+            nev.extend([dask_awkward.sum(mask) for mask in masks])
+
+        return NminusOne(names, nev, masks, self.delayed_mode)
+
+    def cutflow(self, *names):
+        """Compute the cutflow for a set of selections
+
+        Returns an object which can return a list of the number of events that pass all the previous selections including the current one
+        after each named selection is applied consecutively. The first element
+        of the returned list is the total number of events before any selections are applied.
+        The last element is the final number of events that pass after all the selections are applied.
+        Can also return a cutflow histogram as a ``hist.Hist`` object where the bin heights are the number of events of the cutflow list.
+        If the PackedSelection is in delayed mode, the elements of the list will be dask_awkward Arrays that can be computed whenever the user wants.
+        If the histogram is requested, those delayed arrays will be computed in the process in order to set the bin heights.
+
+        Parameters
+        ----------
+            ``*names`` : args
+                The named selections to use, need to be a subset of the selections already added
+
+        Returns
+        -------
+            res: coffea.analysis_tools.Cutflow
+                A wrapper class for the results, see the documentation for that class for more details
+        """
+        for cut in names:
+            if not isinstance(cut, str) or cut not in self.names:
+                raise ValueError(
+                    "All arguments must be strings that refer to the names of existing selections"
+                )
+
+        masksonecut, maskscutflow = [], []
+        for i, cut in enumerate(names):
+            mask1 = self.any(cut)
+            mask2 = self.all(*(names[: i + 1]))
+            masksonecut.append(mask1)
+            maskscutflow.append(mask2)
+
+        if not self.delayed_mode:
+            nevonecut = [len(self._data)]
+            nevcutflow = [len(self._data)]
+            nevonecut.extend(numpy.sum(masksonecut, axis=1))
+            nevcutflow.extend(numpy.sum(maskscutflow, axis=1))
+
+        elif self.delayed_mode:
+            nevonecut = [
+                dask_awkward.sum(
+                    dask_awkward.from_awkward(awkward.Array([len(self._data)]), 1)
+                )
+            ]
+            nevcutflow = [
+                dask_awkward.sum(
+                    dask_awkward.from_awkward(awkward.Array([len(self._data)]), 1)
+                )
+            ]
+            nevonecut.extend([dask_awkward.sum(mask1) for mask1 in masksonecut])
+            nevcutflow.extend([dask_awkward.sum(mask2) for mask2 in maskscutflow])
+
+        return Cutflow(
+            names, nevonecut, nevcutflow, masksonecut, maskscutflow, self.delayed_mode
+        )
