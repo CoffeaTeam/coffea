@@ -14,7 +14,7 @@ jobs:
       - name: format calver prefix
         id: prefix
         run: |
-          echo "::set-output name=date::$(date +'%Y.%-m')"
+          echo "date=$(date +'%Y.%-m')" >> $GITHUB_OUTPUT
       - name: extract tag message
         id: tagmessage
         run: |
