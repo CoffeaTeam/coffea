@@ -41,7 +41,7 @@ class Systematic:
         Make sure that the parent object always has a field called '__systematics__'.
         """
         if "__systematics__" not in awkward.fields(self):
-            self["__systematics__"] = awkward.Array(len(self) * [{}])
+            self["__systematics__"] = {}
 
     @property
     def systematics(self):
