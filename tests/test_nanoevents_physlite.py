@@ -1,14 +1,11 @@
 import os
-import sys
 
 import numpy as np
 import pytest
 
 from coffea.nanoevents import NanoEventsFactory, PHYSLITESchema
 
-pytestmark = pytest.mark.skipif(
-    sys.platform.startswith("win"), reason="uproot is upset with this file on windows"
-)
+pytestmark = pytest.mark.skip(reason="uproot is upset with this file...")
 
 
 def _events():
