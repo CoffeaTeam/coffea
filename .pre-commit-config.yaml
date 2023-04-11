@@ -54,13 +54,13 @@ repos:
     exclude: coffea/processor/templates
 
 - repo: https://github.com/codespell-project/codespell
-  rev: v2.2.2
+  rev: v2.2.4
   hooks:
   - id: codespell
     args: ["--skip=*.ipynb","-L hist,Hist,nd,SubJet,subjet,Subjet,PTD,ptd"]
 
 - repo: https://github.com/mgedmin/check-manifest
-  rev: "0.46"
+  rev: "0.49"
   hooks:
   - id: check-manifest
     stages: [manual]
