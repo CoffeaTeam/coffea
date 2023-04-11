@@ -6,6 +6,7 @@ import re
 import signal
 import textwrap
 from os.path import basename, getsize, join
+from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 import cloudpickle
@@ -75,6 +76,7 @@ class CoffeaWQ(WorkQueue):
         self,
         executor,
     ):
+        Path(executor.filepath).mkdir(parents=True, exist_ok=True)
         self._staging_dir_obj = TemporaryDirectory("wq-tmp-", dir=executor.filepath)
 
         self.executor = executor
