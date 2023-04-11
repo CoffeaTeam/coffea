@@ -1936,7 +1936,11 @@ class Runner:
             processor_instance.postprocess(wrapped_out["out"])
 
         if "metrics" in wrapped_out.keys():
-            wrapped_out["metrics"]["chunks"] = len(chunks)
+            if isinstance(self.executor, WorkQueueExecutor):
+                wrapped_out["metrics"]["chunks"] = len(wrapped_out["processed"])
+            else:
+                wrapped_out["metrics"]["chunks"] = len(chunks_to_count)
+
             for k, v in wrapped_out["metrics"].items():
                 if isinstance(v, set):
                     wrapped_out["metrics"][k] = list(v)
