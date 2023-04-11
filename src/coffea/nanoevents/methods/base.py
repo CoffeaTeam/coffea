@@ -93,6 +93,7 @@ class Systematic:
         kind: str,
         what: Union[str, List[str], Tuple[str]],
         varying_function: Callable,
+        _dask_array_=None,
     ):
         """
         name: str, name of the systematic variation / uncertainty source
@@ -100,6 +101,21 @@ class Systematic:
         what: Union[str, List[str], Tuple[str]], name what gets varied, this could be a list or tuple of column names
         varying_function: Union[function, bound method], a function that describes how 'what' is varied, it must close over all non-event-data arguments.
         """
+        if _dask_array_ is not None:
+            print("self", repr(self))
+            print("name", name)
+            print("kind", kind)
+            print("what", repr(what))
+            print("vf  ", varying_function)
+            print("da  ", _dask_array_, type(_dask_array_))
+            _dask_array_.map_partitions(
+                _ClassMethodFn("add_systematic"),
+                name,
+                kind,
+                what,
+                varying_function,
+            )
+
         self._ensure_systematics()
 
         if name in awkward.fields(self["__systematics__"]):
