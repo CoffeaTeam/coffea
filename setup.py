@@ -54,11 +54,11 @@ def get_description():
 
 
 INSTALL_REQUIRES = [
-    "awkward>=2.1.0",
+    "awkward>=2.1.2",
     "uproot>=5.0.5",
     "dask[array]>=2022.12.1",
-    "dask-awkward>=2023.3",
-    "dask-histogram>=2023.2",
+    "dask-awkward>=2023.4",
+    "dask-histogram>=2023.4",
     "correctionlib>=2.0.0",
     "pyarrow>=6.0.0",
     "fsspec",
