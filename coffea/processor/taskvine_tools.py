@@ -325,6 +325,8 @@ class CoffeaTaskvine(Manager):
         self.stats_coffea["events_submitted"] += len(t)
 
     def _final_accumulation(self, accumulator):
+        return accumulator
+        
         if len(self.tasks_to_accumulate) < 1:
             self.console.warn("No results available.")
             return accumulator
@@ -690,10 +692,8 @@ class CoffeaTaskvineTask(Task):
         
         self.infile_args = queue.declare_file(self.infile_args)
         self.add_input(self.infile_args, "args.p")
-        #self.add_output_file(self.outfile_output, "output.p", cache=False)
         self.add_output(self.output_file, "output.p")
-        #self.add_output_file(self.outfile_stdout, "stdout.log", cache=False)
-        self.add_output(self.stdout_file, "stdout.log")
+        #self.add_output(self.stdout_file, "stdout.log")
 
         for i, f in enumerate(executor.extra_input_files):
             extra_input_file = queue.declare_file(f, cache=True)
@@ -714,7 +714,6 @@ class CoffeaTaskvineTask(Task):
 
     def remote_command(self, env_file=None):
         fn_command = "python fn_wrapper function.p args.p output.p >stdout.log 2>&1"
-        #fn_command = f"python fn_wrapper function.p args.p {self.outfile_output} >{self.outfile_stdout} 2>&1"
         command = fn_command
 
         if env_file:
@@ -1052,10 +1051,10 @@ class AccumCoffeaTaskvineTask(CoffeaTaskvineTask):
         for i, t in enumerate(self.tasks_to_accumulate):
             args.append(f'result.{i}')
         
-        super().__init__(queue, False, infile_fn, args, itemid)
+        super().__init__(queue, False, infile_fn, [args], itemid)
         
         for i, t in enumerate(self.tasks_to_accumulate):
-            self.add_input(t.output_file, f'result.{i}') # remote name unique
+            self.add_input(t.output_file, f'result.{i}')
 
         self.set_category("accumulating")
         
