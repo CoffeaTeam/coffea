@@ -616,7 +616,7 @@ def convert_rochester_file(path, loaduncs=True):
                     assert len(values) == ntrk + 1
 
                 # tag R has 2 indices corresponding to VARIABLE BINNUMBER and has RTRK values each
-                # these variables correspond to the rsPar[3] and crystal ball (std::vector<CrystalBall> cb) of RocRes where CrystalBall has valus s, a, n
+                # these variables correspond to the rsPar[3] and crystal ball (std::vector<CrystalBall> cb) of RocRes where CrystalBall has values s, a, n
                 # (and BINNUMBER is the abseta bin)
                 # Note: crystal ball here is a symmetric double-sided crystal ball
                 elif tag == "R":
