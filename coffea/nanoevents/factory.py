@@ -229,6 +229,7 @@ class NanoEventsFactory:
         treepath="/Events",
         entry_start=None,
         entry_stop=None,
+        chunks_per_file=1,
         runtime_cache=None,
         persistent_cache=None,
         schemaclass=NanoAODSchema,
@@ -316,6 +317,7 @@ class NanoEventsFactory:
                     open_files=False,
                     ak_add_doc=True,
                     filter_branch=_remove_not_interpretable,
+                    steps_per_file=chunks_per_file,
                 )
             else:
                 opener = partial(
@@ -325,6 +327,7 @@ class NanoEventsFactory:
                     open_files=False,
                     ak_add_doc=True,
                     filter_branch=_remove_not_interpretable,
+                    steps_per_file=chunks_per_file,
                 )
             return cls(map_schema, opener, None, cache=None, is_dask=True)
         elif permit_dask and not schemaclass.__dask_capable__:
