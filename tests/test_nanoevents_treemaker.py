@@ -74,7 +74,7 @@ def test_nested_collection(collection, subcollection, arr_type, element, events)
         assert ak.all(
             events[collection][subcollection + "Counts"].compute()
             == ak.count(subcol, axis=-1)
-	    )
+        )
     else:
         assert ak.all(
             events[collection][subcollection + "Counts"].compute()
