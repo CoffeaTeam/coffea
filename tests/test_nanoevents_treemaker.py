@@ -70,9 +70,10 @@ def test_nested_collection(collection, subcollection, arr_type, element, events)
             events[collection][subcollection].compute().layout.content.content
         ).content.primitive.startswith(arr_type)
     if element is None:
+        subcol = events[collection][subcollection].compute()
         assert ak.all(
             events[collection][subcollection + "Counts"].compute()
-            == dak.count(events[collection][subcollection], axis=-1).compute()
+            == ak.count(subcol, axis=-1)
         )
     else:
         assert ak.all(
