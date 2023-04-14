@@ -702,16 +702,10 @@ def test_corrected_jets_factory():
 
     jets = events.Jet
 
-    jets = dak.with_field(jets, (1 - jets["rawFactor"]) * jets.pt, "pt_raw")
-    jets = dak.with_field(jets, (1 - jets["rawFactor"]) * jets.mass, "mass_raw")
-    jets = dak.with_field(
-        jets,
-        dak.values_astype(dak.fill_none(jets.matched_gen.pt, 0), np.float32),
-        "pt_gen",
-    )
-    jets = dak.with_field(
-        jets, dak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0], "rho"
-    )
+    jets["pt_raw"] = (1 - jets["rawFactor"]) * jets.pt
+    jets["mass_raw"] = (1 - jets["rawFactor"]) * jets.mass
+    jets["pt_gen"] = dak.fill_none(jets.matched_gen.pt, 0)
+    jets["rho"] = events.fixedGridRhoFastjetAll
     name_map["ptGenJet"] = "pt_gen"
     name_map["ptRaw"] = "pt_raw"
     name_map["massRaw"] = "mass_raw"
