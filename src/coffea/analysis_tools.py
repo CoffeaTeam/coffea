@@ -478,18 +478,12 @@ class NminusOne:
         """
         labels = ["initial"] + [f"N - {i}" for i in self._names] + ["N"]
         if not self._delayed_mode:
-            h = hist.Hist(
-                hist.axis.IntCategory(
-                    numpy.arange(len(labels)), growth=True, name="N-1"
-                )
-            )
+            h = hist.Hist(hist.axis.Integer(0, len(labels), growth=True, name="N-1"))
             h.fill(numpy.arange(len(labels)), weight=self._nev)
 
         elif self._delayed_mode:
             h = hist.dask.Hist(
-                hist.axis.IntCategory(
-                    numpy.arange(len(labels)), growth=True, name="N-1"
-                )
+                hist.axis.Integer(0, len(labels), growth=True, name="N-1")
             )
             for i, weight in enumerate(self._masks, 1):
                 h.fill(dask_awkward.full_like(weight, i, dtype=int), weight=weight)
@@ -529,7 +523,7 @@ class NminusOne:
                         awkward.max(var) + 1e-5,
                         name=name,
                     ),
-                    hist.axis.IntCategory(numpy.arange(len(labels)), name="N-1"),
+                    hist.axis.Integer(0, len(labels), name="N-1"),
                 )
                 arr = awkward.flatten(var)
                 h.fill(arr, awkward.zeros_like(arr))
@@ -547,7 +541,7 @@ class NminusOne:
                         dask_awkward.max(var).compute() + 1e-5,
                         name=name,
                     ),
-                    hist.axis.IntCategory(numpy.arange(len(labels)), name="N-1"),
+                    hist.axis.Integer(0, len(labels), name="N-1"),
                 )
                 arr = dask_awkward.flatten(var)
                 h.fill(arr, dask_awkward.zeros_like(arr))
@@ -639,9 +633,7 @@ class Cutflow:
 
         if not self._delayed_mode:
             honecut = hist.Hist(
-                hist.axis.IntCategory(
-                    numpy.arange(len(labels)), growth=True, name="onecut"
-                )
+                hist.axis.Integer(0, len(labels), growth=True, name="onecut")
             )
             hcutflow = honecut.copy()
             hcutflow.axes.name = ("cutflow",)
@@ -650,9 +642,7 @@ class Cutflow:
 
         elif self._delayed_mode:
             honecut = hist.dask.Hist(
-                hist.axis.IntCategory(
-                    numpy.arange(len(labels)), growth=True, name="onecut"
-                )
+                hist.axis.Integer(0, len(labels), growth=True, name="onecut")
             )
             hcutflow = honecut.copy()
             hcutflow.axes.name = ("cutflow",)
@@ -709,7 +699,7 @@ class Cutflow:
                         awkward.max(var) + 1e-5,
                         name=name,
                     ),
-                    hist.axis.IntCategory(numpy.arange(len(labels)), name="onecut"),
+                    hist.axis.Integer(0, len(labels), name="onecut"),
                 )
                 hcutflow = honecut.copy()
                 hcutflow.axes.name = name, "cutflow"
@@ -737,7 +727,7 @@ class Cutflow:
                         dask_awkward.max(var).compute() + 1e-5,
                         name=name,
                     ),
-                    hist.axis.IntCategory(numpy.arange(len(labels)), name="onecut"),
+                    hist.axis.Integer(0, len(labels), name="onecut"),
                 )
                 hcutflow = honecut.copy()
                 hcutflow.axes.name = name, "cutflow"
