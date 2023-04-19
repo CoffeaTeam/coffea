@@ -478,13 +478,11 @@ class NminusOne:
         """
         labels = ["initial"] + [f"N - {i}" for i in self._names] + ["N"]
         if not self._delayed_mode:
-            h = hist.Hist(hist.axis.Integer(0, len(labels), growth=True, name="N-1"))
+            h = hist.Hist(hist.axis.Integer(0, len(labels), name="N-1"))
             h.fill(numpy.arange(len(labels)), weight=self._nev)
 
         elif self._delayed_mode:
-            h = hist.dask.Hist(
-                hist.axis.Integer(0, len(labels), growth=True, name="N-1")
-            )
+            h = hist.dask.Hist(hist.axis.Integer(0, len(labels), name="N-1"))
             for i, weight in enumerate(self._masks, 1):
                 h.fill(dask_awkward.full_like(weight, i, dtype=int), weight=weight)
             h.fill(
@@ -493,7 +491,9 @@ class NminusOne:
             )
         return h, labels
 
-    def plot_vars(self, vars):
+    def plot_vars(
+        self, vars, bins=None, start=None, stop=None, edges=None, transform=None
+    ):
         """Plot the histograms of variables for each step of the N-1 selection
 
         Parameters
@@ -501,6 +501,21 @@ class NminusOne:
             vars : dict
                 A dictionary in the form ``{name: array}`` where ``name`` is the name of the variable,
                 and ``array`` is the corresponding array of values
+            bins : iterable of integers or Nones, optional
+                The number of bins for each variable histogram. If not specified, it defaults to 20.
+                Must be the same length as ``vars``.
+            start : iterable of floats or intergers or Nones, optional
+                The lower edge of the first bin for each variable histogram. If not specified, it defaults to the minimum value of the variable array.
+                Must be the same length as ``vars``.
+            stop : iterable of floats or intergers or Nones, optional
+                The upper edge of the last bin for each variable histogram. If not specified, it defaults to the maximum value of the variable array.
+                Must be the same length as ``vars``.
+            edges : list of iterables of floats or integers, optional
+                The bin edges for each variable histogram. This overrides ``bins``, ``start``, and ``stop`` if specified.
+                Must be the same length as ``vars``.
+            transform : iterable of hist.axis.transform instances or Nones, optional
+                The transforms to apply to each variable histogram. If not specified, it defaults to no None.
+                Must be the same length as ``vars``.
 
         Returns
         -------
@@ -514,15 +529,29 @@ class NminusOne:
         hists = []
         labels = ["initial"] + [f"N - {i}" for i in self._names] + ["N"]
 
+        bins = [None] * len(vars) if bins is None else bins
+        start = [None] * len(vars) if start is None else start
+        stop = [None] * len(vars) if stop is None else stop
+        edges = [None] * len(vars) if edges is None else edges
+        transform = [None] * len(vars) if transform is None else transform
+
+        checklengths = [
+            len(x) == len(vars) for x in (bins, start, stop, edges, transform)
+        ]
+        if not all(checklengths):
+            raise ValueError(
+                "vars, bins, start, stop, edges, and transform must be the same length"
+            )
+
         if not self._delayed_mode:
-            for name, var in vars.items():
+            for (name, var), b, s1, s2, e, t in zip(
+                vars.items(), bins, start, stop, edges, transform
+            ):
+                axis = coffea.util._getaxis(
+                    name, var, b, s1, s2, e, t, self._delayed_mode
+                )
                 h = hist.Hist(
-                    hist.axis.Regular(
-                        20,
-                        awkward.min(var) - 1e-5,
-                        awkward.max(var) + 1e-5,
-                        name=name,
-                    ),
+                    axis,
                     hist.axis.Integer(0, len(labels), name="N-1"),
                 )
                 arr = awkward.flatten(var)
@@ -533,14 +562,14 @@ class NminusOne:
                 hists.append(h)
 
         elif self._delayed_mode:
-            for name, var in vars.items():
+            for (name, var), b, s1, s2, e, t in zip(
+                vars.items(), bins, start, stop, edges, transform
+            ):
+                axis = coffea.util._getaxis(
+                    name, var, b, s1, s2, e, t, self._delayed_mode
+                )
                 h = hist.dask.Hist(
-                    hist.axis.Regular(
-                        20,
-                        dask_awkward.min(var).compute() - 1e-5,
-                        dask_awkward.max(var).compute() + 1e-5,
-                        name=name,
-                    ),
+                    axis,
                     hist.axis.Integer(0, len(labels), name="N-1"),
                 )
                 arr = dask_awkward.flatten(var)
@@ -632,18 +661,14 @@ class Cutflow:
         labels = ["initial"] + list(self._names)
 
         if not self._delayed_mode:
-            honecut = hist.Hist(
-                hist.axis.Integer(0, len(labels), growth=True, name="onecut")
-            )
+            honecut = hist.Hist(hist.axis.Integer(0, len(labels), name="onecut"))
             hcutflow = honecut.copy()
             hcutflow.axes.name = ("cutflow",)
             honecut.fill(numpy.arange(len(labels)), weight=self._nevonecut)
             hcutflow.fill(numpy.arange(len(labels)), weight=self._nevcutflow)
 
         elif self._delayed_mode:
-            honecut = hist.dask.Hist(
-                hist.axis.Integer(0, len(labels), growth=True, name="onecut")
-            )
+            honecut = hist.dask.Hist(hist.axis.Integer(0, len(labels), name="onecut"))
             hcutflow = honecut.copy()
             hcutflow.axes.name = ("cutflow",)
 
@@ -666,7 +691,9 @@ class Cutflow:
 
         return honecut, hcutflow, labels
 
-    def plot_vars(self, vars):
+    def plot_vars(
+        self, vars, bins=None, start=None, stop=None, edges=None, transform=None
+    ):
         """Plot the histograms of variables for each step of the N-1 selection
 
         Parameters
@@ -674,6 +701,21 @@ class Cutflow:
             vars : dict
                 A dictionary in the form ``{name: array}`` where ``name`` is the name of the variable,
                 and ``array`` is the corresponding array of values
+            bins : iterable of integers or Nones, optional
+                The number of bins for each variable histogram. If not specified, it defaults to 20.
+                Must be the same length as ``vars``.
+            start : iterable of floats or intergers or Nones, optional
+                The lower edge of the first bin for each variable histogram. If not specified, it defaults to the minimum value of the variable array.
+                Must be the same length as ``vars``.
+            stop : iterable of floats or intergers or Nones, optional
+                The upper edge of the last bin for each variable histogram. If not specified, it defaults to the maximum value of the variable array.
+                Must be the same length as ``vars``.
+            edges : list of iterables of floats or integers, optional
+                The bin edges for each variable histogram. This overrides ``bins``, ``start``, and ``stop`` if specified.
+                Must be the same length as ``vars``.
+            transform : iterable of hist.axis.transform instances or Nones, optional
+                The transforms to apply to each variable histogram. If not specified, it defaults to no None.
+                Must be the same length as ``vars``.
 
         Returns
         -------
@@ -690,15 +732,29 @@ class Cutflow:
         histsonecut, histscutflow = [], []
         labels = ["initial"] + list(self._names)
 
+        bins = [None] * len(vars) if bins is None else bins
+        start = [None] * len(vars) if start is None else start
+        stop = [None] * len(vars) if stop is None else stop
+        edges = [None] * len(vars) if edges is None else edges
+        transform = [None] * len(vars) if transform is None else transform
+
+        checklengths = [
+            len(x) == len(vars) for x in (bins, start, stop, edges, transform)
+        ]
+        if not all(checklengths):
+            raise ValueError(
+                "vars, bins, start, stop, edges, and transform must be the same length"
+            )
+
         if not self._delayed_mode:
-            for name, var in vars.items():
+            for (name, var), b, s1, s2, e, t in zip(
+                vars.items(), bins, start, stop, edges, transform
+            ):
+                axis = coffea.util._getaxis(
+                    name, var, b, s1, s2, e, t, self._delayed_mode
+                )
                 honecut = hist.Hist(
-                    hist.axis.Regular(
-                        20,
-                        awkward.min(var) - 1e-5,
-                        awkward.max(var) + 1e-5,
-                        name=name,
-                    ),
+                    axis,
                     hist.axis.Integer(0, len(labels), name="onecut"),
                 )
                 hcutflow = honecut.copy()
@@ -719,14 +775,14 @@ class Cutflow:
                 histscutflow.append(hcutflow)
 
         elif self._delayed_mode:
-            for name, var in vars.items():
+            for (name, var), b, s1, s2, e, t in zip(
+                vars.items(), bins, start, stop, edges, transform
+            ):
+                axis = coffea.util._getaxis(
+                    name, var, b, s1, s2, e, t, self._delayed_mode
+                )
                 honecut = hist.dask.Hist(
-                    hist.axis.Regular(
-                        20,
-                        dask_awkward.min(var).compute() - 1e-5,
-                        dask_awkward.max(var).compute() + 1e-5,
-                        name=name,
-                    ),
+                    axis,
                     hist.axis.Integer(0, len(labels), name="onecut"),
                 )
                 hcutflow = honecut.copy()

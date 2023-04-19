@@ -20,6 +20,7 @@ from rich.progress import (
 )
 
 import coffea
+import hist
 
 ak = awkward
 dak = dask_awkward
@@ -96,6 +97,25 @@ def _ensure_flat(array, allow_missing=False):
     if isinstance(array, ak.Array):
         array = ak.to_numpy(array, allow_missing=allow_missing)
     return array
+
+
+def _getaxis(name, var, bins, start, stop, edges, transform, delayed_mode):
+    "Get a hist axis for plot_vars in PackedSelection"
+
+    if edges is not None:
+        return hist.axis.Variable(edges=edges, name=name)
+
+    if not delayed_mode:
+        start = ak.min(var) - 1e-6 if start is None else start
+        stop = ak.max(var) + 1e-6 if stop is None else stop
+    elif delayed_mode:
+        start = dak.min(var).compute() - 1e-6 if start is None else start
+        stop = dak.max(var).compute() + 1e-6 if stop is None else stop
+    bins = 20 if bins is None else bins
+
+    return hist.axis.Regular(
+        bins=bins, start=start, stop=stop, name=name, transform=transform
+    )
 
 
 def _exception_chain(exc: BaseException) -> List[BaseException]:
