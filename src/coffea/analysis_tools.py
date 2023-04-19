@@ -522,7 +522,7 @@ class NminusOne:
             edges : list of iterables of floats or integers, optional
                 The bin edges for each variable histogram. This overrides ``bins``, ``start``, and ``stop`` if specified.
                 Must be the same length as ``vars``.
-            transform : iterable of hist.axis.transform instances or Nones, optional
+            transform : iterable of hist.axis.transform objects or Nones, optional
                 The transforms to apply to each variable histogram axis. If not specified, it defaults to None.
                 Must be the same length as ``vars``.
 
@@ -680,8 +680,7 @@ class Cutflow:
 
         elif self._delayed_mode:
             honecut = hist.dask.Hist(hist.axis.Integer(0, len(labels), name="onecut"))
-            hcutflow = honecut.copy()
-            hcutflow.axes.name = ("cutflow",)
+            hcutflow = hist.dask.Hist(hist.axis.Integer(0, len(labels), name="cutflow"))
 
             for i, weight in enumerate(self._masksonecut, 1):
                 honecut.fill(
@@ -733,7 +732,7 @@ class Cutflow:
             edges : list of iterables of floats or integers, optional
                 The bin edges for each variable histogram. This overrides ``bins``, ``start``, and ``stop`` if specified.
                 Must be the same length as ``vars``.
-            transform : iterable of hist.axis.transform instances or Nones, optional
+            transform : iterable of hist.axis.transform objects or Nones, optional
                 The transforms to apply to each variable histogram axis. If not specified, it defaults to None.
                 Must be the same length as ``vars``.
 
@@ -807,8 +806,10 @@ class Cutflow:
                     axis,
                     hist.axis.Integer(0, len(labels), name="onecut"),
                 )
-                hcutflow = honecut.copy()
-                hcutflow.axes.name = name, "cutflow"
+                hcutflow = hist.dask.Hist(
+                    axis,
+                    hist.axis.Integer(0, len(labels), name="cutflow"),
+                )
 
                 arr = dask_awkward.flatten(var)
                 honecut.fill(arr, dask_awkward.zeros_like(arr))
@@ -896,7 +897,7 @@ class PackedSelection:
             )
         elif len(self._names) == self.maxitems:
             raise RuntimeError(
-                f"Exhausted all slots in this PackedSelection, consider a larger dtype or fewer selections"
+                "Exhausted all slots in this PackedSelection, consider a larger dtype or fewer selections"
             )
         elif not dask_awkward.lib.core.compatible_partitions(self._data, selection):
             raise ValueError(

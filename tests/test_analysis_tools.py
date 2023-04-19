@@ -342,6 +342,7 @@ def test_packed_selection():
     import dask_awkward as dak
 
     from coffea.analysis_tools import PackedSelection
+    from coffea.nanoevents import NanoEventsFactory, NanoAODSchema
 
     sel = PackedSelection()
 
@@ -364,7 +365,7 @@ def test_packed_selection():
         {"all_true": all_true, "all_false": all_false, "fizz": fizz, "buzz": buzz}
     )
 
-    assert sel.delayed_mode == False
+    assert sel.delayed_mode is False
     with pytest.raises(
         ValueError,
         match="New selection 'wrong_type' is not eager while PackedSelection is!",
@@ -410,13 +411,161 @@ def test_packed_selection():
     ):
         sel.add("dask_array", daskarray)
 
+    fname = "tests/samples/nano_dy.root"
+    events = NanoEventsFactory.from_root(
+        fname,
+        schemaclass=NanoAODSchema.v6,
+        metadata={"dataset": "DYJets"},
+    ).events()
+
+    selection = PackedSelection()
+
+    twoelectron = ak.num(events.Electron) == 2
+    nomuon = ak.num(events.Muon) == 0
+    leadpt20 = ak.any(events.Electron.pt >= 20.0, axis=1) | ak.any(
+        events.Muon.pt >= 20.0, axis=1
+    )
+
+    selection.add_multiple(
+        {
+            "twoElectron": twoelectron,
+            "noMuon": nomuon,
+            "leadPt20": leadpt20,
+        }
+    )
+
+    assert selection.names == ["twoElectron", "noMuon", "leadPt20"]
+
+    nminusone = selection.nminusone("twoElectron", "noMuon", "leadPt20")
+
+    labels, nev, masks = nminusone.result()
+
+    assert labels == ["initial", "N - twoElectron", "N - noMuon", "N - leadPt20", "N"]
+
+    assert nev == [
+        len(events),
+        len(events[nomuon & leadpt20]),
+        len(events[twoelectron & leadpt20]),
+        len(events[twoelectron & nomuon]),
+        len(events[twoelectron & nomuon & leadpt20]),
+    ]
+
+    for mask, truth in zip(
+        masks,
+        [
+            nomuon & leadpt20,
+            twoelectron & leadpt20,
+            twoelectron & nomuon,
+            twoelectron & nomuon & leadpt20,
+        ],
+    ):
+        assert np.all(mask == truth)
+
+    h, hlabels = nminusone.yieldhist()
+
+    assert hlabels == ["initial", "N - twoElectron", "N - noMuon", "N - leadPt20", "N"]
+
+    assert np.all(h.axes["N-1"].edges == np.arange(0, 6))
+
+    assert np.all(h.counts() == nev)
+
+    hs, hslabels = nminusone.plot_vars(
+        {"Ept": events.Electron.pt, "Ephi": events.Electron.phi}
+    )
+
+    assert hlabels == ["initial", "N - twoElectron", "N - noMuon", "N - leadPt20", "N"]
+
+    for h, array in zip(hs, [events.Electron.pt, events.Electron.phi]):
+        edges = h.axes[0].edges
+        for i, truth in enumerate(
+            [
+                np.ones(40, dtype=bool),
+                nomuon & leadpt20,
+                twoelectron & leadpt20,
+                twoelectron & nomuon,
+                twoelectron & nomuon & leadpt20,
+            ]
+        ):
+            counts = h[:, i].counts()
+            c, e = np.histogram(ak.flatten(array[truth]), bins=edges)
+            assert np.all(counts == c)
+
+    cutflow = selection.cutflow("noMuon", "twoElectron", "leadPt20")
+
+    labels, nevonecut, nevcutflow, masksonecut, maskscutflow = cutflow.result()
+
+    assert labels == ["initial", "noMuon", "twoElectron", "leadPt20"]
+
+    assert nevonecut == [
+        len(events),
+        len(events[nomuon]),
+        len(events[twoelectron]),
+        len(events[leadpt20]),
+    ]
+
+    assert nevcutflow == [
+        len(events),
+        len(events[nomuon]),
+        len(events[nomuon & twoelectron]),
+        len(events[nomuon & twoelectron & leadpt20]),
+    ]
+
+    for mask, truth in zip(masksonecut, [nomuon, twoelectron, leadpt20]):
+        assert np.all(mask == truth)
+
+    for mask, truth in zip(
+        maskscutflow, [nomuon, nomuon & twoelectron, nomuon & twoelectron & leadpt20]
+    ):
+        assert np.all(mask == truth)
+
+    honecut, hcutflow, hlabels = cutflow.yieldhist()
+
+    assert hlabels == ["initial", "noMuon", "twoElectron", "leadPt20"]
+
+    assert np.all(honecut.axes["onecut"].edges == np.arange(0, 5))
+    assert np.all(hcutflow.axes["cutflow"].edges == np.arange(0, 5))
+
+    assert np.all(honecut.counts() == nevonecut)
+    assert np.all(hcutflow.counts() == nevcutflow)
+
+    honecuts, hcutflows, hslabels = cutflow.plot_vars(
+        {"ept": events.Electron.pt, "ephi": events.Electron.phi}
+    )
+
+    assert hslabels == ["initial", "noMuon", "twoElectron", "leadPt20"]
+
+    for h, array in zip(honecuts, [events.Electron.pt, events.Electron.phi]):
+        edges = h.axes[0].edges
+        for i, truth in enumerate(
+            [np.ones(40, dtype=bool), nomuon, twoelectron, leadpt20]
+        ):
+            counts = h[:, i].counts()
+            c, e = np.histogram(ak.flatten(array[truth]), bins=edges)
+            assert np.all(counts == c)
+
+    for h, array in zip(hcutflows, [events.Electron.pt, events.Electron.phi]):
+        edges = h.axes[0].edges
+        for i, truth in enumerate(
+            [
+                np.ones(40, dtype=bool),
+                nomuon,
+                nomuon & twoelectron,
+                nomuon & twoelectron & leadpt20,
+            ]
+        ):
+            counts = h[:, i].counts()
+            c, e = np.histogram(ak.flatten(array[truth]), bins=edges)
+            assert np.all(counts == c)
+
 
 def test_packed_selection_dak():
     import awkward as ak
     import dask.array as da
     import dask_awkward as dak
+    import dask
 
     from coffea.analysis_tools import PackedSelection
+    from coffea.nanoevents import NanoEventsFactory, NanoAODSchema
 
     sel = PackedSelection()
 
@@ -445,7 +594,7 @@ def test_packed_selection_dak():
         {"all_true": all_true, "all_false": all_false, "fizz": fizz, "buzz": buzz}
     )
 
-    assert sel.delayed_mode == True
+    assert sel.delayed_mode is True
     with pytest.raises(
         ValueError,
         match="New selection 'wrong_type' is not delayed while PackedSelection is!",
@@ -472,7 +621,7 @@ def test_packed_selection_dak():
 
     with pytest.raises(
         ValueError,
-        match=f"New selection 'wrong_shape' has a different partition structure than existing selections",
+        match="New selection 'wrong_shape' has a different partition structure than existing selections",
     ):
         sel.add("wrong_shape", wrong_shape)
 
@@ -492,3 +641,155 @@ def test_packed_selection_dak():
         match="Dask arrays are not supported, please convert them to dask_awkward.Array by using dask_awkward.from_dask_array()",
     ):
         sel.add("dask_array", daskarray)
+
+    fname = "tests/samples/nano_dy.root"
+    events = NanoEventsFactory.from_root(
+        fname,
+        schemaclass=NanoAODSchema.v6,
+        metadata={"dataset": "DYJets"},
+    ).events()
+    events = dak.from_awkward(events, npartitions=1)
+
+    selection = PackedSelection()
+
+    twoelectron = dak.num(events.Electron) == 2
+    nomuon = dak.num(events.Muon) == 0
+    leadpt20 = dak.any(events.Electron.pt >= 20.0, axis=1) | dak.any(
+        events.Muon.pt >= 20.0, axis=1
+    )
+
+    selection.add_multiple(
+        {
+            "twoElectron": twoelectron,
+            "noMuon": nomuon,
+            "leadPt20": leadpt20,
+        }
+    )
+
+    assert selection.names == ["twoElectron", "noMuon", "leadPt20"]
+
+    nminusone = selection.nminusone("twoElectron", "noMuon", "leadPt20")
+
+    labels, nev, masks = nminusone.result()
+
+    assert labels == ["initial", "N - twoElectron", "N - noMuon", "N - leadPt20", "N"]
+
+    assert list(dask.compute(*nev)) == [
+        len(events),
+        len(events[nomuon & leadpt20]),
+        len(events[twoelectron & leadpt20]),
+        len(events[twoelectron & nomuon]),
+        len(events[twoelectron & nomuon & leadpt20]),
+    ]
+
+    for mask, truth in zip(
+        masks,
+        [
+            nomuon & leadpt20,
+            twoelectron & leadpt20,
+            twoelectron & nomuon,
+            twoelectron & nomuon & leadpt20,
+        ],
+    ):
+        assert np.all(mask.compute() == truth.compute())
+
+    h, hlabels = dask.compute(*nminusone.yieldhist())
+
+    assert hlabels == ["initial", "N - twoElectron", "N - noMuon", "N - leadPt20", "N"]
+
+    assert np.all(h.axes["N-1"].edges == np.arange(0, 6))
+
+    assert np.all(h.counts() == list(dask.compute(*nev)))
+
+    hs, hslabels = dask.compute(
+        *nminusone.plot_vars({"Ept": events.Electron.pt, "Ephi": events.Electron.phi})
+    )
+
+    assert hlabels == ["initial", "N - twoElectron", "N - noMuon", "N - leadPt20", "N"]
+
+    for h, array in zip(hs, [events.Electron.pt, events.Electron.phi]):
+        edges = h.axes[0].edges
+        for i, truth in enumerate(
+            [
+                np.ones(40, dtype=bool),
+                nomuon.compute() & leadpt20.compute(),
+                twoelectron.compute() & leadpt20.compute(),
+                twoelectron.compute() & nomuon.compute(),
+                twoelectron.compute() & nomuon.compute() & leadpt20.compute(),
+            ]
+        ):
+            counts = h[:, i].counts()
+            c, e = np.histogram(dak.flatten(array[truth]).compute(), bins=edges)
+            assert np.all(counts == c)
+
+    cutflow = selection.cutflow("noMuon", "twoElectron", "leadPt20")
+
+    labels, nevonecut, nevcutflow, masksonecut, maskscutflow = cutflow.result()
+
+    assert labels == ["initial", "noMuon", "twoElectron", "leadPt20"]
+
+    assert list(dask.compute(*nevonecut)) == [
+        len(events),
+        len(events[nomuon]),
+        len(events[twoelectron]),
+        len(events[leadpt20]),
+    ]
+
+    assert list(dask.compute(*nevcutflow)) == [
+        len(events),
+        len(events[nomuon]),
+        len(events[nomuon & twoelectron]),
+        len(events[nomuon & twoelectron & leadpt20]),
+    ]
+
+    for mask, truth in zip(masksonecut, [nomuon, twoelectron, leadpt20]):
+        assert np.all(mask.compute() == truth.compute())
+
+    for mask, truth in zip(
+        maskscutflow, [nomuon, nomuon & twoelectron, nomuon & twoelectron & leadpt20]
+    ):
+        assert np.all(mask.compute() == truth.compute())
+
+    honecut, hcutflow, hlabels = dask.compute(*cutflow.yieldhist())
+
+    assert hlabels == ["initial", "noMuon", "twoElectron", "leadPt20"]
+
+    assert np.all(honecut.axes["onecut"].edges == np.arange(0, 5))
+    assert np.all(hcutflow.axes["cutflow"].edges == np.arange(0, 5))
+
+    assert np.all(honecut.counts() == list(dask.compute(*nevonecut)))
+    assert np.all(hcutflow.counts() == list(dask.compute(*nevcutflow)))
+
+    honecuts, hcutflows, hslabels = dask.compute(
+        *cutflow.plot_vars({"ept": events.Electron.pt, "ephi": events.Electron.phi})
+    )
+
+    assert hslabels == ["initial", "noMuon", "twoElectron", "leadPt20"]
+
+    for h, array in zip(honecuts, [events.Electron.pt, events.Electron.phi]):
+        edges = h.axes[0].edges
+        for i, truth in enumerate(
+            [
+                np.ones(40, dtype=bool),
+                nomuon.compute(),
+                twoelectron.compute(),
+                leadpt20.compute(),
+            ]
+        ):
+            counts = h[:, i].counts()
+            c, e = np.histogram(dak.flatten(array[truth]).compute(), bins=edges)
+            assert np.all(counts == c)
+
+    for h, array in zip(hcutflows, [events.Electron.pt, events.Electron.phi]):
+        edges = h.axes[0].edges
+        for i, truth in enumerate(
+            [
+                np.ones(40, dtype=bool),
+                nomuon.compute(),
+                (nomuon & twoelectron).compute(),
+                (nomuon & twoelectron & leadpt20).compute(),
+            ]
+        ):
+            counts = h[:, i].counts()
+            c, e = np.histogram(dak.flatten(array[truth]).compute(), bins=edges)
+            assert np.all(counts == c)
