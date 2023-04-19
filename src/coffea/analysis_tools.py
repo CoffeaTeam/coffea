@@ -492,7 +492,14 @@ class NminusOne:
         return h, labels
 
     def plot_vars(
-        self, vars, bins=None, start=None, stop=None, edges=None, transform=None
+        self,
+        vars,
+        axes=None,
+        bins=None,
+        start=None,
+        stop=None,
+        edges=None,
+        transform=None,
     ):
         """Plot the histograms of variables for each step of the N-1 selection
 
@@ -501,6 +508,8 @@ class NminusOne:
             vars : dict
                 A dictionary in the form ``{name: array}`` where ``name`` is the name of the variable,
                 and ``array`` is the corresponding array of values
+            axes : list of hist.axis objects, optional
+                The axes objects to histogram the variables on. This will override all the following arguments that define axes.
             bins : iterable of integers or Nones, optional
                 The number of bins for each variable histogram. If not specified, it defaults to 20.
                 Must be the same length as ``vars``.
@@ -514,7 +523,7 @@ class NminusOne:
                 The bin edges for each variable histogram. This overrides ``bins``, ``start``, and ``stop`` if specified.
                 Must be the same length as ``vars``.
             transform : iterable of hist.axis.transform instances or Nones, optional
-                The transforms to apply to each variable histogram. If not specified, it defaults to no None.
+                The transforms to apply to each variable histogram axis. If not specified, it defaults to None.
                 Must be the same length as ``vars``.
 
         Returns
@@ -535,21 +544,28 @@ class NminusOne:
         edges = [None] * len(vars) if edges is None else edges
         transform = [None] * len(vars) if transform is None else transform
 
-        checklengths = [
-            len(x) == len(vars) for x in (bins, start, stop, edges, transform)
-        ]
-        if not all(checklengths):
-            raise ValueError(
-                "vars, bins, start, stop, edges, and transform must be the same length"
-            )
-
-        if not self._delayed_mode:
+        if axes is not None:
+            axes = axes
+        elif axes is None:
+            axes = []
             for (name, var), b, s1, s2, e, t in zip(
                 vars.items(), bins, start, stop, edges, transform
             ):
-                axis = coffea.util._getaxis(
+                ax = coffea.util._getaxis(
                     name, var, b, s1, s2, e, t, self._delayed_mode
                 )
+                axes.append(ax)
+
+        checklengths = [
+            len(x) == len(vars) for x in (axes, bins, start, stop, edges, transform)
+        ]
+        if not all(checklengths):
+            raise ValueError(
+                "vars, axes, bins, start, stop, edges, and transform must be the same length"
+            )
+
+        if not self._delayed_mode:
+            for (name, var), axis in zip(vars.items(), axes):
                 h = hist.Hist(
                     axis,
                     hist.axis.Integer(0, len(labels), name="N-1"),
@@ -562,12 +578,7 @@ class NminusOne:
                 hists.append(h)
 
         elif self._delayed_mode:
-            for (name, var), b, s1, s2, e, t in zip(
-                vars.items(), bins, start, stop, edges, transform
-            ):
-                axis = coffea.util._getaxis(
-                    name, var, b, s1, s2, e, t, self._delayed_mode
-                )
+            for (name, var), axis in zip(vars.items(), axes):
                 h = hist.dask.Hist(
                     axis,
                     hist.axis.Integer(0, len(labels), name="N-1"),
@@ -692,7 +703,14 @@ class Cutflow:
         return honecut, hcutflow, labels
 
     def plot_vars(
-        self, vars, bins=None, start=None, stop=None, edges=None, transform=None
+        self,
+        vars,
+        axes=None,
+        bins=None,
+        start=None,
+        stop=None,
+        edges=None,
+        transform=None,
     ):
         """Plot the histograms of variables for each step of the N-1 selection
 
@@ -701,6 +719,8 @@ class Cutflow:
             vars : dict
                 A dictionary in the form ``{name: array}`` where ``name`` is the name of the variable,
                 and ``array`` is the corresponding array of values
+            axes : list of hist.axis objects, optional
+                The axes object to histogram the variables on. This will override all the following arguments that define axes.
             bins : iterable of integers or Nones, optional
                 The number of bins for each variable histogram. If not specified, it defaults to 20.
                 Must be the same length as ``vars``.
@@ -714,7 +734,7 @@ class Cutflow:
                 The bin edges for each variable histogram. This overrides ``bins``, ``start``, and ``stop`` if specified.
                 Must be the same length as ``vars``.
             transform : iterable of hist.axis.transform instances or Nones, optional
-                The transforms to apply to each variable histogram. If not specified, it defaults to no None.
+                The transforms to apply to each variable histogram axis. If not specified, it defaults to None.
                 Must be the same length as ``vars``.
 
         Returns
@@ -738,21 +758,28 @@ class Cutflow:
         edges = [None] * len(vars) if edges is None else edges
         transform = [None] * len(vars) if transform is None else transform
 
-        checklengths = [
-            len(x) == len(vars) for x in (bins, start, stop, edges, transform)
-        ]
-        if not all(checklengths):
-            raise ValueError(
-                "vars, bins, start, stop, edges, and transform must be the same length"
-            )
-
-        if not self._delayed_mode:
+        if axes is not None:
+            axes = axes
+        elif axes is None:
+            axes = []
             for (name, var), b, s1, s2, e, t in zip(
                 vars.items(), bins, start, stop, edges, transform
             ):
-                axis = coffea.util._getaxis(
+                ax = coffea.util._getaxis(
                     name, var, b, s1, s2, e, t, self._delayed_mode
                 )
+                axes.append(ax)
+
+        checklengths = [
+            len(x) == len(vars) for x in (axes, bins, start, stop, edges, transform)
+        ]
+        if not all(checklengths):
+            raise ValueError(
+                "vars, axes, bins, start, stop, edges, and transform must be the same length"
+            )
+
+        if not self._delayed_mode:
+            for (name, var), axis in zip(vars.items(), axes):
                 honecut = hist.Hist(
                     axis,
                     hist.axis.Integer(0, len(labels), name="onecut"),
@@ -775,12 +802,7 @@ class Cutflow:
                 histscutflow.append(hcutflow)
 
         elif self._delayed_mode:
-            for (name, var), b, s1, s2, e, t in zip(
-                vars.items(), bins, start, stop, edges, transform
-            ):
-                axis = coffea.util._getaxis(
-                    name, var, b, s1, s2, e, t, self._delayed_mode
-                )
+            for (name, var), axis in zip(vars.items(), axes):
                 honecut = hist.dask.Hist(
                     axis,
                     hist.axis.Integer(0, len(labels), name="onecut"),
