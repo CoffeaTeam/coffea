@@ -6,6 +6,7 @@ from typing import Any, List, Optional
 
 import awkward
 import dask_awkward
+import hist
 import numba
 import numpy
 from rich.progress import (
@@ -20,7 +21,6 @@ from rich.progress import (
 )
 
 import coffea
-import hist
 
 ak = awkward
 dak = dask_awkward

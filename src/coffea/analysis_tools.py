@@ -3,18 +3,17 @@
 These helper classes were previously part of ``coffea.processor``
 but have been migrated and updated to be compatible with awkward-array 1.0
 """
+from collections import namedtuple
+
 import awkward
 import dask.array
 import dask_awkward
+import hist
+import hist.dask
 import numpy
 
 import coffea.processor
 import coffea.util
-
-import hist
-import hist.dask
-
-from collections import namedtuple
 
 
 class WeightStatistics(coffea.processor.AccumulatorABC):

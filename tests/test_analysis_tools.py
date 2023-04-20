@@ -342,7 +342,7 @@ def test_packed_selection():
     import dask_awkward as dak
 
     from coffea.analysis_tools import PackedSelection
-    from coffea.nanoevents import NanoEventsFactory, NanoAODSchema
+    from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 
     sel = PackedSelection()
 
@@ -560,12 +560,12 @@ def test_packed_selection():
 
 def test_packed_selection_dak():
     import awkward as ak
+    import dask
     import dask.array as da
     import dask_awkward as dak
-    import dask
 
     from coffea.analysis_tools import PackedSelection
-    from coffea.nanoevents import NanoEventsFactory, NanoAODSchema
+    from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 
     sel = PackedSelection()
 
