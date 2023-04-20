@@ -513,10 +513,10 @@ class NminusOne:
             bins : iterable of integers or Nones, optional
                 The number of bins for each variable histogram. If not specified, it defaults to 20.
                 Must be the same length as ``vars``.
-            start : iterable of floats or intergers or Nones, optional
+            start : iterable of floats or integers or Nones, optional
                 The lower edge of the first bin for each variable histogram. If not specified, it defaults to the minimum value of the variable array.
                 Must be the same length as ``vars``.
-            stop : iterable of floats or intergers or Nones, optional
+            stop : iterable of floats or integers or Nones, optional
                 The upper edge of the last bin for each variable histogram. If not specified, it defaults to the maximum value of the variable array.
                 Must be the same length as ``vars``.
             edges : list of iterables of floats or integers, optional
@@ -723,10 +723,10 @@ class Cutflow:
             bins : iterable of integers or Nones, optional
                 The number of bins for each variable histogram. If not specified, it defaults to 20.
                 Must be the same length as ``vars``.
-            start : iterable of floats or intergers or Nones, optional
+            start : iterable of floats or integers or Nones, optional
                 The lower edge of the first bin for each variable histogram. If not specified, it defaults to the minimum value of the variable array.
                 Must be the same length as ``vars``.
-            stop : iterable of floats or intergers or Nones, optional
+            stop : iterable of floats or integers or Nones, optional
                 The upper edge of the last bin for each variable histogram. If not specified, it defaults to the maximum value of the variable array.
                 Must be the same length as ``vars``.
             edges : list of iterables of floats or integers, optional
