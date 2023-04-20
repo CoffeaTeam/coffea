@@ -336,13 +336,12 @@ def test_weights_partial_dak():
     assert error_raised
 
 
-def test_packed_selection():
+def test_packed_selection_basic():
     import awkward as ak
     import dask.array as da
     import dask_awkward as dak
 
     from coffea.analysis_tools import PackedSelection
-    from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 
     sel = PackedSelection()
 
@@ -411,6 +410,13 @@ def test_packed_selection():
     ):
         sel.add("dask_array", daskarray)
 
+
+def test_packed_selection_nminusone():
+    import awkward as ak
+
+    from coffea.analysis_tools import PackedSelection
+    from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
+
     fname = "tests/samples/nano_dy.root"
     events = NanoEventsFactory.from_root(
         fname,
@@ -473,7 +479,7 @@ def test_packed_selection():
         {"Ept": events.Electron.pt, "Ephi": events.Electron.phi}
     )
 
-    assert hlabels == ["initial", "N - twoElectron", "N - noMuon", "N - leadPt20", "N"]
+    assert hslabels == ["initial", "N - twoElectron", "N - noMuon", "N - leadPt20", "N"]
 
     for h, array in zip(hs, [events.Electron.pt, events.Electron.phi]):
         edges = h.axes[0].edges
@@ -489,6 +495,38 @@ def test_packed_selection():
             counts = h[:, i].counts()
             c, e = np.histogram(ak.flatten(array[truth]), bins=edges)
             assert np.all(counts == c)
+
+
+def test_packed_selection_cutflow():
+    import awkward as ak
+
+    from coffea.analysis_tools import PackedSelection
+    from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
+
+    fname = "tests/samples/nano_dy.root"
+    events = NanoEventsFactory.from_root(
+        fname,
+        schemaclass=NanoAODSchema.v6,
+        metadata={"dataset": "DYJets"},
+    ).events()
+
+    selection = PackedSelection()
+
+    twoelectron = ak.num(events.Electron) == 2
+    nomuon = ak.num(events.Muon) == 0
+    leadpt20 = ak.any(events.Electron.pt >= 20.0, axis=1) | ak.any(
+        events.Muon.pt >= 20.0, axis=1
+    )
+
+    selection.add_multiple(
+        {
+            "twoElectron": twoelectron,
+            "noMuon": nomuon,
+            "leadPt20": leadpt20,
+        }
+    )
+
+    assert selection.names == ["twoElectron", "noMuon", "leadPt20"]
 
     cutflow = selection.cutflow("noMuon", "twoElectron", "leadPt20")
 
@@ -558,14 +596,12 @@ def test_packed_selection():
             assert np.all(counts == c)
 
 
-def test_packed_selection_dak():
+def test_packed_selection_basic_dak():
     import awkward as ak
-    import dask
     import dask.array as da
     import dask_awkward as dak
 
     from coffea.analysis_tools import PackedSelection
-    from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 
     sel = PackedSelection()
 
@@ -642,6 +678,14 @@ def test_packed_selection_dak():
     ):
         sel.add("dask_array", daskarray)
 
+
+def test_packed_selection_nminusone_dak():
+    import dask
+    import dask_awkward as dak
+
+    from coffea.analysis_tools import PackedSelection
+    from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
+
     fname = "tests/samples/nano_dy.root"
     events = NanoEventsFactory.from_root(
         fname,
@@ -705,7 +749,7 @@ def test_packed_selection_dak():
         *nminusone.plot_vars({"Ept": events.Electron.pt, "Ephi": events.Electron.phi})
     )
 
-    assert hlabels == ["initial", "N - twoElectron", "N - noMuon", "N - leadPt20", "N"]
+    assert hslabels == ["initial", "N - twoElectron", "N - noMuon", "N - leadPt20", "N"]
 
     for h, array in zip(hs, [events.Electron.pt, events.Electron.phi]):
         edges = h.axes[0].edges
@@ -721,6 +765,40 @@ def test_packed_selection_dak():
             counts = h[:, i].counts()
             c, e = np.histogram(dak.flatten(array[truth]).compute(), bins=edges)
             assert np.all(counts == c)
+
+
+def test_packed_selection_cutflow_dak():
+    import dask
+    import dask_awkward as dak
+
+    from coffea.analysis_tools import PackedSelection
+    from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
+
+    fname = "tests/samples/nano_dy.root"
+    events = NanoEventsFactory.from_root(
+        fname,
+        schemaclass=NanoAODSchema.v6,
+        metadata={"dataset": "DYJets"},
+    ).events()
+    events = dak.from_awkward(events, npartitions=1)
+
+    selection = PackedSelection()
+
+    twoelectron = dak.num(events.Electron) == 2
+    nomuon = dak.num(events.Muon) == 0
+    leadpt20 = dak.any(events.Electron.pt >= 20.0, axis=1) | dak.any(
+        events.Muon.pt >= 20.0, axis=1
+    )
+
+    selection.add_multiple(
+        {
+            "twoElectron": twoelectron,
+            "noMuon": nomuon,
+            "leadPt20": leadpt20,
+        }
+    )
+
+    assert selection.names == ["twoElectron", "noMuon", "leadPt20"]
 
     cutflow = selection.cutflow("noMuon", "twoElectron", "leadPt20")
 
