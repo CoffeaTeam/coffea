@@ -1,12 +1,13 @@
 # For python niceties
-from typing import Optional, List, Dict, Union
 import abc
 import warnings
+from typing import Dict, List, Optional, Union
+
+import awkward
+import dask_awkward
 
 # For data manipulation
 import numpy
-import awkward
-import dask_awkward
 
 # For triton specific handling
 try:

@@ -1,7 +1,8 @@
-import coffea.ml_tools
-import numpy as np
 import awkward as ak
 import dask_awkward as dak
+import numpy as np
+
+import coffea.ml_tools
 
 if __name__ == "__main__":
     ## Creating jagged Jet-with-constituent array
