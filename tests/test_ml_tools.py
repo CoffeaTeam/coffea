@@ -5,7 +5,7 @@ import numpy as np
 import coffea.ml_tools
 
 if __name__ == "__main__":
-    ## Creating jagged Jet-with-constituent array
+    # Creating jagged Jet-with-constituent array
     NJETS = 2000
     NFEAT = 100
     jets = ak.zip(
