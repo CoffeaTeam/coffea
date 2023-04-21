@@ -8,6 +8,4 @@ from .triton_wrapper import triton_wrapper
 
 __all__ = [
     "triton_wrapper",
-    "LumiList",
-    "LumiMask",
 ]
