@@ -2,9 +2,9 @@ import abc
 import warnings
 from typing import Union, Tuple
 
-import numpy
 import awkward
 import dask_awkward
+import numpy
 
 try:
     import torch
