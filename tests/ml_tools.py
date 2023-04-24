@@ -14,22 +14,24 @@ def prepare_jets_array():
             "pt": ak.from_numpy(np.random.random(size=NJETS)),
             "eta": ak.from_numpy(np.random.random(size=NJETS)),
             "phi": ak.from_numpy(np.random.random(size=NJETS)),
-            "ntrk": ak.from_numpy(np.random.randint(1, 50, size=NJETS)),
-        }
+            "ncands": ak.from_numpy(np.random.randint(1, 50, size=NJETS)),
+        },
+        with_name="LorentzVector",
     )
-    tracks = ak.zip(
+    pfcands = ak.zip(
         {
             "pt": ak.from_regular(np.random.random(size=(NJETS, NFEAT))),
             "eta": ak.from_regular(np.random.random(size=(NJETS, NFEAT))),
             "phi": ak.from_regular(np.random.random(size=(NJETS, NFEAT))),
-            "ip2d": ak.from_regular(np.random.random(size=(NJETS, NFEAT))),
-            "ipz": ak.from_regular(np.random.random(size=(NJETS, NFEAT))),
-        }
+            "feat1": ak.from_regular(np.random.random(size=(NJETS, NFEAT))),
+            "feat2": ak.from_regular(np.random.random(size=(NJETS, NFEAT))),
+        },
+        with_name="LorentzVector",
     )
 
-    idx = ak.local_index(tracks.pt, axis=-1)
-    tracks = tracks[idx < jets.ntrk]
-    jets["tracks"] = tracks[:]
+    idx = ak.local_index(cand.pt, axis=-1)
+    pfcands = pfcand[idx < jets.ncands]
+    jets["pfcands"] = tracks[:]
 
     ak_jets = jets[:]
     ak.to_parquet(jets, "ml_tools.parquet")
@@ -60,12 +62,8 @@ def triton_testing():
                     "lptf": my_pad(
                         np.log(jets.tracks.pt / ak.sum(jets.tracks.pt, axis=-1))
                     ),
-                    "ip2d": my_pad(
-                        np.sign(jets.tracks.ip2d) * np.log(jets.tracks.ip2d + 1)
-                    ),
-                    "ipz": my_pad(
-                        np.sign(jets.tracks.ipz) * np.log(jets.tracks.ipz + 1)
-                    ),
+                    "f1": my_pad(np.log(jets.tracks.feat1 + 1)),
+                    "f2": my_pad(np.log(jets.tracks.feat2 + 1)),
                 },
                 "mask__2": {
                     "mask": my_pad(ak.ones_like(jets.tracks.pt)),
