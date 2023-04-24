@@ -1,6 +1,6 @@
 import abc
 import warnings
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Union, Tuple
 
 import awkward
 import dask_awkward
