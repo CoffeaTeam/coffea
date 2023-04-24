@@ -11,7 +11,7 @@ try:
 except ImportError as err:
     warnings.warn(
         "Users should make sure the torch package is installed before proceeding!",
-        ImportError,
+        UserWarning,
     )
     raise err
 
