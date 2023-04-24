@@ -1,5 +1,3 @@
-import abc
-import warnings
 from typing import List, Tuple
 
 
@@ -24,7 +22,7 @@ class convert_args_pair:
 
     def pair_to_args(self, *args, **kwargs) -> Tuple:
         """Converting (*args,**kwargs) pair to *args-like"""
-        return Tuple(*args, *kwargs.values())
+        return [*args, *kwargs.values()]
 
 
 class lazy_container:
@@ -71,6 +69,15 @@ class lazy_container:
         whether evaluations of the various objects has been carried out or not.
         """
         state = self.__dict__.copy()
-        for name in self._lazy_list:
+        for name in state["_lazy_list"]:
             state["_" + name] = None
         return state
+
+    def __setstate__(self, d: dict):
+        """
+        Due to the overloading the of the __getattr__ and __getstate__ method,
+        we need to explcitly define the __setstate__ method. Notice that due to
+        the design of the __getstate__ method, this should never receive a
+        dictionary that initializes the lazy objects under normal operations.
+        """
+        self.__dict__.update(d)
