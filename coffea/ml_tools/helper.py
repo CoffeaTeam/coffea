@@ -55,12 +55,17 @@ class lazy_container:
             setattr(self, "_" + name, None)
 
     def __getattr__(self, name):
+        """
+        The method __getattr__ is only invoke if the attribute cannot be found
+        with conventional method (such as with the not-explicitly defined method
+        lazycontainter.<lazy_object> with no "_" prefix)
+        """
         if name in self._lazy_list:
             if getattr(self, "_" + name) is None:
                 setattr(self, "_" + name, getattr(self, "_create_" + name)())
             return getattr(self, "_" + name)
         else:
-            return super().__getattr__(name)
+            raise AttributeError(f"{name} not defined for {self.__class__.__name__}!")
 
     def __getstate__(self):
         """
