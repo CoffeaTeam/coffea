@@ -30,7 +30,7 @@ def prepare_jets_array():
     )
 
     idx = ak.local_index(pfcands.pt, axis=-1)
-    pfcands = pfcand[idx < jets.ncands]
+    pfcands = pfcands[idx < jets.ncands]
     jets["pfcands"] = pfcands[:]
 
     ak_jets = jets[:]
