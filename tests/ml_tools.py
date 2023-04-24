@@ -29,9 +29,9 @@ def prepare_jets_array():
         with_name="LorentzVector",
     )
 
-    idx = ak.local_index(cand.pt, axis=-1)
+    idx = ak.local_index(pfcands.pt, axis=-1)
     pfcands = pfcand[idx < jets.ncands]
-    jets["pfcands"] = tracks[:]
+    jets["pfcands"] = pfcands[:]
 
     ak_jets = jets[:]
     ak.to_parquet(jets, "ml_tools.parquet")
