@@ -1,10 +1,10 @@
 import abc
 import warnings
-from typing import Optional, List, Dict, Union, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
-import numpy
 import awkward
 import dask_awkward
+import numpy
 
 try:
     import torch
