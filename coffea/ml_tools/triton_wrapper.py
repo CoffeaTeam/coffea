@@ -15,38 +15,16 @@ try:
     import tritonclient.http
     import tritonclient.utils
 except ImportError as err:
-    warnings.warn_explicit(
+    warnings.warn(
         "Users should make sure the tritonclient package is installed before proceeding!",
         ImportError,
     )
     raise err
 
-
-class convert_args_pair:
-    """
-    Helper class that helps with the conversion of the (*args, **kwargs) input
-    pairs to *args and vice versa. Useful for interacting with map-partitions
-    call wrapper, as those can only accept *args-like inputs.
-    """
-
-    def __init__(self, inputs):
-        """Storing the conversion dimension"""
-        assert len(inputs) == 2
-        self.args_len = len(inputs[0])
-        self.kwargs_keys = list(inputs[1].keys())
-
-    def args_to_pair(self, *args):
-        """Converting *args to a (*args,**kwargs) pair"""
-        ret_args = tuple(x for x in args[0 : self.args_len])
-        ret_kwargs = {k: v for k, v in zip(self.kwargs_keys, args[self.args_len :])}
-        return ret_args, ret_kwargs
-
-    def pair_to_args(self, *args, **kwargs):
-        """Converting (*args,**kwargs) pair to *args-like"""
-        return [*args, *kwargs.values()]
+from .helper import lazy_container, convert_args_pair
 
 
-class triton_wrapper(abc.ABC):
+class triton_wrapper(abc.ABC, lazy_container):
     """
     Wrapper for running triton inference.
 
@@ -59,12 +37,12 @@ class triton_wrapper(abc.ABC):
 
     - The constructor: provide a URL used to indicate the triton communication
       protocol to the triton server as well as the model of interest.
-    - Overloading the `awkward_to_numpy` method: manipulate some awkward array
-      inputs into a numpy format suitable for the model of interest. When
-      debugging this method, one can pass the output of this method to the
-      `_validate_numpy_format`, where it compares the input format with the
-      metadata of the model currently hosted on the triton server to check for
-      format consistency.
+    - Overloading the `awkward_to_numpy` method (and alternatively the
+      `dask_touch` method): manipulate some awkward array inputs into a numpy
+      format suitable for the model of interest. When debugging this method, one
+      can pass the output of this method to the `_validate_numpy_format`, where
+      it compares the input format with the metadata of the model currently
+      hosted on the triton server to check for format consistency.
     - `__call__`: the primary inference method, where the user passes over the
       arrays of interest, and the handling of numpy/awkward/dask_awkward types
       is handled automatically.
@@ -74,6 +52,9 @@ class triton_wrapper(abc.ABC):
         self, model_url: str, client_args: Optional[Dict] = None, batch_size=-1
     ):
         """
+        Parameters
+        ----------
+
         - model_url: A string in the format of:
           triton+<protocol>://<address>/<model>/<version>
 
@@ -82,22 +63,23 @@ class triton_wrapper(abc.ABC):
 
         - batch_size: How the input arrays should be split up for analysis
           processing. Leave negative to have this automatically resolved.
-
-        At the constructor level, most objects that is used for client
-        interaction should be left as a None object, as this ensures that this
-        wrapper object can be passed around using pickle.
         """
+        super(lazy_container, self).__init__(
+            ["client", "model_metadata", "model_inputs", "model_outputs"]
+        )
+
         fullprotocol, location = model_url.split("://")
         _, self.protocol = fullprotocol.split("+")
         self.address, self.model, self.version = location.split("/")
+
+        # Additional pseudo-lazy objects that requires additional parsing after
+        # lazy objects have been initialized or additional parsing.
         self._batch_size = batch_size
         self._client_args = client_args
 
-        # Containers for lazy evaluations
-        self._client = None  #
-        self._model_metadata = None  #
-        self._model_inputs = None  #
-        self._model_outputs = None
+    """
+    Lazy object creation
+    """
 
     @property
     def pmod(self):
@@ -111,19 +93,9 @@ class triton_wrapper(abc.ABC):
                 f"{self.protocol} does not encode a valid protocol (grpc or http)"
             )
 
-    @property
-    def client(self):
-        """
-        User level fields to access the triton client object. Automatically
-        create if it doesn't already to exist.
-        """
-        if self._client is None:
-            self._client = self.pmod.InferenceServerClient(
-                url=self.address, **self.client_args
-            )
-        return self._client
+    def _create_client(self):
+        return self.pmod.InferenceServerClient(url=self.address, **self.client_args)
 
-    @property
     def client_args(self) -> Dict:
         """
         Function for adding default arguments to the client constructor kwargs.
@@ -136,41 +108,26 @@ class triton_wrapper(abc.ABC):
             kwargs.update(self.client_args)
         return kwargs
 
-    @property
-    def model_metadata(self) -> Dict:
-        """
-        Extracting the model meta data by querying the server hosting the model.
-        Minimal data parsing the performed here.
-        """
-        if self._model_metadata is None:
-            self._model_metadata = self.client.get_model_metadata(
-                self.model, self.version, as_json=True
-            )
-        return self._model_metadata
+    def _create_metadata(self) -> Dict:
+        return self.client.get_model_metadata(self.model, self.version, as_json=True)
 
-    @property
-    def model_inputs(self) -> Dict[str, Dict]:
+    def _create_model_inputs(self) -> Dict[str, Dict]:
         """
         Extracting the model input data formats from the model_metatdata. Here
         we slightly change the input formats the objects in a format that is
         easier to manipulate and compare with numpy arrays.
         """
-        if self._model_inputs is None:
-            self._model_inputs = {
-                x["name"]: {
-                    "shape": tuple(int(i) for i in x["shape"]),
-                    "datatype": x["datatype"],
-                }
-                for x in self.model_metadata["inputs"]
+        return {
+            x["name"]: {
+                "shape": tuple(int(i) for i in x["shape"]),
+                "datatype": x["datatype"],
             }
-        return self._model_inputs
+            for x in self.model_metadata["inputs"]
+        }
 
-    @property
-    def model_outputs(self) -> List[int]:
+    def _create_model_outputs(self) -> List[int]:
         """Getting a list of names of possible outputs"""
-        if self._model_outputs is None:
-            self._model_outputs = [x["name"] for x in self.model_metadata["outputs"]]
-        return self._model_outputs
+        return [x["name"] for x in self.model_metadata["outputs"]]
 
     @property
     def batch_size(self) -> int:
@@ -192,9 +149,13 @@ class triton_wrapper(abc.ABC):
 
         return self._batch_size
 
+    """
+    Numpy/awkward/dask_awkward inference
+    """
+
     def _validate_numpy_format(
         self, output_list: List[str], input_dict: Dict[str, numpy.array]
-    ):
+    ) -> None:
         """
         Helper function for validating the numpy format to be passed to the
         inference request. This function will raise exceptions if any format is
@@ -261,8 +222,9 @@ class triton_wrapper(abc.ABC):
         translated into a list of `tritonclient.InferInput` objects.
 
         Requested output should be a list of string, corresponding to the name
-        of the outputs of interest. This strings will be automatically translated
-        into the required `tritonclient.InferRequestedOutput` objects.
+        of the outputs of interest. This strings will be automatically
+        translated into the required `tritonclient.InferRequestedOutput`
+        objects.
 
         The validate option will take the input/output requests, and compare it
         with the expected input/output as seen by the model_metadata hosted at
@@ -476,20 +438,13 @@ class triton_wrapper(abc.ABC):
         match what is expected for the `awkward_to_numpy` method overloaded by
         the user.
         """
-        if isinstance(args[0], awkward.Array):  # TODO: better type detection methods
+        all_arrs = [*args, *kwargs.values()]
+        if all(isinstance(arr, awkward.Array) for arr in all_arrs):
             return self.__call_awkward__(output_list, *args, **kwargs)
-        else:
+        elif all(isinstance(arr, dask_awkward.Array) for arr in all_arrs):
             return self.__call_dask__(output_list, *args, **kwargs)
-
-    def __getstate__(self):
-        """
-        Explicitly setting all the lazy objects to be hidden from pickle attempts.
-        This ensures that wrapper objects can be pickled regardless of whether
-        evaluations of the various objects has been carried out or not.
-        """
-        state = self.__dict__.copy()
-        state["_client"] = None
-        state["_model_metadata"] = None
-        state["_model_inputs"] = None
-        state["_model_outputs"] = None
-        return state
+        else:
+            raise ValueError(
+                "All input arrays should be of the same type "
+                "(either awkward.Array or dask_awkward.Array)"
+            )
