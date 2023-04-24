@@ -64,8 +64,8 @@ class triton_wrapper(abc.ABC, lazy_container):
         - batch_size: How the input arrays should be split up for analysis
           processing. Leave negative to have this automatically resolved.
         """
-        super(lazy_container, self).__init__(
-            ["client", "model_metadata", "model_inputs", "model_outputs"]
+        lazy_container.__init__(
+            self, ["client", "model_metadata", "model_inputs", "model_outputs"]
         )
 
         fullprotocol, location = model_url.split("://")
@@ -96,6 +96,7 @@ class triton_wrapper(abc.ABC, lazy_container):
     def _create_client(self):
         return self.pmod.InferenceServerClient(url=self.address, **self.client_args)
 
+    @property
     def client_args(self) -> Dict:
         """
         Function for adding default arguments to the client constructor kwargs.
@@ -108,7 +109,7 @@ class triton_wrapper(abc.ABC, lazy_container):
             kwargs.update(self.client_args)
         return kwargs
 
-    def _create_metadata(self) -> Dict:
+    def _create_model_metadata(self) -> Dict:
         return self.client.get_model_metadata(self.model, self.version, as_json=True)
 
     def _create_model_inputs(self) -> Dict[str, Dict]:
