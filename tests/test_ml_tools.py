@@ -4,7 +4,8 @@ import numpy as np
 
 import coffea.ml_tools
 
-if __name__ == "__main__":
+
+def prepare_jets_array():
     # Creating jagged Jet-with-constituent array
     NJETS = 2000
     NFEAT = 100
@@ -30,11 +31,18 @@ if __name__ == "__main__":
     tracks = tracks[idx < jets.ntrk]
     jets["tracks"] = tracks[:]
 
+    ak_jets = jets[:]
+    ak.to_parquet(jets, "ml_tools.parquet")
+    dak_jets = dak.from_parquet("ml_tools.parquet")
+    return ak_jets, dak_jets
+
+
+def triton_testing():
     # Defining custom wrapper function with awkward padding requirements.
     class triton_wrapper_test(coffea.ml_tools.triton_wrapper):
         def awkward_to_numpy(self, jets):
             def my_pad(arr):
-                return ak.fill_none(ak.pad_none(arr, NFEAT, axis=1, clip=True), 0.0)
+                return ak.fill_none(ak.pad_none(arr, 100, axis=1, clip=True), 0.0)
 
             fmap = {
                 "points__0": {
@@ -85,24 +93,28 @@ if __name__ == "__main__":
         model_url="triton+grpc://triton.apps.okddev.fnal.gov:443/emj_gnn_aligned/1"
     )
 
+    ak_jets, dak_jets = prepare_jets_array()
+
     # Numpy arrays testing
-    np_res = tw._numpy_call(["softmax__0"], tw.awkward_to_numpy(jets), validate=True)
+    np_res = tw._numpy_call(["softmax__0"], tw.awkward_to_numpy(ak_jets), validate=True)
     print({k: v.shape for k, v in np_res.items()})
 
     # Vanilla awkward arrays
-    ak_res = tw(["softmax__0"], jets)
+    ak_res = tw(["softmax__0"], ak_jets)
     print({k: v.to_numpy().shape for k, v in ak_res.items()})
 
     for k in np_res.keys():
         assert np.all(ak.to_numpy(ak_res[k]) == np_res[k])
 
-    # DASK awkward arrays (to_parquet for force everything to be lazy)
-    ak.to_parquet(jets, "triton_test.parquet")
-    dak_jets = dak.from_parquet("triton_test.parquet")
+    # dask awkward arrays (with lazy_evaluations)
     dak_res = tw(["softmax__0"], dak_jets)
     print({k: v.compute().to_numpy().shape for k, v in dak_res.items()})
 
-    print(dak.necessary_columns(dak_res))
-
     for k in ak_res.keys():
         assert ak.all(ak_res[k] == dak_res[k].compute())
+    print(dak.necessary_columns(dak_res))
+
+
+if __name__ == "__main__":
+
+    triton_testing()
