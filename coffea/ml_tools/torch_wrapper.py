@@ -130,7 +130,7 @@ class torch_wrapper(abc.ABC):
                 self.twrap = twrap
 
             def __call__(self, *args):
-                # Call function can only recieve args
+                # Call function can only receive args
                 if awkward.backend(args[0]) == "typetracer":
                     # For meta-data extraction
                     eval_args, eval_kwargs = self.args_to_pair(*args)
