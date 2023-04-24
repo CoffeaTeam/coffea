@@ -21,7 +21,7 @@ except ImportError as err:
     )
     raise err
 
-from .helper import lazy_container, convert_args_pair
+from .helper import convert_args_pair, lazy_container
 
 
 class triton_wrapper(abc.ABC, lazy_container):
