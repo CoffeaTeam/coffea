@@ -82,15 +82,16 @@ def triton_testing():
                 "input_dict": common_awkward_to_numpy(jets),
             }
 
-        def dask_touch(self, output_list, jets):
-            jets.eta.layout._touch_data(recursive=True)
-            jets.phi.layout._touch_data(recursive=True)
-            jets.pfcands.pt.layout._touch_data(recursive=True)
-            jets.pfcands.phi.layout._touch_data(recursive=True)
-            jets.pfcands.eta.layout._touch_data(recursive=True)
-            jets.pfcands.feat1.layout._touch_data(recursive=True)
-            jets.pfcands.feat2.layout._touch_data(recursive=True)
-            pass
+        def dask_columns(self, output_list, jets):
+            return [
+                jets.eta,
+                jets.phi,
+                jets.pfcands.pt,
+                jets.pfcands.phi,
+                jets.pfcands.eta,
+                jets.pfcands.feat1,
+                jets.pfcands.feat2,
+            ]
 
     # Running the evaluation in lazy and non-lazy forms
     tw = triton_wrapper_test(

@@ -69,6 +69,41 @@ class lazy_container:
         self.__dict__.update(d)
 
 
+class container_converter:
+    def __init__(self, method_map, default_conv=None):
+        self.method_map = method_map
+        self.default_conv = default_conv
+        if self.default_conv is None:
+            self.default_conv = self.unrecognized
+
+    def convert(self, x):
+        if isinstance(x, Dict):
+            return {k: self.convert(v) for k, v in x.items()}
+        elif isinstance(x, List):
+            return list(self.convert(v) for v in x)
+        elif isinstance(x, Tuple):
+            return tuple(self.convert(v) for v in x)
+
+        for itype, call in self.method_map.items():
+            if isinstance(x, itype):
+                return call(x)
+
+        return self.default_conv(x)
+
+    def __call__(self, *args, **kwargs) -> Tuple:
+        ret_args = tuple(self.convert(x) for x in args)
+        ret_kwargs = {k: self.convert(v) for k, v in kwargs.items()}
+        return ret_args, ret_kwargs
+
+    @staticmethod
+    def no_action(x):
+        return x
+
+    @staticmethod
+    def unrecognized(x):
+        raise ValueError(f"Unknown type {type(x)}")
+
+
 class numpy_call_wrapper(abc.ABC):
     """
     Wrapper for awkward.to_numpy evaluations for dask_awkward array inputs.
@@ -127,14 +162,13 @@ class numpy_call_wrapper(abc.ABC):
         """
         Converting awkward-array like inputs into be numpy-like inputs
         compatible with the `numpy_call` method. The return value should be
-        (*args, **kwargs) pair that is compatible to be expected as inputs to
-        the `numpy_call`.
+        (*args, **kwargs) pair that is compatible with the numpy_call.
+
+        Consult the following documentation to find the awkward operations
+        needed.
+            https://awkward-array.org/doc/main/user-guide/how-to-restructure-pad.html
         """
-        raise NotImplementedError(
-            "This needs to be overloaded by users! "
-            "Consult the following documentation to find the awkward operations needed."
-            "https://awkward-array.org/doc/main/user-guide/how-to-restructure-pad.html"
-        )
+        pass
 
     def numpy_to_awkward(self, np_return, *args, **kwargs):
         """
@@ -147,20 +181,8 @@ class numpy_call_wrapper(abc.ABC):
         For the base method, we will simply iterate over the containers and call
         the default `awkward.from_numpy` conversion
         """
-
-        def convert(entry):
-            if isinstance(entry, numpy.ndarray):
-                return awkward.from_numpy(entry)
-            elif isinstance(entry, Dict):
-                return {k: convert(v) for k, v in entry.items()}
-            elif isinstance(entry, List):
-                return [convert(v) for v in entry]
-            elif isinstance(entry, Tuple):
-                return tuple(convert(v) for v in entry)
-            else:
-                raise ValueError("Unrecognized data format")
-
-        return convert(np_return)
+        conv = container_converter({numpy.ndarray: awkward.from_numpy})
+        return conv.convert(np_return)
 
     def _call_awkward(self, *args, **kwargs):
         """
@@ -171,20 +193,14 @@ class numpy_call_wrapper(abc.ABC):
         np_rets = self._call_numpy(*np_args, **np_kwargs)
         return self.numpy_to_awkward(np_rets, *args, **kwargs)
 
-    def dask_touch(self, *args, **kwargs) -> None:
+    def dask_columns(self, *args, **kwargs):
         """
-        While not strictly needed, there user should attempt to overload this
-        method such that unnecessary branches are not loaded. By default, we
-        will use a recursive touching, which can result in performance
-        penalties.
+        Given the same inputs as _call_dask, return a list of columns that is
+        required for the awkward_to_numpy conversion to complete. If you return
+        a None object, then the default method will kick in (touch everything
+        recursively) which has potential performance penalties
         """
-        warnings.warn(
-            "Default implementation is not lazy! "
-            "Users should overload! with branches of interest",
-            DeprecationWarning,
-        )
-        for arr in [*args, *kwargs.values()]:
-            arr.layout._touch_data(recursive=True)
+        pass
 
     def _call_dask(self, *args, **kwargs):
         """
@@ -255,6 +271,9 @@ class numpy_call_wrapper(abc.ABC):
                 else:
                     return arg
 
+            def touch_column(self, col):
+                return col.layout._touch_data(recursive=True)
+
             def __call__(self, *args):
                 """
                 Mainly translating the input *args to the (*args, **kwarg) pair
@@ -263,14 +282,23 @@ class numpy_call_wrapper(abc.ABC):
                 metadata scouting.
                 """
                 if self.get_backend(*args) == "typetracer":
-                    # None-recursive touching
-                    for arr in args:
-                        if isinstance(arr, awkward.Array):
-                            arr.layout._touch_data(recursive=False)
-
                     # Running the touch overload function
                     eval_args, eval_kwargs = self.args_to_pair(*args)
-                    self.wrapper.dask_touch(*eval_args, **eval_kwargs)
+                    columns = self.wrapper.dask_columns(*eval_args, **eval_kwargs)
+
+                    conv = container_converter(
+                        {awkward.Array: self.touch_column},
+                        default_conv=container_converter.no_action,
+                    )
+                    if columns is None:
+                        warnings.warn(
+                            "Touching all columns recursively may have performance penalties"
+                            f"Consider overloading the dask_columns method of {self.wrapper.__class__.__name__}",
+                            UserWarning,
+                        )
+                        conv(*args)
+                    else:
+                        conv(*columns)
 
                     # Getting the length-one array for evaluation
                     eval_args, eval_kwargs = self.args_to_pair(
