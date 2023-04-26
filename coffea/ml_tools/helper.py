@@ -6,7 +6,7 @@ import awkward
 import dask_awkward
 
 
-from typing import List, Tuple, Dict, Union
+from typing import List, Tuple, Dict
 
 
 class lazy_container:
@@ -23,7 +23,6 @@ class lazy_container:
     ----------
         lazy_list : List[str]
             A list of string for the names of the lazy objects.
-
     """
 
     def __init__(self, lazy_list: List[str]):
@@ -80,6 +79,22 @@ class numpy_call_wrapper(abc.ABC):
     typically expect a numpy-like input. This class wraps up the user-level
     awkward->numpy data mangling and the underling numpy evaluation calls to be
     compatible with dask awkward.
+
+    For the class to be fully functional, the user must overload these methods:
+
+    - numpy_call: How the evaluation using all numpy tool be performed
+    - awkward_to_numpy: How awkward-inputs should be translated to the a numpy
+      format that is compatible with the numpy_call
+
+    Additional classes that have helper functions that will be nice to have but
+    isn't strictly required for the class to operate but will help assist with
+    code debugging.
+
+    - validate_numpy_input: makes sure the computation routine understand the
+      input.
+    - numpy_to_awkward: Additional translation to covert numpy outputs to
+      awkward (defaults to a simple `awkward.from_numpy` conversion)
+    - dask_touch: makes the dask computation only load the branches of interest.
     """
 
     def __init__(self):
