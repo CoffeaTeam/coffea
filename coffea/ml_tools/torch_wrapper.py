@@ -1,16 +1,14 @@
-import abc
 import warnings
-from typing import Tuple, Union
-
-import awkward
-import dask_awkward
 import numpy
 
 try:
     import torch
 except ImportError as err:
     warnings.warn(
-        "Users should make sure the torch package is installed before proceeding!",
+        "Users should make sure the torch package is installed before proceeding!\n"
+        "> pip install torch\n"
+        "or\n"
+        "> conda install torch",
         UserWarning,
     )
     raise err

@@ -11,7 +11,10 @@ try:
     import tritonclient.utils
 except ImportError as err:
     warnings.warn(
-        "Users should make sure the tritonclient package is installed before proceeding!",
+        "Users should make sure the tritonclient package is installed before proceeding!\n"
+        "> pip install tritonclient\n"
+        "or\n"
+        "> conda install tritonclient",
         UserWarning,
     )
     raise err
