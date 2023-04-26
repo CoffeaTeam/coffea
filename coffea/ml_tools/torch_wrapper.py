@@ -1,17 +1,17 @@
 import abc
 import warnings
-from typing import Tuple, Union
+from typing import Union, Tuple
 
+import numpy
 import awkward
 import dask_awkward
-import numpy
 
 try:
     import torch
 except ImportError as err:
     warnings.warn(
         "Users should make sure the torch package is installed before proceeding!",
-        UserWarning,
+        UserWarning
     )
     raise err
 
@@ -130,7 +130,11 @@ class torch_wrapper(abc.ABC):
                 self.twrap = twrap
 
             def __call__(self, *args):
+<<<<<<< HEAD
                 # Call function can only receive args
+=======
+                # Call function can only recieve args
+>>>>>>> fd00f58
                 if awkward.backend(args[0]) == "typetracer":
                     # For meta-data extraction
                     eval_args, eval_kwargs = self.args_to_pair(*args)
