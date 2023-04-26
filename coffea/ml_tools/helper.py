@@ -1,12 +1,10 @@
 import abc
 import warnings
+from typing import Dict, List, Tuple
 
-import numpy
 import awkward
 import dask_awkward
-
-
-from typing import List, Tuple, Dict
+import numpy
 
 
 class lazy_container:

@@ -234,6 +234,7 @@ class triton_wrapper(lazy_container, numpy_call_wrapper):
         The return will be the dictionary of numpy arrays that have the
         output_list arguments as keys.
         """
+
         # Setting up the inference input containers
         def _get_infer_shape(name):
             ishape = numpy.array(input_dict[name].shape)
