@@ -799,7 +799,7 @@ def test_corrected_jets_factory():
     )
 
     check_resosfs = resosf.getScaleFactor(
-        JetEta=jets.eta,
+        JetEta=events.Jet.eta,
     ).compute()
 
     # Filter out the non-deterministic (no gen pt) jets
@@ -811,17 +811,22 @@ def test_corrected_jets_factory():
 
     test_gen_pt = ak.concatenate(
         [
-            corrected_jets.pt_gen.compute()[0, :-2],
-            corrected_jets.pt_gen.compute()[-1, :-1],
+            dak.fill_none(events.Jet.matched_gen.pt, 0).compute()[0, :-2],
+            dak.fill_none(events.Jet.matched_gen.pt, 0).compute()[-1, :-1],
         ]
     )
     test_raw_pt = ak.concatenate(
-        [jets.pt_raw.compute()[0, :-2], jets.pt_raw.compute()[-1, :-1]]
+        [
+            ((1 - events.Jet.rawFactor) * events.Jet.pt).compute()[0, :-2],
+            ((1 - events.Jet.rawFactor) * events.Jet.pt).compute()[-1, :-1],
+        ]
     )
     test_pt = ak.concatenate(
         [corrected_jets.pt.compute()[0, :-2], corrected_jets.pt.compute()[-1, :-1]]
     )
-    test_eta = ak.concatenate([jets.eta.compute()[0, :-2], jets.eta.compute()[-1, :-1]])
+    test_eta = ak.concatenate(
+        [events.Jet.eta.compute()[0, :-2], events.Jet.eta.compute()[-1, :-1]]
+    )
     test_jer = ak.concatenate([check_resos[0, :-2], check_resos[-1, :-1]])
     test_jer_sf = ak.concatenate(
         [
