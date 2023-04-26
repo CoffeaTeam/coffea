@@ -108,10 +108,6 @@ EXTRAS_REQUIRE["dev"] = [
     "pyinstrument",
     "ipython",
 ]
-EXTRAS_REQUIRE["mltools"] = [
-    "tritonclient",
-    "torch>=1.12.1",
-]
 
 setup(
     version=get_version(),
