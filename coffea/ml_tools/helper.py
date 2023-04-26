@@ -1,28 +1,12 @@
-from typing import List, Tuple
+import abc
+import warnings
+
+import numpy
+import awkward
+import dask_awkward
 
 
-class convert_args_pair:
-    """
-    Helper class that helps with the conversion of the (*args, **kwargs) input
-    pairs to *args and vice versa. Useful for interacting with map-partitions
-    call wrapper, as those can only accept *args-like inputs.
-    """
-
-    def __init__(self, inputs: Tuple):
-        """Storing the conversion dimension"""
-        assert len(inputs) == 2
-        self.args_len = len(inputs[0])
-        self.kwargs_keys = list(inputs[1].keys())
-
-    def args_to_pair(self, *args) -> Tuple:
-        """Converting *args to a (*args,**kwargs) pair"""
-        ret_args = tuple(x for x in args[0 : self.args_len])
-        ret_kwargs = {k: v for k, v in zip(self.kwargs_keys, args[self.args_len :])}
-        return ret_args, ret_kwargs
-
-    def pair_to_args(self, *args, **kwargs) -> Tuple:
-        """Converting (*args,**kwargs) pair to *args-like"""
-        return [*args, *kwargs.values()]
+from typing import List, Tuple, Dict, Union
 
 
 class lazy_container:
@@ -51,7 +35,7 @@ class lazy_container:
             ), f"Requested variable {name} cannot be used as variable name"
             assert hasattr(
                 self, "_create_" + name
-            ), f"Method _create_{name} needs to be implemented in class"
+            ), f"Method _create_{name} needs to be implemented in by class"
             setattr(self, "_" + name, None)
 
     def __getattr__(self, name):
@@ -86,3 +70,234 @@ class lazy_container:
         dictionary that initializes the lazy objects under normal operations.
         """
         self.__dict__.update(d)
+
+
+class numpy_call_wrapper(abc.ABC):
+    """
+    Wrapper for awkward.to_numpy evaluations for dask_awkward array inputs.
+
+    For tools outside the coffea package (like for ML inference), the inputs
+    typically expect a numpy-like input. This class wraps up the user-level
+    awkward->numpy data mangling and the underling numpy evaluation calls to be
+    compatible with dask awkward.
+    """
+
+    def __init__(self):
+        pass
+
+    def validate_numpy_input(self, *args, **kwargs) -> None:
+        """
+        Validating that the numpy-like input arguments are compatible with the
+        underlying evaluation calls. This function should raise an exception if
+        invalid input values are found. The base method performs no checks but
+        raises a warning that no checks were performed.
+        """
+        warnings.warn("Not checks were performed on input!")
+
+    def _call_numpy(self, *args, **kwargs):
+        """
+        Thin wrapper such that the validate_numpy_inputs is called.
+        """
+        self.validate_numpy_input(*args, **kwargs)
+        return self.numpy_call(*args, **kwargs)
+
+    @abc.abstractclassmethod
+    def numpy_call(self, *args, **kwargs):
+        """
+        Underlying numpy-like evaluation. This method should be reimplemented by
+        the user or by tool-specialized classes.
+        """
+        pass
+
+    @abc.abstractclassmethod
+    def awkward_to_numpy(self, *args, **kwargs) -> Tuple:
+        """
+        Converting awkward-array like inputs into be numpy-like inputs
+        compatible with the `numpy_call` method. The return value should be
+        (*args, **kwargs) pair that is compatible to be expected as inputs to
+        the `numpy_call`.
+        """
+        raise NotImplementedError(
+            "This needs to be overloaded by users! "
+            "Consult the following documentation to find the awkward operations needed."
+            "https://awkward-array.org/doc/main/user-guide/how-to-restructure-pad.html"
+        )
+
+    def numpy_to_awkward(self, np_return, *args, **kwargs):
+        """
+        Additional conversion from the numpy_call output back to awkward arrays.
+        This method does not need to need to be overloaded, but can make the
+        data-mangling that occurs outside the class cleaner (ex, additional
+        awkward.unflatten calls.) To ensure that the data mangling can occur,
+        the unformatted awkward-like inputs are also passed to this function.
+
+        For the base method, we will simply iterate over the containers and call
+        the default `awkward.from_numpy` conversion
+        """
+
+        def convert(entry):
+            if isinstance(entry, numpy.ndarray):
+                return awkward.from_numpy(entry)
+            elif isinstance(entry, Dict):
+                return {k: convert(v) for k, v in entry.items()}
+            elif isinstance(entry, List):
+                return [convert(v) for v in entry]
+            elif isinstance(entry, Tuple):
+                return tuple(convert(v) for v in entry)
+            else:
+                raise ValueError("Unrecognized data format")
+
+        return convert(np_return)
+
+    def _call_awkward(self, *args, **kwargs):
+        """
+        The common routine of awkward_to_numpy conversion, numpy evaluation,
+        then numpy_to_awkward conversion.
+        """
+        np_args, np_kwargs = self.awkward_to_numpy(*args, *kwargs)
+        np_rets = self._call_numpy(*np_args, **np_kwargs)
+        return self.numpy_to_awkward(np_rets, *args, **kwargs)
+
+    def dask_touch(self, *args, **kwargs) -> None:
+        """
+        While not strictly needed, there user should attempt to overload this
+        method such that unnecessary branches are not loaded. By default, we
+        will use a recursive touching, which can result in performance
+        penalties.
+        """
+        warnings.warn(
+            "Default implementation is not lazy! "
+            "Users should overload! with branches of interest",
+            DeprecationWarning,
+        )
+        for arr in [*args, *kwargs.values()]:
+            arr.layout._touch_data(recursive=True)
+
+    def _call_dask(self, *args, **kwargs):
+        """
+        Wrapper required for dask awkward calls.
+
+        Here we create a new callable class (_callable_wrap) that packs the
+        awkward_to_numpy/numpy_call/numpy_to_awkward call routines to be
+        passable to the dask_awkward.map_partition method.
+
+        In addition, because map_partition by default expects the callable's
+        return to be singular awkward array, we provide the additional format
+        converters to translate numpy_calls that returns container of arrays.
+        """
+
+        def pack_ret_array(ret):
+            if isinstance(ret, awkward.Array):
+                return ret
+            elif isinstance(ret, Dict):
+                return awkward.zip(ret)
+            else:
+                # TODO: implement more potential containers?
+                raise ValueError(f"Do not know how to type {type(ret)}")
+
+        def unpack_ret_array(ret):
+            if len(ret.fields) != 0:
+                # TODO: is this method robust?
+                return {k: ret[k] for k in ret.fields}
+            else:
+                return ret
+
+        class _callable_wrap:
+            def __init__(self, inputs, wrapper):
+                """
+                Here we need to also store the args_len and keys argument, as
+                the map_partition method currently only works with *args like
+                arguments. These containers are needed to properly translate the
+                passed *args to a (*args, **kwargs) pair used by
+                __call_awkward__.
+                """
+                assert len(inputs) == 2
+                self.args_len = len(inputs[0])
+                self.kwargs_keys = list(inputs[1].keys())
+                self.wrapper = wrapper
+
+            def args_to_pair(self, *args) -> Tuple:
+                """Converting *args to a (*args,**kwargs) pair"""
+                ret_args = tuple(x for x in args[0 : self.args_len])
+                ret_kwargs = {
+                    k: v for k, v in zip(self.kwargs_keys, args[self.args_len :])
+                }
+                return ret_args, ret_kwargs
+
+            def pair_to_args(self, *args, **kwargs) -> Tuple:
+                """Converting (*args,**kwargs) pair to *args-like"""
+                return [*args, *kwargs.values()]
+
+            def get_backend(self, *args):
+                for x in args:
+                    if isinstance(x, awkward.Array):
+                        return awkward.backend(x)
+                    elif isinstance(x, dask_awkward.Array):
+                        return awkward.backend(x)
+                return None
+
+            def make_length_one(self, arg):
+                if isinstance(arg, awkward.Array):
+                    return arg.layout.form.length_one_array(behavior=arg.behavior)
+                else:
+                    return arg
+
+            def __call__(self, *args):
+                """
+                Mainly translating the input *args to the (*args, **kwarg) pair
+                defined for the `__call_awkward__` method. Additional
+                calculation routine defined to for the 'typetracer' backend for
+                metadata scouting.
+                """
+                if self.get_backend(*args) == "typetracer":
+                    # None-recursive touching
+                    for arr in args:
+                        if isinstance(arr, awkward.Array):
+                            arr.layout._touch_data(recursive=False)
+
+                    # Running the touch overload function
+                    eval_args, eval_kwargs = self.args_to_pair(*args)
+                    self.wrapper.dask_touch(*eval_args, **eval_kwargs)
+
+                    # Getting the length-one array for evaluation
+                    eval_args, eval_kwargs = self.args_to_pair(
+                        *tuple(self.make_length_one(v) for v in args)
+                    )
+
+                    # awkward.zip so that the return is a single awkward
+                    # array
+                    out = self.wrapper._call_awkward(*eval_args, **eval_kwargs)
+                    out = pack_ret_array(out)
+                    return awkward.Array(
+                        out.layout.to_typetracer(forget_length=True),
+                        behavior=out.behavior,
+                    )
+                else:
+                    eval_args, eval_kwargs = self.args_to_pair(*args)
+                    return pack_ret_array(
+                        self.wrapper._call_awkward(*eval_args, **eval_kwargs)
+                    )
+
+        wrap = _callable_wrap((args, kwargs), self)
+        arr = dask_awkward.lib.core.map_partitions(
+            wrap,
+            *wrap.pair_to_args(*args, **kwargs),
+            label="triton_wrapper_dak",
+            opt_touch_all=False,
+        )
+        return unpack_ret_array(arr)
+
+    def __call__(self, *args, **kwargs):
+        """
+        Highest level abstraction to be directly called by the user. Checks
+        whether the inputs has any awkward arrays or dask_awkward arrays, and
+        call the corresponding function if they are found. If no dask awkward or
+        awkward arrays are found, calling the underlying _call_numpy method.
+        """
+        all_arrs = [*args, *kwargs.values()]
+        if any(isinstance(arr, awkward.Array) for arr in all_arrs):
+            return self._call_awkward(*args, **kwargs)
+        elif any(isinstance(arr, dask_awkward.Array) for arr in all_arrs):
+            return self._call_dask(*args, **kwargs)
+        else:
+            return self._call_numpy(*args, **kwargs)
