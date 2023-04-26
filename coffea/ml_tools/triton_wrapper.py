@@ -1,12 +1,7 @@
 # For python niceties
-import abc
 import warnings
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
-import awkward
-import dask_awkward
-
-# For data manipulation
 import numpy
 
 # For triton specific handling
@@ -211,7 +206,7 @@ class triton_wrapper(lazy_container, numpy_call_wrapper):
                 )
 
     def numpy_call(
-        self, output_list: List[str], input_dict: Dict[str, numpy.array], validate=False
+        self, output_list: List[str], input_dict: Dict[str, numpy.array]
     ) -> Dict[str, numpy.array]:
         """
         The thinnest inferences request wrapping. Notice that this method should
@@ -236,9 +231,6 @@ class triton_wrapper(lazy_container, numpy_call_wrapper):
         The return will be the dictionary of numpy arrays that have the
         output_list arguments as keys.
         """
-        if validate:
-            self._validate_numpy_format(output_list, input_dict)
-
         # Setting up the inference input containers
         def _get_infer_shape(name):
             ishape = numpy.array(input_dict[name].shape)

@@ -39,51 +39,57 @@ def prepare_jets_array():
     return ak_jets, dak_jets
 
 
+def common_awkward_to_numpy(jets):
+    def my_pad(arr):
+        return ak.fill_none(ak.pad_none(arr, 100, axis=1, clip=True), 0.0)
+
+    fmap = {
+        "points__0": {
+            "deta": my_pad(jets.eta - jets.pfcands.eta),
+            "dphi": my_pad(jets.phi - jets.pfcands.phi),
+        },
+        "features__1": {
+            "dr": my_pad(
+                np.sqrt(
+                    (jets.eta - jets.pfcands.eta) ** 2
+                    + (jets.phi - jets.pfcands.phi) ** 2
+                )
+            ),
+            "lpt": my_pad(np.log(jets.pfcands.pt)),
+            "lptf": my_pad(np.log(jets.pfcands.pt / ak.sum(jets.pfcands.pt, axis=-1))),
+            "f1": my_pad(np.log(jets.pfcands.feat1 + 1)),
+            "f2": my_pad(np.log(jets.pfcands.feat2 + 1)),
+        },
+        "mask__2": {
+            "mask": my_pad(ak.ones_like(jets.pfcands.pt)),
+        },
+    }
+
+    return {
+        k: ak.concatenate(
+            [x[:, np.newaxis, :] for x in fmap[k].values()], axis=1
+        ).to_numpy()
+        for k in fmap.keys()
+    }
+
+
 def triton_testing():
     # Defining custom wrapper function with awkward padding requirements.
     class triton_wrapper_test(coffea.ml_tools.triton_wrapper):
-        def awkward_to_numpy(self, jets):
-            def my_pad(arr):
-                return ak.fill_none(ak.pad_none(arr, 100, axis=1, clip=True), 0.0)
-
-            fmap = {
-                "points__0": {
-                    "deta": my_pad(jets.eta - jets.tracks.eta),
-                    "dphi": my_pad(jets.phi - jets.tracks.phi),
-                },
-                "features__1": {
-                    "dr": my_pad(
-                        np.sqrt(
-                            (jets.eta - jets.tracks.eta) ** 2
-                            + (jets.phi - jets.tracks.phi) ** 2
-                        )
-                    ),
-                    "lpt": my_pad(np.log(jets.tracks.pt)),
-                    "lptf": my_pad(
-                        np.log(jets.tracks.pt / ak.sum(jets.tracks.pt, axis=-1))
-                    ),
-                    "f1": my_pad(np.log(jets.tracks.feat1 + 1)),
-                    "f2": my_pad(np.log(jets.tracks.feat2 + 1)),
-                },
-                "mask__2": {
-                    "mask": my_pad(ak.ones_like(jets.tracks.pt)),
-                },
+        def awkward_to_numpy(self, output_list, jets):
+            return [], {
+                "output_list": output_list,
+                "input_dict": common_awkward_to_numpy(jets),
             }
 
-            return {
-                k: ak.concatenate(
-                    [x[:, np.newaxis, :] for x in fmap[k].values()], axis=1
-                ).to_numpy()
-                for k in fmap.keys()
-            }
-
-        def dask_touch(self, jets):
-            jets.eta.layout._touch_data(recursive=False)
-            jets.phi.layout._touch_data(recursive=False)
-            jets.tracks.pt.layout._touch_data(recursive=False)
-            jets.tracks.eta.layout._touch_data(recursive=False)
-            jets.tracks.ip2d.layout._touch_data(recursive=False)
-            jets.tracks.ipz.layout._touch_data(recursive=False)
+        def dask_touch(self, output_list, jets):
+            jets.eta.layout._touch_data(recursive=True)
+            jets.phi.layout._touch_data(recursive=True)
+            jets.pfcands.pt.layout._touch_data(recursive=True)
+            jets.pfcands.phi.layout._touch_data(recursive=True)
+            jets.pfcands.eta.layout._touch_data(recursive=True)
+            jets.pfcands.feat1.layout._touch_data(recursive=True)
+            jets.pfcands.feat2.layout._touch_data(recursive=True)
             pass
 
     # Running the evaluation in lazy and non-lazy forms
@@ -94,7 +100,7 @@ def triton_testing():
     ak_jets, dak_jets = prepare_jets_array()
 
     # Numpy arrays testing
-    np_res = tw._numpy_call(["softmax__0"], tw.awkward_to_numpy(ak_jets), validate=True)
+    np_res = tw(["softmax__0"], common_awkward_to_numpy(ak_jets))
     print({k: v.shape for k, v in np_res.items()})
 
     # Vanilla awkward arrays
