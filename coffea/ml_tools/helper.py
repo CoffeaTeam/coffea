@@ -90,7 +90,7 @@ class numpy_call_wrapper(abc.ABC):
 
     - validate_numpy_input: makes sure the computation routine understand the
       input.
-    - numpy_to_awkward: Additional translation to covert numpy outputs to
+    - numpy_to_awkward: Additional translation to convert numpy outputs to
       awkward (defaults to a simple `awkward.from_numpy` conversion)
     - dask_touch: makes the dask computation only load the branches of interest.
     """
