@@ -70,6 +70,19 @@ class lazy_container:
 
 
 class container_converter:
+    """
+    Running over the all arguments of arbitrary function inputs (*args,
+    **kwargs), iterating through the base python containers and running a
+    conversion function on each of the leaf entries.
+
+    The method map has types as the first key and a callable function as the
+    value, the callable function will only be used on the matching type.
+
+    A default conversion callable can also be provided to convert objects that
+    is not explicitly listed. By default, if a type is not explicitly listed and
+    exception is raised.
+    """
+
     def __init__(self, method_map, default_conv=None):
         self.method_map = method_map
         self.default_conv = default_conv
@@ -91,9 +104,7 @@ class container_converter:
         return self.default_conv(x)
 
     def __call__(self, *args, **kwargs) -> Tuple:
-        ret_args = tuple(self.convert(x) for x in args)
-        ret_kwargs = {k: self.convert(v) for k, v in kwargs.items()}
-        return ret_args, ret_kwargs
+        return self.convert(args), self.convert(kwargs)
 
     @staticmethod
     def no_action(x):
