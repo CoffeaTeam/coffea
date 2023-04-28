@@ -444,6 +444,40 @@ class NminusOne:
         labels = ["initial"] + [f"N - {i}" for i in self._names] + ["N"]
         return NminusOneResult(labels, self._nev, self._masks)
 
+    def to_npz(self, file, compressed=False):
+        """Saves the results of the N-1 selection to a .npz file
+
+        Parameters
+        ----------
+            file : str or file
+                Either the filename (string) or an open file (file-like object)
+                where the data will be saved. If file is a string or a Path, the
+                ``.npz`` extension will be appended to the filename if it is not
+                already there.
+            compressed : bool, optional
+                If True, the data will be compressed in the ``.npz`` file.
+                Default is False.
+        """
+        labels, nev, masks = self.result()
+        if self._delayed_mode:
+            nev = list(dask.compute(*nev))
+            masks = list(dask.compute(*masks))
+
+        if compressed:
+            numpy.savez_compressed(
+                file,
+                labels=labels,
+                nev=nev,
+                masks=masks,
+            )
+        else:
+            numpy.savez(
+                file,
+                labels=labels,
+                nev=nev,
+                masks=masks,
+            )
+
     def print(self):
         """Prints the statistics of the N-1 selection"""
 
@@ -488,6 +522,7 @@ class NminusOne:
                 dask_awkward.from_awkward(awkward.Array([0]), 1),
                 weight=dask_awkward.from_awkward(awkward.Array([len(weight)]), 1),
             )
+
         return h, labels
 
     def plot_vars(
@@ -506,7 +541,8 @@ class NminusOne:
         ----------
             vars : dict
                 A dictionary in the form ``{name: array}`` where ``name`` is the name of the variable,
-                and ``array`` is the corresponding array of values
+                and ``array`` is the corresponding array of values.
+                The arrays must be the same length as each mask of the N-1 selection.
             axes : list of hist.axis objects, optional
                 The axes objects to histogram the variables on. This will override all the following arguments that define axes.
             bins : iterable of integers or Nones, optional
@@ -531,8 +567,13 @@ class NminusOne:
                 A list of 2D histograms of the variables for each step of the N-1 selection.
                 The first axis is the variable, the second axis is the N-1 selection step.
             labels : list of strings
-                The bin labels of y axis of the histogram
+                The bin labels of y axis of the histogram.
         """
+        for name, var in vars.items():
+            if len(var) != len(self._masks[0]):
+                raise ValueError(
+                    f"The variable '{name}' has length '{len(var)}', but the masks have length '{len(self._masks[0])}'"
+                )
 
         hists = []
         labels = ["initial"] + [f"N - {i}" for i in self._names] + ["N"]
@@ -638,6 +679,46 @@ class Cutflow:
             self._maskscutflow,
         )
 
+    def to_npz(self, file, compressed=False):
+        """Saves the results of the cutflow to a .npz file
+
+        Parameters
+        ----------
+            file : str or file
+                Either the filename (string) or an open file (file-like object)
+                where the data will be saved. If file is a string or a Path, the
+                ``.npz`` extension will be appended to the filename if it is not
+                already there.
+            compressed : bool, optional
+                If True, the data will be compressed in the ``.npz`` file.
+                Default is False.
+        """
+        labels, nevonecut, nevcutflow, masksonecut, maskscutflow = self.result()
+        if self._delayed_mode:
+            nevonecut = list(dask.compute(*nevonecut))
+            nevcutflow = list(dask.compute(*nevcutflow))
+            masksonecut = list(dask.compute(*masksonecut))
+            maskscutflow = list(dask.compute(*maskscutflow))
+
+        if compressed:
+            numpy.savez_compressed(
+                file,
+                labels=labels,
+                nevonecut=nevonecut,
+                nevcutflow=nevcutflow,
+                masksonecut=masksonecut,
+                maskscutflow=maskscutflow,
+            )
+        else:
+            numpy.savez(
+                file,
+                labels=labels,
+                nevonecut=nevonecut,
+                nevcutflow=nevcutflow,
+                masksonecut=masksonecut,
+                maskscutflow=maskscutflow,
+            )
+
     def print(self):
         """Prints the statistics of the Cutflow"""
 
@@ -679,7 +760,8 @@ class Cutflow:
 
         elif self._delayed_mode:
             honecut = hist.dask.Hist(hist.axis.Integer(0, len(labels), name="onecut"))
-            hcutflow = hist.dask.Hist(hist.axis.Integer(0, len(labels), name="cutflow"))
+            hcutflow = honecut.copy()
+            hcutflow.axes.name = ("cutflow",)
 
             for i, weight in enumerate(self._masksonecut, 1):
                 honecut.fill(
@@ -716,9 +798,10 @@ class Cutflow:
         ----------
             vars : dict
                 A dictionary in the form ``{name: array}`` where ``name`` is the name of the variable,
-                and ``array`` is the corresponding array of values
+                and ``array`` is the corresponding array of values.
+                The arrays must be the same length as each mask of the cutflow.
             axes : list of hist.axis objects, optional
-                The axes object to histogram the variables on. This will override all the following arguments that define axes.
+                The axes objects to histogram the variables on. This will override all the following arguments that define axes.
             bins : iterable of integers or Nones, optional
                 The number of bins for each variable histogram. If not specified, it defaults to 20.
                 Must be the same length as ``vars``.
@@ -744,8 +827,13 @@ class Cutflow:
                 A list of 1D histograms of the variables of events surviving the cumulative cutflow.
                 The first axis is the variable, the second axis is the cuts.
             labels : list of strings
-                The bin labels of the y axis of the histograms
+                The bin labels of the y axis of the histograms.
         """
+        for name, var in vars.items():
+            if len(var) != len(self._masksonecut[0]):
+                raise ValueError(
+                    f"The variable '{name}' has length '{len(var)}', but the masks have length '{len(self._masksonecut[0])}'"
+                )
 
         histsonecut, histscutflow = [], []
         labels = ["initial"] + list(self._names)
@@ -805,10 +893,8 @@ class Cutflow:
                     axis,
                     hist.axis.Integer(0, len(labels), name="onecut"),
                 )
-                hcutflow = hist.dask.Hist(
-                    axis,
-                    hist.axis.Integer(0, len(labels), name="cutflow"),
-                )
+                hcutflow = honecut.copy()
+                hcutflow.axes.name = name, "cutflow"
 
                 arr = dask_awkward.flatten(var)
                 honecut.fill(arr, dask_awkward.zeros_like(arr))

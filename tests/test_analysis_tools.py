@@ -1,6 +1,19 @@
+import os
+
+import dask_awkward
 import numpy as np
 import pytest
 from dummy_distributions import dummy_jagged_eta_pt
+
+from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
+
+fname = "tests/samples/nano_dy.root"
+events = NanoEventsFactory.from_root(
+    fname,
+    schemaclass=NanoAODSchema.v6,
+    metadata={"dataset": "DYJets"},
+).events()
+dakevents = dask_awkward.from_awkward(events, npartitions=1)
 
 
 def test_weights():
@@ -415,14 +428,6 @@ def test_packed_selection_nminusone():
     import awkward as ak
 
     from coffea.analysis_tools import PackedSelection
-    from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
-
-    fname = "tests/samples/nano_dy.root"
-    events = NanoEventsFactory.from_root(
-        fname,
-        schemaclass=NanoAODSchema.v6,
-        metadata={"dataset": "DYJets"},
-    ).events()
 
     selection = PackedSelection()
 
@@ -442,6 +447,11 @@ def test_packed_selection_nminusone():
 
     assert selection.names == ["twoElectron", "noMuon", "leadPt20"]
 
+    with pytest.raises(
+        ValueError,
+        match="All arguments must be strings that refer to the names of existing selections",
+    ):
+        selection.nminusone("twoElectron", "nonexistent")
     nminusone = selection.nminusone("twoElectron", "noMuon", "leadPt20")
 
     labels, nev, masks = nminusone.result()
@@ -467,6 +477,20 @@ def test_packed_selection_nminusone():
     ):
         assert np.all(mask == truth)
 
+    nminusone.to_npz("nminusone.npz", compressed=False)
+    with np.load("nminusone.npz") as file:
+        assert np.all(file["labels"] == labels)
+        assert np.all(file["nev"] == nev)
+        assert np.all(file["masks"] == masks)
+    os.remove("nminusone.npz")
+
+    nminusone.to_npz("nminusone.npz", compressed=True)
+    with np.load("nminusone.npz") as file:
+        assert np.all(file["labels"] == labels)
+        assert np.all(file["nev"] == nev)
+        assert np.all(file["masks"] == masks)
+    os.remove("nminusone.npz")
+
     h, hlabels = nminusone.yieldhist()
 
     assert hlabels == ["initial", "N - twoElectron", "N - noMuon", "N - leadPt20", "N"]
@@ -475,6 +499,13 @@ def test_packed_selection_nminusone():
 
     assert np.all(h.counts() == nev)
 
+    with pytest.raises(
+        ValueError,
+        match="The variable 'Ephi' has length '20', but the masks have length '40'",
+    ):
+        nminusone.plot_vars(
+            {"Ept": events.Electron.pt, "Ephi": events.Electron.phi[:20]}
+        )
     hs, hslabels = nminusone.plot_vars(
         {"Ept": events.Electron.pt, "Ephi": events.Electron.phi}
     )
@@ -501,14 +532,6 @@ def test_packed_selection_cutflow():
     import awkward as ak
 
     from coffea.analysis_tools import PackedSelection
-    from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
-
-    fname = "tests/samples/nano_dy.root"
-    events = NanoEventsFactory.from_root(
-        fname,
-        schemaclass=NanoAODSchema.v6,
-        metadata={"dataset": "DYJets"},
-    ).events()
 
     selection = PackedSelection()
 
@@ -528,6 +551,11 @@ def test_packed_selection_cutflow():
 
     assert selection.names == ["twoElectron", "noMuon", "leadPt20"]
 
+    with pytest.raises(
+        ValueError,
+        match="All arguments must be strings that refer to the names of existing selections",
+    ):
+        selection.cutflow("twoElectron", "nonexistent")
     cutflow = selection.cutflow("noMuon", "twoElectron", "leadPt20")
 
     labels, nevonecut, nevcutflow, masksonecut, maskscutflow = cutflow.result()
@@ -556,6 +584,24 @@ def test_packed_selection_cutflow():
     ):
         assert np.all(mask == truth)
 
+    cutflow.to_npz("cutflow.npz", compressed=False)
+    with np.load("cutflow.npz") as file:
+        assert np.all(file["labels"] == labels)
+        assert np.all(file["nevonecut"] == nevonecut)
+        assert np.all(file["nevcutflow"] == nevcutflow)
+        assert np.all(file["masksonecut"] == masksonecut)
+        assert np.all(file["maskscutflow"] == maskscutflow)
+    os.remove("cutflow.npz")
+
+    cutflow.to_npz("cutflow.npz", compressed=True)
+    with np.load("cutflow.npz") as file:
+        assert np.all(file["labels"] == labels)
+        assert np.all(file["nevonecut"] == nevonecut)
+        assert np.all(file["nevcutflow"] == nevcutflow)
+        assert np.all(file["masksonecut"] == masksonecut)
+        assert np.all(file["maskscutflow"] == maskscutflow)
+    os.remove("cutflow.npz")
+
     honecut, hcutflow, hlabels = cutflow.yieldhist()
 
     assert hlabels == ["initial", "noMuon", "twoElectron", "leadPt20"]
@@ -566,6 +612,11 @@ def test_packed_selection_cutflow():
     assert np.all(honecut.counts() == nevonecut)
     assert np.all(hcutflow.counts() == nevcutflow)
 
+    with pytest.raises(
+        ValueError,
+        match="The variable 'Ephi' has length '20', but the masks have length '40'",
+    ):
+        cutflow.plot_vars({"Ept": events.Electron.pt, "Ephi": events.Electron.phi[:20]})
     honecuts, hcutflows, hslabels = cutflow.plot_vars(
         {"ept": events.Electron.pt, "ephi": events.Electron.phi}
     )
@@ -684,15 +735,8 @@ def test_packed_selection_nminusone_dak():
     import dask_awkward as dak
 
     from coffea.analysis_tools import PackedSelection
-    from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 
-    fname = "tests/samples/nano_dy.root"
-    events = NanoEventsFactory.from_root(
-        fname,
-        schemaclass=NanoAODSchema.v6,
-        metadata={"dataset": "DYJets"},
-    ).events()
-    events = dak.from_awkward(events, npartitions=1)
+    events = dakevents
 
     selection = PackedSelection()
 
@@ -712,6 +756,11 @@ def test_packed_selection_nminusone_dak():
 
     assert selection.names == ["twoElectron", "noMuon", "leadPt20"]
 
+    with pytest.raises(
+        ValueError,
+        match="All arguments must be strings that refer to the names of existing selections",
+    ):
+        selection.nminusone("twoElectron", "nonexistent")
     nminusone = selection.nminusone("twoElectron", "noMuon", "leadPt20")
 
     labels, nev, masks = nminusone.result()
@@ -737,6 +786,20 @@ def test_packed_selection_nminusone_dak():
     ):
         assert np.all(mask.compute() == truth.compute())
 
+    nminusone.to_npz("nminusone.npz", compressed=False)
+    with np.load("nminusone.npz") as file:
+        assert np.all(file["labels"] == labels)
+        assert np.all(file["nev"] == list(dask.compute(*nev)))
+        assert np.all(file["masks"] == list(dask.compute(*masks)))
+    os.remove("nminusone.npz")
+
+    nminusone.to_npz("nminusone.npz", compressed=True)
+    with np.load("nminusone.npz") as file:
+        assert np.all(file["labels"] == labels)
+        assert np.all(file["nev"] == list(dask.compute(*nev)))
+        assert np.all(file["masks"] == list(dask.compute(*masks)))
+    os.remove("nminusone.npz")
+
     h, hlabels = dask.compute(*nminusone.yieldhist())
 
     assert hlabels == ["initial", "N - twoElectron", "N - noMuon", "N - leadPt20", "N"]
@@ -745,6 +808,13 @@ def test_packed_selection_nminusone_dak():
 
     assert np.all(h.counts() == list(dask.compute(*nev)))
 
+    with pytest.raises(
+        ValueError,
+        match="The variable 'Ephi' has length '20', but the masks have length '40'",
+    ):
+        nminusone.plot_vars(
+            {"Ept": events.Electron.pt, "Ephi": events.Electron.phi[:20]}
+        )
     hs, hslabels = dask.compute(
         *nminusone.plot_vars({"Ept": events.Electron.pt, "Ephi": events.Electron.phi})
     )
@@ -772,15 +842,8 @@ def test_packed_selection_cutflow_dak():
     import dask_awkward as dak
 
     from coffea.analysis_tools import PackedSelection
-    from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 
-    fname = "tests/samples/nano_dy.root"
-    events = NanoEventsFactory.from_root(
-        fname,
-        schemaclass=NanoAODSchema.v6,
-        metadata={"dataset": "DYJets"},
-    ).events()
-    events = dak.from_awkward(events, npartitions=1)
+    events = dakevents
 
     selection = PackedSelection()
 
@@ -800,6 +863,11 @@ def test_packed_selection_cutflow_dak():
 
     assert selection.names == ["twoElectron", "noMuon", "leadPt20"]
 
+    with pytest.raises(
+        ValueError,
+        match="All arguments must be strings that refer to the names of existing selections",
+    ):
+        selection.cutflow("twoElectron", "nonexistent")
     cutflow = selection.cutflow("noMuon", "twoElectron", "leadPt20")
 
     labels, nevonecut, nevcutflow, masksonecut, maskscutflow = cutflow.result()
@@ -828,6 +896,24 @@ def test_packed_selection_cutflow_dak():
     ):
         assert np.all(mask.compute() == truth.compute())
 
+    cutflow.to_npz("cutflow.npz", compressed=False)
+    with np.load("cutflow.npz") as file:
+        assert np.all(file["labels"] == labels)
+        assert np.all(file["nevonecut"] == list(dask.compute(*nevonecut)))
+        assert np.all(file["nevcutflow"] == list(dask.compute(*nevcutflow)))
+        assert np.all(file["masksonecut"] == list(dask.compute(*masksonecut)))
+        assert np.all(file["maskscutflow"] == list(dask.compute(*maskscutflow)))
+    os.remove("cutflow.npz")
+
+    cutflow.to_npz("cutflow.npz", compressed=True)
+    with np.load("cutflow.npz") as file:
+        assert np.all(file["labels"] == labels)
+        assert np.all(file["nevonecut"] == list(dask.compute(*nevonecut)))
+        assert np.all(file["nevcutflow"] == list(dask.compute(*nevcutflow)))
+        assert np.all(file["masksonecut"] == list(dask.compute(*masksonecut)))
+        assert np.all(file["maskscutflow"] == list(dask.compute(*maskscutflow)))
+    os.remove("cutflow.npz")
+
     honecut, hcutflow, hlabels = dask.compute(*cutflow.yieldhist())
 
     assert hlabels == ["initial", "noMuon", "twoElectron", "leadPt20"]
@@ -838,6 +924,11 @@ def test_packed_selection_cutflow_dak():
     assert np.all(honecut.counts() == list(dask.compute(*nevonecut)))
     assert np.all(hcutflow.counts() == list(dask.compute(*nevcutflow)))
 
+    with pytest.raises(
+        ValueError,
+        match="The variable 'Ephi' has length '20', but the masks have length '40'",
+    ):
+        cutflow.plot_vars({"Ept": events.Electron.pt, "Ephi": events.Electron.phi[:20]})
     honecuts, hcutflows, hslabels = dask.compute(
         *cutflow.plot_vars({"ept": events.Electron.pt, "ephi": events.Electron.phi})
     )
