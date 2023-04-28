@@ -36,7 +36,6 @@ def getfunction(
                 zlargs.append(
                     awkward.Array(
                         arg.form.length_zero_array(highlevel=False),
-                        behavior=arg.behavior,
                     )
                 )
             result = thelookup_wref()._evaluate(
