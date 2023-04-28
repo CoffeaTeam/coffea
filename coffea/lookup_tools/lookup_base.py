@@ -33,7 +33,12 @@ def getfunction(
             zlargs = []
             for arg in args:
                 arg._touch_data(recursive=True)
-                zlargs.append(arg.form.length_zero_array())
+                zlargs.append(
+                    awkward.Array(
+                        arg.form.length_zero_array(highlevel=False),
+                        behavior=arg.behavior,
+                    )
+                )
             result = thelookup_wref()._evaluate(
                 *(list(__pre_args__) + [awkward.to_numpy(zlarg) for zlarg in zlargs]),
                 **kwargs,
@@ -88,9 +93,17 @@ class lookup_base:
                 **kwargs,
             )
 
-            zlargs = [arg._meta.layout.form.length_zero_array() for arg in actual_args]
+            zlargs = [
+                awkward.Array(
+                    arg._meta.layout.form.length_zero_array(highlevel=False),
+                    behavior=arg.behavior,
+                )
+                for arg in actual_args
+            ]
             zlout = tomap(*zlargs)
-            meta = dask_awkward.typetracer_from_form(zlout.layout.form)
+            meta = awkward.Array(
+                zlout.layout.to_typetracer(forget_length=True), behavior=zlout.behavior
+            )
 
             if dask_label is not None:
                 return dask_awkward.map_partitions(
