@@ -161,13 +161,18 @@ class FactorizedJetCorrector:
         if type(first_kwarg) is dask_awkward.Array:
             levels = "/".join(self._levels)
             func = _getCorrectionFn(self, **kwargs)
-            meta = dask_awkward.typetracer_from_form(
-                func(
-                    *tuple(
-                        arg._meta.layout.form.length_zero_array()
-                        for arg in kwargs.values()
+            zl_out = func(
+                *tuple(
+                    awkward.Array(
+                        arg._meta.layout.form.length_zero_array(highlevel=False),
+                        behavior=arg.behavior,
                     )
-                ).layout.form
+                    for arg in kwargs.values()
+                )
+            )
+            meta = awkward.Array(
+                zl_out.layout.to_typetracer(forget_length=True),
+                behavior=zl_out.behavior,
             )
 
             return dask_awkward.map_partitions(
