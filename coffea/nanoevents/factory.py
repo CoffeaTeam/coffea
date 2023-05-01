@@ -163,7 +163,9 @@ class _map_schema_parquet(_map_schema_base):
 
     def __call__(self, form):
         # expecting a flat data source in so this is OK
-        lza = form.length_zero_array()
+        lza = awkward.Array(
+            form.length_zero_array(highlevel=False), behavior=self.behavior
+        )
         column_source = {key: lza[key] for key in awkward.fields(lza)}
 
         lform = PreloadedSourceMapping._extract_base_form(column_source)

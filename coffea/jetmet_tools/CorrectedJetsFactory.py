@@ -45,7 +45,7 @@ def rand_gauss(item):
     if backend == "cpu":
         seeds = numpy.array(item)[[0, -1]].view("i4")
     elif backend == "typetracer":
-        olitem = item.layout.form.length_one_array()
+        olitem = item.layout.form.length_one_array(highlevel=False)
         seeds = numpy.array(olitem)[[0, -1]].view("i4")
     else:
         raise ValueError("rand_gauss received an unsupported awkward backend!")
@@ -69,13 +69,17 @@ def rand_gauss(item):
             behavior=item.behavior,
         )
     elif backend == "typetracer":
-        zlitem = item.layout.form.length_zero_array()
+        zlitem = awkward.Array(
+            item.layout.form.length_zero_array(highlevel=False), behavior=item.behavior
+        )
         out = awkward.transform(
             getfunction,
             zlitem,
             behavior=zlitem.behavior,
         )
-        out = dask_awkward.typetracer_from_form(out.layout.form)
+        out = awkward.Array(
+            out.layout.to_typetracer(forget_length=True), behavior=out.behavior
+        )
 
     assert out is not None
     return out
@@ -118,8 +122,14 @@ def jer_smear(
     backend = awkward.backend(smearfact, jetPt)
 
     if backend == "typetracer":
-        smearfact = smearfact.layout.form.length_zero_array()
-        jetPt = smearfact.layout.form.length_zero_array()
+        smearfact = awkward.Array(
+            smearfact.layout.form.length_zero_array(highlevel=False),
+            behavior=smearfact.behavior,
+        )
+        jetPt = awkward.Array(
+            jetPt.layout.form.length_zero_array(highlevel=False),
+            behavior=jetPt.behavior,
+        )
 
     def getfunction(layout, depth, **kwargs):
         if isinstance(layout, awkward.contents.NumpyArray) or not isinstance(
@@ -131,8 +141,13 @@ def jer_smear(
     smearfact = awkward.transform(getfunction, jetPt, behavior=jetPt.behavior)
 
     if backend == "typetracer":
-        jetPt = dask_awkward.typetracer_from_form(jetPt.layout.form)
-        smearfact = dask_awkward.typetracer_from_form(smearfact.layout.form)
+        jetPt = awkward.Array(
+            jetPt.layout.to_typetracer(forget_length=True), behavior=jetPt.behavior
+        )
+        smearfact = awkward.Array(
+            smearfact.layout.to_typetracer(forget_length=True),
+            behavior=smearfact.behavior,
+        )
 
     return smearfact
 
