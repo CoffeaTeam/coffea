@@ -14,20 +14,15 @@ except ImportError as err:
     )
     raise err
 
-from .helper import numpy_call_wrapper
+from .helper import lazy_container, numpy_call_wrapper
 
 
-class torch_wrapper(numpy_call_wrapper):
+class torch_wrapper(lazy_container, numpy_call_wrapper):
     """
     Wrapper for running pytorch with awkward/dask-awkward inputs.
     """
 
-    def __init__(
-        self,
-        torch_model: torch.nn.Module,
-        torch_state: str,
-        torch_device: str = "cuda" if torch.cuda.is_available() else "cpu",
-    ):
+    def __init__(self, torch_model: torch.nn.Module, torch_state: str):
         """
         Since pytorch models are directly pickle-able, we do not need to invoke
         lazy objects for this class.
@@ -40,12 +35,8 @@ class torch_wrapper(numpy_call_wrapper):
         - torch_state: Model state. Since this needs to be loaded after
           determining the torch computation device, this needs to be passed
           along with the model of interest.
-
-        - torch_device: string representing the computation device to run
-          inference on. ("cpu" or "gpu")
         """
-        # Setting up the default torch inference computation device
-        self.device = torch.device(torch_device)
+        lazy_container.__init__(self, ["device"])
 
         # Copy the pytorch model, loading in the state, and set to evaluation mode
         self.torch_model = torch_model
@@ -53,6 +44,15 @@ class torch_wrapper(numpy_call_wrapper):
             torch.load(torch_state, map_location=torch.device(self.device))
         )
         self.torch_model.eval()
+
+    def _create_device(self):
+        """
+        Torch device run calculations on. This wrapper class will always attempt
+        to use GPU if possible. Setting this as a lazy object so that remote
+        worker can have a different configuration the interactive session.
+        """
+        # Setting up the default torch inference computation device
+        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def validate_numpy_inputs(self, *args: numpy.array, **kwargs: numpy.array) -> None:
         # TODO: How to extract this information from just model?
