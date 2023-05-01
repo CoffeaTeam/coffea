@@ -118,3 +118,7 @@ def test_triton():
     for k in ak_res.keys():
         assert ak.all(ak_res[k] == dak_res[k].compute())
     print(dak.necessary_columns(dak_res))
+
+
+if __name__ == "__main__":
+    test_triton()
