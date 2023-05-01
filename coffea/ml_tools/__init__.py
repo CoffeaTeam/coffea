@@ -5,8 +5,8 @@ handle data mangling in awkward/numpy formats. Specifics of passing numpy arrays
 conversion and the handling of dask are mostly abstract away.
 """
 from .helper import numpy_call_wrapper
-from .triton_wrapper import triton_wrapper
 from .torch_wrapper import torch_wrapper
+from .triton_wrapper import triton_wrapper
 
 __all__ = [
     "numpy_call_wrapper",
