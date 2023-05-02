@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+from typing import Optional
 
 """Adapted from https://github.com/hqucms/weaver/blob/master/utils/nn/model/ParticleNet.py"""
 
