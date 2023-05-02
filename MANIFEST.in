@@ -29,5 +29,6 @@ recursive-include tests *.py
 recursive-include tests *.root
 recursive-include tests *.sh
 recursive-include tests *.txt
+recursive-include tests *.pt
 recursive-include validation *.py
 recursive-include validation *.sh
