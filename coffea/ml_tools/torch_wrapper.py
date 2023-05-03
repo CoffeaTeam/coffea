@@ -22,28 +22,22 @@ class torch_wrapper(lazy_container, numpy_call_wrapper):
     Wrapper for running pytorch with awkward/dask-awkward inputs.
     """
 
-    def __init__(self, torch_model: torch.nn.Module, torch_state: str):
+    def __init__(self, torch_model: torch.nn.Module):
         """
-        Since pytorch models are directly pickle-able, we do not need to invoke
-        lazy objects for this class.
+        Object lazy-ness is required to allow for GPU running on remote workers.
+        The users will be responsible for passing in a properly constructed
+        pytorch model (with dict_state properly loaded).
 
         Parameters
         ----------
 
         - torch_model: The torch model object that will be used for inference
-
-        - torch_state: Model state. Since this needs to be loaded after
-          determining the torch computation device, this needs to be passed
-          along with the model of interest.
         """
-        lazy_container.__init__(self, ["device"])
+        lazy_container.__init__(self, ["model", "device"])
 
-        # Copy the pytorch model, loading in the state, and set to evaluation mode
-        self.torch_model = torch_model
-        self.torch_model.load_state_dict(
-            torch.load(torch_state, map_location=torch.device(self.device))
-        )
-        self.torch_model.eval()
+        # Reference to the original pytorch model, loading in the state, and
+        # set to evaluation mode
+        self.orig_model = torch_model
 
     def _create_device(self):
         """
@@ -54,8 +48,16 @@ class torch_wrapper(lazy_container, numpy_call_wrapper):
         # Setting up the default torch inference computation device
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    def _create_model(self):
+        if torch.cuda.is_available():
+            model = self.orig_model.cuda()
+        else:
+            model = self.orig_model
+        model.eval()
+        return model
+
     def validate_numpy_inputs(self, *args: numpy.array, **kwargs: numpy.array) -> None:
-        # TODO: How to extract this information from just model?
+        # TODO: How to extract type information from just model?
         pass
 
     def numpy_call(self, *args: numpy.array, **kwargs: numpy.array) -> numpy.array:
@@ -66,4 +68,4 @@ class torch_wrapper(lazy_container, numpy_call_wrapper):
         args = [torch.from_numpy(arr).to(self.device) for arr in args]
         kwargs = {k: torch.from_numpy(arr).to(self.device) for k, arr in kwargs.items()}
         with torch.no_grad():
-            return self.torch_model(*args, **kwargs).detach().numpy()
+            return self.model(*args, **kwargs).detach().numpy()
