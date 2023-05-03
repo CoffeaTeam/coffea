@@ -58,6 +58,11 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         python -m pip install --upgrade pip setuptools wheel
+        # mltool installs
+        python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+        python -m pip install xgboost
+        python -m pip install tritonclient[grpc,http]
+        # install checked out coffea
         python -m pip install -q -e '.[dev,parsl,dask,spark]'
         python -m pip list
         java -version
@@ -65,6 +70,10 @@ jobs:
       if: matrix.os == 'macOS-latest'
       run: |
         python -m pip install --upgrade pip setuptools wheel
+        # mltool installs
+        python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+        python -m pip install xgboost
+        # install checked out coffea
         python -m pip install -q -e '.[dev,dask,spark]'
         python -m pip list
         java -version
@@ -72,6 +81,10 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         python -m pip install --upgrade pip setuptools wheel
+        # mltool installs
+        python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+        python -m pip install xgboost
+        # install checked out coffea
         python -m pip install -q -e '.[dev,dask]'
         python -m pip list
         java -version
