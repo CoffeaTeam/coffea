@@ -1,3 +1,7 @@
+import pytest
+import sys
+import torch
+
 import awkward as ak
 import dask_awkward as dak
 import numpy as np
@@ -5,26 +9,26 @@ import numpy as np
 import coffea.ml_tools
 
 
-def prepare_jets_array():
-    # Creating jagged Jet-with-constituent array
-    NJETS = 2000
+def prepare_jets_array(njets):
+    # Creating jagged Jet-with-constituent array, returning both awkward and lazy
+    # dask_awkward arrays
     NFEAT = 100
     jets = ak.zip(
         {
-            "pt": ak.from_numpy(np.random.random(size=NJETS)),
-            "eta": ak.from_numpy(np.random.random(size=NJETS)),
-            "phi": ak.from_numpy(np.random.random(size=NJETS)),
-            "ncands": ak.from_numpy(np.random.randint(1, 50, size=NJETS)),
+            "pt": ak.from_numpy(np.random.random(size=njets)),
+            "eta": ak.from_numpy(np.random.random(size=njets)),
+            "phi": ak.from_numpy(np.random.random(size=njets)),
+            "ncands": ak.from_numpy(np.random.randint(1, 50, size=njets)),
         },
         with_name="LorentzVector",
     )
     pfcands = ak.zip(
         {
-            "pt": ak.from_regular(np.random.random(size=(NJETS, NFEAT))),
-            "eta": ak.from_regular(np.random.random(size=(NJETS, NFEAT))),
-            "phi": ak.from_regular(np.random.random(size=(NJETS, NFEAT))),
-            "feat1": ak.from_regular(np.random.random(size=(NJETS, NFEAT))),
-            "feat2": ak.from_regular(np.random.random(size=(NJETS, NFEAT))),
+            "pt": ak.from_regular(np.random.random(size=(njets, NFEAT))),
+            "eta": ak.from_regular(np.random.random(size=(njets, NFEAT))),
+            "phi": ak.from_regular(np.random.random(size=(njets, NFEAT))),
+            "feat1": ak.from_regular(np.random.random(size=(njets, NFEAT))),
+            "feat2": ak.from_regular(np.random.random(size=(njets, NFEAT))),
         },
         with_name="LorentzVector",
     )
@@ -44,11 +48,11 @@ def common_awkward_to_numpy(jets):
         return ak.fill_none(ak.pad_none(arr, 100, axis=1, clip=True), 0.0)
 
     fmap = {
-        "points__0": {
+        "points": {
             "deta": my_pad(jets.eta - jets.pfcands.eta),
             "dphi": my_pad(jets.phi - jets.pfcands.phi),
         },
-        "features__1": {
+        "features": {
             "dr": my_pad(
                 np.sqrt(
                     (jets.eta - jets.pfcands.eta) ** 2
@@ -60,7 +64,7 @@ def common_awkward_to_numpy(jets):
             "f1": my_pad(np.log(jets.pfcands.feat1 + 1)),
             "f2": my_pad(np.log(jets.pfcands.feat2 + 1)),
         },
-        "mask__2": {
+        "mask": {
             "mask": my_pad(ak.ones_like(jets.pfcands.pt)),
         },
     }
@@ -73,6 +77,10 @@ def common_awkward_to_numpy(jets):
     }
 
 
+@pytest.mark.skipif(
+    sys.platform != "linux",
+    reason="tritonclient only available on Linux systems",
+)
 def test_triton():
     # Defining custom wrapper function with awkward padding requirements.
     class triton_wrapper_test(coffea.ml_tools.triton_wrapper):
@@ -95,30 +103,91 @@ def test_triton():
 
     # Running the evaluation in lazy and non-lazy forms
     tw = triton_wrapper_test(
-        model_url="triton+grpc://triton.apps.okddev.fnal.gov:443/emj_gnn_aligned/1"
+        model_url="triton+grpc://localhost:8001/pn_test/1",
+        client_args=dict(
+            ssl=False
+        ),  # Solves SSL version mismatch for local inference server
     )
 
-    ak_jets, dak_jets = prepare_jets_array()
-
-    # Numpy arrays testing
-    np_res = tw(["softmax__0"], common_awkward_to_numpy(ak_jets))
-    print({k: v.shape for k, v in np_res.items()})
+    ak_jets, dak_jets = prepare_jets_array(njets=256)
 
     # Vanilla awkward arrays
-    ak_res = tw(["softmax__0"], ak_jets)
-    print({k: v.to_numpy().shape for k, v in ak_res.items()})
-
-    for k in np_res.keys():
-        assert np.all(ak.to_numpy(ak_res[k]) == np_res[k])
-
-    # dask awkward arrays (with lazy_evaluations)
-    dak_res = tw(["softmax__0"], dak_jets)
-    print({k: v.compute().to_numpy().shape for k, v in dak_res.items()})
+    ak_res = tw(["output"], ak_jets)
+    dak_res = tw(["output"], dak_jets)
 
     for k in ak_res.keys():
         assert ak.all(ak_res[k] == dak_res[k].compute())
-    print(dak.necessary_columns(dak_res))
+    columns = list(dak.necessary_columns(dak_res).values())[0]
+    assert sorted(columns) == sorted(
+        [
+            "eta",
+            "phi",
+            "pfcands.pt",
+            "pfcands.phi",
+            "pfcands.eta",
+            "pfcands.feat1",
+            "pfcands.feat2",
+        ]
+    )
 
 
-if __name__ == "__main__":
-    test_triton()
+def test_torch():
+    class torch_wrapper_test(coffea.ml_tools.torch_wrapper):
+        def awkward_to_numpy(self, jets):
+            default = common_awkward_to_numpy(jets)
+            return [], {
+                "points": default["points"].astype(np.float32),
+                "features": default["features"].astype(np.float32),
+                "mask": default["mask"].astype(np.float16),
+            }
+
+        def dask_columns(self, jets):
+            return [
+                jets.eta,
+                jets.phi,
+                jets.pfcands.pt,
+                jets.pfcands.phi,
+                jets.pfcands.eta,
+                jets.pfcands.feat1,
+                jets.pfcands.feat2,
+            ]
+
+    model = torch.jit.load("tests/samples/pn_demo.pt")
+    tw = torch_wrapper_test(model)
+    ak_jets, dak_jets = prepare_jets_array(njets=256)
+
+    ak_res = tw(ak_jets)
+    dak_res = tw(dak_jets)
+
+    assert np.all(np.isclose(ak_res, dak_res.compute()))
+
+
+def test_xgboost():
+    feature_list = [f"feat{i}" for i in range(10)]
+
+    class xgboost_test(coffea.ml_tools.xgboost_wrapper):
+        def awkward_to_numpy(self, events):
+            ret = np.column_stack([events[name].to_numpy() for name in feature_list])
+            return [], dict(data=ret)
+
+        def dask_columns(self, events):
+            return [events[f] for f in feature_list]
+
+    xgb_wrap = xgboost_test("tests/samples/xgboost_example.xgb")
+
+    # Dummy 1000 event array with 20 feature branches
+    ak_events = ak.zip(
+        {f"feat{i}": ak.from_numpy(np.random.random(size=1_000)) for i in range(20)}
+    )
+    ak.to_parquet(ak_events, "ml_tools.xgboost.parquet")
+    dak_events = dak.from_parquet("ml_tools.xgboost.parquet")
+
+    ak_res = xgb_wrap(ak_events)
+    dak_res = xgb_wrap(dak_events)
+
+    # Results should be identical
+    assert ak.all(ak_res == dak_res.compute())
+
+    # Should only load required columns
+    columns = list(dak.necessary_columns(dak_res).values())[0]
+    assert sorted(columns) == sorted(feature_list)
