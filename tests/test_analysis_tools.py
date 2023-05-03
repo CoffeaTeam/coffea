@@ -50,10 +50,10 @@ def test_weights():
     test_shift_down = weight.weight("testDown")
 
     assert np.all(np.abs(test_shift_down - (exp_down)) < 1e-6)
-    
+
     with pytest.raises(ValueError):
         raise weight.partial_weight(include="test")
-    
+
     with pytest.raises(ValueError):
         raise weight.partial_weight(exclude="test")
 
