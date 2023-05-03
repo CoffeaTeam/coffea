@@ -65,7 +65,9 @@ def test_weights_dak():
     from coffea.analysis_tools import Weights
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
-    scale_central = dak.from_dask_array(da.random.normal(loc=1.0, scale=0.01, size=counts.size))
+    scale_central = dak.from_dask_array(
+        da.random.normal(loc=1.0, scale=0.01, size=counts.size)
+    )
     scale_up = scale_central * 1.10
     scale_down = scale_central * 0.95
     scale_up_shift = 0.10 * scale_central
@@ -167,7 +169,9 @@ def test_weights_multivariation_dak():
     from coffea.analysis_tools import Weights
 
     counts, test_eta, test_pt = dummy_jagged_eta_pt()
-    scale_central = dak.from_dask_array(da.random.normal(loc=1.0, scale=0.01, size=counts.size))
+    scale_central = dak.from_dask_array(
+        da.random.normal(loc=1.0, scale=0.01, size=counts.size)
+    )
     scale_up = scale_central * 1.10
     scale_down = scale_central * 0.95
     scale_up_2 = scale_central * 1.2
@@ -357,7 +361,9 @@ def test_packed_selection():
     assert np.all(sel.any("all_true", "all_false") == all_true)
     assert np.all(
         sel.all("fizz", "buzz")
-        == np.array([True, False, False, False, False, False, False, False, False, False])
+        == np.array(
+            [True, False, False, False, False, False, False, False, False, False]
+        )
     )
     assert np.all(
         sel.any("fizz", "buzz")
@@ -385,26 +391,36 @@ def test_packed_selection_dak():
     sel = PackedSelection()
 
     shape = (10,)
-    all_true = dak.from_awkward(ak.Array(np.full(shape=shape, fill_value=True, dtype=bool)), 1)
-    all_false = dak.from_awkward(ak.Array(np.full(shape=shape, fill_value=False, dtype=bool)), 1)
+    all_true = dak.from_awkward(
+        ak.Array(np.full(shape=shape, fill_value=True, dtype=bool)), 1
+    )
+    all_false = dak.from_awkward(
+        ak.Array(np.full(shape=shape, fill_value=False, dtype=bool)), 1
+    )
     fizz = dak.from_awkward(ak.Array(np.arange(shape[0]) % 3 == 0), 1)
     buzz = dak.from_awkward(ak.Array(np.arange(shape[0]) % 5 == 0), 1)
     ones = dak.from_awkward(ak.Array(np.ones(shape=shape, dtype=np.uint64)), 1)
-    wrong_shape = ones = dak.from_awkward(ak.Array(np.ones(shape=(shape[0] - 5,), dtype=bool)), 1)
+    wrong_shape = ones = dak.from_awkward(
+        ak.Array(np.ones(shape=(shape[0] - 5,), dtype=bool)), 1
+    )
 
     sel.add("all_true", all_true)
     sel.add("all_false", all_false)
     sel.add("fizz", fizz)
     sel.add("buzz", buzz)
 
-    assert np.all(sel.require(all_true=True, all_false=False).compute() == all_true.compute())
+    assert np.all(
+        sel.require(all_true=True, all_false=False).compute() == all_true.compute()
+    )
     # allow truthy values
     assert np.all(sel.require(all_true=1, all_false=0).compute() == all_true.compute())
     assert np.all(sel.all("all_true", "all_false").compute() == all_false.compute())
     assert np.all(sel.any("all_true", "all_false").compute() == all_true.compute())
     assert np.all(
         sel.all("fizz", "buzz").compute()
-        == np.array([True, False, False, False, False, False, False, False, False, False])
+        == np.array(
+            [True, False, False, False, False, False, False, False, False, False]
+        )
     )
     assert np.all(
         sel.any("fizz", "buzz").compute()
