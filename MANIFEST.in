@@ -30,5 +30,7 @@ recursive-include tests *.root
 recursive-include tests *.sh
 recursive-include tests *.txt
 recursive-include tests *.pt
+recursive-include tests *.pbtxt
+recursive-include tests *.xgb
 recursive-include validation *.py
 recursive-include validation *.sh
