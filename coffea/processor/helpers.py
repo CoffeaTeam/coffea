@@ -115,9 +115,9 @@ class Weights:
 
         Parameters
         ----------
-            include : list
+            include : list | set
                 Weight names to include, defaults to []
-            exclude : list
+            exclude : list | set
                 Weight names to exclude, defaults to []
         Returns
         -------
@@ -133,10 +133,10 @@ class Weights:
             raise ValueError(
                 "Need to specify exactly one of the 'exclude' or 'include' arguments."
             )
-        if include and not isinstance(include, list):
-            raise ValueError("'include' should be a list of weight names")
-        if exclude and not isinstance(exclude, list):
-            raise ValueError("'exclude' should be a list of weight names")
+        if include and not isinstance(include, (list, set)):
+            raise ValueError("'include' should be a list or set of weight names")
+        if exclude and not isinstance(exclude, (list, set)):
+            raise ValueError("'exclude' should be a list or set of weight names")
 
         names = set(self._weights.keys())
         if include:
