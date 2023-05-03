@@ -1,4 +1,5 @@
 from typing import Dict, Optional
+
 import numpy
 
 from coffea.ml_tools.helper import lazy_container, numpy_call_wrapper
