@@ -1,11 +1,12 @@
 from typing import Dict, Optional
 import numpy
+import warnings
 
 from coffea.ml_tools.helper import lazy_container, numpy_call_wrapper
 
 try:
     import xgboost
-except ImportError:
+except ImportError as err:
     warnings.warn(
         "Users should make sure the xgboost package is installed before proceeding!\n"
         "> pip install xgboost==1.5.1\n"
