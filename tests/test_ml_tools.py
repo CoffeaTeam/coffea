@@ -6,11 +6,11 @@ import numpy as np
 import pytest
 import torch
 
-import coffea.ml_tools.torch_wrapper
-import coffea.ml_tools.xgboost_wrapper
+from coffea.ml_tools.torch_wrapper import torch_wrapper
+from coffea.ml_tools.xgboost_wrapper import xgboost_wrapper
 
 if sys.platform == "linux":
-    import coffea.ml_tools.triton_wrapper
+    from coffea.ml_tools.triton_wrapper import triton_wrapper
 
 
 def prepare_jets_array(njets):
@@ -87,7 +87,7 @@ def common_awkward_to_numpy(jets):
 )
 def test_triton():
     # Defining custom wrapper function with awkward padding requirements.
-    class triton_wrapper_test(coffea.ml_tools.triton_wrapper):
+    class triton_wrapper_test(triton_wrapper):
         def awkward_to_numpy(self, output_list, jets):
             return [], {
                 "output_list": output_list,
@@ -136,7 +136,7 @@ def test_triton():
 
 
 def test_torch():
-    class torch_wrapper_test(coffea.ml_tools.torch_wrapper):
+    class torch_wrapper_test(torch_wrapper):
         def awkward_to_numpy(self, jets):
             default = common_awkward_to_numpy(jets)
             return [], {
@@ -169,7 +169,7 @@ def test_torch():
 def test_xgboost():
     feature_list = [f"feat{i}" for i in range(10)]
 
-    class xgboost_test(coffea.ml_tools.xgboost_wrapper):
+    class xgboost_test(xgboost_wrapper):
         def awkward_to_numpy(self, events):
             ret = np.column_stack([events[name].to_numpy() for name in feature_list])
             return [], dict(data=ret)
