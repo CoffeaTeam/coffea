@@ -19,6 +19,10 @@ task:
       install_script: |
         . ../venv/bin/activate
         python -m pip install --upgrade pip setuptools wheel
+        # mltool installs
+        python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+        python -m pip install xgboost
+        # install checked out coffea
         python -m pip install --verbose .[dev,parsl,dask]
         python -m pip list
       pytest_script: |
