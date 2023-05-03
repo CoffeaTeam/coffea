@@ -1,10 +1,9 @@
-from typing import Optional, Dict
+from typing import Dict, Optional
 
-import xgboost
 import numpy
+import xgboost
 
-
-from coffea.ml_tools.helper import numpy_call_wrapper, lazy_container
+from coffea.ml_tools.helper import lazy_container, numpy_call_wrapper
 
 
 class xgboost_wrapper(numpy_call_wrapper, lazy_container):
