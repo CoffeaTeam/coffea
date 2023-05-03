@@ -6,7 +6,11 @@ import numpy as np
 import pytest
 import torch
 
-import coffea.ml_tools
+import coffea.ml_tools.torch_wrapper
+import coffea.ml_tools.xgboost_wrapper
+
+if sys.platform == "linux":
+    import coffea.ml_tools.triton_wrapper
 
 
 def prepare_jets_array(njets):
