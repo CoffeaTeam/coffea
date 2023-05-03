@@ -1,10 +1,19 @@
 from typing import Optional, Dict
-
-import xgboost
 import numpy
 
-
 from coffea.ml_tools.helper import numpy_call_wrapper, lazy_container
+
+try:
+    import xgboost
+except ImportError:
+    warnings.warn(
+        "Users should make sure the xgboost package is installed before proceeding!\n"
+        "> pip install xgboost==1.5.1\n"
+        "or\n"
+        "> conda install xgboost==1.5.1",
+        UserWarning,
+    )
+    raise err
 
 
 class xgboost_wrapper(numpy_call_wrapper, lazy_container):
