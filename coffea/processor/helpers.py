@@ -130,9 +130,7 @@ class Weights:
                 "To be able to request weight exclusion, use storeIndividual=True when creating Weights object."
             )
         if (include and exclude) or not (include or exclude):
-            raise ValueError(
-                "Need to specify exactly one of the 'exclude' or 'include' arguments."
-            )
+            raise ValueError("Need to specify exactly one of the 'exclude' or 'include' arguments.")
         if include and not isinstance(include, list):
             raise ValueError("'include' should be a list of weight names")
         if exclude and not isinstance(exclude, list):
@@ -206,9 +204,7 @@ class PackedSelection:
                 If not the first mask added, it must also have
                 the same shape as previously added masks.
         """
-        if isinstance(selection, numpy.ndarray) and selection.dtype == numpy.dtype(
-            "bool"
-        ):
+        if isinstance(selection, numpy.ndarray) and selection.dtype == numpy.dtype("bool"):
             if len(self._names) == 0:
                 self._mask = numpy.zeros(shape=selection.shape, dtype=self._dtype)
             elif len(self._names) == 64:
@@ -225,8 +221,7 @@ class PackedSelection:
             self._names.append(name)
         else:
             raise ValueError(
-                "PackedSelection only understands numpy boolean arrays, got %r"
-                % selection
+                "PackedSelection only understands numpy boolean arrays, got %r" % selection
             )
 
     def require(self, **names):
