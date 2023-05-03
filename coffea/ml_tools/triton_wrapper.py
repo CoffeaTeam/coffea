@@ -12,9 +12,9 @@ try:
 except ImportError as err:
     warnings.warn(
         "Users should make sure the tritonclient package is installed before proceeding!\n"
-        "> pip install tritonclient\n"
+        "> pip install tritonclient[grpc,http]\n"
         "or\n"
-        "> conda install tritonclient",
+        "> conda install tritonclient[grpc,http]",
         UserWarning,
     )
     raise err
