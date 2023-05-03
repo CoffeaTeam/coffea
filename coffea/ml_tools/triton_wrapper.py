@@ -104,7 +104,7 @@ class triton_wrapper(lazy_container, numpy_call_wrapper):
         elif self.protocol == "http":
             kwargs = dict(verbose=False, concurrency=12)
         if self._client_args is not None:
-            kwargs.update(self.client_args)
+            kwargs.update(self._client_args)
         return kwargs
 
     def _create_model_metadata(self) -> Dict:
@@ -143,8 +143,15 @@ class triton_wrapper(lazy_container, numpy_call_wrapper):
                 self._batch_size = model_config["dynamic_batching"][
                     "preferred_batch_size"
                 ][0]
-            else:
+            elif "max_batch_size" in model_config:
                 self._batch_size = model_config["max_batch_size"]
+            else:
+                warnings.warn(
+                    "Batch size not set by model! Setting to default value 128. "
+                    "Contact model maintainer to check if this is expected",
+                    UserWarning,
+                )
+                self._batch_size = 10
 
         return self._batch_size
 
@@ -166,7 +173,7 @@ class triton_wrapper(lazy_container, numpy_call_wrapper):
             # Checking the name
             if iname not in self.model_inputs.keys():
                 raise ValueError(
-                    f"Input '{iname}' not defined in model! "
+                    f"Input [{iname}] not defined in model! "
                     f"Inputs defined by model: {[x for x in self.model_inputs.keys()]}"
                 )
             # Checking the shape
@@ -174,12 +181,12 @@ class triton_wrapper(lazy_container, numpy_call_wrapper):
             mshape = numpy.array(self.model_inputs[iname]["shape"])
             if len(ishape) != len(mshape):
                 raise ValueError(
-                    f"Input {iname} got wrong dimension: {len(ishape)} "
+                    f"Input [{iname}] got wrong dimension: {len(ishape)} "
                     f"(Expected {len(mshape)})"
                 )
             if not all(numpy.where(mshape > 0, ishape == mshape, True)):
                 raise ValueError(
-                    f"Input {iname} got array of shape {ishape} "
+                    f"Input [{iname}] got array of shape {ishape} "
                     f"(Expected: {mshape}, -1 means arbitrary)"
                 )
             # Checking data type. Notice that this will only raise a warning! Data
@@ -191,7 +198,7 @@ class triton_wrapper(lazy_container, numpy_call_wrapper):
             )
             if itype != mtype:
                 warnings.warn(
-                    f"Input {iname} got array of type {itype} (Expected {mtype.__name__})."
+                    f"Input [{iname}] got array of type [{itype}] (Expected [{mtype.__name__}])."
                     " Automatic conversion will be performed using numpy.array.astype.",
                     UserWarning,
                 )
@@ -199,13 +206,13 @@ class triton_wrapper(lazy_container, numpy_call_wrapper):
         # Checking for missing inputs
         for mname in self.model_inputs.keys():
             if mname not in input_dict.keys():
-                raise ValueError(f"Input {mname} not given in input dictionary!")
+                raise ValueError(f"Input [{mname}] not given in input dictionary!")
 
         # Checking output
         for oname in output_list:
             if oname not in self.model_outputs:
                 raise ValueError(
-                    f"Requested output {oname} not defined by model (Defined: {[x for x in self.model_outputs]})"
+                    f"Requested output [{oname}] not defined by model (Defined: {[x for x in self.model_outputs]})"
                 )
 
     def numpy_call(
