@@ -88,6 +88,12 @@ jobs:
         python -m pip install -q -e '.[dev,dask]'
         python -m pip list
         java -version
+
+    - name: Start triton server with example model
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        docker run  --rm   -p 8001:8001 -p 8002:8002  -v$(realpath ./coffea/tests/samples/triton_models_test):/models nvcr.io/nvidia/tritonserver:23.04-py3 tritonserver --model-repository=/models
+
     - name: Test with pytest
       run: |
         pytest --cov-report=xml --cov=coffea tests
