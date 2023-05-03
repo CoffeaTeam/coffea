@@ -1,7 +1,7 @@
+import warnings
 from typing import Dict, Optional
 
 import numpy
-import warnings
 
 from coffea.ml_tools.helper import lazy_container, numpy_call_wrapper
 
