@@ -133,6 +133,10 @@ class Weights:
             raise ValueError(
                 "Need to specify exactly one of the 'exclude' or 'include' arguments."
             )
+        if include and not isinstance(include, list):
+            raise ValueError("'include' should be a list of weight names")
+        if exclude and not isinstance(exclude, list):
+            raise ValueError("'exclude' should be a list of weight names")
 
         names = set(self._weights.keys())
         if include:
