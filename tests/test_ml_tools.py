@@ -1,10 +1,10 @@
-import pytest
 import sys
-import torch
 
 import awkward as ak
 import dask_awkward as dak
 import numpy as np
+import pytest
+import torch
 
 import coffea.ml_tools
 
