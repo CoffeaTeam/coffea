@@ -51,6 +51,12 @@ def test_weights():
 
     assert np.all(np.abs(test_shift_down - (exp_down)) < 1e-6)
 
+    with pytest.raises(ValueError):
+        raise weight.partial_weight(include="test")
+
+    with pytest.raises(ValueError):
+        raise weight.partial_weight(exclude="test")
+
 
 def test_weights_dak():
     import dask.array as da

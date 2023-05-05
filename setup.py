@@ -63,8 +63,8 @@ INSTALL_REQUIRES = [
     "pyarrow>=6.0.0",
     "fsspec",
     "matplotlib>=3",
-    "numba>=0.56.0",
-    "numpy>=1.22.0,<1.24",  # < 1.24 for numba 0.56 series
+    "numba>=0.57.0",
+    "numpy>=1.22.0,<1.25",  # < 1.25 for numba 0.57 series
     "scipy>=1.1.0",
     "tqdm>=4.27.0",
     "lz4",
