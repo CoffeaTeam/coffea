@@ -4,12 +4,14 @@ on:
   push:
     branches:
       - master
+      - backports-v0.7.x
       - backports-v0.6.x
     tags:
       - v*.*.*
   pull_request:
     branches:
       - master
+      - backports-v0.7.x
       - backports-v0.6.x
   # Run daily at 0:01 UTC
   schedule:
@@ -34,7 +36,7 @@ jobs:
         os: [ubuntu-latest, macOS-latest, windows-latest]
         java-version: [17]
         java-distribution: ["corretto"]
-        python-version: ["3.8", "3.10"]
+        python-version: ["3.8", "3.11"]
 
     name: test coffea (${{ matrix.os }}) - python ${{ matrix.python-version }}, JDK${{ matrix.java-version }}
 
@@ -79,21 +81,21 @@ jobs:
       run: |
         pytest --cov-report=xml --cov=coffea tests
     - name: Upload codecov
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.10
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11
       uses: codecov/codecov-action@v3
     - name: Install graphviz
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.10
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11
       uses: kamiazya/setup-graphviz@v1
     - name: Install pandoc
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.10
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11
       uses: r-lib/actions/setup-pandoc@v2
     - name: Build documentation
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.10
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11
       run: |
         cd docs && make html
         touch build/html/.nojekyll
     - name: Deploy documentation
-      if: github.event_name == 'push' && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.10
+      if: github.event_name == 'push' && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11
       uses: crazy-max/ghaction-github-pages@v3
       with:
         target_branch: gh-pages
@@ -106,7 +108,7 @@ jobs:
     needs: pre-commit
     strategy:
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.11"]
     name: test coffea-workqueue
 
     steps:
@@ -155,7 +157,7 @@ jobs:
     needs: [test, testwq]
     strategy:
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.11"]
     name: deploy release
 
     steps:
