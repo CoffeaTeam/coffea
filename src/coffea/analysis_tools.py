@@ -545,6 +545,7 @@ class NminusOne:
                 The arrays must be the same length as each mask of the N-1 selection.
             axes : list of hist.axis objects, optional
                 The axes objects to histogram the variables on. This will override all the following arguments that define axes.
+                Must be the same length as ``vars``.
             bins : iterable of integers or Nones, optional
                 The number of bins for each variable histogram. If not specified, it defaults to 20.
                 Must be the same length as ``vars``.
@@ -802,6 +803,7 @@ class Cutflow:
                 The arrays must be the same length as each mask of the cutflow.
             axes : list of hist.axis objects, optional
                 The axes objects to histogram the variables on. This will override all the following arguments that define axes.
+                Must be the same length as ``vars``.
             bins : iterable of integers or Nones, optional
                 The number of bins for each variable histogram. If not specified, it defaults to 20.
                 Must be the same length as ``vars``.
