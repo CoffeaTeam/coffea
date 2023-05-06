@@ -8,12 +8,14 @@ from dummy_distributions import dummy_jagged_eta_pt
 from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 
 fname = "tests/samples/nano_dy.root"
-events = NanoEventsFactory.from_root(
+eagerevents = NanoEventsFactory.from_root(
     fname,
     schemaclass=NanoAODSchema.v6,
     metadata={"dataset": "DYJets"},
 ).events()
-dakevents = dask_awkward.from_awkward(events, npartitions=1)
+dakevents = NanoEventsFactory.from_root(
+    fname, schemaclass=NanoAODSchema, metadata={"dataset": "DYJets"}, permit_dask=True
+).events()
 
 
 def test_weights():
@@ -429,6 +431,8 @@ def test_packed_selection_nminusone():
 
     from coffea.analysis_tools import PackedSelection
 
+    events = eagerevents
+
     selection = PackedSelection()
 
     twoelectron = ak.num(events.Electron) == 2
@@ -532,6 +536,8 @@ def test_packed_selection_cutflow():
     import awkward as ak
 
     from coffea.analysis_tools import PackedSelection
+
+    events = eagerevents
 
     selection = PackedSelection()
 
@@ -730,6 +736,7 @@ def test_packed_selection_basic_dak():
         sel.add("dask_array", daskarray)
 
 
+@pytest.mark.xfail(reason="Issue #256 on dask awkward")
 def test_packed_selection_nminusone_dak():
     import dask
     import dask_awkward as dak
@@ -837,6 +844,7 @@ def test_packed_selection_nminusone_dak():
             assert np.all(counts == c)
 
 
+@pytest.mark.xfail(reason="Issue #256 on dask awkward")
 def test_packed_selection_cutflow_dak():
     import dask
     import dask_awkward as dak
