@@ -1,16 +1,7 @@
-import sys
-
 import awkward as ak
 import dask_awkward as dak
 import numpy as np
 import pytest
-import torch
-
-from coffea.ml_tools.torch_wrapper import torch_wrapper
-from coffea.ml_tools.xgboost_wrapper import xgboost_wrapper
-
-if sys.platform == "linux":
-    from coffea.ml_tools.triton_wrapper import triton_wrapper
 
 
 def prepare_jets_array(njets):
@@ -81,11 +72,11 @@ def common_awkward_to_numpy(jets):
     }
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux",
-    reason="tritonclient only available on Linux systems",
-)
 def test_triton():
+    _ = pytest.importorskip("tritonclient")    
+
+    from coffea.ml_tools.triton_wrapper import triton_wrapper
+
     # Defining custom wrapper function with awkward padding requirements.
     class triton_wrapper_test(triton_wrapper):
         def awkward_to_numpy(self, output_list, jets):
@@ -136,6 +127,10 @@ def test_triton():
 
 
 def test_torch():
+    torch = pytest.importorskip("torch")
+
+    from coffea.ml_tools.torch_wrapper import torch_wrapper
+
     class torch_wrapper_test(torch_wrapper):
         def awkward_to_numpy(self, jets):
             default = common_awkward_to_numpy(jets)
@@ -167,6 +162,10 @@ def test_torch():
 
 
 def test_xgboost():
+    _ = pytest.importorskip("xgboost")
+
+    from coffea.ml_tools.xgboost_wrapper import xgboost_wrapper
+
     feature_list = [f"feat{i}" for i in range(10)]
 
     class xgboost_test(xgboost_wrapper):
