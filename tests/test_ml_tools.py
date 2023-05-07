@@ -73,7 +73,7 @@ def common_awkward_to_numpy(jets):
 
 
 def test_triton():
-    _ = pytest.importorskip("tritonclient")    
+    _ = pytest.importorskip("tritonclient")
 
     from coffea.ml_tools.triton_wrapper import triton_wrapper
 
