@@ -56,9 +56,10 @@ class torch_wrapper(lazy_container, numpy_call_wrapper):
         model.eval()
         return model
 
-    def validate_numpy_inputs(self, *args: numpy.array, **kwargs: numpy.array) -> None:
-        # TODO: How to extract type information from just model?
-        pass
+    def validate_numpy_input(self, *args: numpy.array, **kwargs: numpy.array) -> None:
+        # Pytorch's model.parameters is not a reliable way to extract input
+        # information for arbitrary models, so we will leave this to the user.
+        super().validate_numpy_input(*args, **kwargs)
 
     def numpy_call(self, *args: numpy.array, **kwargs: numpy.array) -> numpy.array:
         """
