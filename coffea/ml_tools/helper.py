@@ -151,7 +151,7 @@ class numpy_call_wrapper(abc.ABC):
         invalid input values are found. The base method performs no checks but
         raises a warning that no checks were performed.
         """
-        warnings.warn("Not checks were performed on input!")
+        warnings.warn("No format checks were performed on input!")
 
     def _call_numpy(self, *args, **kwargs):
         """
@@ -233,7 +233,7 @@ class numpy_call_wrapper(abc.ABC):
                 return awkward.zip(ret)
             else:
                 # TODO: implement more potential containers?
-                raise ValueError(f"Do not know how to type {type(ret)}")
+                raise ValueError(f"Do not know how to pack array type {type(ret)}")
 
         def unpack_ret_array(ret):
             if len(ret.fields) != 0:
