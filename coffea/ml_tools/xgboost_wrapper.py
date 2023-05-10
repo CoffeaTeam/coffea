@@ -34,12 +34,28 @@ class xgboost_wrapper(numpy_call_wrapper, lazy_container):
 
     def validate_numpy_input(
         self,
-        data,
+        data: numpy.ndarray,
         dmat_args: Optional[Dict] = None,
         predict_args: Optional[Dict] = None,
     ):
-        # TODO: Properly validate numpy data based on Booster values.
-        pass
+        """
+        The inner most dimension of the data array should be smaller than the
+        number of features of the xgboost model. (Will raise a warning if
+        mismatched). We will not attempt to parse the kwargs passed to the
+        construction of a DMatrix, or the predict call, as those advanced
+        features are expected to be properly handled by the user.
+        """
+        ndims = data.shape[-1]
+        nfeat = self.xgbooster.num_features()
+        if ndims > nfeat:
+            raise ValueError(
+                f"Input shape {data.shape} exceeded number of features ({nfeat})"
+            )
+        elif ndims < nfeat:
+            warnings.warn(
+                f"Input shape {data.shape} smaller than number of features ({nfeat})",
+                UserWarning,
+            )
 
     def numpy_call(
         self,
