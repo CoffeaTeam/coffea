@@ -166,7 +166,7 @@ def test_xgboost():
 
     from coffea.ml_tools.xgboost_wrapper import xgboost_wrapper
 
-    feature_list = [f"feat{i}" for i in range(10)]
+    feature_list = [f"feat{i}" for i in range(15)]
 
     class xgboost_test(xgboost_wrapper):
         def awkward_to_numpy(self, events):
