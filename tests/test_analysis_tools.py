@@ -1,6 +1,5 @@
 import os
 
-import dask_awkward
 import numpy as np
 import pytest
 from dummy_distributions import dummy_jagged_eta_pt
