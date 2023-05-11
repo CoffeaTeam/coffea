@@ -54,11 +54,11 @@ def get_description():
 
 
 INSTALL_REQUIRES = [
-    "awkward>=2.1.4",
+    "awkward>=2.2.0",
     "uproot>=5.0.7",
     "dask[array]>=2023.4.0",
-    "dask-awkward>=2023.4.2",
-    "dask-histogram>=2023.4.4",
+    "dask-awkward>=2023.5.0",
+    "dask-histogram>=2023.5.0",
     "correctionlib>=2.0.0",
     "pyarrow>=6.0.0",
     "fsspec",
@@ -80,8 +80,7 @@ EXTRAS_REQUIRE = {}
 EXTRAS_REQUIRE["spark"] = ["ipywidgets", "pyspark>=3.3.0", "jinja2"]
 EXTRAS_REQUIRE["parsl"] = ["parsl>=2022.12.1"]
 EXTRAS_REQUIRE["dask"] = [
-    "dask[dataframe]>=2022.12.1",
-    "distributed>=2022.12.1",
+    "distributed>=2023.4.0",
     "bokeh>=1.3.4",
     "blosc",
 ]
