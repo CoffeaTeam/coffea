@@ -8,10 +8,21 @@ import numpy
 
 
 def getfunction(
-    args, thelookup_dask=None, thelookup_wref=None, __pre_args__=tuple(), **kwargs
+    args,
+    thelookup_dask=None,
+    thelookup_wref=None,
+    __non_array_args__=tuple(),
+    __arg_indices__=tuple(),
+    **kwargs
 ):
     if not isinstance(args, (list, tuple)):
         args = (args,)
+
+    if not len(args) + len(__non_array_args__) == len(__arg_indices__):
+        raise ValueError(
+            "Total length of array and non-array args should match expected placement."
+        )
+
     if all(
         isinstance(x, (awkward.contents.NumpyArray, awkward.contents.EmptyArray))
         or not isinstance(x, (awkward.contents.Content))
@@ -19,32 +30,35 @@ def getfunction(
     ):
         result = None
         backend = awkward.backend(*args)
-        if backend == "cpu":
-            thelookup = None
-            if thelookup_wref is not None:
-                thelookup = thelookup_wref()
-            else:
-                thelookup = thelookup_dask.compute()
-            result = thelookup._evaluate(
-                *(list(__pre_args__) + [awkward.to_numpy(arg) for arg in args]),
-                **kwargs,
-            )
-        elif backend == "typetracer":
-            zlargs = []
-            for arg in args:
-                arg._touch_data(recursive=True)
-                zlargs.append(
-                    awkward.Array(
-                        arg.form.length_zero_array(highlevel=False),
-                    )
-                )
-            result = thelookup_wref()._evaluate(
-                *(list(__pre_args__) + [awkward.to_numpy(zlarg) for zlarg in zlargs]),
-                **kwargs,
-            )
-        else:
+
+        if backend != "cpu" and backend != "typetracer":
             raise NotImplementedError("support for cupy/jax/etc. numpy extensions")
 
+        # order args and __non_array_args__ correctly
+        repacked_args = [None] * len(__arg_indices__)
+        for iarg, arg in enumerate(args):
+            if backend == "cpu":
+                repacked_args[__arg_indices__[iarg]] = awkward.to_numpy(arg)
+            elif backend == "typetracer":
+                arg._touch_data(recursive=True)
+                zlarr = awkward.Array(
+                    arg.form.length_zero_array(highlevel=False),
+                )
+                repacked_args[__arg_indices__[iarg]] = awkward.to_numpy(zlarr)
+
+        for inaarg, naarg in enumerate(__non_array_args__):
+            repacked_args[__arg_indices__[inaarg + len(args)]] = naarg
+
+        thelookup = None
+        if thelookup_wref is not None:
+            thelookup = thelookup_wref()
+        else:
+            from dask.distributed import worker_client
+
+            with worker_client() as client:
+                thelookup = client.compute(thelookup_dask).result()
+
+        result = thelookup._evaluate(*repacked_args, **kwargs)
         out = awkward.contents.NumpyArray(result)
         if backend == "typetracer":
             return out.to_typetracer(forget_length=True)
@@ -53,12 +67,13 @@ def getfunction(
 
 
 class _LookupXformFn:
-    def __init__(self, *args, thelookup_dask, thelookup_wref, **kwargs):
+    def __init__(self, *args, arg_indices, thelookup_dask, thelookup_wref, **kwargs):
         self.func = partial(
             getfunction,
             thelookup_dask=thelookup_dask,
             thelookup_wref=thelookup_wref,
-            __pre_args__=args,
+            __non_array_args__=args,
+            __arg_indices__=arg_indices,
             **kwargs,
         )
 
@@ -75,22 +90,33 @@ class lookup_base:
 
     def __call__(self, *args, **kwargs):
         dask_label = kwargs.pop("dask_label", None)
+
+        actual_args = []
+        actual_arg_indices = []
+        delay_args = []
+        delay_arg_indices = []
+        for iarg, arg in enumerate(args):
+            if isinstance(arg, (awkward.highlevel.Array, dask_awkward.Array)):
+                actual_args.append(arg)
+                actual_arg_indices.append(iarg)
+            else:
+                delay_args.append(arg)
+                delay_arg_indices.append(iarg)
+        arg_indices = tuple(actual_arg_indices + delay_arg_indices)
+        actual_args = tuple(actual_args)
+        delay_args = tuple(delay_args)
+
+        tomap = _LookupXformFn(
+            *delay_args,
+            arg_indices=arg_indices,
+            thelookup_dask=self._dask_future,
+            thelookup_wref=self._weakref,
+            **kwargs,
+        )
+
         # if our inputs are all dask_awkward arrays, then we should map_partitions
         if any(isinstance(x, (dask_awkward.Array)) for x in args):
-            import dask
-
-            delay_args = tuple(
-                arg for arg in args if not isinstance(arg, dask_awkward.Array)
-            )
-            actual_args = tuple(
-                arg for arg in args if isinstance(arg, dask_awkward.Array)
-            )
-            tomap = _LookupXformFn(
-                *delay_args,
-                thelookup_dask=self._dask_future,
-                thelookup_wref=self._weakref,
-                **kwargs,
-            )
+            from dask.base import tokenize
 
             zlargs = [
                 awkward.Array(
@@ -109,14 +135,14 @@ class lookup_base:
                     tomap,
                     *actual_args,
                     label=dask_label,
-                    token=dask.base.tokenize(self._dask_future.name, *args),
+                    token=tokenize(self._dask_future.name, *args),
                     meta=meta,
                 )
             else:
                 return dask_awkward.map_partitions(
                     tomap,
                     *actual_args,
-                    token=dask.base.tokenize(self._dask_future.name, *args),
+                    token=tokenize(self._dask_future.name, *args),
                     meta=meta,
                 )
 
@@ -131,22 +157,7 @@ class lookup_base:
                 " numpy arrays, strings, or numbers!"
             )
 
-        # behavior = awkward._util.behavior_of(*args)
-        non_array_args = tuple(
-            arg for arg in args if not isinstance(arg, awkward.highlevel.Array)
-        )
-        array_args = tuple(
-            arg for arg in args if isinstance(arg, awkward.highlevel.Array)
-        )
-        func = partial(
-            getfunction,
-            thelookup_dask=self._dask_future,
-            thelookup_wref=self._weakref,
-            __pre_args__=non_array_args,
-            **kwargs,
-        )
-        out = awkward.transform(func, *array_args)
-        return out
+        return tomap(*actual_args)
 
     def _evaluate(self, *args, **kwargs):
         raise NotImplementedError
