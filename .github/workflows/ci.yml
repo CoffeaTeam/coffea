@@ -85,7 +85,7 @@ jobs:
       uses: codecov/codecov-action@v3
     - name: Install graphviz
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11
-      uses: kamiazya/setup-graphviz@v1
+      uses: ts-graphviz/setup-graphviz@v1
     - name: Install pandoc
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11
       uses: r-lib/actions/setup-pandoc@v2
