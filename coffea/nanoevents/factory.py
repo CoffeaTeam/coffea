@@ -25,6 +25,7 @@ from coffea.nanoevents.mapping import (
 from coffea.nanoevents.schemas import (
     BaseSchema,
     DelphesSchema,
+    EDM4HEPSchema,
     NanoAODSchema,
     PHYSLITESchema,
     TreeMakerSchema,
@@ -55,6 +56,11 @@ def _remove_not_interpretable(branch):
     except uproot.interpretation.objects.CannotBeAwkward:
         warnings.warn(
             f"Skipping {branch.name} as it is it cannot be represented as an Awkward array"
+        )
+        return False
+    except uproot.interpretation.identify.UnknownInterpretation:
+        warnings.warn(
+            f"Skipping {branch.name} as it is it cannot be interpreted by Uproot"
         )
         return False
     else:
@@ -289,6 +295,12 @@ class NanoEventsFactory:
 
                 behavior = nanoaod.behavior
             elif schemaclass is TreeMakerSchema:
+                from coffea.nanoevents.methods import base, vector
+
+                behavior = {}
+                behavior.update(base.behavior)
+                behavior.update(vector.behavior)
+            elif schemaclass is EDM4HEPSchema:
                 from coffea.nanoevents.methods import base, vector
 
                 behavior = {}
