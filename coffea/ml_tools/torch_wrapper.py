@@ -1,5 +1,5 @@
 import warnings
-
+import dask
 import numpy
 
 try:
@@ -37,7 +37,11 @@ class torch_wrapper(lazy_container, numpy_call_wrapper):
 
         # Reference to the original pytorch model, loading in the state, and
         # set to evaluation mode
-        self.orig_model = torch_model
+        self._dask_model = dask.delayed(
+            torch_model,
+            pure=True,
+            name="torch_wrapper_" + dask.base.tokenize(torch_model),
+        ).persist()
 
     def _create_device(self):
         """
@@ -50,9 +54,9 @@ class torch_wrapper(lazy_container, numpy_call_wrapper):
 
     def _create_model(self):
         if torch.cuda.is_available():
-            model = self.orig_model.cuda()
+            model = self._dask_model.compute().cuda()
         else:
-            model = self.orig_model
+            model = self._dask_model.compute()
         model.eval()
         return model
 
