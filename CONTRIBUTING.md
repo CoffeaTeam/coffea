@@ -14,7 +14,7 @@
 
 * Ensure the PR description clearly describes the problem and solution. Include the relevant issue number if applicable.
 
-* Before submitting, please run `flake8 coffea` and `pytest` to ensure you follow our formatting conventions and do not break any existing code. Furthermore, we prefer that any newly contributed code does not reduce the current code coverage of the repository. Please make sure your test your code as thoroughly as is needed.
+* Before submitting, please run `pre-commit run --all-files` and `pytest` to ensure you follow our formatting conventions and do not break any existing code. Furthermore, we prefer that any newly contributed code does not reduce the current code coverage of the repository. Please make sure your test your code as thoroughly as is needed.
 
 #### **Did you fix whitespace, format code, or make a purely cosmetic patch?**
 
@@ -37,6 +37,8 @@ Changes that are cosmetic in nature and do not add anything substantial to the s
 * Run `pushd docs && make html && popd` to compile, and open `docs/build/html/index.html` in a browser to see your local changes
 
 coffea is a HEP community and volunteer effort. We encourage you to pitch in and [join the team](mailto:cms-coffea@cern.ch)!
+
+* Fixes, changes, and documentation updates will be released in a timely manner. Coffea follows [CalVer](https://calver.org/) practices. Repository maintainers will generate new releases as necessary, and releases are made using the github release pages. 
 
 Thanks! :coffee: :coffee: :coffee:
 
