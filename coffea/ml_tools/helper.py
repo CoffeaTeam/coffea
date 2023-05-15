@@ -3,6 +3,7 @@ import warnings
 from typing import Dict, List, Tuple
 
 import awkward
+import dask
 import dask_awkward
 import numpy
 
@@ -334,7 +335,7 @@ class numpy_call_wrapper(abc.ABC):
         arr = dask_awkward.lib.core.map_partitions(
             wrap,
             *wrap.pair_to_args(*args, **kwargs),
-            label="triton_wrapper_dak",
+            label="numpy_call_" + dask.base.tokenize(self),
             opt_touch_all=False,
         )
         return unpack_ret_array(arr)
