@@ -38,7 +38,7 @@ Changes that are cosmetic in nature and do not add anything substantial to the s
 
 coffea is a HEP community and volunteer effort. We encourage you to pitch in and [join the team](mailto:cms-coffea@cern.ch)!
 
-* Fixes, changes, and documentation updates will be released in a timely manner. Coffea follows [CalVer](https://calver.org/) practices. Repository maintainers will generate new releases as necessary, and releases are made using the github release pages. 
+* Fixes, changes, and documentation updates will be released in a timely manner. Coffea follows [CalVer](https://calver.org/) practices. Repository maintainers will generate new releases as necessary, and releases are made using the github release pages.
 
 Thanks! :coffee: :coffee: :coffee:
 
