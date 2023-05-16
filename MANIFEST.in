@@ -1,9 +1,6 @@
-include LICENSE
-include .flake8
-include coffea/processor/templates/*.tmpl
-include docker/kubernetes/spark/Dockerfile
-include docker/skyhook/Dockerfile
+include *.in
 include *.md
+include *.py
 include *.yaml
 include *.yml
 recursive-include binder *.ipynb
