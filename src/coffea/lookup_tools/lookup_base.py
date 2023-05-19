@@ -40,11 +40,7 @@ def getfunction(
             if backend == "cpu":
                 repacked_args[__arg_indices__[iarg]] = awkward.to_numpy(arg)
             elif backend == "typetracer":
-                arg._touch_data(recursive=True)
-                zlarr = awkward.Array(
-                    arg.form.length_zero_array(highlevel=False),
-                )
-                repacked_args[__arg_indices__[iarg]] = awkward.to_numpy(zlarr)
+                repacked_args[__arg_indices__[iarg]] = awkward.typetracer.empty_if_typetracer(arg)
 
         for inaarg, naarg in enumerate(__non_array_args__):
             repacked_args[__arg_indices__[inaarg + len(args)]] = naarg
@@ -120,7 +116,7 @@ class lookup_base:
 
             zlargs = [
                 awkward.Array(
-                    arg._meta.layout.form.length_zero_array(highlevel=False),
+                    awkward.typetracer.empty_if_typetracer(arg),
                     behavior=arg.behavior,
                 )
                 for arg in actual_args
