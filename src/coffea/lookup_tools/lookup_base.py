@@ -42,7 +42,7 @@ def getfunction(
             elif backend == "typetracer":
                 repacked_args[
                     __arg_indices__[iarg]
-                ] = awkward.typetracer.empty_if_typetracer(arg)
+                ] = awkward.to_numpy(awkward.typetracer.empty_if_typetracer(arg))
 
         for inaarg, naarg in enumerate(__non_array_args__):
             repacked_args[__arg_indices__[inaarg + len(args)]] = naarg
