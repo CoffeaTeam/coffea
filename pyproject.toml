@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "coffea"
-description = "Awkward Array meets Dask"
+description = "Basic tools and wrappers for enabling not-too-alien syntax when running columnar Collider HEP analysis."
 readme = "README.rst"
 license = {text = "BSD-3-Clause"}
 requires-python = ">=3.8"
@@ -104,7 +104,7 @@ dev = [
 ]
 
 #[project.entry-points."dask.sizeof"]
-#awkward = "dask_awkward.sizeof:register"
+#coffea = "coffea.sizeof:register"
 
 [tool.hatch.version]
 source = "vcs"
@@ -112,9 +112,6 @@ path = "src/coffea/__init__.py"
 
 [tool.hatch.build.hooks.vcs]
 version-file = "src/coffea/version.py"
-
-[tool.hatch.build.targets.sdist]
-include = ["/src"]
 
 [tool.setuptools_scm]
 write_to = "src/coffea/_version.py"
