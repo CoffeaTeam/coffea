@@ -118,7 +118,7 @@ class lookup_base:
 
             zlargs = [
                 awkward.Array(
-                    awkward.typetracer.empty_if_typetracer(arg),
+                    arg._meta.layout.form.length_zero_array(highlevel=False),
                     behavior=arg.behavior,
                 )
                 for arg in actual_args
