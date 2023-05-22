@@ -2,6 +2,8 @@ import warnings
 
 import dask
 import numpy
+import weakref
+from dask.distributed import worker_client
 
 try:
     import torch
@@ -36,12 +38,14 @@ class torch_wrapper(lazy_container, numpy_call_wrapper):
         """
         lazy_container.__init__(self, ["model", "device"])
 
-        # Reference to the original pytorch model, loading in the state, and
-        # set to evaluation mode
+        # Create a weak reference to the original pytorch model, and also create
+        # a dask.persist instance to the object in case this the model is not
+        # directly available (ex. On a worker node.)
+        self._weak_model = weakref.ref(torch_model)
         self._dask_model = dask.delayed(
-            torch_model,
+            self._model,
             pure=True,
-            name="torch_wrapper_" + dask.base.tokenize(torch_model),
+            name="torch_wrapper_" + dask.base.tokenize(self._model),
         ).persist()
 
     def _create_device(self):
@@ -54,10 +58,23 @@ class torch_wrapper(lazy_container, numpy_call_wrapper):
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def _create_model(self):
+        """
+        Creating the model instance of the using either the weakref or the
+        dask.persist instance (prioritizes using weakref). Enforcing the eval
+        mode after initialization.
+        """
         if torch.cuda.is_available():
-            model = self._dask_model.compute().cuda()
+            if self._weak_model() is not None:
+                model = self._weak_model().cuda()
+            else:
+                with worker_client() as client:
+                    model = client.compute(self._dask_model).result().cuda()
         else:
-            model = self._dask_model.compute()
+            if self._weak_model() is not None:
+                model = self._weak_model()
+            else:
+                with worker_client() as client:
+                    model = client.compute(self._dask_model).result()
         model.eval()
         return model
 
