@@ -1,8 +1,8 @@
 import warnings
+import weakref
 
 import dask
 import numpy
-import weakref
 from dask.distributed import worker_client
 
 try:
