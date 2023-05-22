@@ -2,6 +2,7 @@ import awkward as ak
 import dask_awkward as dak
 import numpy as np
 import pytest
+from distributed import Client
 
 
 def prepare_jets_array(njets):
@@ -77,6 +78,8 @@ def test_triton():
 
     from coffea.ml_tools.triton_wrapper import triton_wrapper
 
+    client = Client()  # Spawn local cluster
+
     # Defining custom wrapper function with awkward padding requirements.
     class triton_wrapper_test(triton_wrapper):
         def awkward_to_numpy(self, output_list, jets):
@@ -124,12 +127,15 @@ def test_triton():
             "pfcands.feat2",
         ]
     )
+    client.close()
 
 
 def test_torch():
-    torch = pytest.importorskip("torch")
+    _ = pytest.importorskip("torch")
 
     from coffea.ml_tools.torch_wrapper import torch_wrapper
+
+    client = Client()  # Spawn local cluster
 
     class torch_wrapper_test(torch_wrapper):
         def awkward_to_numpy(self, jets):
@@ -151,20 +157,34 @@ def test_torch():
                 jets.pfcands.feat2,
             ]
 
-    model = torch.jit.load("tests/samples/pn_demo.pt")
-    tw = torch_wrapper_test(model)
+    tw = torch_wrapper_test("tests/samples/pn_demo.pt")
     ak_jets, dak_jets = prepare_jets_array(njets=256)
 
     ak_res = tw(ak_jets)
     dak_res = tw(dak_jets)
 
     assert np.all(np.isclose(ak_res, dak_res.compute()))
+    columns = list(dak.necessary_columns(dak_res).values())[0]
+    assert sorted(columns) == sorted(
+        [
+            "eta",
+            "phi",
+            "pfcands.pt",
+            "pfcands.phi",
+            "pfcands.eta",
+            "pfcands.feat1",
+            "pfcands.feat2",
+        ]
+    )
+    client.close()
 
 
 def test_xgboost():
     _ = pytest.importorskip("xgboost")
 
     from coffea.ml_tools.xgboost_wrapper import xgboost_wrapper
+
+    client = Client()  # Spawn local cluster
 
     feature_list = [f"feat{i}" for i in range(15)]
 
@@ -194,3 +214,4 @@ def test_xgboost():
     # Should only load required columns
     columns = list(dak.necessary_columns(dak_res).values())[0]
     assert sorted(columns) == sorted(feature_list)
+    client.close()
