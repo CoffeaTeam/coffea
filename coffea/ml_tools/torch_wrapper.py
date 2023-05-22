@@ -1,9 +1,6 @@
 import warnings
 
-import dask
 import numpy
-import weakref
-from dask.distributed import worker_client
 
 try:
     import torch
@@ -25,28 +22,26 @@ class torch_wrapper(lazy_container, numpy_call_wrapper):
     Wrapper for running pytorch with awkward/dask-awkward inputs.
     """
 
-    def __init__(self, torch_model: torch.nn.Module):
+    def __init__(self, torch_jit: str):
         """
-        Object lazy-ness is required to allow for GPU running on remote workers.
-        The users will be responsible for passing in a properly constructed
-        pytorch model (with dict_state properly loaded).
+        As torch models are guaranteed to be directly pickle-able depending on
+        model, we load the model using torch file save states. Notice that we
+        only support TorchScript files for this wrapper class [1]. If the user
+        is attempting to run on the clusters, the TorchScript file will need to
+        be passed to the worker nodes in a way which preserves the file path.
+
+        [1]
+        https://pytorch.org/tutorials/beginner/saving_loading_models.html#export-load-model-in-torchscript-format
 
         Parameters
         ----------
 
-        - torch_model: The torch model object that will be used for inference
+        - torch_jet: The TorchScript file to load for inference
         """
         lazy_container.__init__(self, ["model", "device"])
 
-        # Create a weak reference to the original pytorch model, and also create
-        # a dask.persist instance to the object in case this the model is not
-        # directly available (ex. On a worker node.)
-        self._weak_model = weakref.ref(torch_model)
-        self._dask_model = dask.delayed(
-            self._model,
-            pure=True,
-            name="torch_wrapper_" + dask.base.tokenize(self._model),
-        ).persist()
+        # Saving the file path to be loaded by dask workers.
+        self.torch_jit = torch_jit
 
     def _create_device(self):
         """
@@ -64,17 +59,9 @@ class torch_wrapper(lazy_container, numpy_call_wrapper):
         mode after initialization.
         """
         if torch.cuda.is_available():
-            if self._weak_model() is not None:
-                model = self._weak_model().cuda()
-            else:
-                with worker_client() as client:
-                    model = client.compute(self._dask_model).result().cuda()
+            model = torch.jit.load(self.torch_jit).cuda()
         else:
-            if self._weak_model() is not None:
-                model = self._weak_model()
-            else:
-                with worker_client() as client:
-                    model = client.compute(self._dask_model).result()
+            model = torch.jit.load(self.torch_jit)
         model.eval()
         return model
 
