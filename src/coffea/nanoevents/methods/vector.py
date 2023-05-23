@@ -756,7 +756,7 @@ class LorentzVector(ThreeVector):
 
 @awkward.mixin_class(behavior)
 class LorentzVectorM(ThreeVector):
-    """A cartesian Lorentz vector specfied with mass instead of energy
+    """A cartesian Lorentz vector specified with mass instead of energy
 
     A heavy emphasis towards a momentum vector interpretation is assumed.
     (+, -, -, -) metric
