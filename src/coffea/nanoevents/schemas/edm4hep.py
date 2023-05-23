@@ -43,7 +43,7 @@ class EDM4HEPSchema(BaseSchema):
 
     # originally this was just _momentum_fields = {"energy", "momentum.x", "momentum.y", "momentum.z"}
     _momentum_fields_e = {"energy", "momentum.x", "momentum.y", "momentum.z"}
-    _momentum_fields_m = {"mass", "momentum.x", "momentum.y", "momentum.z"} 
+    _momentum_fields_m = {"mass", "momentum.x", "momentum.y", "momentum.z"}
 
     def __init__(self, base_form, *args, **kwargs):
         super().__init__(base_form, *args, **kwargs)
@@ -66,7 +66,7 @@ class EDM4HEPSchema(BaseSchema):
             "Tracks": "LorentzVector"
         }
         for objname in composite_objects:
-            if objname != "PandoraPFOs" and objname != "MCParticlesSkimmed": 
+            if objname != "PandoraPFOs" and objname != "MCParticlesSkimmed":
                 continue
             # grab the * from "objname/objname.*"
             components = {
@@ -75,7 +75,7 @@ class EDM4HEPSchema(BaseSchema):
                 if k.startswith(objname + "/")
             }
 
-            print(components) 
+            print(components)
 
             if all(comp in components for comp in self._momentum_fields_e):
                 form = zip_forms(
@@ -85,24 +85,24 @@ class EDM4HEPSchema(BaseSchema):
                         "z": branch_forms.pop(f"{objname}/{objname}.momentum.z"),
                         "t": branch_forms.pop(f"{objname}/{objname}.energy"),
                         "charge": branch_forms.pop(f"{objname}/{objname}.charge"),
-                        "pdgId": branch_forms.pop(f"{objname}/{objname}.type"),  
+                        "pdgId": branch_forms.pop(f"{objname}/{objname}.type"),
                     },
                     objname,
                     composite_behavior.get(objname, "LorentzVector"),
                 )
                 branch_forms[objname] = form
-            elif all(comp in components for comp in self._momentum_fields_m): 
+            elif all(comp in components for comp in self._momentum_fields_m):
                 form = zip_forms(
                     {
                         "x": branch_forms.pop(f"{objname}/{objname}.momentum.x"),
                         "y": branch_forms.pop(f"{objname}/{objname}.momentum.y"),
                         "z": branch_forms.pop(f"{objname}/{objname}.momentum.z"),
-                        "mass": branch_forms.pop(f"{objname}/{objname}.mass"), 
+                        "mass": branch_forms.pop(f"{objname}/{objname}.mass"),
                         "charge": branch_forms.pop(f"{objname}/{objname}.charge"),
                         "pdgId": branch_forms.pop(f"{objname}/{objname}.PDG"),
                     },
                     objname,
-                    composite_behavior.get(objname, "LorentzVectorM"), 
+                    composite_behavior.get(objname, "LorentzVectorM"),
                 )
                 branch_forms[objname] = form
             elif components == {
@@ -125,7 +125,9 @@ class EDM4HEPSchema(BaseSchema):
                     f"Unrecognized class with split branches: {components}"
                 )
         # Generating collection from branch name
-        collections = [k for k in branch_forms if k == "PandoraPFOs" or k == "MCParticlesSkimmed"] # added second case 
+        collections = [
+            k for k in branch_forms if k == "PandoraPFOs" or k == "MCParticlesSkimmed"
+        ]  # added second case
         collections = {
             "_".join(k.split("_")[:-1])
             for k in collections

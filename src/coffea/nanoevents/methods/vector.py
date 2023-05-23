@@ -762,10 +762,13 @@ class LorentzVectorM(ThreeVector):
     (+, -, -, -) metric
     This mixin class requires the parent class to provide items `x`, `y`, `z`, and `mass`.
     """
+
     @property
     def t(self):
         """Equivalent to `energy`"""
-        return numpy.sqrt(self.mass*self.mass+self.x*self.x+self.y*self.y+self.z*self.z)
+        return numpy.sqrt(
+            self.mass * self.mass + self.x * self.x + self.y * self.y + self.z * self.z
+        )
 
     @property
     def energy(self):
@@ -994,6 +997,7 @@ class LorentzVectorM(ThreeVector):
         if return_metric:
             return out, metric
         return out
+
 
 @awkward.mixin_class(behavior)
 class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
