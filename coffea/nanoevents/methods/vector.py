@@ -628,7 +628,7 @@ class LorentzVector(ThreeVector):
     def rapidity(self):
         pz = self.z
         e = self.energy
-        return 0.5*numpy.log((e+pz)/(e-pz))
+        return 0.5 * numpy.log((e + pz) / (e - pz))
 
     @property
     def boostvec(self):
