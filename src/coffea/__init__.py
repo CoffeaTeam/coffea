@@ -47,7 +47,10 @@ deprecations_as_errors = False
 import copyreg
 import weakref
 
+import dask_awkward
+
 copyreg.pickle(weakref.ref, lambda x: (lambda y: y, (None,)))
+copyreg.pickle(dask_awkward.Array, lambda x: (lambda y: y, (None,)))
 
 
 __all__ = ["deprecations_as_errors"]

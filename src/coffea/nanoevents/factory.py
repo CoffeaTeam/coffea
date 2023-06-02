@@ -685,7 +685,9 @@ class NanoEventsFactory:
         """Build events"""
         if self._is_dask:
             events = self._mapping(form_mapping=self._schema)
-            events.behavior["__original_array__"] = weakref.ref(events)
+            events.behavior[
+                "__original_array__"
+            ] = lambda: events  # weakref.ref(events)
             return events
 
         events = self._events()
