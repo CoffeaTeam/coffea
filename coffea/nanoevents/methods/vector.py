@@ -625,6 +625,12 @@ class LorentzVector(ThreeVector):
         )
 
     @property
+    def rapidity(self):
+        pz = self.z
+        e = self.energy
+        return 0.5 * (numpy.log(e + pz) - numpy.log(e - pz))
+
+    @property
     def boostvec(self):
         """The `x`, `y` and `z` components divided by `t` as a `ThreeVector`
 
