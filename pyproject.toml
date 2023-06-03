@@ -1,0 +1,129 @@
+[build-system]
+requires = ["hatchling>=1.17.1", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "coffea"
+description = "Basic tools and wrappers for enabling not-too-alien syntax when running columnar Collider HEP analysis."
+readme = "README.rst"
+license = {text = "BSD-3-Clause"}
+requires-python = ">=3.8"
+authors = [
+  { name = "Lindsey Gray", email = "lagray@fnal.gov" },
+  { name = "Nick Smith", email = "ncsmith@fnal.gov" },
+]
+maintainers = [
+  { name = "Lindsey Gray", email = "lagray@fnal.gov" },
+  { name = "Nick Smith", email = "ncsmith@fnal.gov" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: BSD License",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX",
+  "Operating System :: Unix",
+  "Operating System :: Microsoft :: Windows",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Information Analysis",
+  "Topic :: Scientific/Engineering :: Mathematics",
+  "Topic :: Scientific/Engineering :: Physics",
+  "Topic :: Software Development",
+  "Topic :: Utilities",
+]
+dependencies = [
+  "awkward>=2.2.0",
+  "uproot>=5.0.7",
+  "dask[array]>=2023.4.0",
+  "dask-awkward>=2023.5.0",
+  "dask-histogram>=2023.5.0",
+  "correctionlib>=2.0.0",
+  "pyarrow>=6.0.0",
+  "fsspec",
+  "matplotlib>=3",
+  "numba>=0.57.0",
+  "numpy>=1.22.0,<1.25",  # < 1.25 for numba 0.57 series
+  "scipy>=1.1.0",
+  "tqdm>=4.27.0",
+  "lz4",
+  "cloudpickle>=1.2.3",
+  "toml>=0.10.2",
+  "mplhep>=0.1.18",
+  "packaging",
+  "pandas",
+  "hist>=2",
+  "cachetools",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/coffeateam/coffea"
+"Bug Tracker" = "https://github.com/coffeateam/coffea/issues"
+
+[project.optional-dependencies]
+dask = [
+  "distributed>=2023.4.0",
+  "bokeh>=1.3.4",
+  "blosc",
+]
+spark = [
+  "ipywidgets",
+  "pyspark>=3.3.0",
+  "jinja2",
+]
+parsl = [
+  "parsl>=2022.12.1"
+]
+servicex = [
+  "aiostream",
+  "tenacity",
+  "servicex>=2.5.3",
+  "func-adl_servicex",
+]
+dev = [
+  "pre-commit",
+  "flake8",
+  "black",
+  "pytest",
+  "pytest-cov",
+  "pytest-mpl",
+  "pytest-asyncio",
+  "pytest-mock",
+  "sphinx",
+  "nbsphinx",
+  "sphinx-rtd-theme",
+  "sphinx-automodapi",
+  "sphinx-copybutton>=0.3.2",
+  "pyinstrument",
+  "ipython",
+]
+
+#[project.entry-points."dask.sizeof"]
+#coffea = "coffea.sizeof:register"
+
+[tool.hatch.version]
+source = "vcs"
+path = "src/coffea/__init__.py"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/coffea/version.py"
+
+[tool.setuptools_scm]
+write_to = "src/coffea/_version.py"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = ["tests"]
+addopts = [
+  "-rfesxX",
+  "-v",
+]
+log_cli_level = "DEBUG"
+filterwarnings = [
+  "ignore:There is no current event loop",
+]

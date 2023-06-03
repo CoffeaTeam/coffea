@@ -13,7 +13,7 @@ def getfunction(
     thelookup_wref=None,
     __non_array_args__=tuple(),
     __arg_indices__=tuple(),
-    **kwargs
+    **kwargs,
 ):
     if not isinstance(args, (list, tuple)):
         args = (args,)
