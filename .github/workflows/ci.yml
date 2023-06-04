@@ -173,8 +173,8 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Build package for PyPI
       run: |
-        python -m pip install --upgrade pip setuptools wheel
-        python setup.py sdist bdist_wheel --universal
+        python -m pip install pip hatch --upgrade
+        python -m hatch build -t sdist -t wheel
     - name: Publish package to PyPI
       uses: pypa/gh-action-pypi-publish@v1.8.6
       with:
