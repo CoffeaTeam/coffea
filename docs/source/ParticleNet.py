@@ -148,7 +148,7 @@ class ParticleNet(nn.Module):
         use_counts=True,
         for_inference=False,
         for_segmentation=False,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(**kwargs)
 
@@ -274,7 +274,7 @@ class ParticleNetTagger(nn.Module):
         use_counts=True,
         input_dropout=None,
         for_inference=False,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(**kwargs)
         self.input_dropout = nn.Dropout(input_dropout) if input_dropout else None
