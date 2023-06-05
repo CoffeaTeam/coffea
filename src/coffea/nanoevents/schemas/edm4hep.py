@@ -71,7 +71,7 @@ class EDM4HEPSchema(BaseSchema):
             "Tracks": "LorentzVector"
         }
         for objname in composite_objects:
-            if objname not in ["PandoraPFOs","MCParticlesSkimmed","MCTruthRecoLink","RecoMCTruthLink"]: 
+            if objname not in ["PandoraPFOs","MCParticlesSkimmed","MCTruthRecoLink","RecoMCTruthLink","PandoraClusters","MarlinTrkTracks"]: 
                 continue
             # grab the * from "objname/objname.*"
             components = {
@@ -137,6 +137,29 @@ class EDM4HEPSchema(BaseSchema):
                 },
                 objname,
                 composite_behavior.get(objname, "ParticleLink"), 
+                )
+                branch_forms[objname] = form
+            elif objname == "PandoraClusters":
+                # exactly how these 4-vectors are constructed might still need to be edited
+                form = zip_forms(
+                    {
+                        "pt": branch_forms.pop(f"{objname}/{objname}.energy"), # in mm
+                        "eta": branch_forms.pop(f"{objname}/{objname}.iTheta"),
+                        "phi": branch_forms.pop(f"{objname}/{objname}.eta"),
+                        "energy": branch_forms.pop(f"{objname}/{objname}.energy"),
+                    },
+                    objname,
+                    composite_behavior.get(objname, "Cluster"), 
+                )
+                branch_forms[objname] = form
+            elif objname == "MarlinTrkTracks":
+                # will be updated to properly construct 4-vectors
+                form = zip_forms(
+                    {
+                        "dEdx": branch_forms.pop(f"{objname}/{objname}.dEdx"), 
+                    },
+                    objname,
+                    composite_behavior.get(objname, "Track"), 
                 )
                 branch_forms[objname] = form
             else:

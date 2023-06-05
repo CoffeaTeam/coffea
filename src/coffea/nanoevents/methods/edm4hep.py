@@ -24,6 +24,17 @@ class RecoParticle(vector.LorentzVector,base.NanoCollection):
         
         return matched_particles
 
+
+@awkward.mixin_class(behavior)
+class Cluster(vector.PtEtaPhiELorentzVector):
+    '''
+    '''
+
+@awkward.mixin_class(behavior)
+class Track():
+    '''
+    ''' 
+
 @awkward.mixin_class(behavior)
 class ParticleLink():
     '''
