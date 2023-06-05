@@ -2,6 +2,11 @@ import re
 
 from coffea.nanoevents.schemas.base import BaseSchema, nest_jagged_forms, zip_forms
 
+# magic numbers currently used to define cross references
+# this will be updated later to make it more general
+RECO_PARTICLES = 0
+MC_PARTICLES = 1
+
 _base_collection = re.compile(r".*[\#\/]+.*")
 _trailing_under = re.compile(r".*_[0-9]")
 
@@ -66,7 +71,7 @@ class EDM4HEPSchema(BaseSchema):
             "Tracks": "LorentzVector"
         }
         for objname in composite_objects:
-            if objname != "PandoraPFOs" and objname != "MCParticlesSkimmed":
+            if objname not in ["PandoraPFOs","MCParticlesSkimmed","MCTruthRecoLink","RecoMCTruthLink"]: 
                 continue
             # grab the * from "objname/objname.*"
             components = {
@@ -88,7 +93,7 @@ class EDM4HEPSchema(BaseSchema):
                         "pdgId": branch_forms.pop(f"{objname}/{objname}.type"),
                     },
                     objname,
-                    composite_behavior.get(objname, "LorentzVector"),
+                    composite_behavior.get(objname, "RecoParticle"),
                 )
                 branch_forms[objname] = form
             elif all(comp in components for comp in self._momentum_fields_m):
@@ -102,7 +107,7 @@ class EDM4HEPSchema(BaseSchema):
                         "pdgId": branch_forms.pop(f"{objname}/{objname}.PDG"),
                     },
                     objname,
-                    composite_behavior.get(objname, "LorentzVectorM"),
+                    composite_behavior.get(objname, "MCTruthParticle"),
                 )
                 branch_forms[objname] = form
             elif components == {
@@ -120,10 +125,25 @@ class EDM4HEPSchema(BaseSchema):
                     composite_behavior.get(objname, "ThreeVector"),
                 )
                 branch_forms[objname] = form
+            elif objname == "MCTruthRecoLink" or objname == "RecoMCTruthLink": 
+                form = zip_forms(
+                {
+                    "weight_mc_reco": branch_forms["MCTruthRecoLink/MCTruthRecoLink.weight"], 
+                    "weight_reco_mc": branch_forms["RecoMCTruthLink/RecoMCTruthLink.weight"],
+                    "reco_index": branch_forms[f"MCTruthRecoLink#{RECO_PARTICLES}/MCTruthRecoLink#{RECO_PARTICLES}.index"], # only the weights vary between "MCTruthRecoLink" and "RecoMCTruthLink"
+                    "reco_collectionID": branch_forms[f"MCTruthRecoLink#{RECO_PARTICLES}/MCTruthRecoLink#{RECO_PARTICLES}.collectionID"],
+                    "mc_index": branch_forms[f"MCTruthRecoLink#{MC_PARTICLES}/MCTruthRecoLink#{MC_PARTICLES}.index"],
+                    "mc_collectionID": branch_forms[f"MCTruthRecoLink#{MC_PARTICLES}/MCTruthRecoLink#{MC_PARTICLES}.collectionID"],
+                },
+                objname,
+                composite_behavior.get(objname, "ParticleLink"), 
+                )
+                branch_forms[objname] = form
             else:
                 raise ValueError(
                     f"Unrecognized class with split branches: {components}"
                 )
+        
         # Generating collection from branch name
         collections = [
             k for k in branch_forms if k == "PandoraPFOs" or k == "MCParticlesSkimmed"
