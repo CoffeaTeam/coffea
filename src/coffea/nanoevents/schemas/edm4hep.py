@@ -71,7 +71,12 @@ class EDM4HEPSchema(BaseSchema):
             "Tracks": "LorentzVector"
         }
         for objname in composite_objects:
-            if objname not in ["PandoraPFOs","MCParticlesSkimmed","MCTruthRecoLink","RecoMCTruthLink"]: 
+            if objname not in [
+                "PandoraPFOs",
+                "MCParticlesSkimmed",
+                "MCTruthRecoLink",
+                "RecoMCTruthLink",
+            ]:
                 continue
             # grab the * from "objname/objname.*"
             components = {
@@ -125,25 +130,37 @@ class EDM4HEPSchema(BaseSchema):
                     composite_behavior.get(objname, "ThreeVector"),
                 )
                 branch_forms[objname] = form
-            elif objname == "MCTruthRecoLink" or objname == "RecoMCTruthLink": 
+            elif objname == "MCTruthRecoLink" or objname == "RecoMCTruthLink":
                 form = zip_forms(
-                {
-                    "weight_mc_reco": branch_forms["MCTruthRecoLink/MCTruthRecoLink.weight"], 
-                    "weight_reco_mc": branch_forms["RecoMCTruthLink/RecoMCTruthLink.weight"],
-                    "reco_index": branch_forms[f"MCTruthRecoLink#{RECO_PARTICLES}/MCTruthRecoLink#{RECO_PARTICLES}.index"], # only the weights vary between "MCTruthRecoLink" and "RecoMCTruthLink"
-                    "reco_collectionID": branch_forms[f"MCTruthRecoLink#{RECO_PARTICLES}/MCTruthRecoLink#{RECO_PARTICLES}.collectionID"],
-                    "mc_index": branch_forms[f"MCTruthRecoLink#{MC_PARTICLES}/MCTruthRecoLink#{MC_PARTICLES}.index"],
-                    "mc_collectionID": branch_forms[f"MCTruthRecoLink#{MC_PARTICLES}/MCTruthRecoLink#{MC_PARTICLES}.collectionID"],
-                },
-                objname,
-                composite_behavior.get(objname, "ParticleLink"), 
+                    {
+                        "weight_mc_reco": branch_forms[
+                            "MCTruthRecoLink/MCTruthRecoLink.weight"
+                        ],
+                        "weight_reco_mc": branch_forms[
+                            "RecoMCTruthLink/RecoMCTruthLink.weight"
+                        ],
+                        "reco_index": branch_forms[
+                            f"MCTruthRecoLink#{RECO_PARTICLES}/MCTruthRecoLink#{RECO_PARTICLES}.index"
+                        ],  # only the weights vary between "MCTruthRecoLink" and "RecoMCTruthLink"
+                        "reco_collectionID": branch_forms[
+                            f"MCTruthRecoLink#{RECO_PARTICLES}/MCTruthRecoLink#{RECO_PARTICLES}.collectionID"
+                        ],
+                        "mc_index": branch_forms[
+                            f"MCTruthRecoLink#{MC_PARTICLES}/MCTruthRecoLink#{MC_PARTICLES}.index"
+                        ],
+                        "mc_collectionID": branch_forms[
+                            f"MCTruthRecoLink#{MC_PARTICLES}/MCTruthRecoLink#{MC_PARTICLES}.collectionID"
+                        ],
+                    },
+                    objname,
+                    composite_behavior.get(objname, "ParticleLink"),
                 )
                 branch_forms[objname] = form
             else:
                 raise ValueError(
                     f"Unrecognized class with split branches: {components}"
                 )
-        
+
         # Generating collection from branch name
         collections = [
             k for k in branch_forms if k == "PandoraPFOs" or k == "MCParticlesSkimmed"
