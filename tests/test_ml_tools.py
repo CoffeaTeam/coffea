@@ -66,9 +66,7 @@ def common_awkward_to_numpy(jets):
     }
 
     return {
-        k: ak.concatenate(
-            [x[:, np.newaxis, :] for x in fmap[k].values()], axis=1
-        ).to_numpy()
+        k: ak.concatenate([x[:, np.newaxis, :] for x in fmap[k].values()], axis=1)
         for k in fmap.keys()
     }
 
@@ -138,12 +136,12 @@ def test_torch():
     client = Client()  # Spawn local cluster
 
     class torch_wrapper_test(torch_wrapper):
-        def awkward_to_numpy(self, jets):
+        def prepare_awkward_to_numpy(self, jets):
             default = common_awkward_to_numpy(jets)
             return [], {
-                "points": default["points"].astype(np.float32),
-                "features": default["features"].astype(np.float32),
-                "mask": default["mask"].astype(np.float16),
+                "points": ak.values_astype(default["points"], np.float32),
+                "features": ak.values_astype(default["features"], np.float32),
+                "mask": ak.values_astype(default["mask"], np.float16),
             }
 
         def dask_columns(self, jets):

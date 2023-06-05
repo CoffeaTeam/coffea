@@ -170,7 +170,7 @@ class numpy_call_wrapper(abc.ABC):
         pass
 
     @abc.abstractclassmethod
-    def awkward_to_numpy(self, *args, **kwargs) -> Tuple:
+    def prepare_awkward_to_numpy(self, *args, **kwargs) -> Tuple:
         """
         Converting awkward-array like inputs into be numpy-like inputs
         compatible with the `numpy_call` method. The return value should be
@@ -181,6 +181,22 @@ class numpy_call_wrapper(abc.ABC):
             https://awkward-array.org/doc/main/user-guide/how-to-restructure-pad.html
         """
         pass
+
+    def awkward_to_numpy(self, *args, **kwargs) -> Tuple:
+        np_args, np_kwargs = self.prepare_awkward_to_numpy(*args, **kwargs)
+        np_args = [
+            awkward.typetracer.empty_if_typetracer(arg).to_numpy()
+            if isinstance(arg, awkward.Array)
+            else arg
+            for arg in np_args
+        ]
+        np_kwargs = {
+            key: awkward.typetracer.empty_if_typetracer(arg).to_numpy()
+            if isinstance(arg, awkward.Array)
+            else arg
+            for key, arg in np_kwargs.items()
+        }
+        return np_args, np_kwargs
 
     def numpy_to_awkward(self, np_return, *args, **kwargs):
         """
@@ -296,21 +312,7 @@ class numpy_call_wrapper(abc.ABC):
                 if self.get_backend(*args) == "typetracer":
                     # Running the touch overload function
                     eval_args, eval_kwargs = self.args_to_pair(*args)
-                    columns = self.wrapper.dask_columns(*eval_args, **eval_kwargs)
-
-                    conv = container_converter(
-                        {awkward.Array: self.touch_column},
-                        default_conv=container_converter.no_action,
-                    )
-                    if columns is None:
-                        warnings.warn(
-                            "Touching all columns recursively may have performance penalties"
-                            f"Consider overloading the dask_columns method of {self.wrapper.__class__.__name__}",
-                            UserWarning,
-                        )
-                        conv(*args)
-                    else:
-                        conv(*columns)
+                    _ = self.wrapper.awkward_to_numpy(*eval_args, *eval_kwargs)
 
                     # Getting the length-one array for evaluation
                     eval_args, eval_kwargs = self.args_to_pair(
