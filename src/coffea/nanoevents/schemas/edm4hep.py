@@ -162,10 +162,10 @@ class EDM4HEPSchema(BaseSchema):
                 # exactly how these 4-vectors are constructed might still need to be edited
                 form = zip_forms(
                     {
-                        "pt": branch_forms.pop(f"{objname}/{objname}.energy"),  # in mm
+                        "pt": branch_forms[f"{objname}/{objname}.energy"],  # in mm
                         "eta": branch_forms.pop(f"{objname}/{objname}.iTheta"),
-                        "phi": branch_forms.pop(f"{objname}/{objname}.eta"),
-                        "energy": branch_forms.pop(f"{objname}/{objname}.energy"),
+                        "phi": branch_forms.pop(f"{objname}/{objname}.phi"),
+                        "energy": branch_forms[f"{objname}/{objname}.energy"],
                     },
                     objname,
                     composite_behavior.get(objname, "Cluster"),
