@@ -25,8 +25,8 @@ from coffea.nanoevents.mapping import (
 from coffea.nanoevents.schemas import (
     BaseSchema,
     DelphesSchema,
-    PFNanoAODSchema,
     NanoAODSchema,
+    PFNanoAODSchema,
     PHYSLITESchema,
     TreeMakerSchema,
 )
