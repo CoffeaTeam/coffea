@@ -29,13 +29,13 @@ class RecoParticle(vector.LorentzVector, base.NanoCollection):
 
 @awkward.mixin_class(behavior)
 class Cluster(vector.PtEtaPhiELorentzVector):
-    '''
-    '''
+    """ """
+
 
 @awkward.mixin_class(behavior)
-class Track():
-    '''
-    ''' 
+class Track:
+    """ """
+
 
 @awkward.mixin_class(behavior)
 class ParticleLink:

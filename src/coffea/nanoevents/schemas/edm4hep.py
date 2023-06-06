@@ -162,23 +162,23 @@ class EDM4HEPSchema(BaseSchema):
                 # exactly how these 4-vectors are constructed might still need to be edited
                 form = zip_forms(
                     {
-                        "pt": branch_forms.pop(f"{objname}/{objname}.energy"), # in mm
+                        "pt": branch_forms.pop(f"{objname}/{objname}.energy"),  # in mm
                         "eta": branch_forms.pop(f"{objname}/{objname}.iTheta"),
                         "phi": branch_forms.pop(f"{objname}/{objname}.eta"),
                         "energy": branch_forms.pop(f"{objname}/{objname}.energy"),
                     },
                     objname,
-                    composite_behavior.get(objname, "Cluster"), 
+                    composite_behavior.get(objname, "Cluster"),
                 )
                 branch_forms[objname] = form
             elif objname == "MarlinTrkTracks":
                 # will be updated to properly construct 4-vectors
                 form = zip_forms(
                     {
-                        "dEdx": branch_forms.pop(f"{objname}/{objname}.dEdx"), 
+                        "dEdx": branch_forms.pop(f"{objname}/{objname}.dEdx"),
                     },
                     objname,
-                    composite_behavior.get(objname, "Track"), 
+                    composite_behavior.get(objname, "Track"),
                 )
                 branch_forms[objname] = form
             else:
