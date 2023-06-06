@@ -66,17 +66,28 @@ def getfunction(
 
 class _LookupXformFn:
     def __init__(self, *args, arg_indices, thelookup_dask, thelookup_wref, **kwargs):
-        self.func = partial(
-            getfunction,
-            thelookup_dask=thelookup_dask,
-            thelookup_wref=thelookup_wref,
-            __non_array_args__=args,
-            __arg_indices__=arg_indices,
-            **kwargs,
-        )
+        self.getfunction = getfunction
+        self._thelookup_dask = thelookup_dask
+        self._thelookup_wref = thelookup_wref
+        self.__non_array_args__ = args
+        self.__arg_indices__ = arg_indices
+        self.kwargs = kwargs
+
+    def __getstate__(self):
+        out = self.__dict__.copy()
+        out["_thelookup_wref"] = None
+        return out
 
     def __call__(self, *args):
-        return awkward.transform(self.func, *args)
+        func = partial(
+            self.getfunction,
+            thelookup_dask=self._thelookup_dask,
+            thelookup_wref=self._thelookup_wref,
+            __non_array_args__=self.__non_array_args__,
+            __arg_indices__=self.__arg_indices__,
+            **self.kwargs,
+        )
+        return awkward.transform(func, *args)
 
 
 class lookup_base:
@@ -85,6 +96,12 @@ class lookup_base:
     def __init__(self, dask_future):
         self._dask_future = dask_future
         self._weakref = weakref.ref(self)
+
+    def __getstate__(self):
+        out = self.__dict__.copy()
+        if "_weakref" in out:
+            out["_weakref"] = None
+        return out
 
     def __call__(self, *args, **kwargs):
         dask_label = kwargs.pop("dask_label", None)
