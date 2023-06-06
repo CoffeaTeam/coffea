@@ -61,22 +61,12 @@ def rand_gauss(item):
             )
         return None
 
-    out = None
-    if backend == "cpu":
-        out = awkward.transform(
-            getfunction,
-            item,
-            behavior=item.behavior,
-        )
-    elif backend == "typetracer":
-        zlitem = awkward.Array(
-            item.layout.form.length_zero_array(highlevel=False), behavior=item.behavior
-        )
-        out = awkward.transform(
-            getfunction,
-            zlitem,
-            behavior=zlitem.behavior,
-        )
+    out = awkward.transform(
+        getfunction,
+        awkward.typetracer.empty_if_typetracer(item),
+        behavior=item.behavior,
+    )
+    if backend == "typetracer":
         out = awkward.Array(
             out.layout.to_typetracer(forget_length=True), behavior=out.behavior
         )
@@ -121,15 +111,8 @@ def jer_smear(
 
     backend = awkward.backend(smearfact, jetPt)
 
-    if backend == "typetracer":
-        smearfact = awkward.Array(
-            smearfact.layout.form.length_zero_array(highlevel=False),
-            behavior=smearfact.behavior,
-        )
-        jetPt = awkward.Array(
-            jetPt.layout.form.length_zero_array(highlevel=False),
-            behavior=jetPt.behavior,
-        )
+    smearfact = awkward.typetracer.empty_if_typetracer(smearfact)
+    jetPt = awkward.typetracer.empty_if_typetracer(jetPt)
 
     def getfunction(layout, depth, **kwargs):
         if isinstance(layout, awkward.contents.NumpyArray) or not isinstance(
