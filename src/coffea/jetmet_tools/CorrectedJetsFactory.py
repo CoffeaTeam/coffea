@@ -66,7 +66,7 @@ def rand_gauss(item):
         awkward.typetracer.empty_if_typetracer(item),
         behavior=item.behavior,
     )
-    if backend == "typetracer":        
+    if backend == "typetracer":
         out = awkward.Array(
             out.layout.to_typetracer(forget_length=True), behavior=out.behavior
         )
@@ -110,7 +110,7 @@ def jer_smear(
     )
 
     backend = awkward.backend(smearfact, jetPt)
-    
+
     smearfact = awkward.typetracer.empty_if_typetracer(smearfact)
     jetPt = awkward.typetracer.empty_if_typetracer(jetPt)
 
