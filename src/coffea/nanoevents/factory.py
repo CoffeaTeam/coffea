@@ -301,7 +301,7 @@ class NanoEventsFactory:
                 behavior.update(base.behavior)
                 behavior.update(vector.behavior)
             elif schemaclass is EDM4HEPSchema:
-                from coffea.nanoevents.methods import base, vector, edm4hep
+                from coffea.nanoevents.methods import base, edm4hep, vector
 
                 behavior = {}
                 behavior.update(base.behavior)
