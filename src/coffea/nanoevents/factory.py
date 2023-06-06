@@ -25,6 +25,7 @@ from coffea.nanoevents.mapping import (
 from coffea.nanoevents.schemas import (
     BaseSchema,
     DelphesSchema,
+    PFNanoAODSchema,
     NanoAODSchema,
     PHYSLITESchema,
     TreeMakerSchema,
@@ -285,6 +286,10 @@ class NanoEventsFactory:
 
                 behavior = base.behavior
             elif schemaclass is NanoAODSchema:
+                from coffea.nanoevents.methods import nanoaod
+
+                behavior = nanoaod.behavior
+            elif schemaclass is PFNanoAODSchema:
                 from coffea.nanoevents.methods import nanoaod
 
                 behavior = nanoaod.behavior
