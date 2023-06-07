@@ -45,9 +45,10 @@ if sys.version_info.major < 3:
 deprecations_as_errors = False
 
 import copyreg
-import weakref
 
-copyreg.pickle(weakref.ref, lambda x: (lambda y: y, (None,)))
+import dask_awkward
+
+copyreg.pickle(dask_awkward.Array, lambda x: (lambda y: y, (None,)))
 
 
 __all__ = ["deprecations_as_errors"]
