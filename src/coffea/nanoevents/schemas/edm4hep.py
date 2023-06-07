@@ -253,9 +253,10 @@ class EDM4HEPSchema(BaseSchema):
     @property
     def behavior(self):
         """Behaviors necessary to implement this schema"""
-        from coffea.nanoevents.methods import base, vector
+        from coffea.nanoevents.methods import base, vector, edm4hep
 
         behavior = {}
         behavior.update(base.behavior)
         behavior.update(vector.behavior)
+        behavior.update(edm4hep.behavior)
         return behavior
