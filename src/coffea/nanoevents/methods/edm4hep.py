@@ -7,19 +7,16 @@ behavior = {}
 
 @awkward.mixin_class(behavior)
 class MCTruthParticle(vector.LorentzVectorM):
-    """ Generated Monte Carlo particles. 
-    """
+    """Generated Monte Carlo particles."""
 
 
 @awkward.mixin_class(behavior)
 class RecoParticle(vector.LorentzVector, base.NanoCollection):
-    """ Reconstructed particles.
-    """
+    """Reconstructed particles."""
 
     @property
     def matched_gen(self):
-        """ Returns an array of matched generator particle objects for each reconstructed particle.
-        """
+        """Returns an array of matched generator particle objects for each reconstructed particle."""
 
         matched_particles = self.behavior[
             "__original_array__"
@@ -32,20 +29,17 @@ class RecoParticle(vector.LorentzVector, base.NanoCollection):
 
 @awkward.mixin_class(behavior)
 class Cluster(vector.PtEtaPhiELorentzVector):
-    """ Clusters. Will be updated to have linking like RecoParticles.
-    """
+    """Clusters. Will be updated to have linking like RecoParticles."""
 
 
 @awkward.mixin_class(behavior)
 class Track:
-    """ Tracks. Will be updated to have linking like RecoParticles.
-    """
+    """Tracks. Will be updated to have linking like RecoParticles."""
 
 
 @awkward.mixin_class(behavior)
 class ParticleLink:
-    """ MCRecoParticleAssociation objects.
-    """
+    """MCRecoParticleAssociation objects."""
 
     @property
     def reco_mc_index(self):
