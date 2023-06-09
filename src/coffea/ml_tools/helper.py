@@ -207,10 +207,14 @@ class numpy_call_wrapper(abc.ABC):
         np_args, np_kwargs = self.prepare_awkward_to_numpy(*args, **kwargs)
         np_args = [
             awkward.typetracer.length_one_if_typetracer(arg).to_numpy()
+            if isinstance(arg, awkward.Array)
+            else arg
             for arg in np_args
         ]
         np_kwargs = {
             key: awkward.typetracer.length_one_if_typetracer(arg).to_numpy()
+            if isinstance(arg, awkward.Array)
+            else arg
             for key, arg in np_kwargs.items()
         }
         return np_args, np_kwargs
@@ -237,15 +241,6 @@ class numpy_call_wrapper(abc.ABC):
         np_args, np_kwargs = self.awkward_to_numpy(*args, *kwargs)
         np_rets = self._call_numpy(*np_args, **np_kwargs)
         return self.numpy_to_awkward(np_rets, *args, **kwargs)
-
-    def dask_columns(self, *args, **kwargs):
-        """
-        Given the same inputs as _call_dask, return a list of columns that is
-        required for the awkward_to_numpy conversion to complete. If you return
-        a None object, then the default method will kick in (touch everything
-        recursively) which has potential performance penalties
-        """
-        pass
 
     def _call_dask(self, *args, **kwargs):
         """
