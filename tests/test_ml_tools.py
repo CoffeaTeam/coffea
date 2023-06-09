@@ -80,22 +80,11 @@ def test_triton():
 
     # Defining custom wrapper function with awkward padding requirements.
     class triton_wrapper_test(triton_wrapper):
-        def awkward_to_numpy(self, output_list, jets):
+        def prepare_awkward_to_numpy(self, output_list, jets):
             return [], {
                 "output_list": output_list,
                 "input_dict": common_awkward_to_numpy(jets),
             }
-
-        def dask_columns(self, output_list, jets):
-            return [
-                jets.eta,
-                jets.phi,
-                jets.pfcands.pt,
-                jets.pfcands.phi,
-                jets.pfcands.eta,
-                jets.pfcands.feat1,
-                jets.pfcands.feat2,
-            ]
 
     # Running the evaluation in lazy and non-lazy forms
     tw = triton_wrapper_test(
@@ -113,18 +102,18 @@ def test_triton():
 
     for k in ak_res.keys():
         assert ak.all(ak_res[k] == dak_res[k].compute())
-    columns = list(dak.necessary_columns(dak_res).values())[0]
-    assert sorted(columns) == sorted(
-        [
-            "eta",
-            "phi",
-            "pfcands.pt",
-            "pfcands.phi",
-            "pfcands.eta",
-            "pfcands.feat1",
-            "pfcands.feat2",
-        ]
-    )
+    expected_columns = {
+        "eta",
+        "phi",
+        "pfcands.pt",
+        "pfcands.phi",
+        "pfcands.eta",
+        "pfcands.feat1",
+        "pfcands.feat2",
+    }
+    columns = set(list(dak.necessary_columns(dak_res).values())[0])
+    assert columns == expected_columns
+
     client.close()
 
 
@@ -144,17 +133,6 @@ def test_torch():
                 "mask": ak.values_astype(default["mask"], np.float16),
             }
 
-        def dask_columns(self, jets):
-            return [
-                jets.eta,
-                jets.phi,
-                jets.pfcands.pt,
-                jets.pfcands.phi,
-                jets.pfcands.eta,
-                jets.pfcands.feat1,
-                jets.pfcands.feat2,
-            ]
-
     tw = torch_wrapper_test("tests/samples/pn_demo.pt")
     ak_jets, dak_jets = prepare_jets_array(njets=256)
 
@@ -162,18 +140,17 @@ def test_torch():
     dak_res = tw(dak_jets)
 
     assert np.all(np.isclose(ak_res, dak_res.compute()))
-    columns = list(dak.necessary_columns(dak_res).values())[0]
-    assert sorted(columns) == sorted(
-        [
-            "eta",
-            "phi",
-            "pfcands.pt",
-            "pfcands.phi",
-            "pfcands.eta",
-            "pfcands.feat1",
-            "pfcands.feat2",
-        ]
-    )
+    expected_columns = {
+        "eta",
+        "phi",
+        "pfcands.pt",
+        "pfcands.phi",
+        "pfcands.eta",
+        "pfcands.feat1",
+        "pfcands.feat2",
+    }
+    columns = set(list(dak.necessary_columns(dak_res).values())[0])
+    assert columns == expected_columns
     client.close()
 
 
@@ -184,15 +161,22 @@ def test_xgboost():
 
     client = Client()  # Spawn local cluster
 
-    feature_list = [f"feat{i}" for i in range(15)]
+    feature_list = [f"feat{i}" for i in range(16)]
 
     class xgboost_test(xgboost_wrapper):
-        def awkward_to_numpy(self, events):
-            ret = np.column_stack([events[name].to_numpy() for name in feature_list])
+        def prepare_awkward_to_numpy(self, events):
+            ret = np.column_stack(
+                [
+                    ak.typetracer.length_zero_if_typetracer(events[name])
+                    for name in feature_list
+                ]
+            )
+            ret = ak.Array(ret, behavior=events.behavior)
+            if ak.backend(events) == "typetracer":
+                ret = ak.Array(
+                    ret.layout.to_typetracer(forget_length=True), behavior=ret.behavior
+                )
             return [], dict(data=ret)
-
-        def dask_columns(self, events):
-            return [events[f] for f in feature_list]
 
     xgb_wrap = xgboost_test("tests/samples/xgboost_example.xgb")
 
@@ -210,6 +194,6 @@ def test_xgboost():
     assert ak.all(ak_res == dak_res.compute())
 
     # Should only load required columns
-    columns = list(dak.necessary_columns(dak_res).values())[0]
-    assert sorted(columns) == sorted(feature_list)
+    columns = set(list(dak.necessary_columns(dak_res).values())[0])
+    assert columns == set(feature_list)
     client.close()

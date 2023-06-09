@@ -75,7 +75,17 @@ class torch_wrapper(lazy_container, numpy_call_wrapper):
         Evaluating the numpy inputs via the model. Returning the results also as
         as numpy array.
         """
-        args = [torch.from_numpy(arr).to(self.device) for arr in args]
-        kwargs = {k: torch.from_numpy(arr).to(self.device) for k, arr in kwargs.items()}
+        args = [
+            torch.from_numpy(arr)
+            if arr.flags["WRITEABLE"]
+            else torch.from_numpy(numpy.copy(arr))
+            for arr in args
+        ]
+        kwargs = {
+            key: torch.from_numpy(arr)
+            if arr.flags["WRITEABLE"]
+            else torch.from_numpy(numpy.copy(arr))
+            for key, arr in kwargs.items()
+        }
         with torch.no_grad():
             return self.model(*args, **kwargs).detach().numpy()

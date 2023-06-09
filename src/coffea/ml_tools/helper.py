@@ -172,28 +172,45 @@ class numpy_call_wrapper(abc.ABC):
     @abc.abstractclassmethod
     def prepare_awkward_to_numpy(self, *args, **kwargs) -> Tuple:
         """
-        Converting awkward-array like inputs into be numpy-like inputs
-        compatible with the `numpy_call` method. The return value should be
-        (*args, **kwargs) pair that is compatible with the numpy_call.
+        Converting awkward-array like inputs into be numpy-compatible awkward-arrays
+        compatible with the `numpy_call` method. The actual conversion to numpy is
+        handled automatically. The return value should be (*args, **kwargs) pair
+        that is compatible with the numpy_call.
 
         Consult the following documentation to find the awkward operations
         needed.
             https://awkward-array.org/doc/main/user-guide/how-to-restructure-pad.html
+
+        If you need to use numpy-only operations like np.column_stack, remember to use
+        awkward.typetracer.length_zero_if_typetracer(arg) before calling .to_numpy().
+        Furthermore you should convert back into a typetracer in these situations.
+        Otherwise, when running with dask_awkward, you will run into problems.
+
+        length_zero_if_typetracer and typetracer handling example:
+            def prepare_awkward_to_numpy(self, events):
+            ret = np.column_stack(
+                [
+                    ak.typetracer.length_zero_if_typetracer(events[name])
+                    for name in feature_list
+                ]
+            )
+            ret = ak.Array(ret, behavior=events.behavior)
+            if ak.backend(events) == "typetracer":
+                ret = ak.Array(
+                    ret.layout.to_typetracer(forget_length=True), behavior=ret.behavior
+                )
+            return [], dict(data=ret)
         """
         pass
 
     def awkward_to_numpy(self, *args, **kwargs) -> Tuple:
         np_args, np_kwargs = self.prepare_awkward_to_numpy(*args, **kwargs)
         np_args = [
-            awkward.typetracer.empty_if_typetracer(arg).to_numpy()
-            if isinstance(arg, awkward.Array)
-            else arg
+            awkward.typetracer.length_one_if_typetracer(arg).to_numpy()
             for arg in np_args
         ]
         np_kwargs = {
-            key: awkward.typetracer.empty_if_typetracer(arg).to_numpy()
-            if isinstance(arg, awkward.Array)
-            else arg
+            key: awkward.typetracer.length_one_if_typetracer(arg).to_numpy()
             for key, arg in np_kwargs.items()
         }
         return np_args, np_kwargs
@@ -293,15 +310,6 @@ class numpy_call_wrapper(abc.ABC):
                         return awkward.backend(x)
                 return None
 
-            def make_length_one(self, arg):
-                if isinstance(arg, awkward.Array):
-                    return arg.layout.form.length_one_array(behavior=arg.behavior)
-                else:
-                    return arg
-
-            def touch_column(self, col):
-                return col.layout._touch_data(recursive=True)
-
             def __call__(self, *args):
                 """
                 Mainly translating the input *args to the (*args, **kwarg) pair
@@ -309,29 +317,21 @@ class numpy_call_wrapper(abc.ABC):
                 calculation routine defined to for the 'typetracer' backend for
                 metadata scouting.
                 """
+                # This also touches input arrays in case of
+                # type tracers, when it generates length-one
+                # arrays
+                eval_args, eval_kwargs = self.args_to_pair(*tuple(v for v in args))
+
+                # awkward.zip so that the return is a single awkward
+                # array
+                out = self.wrapper._call_awkward(*eval_args, **eval_kwargs)
+                out = pack_ret_array(out)
                 if self.get_backend(*args) == "typetracer":
-                    # Running the touch overload function
-                    eval_args, eval_kwargs = self.args_to_pair(*args)
-                    _ = self.wrapper.awkward_to_numpy(*eval_args, *eval_kwargs)
-
-                    # Getting the length-one array for evaluation
-                    eval_args, eval_kwargs = self.args_to_pair(
-                        *tuple(self.make_length_one(v) for v in args)
-                    )
-
-                    # awkward.zip so that the return is a single awkward
-                    # array
-                    out = self.wrapper._call_awkward(*eval_args, **eval_kwargs)
-                    out = pack_ret_array(out)
-                    return awkward.Array(
+                    out = awkward.Array(
                         out.layout.to_typetracer(forget_length=True),
                         behavior=out.behavior,
                     )
-                else:
-                    eval_args, eval_kwargs = self.args_to_pair(*args)
-                    return pack_ret_array(
-                        self.wrapper._call_awkward(*eval_args, **eval_kwargs)
-                    )
+                return out
 
         wrap = _callable_wrap((args, kwargs), self)
         arr = dask_awkward.lib.core.map_partitions(
