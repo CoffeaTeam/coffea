@@ -211,7 +211,7 @@ class numpy_call_wrapper(abc.ABC):
             elif isinstance(arg, (list, set, tuple)):
                 return arg.__class__(descend_maybe_container(val) for val in arg)
             else:
-                if isinstance(arg, (awkward.Array, numpy.ndarray)):
+                if isinstance(arg, awkward.Array):
                     return awkward.typetracer.length_one_if_typetracer(arg).to_numpy()
                 else:
                     return arg
