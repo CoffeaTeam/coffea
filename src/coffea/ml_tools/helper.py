@@ -204,15 +204,27 @@ class numpy_call_wrapper(abc.ABC):
 
     def awkward_to_numpy(self, *args, **kwargs) -> Tuple:
         np_args, np_kwargs = self.prepare_awkward_to_numpy(*args, **kwargs)
+
+        def descend_maybe_container(arg):
+            if isinstance(arg, dict):
+                return {key: descend_maybe_container(val) for key, val in arg.items()}
+            elif isinstance(arg, (list, set, tuple)):
+                return arg.__class__(descend_maybe_container(val) for val in arg)
+            else:
+                if isinstance(arg, (awkward.Array, numpy.ndarray)):
+                    return awkward.typetracer.length_one_if_typetracer(arg).to_numpy()
+                else:
+                    return arg
+
         np_args = [
-            awkward.typetracer.length_one_if_typetracer(arg).to_numpy()
-            if isinstance(arg, awkward.Array)
+            descend_maybe_container(arg)
+            if isinstance(arg, (awkward.Array, dict, list, set, tuple))
             else arg
             for arg in np_args
         ]
         np_kwargs = {
-            key: awkward.typetracer.length_one_if_typetracer(arg).to_numpy()
-            if isinstance(arg, awkward.Array)
+            key: descend_maybe_container(arg)
+            if isinstance(arg, (awkward.Array, dict, list, set, tuple))
             else arg
             for key, arg in np_kwargs.items()
         }
