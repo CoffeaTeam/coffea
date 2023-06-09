@@ -35,12 +35,12 @@ class triton_wrapper(lazy_container, numpy_call_wrapper):
 
     - The constructor: provide a URL used to indicate the triton communication
       protocol to the triton server as well as the model of interest.
-    - Overloading the `awkward_to_numpy` method (and alternatively the
-      `dask_touch` method): manipulate some awkward array inputs into a numpy
-      format suitable for the model of interest. When debugging this method, one
-      can pass the output of this method to the `_validate_numpy_format`, where
-      it compares the input format with the metadata of the model currently
-      hosted on the triton server to check for format consistency.
+    - Overloading the `prepare_awkward_to_numpy` method: manipulate some
+      awkward array inputs into a numpy format suitable for the model of
+      interest. When debugging this method, one can pass the output of this
+      method to the `_validate_numpy_format`, where it compares the input
+      format with the metadata of the model currently hosted on the triton
+      server to check for format consistency.
     - `__call__`: the primary inference method, where the user passes over the
       arrays of interest, and the handling of numpy/awkward/dask_awkward types
       is handled automatically.
