@@ -347,10 +347,14 @@ class numpy_call_wrapper(abc.ABC):
         call the corresponding function if they are found. If no dask awkward or
         awkward arrays are found, calling the underlying _call_numpy method.
         """
-        all_arrs = [*args, *kwargs.values()]
-        if any(isinstance(arr, awkward.Array) for arr in all_arrs):
+        all_args = [*args, *kwargs.values()]
+        has_ak = any(isinstance(arg, awkward.Array) for arg in all_args)
+        has_dak = any(isinstance(arg, dask_awkward.Array) for arg in all_args)
+        if has_ak and has_dak:
+            raise RuntimeError("Cannot mix awkward and dask_awkward in calculations")
+        elif has_ak:
             return self._call_awkward(*args, **kwargs)
-        elif any(isinstance(arr, dask_awkward.Array) for arr in all_arrs):
+        elif has_dak:
             return self._call_dask(*args, **kwargs)
         else:
             return self._call_numpy(*args, **kwargs)
