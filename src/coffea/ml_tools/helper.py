@@ -335,7 +335,7 @@ class numpy_call_wrapper(abc.ABC):
         arr = dask_awkward.lib.core.map_partitions(
             wrap,
             *wrap.pair_to_args(*args, **kwargs),
-            label="numpy_call_" + dask.base.tokenize(self),
+            label=f"numpy_call_{self.__class__.__name__}_" + dask.base.tokenize(self),
             opt_touch_all=False,
         )
         return unpack_ret_array(arr)
