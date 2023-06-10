@@ -19,10 +19,10 @@ except ImportError as err:
     )
     raise err
 
-from .helper import lazy_container, numpy_call_wrapper
+from .helper import nonserializable_attribute, numpy_call_wrapper
 
 
-class triton_wrapper(lazy_container, numpy_call_wrapper):
+class triton_wrapper(nonserializable_attribute, numpy_call_wrapper):
     """
     Wrapper for running triton inference.
 
@@ -30,21 +30,10 @@ class triton_wrapper(lazy_container, numpy_call_wrapper):
     wrapped and abstracted-away from the users. The users should then only needs
     to handle awkward-level operations to mangle the arrays into the expected
     input format required by the the model of interest.
-
-    The users should only need to interact with the following methods:
-
-    - The constructor: provide a URL used to indicate the triton communication
-      protocol to the triton server as well as the model of interest.
-    - Overloading the `prepare_awkward_to_numpy` method: manipulate some
-      awkward array inputs into a numpy format suitable for the model of
-      interest. When debugging this method, one can pass the output of this
-      method to the `_validate_numpy_format`, where it compares the input
-      format with the metadata of the model currently hosted on the triton
-      server to check for format consistency.
-    - `__call__`: the primary inference method, where the user passes over the
-      arrays of interest, and the handling of numpy/awkward/dask_awkward types
-      is handled automatically.
     """
+
+    batch_size_fallback = 10  # Fall back should batch size not be determined.
+    http_client_concurrency = 12  # TODO: check whether this value is optimum
 
     def __init__(
         self, model_url: str, client_args: Optional[Dict] = None, batch_size=-1
@@ -62,7 +51,7 @@ class triton_wrapper(lazy_container, numpy_call_wrapper):
         - batch_size: How the input arrays should be split up for analysis
           processing. Leave negative to have this automatically resolved.
         """
-        lazy_container.__init__(
+        nonserializable_attribute.__init__(
             self, ["client", "model_metadata", "model_inputs", "model_outputs"]
         )
 
@@ -76,7 +65,8 @@ class triton_wrapper(lazy_container, numpy_call_wrapper):
         self._client_args = client_args
 
     """
-    Lazy object creation
+    Spawning the unserializable triton client, as well as other helper objects
+    that require the triton client to be present.
     """
 
     @property
@@ -102,7 +92,7 @@ class triton_wrapper(lazy_container, numpy_call_wrapper):
         if self.protocol == "grpc":
             kwargs = dict(verbose=False, ssl=True)
         elif self.protocol == "http":
-            kwargs = dict(verbose=False, concurrency=12)
+            kwargs = dict(verbose=False, concurrency=self.http_client_concurrency)
         if self._client_args is not None:
             kwargs.update(self._client_args)
         return kwargs
@@ -147,11 +137,11 @@ class triton_wrapper(lazy_container, numpy_call_wrapper):
                 self._batch_size = model_config["max_batch_size"]
             else:
                 warnings.warn(
-                    "Batch size not set by model! Setting to default value 128. "
+                    f"Batch size not set by model! Setting to default value {self.batch_size_fallback}. "
                     "Contact model maintainer to check if this is expected",
                     UserWarning,
                 )
-                self._batch_size = 10
+                self._batch_size = self.batch_size_fallback
 
         return self._batch_size
 
@@ -163,10 +153,8 @@ class triton_wrapper(lazy_container, numpy_call_wrapper):
         self, output_list: List[str], input_dict: Dict[str, numpy.array]
     ) -> None:
         """
-        Helper function for validating the numpy format to be passed to the
-        inference request. This function will raise exceptions if any format is
-        found to be wrong, with the error messages attempts to be as verbose and
-        as descriptive as possible.
+        tritonclient can return the expected input array dimensions and
+        available output values.
         """
         # Input value checking
         for iname, iarr in input_dict.items():
@@ -219,24 +207,21 @@ class triton_wrapper(lazy_container, numpy_call_wrapper):
         self, output_list: List[str], input_dict: Dict[str, numpy.array]
     ) -> Dict[str, numpy.array]:
         """
-        The thinnest inferences request wrapping. Notice that this method should
-        never be directly called other than for debugging purposes.
+        Parameters
+        ----------
 
-        Inputs to the inferences request should be in the format of a dictionary
-        with the input-names as the dictionary key and the appropriate numpy
-        array as the dictionary value. This input dictionary is automatically
-        translated into a list of `tritonclient.InferInput` objects.
+        - output_list: List of string corresponding to the name of the outputs
+          of interest. These strings will be automatically translated into the
+          required `tritonclient.InferRequestedOutput` objects.
 
-        Requested output should be a list of string, corresponding to the name
-        of the outputs of interest. This strings will be automatically
-        translated into the required `tritonclient.InferRequestedOutput`
-        objects.
+        - input_dict: Dictionary with the model's input-names as the key and the
+          appropriate numpy array as the dictionary value. This dictionary is
+          automatically translated into a list of `tritonclient.InferInput`
+          objects.
 
-        The validate option will take the input/output requests, and compare it
-        with the expected input/output as seen by the model_metadata hosted at
-        the server, since this operation is slow it will be turned off by
-        default, but it will be useful for debugging when developing the
-        user-level `awkward_to_numpy` method.
+
+        Return
+        ------
 
         The return will be the dictionary of numpy arrays that have the
         output_list arguments as keys.

@@ -3,7 +3,7 @@ from typing import Dict, Optional
 
 import numpy
 
-from coffea.ml_tools.helper import lazy_container, numpy_call_wrapper
+from coffea.ml_tools.helper import nonserializable_attribute, numpy_call_wrapper
 
 try:
     import xgboost
@@ -18,14 +18,14 @@ except ImportError as err:
     raise err
 
 
-class xgboost_wrapper(numpy_call_wrapper, lazy_container):
+class xgboost_wrapper(numpy_call_wrapper, nonserializable_attribute):
     """
     Very simple wrapper for xgbooster inference. The xgboost.Booster object is
-    setup as a lazy object.
+    nonserializable, so the users should pass in the xgboost model file.
     """
 
     def __init__(self, fname):
-        lazy_container.__init__(self, ["xgbooster"])
+        nonserializable_attribute.__init__(self, ["xgbooster"])
         self.xgboost_file = fname
 
     def _create_xgbooster(self) -> xgboost.Booster:

@@ -1,6 +1,6 @@
 import abc
 import warnings
-from typing import Dict, List, Tuple
+from typing import Dict, List, Set, Tuple
 
 import awkward
 import dask
@@ -8,26 +8,28 @@ import dask_awkward
 import numpy
 
 
-class lazy_container:
+class nonserializable_attribute:
     """
-    Generalizing the lazy object container syntax.
+    Generalizing the container for non-serializable objects.
 
-    For a given lazy object of name "obj", on container "x" initialization, it
-    will create a dummy instance of the "x._obj = None". On the first time that
-    "x.obj" is called, the contents of "x._obj" will be replaced by the return
-    value of "x._create_obj()" method (this method cannot expect have additional
-    input).
+    For a given unserializable object of name "obj", on container "x"
+    initialization, it will create a dummy instance of the "x._obj = None". On
+    the first time that "x.obj" is called, the contents of "x._obj" will be
+    replaced by the return value of "x._create_obj()" method. The corresponding
+    "_create_obj" method must be able to return the correct object without
+    additional function arguments, so all arguments required to create the
+    object of interest needs to be stored in the container instance.
 
     Parameters
     ----------
-        lazy_list : List[str]
-            A list of string for the names of the lazy objects.
+        nonserial_list : List[str]
+            A list of string for the names of the unserializable objects.
     """
 
-    def __init__(self, lazy_list: List[str]):
-        self._lazy_list = lazy_list
+    def __init__(self, nonserial_list: List[str]):
+        self._nonserial_list = nonserial_list
 
-        for name in lazy_list:
+        for name in nonserial_list:
             assert (
                 name.isidentifier()
             ), f"Requested variable {name} cannot be used as variable name"
@@ -40,9 +42,9 @@ class lazy_container:
         """
         The method __getattr__ is only invoke if the attribute cannot be found
         with conventional method (such as with the not-explicitly defined method
-        lazycontainter.<lazy_object> with no "_" prefix)
+        nonserializable_attribute.att_name with no "_" prefix)
         """
-        if name in self._lazy_list:
+        if name in self._nonserial_list:
             if getattr(self, "_" + name) is None:
                 setattr(self, "_" + name, getattr(self, "_create_" + name)())
             return getattr(self, "_" + name)
@@ -51,21 +53,23 @@ class lazy_container:
 
     def __getstate__(self):
         """
-        Explicitly setting all the lazy objects to be hidden from getstate
-        requests. This ensures that wrapper objects can be pickled regardless of
-        whether evaluations of the various objects has been carried out or not.
+        Explicitly setting all the unserializable objects to be hidden from
+        getstate requests. This ensures that wrapper objects can be pickled
+        regardless of whether evaluations of the various objects has been
+        carried out or not.
         """
         state = self.__dict__.copy()
-        for name in state["_lazy_list"]:
+        for name in state["_nonserial_list"]:
             state["_" + name] = None
         return state
 
     def __setstate__(self, d: dict):
         """
         Due to the overloading the of the __getattr__ and __getstate__ method,
-        we need to explcitly define the __setstate__ method. Notice that due to
+        we need to explicitly define the __setstate__ method. Notice that due to
         the design of the __getstate__ method, this should never receive a
-        dictionary that initializes the lazy objects under normal operations.
+        dictionary that initializes the unserializable objects under normal
+        operations.
         """
         self.__dict__.update(d)
 
@@ -76,11 +80,11 @@ class container_converter:
     **kwargs), iterating through the base python containers and running a
     conversion function on each of the leaf entries.
 
-    The method map has types as the first key and a callable function as the
-    value, the callable function will only be used on the matching type.
+    The method_map has types as the map key and a callable as the value, the
+    callable will only be used on the matching type.
 
     A default conversion callable can also be provided to convert objects that
-    is not explicitly listed. By default, if a type is not explicitly listed and
+    is not explicitly listed. By default, if a type is not explicitly listed, an
     exception is raised.
     """
 
@@ -90,19 +94,17 @@ class container_converter:
         if self.default_conv is None:
             self.default_conv = self.unrecognized
 
-    def convert(self, x):
-        if isinstance(x, Dict):
-            return {k: self.convert(v) for k, v in x.items()}
-        elif isinstance(x, List):
-            return list(self.convert(v) for v in x)
-        elif isinstance(x, Tuple):
-            return tuple(self.convert(v) for v in x)
+    def convert(self, arg):
+        if isinstance(arg, Dict):
+            return {key: self.convert(val) for key, val in arg.items()}
+        elif isinstance(arg, (List, Set, Tuple)):
+            return arg.__class__(self.convert(val) for val in arg)
 
         for itype, call in self.method_map.items():
-            if isinstance(x, itype):
-                return call(x)
+            if isinstance(arg, itype):
+                return call(arg)
 
-        return self.default_conv(x)
+        return self.default_conv(arg)
 
     def __call__(self, *args, **kwargs) -> Tuple:
         return self.convert(args), self.convert(kwargs)
@@ -122,18 +124,17 @@ class numpy_call_wrapper(abc.ABC):
 
     For tools outside the coffea package (like for ML inference), the inputs
     typically expect a numpy-like input. This class wraps up the user-level
-    awkward->numpy data mangling and the underling numpy evaluation calls to be
-    compatible with dask awkward.
+    awkward->numpy data mangling and the underling numpy evaluation calls to
+    recognizable to dask.
 
     For the class to be fully functional, the user must overload these methods:
 
     - numpy_call: How the evaluation using all numpy tool be performed
-    - awkward_to_numpy: How awkward-inputs should be translated to the a numpy
+    - awkward_to_numpy: How awkward arrays should be translated to the a numpy
       format that is compatible with the numpy_call
 
-    Additional classes that have helper functions that will be nice to have but
-    isn't strictly required for the class to operate but will help assist with
-    code debugging.
+    Additionally, the following helper functions can be omitted, but will help
+    assist with either code debugging or for data mangling niceties.
 
     - validate_numpy_input: makes sure the computation routine understand the
       input.
@@ -160,7 +161,7 @@ class numpy_call_wrapper(abc.ABC):
         self.validate_numpy_input(*args, **kwargs)
         return self.numpy_call(*args, **kwargs)
 
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def numpy_call(self, *args, **kwargs):
         """
         Underlying numpy-like evaluation. This method should be reimplemented by
@@ -168,7 +169,7 @@ class numpy_call_wrapper(abc.ABC):
         """
         pass
 
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def prepare_awkward_to_numpy(self, *args, **kwargs) -> Tuple:
         """
         Converting awkward-array like inputs into be numpy-compatible awkward-arrays
@@ -203,39 +204,30 @@ class numpy_call_wrapper(abc.ABC):
         pass
 
     def awkward_to_numpy(self, *args, **kwargs) -> Tuple:
+        """
+        Function called to actually convert awkward arrays to numpy arrays.
+        Conversion is handled by the typetracer variant of awkward.to_numpy so
+        that the relevant columns are automatically detected and handled when
+        using dask_awkward arrays.
+        """
         np_args, np_kwargs = self.prepare_awkward_to_numpy(*args, **kwargs)
 
-        def descend_maybe_container(arg):
-            if isinstance(arg, dict):
-                return {key: descend_maybe_container(val) for key, val in arg.items()}
-            elif isinstance(arg, (list, set, tuple)):
-                return arg.__class__(descend_maybe_container(val) for val in arg)
-            else:
-                if isinstance(arg, awkward.Array):
-                    return awkward.typetracer.length_one_if_typetracer(arg).to_numpy()
-                else:
-                    return arg
+        def typetrace_converter(arg):
+            return awkward.typetracer.length_one_if_typetracer(arg).to_numpy()
 
-        np_args = [
-            descend_maybe_container(arg)
-            if isinstance(arg, (awkward.Array, dict, list, set, tuple))
-            else arg
-            for arg in np_args
-        ]
-        np_kwargs = {
-            key: descend_maybe_container(arg)
-            if isinstance(arg, (awkward.Array, dict, list, set, tuple))
-            else arg
-            for key, arg in np_kwargs.items()
-        }
-        return np_args, np_kwargs
+        conv = container_converter(
+            {awkward.Array: typetrace_converter},
+            default_conv=container_converter.no_action,
+        )
+
+        return conv.convert(np_args), conv.convert(np_kwargs)
 
     def numpy_to_awkward(self, np_return, *args, **kwargs):
         """
         Additional conversion from the numpy_call output back to awkward arrays.
         This method does not need to need to be overloaded, but can make the
-        data-mangling that occurs outside the class cleaner (ex, additional
-        awkward.unflatten calls.) To ensure that the data mangling can occur,
+        data-mangling that occurs outside the class cleaner (ex: additional
+        awkward unflatten calls). To ensure that the data mangling can occur,
         the unformatted awkward-like inputs are also passed to this function.
 
         For the base method, we will simply iterate over the containers and call

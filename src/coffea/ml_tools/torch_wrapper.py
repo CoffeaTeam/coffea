@@ -14,21 +14,21 @@ except ImportError as err:
     )
     raise err
 
-from .helper import lazy_container, numpy_call_wrapper
+from .helper import nonserializable_attribute, numpy_call_wrapper
 
 
-class torch_wrapper(lazy_container, numpy_call_wrapper):
+class torch_wrapper(nonserializable_attribute, numpy_call_wrapper):
     """
     Wrapper for running pytorch with awkward/dask-awkward inputs.
     """
 
     def __init__(self, torch_jit: str):
         """
-        As torch models are guaranteed to be directly pickle-able depending on
-        model, we load the model using torch file save states. Notice that we
-        only support TorchScript files for this wrapper class [1]. If the user
-        is attempting to run on the clusters, the TorchScript file will need to
-        be passed to the worker nodes in a way which preserves the file path.
+        As torch models are not guaranteed to be serializable we load the model
+        using torch save-state files. Notice that we only support TorchScript
+        files for this wrapper class [1]. If the user is attempting to run on
+        the clusters, the TorchScript file will need to be passed to the worker
+        nodes in a way which preserves the file path.
 
         [1]
         https://pytorch.org/tutorials/beginner/saving_loading_models.html#export-load-model-in-torchscript-format
@@ -36,27 +36,24 @@ class torch_wrapper(lazy_container, numpy_call_wrapper):
         Parameters
         ----------
 
-        - torch_jet: The TorchScript file to load for inference
+        - torch_jit: Path to the TorchScript file to load
         """
-        lazy_container.__init__(self, ["model", "device"])
-
-        # Saving the file path to be loaded by dask workers.
+        nonserializable_attribute.__init__(self, ["model", "device"])
         self.torch_jit = torch_jit
 
     def _create_device(self):
         """
         Torch device run calculations on. This wrapper class will always attempt
-        to use GPU if possible. Setting this as a lazy object so that remote
+        to use GPU if possible. Setting this as a "lazy object" so that remote
         worker can have a different configuration the interactive session.
         """
-        # Setting up the default torch inference computation device
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def _create_model(self):
         """
-        Creating the model instance of the using either the weakref or the
-        dask.persist instance (prioritizes using weakref). Enforcing the eval
-        mode after initialization.
+        Loading in the model from the TorchScript file.
+
+        #TODO: Move to weakref to better performance.
         """
         if torch.cuda.is_available():
             model = torch.jit.load(self.torch_jit).cuda()
