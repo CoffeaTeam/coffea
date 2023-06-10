@@ -40,16 +40,9 @@ class _AwkwardRewrapFn:
 
 
 def rand_gauss(item):
-    seeds = None
-    backend = awkward.backend(item)
-    if backend == "cpu":
-        seeds = numpy.array(item)[[0, -1]].view("i4")
-    elif backend == "typetracer":
-        olitem = item.layout.form.length_one_array(highlevel=False)
-        seeds = numpy.array(olitem)[[0, -1]].view("i4")
-    else:
-        raise ValueError("rand_gauss received an unsupported awkward backend!")
-
+    seeds = (
+        awkward.typetracer.length_one_if_typetracer(item).to_numpy()[[0, -1]].view("i4")
+    )
     randomstate = numpy.random.Generator(numpy.random.PCG64(seeds))
 
     def getfunction(layout, depth, **kwargs):
@@ -63,10 +56,10 @@ def rand_gauss(item):
 
     out = awkward.transform(
         getfunction,
-        awkward.typetracer.empty_if_typetracer(item),
+        awkward.typetracer.length_zero_if_typetracer(item),
         behavior=item.behavior,
     )
-    if backend == "typetracer":
+    if awkward.backend(item) == "typetracer":
         out = awkward.Array(
             out.layout.to_typetracer(forget_length=True), behavior=out.behavior
         )
@@ -111,8 +104,8 @@ def jer_smear(
 
     backend = awkward.backend(smearfact, jetPt)
 
-    smearfact = awkward.typetracer.empty_if_typetracer(smearfact)
-    jetPt = awkward.typetracer.empty_if_typetracer(jetPt)
+    smearfact = awkward.typetracer.length_zero_if_typetracer(smearfact)
+    jetPt = awkward.typetracer.length_zero_if_typetracer(jetPt)
 
     def getfunction(layout, depth, **kwargs):
         if isinstance(layout, awkward.contents.NumpyArray) or not isinstance(
