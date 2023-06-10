@@ -15,8 +15,7 @@ def prepare_jets_array(njets):
             "eta": ak.from_numpy(np.random.random(size=njets)),
             "phi": ak.from_numpy(np.random.random(size=njets)),
             "ncands": ak.from_numpy(np.random.randint(1, 50, size=njets)),
-        },
-        with_name="LorentzVector",
+        }
     )
     pfcands = ak.zip(
         {
@@ -25,8 +24,7 @@ def prepare_jets_array(njets):
             "phi": ak.from_regular(np.random.random(size=(njets, NFEAT))),
             "feat1": ak.from_regular(np.random.random(size=(njets, NFEAT))),
             "feat2": ak.from_regular(np.random.random(size=(njets, NFEAT))),
-        },
-        with_name="LorentzVector",
+        }
     )
 
     idx = ak.local_index(pfcands.pt, axis=-1)
