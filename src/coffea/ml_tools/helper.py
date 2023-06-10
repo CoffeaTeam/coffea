@@ -259,6 +259,11 @@ class numpy_call_wrapper(abc.ABC):
         """
 
         def pack_ret_array(ret):
+            """
+            In case the return instance is not a singular array, we will need to
+            pack the results in a way that it "looks" like a single awkward
+            array up to dask.
+            """
             if isinstance(ret, awkward.Array):
                 return ret
             elif isinstance(ret, Dict):
@@ -320,8 +325,6 @@ class numpy_call_wrapper(abc.ABC):
                 # arrays
                 eval_args, eval_kwargs = self.args_to_pair(*tuple(v for v in args))
 
-                # awkward.zip so that the return is a single awkward
-                # array
                 out = self.wrapper._call_awkward(*eval_args, **eval_kwargs)
                 out = pack_ret_array(out)
                 if self.get_backend(*args) == "typetracer":
