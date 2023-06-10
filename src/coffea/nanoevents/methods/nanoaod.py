@@ -556,7 +556,7 @@ class AssociatedPFCand(base.NanoCollection):
     def jet(self, _dask_array_=None):
         collection = self.collection_map[self._collection_name()][0]
         if _dask_array_ is not None:
-            original = _dask_array_.behavior["__original_array__"][collection]
+            original = _dask_array_.behavior["__original_array__"]()[collection]
             return original._apply_global_index(
                 _dask_array_.jetIdxG, _dask_array_=original
             )
@@ -566,7 +566,7 @@ class AssociatedPFCand(base.NanoCollection):
     def pf(self, _dask_array_=None):
         collection = self.collection_map[self._collection_name()][1]
         if _dask_array_ is not None:
-            original = _dask_array_.behavior["__original_array__"][collection]
+            original = _dask_array_.behavior["__original_array__"]()[collection]
             return original._apply_global_index(
                 _dask_array_.pFCandsIdxG, _dask_array_=original
             )
@@ -592,7 +592,7 @@ class AssociatedSV(base.NanoCollection):
     def jet(self, _dask_array_=None):
         collection = self._events()[self.collection_map[self._collection_name()][0]]
         if _dask_array_ is not None:
-            original = _dask_array_.behavior["__original_array__"][collection]
+            original = _dask_array_.behavior["__original_array__"]()[collection]
             return original._apply_global_index(
                 _dask_array_.jetIdxG, _dask_array_=original
             )
@@ -602,7 +602,7 @@ class AssociatedSV(base.NanoCollection):
     def sv(self, _dask_array_=None):
         collection = self.collection_map[self._collection_name()][1]
         if _dask_array_ is not None:
-            original = _dask_array_.behavior["__original_array__"][collection]
+            original = _dask_array_.behavior["__original_array__"]()[collection]
             return original._apply_global_index(
                 _dask_array_.sVIdxG, _dask_array_=original
             )
