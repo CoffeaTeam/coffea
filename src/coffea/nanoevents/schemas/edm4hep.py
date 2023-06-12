@@ -7,6 +7,8 @@ from coffea.nanoevents.schemas.base import BaseSchema, nest_jagged_forms, zip_fo
 RECO_PARTICLES = 0
 MC_PARTICLES = 1
 
+TRACKSTATE_XREF = 1
+
 _base_collection = re.compile(r".*[\#\/]+.*")
 _trailing_under = re.compile(r".*_[0-9]")
 
@@ -87,7 +89,7 @@ class EDM4HEPSchema(BaseSchema):
                 if k.startswith(objname + "/")
             }
 
-            print(components)
+            # print(components)
 
             if all(comp in components for comp in self._momentum_fields_e):
                 form = zip_forms(
@@ -159,11 +161,10 @@ class EDM4HEPSchema(BaseSchema):
                 )
                 branch_forms[objname] = form
             elif objname == "PandoraClusters":
-                # exactly how these 4-vectors are constructed might still need to be edited
                 form = zip_forms(
                     {
                         "pt": branch_forms[f"{objname}/{objname}.energy"],  # in mm
-                        "eta": branch_forms.pop(f"{objname}/{objname}.iTheta"),
+                        "theta": branch_forms.pop(f"{objname}/{objname}.iTheta"),
                         "phi": branch_forms.pop(f"{objname}/{objname}.phi"),
                         "energy": branch_forms[f"{objname}/{objname}.energy"],
                     },
@@ -172,9 +173,11 @@ class EDM4HEPSchema(BaseSchema):
                 )
                 branch_forms[objname] = form
             elif objname == "MarlinTrkTracks":
-                # will be updated to properly construct 4-vectors
                 form = zip_forms(
                     {
+                        "omega": branch_forms.pop(f"{objname}_{TRACKSTATE_XREF}/{objname}_{TRACKSTATE_XREF}.omega"),
+                        "phi": branch_forms.pop(f"{objname}_{TRACKSTATE_XREF}/{objname}_{TRACKSTATE_XREF}.phi"),
+                        "tanLambda": branch_forms.pop(f"{objname}_{TRACKSTATE_XREF}/{objname}_{TRACKSTATE_XREF}.tanLambda"),
                         "dEdx": branch_forms.pop(f"{objname}/{objname}.dEdx"),
                     },
                     objname,

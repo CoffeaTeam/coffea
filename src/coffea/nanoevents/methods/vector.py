@@ -1239,6 +1239,127 @@ class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
             behavior=self.behavior,
         )
 
+@awkward.mixin_class(behavior)
+class PtThetaPhiELorentzVector(LorentzVector, SphericalThreeVector):
+    """A Lorentz vector using theta and energy
+
+    This mixin class requires the parent class to provide items `pt`, `theta`, `phi`, and `energy`.
+    Some additional properties are overridden for performance
+    """
+
+    @property
+    def E(self):
+        """Alias for `t`"""
+        return self.t
+
+    @property
+    def theta(self):
+        r"""polar angle
+        """
+        return self["theta"]
+
+    @property
+    def pt(self):
+        """Alias for `r`"""
+        return self["pt"]
+
+    @property
+    def eta(self):
+        r"""Pseudorapidity
+
+        :math:`-\ln\tan(\theta/2) = \text{arcsinh}(z/r)`
+        """
+        return -numpy.log(numpy.tan(self["theta"]/2))
+
+    @property
+    def phi(self):
+        r"""Azimuthal angle relative to X axis in XY plane
+
+        :math:`\text{arctan2}(y, x)`
+        """
+        return self["phi"]
+
+    @property
+    def energy(self):
+        """Alias for `t`"""
+        return self["energy"]
+
+    @property
+    def t(self):
+        r"""Cartesian time component
+
+        :math:`\sqrt{\rho^2+m^2}`
+        """
+        return self["energy"]
+
+    @property
+    def rho(self):
+        r"""Distance from origin in 3D
+
+        :math:`\sqrt{x^2+y^2+z^2} = \sqrt{r^2+z^2}`
+        """
+        return self.pt * numpy.cosh(self.eta)
+
+    @property
+    def theta(self):
+        r"""Inclination angle from XY plane
+
+        :math:`\text{arctan2}(r, z) = 2\text{arctan}(e^{-\eta})`
+        """
+        return 2 * numpy.arctan(numpy.exp(-self.eta))
+
+    @property
+    def r(self):
+        r"""Distance from origin in XY plane
+
+        :math:`\sqrt{x^2+y^2} = \rho \sin(\theta)`
+        """
+        return self.pt
+
+    @property
+    def z(self):
+        r"""Cartesian z value
+
+        :math:`r \sinh(\eta)`
+        """
+        return self.pt * numpy.sinh(self.eta)
+
+    @property
+    def rho2(self):
+        """Squared `rho`"""
+        return self.rho * self.rho
+
+    @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
+    def multiply(self, other):
+        """Multiply this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components
+
+        In reality, this directly adjusts `pt`, `eta`, `phi` and `energy` for performance
+        """
+        return awkward.zip(
+            {
+                "pt": self.pt * abs(other),
+                "eta": self.eta * numpy.sign(other),
+                "phi": self.phi % (2 * numpy.pi) - (numpy.pi * (other < 0)),
+                "energy": self.energy * other,
+            },
+            with_name="PtEtaPhiELorentzVector",
+            behavior=self.behavior,
+        )
+
+    @awkward.mixin_class_method(numpy.negative)
+    def negative(self):
+        """Returns the negative of the vector"""
+        return awkward.zip(
+            {
+                "pt": self.pt,
+                "eta": -self.eta,
+                "phi": self.phi % (2 * numpy.pi) - numpy.pi,
+                "energy": -self.energy,
+            },
+            with_name="PtEtaPhiELorentzVector",
+            behavior=self.behavior,
+        )
+
 
 __all__ = [
     "TwoVector",
@@ -1249,4 +1370,5 @@ __all__ = [
     "LorentzVectorM",
     "PtEtaPhiMLorentzVector",
     "PtEtaPhiELorentzVector",
+    "PtThetaPhiELorentzVector",
 ]
