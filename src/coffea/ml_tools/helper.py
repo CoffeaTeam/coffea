@@ -96,15 +96,15 @@ class container_converter:
 
     def convert(self, arg):
         if isinstance(arg, Dict):
-            return {key: self.convert(val) for key, val in arg.items()}
+            return dict({key: self.convert(val) for key, val in arg.items()})
         elif isinstance(arg, (List, Set, Tuple)):
             return arg.__class__(self.convert(val) for val in arg)
+        else:
+            for itype, call in self.method_map.items():
+                if isinstance(arg, itype):
+                    return call(arg)
 
-        for itype, call in self.method_map.items():
-            if isinstance(arg, itype):
-                return call(arg)
-
-        return self.default_conv(arg)
+            return self.default_conv(arg)
 
     def __call__(self, *args, **kwargs) -> Tuple:
         return self.convert(args), self.convert(kwargs)
@@ -142,6 +142,14 @@ class numpy_call_wrapper(abc.ABC):
       awkward (defaults to a simple `awkward.from_numpy` conversion)
     """
 
+    # Commonly used helper classes so defining as static method
+    _ak_to_np_ = container_converter(
+        {awkward.Array: awkward.to_numpy}, default_conv=container_converter.no_action
+    )
+    _np_to_ak_ = container_converter(
+        {numpy.ndarray: awkward.from_numpy}, default_conv=container_converter.no_action
+    )
+
     def __init__(self):
         pass
 
@@ -170,7 +178,7 @@ class numpy_call_wrapper(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def prepare_awkward_to_numpy(self, *args, **kwargs) -> Tuple:
+    def awkward_to_numpy(self, *args, **kwargs) -> Tuple:
         """
         Converting awkward-array like inputs into be numpy-compatible awkward-arrays
         compatible with the `numpy_call` method. The actual conversion to numpy is
@@ -203,26 +211,20 @@ class numpy_call_wrapper(abc.ABC):
         """
         pass
 
-    def awkward_to_numpy(self, *args, **kwargs) -> Tuple:
-        """
-        Function called to actually convert awkward arrays to numpy arrays.
-        Conversion is handled by the typetracer variant of awkward.to_numpy so
-        that the relevant columns are automatically detected and handled when
-        using dask_awkward arrays.
-        """
-        np_args, np_kwargs = self.prepare_awkward_to_numpy(*args, **kwargs)
+    def get_awkward_lib(self, *args, **kwargs):
+        all_args = [*args, *kwargs.values()]
+        has_ak = any(isinstance(arg, awkward.Array) for arg in all_args)
+        has_dak = any(isinstance(arg, dask_awkward.Array) for arg in all_args)
+        if has_ak and has_dak:
+            raise RuntimeError("Cannot mix awkward and dask_awkward in calculations")
+        elif has_ak:
+            return awkward
+        elif has_dak:
+            return dask_awkward
+        else:
+            return None
 
-        def typetrace_converter(arg):
-            return awkward.typetracer.length_one_if_typetracer(arg).to_numpy()
-
-        conv = container_converter(
-            {awkward.Array: typetrace_converter},
-            default_conv=container_converter.no_action,
-        )
-
-        return conv.convert(np_args), conv.convert(np_kwargs)
-
-    def numpy_to_awkward(self, np_return, *args, **kwargs):
+    def postprocess_awkward(self, return_array, *args, **kwargs):
         """
         Additional conversion from the numpy_call output back to awkward arrays.
         This method does not need to need to be overloaded, but can make the
@@ -233,17 +235,18 @@ class numpy_call_wrapper(abc.ABC):
         For the base method, we will simply iterate over the containers and call
         the default `awkward.from_numpy` conversion
         """
-        conv = container_converter({numpy.ndarray: awkward.from_numpy})
-        return conv.convert(np_return)
+        return return_array
 
     def _call_awkward(self, *args, **kwargs):
         """
         The common routine of awkward_to_numpy conversion, numpy evaluation,
         then numpy_to_awkward conversion.
         """
-        np_args, np_kwargs = self.awkward_to_numpy(*args, *kwargs)
+        ak_args, ak_kwargs = self.awkward_to_numpy(*args, **kwargs)
+        np_args, np_kwargs = self._ak_to_np_(*ak_args, **ak_kwargs)
         np_rets = self._call_numpy(*np_args, **np_kwargs)
-        return self.numpy_to_awkward(np_rets, *args, **kwargs)
+        np_rets = self._np_to_ak_.convert(np_rets)
+        return self.postprocess_awkward(np_rets, *args, **kwargs)
 
     def _call_dask(self, *args, **kwargs):
         """
@@ -323,9 +326,29 @@ class numpy_call_wrapper(abc.ABC):
                 # This also touches input arrays in case of
                 # type tracers, when it generates length-one
                 # arrays
-                eval_args, eval_kwargs = self.args_to_pair(*tuple(v for v in args))
+                ak_args, ak_kwargs = self.args_to_pair(*args)
 
-                out = self.wrapper._call_awkward(*eval_args, **eval_kwargs)
+                if self.get_backend(*args) == "typetracer":
+                    # Length-0 conversion will not work! Must use length-1 method.
+                    conv = container_converter(
+                        {
+                            awkward.Array: lambda x: awkward.Array(
+                                x.layout.form.length_one_array(highlevel=False),
+                                behavior=x.behavior,
+                            )
+                        }
+                    )
+
+                    ak_args, ak_kwargs = conv(*ak_args, **ak_kwargs)
+
+                # Converting to numpy
+                np_args, np_kwargs = numpy_call_wrapper._ak_to_np_(
+                    *ak_args, **ak_kwargs
+                )
+                out = self.wrapper._call_numpy(*np_args, **np_kwargs)
+                out = self.wrapper._np_to_ak_.convert(out)
+
+                # Additional packing
                 out = pack_ret_array(out)
                 if self.get_backend(*args) == "typetracer":
                     out = awkward.Array(
@@ -334,14 +357,16 @@ class numpy_call_wrapper(abc.ABC):
                     )
                 return out
 
-        wrap = _callable_wrap((args, kwargs), self)
+        dak_args, dak_kwargs = self.awkward_to_numpy(*args, **kwargs)
+        wrap = _callable_wrap((dak_args, dak_kwargs), self)
         arr = dask_awkward.lib.core.map_partitions(
             wrap,
-            *wrap.pair_to_args(*args, **kwargs),
+            *wrap.pair_to_args(*dak_args, **dak_kwargs),
             label=f"numpy_call_{self.__class__.__name__}_" + dask.base.tokenize(self),
             opt_touch_all=False,
         )
-        return unpack_ret_array(arr)
+        arr = unpack_ret_array(arr)
+        return self.postprocess_awkward(arr, *args, **kwargs)
 
     def __call__(self, *args, **kwargs):
         """
@@ -350,14 +375,11 @@ class numpy_call_wrapper(abc.ABC):
         call the corresponding function if they are found. If no dask awkward or
         awkward arrays are found, calling the underlying _call_numpy method.
         """
-        all_args = [*args, *kwargs.values()]
-        has_ak = any(isinstance(arg, awkward.Array) for arg in all_args)
-        has_dak = any(isinstance(arg, dask_awkward.Array) for arg in all_args)
-        if has_ak and has_dak:
-            raise RuntimeError("Cannot mix awkward and dask_awkward in calculations")
-        elif has_ak:
+        array_lib = self.get_awkward_lib(*args, **kwargs)
+
+        if array_lib is awkward:
             return self._call_awkward(*args, **kwargs)
-        elif has_dak:
+        elif array_lib is dask_awkward:
             return self._call_dask(*args, **kwargs)
         else:
             return self._call_numpy(*args, **kwargs)
