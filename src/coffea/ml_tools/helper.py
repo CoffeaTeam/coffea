@@ -130,7 +130,7 @@ class numpy_call_wrapper(abc.ABC):
     For the class to be fully functional, the user must overload these methods:
 
     - numpy_call: How the evaluation using all numpy tool be performed
-    - awkward_to_numpy: How awkward arrays should be translated to the a numpy
+    - prepare_awkward: How awkward arrays should be translated to the a numpy
       format that is compatible with the numpy_call
 
     Additionally, the following helper functions can be omitted, but will help
@@ -178,7 +178,7 @@ class numpy_call_wrapper(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def awkward_to_numpy(self, *args, **kwargs) -> Tuple:
+    def prepare_awkward(self, *args, **kwargs) -> Tuple:
         """
         Converting awkward-array like inputs into be numpy-compatible awkward-arrays
         compatible with the `numpy_call` method. The actual conversion to numpy is
@@ -195,7 +195,7 @@ class numpy_call_wrapper(abc.ABC):
         Otherwise, when running with dask_awkward, you will run into problems.
 
         length_zero_if_typetracer and typetracer handling example:
-            def prepare_awkward_to_numpy(self, events):
+            def prepare_prepare_awkward(self, events):
             ret = np.column_stack(
                 [
                     ak.typetracer.length_zero_if_typetracer(events[name])
@@ -239,10 +239,10 @@ class numpy_call_wrapper(abc.ABC):
 
     def _call_awkward(self, *args, **kwargs):
         """
-        The common routine of awkward_to_numpy conversion, numpy evaluation,
+        The common routine of prepare_awkward conversion, numpy evaluation,
         then numpy_to_awkward conversion.
         """
-        ak_args, ak_kwargs = self.awkward_to_numpy(*args, **kwargs)
+        ak_args, ak_kwargs = self.prepare_awkward(*args, **kwargs)
         np_args, np_kwargs = self._ak_to_np_(*ak_args, **ak_kwargs)
         np_rets = self._call_numpy(*np_args, **np_kwargs)
         np_rets = self._np_to_ak_.convert(np_rets)
@@ -253,7 +253,7 @@ class numpy_call_wrapper(abc.ABC):
         Wrapper required for dask awkward calls.
 
         Here we create a new callable class (_callable_wrap) that packs the
-        awkward_to_numpy/numpy_call/numpy_to_awkward call routines to be
+        prepare_awkward/numpy_call/numpy_to_awkward call routines to be
         passable to the dask_awkward.map_partition method.
 
         In addition, because map_partition by default expects the callable's
@@ -357,7 +357,7 @@ class numpy_call_wrapper(abc.ABC):
                     )
                 return out
 
-        dak_args, dak_kwargs = self.awkward_to_numpy(*args, **kwargs)
+        dak_args, dak_kwargs = self.prepare_awkward(*args, **kwargs)
         wrap = _callable_wrap((dak_args, dak_kwargs), self)
         arr = dask_awkward.lib.core.map_partitions(
             wrap,
