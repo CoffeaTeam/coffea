@@ -362,6 +362,107 @@ class ExecutorBase:
         return type(self)(**tmp)
 
 
+@dataclass
+class DaskExecutorBase(ExecutorBase):
+    """This base class for dak-based processors
+    synthesizes all analysis inputs into one
+    task graph that's then executed by derived
+    classes.
+    """
+
+    def prepare_dataset_graph(self, items, function, accumulator):
+        accumulator = None
+        for dset, info in items.items():
+            if isinstance(items, dict) and "object_path" not in list(items.values()):
+                raise ValueError(
+                    "items should be normalized to uproot spec in prepare_dataset_graph"
+                )
+
+            metadata = info["metadata"].copy()
+            metadata["dataset"] = dset
+
+            temp = function(info["files"], metadata=metadata)
+            if accumulator is None:
+                accumulator = temp
+            else:
+                accumulator = accumulate((accumulator, temp))
+
+        return accumulator
+
+
+@dataclass
+class DaskSyncExecutor(DaskExecutorBase):
+    """Execute dask task graph in one thread
+
+    Parameters
+    ----------
+        items : list
+            List of input arguments
+        function : callable
+            A function to be called on each input, which returns an accumulator instance
+        accumulator : Accumulatable
+            An accumulator to collect the output of the function
+        status : bool
+            If true (default), enable progress bar
+        unit : str
+            Label of progress bar unit
+        desc : str
+            Label of progress bar description
+        compression : int, optional
+            Ignored for iterative executor
+    """
+
+    def __call__(
+        self,
+        items: Iterable,
+        function: Callable,
+        accumulator: Accumulatable,
+    ):
+        import dask
+
+        to_compute = self.prepare_dataset_graph(items, function, None)
+        computed = dask.compute(to_compute, scheduler="sync")
+        return computed[0] if len(computed) == 1 else computed
+
+
+@dataclass
+class DaskProcessesExecutor(DaskExecutorBase):
+    """Execute dask task graph in a multiprocessing pool
+
+    Parameters
+    ----------
+        items : list
+            List of input arguments
+        function : callable
+            A function to be called on each input, which returns an accumulator instance
+        accumulator : Accumulatable
+            An accumulator to collect the output of the function
+        status : bool
+            If true (default), enable progress bar
+        unit : str
+            Label of progress bar unit
+        desc : str
+            Label of progress bar description
+        compression : int, optional
+            Ignored for iterative executor
+    """
+
+    workers = 1
+
+    def __call__(
+        self,
+        items: Iterable,
+        function: Callable,
+        accumulator: Accumulatable,
+    ):
+        import dask
+
+        to_compute = self.prepare_dataset_graph(items, function, None)
+        with dask.config.set(num_workers=self.workers):
+            computed = dask.compute(to_compute, scheduler="processes")
+        return computed[0] if len(computed) == 1 else computed
+
+
 def _watcher(
     FH: _FuturesHolder,
     executor: ExecutorBase,
@@ -1764,6 +1865,8 @@ class Runner:
             processor_instance : ProcessorABC
                 An instance of a class deriving from ProcessorABC
         """
+        if isinstance(self.executor, DaskExecutorBase):
+            return self.run_dask(fileset, processor_instance, treename)
 
         wrapped_out = self.run(fileset, processor_instance, treename)
         if self.use_dataframes:
@@ -1818,6 +1921,32 @@ class Runner:
             fileset.reverse()
 
         return self._chunk_generator(fileset, treename)
+
+    def run_dask(
+        self,
+        fileset: Union[Dict, str, List[WorkItem], Generator],
+        processor_instance: ProcessorABC,
+        treename: str = None,
+    ) -> Accumulatable:
+        """Run the processor_instance on a given fileset
+
+        Parameters
+        ----------
+            fileset : dict | str | List[WorkItem] | Generator
+                - A dictionary ``{dataset: [file, file], }``
+                  Optionally, if some files' tree name differ, the dictionary can be specified:
+                  ``{dataset: {'treename': 'name', 'files': [file, file]}, }``
+                - A single file name
+                - File chunks for self.preprocess()
+                - Chunk generator
+            treename : str, optional
+                name of tree inside each root file, can be ``None``;
+                treename can also be defined in fileset, which will override the passed treename
+                Not needed if processing premade chunks
+            processor_instance : ProcessorABC
+                An instance of a class deriving from ProcessorABC
+        """
+        pass
 
     def run(
         self,
