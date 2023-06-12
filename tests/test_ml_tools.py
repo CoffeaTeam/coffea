@@ -37,7 +37,9 @@ def prepare_jets_array(njets):
     return ak_jets, dak_jets
 
 
-def common_awkward_to_numpy(jets):
+def common_awkward_to_numpy(array_lib, jets):
+    ak = array_lib
+
     def my_pad(arr):
         return ak.fill_none(ak.pad_none(arr, 100, axis=1, clip=True), 0.0)
 
@@ -78,10 +80,11 @@ def test_triton():
 
     # Defining custom wrapper function with awkward padding requirements.
     class triton_wrapper_test(triton_wrapper):
-        def prepare_awkward_to_numpy(self, output_list, jets):
+        def awkward_to_numpy(self, output_list, jets):
+            ak = self.get_awkward_lib(jets)
             return [], {
                 "output_list": output_list,
-                "input_dict": common_awkward_to_numpy(jets),
+                "input_dict": common_awkward_to_numpy(ak, jets),
             }
 
     # Running the evaluation in lazy and non-lazy forms
@@ -123,8 +126,9 @@ def test_torch():
     client = Client()  # Spawn local cluster
 
     class torch_wrapper_test(torch_wrapper):
-        def prepare_awkward_to_numpy(self, jets):
-            default = common_awkward_to_numpy(jets)
+        def awkward_to_numpy(self, jets):
+            ak = self.get_awkward_lib(jets)
+            default = common_awkward_to_numpy(ak, jets)
             return [], {
                 "points": ak.values_astype(default["points"], np.float32),
                 "features": ak.values_astype(default["features"], np.float32),
@@ -162,18 +166,11 @@ def test_xgboost():
     feature_list = [f"feat{i}" for i in range(16)]
 
     class xgboost_test(xgboost_wrapper):
-        def prepare_awkward_to_numpy(self, events):
-            ret = np.column_stack(
-                [
-                    ak.typetracer.length_zero_if_typetracer(events[name])
-                    for name in feature_list
-                ]
+        def awkward_to_numpy(self, events):
+            ak = self.get_awkward_lib(events)
+            ret = ak.concatenate(
+                [events[name][:, np.newaxis] for name in feature_list], axis=1
             )
-            ret = ak.Array(ret, behavior=events.behavior)
-            if ak.backend(events) == "typetracer":
-                ret = ak.Array(
-                    ret.layout.to_typetracer(forget_length=True), behavior=ret.behavior
-                )
             return [], dict(data=ret)
 
     xgb_wrap = xgboost_test("tests/samples/xgboost_example.xgb")
