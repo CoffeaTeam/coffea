@@ -1239,6 +1239,7 @@ class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
             behavior=self.behavior,
         )
 
+
 @awkward.mixin_class(behavior)
 class PtThetaPhiELorentzVector(LorentzVector, SphericalThreeVector):
     """A Lorentz vector using theta and energy
@@ -1254,8 +1255,7 @@ class PtThetaPhiELorentzVector(LorentzVector, SphericalThreeVector):
 
     @property
     def theta(self):
-        r"""polar angle
-        """
+        r"""polar angle"""
         return self["theta"]
 
     @property
@@ -1269,7 +1269,7 @@ class PtThetaPhiELorentzVector(LorentzVector, SphericalThreeVector):
 
         :math:`-\ln\tan(\theta/2) = \text{arcsinh}(z/r)`
         """
-        return -numpy.log(numpy.tan(self["theta"]/2))
+        return -numpy.log(numpy.tan(self["theta"] / 2))
 
     @property
     def phi(self):

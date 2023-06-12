@@ -175,9 +175,15 @@ class EDM4HEPSchema(BaseSchema):
             elif objname == "MarlinTrkTracks":
                 form = zip_forms(
                     {
-                        "omega": branch_forms.pop(f"{objname}_{TRACKSTATE_XREF}/{objname}_{TRACKSTATE_XREF}.omega"),
-                        "phi": branch_forms.pop(f"{objname}_{TRACKSTATE_XREF}/{objname}_{TRACKSTATE_XREF}.phi"),
-                        "tanLambda": branch_forms.pop(f"{objname}_{TRACKSTATE_XREF}/{objname}_{TRACKSTATE_XREF}.tanLambda"),
+                        "omega": branch_forms.pop(
+                            f"{objname}_{TRACKSTATE_XREF}/{objname}_{TRACKSTATE_XREF}.omega"
+                        ),
+                        "phi": branch_forms.pop(
+                            f"{objname}_{TRACKSTATE_XREF}/{objname}_{TRACKSTATE_XREF}.phi"
+                        ),
+                        "tanLambda": branch_forms.pop(
+                            f"{objname}_{TRACKSTATE_XREF}/{objname}_{TRACKSTATE_XREF}.tanLambda"
+                        ),
                         "dEdx": branch_forms.pop(f"{objname}/{objname}.dEdx"),
                     },
                     objname,
