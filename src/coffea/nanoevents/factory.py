@@ -247,8 +247,8 @@ class NanoEventsFactory:
 
         Parameters
         ----------
-            file : str or uproot.reading.ReadOnlyDirectory
-                The filename or already opened file using e.g. ``uproot.open()``
+            file : str or list of str or uproot.reading.ReadOnlyDirectory
+                The filename or list of filenames or already opened file using e.g. ``uproot.open()``
             treepath : str, optional
                 Name of the tree to read in the file
             entry_start : int, optional
@@ -326,7 +326,7 @@ class NanoEventsFactory:
                     filter_branch=_remove_not_interpretable,
                     steps_per_file=chunks_per_file,
                 )
-            else:
+            elif isinstance(file, str):
                 opener = partial(
                     uproot.dask,
                     {file: treepath},
@@ -336,6 +336,18 @@ class NanoEventsFactory:
                     filter_branch=_remove_not_interpretable,
                     steps_per_file=chunks_per_file,
                 )
+            elif isinstance(file, list):
+                opener = partial(
+                    uproot.dask,
+                    {f: treepath for f in file},
+                    full_paths=True,
+                    open_files=False,
+                    ak_add_doc=True,
+                    filter_branch=_remove_not_interpretable,
+                    steps_per_file=chunks_per_file,
+                )
+            else:
+                raise TypeError(f"Invalid file type ({str(type(file))})")
             return cls(map_schema, opener, None, cache=None, is_dask=True)
         elif permit_dask and not schemaclass.__dask_capable__:
             warnings.warn(
@@ -344,6 +356,8 @@ class NanoEventsFactory:
 
         if isinstance(file, str):
             tree = uproot.open({file: None}, **uproot_options)[treepath]
+        elif isinstance(file, list):
+            tree = uproot.open({f: None for f in file}, **uproot_options)[treepath]
         elif isinstance(file, uproot.reading.ReadOnlyDirectory):
             tree = file[treepath]
         elif "<class 'uproot.rootio.ROOTDirectory'>" == str(type(file)):
