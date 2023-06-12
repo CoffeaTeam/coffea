@@ -326,39 +326,23 @@ class NanoEventsFactory:
                     filter_branch=_remove_not_interpretable,
                     steps_per_file=chunks_per_file,
                 )
-            elif isinstance(file, str):
-                opener = partial(
-                    uproot.dask,
-                    {file: treepath},
-                    full_paths=True,
-                    open_files=False,
-                    ak_add_doc=True,
-                    filter_branch=_remove_not_interpretable,
-                    steps_per_file=chunks_per_file,
-                )
-            elif isinstance(file, list):
-                opener = partial(
-                    uproot.dask,
-                    {f: treepath for f in file},
-                    full_paths=True,
-                    open_files=False,
-                    ak_add_doc=True,
-                    filter_branch=_remove_not_interpretable,
-                    steps_per_file=chunks_per_file,
-                )
             else:
-                raise TypeError(f"Invalid file type ({str(type(file))})")
+                opener = partial(
+                    uproot.dask,
+                    file,
+                    full_paths=True,
+                    open_files=False,
+                    ak_add_doc=True,
+                    filter_branch=_remove_not_interpretable,
+                    steps_per_file=chunks_per_file,
+                )
             return cls(map_schema, opener, None, cache=None, is_dask=True)
         elif permit_dask and not schemaclass.__dask_capable__:
             warnings.warn(
                 f"{schemaclass} is not dask capable despite allowing dask, generating non-dask nanoevents"
             )
 
-        if isinstance(file, str):
-            tree = uproot.open({file: None}, **uproot_options)[treepath]
-        elif isinstance(file, list):
-            tree = uproot.open({f: None for f in file}, **uproot_options)[treepath]
-        elif isinstance(file, uproot.reading.ReadOnlyDirectory):
+        if isinstance(file, uproot.reading.ReadOnlyDirectory):
             tree = file[treepath]
         elif "<class 'uproot.rootio.ROOTDirectory'>" == str(type(file)):
             raise RuntimeError(
@@ -366,7 +350,7 @@ class NanoEventsFactory:
                 % file
             )
         else:
-            raise TypeError("Invalid file type (%s)" % (str(type(file))))
+            tree = uproot.open(file, **uproot_options)
 
         if entry_start is None or entry_start < 0:
             entry_start = 0
