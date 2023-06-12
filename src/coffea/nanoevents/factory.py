@@ -323,7 +323,7 @@ class NanoEventsFactory:
 
             map_schema = _map_schema_uproot(
                 schemaclass=schemaclass,
-                behavior=behavior,
+                behavior=dict(behavior),
                 metadata=metadata,
                 version="latest",
             )
@@ -490,7 +490,7 @@ class NanoEventsFactory:
 
             map_schema = _map_schema_parquet(
                 schemaclass=schemaclass,
-                behavior=behavior,
+                behavior=dict(behavior),
                 metadata=metadata,
                 version="latest",
             )
@@ -692,7 +692,13 @@ class NanoEventsFactory:
         schema = schemaclass(base_form)
         if not isinstance(schema, BaseSchema):
             raise RuntimeError("Invalid schema type")
-        return cls(schema, mapping, tuple_to_key(partition_key), cache=runtime_cache)
+        return cls(
+            schema,
+            mapping,
+            tuple_to_key(partition_key),
+            cache=runtime_cache,
+            is_dask=False,
+        )
 
     def __len__(self):
         uuid, treepath, entryrange = key_to_tuple(self._partition_key)
@@ -703,9 +709,7 @@ class NanoEventsFactory:
         """Build events"""
         if self._is_dask:
             events = self._mapping(form_mapping=self._schema)
-            events.behavior[
-                "__original_array__"
-            ] = lambda: events  # weakref.ref(events)
+            events.behavior["__original_array__"] = lambda: events
             return events
 
         events = self._events()
