@@ -187,7 +187,7 @@ class numpy_call_wrapper(abc.ABC):
 
         Consult the following documentation to find the awkward operations
         needed.
-            https://awkward-array.org/doc/main/user-guide/how-to-restructure-pad.html        
+            https://awkward-array.org/doc/main/user-guide/how-to-restructure-pad.html
         """
         pass
 
