@@ -187,27 +187,7 @@ class numpy_call_wrapper(abc.ABC):
 
         Consult the following documentation to find the awkward operations
         needed.
-            https://awkward-array.org/doc/main/user-guide/how-to-restructure-pad.html
-
-        If you need to use numpy-only operations like np.column_stack, remember to use
-        awkward.typetracer.length_zero_if_typetracer(arg) before calling .to_numpy().
-        Furthermore you should convert back into a typetracer in these situations.
-        Otherwise, when running with dask_awkward, you will run into problems.
-
-        length_zero_if_typetracer and typetracer handling example:
-            def prepare_prepare_awkward(self, events):
-            ret = np.column_stack(
-                [
-                    ak.typetracer.length_zero_if_typetracer(events[name])
-                    for name in feature_list
-                ]
-            )
-            ret = ak.Array(ret, behavior=events.behavior)
-            if ak.backend(events) == "typetracer":
-                ret = ak.Array(
-                    ret.layout.to_typetracer(forget_length=True), behavior=ret.behavior
-                )
-            return [], dict(data=ret)
+            https://awkward-array.org/doc/main/user-guide/how-to-restructure-pad.html        
         """
         pass
 
