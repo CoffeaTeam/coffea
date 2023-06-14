@@ -9,7 +9,7 @@ from coffea.nanoevents import NanoEventsFactory, PFNanoAODSchema
 def events():
     path = os.path.abspath("tests/samples/pfnano.root")
     events = NanoEventsFactory.from_root(
-        path, schemaclass=PFNanoAODSchema, permit_dask=True
+        {path: "Events"}, schemaclass=PFNanoAODSchema, permit_dask=True
     ).events()
     return events
 
