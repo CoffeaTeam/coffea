@@ -1672,8 +1672,7 @@ class Runner:
                 if format == "root":
                     materialized = []
                     factory = NanoEventsFactory.from_root(
-                        file=file,
-                        treepath=item.treename,
+                        file={file: item.treename}
                         persistent_cache=cache_function(),
                         schemaclass=schema,
                         metadata=metadata,
