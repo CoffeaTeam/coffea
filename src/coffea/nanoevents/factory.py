@@ -247,10 +247,11 @@ class NanoEventsFactory:
 
         Parameters
         ----------
-            file : str or uproot.reading.ReadOnlyDirectory
-                The filename or already opened file using e.g. ``uproot.open()``
+            file : a string or dict input to ``uproot.open()`` or ``uproot.dask()`` or a ``uproot.reading.ReadOnlyDirectory``
+                The filename or dict of filenames including the treepath (as it would be passed directly to ``uproot.open()``
+                or ``uproot.dask()``) already opened file using e.g. ``uproot.open()``.
             treepath : str, optional
-                Name of the tree to read in the file
+                Name of the tree to read in the file. Used only if ``file`` is a ``uproot.reading.ReadOnlyDirectory``.
             entry_start : int, optional
                 Start at this entry offset in the tree (default 0)
             entry_stop : int, optional
@@ -329,7 +330,7 @@ class NanoEventsFactory:
             else:
                 opener = partial(
                     uproot.dask,
-                    {file: treepath},
+                    file,
                     full_paths=True,
                     open_files=False,
                     ak_add_doc=True,
@@ -342,9 +343,7 @@ class NanoEventsFactory:
                 f"{schemaclass} is not dask capable despite allowing dask, generating non-dask nanoevents"
             )
 
-        if isinstance(file, str):
-            tree = uproot.open({file: None}, **uproot_options)[treepath]
-        elif isinstance(file, uproot.reading.ReadOnlyDirectory):
+        if isinstance(file, uproot.reading.ReadOnlyDirectory):
             tree = file[treepath]
         elif "<class 'uproot.rootio.ROOTDirectory'>" == str(type(file)):
             raise RuntimeError(
@@ -352,7 +351,7 @@ class NanoEventsFactory:
                 % file
             )
         else:
-            raise TypeError("Invalid file type (%s)" % (str(type(file))))
+            tree = uproot.open(file, **uproot_options)
 
         if entry_start is None or entry_start < 0:
             entry_start = 0
