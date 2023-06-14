@@ -11,8 +11,7 @@ pytestmark = pytest.mark.skip(reason="uproot is upset with this file...")
 def _events():
     path = os.path.abspath("tests/samples/DAOD_PHYSLITE_21.2.108.0.art.pool.root")
     factory = NanoEventsFactory.from_root(
-        path,
-        treepath="CollectionTree",
+        {path: "CollectionTree"},
         schemaclass=PHYSLITESchema,
         permit_dask=False,
     )
