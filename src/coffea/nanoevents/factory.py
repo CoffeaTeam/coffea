@@ -247,11 +247,11 @@ class NanoEventsFactory:
 
         Parameters
         ----------
-            file : a string or dict input to ``uproot.open()`` or ``uproot.dask()`` or a  uproot.reading.ReadOnlyDirectory
+            file : a string or dict input to ``uproot.open()`` or ``uproot.dask()`` or a ``uproot.reading.ReadOnlyDirectory``
                 The filename or dict of filenames including the treepath (as it would be passed directly to ``uproot.open()``
                 or ``uproot.dask()``) already opened file using e.g. ``uproot.open()``.
             treepath : str, optional
-                Name of the tree to read in the file
+                Name of the tree to read in the file. Used only if ``file`` is a ``uproot.reading.ReadOnlyDirectory``.
             entry_start : int, optional
                 Start at this entry offset in the tree (default 0)
             entry_stop : int, optional
