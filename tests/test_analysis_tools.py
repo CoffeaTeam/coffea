@@ -737,7 +737,6 @@ def test_packed_selection_basic_dak():
         sel.add("dask_array", daskarray)
 
 
-@pytest.mark.xfail(reason="Issue #256 on dask awkward")
 def test_packed_selection_nminusone_dak():
     import dask
     import dask_awkward as dak
@@ -845,7 +844,6 @@ def test_packed_selection_nminusone_dak():
             assert np.all(counts == c)
 
 
-@pytest.mark.xfail(reason="Issue #256 on dask awkward")
 def test_packed_selection_cutflow_dak():
     import dask
     import dask_awkward as dak
@@ -973,15 +971,7 @@ def test_packed_selection_cutflow_dak():
             assert np.all(counts == c)
 
 
-@pytest.mark.parametrize(
-    "optimization_enabled",
-    [
-        False,
-        pytest.param(
-            True, marks=pytest.mark.xfail(reason="Issue #256 on dask awkward")
-        ),
-    ],
-)
+@pytest.mark.parametrize("optimization_enabled", [True, False])
 def test_packed_selection_nminusone_dak_uproot_only(optimization_enabled):
     import dask
     import dask_awkward as dak
@@ -1110,15 +1100,7 @@ def test_packed_selection_nminusone_dak_uproot_only(optimization_enabled):
                 assert np.all(counts == c)
 
 
-@pytest.mark.parametrize(
-    "optimization_enabled",
-    [
-        False,
-        pytest.param(
-            True, marks=pytest.mark.xfail(reason="Issue #256 on dask awkward")
-        ),
-    ],
-)
+@pytest.mark.parametrize("optimization_enabled", [True, False])
 def test_packed_selection_cutflow_dak_uproot_only(optimization_enabled):
     import dask
     import dask_awkward as dak
