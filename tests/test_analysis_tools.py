@@ -9,12 +9,15 @@ from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 
 fname = "tests/samples/nano_dy.root"
 eagerevents = NanoEventsFactory.from_root(
-    fname,
+    {os.path.abspath(fname): "Events"},
     schemaclass=NanoAODSchema.v6,
     metadata={"dataset": "DYJets"},
 ).events()
 dakevents = NanoEventsFactory.from_root(
-    fname, schemaclass=NanoAODSchema, metadata={"dataset": "DYJets"}, permit_dask=True
+    {os.path.abspath(fname): "Events"},
+    schemaclass=NanoAODSchema,
+    metadata={"dataset": "DYJets"},
+    permit_dask=True,
 ).events()
 uprootevents = uproot.dask({fname: "Events"})
 
@@ -654,8 +657,10 @@ def test_packed_selection_cutflow():
             assert np.all(counts == c)
 
 
-def test_packed_selection_basic_dak():
+@pytest.mark.parametrize("optimization_enabled", [True, False])
+def test_packed_selection_basic_dak(optimization_enabled):
     import awkward as ak
+    import dask
     import dask.array as da
     import dask_awkward as dak
 
@@ -663,81 +668,89 @@ def test_packed_selection_basic_dak():
 
     sel = PackedSelection()
 
-    shape = (10,)
-    all_true = dak.from_awkward(
-        ak.Array(np.full(shape=shape, fill_value=True, dtype=bool)), 1
-    )
-    all_false = dak.from_awkward(
-        ak.Array(np.full(shape=shape, fill_value=False, dtype=bool)), 1
-    )
-    fizz = dak.from_awkward(ak.Array(np.arange(shape[0]) % 3 == 0), 1)
-    buzz = dak.from_awkward(ak.Array(np.arange(shape[0]) % 5 == 0), 1)
-    ones = dak.from_awkward(ak.Array(np.ones(shape=shape, dtype=np.uint64)), 1)
-    wrong_shape = dak.from_awkward(
-        ak.Array(np.ones(shape=(shape[0] - 5,), dtype=bool)), 1
-    )
-    wrong_type = np.arange(shape[0]) % 3 == 0
-    daskarray = da.arange(shape[0]) % 3 == 0
-
-    assert (
-        sel.delayed_mode
-        == "PackedSelection hasn't been initialized with a boolean array yet!"
-    )
-
-    sel.add_multiple(
-        {"all_true": all_true, "all_false": all_false, "fizz": fizz, "buzz": buzz}
-    )
-
-    assert sel.delayed_mode is True
-    with pytest.raises(
-        ValueError,
-        match="New selection 'wrong_type' is not delayed while PackedSelection is!",
-    ):
-        sel.add("wrong_type", wrong_type)
-
-    assert np.all(
-        sel.require(all_true=True, all_false=False).compute() == all_true.compute()
-    )
-    # allow truthy values
-    assert np.all(sel.require(all_true=1, all_false=0).compute() == all_true.compute())
-    assert np.all(sel.all("all_true", "all_false").compute() == all_false.compute())
-    assert np.all(sel.any("all_true", "all_false").compute() == all_true.compute())
-    assert np.all(
-        sel.all("fizz", "buzz").compute()
-        == np.array(
-            [True, False, False, False, False, False, False, False, False, False]
+    with dask.config.set({"awkward.optimization.enabled": optimization_enabled}):
+        shape = (10,)
+        all_true = dak.from_awkward(
+            ak.Array(np.full(shape=shape, fill_value=True, dtype=bool)), 1
         )
-    )
-    assert np.all(
-        sel.any("fizz", "buzz").compute()
-        == np.array([True, False, False, True, False, True, True, False, False, True])
-    )
+        all_false = dak.from_awkward(
+            ak.Array(np.full(shape=shape, fill_value=False, dtype=bool)), 1
+        )
+        fizz = dak.from_awkward(ak.Array(np.arange(shape[0]) % 3 == 0), 1)
+        buzz = dak.from_awkward(ak.Array(np.arange(shape[0]) % 5 == 0), 1)
+        ones = dak.from_awkward(ak.Array(np.ones(shape=shape, dtype=np.uint64)), 1)
+        wrong_shape = dak.from_awkward(
+            ak.Array(np.ones(shape=(shape[0] - 5,), dtype=bool)), 1
+        )
+        wrong_type = np.arange(shape[0]) % 3 == 0
+        daskarray = da.arange(shape[0]) % 3 == 0
 
-    with pytest.raises(
-        ValueError,
-        match="New selection 'wrong_shape' has a different partition structure than existing selections",
-    ):
-        sel.add("wrong_shape", wrong_shape)
+        assert (
+            sel.delayed_mode
+            == "PackedSelection hasn't been initialized with a boolean array yet!"
+        )
 
-    with pytest.raises(ValueError, match="Expected a boolean array, received uint64"):
-        sel.add("ones", ones)
+        sel.add_multiple(
+            {"all_true": all_true, "all_false": all_false, "fizz": fizz, "buzz": buzz}
+        )
 
-    with pytest.raises(
-        RuntimeError,
-        match="Exhausted all slots in this PackedSelection, consider a larger dtype or fewer selections",
-    ):
-        overpack = PackedSelection()
-        for i in range(65):
-            overpack.add("sel_%d", all_true)
+        assert sel.delayed_mode is True
+        with pytest.raises(
+            ValueError,
+            match="New selection 'wrong_type' is not delayed while PackedSelection is!",
+        ):
+            sel.add("wrong_type", wrong_type)
 
-    with pytest.raises(
-        ValueError,
-        match="Dask arrays are not supported, please convert them to dask_awkward.Array by using dask_awkward.from_dask_array()",
-    ):
-        sel.add("dask_array", daskarray)
+        assert np.all(
+            sel.require(all_true=True, all_false=False).compute() == all_true.compute()
+        )
+        # allow truthy values
+        assert np.all(
+            sel.require(all_true=1, all_false=0).compute() == all_true.compute()
+        )
+        assert np.all(sel.all("all_true", "all_false").compute() == all_false.compute())
+        assert np.all(sel.any("all_true", "all_false").compute() == all_true.compute())
+        assert np.all(
+            sel.all("fizz", "buzz").compute()
+            == np.array(
+                [True, False, False, False, False, False, False, False, False, False]
+            )
+        )
+        assert np.all(
+            sel.any("fizz", "buzz").compute()
+            == np.array(
+                [True, False, False, True, False, True, True, False, False, True]
+            )
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="New selection 'wrong_shape' has a different partition structure than existing selections",
+        ):
+            sel.add("wrong_shape", wrong_shape)
+
+        with pytest.raises(
+            ValueError, match="Expected a boolean array, received uint64"
+        ):
+            sel.add("ones", ones)
+
+        with pytest.raises(
+            RuntimeError,
+            match="Exhausted all slots in this PackedSelection, consider a larger dtype or fewer selections",
+        ):
+            overpack = PackedSelection()
+            for i in range(65):
+                overpack.add("sel_%d", all_true)
+
+        with pytest.raises(
+            ValueError,
+            match="Dask arrays are not supported, please convert them to dask_awkward.Array by using dask_awkward.from_dask_array()",
+        ):
+            sel.add("dask_array", daskarray)
 
 
-def test_packed_selection_nminusone_dak():
+@pytest.mark.parametrize("optimization_enabled", [True, False])
+def test_packed_selection_nminusone_dak(optimization_enabled):
     import dask
     import dask_awkward as dak
 
@@ -747,104 +760,126 @@ def test_packed_selection_nminusone_dak():
 
     selection = PackedSelection()
 
-    twoelectron = dak.num(events.Electron) == 2
-    nomuon = dak.num(events.Muon) == 0
-    leadpt20 = dak.any(events.Electron.pt >= 20.0, axis=1) | dak.any(
-        events.Muon.pt >= 20.0, axis=1
-    )
-
-    selection.add_multiple(
-        {
-            "twoElectron": twoelectron,
-            "noMuon": nomuon,
-            "leadPt20": leadpt20,
-        }
-    )
-
-    assert selection.names == ["twoElectron", "noMuon", "leadPt20"]
-
-    with pytest.raises(
-        ValueError,
-        match="All arguments must be strings that refer to the names of existing selections",
-    ):
-        selection.nminusone("twoElectron", "nonexistent")
-    nminusone = selection.nminusone("twoElectron", "noMuon", "leadPt20")
-
-    labels, nev, masks = nminusone.result()
-
-    assert labels == ["initial", "N - twoElectron", "N - noMuon", "N - leadPt20", "N"]
-
-    assert list(dask.compute(*nev)) == [
-        len(events),
-        len(events[nomuon & leadpt20]),
-        len(events[twoelectron & leadpt20]),
-        len(events[twoelectron & nomuon]),
-        len(events[twoelectron & nomuon & leadpt20]),
-    ]
-
-    for mask, truth in zip(
-        masks,
-        [
-            nomuon & leadpt20,
-            twoelectron & leadpt20,
-            twoelectron & nomuon,
-            twoelectron & nomuon & leadpt20,
-        ],
-    ):
-        assert np.all(mask.compute() == truth.compute())
-
-    nminusone.to_npz("nminusone.npz", compressed=False)
-    with np.load("nminusone.npz") as file:
-        assert np.all(file["labels"] == labels)
-        assert np.all(file["nev"] == list(dask.compute(*nev)))
-        assert np.all(file["masks"] == list(dask.compute(*masks)))
-    os.remove("nminusone.npz")
-
-    nminusone.to_npz("nminusone.npz", compressed=True)
-    with np.load("nminusone.npz") as file:
-        assert np.all(file["labels"] == labels)
-        assert np.all(file["nev"] == list(dask.compute(*nev)))
-        assert np.all(file["masks"] == list(dask.compute(*masks)))
-    os.remove("nminusone.npz")
-
-    h, hlabels = dask.compute(*nminusone.yieldhist())
-
-    assert hlabels == ["initial", "N - twoElectron", "N - noMuon", "N - leadPt20", "N"]
-
-    assert np.all(h.axes["N-1"].edges == np.arange(0, 6))
-
-    assert np.all(h.counts() == list(dask.compute(*nev)))
-
-    with pytest.raises(
-        ValueError,
-        match="The variable 'Ephi' has length '20', but the masks have length '40'",
-    ):
-        nminusone.plot_vars(
-            {"Ept": events.Electron.pt, "Ephi": events.Electron.phi[:20]}
+    with dask.config.set({"awkward.optimization.enabled": optimization_enabled}):
+        twoelectron = dak.num(events.Electron) == 2
+        nomuon = dak.num(events.Muon) == 0
+        leadpt20 = dak.any(events.Electron.pt >= 20.0, axis=1) | dak.any(
+            events.Muon.pt >= 20.0, axis=1
         )
-    hs, hslabels = dask.compute(
-        *nminusone.plot_vars({"Ept": events.Electron.pt, "Ephi": events.Electron.phi})
-    )
 
-    assert hslabels == ["initial", "N - twoElectron", "N - noMuon", "N - leadPt20", "N"]
+        selection.add_multiple(
+            {
+                "twoElectron": twoelectron,
+                "noMuon": nomuon,
+                "leadPt20": leadpt20,
+            }
+        )
 
-    for h, array in zip(hs, [events.Electron.pt, events.Electron.phi]):
-        edges = h.axes[0].edges
-        for i, truth in enumerate(
-            [
-                np.ones(40, dtype=bool),
-                nomuon.compute() & leadpt20.compute(),
-                twoelectron.compute() & leadpt20.compute(),
-                twoelectron.compute() & nomuon.compute(),
-                twoelectron.compute() & nomuon.compute() & leadpt20.compute(),
-            ]
+        assert selection.names == ["twoElectron", "noMuon", "leadPt20"]
+
+        with pytest.raises(
+            ValueError,
+            match="All arguments must be strings that refer to the names of existing selections",
         ):
-            counts = h[:, i].counts()
-            c, e = np.histogram(dak.flatten(array[truth]).compute(), bins=edges)
-            assert np.all(counts == c)
+            selection.nminusone("twoElectron", "nonexistent")
+        nminusone = selection.nminusone("twoElectron", "noMuon", "leadPt20")
+
+        labels, nev, masks = nminusone.result()
+
+        assert labels == [
+            "initial",
+            "N - twoElectron",
+            "N - noMuon",
+            "N - leadPt20",
+            "N",
+        ]
+
+        assert list(dask.compute(*nev)) == [
+            len(events),
+            len(events[nomuon & leadpt20]),
+            len(events[twoelectron & leadpt20]),
+            len(events[twoelectron & nomuon]),
+            len(events[twoelectron & nomuon & leadpt20]),
+        ]
+
+        for mask, truth in zip(
+            masks,
+            [
+                nomuon & leadpt20,
+                twoelectron & leadpt20,
+                twoelectron & nomuon,
+                twoelectron & nomuon & leadpt20,
+            ],
+        ):
+            assert np.all(mask.compute() == truth.compute())
+
+        nminusone.to_npz("nminusone.npz", compressed=False)
+        with np.load("nminusone.npz") as file:
+            assert np.all(file["labels"] == labels)
+            assert np.all(file["nev"] == list(dask.compute(*nev)))
+            assert np.all(file["masks"] == list(dask.compute(*masks)))
+        os.remove("nminusone.npz")
+
+        nminusone.to_npz("nminusone.npz", compressed=True)
+        with np.load("nminusone.npz") as file:
+            assert np.all(file["labels"] == labels)
+            assert np.all(file["nev"] == list(dask.compute(*nev)))
+            assert np.all(file["masks"] == list(dask.compute(*masks)))
+        os.remove("nminusone.npz")
+
+        h, hlabels = dask.compute(*nminusone.yieldhist())
+
+        assert hlabels == [
+            "initial",
+            "N - twoElectron",
+            "N - noMuon",
+            "N - leadPt20",
+            "N",
+        ]
+
+        assert np.all(h.axes["N-1"].edges == np.arange(0, 6))
+
+        assert np.all(h.counts() == list(dask.compute(*nev)))
+
+        with pytest.raises(
+            ValueError,
+            match="The variable 'Ephi' has length '20', but the masks have length '40'",
+        ):
+            nminusone.plot_vars(
+                {"Ept": events.Electron.pt, "Ephi": events.Electron.phi[:20]}
+            )
+        hs, hslabels = dask.compute(
+            *nminusone.plot_vars(
+                {"Ept": events.Electron.pt, "Ephi": events.Electron.phi}
+            )
+        )
+
+        assert hslabels == [
+            "initial",
+            "N - twoElectron",
+            "N - noMuon",
+            "N - leadPt20",
+            "N",
+        ]
+
+        for h, array in zip(hs, [events.Electron.pt, events.Electron.phi]):
+            edges = h.axes[0].edges
+            for i, truth in enumerate(
+                [
+                    np.ones(40, dtype=bool),
+                    nomuon.compute() & leadpt20.compute(),
+                    twoelectron.compute() & leadpt20.compute(),
+                    twoelectron.compute() & nomuon.compute(),
+                    twoelectron.compute() & nomuon.compute() & leadpt20.compute(),
+                ]
+            ):
+                counts = h[:, i].counts()
+                c, e = np.histogram(dak.flatten(array[truth]).compute(), bins=edges)
+                assert np.all(counts == c)
 
 
-def test_packed_selection_cutflow_dak():
+@pytest.mark.parametrize("optimization_enabled", [True, False])
+def test_packed_selection_cutflow_dak(optimization_enabled):
     import dask
     import dask_awkward as dak
 
@@ -853,122 +888,125 @@ def test_packed_selection_cutflow_dak():
     events = dakevents
 
     selection = PackedSelection()
+    with dask.config.set({"awkward.optimization.enabled": optimization_enabled}):
+        twoelectron = dak.num(events.Electron) == 2
+        nomuon = dak.num(events.Muon) == 0
+        leadpt20 = dak.any(events.Electron.pt >= 20.0, axis=1) | dak.any(
+            events.Muon.pt >= 20.0, axis=1
+        )
 
-    twoelectron = dak.num(events.Electron) == 2
-    nomuon = dak.num(events.Muon) == 0
-    leadpt20 = dak.any(events.Electron.pt >= 20.0, axis=1) | dak.any(
-        events.Muon.pt >= 20.0, axis=1
-    )
+        selection.add_multiple(
+            {
+                "twoElectron": twoelectron,
+                "noMuon": nomuon,
+                "leadPt20": leadpt20,
+            }
+        )
 
-    selection.add_multiple(
-        {
-            "twoElectron": twoelectron,
-            "noMuon": nomuon,
-            "leadPt20": leadpt20,
-        }
-    )
+        assert selection.names == ["twoElectron", "noMuon", "leadPt20"]
 
-    assert selection.names == ["twoElectron", "noMuon", "leadPt20"]
-
-    with pytest.raises(
-        ValueError,
-        match="All arguments must be strings that refer to the names of existing selections",
-    ):
-        selection.cutflow("twoElectron", "nonexistent")
-    cutflow = selection.cutflow("noMuon", "twoElectron", "leadPt20")
-
-    labels, nevonecut, nevcutflow, masksonecut, maskscutflow = cutflow.result()
-
-    assert labels == ["initial", "noMuon", "twoElectron", "leadPt20"]
-
-    assert list(dask.compute(*nevonecut)) == [
-        len(events),
-        len(events[nomuon]),
-        len(events[twoelectron]),
-        len(events[leadpt20]),
-    ]
-
-    assert list(dask.compute(*nevcutflow)) == [
-        len(events),
-        len(events[nomuon]),
-        len(events[nomuon & twoelectron]),
-        len(events[nomuon & twoelectron & leadpt20]),
-    ]
-
-    for mask, truth in zip(masksonecut, [nomuon, twoelectron, leadpt20]):
-        assert np.all(mask.compute() == truth.compute())
-
-    for mask, truth in zip(
-        maskscutflow, [nomuon, nomuon & twoelectron, nomuon & twoelectron & leadpt20]
-    ):
-        assert np.all(mask.compute() == truth.compute())
-
-    cutflow.to_npz("cutflow.npz", compressed=False)
-    with np.load("cutflow.npz") as file:
-        assert np.all(file["labels"] == labels)
-        assert np.all(file["nevonecut"] == list(dask.compute(*nevonecut)))
-        assert np.all(file["nevcutflow"] == list(dask.compute(*nevcutflow)))
-        assert np.all(file["masksonecut"] == list(dask.compute(*masksonecut)))
-        assert np.all(file["maskscutflow"] == list(dask.compute(*maskscutflow)))
-    os.remove("cutflow.npz")
-
-    cutflow.to_npz("cutflow.npz", compressed=True)
-    with np.load("cutflow.npz") as file:
-        assert np.all(file["labels"] == labels)
-        assert np.all(file["nevonecut"] == list(dask.compute(*nevonecut)))
-        assert np.all(file["nevcutflow"] == list(dask.compute(*nevcutflow)))
-        assert np.all(file["masksonecut"] == list(dask.compute(*masksonecut)))
-        assert np.all(file["maskscutflow"] == list(dask.compute(*maskscutflow)))
-    os.remove("cutflow.npz")
-
-    honecut, hcutflow, hlabels = dask.compute(*cutflow.yieldhist())
-
-    assert hlabels == ["initial", "noMuon", "twoElectron", "leadPt20"]
-
-    assert np.all(honecut.axes["onecut"].edges == np.arange(0, 5))
-    assert np.all(hcutflow.axes["cutflow"].edges == np.arange(0, 5))
-
-    assert np.all(honecut.counts() == list(dask.compute(*nevonecut)))
-    assert np.all(hcutflow.counts() == list(dask.compute(*nevcutflow)))
-
-    with pytest.raises(
-        ValueError,
-        match="The variable 'Ephi' has length '20', but the masks have length '40'",
-    ):
-        cutflow.plot_vars({"Ept": events.Electron.pt, "Ephi": events.Electron.phi[:20]})
-    honecuts, hcutflows, hslabels = dask.compute(
-        *cutflow.plot_vars({"ept": events.Electron.pt, "ephi": events.Electron.phi})
-    )
-
-    assert hslabels == ["initial", "noMuon", "twoElectron", "leadPt20"]
-
-    for h, array in zip(honecuts, [events.Electron.pt, events.Electron.phi]):
-        edges = h.axes[0].edges
-        for i, truth in enumerate(
-            [
-                np.ones(40, dtype=bool),
-                nomuon.compute(),
-                twoelectron.compute(),
-                leadpt20.compute(),
-            ]
+        with pytest.raises(
+            ValueError,
+            match="All arguments must be strings that refer to the names of existing selections",
         ):
-            counts = h[:, i].counts()
-            c, e = np.histogram(dak.flatten(array[truth]).compute(), bins=edges)
-            assert np.all(counts == c)
+            selection.cutflow("twoElectron", "nonexistent")
+        cutflow = selection.cutflow("noMuon", "twoElectron", "leadPt20")
 
-    for h, array in zip(hcutflows, [events.Electron.pt, events.Electron.phi]):
-        edges = h.axes[0].edges
-        for i, truth in enumerate(
-            [
-                np.ones(40, dtype=bool),
-                nomuon.compute(),
-                (nomuon & twoelectron).compute(),
-                (nomuon & twoelectron & leadpt20).compute(),
-            ]
+        labels, nevonecut, nevcutflow, masksonecut, maskscutflow = cutflow.result()
+
+        assert labels == ["initial", "noMuon", "twoElectron", "leadPt20"]
+
+        assert list(dask.compute(*nevonecut)) == [
+            len(events),
+            len(events[nomuon]),
+            len(events[twoelectron]),
+            len(events[leadpt20]),
+        ]
+
+        assert list(dask.compute(*nevcutflow)) == [
+            len(events),
+            len(events[nomuon]),
+            len(events[nomuon & twoelectron]),
+            len(events[nomuon & twoelectron & leadpt20]),
+        ]
+
+        for mask, truth in zip(masksonecut, [nomuon, twoelectron, leadpt20]):
+            assert np.all(mask.compute() == truth.compute())
+
+        for mask, truth in zip(
+            maskscutflow,
+            [nomuon, nomuon & twoelectron, nomuon & twoelectron & leadpt20],
         ):
-            counts = h[:, i].counts()
-            c, e = np.histogram(dak.flatten(array[truth]).compute(), bins=edges)
-            assert np.all(counts == c)
+            assert np.all(mask.compute() == truth.compute())
+
+        cutflow.to_npz("cutflow.npz", compressed=False)
+        with np.load("cutflow.npz") as file:
+            assert np.all(file["labels"] == labels)
+            assert np.all(file["nevonecut"] == list(dask.compute(*nevonecut)))
+            assert np.all(file["nevcutflow"] == list(dask.compute(*nevcutflow)))
+            assert np.all(file["masksonecut"] == list(dask.compute(*masksonecut)))
+            assert np.all(file["maskscutflow"] == list(dask.compute(*maskscutflow)))
+        os.remove("cutflow.npz")
+
+        cutflow.to_npz("cutflow.npz", compressed=True)
+        with np.load("cutflow.npz") as file:
+            assert np.all(file["labels"] == labels)
+            assert np.all(file["nevonecut"] == list(dask.compute(*nevonecut)))
+            assert np.all(file["nevcutflow"] == list(dask.compute(*nevcutflow)))
+            assert np.all(file["masksonecut"] == list(dask.compute(*masksonecut)))
+            assert np.all(file["maskscutflow"] == list(dask.compute(*maskscutflow)))
+        os.remove("cutflow.npz")
+
+        honecut, hcutflow, hlabels = dask.compute(*cutflow.yieldhist())
+
+        assert hlabels == ["initial", "noMuon", "twoElectron", "leadPt20"]
+
+        assert np.all(honecut.axes["onecut"].edges == np.arange(0, 5))
+        assert np.all(hcutflow.axes["cutflow"].edges == np.arange(0, 5))
+
+        assert np.all(honecut.counts() == list(dask.compute(*nevonecut)))
+        assert np.all(hcutflow.counts() == list(dask.compute(*nevcutflow)))
+
+        with pytest.raises(
+            ValueError,
+            match="The variable 'Ephi' has length '20', but the masks have length '40'",
+        ):
+            cutflow.plot_vars(
+                {"Ept": events.Electron.pt, "Ephi": events.Electron.phi[:20]}
+            )
+        honecuts, hcutflows, hslabels = dask.compute(
+            *cutflow.plot_vars({"ept": events.Electron.pt, "ephi": events.Electron.phi})
+        )
+
+        assert hslabels == ["initial", "noMuon", "twoElectron", "leadPt20"]
+
+        for h, array in zip(honecuts, [events.Electron.pt, events.Electron.phi]):
+            edges = h.axes[0].edges
+            for i, truth in enumerate(
+                [
+                    np.ones(40, dtype=bool),
+                    nomuon.compute(),
+                    twoelectron.compute(),
+                    leadpt20.compute(),
+                ]
+            ):
+                counts = h[:, i].counts()
+                c, e = np.histogram(dak.flatten(array[truth]).compute(), bins=edges)
+                assert np.all(counts == c)
+
+        for h, array in zip(hcutflows, [events.Electron.pt, events.Electron.phi]):
+            edges = h.axes[0].edges
+            for i, truth in enumerate(
+                [
+                    np.ones(40, dtype=bool),
+                    nomuon.compute(),
+                    (nomuon & twoelectron).compute(),
+                    (nomuon & twoelectron & leadpt20).compute(),
+                ]
+            ):
+                counts = h[:, i].counts()
+                c, e = np.histogram(dak.flatten(array[truth]).compute(), bins=edges)
+                assert np.all(counts == c)
 
 
 @pytest.mark.parametrize("optimization_enabled", [True, False])
