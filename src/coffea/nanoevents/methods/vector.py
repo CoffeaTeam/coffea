@@ -510,6 +510,11 @@ class LorentzVector(ThreeVector):
     def energy(self):
         """Alias for `t`"""
         return self.t
+    
+    @property
+    def E(self):
+        """Alias for `t`"""
+        return self.t
 
     @property
     def eta(self):
@@ -772,6 +777,11 @@ class LorentzVectorM(ThreeVector):
 
     @property
     def energy(self):
+        """Alias for `t`"""
+        return self.t
+    
+    @property
+    def E(self):
         """Alias for `t`"""
         return self.t
 
