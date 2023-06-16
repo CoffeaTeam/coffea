@@ -107,3 +107,19 @@ class ParticleLink:
         )
 
         return proper_indices
+    
+    @property
+    def debug_index_shaping(self):
+        """
+        function acting as a canned reproducer of the source of the problem in the above function
+        **just for debugging purposes**
+        """
+        arr_reco = self.reco_index
+        arr_mc = self.mc_index
+
+        sorted_reco = arr_reco[awkward.argsort(arr_reco)]
+        sorted_mc = arr_mc[awkward.argsort(arr_reco)]
+
+        print(sorted_reco,sorted_mc)
+
+        return sorted_reco # only return one due to type contraints
