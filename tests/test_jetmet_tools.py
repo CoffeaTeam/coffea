@@ -673,8 +673,7 @@ def test_corrected_jets_factory():
     from coffea.nanoevents import NanoEventsFactory
 
     events = NanoEventsFactory.from_root(
-        os.path.abspath("tests/samples/nano_dy.root"),
-        treepath="Events",
+        {os.path.abspath("tests/samples/nano_dy.root"): "Events"},
         metadata={},
         permit_dask=True,
     ).events()
