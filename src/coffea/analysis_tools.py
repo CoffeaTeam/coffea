@@ -1099,8 +1099,20 @@ class PackedSelection:
         return (self._data & consider) == require
 
     def all(self, *names):
-        """Shorthand for `require`, where all the values are True"""
-        return self.require(**{name: True for name in names})
+        """Shorthand for `require`, where all the values are True.
+        If no arguments are given, all the added selections are required to be True.
+        """
+        if names:
+            return self.require(**{name: True for name in names})
+        return self.require(**{name: True for name in self._names})
+
+    def allfalse(self, *names):
+        """Shorthand for `require`, where all the values are False.
+        If no arguments are given, all the added selections are required to be False.
+        """
+        if names:
+            return self.require(**{name: False for name in names})
+        return self.require(**{name: False for name in self._names})
 
     def any(self, *names):
         """Return a mask vector corresponding to an inclusive OR of requirements
@@ -1154,7 +1166,7 @@ class PackedSelection:
                 A wrapper class for the results, see the documentation for that class for more details
         """
         for cut in names:
-            if not isinstance(cut, str) or cut not in self.names:
+            if not isinstance(cut, str) or cut not in self._names:
                 raise ValueError(
                     "All arguments must be strings that refer to the names of existing selections"
                 )
@@ -1202,7 +1214,7 @@ class PackedSelection:
                 A wrapper class for the results, see the documentation for that class for more details
         """
         for cut in names:
-            if not isinstance(cut, str) or cut not in self.names:
+            if not isinstance(cut, str) or cut not in self._names:
                 raise ValueError(
                     "All arguments must be strings that refer to the names of existing selections"
                 )

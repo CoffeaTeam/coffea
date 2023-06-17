@@ -392,9 +392,21 @@ def test_packed_selection_basic():
         == "PackedSelection hasn't been initialized with a boolean array yet!"
     )
 
-    sel.add_multiple(
-        {"all_true": all_true, "all_false": all_false, "fizz": fizz, "buzz": buzz}
+    sel.add("fizz", fizz)
+    sel.add("buzz", buzz)
+
+    assert np.all(
+        sel.all()
+        == np.array(
+            [True, False, False, False, False, False, False, False, False, False]
+        )
     )
+    assert np.all(
+        sel.allfalse()
+        == np.array([False, True, True, False, True, False, False, True, True, False])
+    )
+
+    sel.add_multiple({"all_true": all_true, "all_false": all_false})
 
     assert sel.delayed_mode is False
     with pytest.raises(
@@ -413,6 +425,10 @@ def test_packed_selection_basic():
         == np.array(
             [True, False, False, False, False, False, False, False, False, False]
         )
+    )
+    assert np.all(
+        sel.allfalse("fizz", "buzz")
+        == np.array([False, True, True, False, True, False, False, True, True, False])
     )
     assert np.all(
         sel.any("fizz", "buzz")
@@ -703,9 +719,23 @@ def test_packed_selection_basic_dak(optimization_enabled):
             == "PackedSelection hasn't been initialized with a boolean array yet!"
         )
 
-        sel.add_multiple(
-            {"all_true": all_true, "all_false": all_false, "fizz": fizz, "buzz": buzz}
+        sel.add("fizz", fizz)
+        sel.add("buzz", buzz)
+
+        assert np.all(
+            sel.all().compute()
+            == np.array(
+                [True, False, False, False, False, False, False, False, False, False]
+            )
         )
+        assert np.all(
+            sel.allfalse().compute()
+            == np.array(
+                [False, True, True, False, True, False, False, True, True, False]
+            )
+        )
+
+        sel.add_multiple({"all_true": all_true, "all_false": all_false})
 
         assert sel.delayed_mode is True
         with pytest.raises(
@@ -727,6 +757,12 @@ def test_packed_selection_basic_dak(optimization_enabled):
             sel.all("fizz", "buzz").compute()
             == np.array(
                 [True, False, False, False, False, False, False, False, False, False]
+            )
+        )
+        assert np.all(
+            sel.allfalse("fizz", "buzz").compute()
+            == np.array(
+                [False, True, True, False, True, False, False, True, True, False]
             )
         )
         assert np.all(
