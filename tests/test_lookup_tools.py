@@ -1,6 +1,7 @@
 import os
 
 import awkward as ak
+import dask
 import dask_awkward as dak
 import pytest
 from dummy_distributions import dummy_jagged_eta_pt
@@ -142,97 +143,103 @@ def test_evaluate_noimpl():
         pass
 
 
-def test_correctionlib():
-    extractor = lookup_tools.extractor()
-    extractor.add_weight_sets(["* * tests/samples/testSF2d.corr.json.gz"])
+@pytest.mark.parametrize("optimization_enabled", [True, False])
+def test_correctionlib(optimization_enabled):
+    with dask.config.set({"awkward.optimization.enabled": optimization_enabled}):
+        extractor = lookup_tools.extractor()
+        extractor.add_weight_sets(["* * tests/samples/testSF2d.corr.json.gz"])
 
-    extractor.finalize()
+        extractor.finalize()
 
-    evaluator = extractor.make_evaluator()
+        evaluator = extractor.make_evaluator()
 
-    counts, test_eta, test_pt = dummy_jagged_eta_pt()
+        counts, test_eta, test_pt = dummy_jagged_eta_pt()
 
-    test_out = evaluator["scalefactors_Tight_Electron"](test_eta, test_pt)
+        test_out = evaluator["scalefactors_Tight_Electron"](test_eta, test_pt)
 
-    # print it
-    print(evaluator["scalefactors_Tight_Electron"])
+        # print it
+        print(evaluator["scalefactors_Tight_Electron"])
 
-    # test structured eval
-    test_eta_jagged = ak.unflatten(test_eta, counts)
-    test_pt_jagged = ak.unflatten(test_pt, counts)
-    test_out_jagged = evaluator["scalefactors_Tight_Electron"](
-        test_eta_jagged, test_pt_jagged
-    )
+        # test structured eval
+        test_eta_jagged = ak.unflatten(test_eta, counts)
+        test_pt_jagged = ak.unflatten(test_pt, counts)
+        test_out_jagged = evaluator["scalefactors_Tight_Electron"](
+            test_eta_jagged, test_pt_jagged
+        )
 
-    # test lazy eval
-    test_eta_dak = dak.from_awkward(test_eta_jagged, 1)
-    test_pt_dak = dak.from_awkward(test_pt_jagged, 1)
-    test_out_dak = evaluator["scalefactors_Tight_Electron"](
-        test_eta_dak, test_pt_dak, dask_label="scalefactors_Tight_Electron"
-    )
+        # test lazy eval
+        test_eta_dak = dak.from_awkward(test_eta_jagged, 1)
+        test_pt_dak = dak.from_awkward(test_pt_jagged, 1)
+        test_out_dak = evaluator["scalefactors_Tight_Electron"](
+            test_eta_dak, test_pt_dak, dask_label="scalefactors_Tight_Electron"
+        )
 
-    print(test_out_dak)
+        print(test_out_dak)
 
-    assert ak.all(ak.num(test_out_jagged) == counts)
-    assert ak.all(ak.flatten(test_out_jagged) == test_out)
-    assert ak.all(ak.flatten(test_out_dak.compute()) == test_out)
+        assert ak.all(ak.num(test_out_jagged) == counts)
+        assert ak.all(ak.flatten(test_out_jagged) == test_out)
+        assert ak.all(ak.flatten(test_out_dak.compute()) == test_out)
 
-    print(test_out)
+        print(test_out)
 
-    diff = np.abs(test_out - _testSF2d_expected_output)
-    print("Max diff: %.16f" % diff.max())
-    print("Median diff: %.16f" % np.median(diff))
-    print(
-        "Diff over threshold rate: %.1f %%" % (100 * (diff >= 1.0e-8).sum() / diff.size)
-    )
-    assert (diff < 1.0e-8).all()
+        diff = np.abs(test_out - _testSF2d_expected_output)
+        print("Max diff: %.16f" % diff.max())
+        print("Median diff: %.16f" % np.median(diff))
+        print(
+            "Diff over threshold rate: %.1f %%"
+            % (100 * (diff >= 1.0e-8).sum() / diff.size)
+        )
+        assert (diff < 1.0e-8).all()
 
 
-def test_root_scalefactors():
-    extractor = lookup_tools.extractor()
-    extractor.add_weight_sets(
-        ["testSF2d scalefactors_Tight_Electron tests/samples/testSF2d.histo.root"]
-    )
+@pytest.mark.parametrize("optimization_enabled", [True, False])
+def test_root_scalefactors(optimization_enabled):
+    with dask.config.set({"awkward.optimization.enabled": optimization_enabled}):
+        extractor = lookup_tools.extractor()
+        extractor.add_weight_sets(
+            ["testSF2d scalefactors_Tight_Electron tests/samples/testSF2d.histo.root"]
+        )
 
-    extractor.finalize(reduce_list=["testSF2d"])
+        extractor.finalize(reduce_list=["testSF2d"])
 
-    evaluator = extractor.make_evaluator()
+        evaluator = extractor.make_evaluator()
 
-    counts, test_eta, test_pt = dummy_jagged_eta_pt()
+        counts, test_eta, test_pt = dummy_jagged_eta_pt()
 
-    # test flat eval
-    test_out = evaluator["testSF2d"](test_eta, test_pt)
+        # test flat eval
+        test_out = evaluator["testSF2d"](test_eta, test_pt)
 
-    # print it
-    print(evaluator["testSF2d"])
+        # print it
+        print(evaluator["testSF2d"])
 
-    # test structured eval
-    test_eta_jagged = ak.unflatten(test_eta, counts)
-    test_pt_jagged = ak.unflatten(test_pt, counts)
-    test_out_jagged = evaluator["testSF2d"](test_eta_jagged, test_pt_jagged)
+        # test structured eval
+        test_eta_jagged = ak.unflatten(test_eta, counts)
+        test_pt_jagged = ak.unflatten(test_pt, counts)
+        test_out_jagged = evaluator["testSF2d"](test_eta_jagged, test_pt_jagged)
 
-    # test lazy eval
-    test_eta_dak = dak.from_awkward(test_eta_jagged, 1)
-    test_pt_dak = dak.from_awkward(test_pt_jagged, 1)
-    test_out_dak = evaluator["testSF2d"](
-        test_eta_dak, test_pt_dak, dask_label="testSF2d"
-    )
+        # test lazy eval
+        test_eta_dak = dak.from_awkward(test_eta_jagged, 1)
+        test_pt_dak = dak.from_awkward(test_pt_jagged, 1)
+        test_out_dak = evaluator["testSF2d"](
+            test_eta_dak, test_pt_dak, dask_label="testSF2d"
+        )
 
-    print(test_out_dak)
+        print(test_out_dak)
 
-    assert ak.all(ak.num(test_out_jagged) == counts)
-    assert ak.all(ak.flatten(test_out_jagged) == test_out)
-    assert ak.all(ak.flatten(test_out_dak.compute()) == test_out)
+        assert ak.all(ak.num(test_out_jagged) == counts)
+        assert ak.all(ak.flatten(test_out_jagged) == test_out)
+        assert ak.all(ak.flatten(test_out_dak.compute()) == test_out)
 
-    print(test_out)
+        print(test_out)
 
-    diff = np.abs(test_out - _testSF2d_expected_output)
-    print("Max diff: %.16f" % diff.max())
-    print("Median diff: %.16f" % np.median(diff))
-    print(
-        "Diff over threshold rate: %.1f %%" % (100 * (diff >= 1.0e-8).sum() / diff.size)
-    )
-    assert (diff < 1.0e-8).all()
+        diff = np.abs(test_out - _testSF2d_expected_output)
+        print("Max diff: %.16f" % diff.max())
+        print("Median diff: %.16f" % np.median(diff))
+        print(
+            "Diff over threshold rate: %.1f %%"
+            % (100 * (diff >= 1.0e-8).sum() / diff.size)
+        )
+        assert (diff < 1.0e-8).all()
 
 
 def test_histo_json_scalefactors():
