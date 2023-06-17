@@ -1311,14 +1311,6 @@ class PtThetaPhiELorentzVector(LorentzVector, SphericalThreeVector):
         return self.pt * numpy.cosh(self.eta)
 
     @property
-    def theta(self):
-        r"""Inclination angle from XY plane
-
-        :math:`\text{arctan2}(r, z) = 2\text{arctan}(e^{-\eta})`
-        """
-        return 2 * numpy.arctan(numpy.exp(-self.eta))
-
-    @property
     def r(self):
         r"""Distance from origin in XY plane
 

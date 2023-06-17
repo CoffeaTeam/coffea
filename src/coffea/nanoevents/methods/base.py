@@ -202,6 +202,64 @@ class NanoCollection:
         Used with global indexes to resolve cross-references"""
         return self._getlistarray().content
 
+    def _apply_global_mapping(self, from_map, onto_map, _dask_array_=None):
+        """Internal method to take from a collection using a flat mapping
+           (i.e. two flat indices that need to be sorted and taken from)
+
+        This is often necessary to be able to still resolve cross-references on
+        reduced arrays or single records.
+        """
+
+        def flat_take(layout):
+            idx = awkward.Array(layout)
+            return self._content()[idx.mask[idx >= 0]]
+
+        def descend(layout, depth, **kwargs):
+            if layout.purelist_depth == 1:
+                print(layout)
+                return flat_take(layout)
+
+        sorter = awkward.argsort(
+            from_map._meta if isinstance(from_map, dask_awkward.Array) else from_map
+        )
+        sorted_from = (
+            from_map._meta if isinstance(from_map, dask_awkward.Array) else from_map
+        )[sorter]
+        sorted_onto = (
+            onto_map._meta if isinstance(onto_map, dask_awkward.Array) else onto_map
+        )[sorter]
+
+        index = awkward.unflatten(
+            awkward.typetracer.length_zero_if_typetracer(sorted_onto),
+            awkward.flatten(
+                awkward.run_lengths(
+                    awkward.typetracer.length_zero_if_typetracer(sorted_from)
+                ),
+                axis=1,
+            ),
+            axis=1,
+        )
+        if awkward.backend(sorter) == "typetracer":
+            index = awkward.Array(
+                index.layout.to_typetracer(forget_length=True), behavior=index.behavior
+            )
+
+        (index_out,) = awkward.broadcast_arrays(
+            index._meta if isinstance(index, dask_awkward.Array) else index
+        )
+        layout_out = awkward.transform(descend, index_out.layout, highlevel=False)
+        out = awkward.Array(layout_out, behavior=self.behavior)
+
+        if isinstance(from_map, dask_awkward.Array):
+            return _dask_array_.map_partitions(
+                _ClassMethodFn("_apply_global_mapping"),
+                from_map,
+                onto_map,
+                label="_apply_global_mapping",
+                meta=out,
+            )
+        return out
+
     def _apply_global_index(self, index, _dask_array_=None):
         """Internal method to take from a collection using a flat index
 

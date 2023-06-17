@@ -9,8 +9,20 @@ behavior = {}
 
 
 @awkward.mixin_class(behavior)
-class MCTruthParticle(vector.LorentzVectorM):
+class MCTruthParticle(vector.LorentzVectorM, base.NanoCollection):
     """Generated Monte Carlo particles."""
+
+    @property
+    def matched_pfos(self, _dask_array_=None):
+        """Returns an array of matched generator particle objects for each reconstructed particle."""
+        if _dask_array_ is not None:
+            original = self.behavior["__original_array__"]().PandoraPFOs
+            return _dask_array_._apply_global_mapping(
+                self.behavior["__original_array__"]().RecoMCTruthLink.Gmc_index,
+                self.behavior["__original_array__"]().RecoMCTruthLink.Greco_index,
+                _dask_array_=original,
+            )
+        raise RuntimeError("Not reachable in dask mode!")
 
 
 @awkward.mixin_class(behavior)
@@ -18,16 +30,16 @@ class RecoParticle(vector.LorentzVector, base.NanoCollection):
     """Reconstructed particles."""
 
     @property
-    def matched_gen(self):
+    def matched_gen(self, _dask_array_=None):
         """Returns an array of matched generator particle objects for each reconstructed particle."""
-
-        matched_particles = self.behavior[
-            "__original_array__"
-        ]().MCParticlesSkimmed._apply_global_index(
-            self.behavior["__original_array__"]().RecoMCTruthLink.reco_mc_index,
-        )
-
-        return matched_particles
+        if _dask_array_ is not None:
+            original = self.behavior["__original_array__"]().MCParticlesSkimmed
+            return _dask_array_._apply_global_mapping(
+                self.behavior["__original_array__"]().RecoMCTruthLink.Greco_index,
+                self.behavior["__original_array__"]().RecoMCTruthLink.Gmc_index,
+                _dask_array_=original,
+            )
+        raise RuntimeError("Not reachable in dask mode!")
 
 
 @awkward.mixin_class(behavior)
@@ -48,12 +60,16 @@ class Track(vector.LorentzVectorM, base.NanoEvents):
         """
         metadata = self.behavior["__original_array__"]().get_metadata()
 
-        if metadata == None or "b_field" not in metadata.keys():
+        if metadata is None or "b_field" not in metadata.keys():
             print(
-                "Track momentum requires value of magnetic field. \n Please have 'metadata' argument in from_root function have key 'b_field' with the value of magnetic field."
+                "Track momentum requires value of magnetic field. \n"
+                "Please have 'metadata' argument in from_root function have"
+                "key 'b_field' with the value of magnetic field."
             )
             raise ValueError(
-                "Track momentum requires value of magnetic field. \n Please have 'metadata' argument in from_root function have key 'b_field' with the value of magnetic field."
+                "Track momentum requires value of magnetic field. \n"
+                "Please have 'metadata' argument in from_root function have"
+                "key 'b_field' with the value of magnetic field."
             )
         else:
             b_field = metadata["b_field"]
@@ -88,7 +104,7 @@ class Track(vector.LorentzVectorM, base.NanoEvents):
 
 
 @awkward.mixin_class(behavior)
-class ParticleLink:
+class ParticleLink(base.NanoCollection):
     """MCRecoParticleAssociation objects."""
 
     @property
@@ -122,4 +138,4 @@ class ParticleLink:
 
         print(sorted_reco, sorted_mc)
 
-        return sorted_reco  # only return one due to type contraints
+        return sorted_reco  # only return one due to type constraints

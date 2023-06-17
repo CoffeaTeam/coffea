@@ -1,6 +1,8 @@
 import re
 
+from coffea.nanoevents import transforms
 from coffea.nanoevents.schemas.base import BaseSchema, nest_jagged_forms, zip_forms
+from coffea.nanoevents.util import concat
 
 # magic numbers currently used to define cross references
 # this will be updated later to make it more general
@@ -135,8 +137,50 @@ class EDM4HEPSchema(BaseSchema):
                 )
                 branch_forms[objname] = form
             elif objname == "MCTruthRecoLink" or objname == "RecoMCTruthLink":
+                pfos_offsets_src = (
+                    branch_forms["PandoraPFOs/PandoraPFOs.momentum.x"]
+                    if "PandoraPFOs/PandoraPFOs.momentum.x" in branch_forms
+                    else branch_forms["PandoraPFOs"]
+                )
+                pfos_offsets_form = {
+                    "class": "NumpyArray",
+                    "itemsize": 8,
+                    "format": "i",
+                    "primitive": "int64",
+                    "form_key": concat(*[pfos_offsets_src["form_key"], "!offsets"]),
+                }
+
+                mc_offsets_src = (
+                    branch_forms["MCParticlesSkimmed/MCParticlesSkimmed.momentum.x"]
+                    if "MCParticlesSkimmed/MCParticlesSkimmed.momentum.x"
+                    in branch_forms
+                    else branch_forms["MCParticlesSkimmed"]
+                )
+                mc_offsets_form = {
+                    "class": "NumpyArray",
+                    "itemsize": 8,
+                    "format": "i",
+                    "primitive": "int64",
+                    "form_key": concat(*[mc_offsets_src["form_key"], "!offsets"]),
+                }
+
+                Greco_index_form = transforms.local2global_form(
+                    branch_forms[
+                        f"MCTruthRecoLink#{RECO_PARTICLES}/MCTruthRecoLink#{RECO_PARTICLES}.index"
+                    ],
+                    pfos_offsets_form,
+                )
+                Gmc_index_form = transforms.local2global_form(
+                    branch_forms[
+                        f"MCTruthRecoLink#{MC_PARTICLES}/MCTruthRecoLink#{MC_PARTICLES}.index"
+                    ],
+                    mc_offsets_form,
+                )
+
                 form = zip_forms(
                     {
+                        "Greco_index": Greco_index_form,
+                        "Gmc_index": Gmc_index_form,
                         "weight_mc_reco": branch_forms[
                             "MCTruthRecoLink/MCTruthRecoLink.weight"
                         ],
