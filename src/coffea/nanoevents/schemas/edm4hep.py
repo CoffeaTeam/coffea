@@ -106,6 +106,7 @@ class EDM4HEPSchema(BaseSchema):
                     objname,
                     composite_behavior.get(objname, "RecoParticle"),
                 )
+                form["content"]["parameters"]["collection_name"] = objname
                 branch_forms[objname] = form
             elif all(comp in components for comp in self._momentum_fields_m):
                 form = zip_forms(
@@ -120,6 +121,7 @@ class EDM4HEPSchema(BaseSchema):
                     objname,
                     composite_behavior.get(objname, "MCTruthParticle"),
                 )
+                form["content"]["parameters"]["collection_name"] = objname
                 branch_forms[objname] = form
             elif components == {
                 "fCoordinates.fX",
@@ -135,6 +137,7 @@ class EDM4HEPSchema(BaseSchema):
                     objname,
                     composite_behavior.get(objname, "ThreeVector"),
                 )
+                form["content"]["parameters"]["collection_name"] = objname
                 branch_forms[objname] = form
             elif objname == "MCTruthRecoLink" or objname == "RecoMCTruthLink":
                 pfos_offsets_src = (

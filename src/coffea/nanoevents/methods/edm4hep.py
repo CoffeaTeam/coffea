@@ -16,8 +16,12 @@ class MCTruthParticle(vector.LorentzVectorM, base.NanoCollection):
     def matched_pfos(self, _dask_array_=None):
         """Returns an array of matched generator particle objects for each reconstructed particle."""
         if _dask_array_ is not None:
+            collection_name = self.layout.purelist_parameter("collection_name")
+            original_from = self.behavior["__original_array__"]()[collection_name]
             original = self.behavior["__original_array__"]().PandoraPFOs
-            return _dask_array_._apply_global_mapping(
+            return original._apply_global_mapping(
+                _dask_array_,
+                original_from,
                 self.behavior["__original_array__"]().RecoMCTruthLink.Gmc_index,
                 self.behavior["__original_array__"]().RecoMCTruthLink.Greco_index,
                 _dask_array_=original,
@@ -33,8 +37,12 @@ class RecoParticle(vector.LorentzVector, base.NanoCollection):
     def matched_gen(self, _dask_array_=None):
         """Returns an array of matched generator particle objects for each reconstructed particle."""
         if _dask_array_ is not None:
+            collection_name = self.layout.purelist_parameter("collection_name")
+            original_from = self.behavior["__original_array__"]()[collection_name]
             original = self.behavior["__original_array__"]().MCParticlesSkimmed
-            return _dask_array_._apply_global_mapping(
+            return original._apply_global_mapping(
+                _dask_array_,
+                original_from,
                 self.behavior["__original_array__"]().RecoMCTruthLink.Greco_index,
                 self.behavior["__original_array__"]().RecoMCTruthLink.Gmc_index,
                 _dask_array_=original,
