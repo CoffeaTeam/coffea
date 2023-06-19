@@ -52,12 +52,44 @@ class RecoParticle(vector.LorentzVector, base.NanoCollection):
 
 @awkward.mixin_class(behavior)
 class Cluster(vector.PtThetaPhiELorentzVector):
-    """Clusters. Will be updated to have linking like RecoParticles."""
+    """Clusters."""
+
+    @property
+    def matched_gen(self, _dask_array_=None):
+        """Returns an array of matched generator particle objects for each cluster."""
+        if _dask_array_ is not None:
+            collection_name = self.layout.purelist_parameter("collection_name")
+            original_from = self.behavior["__original_array__"]()[collection_name]
+            original = self.behavior["__original_array__"]().MCParticlesSkimmed
+            return original._apply_global_mapping(
+                _dask_array_,
+                original_from,
+                self.behavior["__original_array__"]().ClusterMCTruthLink.Gcluster_index,
+                self.behavior["__original_array__"]().ClusterMCTruthLink.Gmc_index,
+                _dask_array_=original,
+            )
+        raise RuntimeError("Not reachable in dask mode!")
 
 
 @awkward.mixin_class(behavior)
 class Track(vector.LorentzVectorM, base.NanoEvents):
-    """Tracks. Will be updated to have linking like RecoParticles."""
+    """Tracks."""
+
+    @property
+    def matched_gen(self, _dask_array_=None):
+        """Returns an array of matched generator particle objects for each track."""
+        if _dask_array_ is not None:
+            collection_name = self.layout.purelist_parameter("collection_name")
+            original_from = self.behavior["__original_array__"]()[collection_name]
+            original = self.behavior["__original_array__"]().MCParticlesSkimmed
+            return original._apply_global_mapping(
+                _dask_array_,
+                original_from,
+                self.behavior["__original_array__"]().MarlinTrkTracksMCTruthLink.Gtrk_index,
+                self.behavior["__original_array__"]().MarlinTrkTracksMCTruthLink.Gmc_index,
+                _dask_array_=original,
+            )
+        raise RuntimeError("Not reachable in dask mode!")
 
     @property
     def pt(self):

@@ -81,7 +81,11 @@ class EDM4HEPSchema(BaseSchema):
                 "MCTruthRecoLink",
                 "RecoMCTruthLink",
                 "PandoraClusters",
+                "MCTruthClusterLink",
+                "ClusterMCTruthLink",
                 "MarlinTrkTracks",
+                "MCTruthMarlinTrkTracksLink",
+                "MarlinTrkTracksMCTruthLink",
             ]:
                 continue
             # grab the * from "objname/objname.*"
@@ -207,6 +211,142 @@ class EDM4HEPSchema(BaseSchema):
                     composite_behavior.get(objname, "ParticleLink"),
                 )
                 branch_forms[objname] = form
+            elif objname == "MCTruthClusterLink" or objname == "ClusterMCTruthLink":
+                cluster_offsets_src = (
+                    branch_forms["PandoraClusters/PandoraClusters.energy"]
+                    if "PandoraClusters/PandoraClusters.energy" in branch_forms
+                    else branch_forms["PandoraClusters"]
+                )
+                cluster_offsets_form = {
+                    "class": "NumpyArray",
+                    "itemsize": 8,
+                    "format": "i",
+                    "primitive": "int64",
+                    "form_key": concat(*[cluster_offsets_src["form_key"], "!offsets"]),
+                }
+
+                mc_offsets_src = (
+                    branch_forms["MCParticlesSkimmed/MCParticlesSkimmed.momentum.x"]
+                    if "MCParticlesSkimmed/MCParticlesSkimmed.momentum.x"
+                    in branch_forms
+                    else branch_forms["MCParticlesSkimmed"]
+                )
+                mc_offsets_form = {
+                    "class": "NumpyArray",
+                    "itemsize": 8,
+                    "format": "i",
+                    "primitive": "int64",
+                    "form_key": concat(*[mc_offsets_src["form_key"], "!offsets"]),
+                }
+
+                Gcluster_index_form = transforms.local2global_form(
+                    branch_forms[
+                        f"MCTruthClusterLink#{RECO_PARTICLES}/MCTruthClusterLink#{RECO_PARTICLES}.index"
+                    ],
+                    cluster_offsets_form,
+                )
+                Gmc_index_form = transforms.local2global_form(
+                    branch_forms[
+                        f"MCTruthClusterLink#{MC_PARTICLES}/MCTruthClusterLink#{MC_PARTICLES}.index"
+                    ],
+                    mc_offsets_form,
+                )
+
+                form = zip_forms(
+                    {
+                        "Gcluster_index": Gcluster_index_form,
+                        "Gmc_index": Gmc_index_form,
+                        "weight_mc_cluster": branch_forms[
+                            "MCTruthClusterLink/MCTruthClusterLink.weight"
+                        ],
+                        "weight_cluster_mc": branch_forms[
+                            "ClusterMCTruthLink/ClusterMCTruthLink.weight"
+                        ],
+                        "cluster_index": branch_forms[
+                            f"MCTruthClusterLink#{RECO_PARTICLES}/MCTruthClusterLink#{RECO_PARTICLES}.index"
+                        ],  
+                        "cluster_collectionID": branch_forms[
+                            f"MCTruthClusterLink#{RECO_PARTICLES}/MCTruthClusterLink#{RECO_PARTICLES}.collectionID"
+                        ],
+                        "mc_index": branch_forms[
+                            f"MCTruthClusterLink#{MC_PARTICLES}/MCTruthClusterLink#{MC_PARTICLES}.index"
+                        ],
+                        "mc_collectionID": branch_forms[
+                            f"MCTruthClusterLink#{MC_PARTICLES}/MCTruthClusterLink#{MC_PARTICLES}.collectionID"
+                        ],
+                    },
+                    objname,
+                    composite_behavior.get(objname, "ParticleLink"),
+                )
+                branch_forms[objname] = form
+            elif objname == "MCTruthMarlinTrkTracksLink" or objname == "MarlinTrkTracksMCTruthLink":
+                trk_offsets_src = (
+                    branch_forms[f"MarlinTrkTracks_{TRACKSTATE_XREF}/MarlinTrkTracks_{TRACKSTATE_XREF}.omega"]
+                    if f"MarlinTrkTracks_{TRACKSTATE_XREF}/MarlinTrkTracks_{TRACKSTATE_XREF}.omega" in branch_forms
+                    else branch_forms["MarlinTrkTracks"] # since tracks are set up differently this should maybe be f"MarlinTrkTracks_{TRACKSTATE_XREF}"
+                )
+                trk_offsets_form = {
+                    "class": "NumpyArray",
+                    "itemsize": 8,
+                    "format": "i",
+                    "primitive": "int64",
+                    "form_key": concat(*[trk_offsets_src["form_key"], "!offsets"]),
+                }
+
+                mc_offsets_src = (
+                    branch_forms["MCParticlesSkimmed/MCParticlesSkimmed.momentum.x"]
+                    if "MCParticlesSkimmed/MCParticlesSkimmed.momentum.x"
+                    in branch_forms
+                    else branch_forms["MCParticlesSkimmed"]
+                )
+                mc_offsets_form = {
+                    "class": "NumpyArray",
+                    "itemsize": 8,
+                    "format": "i",
+                    "primitive": "int64",
+                    "form_key": concat(*[mc_offsets_src["form_key"], "!offsets"]),
+                }
+
+                Gtrk_index_form = transforms.local2global_form(
+                    branch_forms[
+                        f"MCTruthMarlinTrkTracksLink#{RECO_PARTICLES}/MCTruthMarlinTrkTracksLink#{RECO_PARTICLES}.index"
+                    ],
+                    trk_offsets_form,
+                )
+                Gmc_index_form = transforms.local2global_form(
+                    branch_forms[
+                        f"MCTruthMarlinTrkTracksLink#{MC_PARTICLES}/MCTruthMarlinTrkTracksLink#{MC_PARTICLES}.index"
+                    ],
+                    mc_offsets_form,
+                )
+
+                form = zip_forms(
+                    {
+                        "Gtrk_index": Gtrk_index_form,
+                        "Gmc_index": Gmc_index_form,
+                        "weight_mc_trk": branch_forms[
+                            "MCTruthMarlinTrkTracksLink/MCTruthMarlinTrkTracksLink.weight"
+                        ],
+                        "weight_trk_mc": branch_forms[
+                            "MarlinTrkTracksMCTruthLink/MarlinTrkTracksMCTruthLink.weight"
+                        ],
+                        "trk_index": branch_forms[
+                            f"MCTruthMarlinTrkTracksLink#{RECO_PARTICLES}/MCTruthMarlinTrkTracksLink#{RECO_PARTICLES}.index"
+                        ],  
+                        "trk_collectionID": branch_forms[
+                            f"MCTruthMarlinTrkTracksLink#{RECO_PARTICLES}/MCTruthMarlinTrkTracksLink#{RECO_PARTICLES}.collectionID"
+                        ],
+                        "mc_index": branch_forms[
+                            f"MCTruthMarlinTrkTracksLink#{MC_PARTICLES}/MCTruthMarlinTrkTracksLink#{MC_PARTICLES}.index"
+                        ],
+                        "mc_collectionID": branch_forms[
+                            f"MCTruthMarlinTrkTracksLink#{MC_PARTICLES}/MCTruthMarlinTrkTracksLink#{MC_PARTICLES}.collectionID"
+                        ],
+                    },
+                    objname,
+                    composite_behavior.get(objname, "ParticleLink"),
+                )
+                branch_forms[objname] = form
             elif objname == "PandoraClusters":
                 form = zip_forms(
                     {
@@ -218,6 +358,7 @@ class EDM4HEPSchema(BaseSchema):
                     objname,
                     composite_behavior.get(objname, "Cluster"),
                 )
+                form["content"]["parameters"]["collection_name"] = objname
                 branch_forms[objname] = form
             elif objname == "MarlinTrkTracks":
                 form = zip_forms(
@@ -236,6 +377,7 @@ class EDM4HEPSchema(BaseSchema):
                     objname,
                     composite_behavior.get(objname, "Track"),
                 )
+                form["content"]["parameters"]["collection_name"] = objname
                 branch_forms[objname] = form
             else:
                 raise ValueError(
@@ -244,8 +386,17 @@ class EDM4HEPSchema(BaseSchema):
 
         # Generating collection from branch name
         collections = [
-            k for k in branch_forms if k == "PandoraPFOs" or k == "MCParticlesSkimmed"
-        ]  # added second case
+            k for k in branch_forms if k in [
+                "PandoraPFOs",
+                "MCParticlesSkimmed",
+                "MCTruthRecoLink",
+                "RecoMCTruthLink",
+                "PandoraClusters",
+                "MCTruthClusterLink",
+                "ClusterMCTruthLink",
+                "MarlinTrkTracks",
+            ]
+        ]  
         collections = {
             "_".join(k.split("_")[:-1])
             for k in collections
