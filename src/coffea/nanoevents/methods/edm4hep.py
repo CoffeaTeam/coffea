@@ -27,7 +27,7 @@ class MCTruthParticle(vector.LorentzVectorM, base.NanoCollection):
                 _dask_array_=original,
             )
         raise RuntimeError("Not reachable in dask mode!")
-    
+
     @property
     def matched_clusters(self, _dask_array_=None):
         """Returns an array of matched cluster particle objects for each generator particle."""
@@ -43,7 +43,7 @@ class MCTruthParticle(vector.LorentzVectorM, base.NanoCollection):
                 _dask_array_=original,
             )
         raise RuntimeError("Not reachable in dask mode!")
-    
+
     @property
     def matched_trks(self, _dask_array_=None):
         """Returns an array of matched cluster particle objects for each generator particle."""
@@ -54,8 +54,12 @@ class MCTruthParticle(vector.LorentzVectorM, base.NanoCollection):
             return original._apply_global_mapping(
                 _dask_array_,
                 original_from,
-                self.behavior["__original_array__"]().MarlinTrkTracksMCTruthLink.Gmc_index,
-                self.behavior["__original_array__"]().MarlinTrkTracksMCTruthLink.Gtrk_index,
+                self.behavior[
+                    "__original_array__"
+                ]().MarlinTrkTracksMCTruthLink.Gmc_index,
+                self.behavior[
+                    "__original_array__"
+                ]().MarlinTrkTracksMCTruthLink.Gtrk_index,
                 _dask_array_=original,
             )
         raise RuntimeError("Not reachable in dask mode!")
