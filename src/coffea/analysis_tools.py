@@ -1089,6 +1089,12 @@ class PackedSelection:
         returns a boolean array where an entry is True if the corresponding entries
         ``cut1 == True``, ``cut2 == False``, and ``cut3`` arbitrary.
         """
+        for cut, v in names.items():
+            if not isinstance(cut, str) or cut not in self._names:
+                raise ValueError(
+                    "All arguments must be strings that refer to the names of existing selections"
+                )
+
         consider = 0
         require = 0
         for name, val in names.items():
@@ -1137,6 +1143,11 @@ class PackedSelection:
         returns a boolean array where an entry is True if the corresponding entries
         ``cut1 == True`` or ``cut2 == False``, and ``cut3`` arbitrary.
         """
+        for cut in names:
+            if not isinstance(cut, str) or cut not in self._names:
+                raise ValueError(
+                    "All arguments must be strings that refer to the names of existing selections"
+                )
         consider = 0
         for name in names:
             idx = self._names.index(name)
