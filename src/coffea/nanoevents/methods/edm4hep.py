@@ -14,7 +14,7 @@ class MCTruthParticle(vector.LorentzVectorM, base.NanoCollection):
 
     @property
     def matched_pfos(self, _dask_array_=None):
-        """Returns an array of matched generator particle objects for each reconstructed particle."""
+        """Returns an array of matched reconstructed particle objects for each generator particle."""
         if _dask_array_ is not None:
             collection_name = self.layout.purelist_parameter("collection_name")
             original_from = self.behavior["__original_array__"]()[collection_name]
@@ -24,6 +24,38 @@ class MCTruthParticle(vector.LorentzVectorM, base.NanoCollection):
                 original_from,
                 self.behavior["__original_array__"]().RecoMCTruthLink.Gmc_index,
                 self.behavior["__original_array__"]().RecoMCTruthLink.Greco_index,
+                _dask_array_=original,
+            )
+        raise RuntimeError("Not reachable in dask mode!")
+    
+    @property
+    def matched_clusters(self, _dask_array_=None):
+        """Returns an array of matched cluster particle objects for each generator particle."""
+        if _dask_array_ is not None:
+            collection_name = self.layout.purelist_parameter("collection_name")
+            original_from = self.behavior["__original_array__"]()[collection_name]
+            original = self.behavior["__original_array__"]().PandoraClusters
+            return original._apply_global_mapping(
+                _dask_array_,
+                original_from,
+                self.behavior["__original_array__"]().ClusterMCTruthLink.Gmc_index,
+                self.behavior["__original_array__"]().ClusterMCTruthLink.Gcluster_index,
+                _dask_array_=original,
+            )
+        raise RuntimeError("Not reachable in dask mode!")
+    
+    @property
+    def matched_trks(self, _dask_array_=None):
+        """Returns an array of matched cluster particle objects for each generator particle."""
+        if _dask_array_ is not None:
+            collection_name = self.layout.purelist_parameter("collection_name")
+            original_from = self.behavior["__original_array__"]()[collection_name]
+            original = self.behavior["__original_array__"]().MarlinTrkTracks
+            return original._apply_global_mapping(
+                _dask_array_,
+                original_from,
+                self.behavior["__original_array__"]().MarlinTrkTracksMCTruthLink.Gmc_index,
+                self.behavior["__original_array__"]().MarlinTrkTracksMCTruthLink.Gtrk_index,
                 _dask_array_=original,
             )
         raise RuntimeError("Not reachable in dask mode!")
@@ -51,7 +83,7 @@ class RecoParticle(vector.LorentzVector, base.NanoCollection):
 
 
 @awkward.mixin_class(behavior)
-class Cluster(vector.PtThetaPhiELorentzVector):
+class Cluster(vector.PtThetaPhiELorentzVector, base.NanoCollection):
     """Clusters."""
 
     @property
@@ -72,7 +104,7 @@ class Cluster(vector.PtThetaPhiELorentzVector):
 
 
 @awkward.mixin_class(behavior)
-class Track(vector.LorentzVectorM, base.NanoEvents):
+class Track(vector.LorentzVectorM, base.NanoEvents, base.NanoCollection):
     """Tracks."""
 
     @property
