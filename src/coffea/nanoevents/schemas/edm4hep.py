@@ -264,7 +264,7 @@ class EDM4HEPSchema(BaseSchema):
                         ],
                         "cluster_index": branch_forms[
                             f"MCTruthClusterLink#{RECO_PARTICLES}/MCTruthClusterLink#{RECO_PARTICLES}.index"
-                        ],  
+                        ],
                         "cluster_collectionID": branch_forms[
                             f"MCTruthClusterLink#{RECO_PARTICLES}/MCTruthClusterLink#{RECO_PARTICLES}.collectionID"
                         ],
@@ -279,11 +279,19 @@ class EDM4HEPSchema(BaseSchema):
                     composite_behavior.get(objname, "ParticleLink"),
                 )
                 branch_forms[objname] = form
-            elif objname == "MCTruthMarlinTrkTracksLink" or objname == "MarlinTrkTracksMCTruthLink":
+            elif (
+                objname == "MCTruthMarlinTrkTracksLink"
+                or objname == "MarlinTrkTracksMCTruthLink"
+            ):
                 trk_offsets_src = (
-                    branch_forms[f"MarlinTrkTracks_{TRACKSTATE_XREF}/MarlinTrkTracks_{TRACKSTATE_XREF}.omega"]
-                    if f"MarlinTrkTracks_{TRACKSTATE_XREF}/MarlinTrkTracks_{TRACKSTATE_XREF}.omega" in branch_forms
-                    else branch_forms["MarlinTrkTracks"] # since tracks are set up differently this should maybe be f"MarlinTrkTracks_{TRACKSTATE_XREF}"
+                    branch_forms[
+                        f"MarlinTrkTracks_{TRACKSTATE_XREF}/MarlinTrkTracks_{TRACKSTATE_XREF}.omega"
+                    ]
+                    if f"MarlinTrkTracks_{TRACKSTATE_XREF}/MarlinTrkTracks_{TRACKSTATE_XREF}.omega"
+                    in branch_forms
+                    else branch_forms[
+                        "MarlinTrkTracks"
+                    ]  # since tracks are set up differently this should maybe be f"MarlinTrkTracks_{TRACKSTATE_XREF}"
                 )
                 trk_offsets_form = {
                     "class": "NumpyArray",
@@ -332,7 +340,7 @@ class EDM4HEPSchema(BaseSchema):
                         ],
                         "trk_index": branch_forms[
                             f"MCTruthMarlinTrkTracksLink#{RECO_PARTICLES}/MCTruthMarlinTrkTracksLink#{RECO_PARTICLES}.index"
-                        ],  
+                        ],
                         "trk_collectionID": branch_forms[
                             f"MCTruthMarlinTrkTracksLink#{RECO_PARTICLES}/MCTruthMarlinTrkTracksLink#{RECO_PARTICLES}.collectionID"
                         ],
@@ -386,7 +394,10 @@ class EDM4HEPSchema(BaseSchema):
 
         # Generating collection from branch name
         collections = [
-            k for k in branch_forms if k in [
+            k
+            for k in branch_forms
+            if k
+            in [
                 "PandoraPFOs",
                 "MCParticlesSkimmed",
                 "MCTruthRecoLink",
@@ -396,7 +407,7 @@ class EDM4HEPSchema(BaseSchema):
                 "ClusterMCTruthLink",
                 "MarlinTrkTracks",
             ]
-        ]  
+        ]
         collections = {
             "_".join(k.split("_")[:-1])
             for k in collections

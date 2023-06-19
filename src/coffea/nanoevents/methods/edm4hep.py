@@ -85,8 +85,12 @@ class Track(vector.LorentzVectorM, base.NanoEvents):
             return original._apply_global_mapping(
                 _dask_array_,
                 original_from,
-                self.behavior["__original_array__"]().MarlinTrkTracksMCTruthLink.Gtrk_index,
-                self.behavior["__original_array__"]().MarlinTrkTracksMCTruthLink.Gmc_index,
+                self.behavior[
+                    "__original_array__"
+                ]().MarlinTrkTracksMCTruthLink.Gtrk_index,
+                self.behavior[
+                    "__original_array__"
+                ]().MarlinTrkTracksMCTruthLink.Gmc_index,
                 _dask_array_=original,
             )
         raise RuntimeError("Not reachable in dask mode!")
