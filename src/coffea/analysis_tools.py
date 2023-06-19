@@ -1102,7 +1102,7 @@ class PackedSelection:
             idx = self._names.index(name)
             consider |= 1 << idx
             require |= int(val) << idx
-        return (self._data & consider) == require
+        return (self._data & self._dtype.type(consider)) == require
 
     def all(self, *names):
         """Shorthand for `require`, where all the values are True.
@@ -1152,7 +1152,7 @@ class PackedSelection:
         for name in names:
             idx = self._names.index(name)
             consider |= 1 << idx
-        return (self._data & consider) != 0
+        return (self._data & self._dtype.type(consider)) != 0
 
     def nminusone(self, *names):
         """Compute the "N-1" style selection for a set of selections

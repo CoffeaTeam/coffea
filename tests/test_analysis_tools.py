@@ -368,14 +368,15 @@ def test_weights_partial_dak(optimization_enabled):
         assert error_raised
 
 
-def test_packed_selection_basic():
+@pytest.mark.parametrize("dtype", ["uint16", "uint32", "uint64"])
+def test_packed_selection_basic(dtype):
     import awkward as ak
     import dask.array as da
     import dask_awkward as dak
 
     from coffea.analysis_tools import PackedSelection
 
-    sel = PackedSelection()
+    sel = PackedSelection(dtype=dtype)
 
     shape = (10,)
     all_true = np.full(shape=shape, fill_value=True, dtype=bool)
@@ -448,7 +449,7 @@ def test_packed_selection_basic():
         RuntimeError,
         match="Exhausted all slots in this PackedSelection, consider a larger dtype or fewer selections",
     ):
-        overpack = PackedSelection()
+        overpack = PackedSelection(dtype=dtype)
         for i in range(65):
             overpack.add("sel_%d", all_true)
 
@@ -687,7 +688,8 @@ def test_packed_selection_cutflow():
 
 
 @pytest.mark.parametrize("optimization_enabled", [True, False])
-def test_packed_selection_basic_dak(optimization_enabled):
+@pytest.mark.parametrize("dtype", ["uint16", "uint32", "uint64"])
+def test_packed_selection_basic_dak(optimization_enabled, dtype):
     import awkward as ak
     import dask
     import dask.array as da
@@ -695,7 +697,7 @@ def test_packed_selection_basic_dak(optimization_enabled):
 
     from coffea.analysis_tools import PackedSelection
 
-    sel = PackedSelection()
+    sel = PackedSelection(dtype=dtype)
 
     with dask.config.set({"awkward.optimization.enabled": optimization_enabled}):
         shape = (10,)
@@ -787,7 +789,7 @@ def test_packed_selection_basic_dak(optimization_enabled):
             RuntimeError,
             match="Exhausted all slots in this PackedSelection, consider a larger dtype or fewer selections",
         ):
-            overpack = PackedSelection()
+            overpack = PackedSelection(dtype=dtype)
             for i in range(65):
                 overpack.add("sel_%d", all_true)
 
