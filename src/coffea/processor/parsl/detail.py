@@ -43,15 +43,15 @@ def derive_chunks(filename, treename, chunksize, ds, timeout=10):
 
     uproot.XRootDSource.defaults["parallel"] = False
 
-    afile = uproot.open({filename: None})
+    a_file = uproot.open({filename: None})
 
     tree = None
     if isinstance(treename, str):
-        tree = afile[treename]
+        tree = a_file[treename]
     elif isinstance(treename, Sequence):
         for name in reversed(treename):
-            if name in afile:
-                tree = afile[name]
+            if name in a_file:
+                tree = a_file[name]
     else:
         raise Exception(
             "treename must be a str or Sequence but is a %s!" % repr(type(treename))
