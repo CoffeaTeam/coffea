@@ -70,7 +70,7 @@ def common_prepare_awkward(array_lib, jets):
         for k in fmap.keys()
     }
 
-
+@pytest.mark.skip(reason="triton requires nested args / kwargs in dask_awkward, not there yet")
 def test_triton():
     _ = pytest.importorskip("tritonclient")
 
