@@ -3,6 +3,7 @@
 These helper classes were previously part of ``coffea.processor``
 but have been migrated and updated to be compatible with awkward-array 1.0
 """
+import warnings
 from collections import namedtuple
 
 import awkward
@@ -514,7 +515,7 @@ class NminusOne:
             h = hist.Hist(hist.axis.Integer(0, len(labels), name="N-1"))
             h.fill(numpy.arange(len(labels)), weight=self._nev)
 
-        elif self._delayed_mode:
+        else:
             h = hist.dask.Hist(hist.axis.Integer(0, len(labels), name="N-1"))
             for i, weight in enumerate(self._masks, 1):
                 h.fill(dask_awkward.full_like(weight, i, dtype=int), weight=weight)
@@ -587,12 +588,12 @@ class NminusOne:
 
         if axes is not None:
             axes = axes
-        elif axes is None:
+        else:
             axes = []
             for (name, var), b, s1, s2, e, t in zip(
                 vars.items(), bins, start, stop, edges, transform
             ):
-                ax = coffea.util._getaxis(
+                ax = coffea.util._gethistogramaxis(
                     name, var, b, s1, s2, e, t, self._delayed_mode
                 )
                 axes.append(ax)
@@ -618,7 +619,7 @@ class NminusOne:
                     h.fill(arr, awkward.full_like(arr, i, dtype=int))
                 hists.append(h)
 
-        elif self._delayed_mode:
+        else:
             for (name, var), axis in zip(vars.items(), axes):
                 h = hist.dask.Hist(
                     axis,
@@ -759,7 +760,7 @@ class Cutflow:
             honecut.fill(numpy.arange(len(labels)), weight=self._nevonecut)
             hcutflow.fill(numpy.arange(len(labels)), weight=self._nevcutflow)
 
-        elif self._delayed_mode:
+        else:
             honecut = hist.dask.Hist(hist.axis.Integer(0, len(labels), name="onecut"))
             hcutflow = honecut.copy()
             hcutflow.axes.name = ("cutflow",)
@@ -848,12 +849,12 @@ class Cutflow:
 
         if axes is not None:
             axes = axes
-        elif axes is None:
+        else:
             axes = []
             for (name, var), b, s1, s2, e, t in zip(
                 vars.items(), bins, start, stop, edges, transform
             ):
-                ax = coffea.util._getaxis(
+                ax = coffea.util._gethistogramaxis(
                     name, var, b, s1, s2, e, t, self._delayed_mode
                 )
                 axes.append(ax)
@@ -889,7 +890,7 @@ class Cutflow:
                     hcutflow.fill(arr, awkward.full_like(arr, i, dtype=int))
                 histscutflow.append(hcutflow)
 
-        elif self._delayed_mode:
+        else:
             for (name, var), axis in zip(vars.items(), axes):
                 honecut = hist.dask.Hist(
                     axis,
@@ -961,7 +962,10 @@ class PackedSelection:
         elif isinstance(self._data, numpy.ndarray):
             return False
         else:
-            return "PackedSelection hasn't been initialized with a boolean array yet!"
+            warnings.warn(
+                "PackedSelection hasn't been initialized with a boolean array yet!"
+            )
+            return False
 
     @property
     def maxitems(self):
@@ -984,7 +988,7 @@ class PackedSelection:
             )
         elif len(self._names) == self.maxitems:
             raise RuntimeError(
-                "Exhausted all slots in this PackedSelection, consider a larger dtype or fewer selections"
+                f"Exhausted all slots in PackedSelection: {self}, consider a larger dtype or fewer selections"
             )
         elif not dask_awkward.lib.core.compatible_partitions(self._data, selection):
             raise ValueError(
@@ -1011,7 +1015,7 @@ class PackedSelection:
             )
         elif len(self._names) == self.maxitems:
             raise RuntimeError(
-                "Exhausted all slots in this PackedSelection, consider a larger dtype or fewer selections"
+                f"Exhausted all slots in PackedSelection: {self}, consider a larger dtype or fewer selections"
             )
         elif self._data.shape != selection.shape:
             raise ValueError(
@@ -1193,7 +1197,7 @@ class PackedSelection:
             nev = [len(self._data)]
             nev.extend(numpy.sum(masks, axis=1))
 
-        elif self.delayed_mode:
+        else:
             nev = [
                 dask_awkward.sum(
                     dask_awkward.from_awkward(awkward.Array([len(self._data)]), 1)
@@ -1243,7 +1247,7 @@ class PackedSelection:
             nevonecut.extend(numpy.sum(masksonecut, axis=1))
             nevcutflow.extend(numpy.sum(maskscutflow, axis=1))
 
-        elif self.delayed_mode:
+        else:
             nevonecut = [
                 dask_awkward.sum(
                     dask_awkward.from_awkward(awkward.Array([len(self._data)]), 1)

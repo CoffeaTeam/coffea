@@ -99,7 +99,7 @@ def _ensure_flat(array, allow_missing=False):
     return array
 
 
-def _getaxis(name, var, bins, start, stop, edges, transform, delayed_mode):
+def _gethistogramaxis(name, var, bins, start, stop, edges, transform, delayed_mode):
     "Get a hist axis for plot_vars in PackedSelection"
 
     if edges is not None:

@@ -388,10 +388,11 @@ def test_packed_selection_basic(dtype):
     wrong_type = dak.from_awkward(ak.Array(np.arange(shape[0]) % 3 == 0), 1)
     daskarray = da.arange(shape[0]) % 3 == 0
 
-    assert (
-        sel.delayed_mode
-        == "PackedSelection hasn't been initialized with a boolean array yet!"
-    )
+    with pytest.warns(
+        UserWarning,
+        match="PackedSelection hasn't been initialized with a boolean array yet!",
+    ):
+        assert sel.delayed_mode is False
 
     sel.add("fizz", fizz)
     sel.add("buzz", buzz)
@@ -445,10 +446,7 @@ def test_packed_selection_basic(dtype):
     with pytest.raises(ValueError, match="Expected a boolean array, received uint64"):
         sel.add("ones", ones)
 
-    with pytest.raises(
-        RuntimeError,
-        match="Exhausted all slots in this PackedSelection, consider a larger dtype or fewer selections",
-    ):
+    with pytest.raises(RuntimeError):
         overpack = PackedSelection(dtype=dtype)
         for i in range(65):
             overpack.add("sel_%d", all_true)
@@ -716,10 +714,11 @@ def test_packed_selection_basic_dak(optimization_enabled, dtype):
         wrong_type = np.arange(shape[0]) % 3 == 0
         daskarray = da.arange(shape[0]) % 3 == 0
 
-        assert (
-            sel.delayed_mode
-            == "PackedSelection hasn't been initialized with a boolean array yet!"
-        )
+    with pytest.warns(
+        UserWarning,
+        match="PackedSelection hasn't been initialized with a boolean array yet!",
+    ):
+        assert sel.delayed_mode is False
 
         sel.add("fizz", fizz)
         sel.add("buzz", buzz)
@@ -785,10 +784,7 @@ def test_packed_selection_basic_dak(optimization_enabled, dtype):
         ):
             sel.add("ones", ones)
 
-        with pytest.raises(
-            RuntimeError,
-            match="Exhausted all slots in this PackedSelection, consider a larger dtype or fewer selections",
-        ):
+        with pytest.raises(RuntimeError):
             overpack = PackedSelection(dtype=dtype)
             for i in range(65):
                 overpack.add("sel_%d", all_true)
