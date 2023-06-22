@@ -94,20 +94,31 @@ class container_converter:
         if self.default_conv is None:
             self.default_conv = self.unrecognized
 
-    def convert(self, arg):
+    def _convert(self, arg, maybe_backends):
         if isinstance(arg, Dict):
-            return dict({key: self.convert(val) for key, val in arg.items()})
+            return dict(
+                {key: self.convert(val, maybe_backends) for key, val in arg.items()}
+            )
         elif isinstance(arg, (List, Set, Tuple)):
-            return arg.__class__(self.convert(val) for val in arg)
+            return arg.__class__(self.convert(val, maybe_backends) for val in arg)
         else:
             for itype, call in self.method_map.items():
                 if isinstance(arg, itype):
+                    if maybe_backends is not None and itype is awkward.highlevel.Array:
+                        maybe_backends.add(awkward.backend(arg))
                     return call(arg)
 
             return self.default_conv(arg)
 
+    def convert(self, arg, maybe_backends=None):
+        out = self._convert(arg, maybe_backends)
+        return out
+
     def __call__(self, *args, **kwargs) -> Tuple:
-        return self.convert(args), self.convert(kwargs)
+        backends = set()
+        out_args = self.convert(args, backends)
+        out_kwargs = self.convert(kwargs, backends)
+        return (out_args, out_kwargs), backends
 
     @staticmethod
     def no_action(x):
@@ -223,7 +234,7 @@ class numpy_call_wrapper(abc.ABC):
         then numpy_to_awkward conversion.
         """
         ak_args, ak_kwargs = self.prepare_awkward(*args, **kwargs)
-        np_args, np_kwargs = self._ak_to_np_(*ak_args, **ak_kwargs)
+        (np_args, np_kwargs), _ = self._ak_to_np_(*ak_args, **ak_kwargs)
         np_rets = self._call_numpy(*np_args, **np_kwargs)
         np_rets = self._np_to_ak_.convert(np_rets)
         return self.postprocess_awkward(np_rets, *args, **kwargs)
@@ -308,21 +319,15 @@ class numpy_call_wrapper(abc.ABC):
                 # arrays
                 ak_args, ak_kwargs = self.args_to_pair(*args)
 
-                if self.get_backend(*args) == "typetracer":
-                    # Length-0 conversion will not work! Must use length-1 method.
-                    conv = container_converter(
-                        {
-                            awkward.Array: lambda x: awkward.Array(
-                                x.layout.form.length_one_array(highlevel=False),
-                                behavior=x.behavior,
-                            )
-                        }
-                    )
+                conv = container_converter(
+                    {awkward.Array: awkward.typetracer.length_one_if_typetracer},
+                    default_conv=container_converter.no_action,
+                )
 
-                    ak_args, ak_kwargs = conv(*ak_args, **ak_kwargs)
+                (ak_args, ak_kwargs), backends = conv(*ak_args, **ak_kwargs)
 
                 # Converting to numpy
-                np_args, np_kwargs = numpy_call_wrapper._ak_to_np_(
+                (np_args, np_kwargs), _ = numpy_call_wrapper._ak_to_np_(
                     *ak_args, **ak_kwargs
                 )
                 out = self.wrapper._call_numpy(*np_args, **np_kwargs)
@@ -330,7 +335,7 @@ class numpy_call_wrapper(abc.ABC):
 
                 # Additional packing
                 out = pack_ret_array(out)
-                if self.get_backend(*args) == "typetracer":
+                if "typetracer" in backends:
                     out = awkward.Array(
                         out.layout.to_typetracer(forget_length=True),
                         behavior=out.behavior,
