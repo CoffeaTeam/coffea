@@ -2,14 +2,18 @@ from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 
 
 def test_explicit_delete_after_assign():
+    data_dir = Path(__file__).parent / "samples"
+    testfile = data_dir / "nano_dy.root"
+
     events = NanoEventsFactory.from_root(
         {
-            "https://github.com/CoffeaTeam/coffea/raw/master/tests/samples/nano_dy.root": "Events"
+            testfile: "Events"
         },
         metadata={"dataset": "nano_dy"},
         schemaclass=NanoAODSchema,
         permit_dask=True,
     ).events()
+
     genpart = events["GenPart"]
     del events
-    parent = genpart.parent  # noqa: F841
+    _ = genpart.parent
