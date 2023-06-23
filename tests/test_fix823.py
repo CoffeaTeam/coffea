@@ -6,9 +6,7 @@ def test_explicit_delete_after_assign():
     testfile = data_dir / "nano_dy.root"
 
     events = NanoEventsFactory.from_root(
-        {
-            testfile: "Events"
-        },
+        {testfile: "Events"},
         metadata={"dataset": "nano_dy"},
         schemaclass=NanoAODSchema,
         permit_dask=True,
