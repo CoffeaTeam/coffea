@@ -75,7 +75,7 @@ Strict dependencies
 
 The following are installed automatically when you install coffea with pip:
 
-- `numpy <https://scipy.org/install.html>`__ (1.15+);
+- `numpy <https://scipy.org/install.html>`__ (1.22+);
 - `uproot <https://github.com/scikit-hep/uproot5>`__ for interacting with ROOT files and handling their data transparently;
 - `awkward-array <https://github.com/scikit-hep/awkward>`__ to manipulate complex-structured columnar data, such as jagged arrays;
 - `numba <https://numba.pydata.org/>`__ just-in-time compilation of python functions;
