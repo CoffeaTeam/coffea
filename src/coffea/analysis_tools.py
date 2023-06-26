@@ -427,6 +427,9 @@ class NminusOneToNpz:
         self._masks = masks
         self._saver = saver
 
+    def __repr__(self):
+        return f"NminusOneToNpz(file={self._file}), labels={self._labels})"
+
     @property
     def file(self):
         return self._file
@@ -462,6 +465,9 @@ class CutflowToNpz:
         self._masksonecut = masksonecut
         self._maskscutflow = maskscutflow
         self._saver = saver
+
+    def __repr__(self):
+        return f"CutflowToNpz(file={self._file}), labels={self._labels})"
 
     @property
     def file(self):
