@@ -1287,11 +1287,7 @@ class PackedSelection:
             nev.extend(numpy.sum(masks, axis=1))
 
         else:
-            nev = [
-                dask_awkward.sum(
-                    dask_awkward.from_awkward(awkward.Array([len(self._data)]), 1)
-                )
-            ]
+            nev = [dask_awkward.count(self._data, axis=0)]
             nev.extend([dask_awkward.sum(mask) for mask in masks])
 
         return NminusOne(names, nev, masks, self.delayed_mode)
@@ -1337,16 +1333,8 @@ class PackedSelection:
             nevcutflow.extend(numpy.sum(maskscutflow, axis=1))
 
         else:
-            nevonecut = [
-                dask_awkward.sum(
-                    dask_awkward.from_awkward(awkward.Array([len(self._data)]), 1)
-                )
-            ]
-            nevcutflow = [
-                dask_awkward.sum(
-                    dask_awkward.from_awkward(awkward.Array([len(self._data)]), 1)
-                )
-            ]
+            nevonecut = [dask_awkward.count(self._data, axis=0)]
+            nevcutflow = [dask_awkward.count(self._data, axis=0)]
             nevonecut.extend([dask_awkward.sum(mask1) for mask1 in masksonecut])
             nevcutflow.extend([dask_awkward.sum(mask2) for mask2 in maskscutflow])
 
