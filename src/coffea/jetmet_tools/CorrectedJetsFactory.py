@@ -47,7 +47,7 @@ def rand_gauss(item):
 
     def getfunction(layout, depth, **kwargs):
         if isinstance(layout, awkward.contents.NumpyArray) or not isinstance(
-            layout, (awkward.contents.Content, awkward.partition.PartitionedArray)
+            layout, (awkward.contents.Content, )
         ):
             return awkward.contents.NumpyArray(
                 randomstate.normal(size=len(layout)).astype(numpy.float32)
