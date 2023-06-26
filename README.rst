@@ -71,13 +71,13 @@ For more details, see the `Installing coffea <https://coffeateam.github.io/coffe
 Strict dependencies
 ===================
 
-- `Python <http://docs.python-guide.org/en/latest/starting/installation/>`__ (3.6+)
+- `Python <http://docs.python-guide.org/en/latest/starting/installation/>`__ (3.8+)
 
 The following are installed automatically when you install coffea with pip:
 
 - `numpy <https://scipy.org/install.html>`__ (1.15+);
-- `uproot <https://github.com/scikit-hep/uproot4>`__ for interacting with ROOT files and handling their data transparently;
-- `awkward-array <https://github.com/scikit-hep/awkward-1.0>`__ to manipulate complex-structured columnar data, such as jagged arrays;
+- `uproot <https://github.com/scikit-hep/uproot5>`__ for interacting with ROOT files and handling their data transparently;
+- `awkward-array <https://github.com/scikit-hep/awkward>`__ to manipulate complex-structured columnar data, such as jagged arrays;
 - `numba <https://numba.pydata.org/>`__ just-in-time compilation of python functions;
 - `scipy <https://scipy.org/scipylib/index.html>`__ for many statistical functions;
 - `matplotlib <https://matplotlib.org/>`__ as a plotting backend;
