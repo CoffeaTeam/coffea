@@ -12,6 +12,8 @@ import dask_awkward
 import hist
 import hist.dask
 import numpy
+from dask_awkward.lib.core import compatible_partitions
+from dask_awkward.utils import IncompatiblePartitions
 
 import coffea.processor
 import coffea.util
@@ -415,6 +417,91 @@ class Weights:
         return keys
 
 
+class NminusOneToNpz:
+    """Object to be returned by NmiusOne.to_npz()"""
+
+    def __init__(self, file, labels, nev, masks, saver):
+        self._file = file
+        self._labels = labels
+        self._nev = nev
+        self._masks = masks
+        self._saver = saver
+
+    @property
+    def file(self):
+        return self._file
+
+    @property
+    def labels(self):
+        return self._labels
+
+    @property
+    def nev(self):
+        return self._nev
+
+    @property
+    def masks(self):
+        return self._masks
+
+    def compute(self):
+        self._nev = list(dask.compute(*self._nev))
+        self._masks = list(dask.compute(*self._masks))
+        self._saver(self._file, labels=self._labels, nev=self._nev, masks=self._masks)
+
+
+class CutflowToNpz:
+    """Object to be returned by Cutflow.to_npz()"""
+
+    def __init__(
+        self, file, labels, nevonecut, nevcutflow, masksonecut, maskscutflow, saver
+    ):
+        self._file = file
+        self._labels = labels
+        self._nevonecut = nevonecut
+        self._nevcutflow = nevcutflow
+        self._masksonecut = masksonecut
+        self._maskscutflow = maskscutflow
+        self._saver = saver
+
+    @property
+    def file(self):
+        return self._file
+
+    @property
+    def labels(self):
+        return self._labels
+
+    @property
+    def nevonecut(self):
+        return self._nevonecut
+
+    @property
+    def nevcutflow(self):
+        return self._nevcutflow
+
+    @property
+    def masksonecut(self):
+        return self._masksonecut
+
+    @property
+    def maskscutflow(self):
+        return self._maskscutflow
+
+    def compute(self):
+        self._nevonecut = list(dask.compute(*self._nevonecut))
+        self._nevcutflow = list(dask.compute(*self._nevcutflow))
+        self._masksonecut = list(dask.compute(*self._masksonecut))
+        self._maskscutflow = list(dask.compute(*self._maskscutflow))
+        numpy.savez(
+            self._file,
+            labels=self._labels,
+            nevonecut=self._nevonecut,
+            nevcutflow=self._nevcutflow,
+            masksonecut=self._masksonecut,
+            maskscutflow=self._maskscutflow,
+        )
+
+
 class NminusOne:
     """Object to be returned by PackedSelection.nminusone()"""
 
@@ -445,7 +532,7 @@ class NminusOne:
         labels = ["initial"] + [f"N - {i}" for i in self._names] + ["N"]
         return NminusOneResult(labels, self._nev, self._masks)
 
-    def to_npz(self, file, compressed=False):
+    def to_npz(self, file, compressed=False, compute=True):
         """Saves the results of the N-1 selection to a .npz file
 
         Parameters
@@ -458,26 +545,24 @@ class NminusOne:
             compressed : bool, optional
                 If True, the data will be compressed in the ``.npz`` file.
                 Default is False.
+            compute : bool, optional
+                Whether to immediately start writing or to return an object
+                that the user can choose when to start writing by calling compute().
+                Default is True.
         """
         labels, nev, masks = self.result()
-        if self._delayed_mode:
-            nev = list(dask.compute(*nev))
-            masks = list(dask.compute(*masks))
 
         if compressed:
-            numpy.savez_compressed(
-                file,
-                labels=labels,
-                nev=nev,
-                masks=masks,
-            )
+            saver = numpy.savez_compressed
         else:
-            numpy.savez(
-                file,
-                labels=labels,
-                nev=nev,
-                masks=masks,
-            )
+            saver = numpy.savez
+
+        out = NminusOneToNpz(file, labels, nev, masks, saver)
+        if compute:
+            out.compute()
+            return None
+        else:
+            return out
 
     def print(self):
         """Prints the statistics of the N-1 selection"""
@@ -571,11 +656,16 @@ class NminusOne:
             labels : list of strings
                 The bin labels of y axis of the histogram.
         """
-        for name, var in vars.items():
-            if len(var) != len(self._masks[0]):
-                raise ValueError(
-                    f"The variable '{name}' has length '{len(var)}', but the masks have length '{len(self._masks[0])}'"
-                )
+        if self._delayed_mode:
+            for name, var in vars.items():
+                if not compatible_partitions(var, self._masks[0]):
+                    raise IncompatiblePartitions("plot_vars", var, self._masks[0])
+        else:
+            for name, var in vars.items():
+                if len(var) != len(self._masks[0]):
+                    raise ValueError(
+                        f"The variable '{name}' has length '{len(var)}', but the masks have length '{len(self._masks[0])}'"
+                    )
 
         hists = []
         labels = ["initial"] + [f"N - {i}" for i in self._names] + ["N"]
@@ -681,7 +771,7 @@ class Cutflow:
             self._maskscutflow,
         )
 
-    def to_npz(self, file, compressed=False):
+    def to_npz(self, file, compressed=False, compute=True):
         """Saves the results of the cutflow to a .npz file
 
         Parameters
@@ -694,32 +784,26 @@ class Cutflow:
             compressed : bool, optional
                 If True, the data will be compressed in the ``.npz`` file.
                 Default is False.
+            compute : bool, optional
+                Whether to immediately start writing or to return an object
+                that the user can choose when to start writing by calling compute().
+                Default is True.
         """
         labels, nevonecut, nevcutflow, masksonecut, maskscutflow = self.result()
-        if self._delayed_mode:
-            nevonecut = list(dask.compute(*nevonecut))
-            nevcutflow = list(dask.compute(*nevcutflow))
-            masksonecut = list(dask.compute(*masksonecut))
-            maskscutflow = list(dask.compute(*maskscutflow))
 
         if compressed:
-            numpy.savez_compressed(
-                file,
-                labels=labels,
-                nevonecut=nevonecut,
-                nevcutflow=nevcutflow,
-                masksonecut=masksonecut,
-                maskscutflow=maskscutflow,
-            )
+            saver = numpy.savez_compressed
         else:
-            numpy.savez(
-                file,
-                labels=labels,
-                nevonecut=nevonecut,
-                nevcutflow=nevcutflow,
-                masksonecut=masksonecut,
-                maskscutflow=maskscutflow,
-            )
+            saver = numpy.savez
+
+        out = CutflowToNpz(
+            file, labels, nevonecut, nevcutflow, masksonecut, maskscutflow, saver
+        )
+        if compute:
+            out.compute()
+            return None
+        else:
+            return out
 
     def print(self):
         """Prints the statistics of the Cutflow"""
@@ -832,11 +916,16 @@ class Cutflow:
             labels : list of strings
                 The bin labels of the y axis of the histograms.
         """
-        for name, var in vars.items():
-            if len(var) != len(self._masksonecut[0]):
-                raise ValueError(
-                    f"The variable '{name}' has length '{len(var)}', but the masks have length '{len(self._masksonecut[0])}'"
-                )
+        if self._delayed_mode:
+            for name, var in vars.items():
+                if not compatible_partitions(var, self._masksonecut[0]):
+                    raise IncompatiblePartitions("tala", var, self._masksonecut[0])
+        else:
+            for name, var in vars.items():
+                if len(var) != len(self._masksonecut[0]):
+                    raise ValueError(
+                        f"The variable '{name}' has length '{len(var)}', but the masks have length '{len(self._masksonecut[0])}'"
+                    )
 
         histsonecut, histscutflow = [], []
         labels = ["initial"] + list(self._names)

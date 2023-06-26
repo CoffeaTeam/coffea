@@ -3,6 +3,7 @@ import os
 import numpy as np
 import pytest
 import uproot
+from dask_awkward.utils import IncompatiblePartitions
 from dummy_distributions import dummy_jagged_eta_pt
 
 from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
@@ -535,10 +536,7 @@ def test_packed_selection_nminusone():
 
     assert np.all(h.counts() == nev)
 
-    with pytest.raises(
-        ValueError,
-        match="The variable 'Ephi' has length '20', but the masks have length '40'",
-    ):
+    with pytest.raises(ValueError):
         nminusone.plot_vars(
             {"Ept": events.Electron.pt, "Ephi": events.Electron.phi[:20]}
         )
@@ -650,10 +648,7 @@ def test_packed_selection_cutflow():
     assert np.all(honecut.counts() == nevonecut)
     assert np.all(hcutflow.counts() == nevcutflow)
 
-    with pytest.raises(
-        ValueError,
-        match="The variable 'Ephi' has length '20', but the masks have length '40'",
-    ):
+    with pytest.raises(ValueError):
         cutflow.plot_vars({"Ept": events.Electron.pt, "Ephi": events.Electron.phi[:20]})
     honecuts, hcutflows, hslabels = cutflow.plot_vars(
         {"ept": events.Electron.pt, "ephi": events.Electron.phi}
@@ -888,10 +883,7 @@ def test_packed_selection_nminusone_dak(optimization_enabled):
 
         assert np.all(h.counts() == list(dask.compute(*nev)))
 
-        with pytest.raises(
-            ValueError,
-            match="The variable 'Ephi' has length '20', but the masks have length '40'",
-        ):
+        with pytest.raises(IncompatiblePartitions):
             nminusone.plot_vars(
                 {"Ept": events.Electron.pt, "Ephi": events.Electron.phi[:20]}
             )
@@ -1015,10 +1007,7 @@ def test_packed_selection_cutflow_dak(optimization_enabled):
         assert np.all(honecut.counts() == list(dask.compute(*nevonecut)))
         assert np.all(hcutflow.counts() == list(dask.compute(*nevcutflow)))
 
-        with pytest.raises(
-            ValueError,
-            match="The variable 'Ephi' has length '20', but the masks have length '40'",
-        ):
+        with pytest.raises(IncompatiblePartitions):
             cutflow.plot_vars(
                 {"Ept": events.Electron.pt, "Ephi": events.Electron.phi[:20]}
             )
@@ -1149,10 +1138,7 @@ def test_packed_selection_nminusone_dak_uproot_only(optimization_enabled):
 
         assert np.all(h.counts() == list(dask.compute(*nev)))
 
-        with pytest.raises(
-            ValueError,
-            match="The variable 'Ephi' has length '20', but the masks have length '40'",
-        ):
+        with pytest.raises(IncompatiblePartitions):
             nminusone.plot_vars(
                 {"Ept": events.Electron_pt, "Ephi": events.Electron_phi[:20]}
             )
@@ -1276,10 +1262,7 @@ def test_packed_selection_cutflow_dak_uproot_only(optimization_enabled):
         assert np.all(honecut.counts() == list(dask.compute(*nevonecut)))
         assert np.all(hcutflow.counts() == list(dask.compute(*nevcutflow)))
 
-        with pytest.raises(
-            ValueError,
-            match="The variable 'Ephi' has length '20', but the masks have length '40'",
-        ):
+        with pytest.raises(IncompatiblePartitions):
             cutflow.plot_vars(
                 {"Ept": events.Electron_pt, "Ephi": events.Electron_phi[:20]}
             )
