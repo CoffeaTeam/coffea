@@ -660,7 +660,7 @@ class NminusOne:
             for name, var in vars.items():
                 if not compatible_partitions(var, self._masks[0]):
                     raise IncompatiblePartitions("plot_vars", var, self._masks[0])
-        else:
+        elif not self._delayed_mode:  # use elif because if may fail
             for name, var in vars.items():
                 if len(var) != len(self._masks[0]):
                     raise ValueError(
@@ -919,8 +919,8 @@ class Cutflow:
         if self._delayed_mode:
             for name, var in vars.items():
                 if not compatible_partitions(var, self._masksonecut[0]):
-                    raise IncompatiblePartitions("tala", var, self._masksonecut[0])
-        else:
+                    raise IncompatiblePartitions("plot_vars", var, self._masksonecut[0])
+        elif not self._delayed_mode:  # use elif because if may fail
             for name, var in vars.items():
                 if len(var) != len(self._masksonecut[0]):
                     raise ValueError(
