@@ -555,6 +555,12 @@ class NminusOne:
                 Whether to immediately start writing or to return an object
                 that the user can choose when to start writing by calling compute().
                 Default is True.
+
+        Returns
+        -------
+            out : NminusOneToNpz or None
+                If ``compute=True``, returns None. Otherwise, returns an object
+                that can be used to start writing the data by calling compute().
         """
         labels, nev, masks = self.result()
 
@@ -794,6 +800,12 @@ class Cutflow:
                 Whether to immediately start writing or to return an object
                 that the user can choose when to start writing by calling compute().
                 Default is True.
+
+        Returns
+        -------
+            out : CutflowToNpz or None
+                If ``compute=True``, returns None. Otherwise, returns an object
+                that can be used to start writing the data by calling compute().
         """
         labels, nevonecut, nevcutflow, masksonecut, maskscutflow = self.result()
 
