@@ -616,10 +616,7 @@ class NminusOne:
             h = hist.dask.Hist(hist.axis.Integer(0, len(labels), name="N-1"))
             for i, weight in enumerate(self._masks, 1):
                 h.fill(dask_awkward.full_like(weight, i, dtype=int), weight=weight)
-            h.fill(
-                dask_awkward.from_awkward(awkward.Array([0]), 1),
-                weight=dask_awkward.from_awkward(awkward.Array([len(weight)]), 1),
-            )
+            h.fill(dask_awkward.zeros_like(weight))
 
         return h, labels
 
@@ -871,18 +868,12 @@ class Cutflow:
                 honecut.fill(
                     dask_awkward.full_like(weight, i, dtype=int), weight=weight
                 )
-            honecut.fill(
-                dask_awkward.from_awkward(awkward.Array([0]), 1),
-                weight=dask_awkward.from_awkward(awkward.Array([len(weight)]), 1),
-            )
+            honecut.fill(dask_awkward.zeros_like(weight))
             for i, weight in enumerate(self._maskscutflow, 1):
                 hcutflow.fill(
                     dask_awkward.full_like(weight, i, dtype=int), weight=weight
                 )
-            hcutflow.fill(
-                dask_awkward.from_awkward(awkward.Array([0]), 1),
-                weight=dask_awkward.from_awkward(awkward.Array([len(weight)]), 1),
-            )
+            hcutflow.fill(dask_awkward.zeros_like(weight))
 
         return honecut, hcutflow, labels
 
