@@ -57,14 +57,14 @@ def add(a: Accumulatable, b: Accumulatable) -> Accumulatable:
                 out[key] = (
                     copy.deepcopy(a[key])
                     if not isinstance(a[key], DaskMethodsMixin)
-                    else copy.copy(a[key])
+                    else a[key]
                 )
         for key in b:
             if key not in lhs:
                 out[key] = (
                     copy.deepcopy(b[key])
                     if not isinstance(b[key], DaskMethodsMixin)
-                    else copy.copy(b[key])
+                    else b[key]
                 )
         return out
     raise ValueError(
@@ -93,7 +93,7 @@ def iadd(a: Accumulatable, b: Accumulatable) -> Accumulatable:
                 a[key] = (
                     copy.deepcopy(b[key])
                     if not isinstance(b[key], DaskMethodsMixin)
-                    else copy.copy(b[key])
+                    else b[key]
                 )
         return a
     raise ValueError(

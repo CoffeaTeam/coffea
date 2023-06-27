@@ -232,7 +232,7 @@ class NanoEventsFactory:
         treepath="/Events",
         entry_start=None,
         entry_stop=None,
-        chunks_per_file=1,
+        chunks_per_file=None,
         runtime_cache=None,
         persistent_cache=None,
         schemaclass=NanoAODSchema,
@@ -326,6 +326,15 @@ class NanoEventsFactory:
                     ak_add_doc=True,
                     filter_branch=_remove_not_interpretable,
                     steps_per_file=chunks_per_file,
+                )
+            elif chunks_per_file is None:
+                opener = partial(
+                    uproot.dask,
+                    file,
+                    full_paths=True,
+                    open_files=False,
+                    ak_add_doc=True,
+                    filter_branch=_remove_not_interpretable,
                 )
             else:
                 opener = partial(
