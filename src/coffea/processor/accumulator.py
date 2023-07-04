@@ -10,7 +10,8 @@ from dask.base import DaskMethodsMixin
 try:
     from typing import Protocol, runtime_checkable  # type: ignore
 except ImportError:
-    from typing_extensions import Protocol, runtime_checkable  # type: ignore
+    from typing_extensions import Protocol  # type: ignore
+    from typing import runtime_checkable
 
 import numpy
 
