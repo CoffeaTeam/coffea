@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Gray"
+  given-names: "Lindsey"
+  affiliation: "Fermilab"
+  orcid: "https://orcid.org/0000-0002-6408-4288"
+- family-names: "Smith"
+  given-names: "Nicholas"
+  affiliation: "Fermilab"
+  orcid: "https://orcid.org/0000-0002-0324-3054"
+  email: "nick.smith@cern.ch"
+title: "coffea"
+version: 0.7.21
+doi: 10.5281/zenodo.7733568
+date-released: 2023-03-14
+url: "https://github.com/CoffeaTeam/coffea"
