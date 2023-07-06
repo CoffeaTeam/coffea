@@ -5,11 +5,16 @@ authors:
   given-names: "Lindsey"
   affiliation: "Fermilab"
   orcid: "https://orcid.org/0000-0002-6408-4288"
+  email: "Lindsey.Gray@cern.ch"
 - family-names: "Smith"
   given-names: "Nicholas"
   affiliation: "Fermilab"
   orcid: "https://orcid.org/0000-0002-0324-3054"
   email: "nick.smith@cern.ch"
+- family-names: "Novak"
+  given-names: "Andrzej"
+  affiliation: "RWTH Aachen"
+  orcid: "https://orcid.org/0000-0002-0389-5896"
 title: "coffea"
 version: 0.7.21
 doi: 10.5281/zenodo.7733568
