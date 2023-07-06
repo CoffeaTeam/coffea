@@ -15,6 +15,11 @@ authors:
   given-names: "Andrzej"
   affiliation: "RWTH Aachen"
   orcid: "https://orcid.org/0000-0002-0389-5896"
+- family-names: "Fackeldey"
+  given-names: "Peter"
+  affiliation: "RWTH Aachen University"
+  orcid: "https://orcid.org/0000-0003-4932-7162"
+  email: "peter.fackeldey@rwth-aachen.de"
 title: "coffea"
 version: 0.7.21
 doi: 10.5281/zenodo.7733568
