@@ -20,6 +20,11 @@ authors:
   affiliation: "RWTH Aachen University"
   orcid: "https://orcid.org/0000-0003-4932-7162"
   email: "peter.fackeldey@rwth-aachen.de"
+- family-names: "Tovar"
+  given-names: "Benjamin"
+  affiliation: "University of Notre Dame"
+  orcid: "https://orcid.org/0000-0002-5294-2281"
+  email: "btovar@nd.edu"
 title: "coffea"
 version: 0.7.21
 doi: 10.5281/zenodo.7733568
