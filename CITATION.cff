@@ -30,6 +30,11 @@ authors:
   affiliation: "University of Maryland, College Park"
   orcid: "https://orcid.org/0000-0002-5795-4783"
   email: "yi-mu.chen@cern.ch"
+- family-names: "Watts"
+  given-names: "Gordon"
+  affiliation: "University of Washington"
+  orcid: "https://orcid.org/0000-0002-0753-7308"
+  email: "gwatts@uw.edu"
 title: "coffea"
 version: 0.7.21
 doi: 10.5281/zenodo.7733568
