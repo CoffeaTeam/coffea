@@ -38,9 +38,9 @@ classifiers = [
 ]
 dependencies = [
   "awkward>=2.2.4",
-  "uproot>=5.0.9",
+  "uproot>=5.0.10",
   "dask[array]>=2023.4.0",
-  "dask-awkward>=2023.6.3",
+  "dask-awkward>=2023.7.0",
   "dask-histogram>=2023.6.0",
   "correctionlib>=2.0.0",
   "pyarrow>=6.0.0",
