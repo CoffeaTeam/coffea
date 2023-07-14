@@ -35,6 +35,11 @@ authors:
   affiliation: "University of Washington"
   orcid: "https://orcid.org/0000-0002-0753-7308"
   email: "gwatts@uw.edu"
+- family-names: "Krommydas"
+  given-names: "Iason"
+  affiliation: "Rice University"
+  orcid: "https://orcid.org/0000-0001-7849-8863"
+  email: "ik23@rice.edu"
 title: "coffea"
 version: 0.7.21
 doi: 10.5281/zenodo.7733568
