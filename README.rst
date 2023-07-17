@@ -95,4 +95,3 @@ If you would like to cite this code in your work, you can use the zenodo DOI ind
 
 - "N. Smith et al 2020 EPJ Web Conf. 245 06012"
 - "L. Gray et al 2023 J. Phys.: Conf. Ser. 2438 012033"
-
