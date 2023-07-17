@@ -88,3 +88,11 @@ The following are installed automatically when you install coffea with pip:
 Documentation
 =============
 All documentation is hosted at https://coffeateam.github.io/coffea/
+
+Citation
+========
+If you would like to cite this code in your work, you can use the zenodo DOI indicated in ``CITATION.cff``, or the `latest DOI <https://zenodo.org/badge/latestdoi/159673139>`__. You may also cite the proceedings:
+
+- "N. Smith et al 2020 EPJ Web Conf. 245 06012"
+- "L. Gray et al 2023 J. Phys.: Conf. Ser. 2438 012033"
+
