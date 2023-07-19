@@ -81,7 +81,7 @@ The following are installed automatically when you install coffea with pip:
 - `numba <https://numba.pydata.org/>`__ just-in-time compilation of python functions;
 - `scipy <https://scipy.org/scipylib/index.html>`__ for many statistical functions;
 - `matplotlib <https://matplotlib.org/>`__ as a plotting backend;
-- and other utility packages, as enumerated in ``setup.py``.
+- and other utility packages, as enumerated in ``pyproject.toml``.
 
 .. inclusion-marker-3-do-not-remove
 
