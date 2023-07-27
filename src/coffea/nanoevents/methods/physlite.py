@@ -3,6 +3,7 @@ from numbers import Number
 
 import awkward
 import numpy
+import dask_awkward
 
 from coffea.nanoevents.methods import base, vector
 
@@ -64,7 +65,8 @@ def _element_link_multiple(events, obj, link_field, with_name=None):
     return out
 
 
-def _get_target_offsets(offsets, event_index):
+def _concrete_get_target_offsets(load_column, event_index):
+    offsets = awkward.typetracer.length_one_if_typetracer(load_column.layout.offsets.data)
     if isinstance(event_index, Number):
         return offsets[event_index]
 
@@ -72,15 +74,52 @@ def _get_target_offsets(offsets, event_index):
         if layout.purelist_depth == 1:
             return awkward.contents.NumpyArray(offsets)[layout]
 
-    return awkward.transform(descend, event_index)
+    return awkward.transform(descend, event_index.layout)
+
+
+def _dask_get_target_offsets(load_column, event_index):
+    return dask_awkward.map_partitions(
+        _concrete_get_target_offsets,
+        load_column,
+        event_index
+    )
+
+
+def _get_target_offsets(load_column, event_index):
+    # TODO check event_index as well
+    if isinstance(load_column, dask_awkward.Array):
+        return _dask_get_target_offsets(load_column, event_index)
+    return _concrete_get_target_offsets(load_column, event_index)
 
 
 def _get_global_index(target, eventindex, index):
     load_column = target[
         target.fields[0]
-    ]  # awkward is eager-mode now (will need to dask this)
-    target_offsets = _get_target_offsets(load_column.layout.offsets, eventindex)
-    return target_offsets + index
+    ]
+    target_offsets = _get_target_offsets(load_column, eventindex)
+    return target_offsets + index # here i get
+
+
+# def _concrete_get_global_index(target, eventindex, index):
+#     load_column = target[
+#         target.fields[0]
+#     ]
+#     target_offsets = _get_target_offsets(load_column.layout.offsets, eventindex)
+#     return target_offsets + index
+
+# def _dask_get_global_index(target, eventindex, index):
+#     return dask_awkward.map_partitions(
+#         _concrete_get_global_index,
+#         target,
+#         eventindex,
+#         index,
+#     )
+
+# def _get_global_index(target, eventindex, index):
+#     # check target, eventindex, index all dak
+#     if isinstance(target, dask_awkward.Array):
+#         return _dask_get_global_index(target, eventindex, index)
+#     return _concrete_get_global_index(target, eventindex, index)
 
 
 @awkward.mixin_class(behavior)
