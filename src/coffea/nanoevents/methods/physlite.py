@@ -192,9 +192,9 @@ class Electron(Particle):
     """Electron collection, following `xAOD::Electron_v1
     <https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODEgamma/Root/Electron_v1.cxx>`_.
     """
+
     @property
     def trackParticles(self, _dask_array_=None):
-
         if _dask_array_ is not None:
             target = _dask_array_.behavior["__original_array__"]().GSFTrackParticles
             links = _dask_array_.trackParticleLinks
@@ -215,7 +215,9 @@ class Electron(Particle):
         )
 
     @property
-    def trackParticle(self):
+    def trackParticle(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            self = _dask_array_  # TODO: is this what i should be doing?
         trackParticles = self.trackParticles
         return self.trackParticles[
             tuple([slice(None) for i in range(trackParticles.ndim - 1)] + [0])
