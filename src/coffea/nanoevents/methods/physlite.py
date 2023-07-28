@@ -2,8 +2,8 @@
 from numbers import Number
 
 import awkward
-import numpy
 import dask_awkward
+import numpy
 
 from coffea.nanoevents.methods import base, vector
 
