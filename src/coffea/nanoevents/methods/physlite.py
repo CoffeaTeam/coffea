@@ -65,10 +65,23 @@ def _element_link_multiple(events, obj, link_field, with_name=None):
     return out
 
 
-def _concrete_get_target_offsets(load_column, event_index):
-    offsets = awkward.typetracer.length_one_if_typetracer(load_column.layout.offsets.data)
+def _get_target_offsets(load_column, event_index):
+    if isinstance(load_column, dask_awkward.Array):
+        # TODO check event_index as well
+        return dask_awkward.map_partitions(
+            _get_target_offsets, load_column, event_index
+        )
+
+    offsets = load_column.layout.offsets.data
+
     if isinstance(event_index, Number):
+        # TODO i think this is not working yet in dask
         return offsets[event_index]
+
+    # nescessary to stick it into the `NumpyArray` constructor
+    offsets = awkward.typetracer.length_zero_if_typetracer(
+        load_column.layout.offsets.data
+    )
 
     def descend(layout, depth, **kwargs):
         if layout.purelist_depth == 1:
@@ -77,27 +90,10 @@ def _concrete_get_target_offsets(load_column, event_index):
     return awkward.transform(descend, event_index.layout)
 
 
-def _dask_get_target_offsets(load_column, event_index):
-    return dask_awkward.map_partitions(
-        _concrete_get_target_offsets,
-        load_column,
-        event_index
-    )
-
-
-def _get_target_offsets(load_column, event_index):
-    # TODO check event_index as well
-    if isinstance(load_column, dask_awkward.Array):
-        return _dask_get_target_offsets(load_column, event_index)
-    return _concrete_get_target_offsets(load_column, event_index)
-
-
 def _get_global_index(target, eventindex, index):
-    load_column = target[
-        target.fields[0]
-    ]
+    load_column = target[target.fields[0]]
     target_offsets = _get_target_offsets(load_column, eventindex)
-    return target_offsets + index # here i get
+    return target_offsets + index  # here i get
 
 
 # def _concrete_get_global_index(target, eventindex, index):
@@ -196,10 +192,21 @@ class Electron(Particle):
     """Electron collection, following `xAOD::Electron_v1
     <https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODEgamma/Root/Electron_v1.cxx>`_.
     """
-
     @property
-    def trackParticles(self):
+    def trackParticles(self, _dask_array_=None):
+
+        if _dask_array_ is not None:
+            target = _dask_array_.behavior["__original_array__"]().GSFTrackParticles
+            links = _dask_array_.trackParticleLinks
+            return _element_link(
+                target,
+                _dask_array_._eventindex,
+                links.m_persIndex,
+                links.m_persKey,
+            )
+
         links = self.trackParticleLinks
+
         return _element_link(
             self._events().GSFTrackParticles,
             self._eventindex,

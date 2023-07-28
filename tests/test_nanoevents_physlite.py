@@ -5,9 +5,10 @@ import pytest
 
 from coffea.nanoevents import NanoEventsFactory, PHYSLITESchema
 
-from coffea.nanoevents.methods.physlite import _get_global_index
+from coffea.nanoevents.methods.physlite import _get_global_index, _element_link
 
 import dask
+import dask_awkward as dak
 dask.config.set({"awkward.optimization.enabled": False, "awkward.raise-failed-meta": True, "awkward.optimization.on-fail": "raise"})
 
 pytestmark = pytest.mark.skip(reason="uproot is upset with this file...")
@@ -25,7 +26,18 @@ def _events():
 
 events = _events()
 
-gi = _get_global_index(events.GSFTrackParticles, events.Electrons._eventindex, events.Electrons.trackParticleLinks.m_persIndex)
+gi = _get_global_index(
+    events.GSFTrackParticles,
+    events.Electrons._eventindex,
+    events.Electrons.trackParticleLinks.m_persIndex
+)
+
+el = _element_link(
+    events.GSFTrackParticles,
+    events.Electrons._eventindex,
+    events.Electrons.trackParticleLinks.m_persIndex,
+    events.Electrons.trackParticleLinks.m_persKey
+)
 
 # @pytest.fixture(scope="module")
 # def events():
