@@ -59,6 +59,10 @@ def _element_link_method(self, link_name, target_name, _dask_array_):
 
 
 def _element_link_multiple(events, obj, link_field, with_name=None):
+    # currently not working in dask because:
+    # - we don't know the resulting type beforehand
+    # - also not the targets, so no way to find out which columns to load?
+    # - could consider to treat the case of truth collections by just loading all truth columns
     link = obj[link_field]
     key = link.m_persKey
     index = link.m_persIndex
