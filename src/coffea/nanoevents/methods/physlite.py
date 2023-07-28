@@ -39,6 +39,25 @@ def _element_link(target_collection, eventindex, index, key):
     return target_collection._apply_global_index(global_index)
 
 
+def _element_link_method(self, link_name, target_name, _dask_array_):
+    if _dask_array_ is not None:
+        target = _dask_array_.behavior["__original_array__"]()[target_name]
+        links = _dask_array_[link_name]
+        return _element_link(
+            target,
+            _dask_array_._eventindex,
+            links.m_persIndex,
+            links.m_persKey,
+        )
+    links = self[link_name]
+    return _element_link(
+        self._events()[target_name],
+        self._eventindex,
+        links.m_persIndex,
+        links.m_persKey,
+    )
+
+
 def _element_link_multiple(events, obj, link_field, with_name=None):
     link = obj[link_field]
     key = link.m_persKey
@@ -66,8 +85,10 @@ def _element_link_multiple(events, obj, link_field, with_name=None):
 
 
 def _get_target_offsets(load_column, event_index):
-    if isinstance(load_column, dask_awkward.Array):
-        # TODO check event_index as well
+    if isinstance(load_column, dask_awkward.Array) and isinstance(
+        event_index, dask_awkward.Array
+    ):
+        # wrap in map_partitions if dask arrays
         return dask_awkward.map_partitions(
             _get_target_offsets, load_column, event_index
         )
@@ -75,10 +96,10 @@ def _get_target_offsets(load_column, event_index):
     offsets = load_column.layout.offsets.data
 
     if isinstance(event_index, Number):
-        # TODO i think this is not working yet in dask
         return offsets[event_index]
 
     # nescessary to stick it into the `NumpyArray` constructor
+    # if typetracer is passed through
     offsets = awkward.typetracer.length_zero_if_typetracer(
         load_column.layout.offsets.data
     )
@@ -93,29 +114,7 @@ def _get_target_offsets(load_column, event_index):
 def _get_global_index(target, eventindex, index):
     load_column = target[target.fields[0]]
     target_offsets = _get_target_offsets(load_column, eventindex)
-    return target_offsets + index  # here i get
-
-
-# def _concrete_get_global_index(target, eventindex, index):
-#     load_column = target[
-#         target.fields[0]
-#     ]
-#     target_offsets = _get_target_offsets(load_column.layout.offsets, eventindex)
-#     return target_offsets + index
-
-# def _dask_get_global_index(target, eventindex, index):
-#     return dask_awkward.map_partitions(
-#         _concrete_get_global_index,
-#         target,
-#         eventindex,
-#         index,
-#     )
-
-# def _get_global_index(target, eventindex, index):
-#     # check target, eventindex, index all dak
-#     if isinstance(target, dask_awkward.Array):
-#         return _dask_get_global_index(target, eventindex, index)
-#     return _concrete_get_global_index(target, eventindex, index)
+    return target_offsets + index
 
 
 @awkward.mixin_class(behavior)
@@ -175,12 +174,12 @@ class Muon(Particle):
     """
 
     @property
-    def trackParticle(self):
-        return _element_link(
-            self._events().CombinedMuonTrackParticles,
-            self._eventindex,
-            self["combinedTrackParticleLink.m_persIndex"],
-            self["combinedTrackParticleLink.m_persKey"],
+    def trackParticle(self, _dask_array_=None):
+        return _element_link_method(
+            self,
+            "combinedTrackParticleLink",
+            "CombinedMuonTrackParticles",
+            _dask_array_,
         )
 
 
@@ -195,23 +194,8 @@ class Electron(Particle):
 
     @property
     def trackParticles(self, _dask_array_=None):
-        if _dask_array_ is not None:
-            target = _dask_array_.behavior["__original_array__"]().GSFTrackParticles
-            links = _dask_array_.trackParticleLinks
-            return _element_link(
-                target,
-                _dask_array_._eventindex,
-                links.m_persIndex,
-                links.m_persKey,
-            )
-
-        links = self.trackParticleLinks
-
-        return _element_link(
-            self._events().GSFTrackParticles,
-            self._eventindex,
-            links.m_persIndex,
-            links.m_persKey,
+        return _element_link_method(
+            self, "trackParticleLinks", "GSFTrackParticles", _dask_array_
         )
 
     @property
@@ -222,6 +206,12 @@ class Electron(Particle):
         return self.trackParticles[
             tuple([slice(None) for i in range(trackParticles.ndim - 1)] + [0])
         ]
+
+    @property
+    def caloClusters(self, _dask_array_=None):
+        return _element_link_method(
+            self, "caloClusterLinks", "CaloCalTopoClusters", _dask_array_
+        )
 
 
 _set_repr_name("Electron")
