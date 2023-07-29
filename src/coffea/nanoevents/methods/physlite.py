@@ -102,7 +102,7 @@ def _get_target_offsets(load_column, event_index):
     if isinstance(event_index, Number):
         return offsets[event_index]
 
-    # nescessary to stick it into the `NumpyArray` constructor
+    # necessary to stick it into the `NumpyArray` constructor
     # if typetracer is passed through
     offsets = awkward.typetracer.length_zero_if_typetracer(
         load_column.layout.offsets.data
