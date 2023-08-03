@@ -404,7 +404,7 @@ def test_rochester():
 
     # test against mc
     events = NanoEventsFactory.from_root(
-        os.path.abspath("tests/samples/nano_dy.root")
+        {os.path.abspath("tests/samples/nano_dy.root"): "Events"},
     ).events()
 
     hasgen = ~np.isnan(ak.fill_none(events.Muon.matched_gen.pt, np.nan))
