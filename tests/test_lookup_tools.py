@@ -372,8 +372,6 @@ def test_jec_txt_effareas():
 
 
 def test_rochester():
-    pytest.xfail("weird side effect from running other tests... passes by itself")
-
     rochester_data = lookup_tools.txt_converters.convert_rochester_file(
         "tests/samples/RoccoR2018.txt.gz", loaduncs=True
     )
