@@ -230,11 +230,17 @@ class rochester_lookup:
         args = (u_flat, cbA_flat, cbA_flat, cbN_flat, cbN_flat, loc, cbS_flat)
 
         if any(isinstance(arg, dak.Array) for arg in args):
+
             def apply(*args):
-                args_lz = [awkward.typetracer.length_zero_if_typetracer(arg) for arg in args]
+                args_lz = [
+                    awkward.typetracer.length_zero_if_typetracer(arg) for arg in args
+                ]
                 out = awkward.Array(doublecrystalball.ppf(*args_lz))
                 if awkward.backend(args[0]) == "typetracer":
-                    out = awkward.Array(out.layout.to_typetracer(forget_length=True), behavior=out.behavior)
+                    out = awkward.Array(
+                        out.layout.to_typetracer(forget_length=True),
+                        behavior=out.behavior,
+                    )
                 return out
 
             invcdf = dak.map_partitions(apply, *args)
