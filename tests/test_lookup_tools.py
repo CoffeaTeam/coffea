@@ -388,7 +388,7 @@ def test_rochester():
 
     # test against nanoaod
     events = NanoEventsFactory.from_root(
-        os.path.abspath("tests/samples/nano_dimuon.root")
+        {os.path.abspath("tests/samples/nano_dimuon.root"): "Events"}
     ).events()
 
     data_k = rochester.kScaleDT(
