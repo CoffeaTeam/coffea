@@ -388,23 +388,25 @@ def test_rochester():
 
     # test against nanoaod
     events = NanoEventsFactory.from_root(
-        {os.path.abspath("tests/samples/nano_dimuon.root"): "Events"}
+        {os.path.abspath("tests/samples/nano_dimuon.root"): "Events"},
+        permit_dask=True,
     ).events()
 
     data_k = rochester.kScaleDT(
         events.Muon.charge, events.Muon.pt, events.Muon.eta, events.Muon.phi
     )
-    data_k = np.array(ak.flatten(data_k))
+    data_k = ak.flatten(data_k).compute().to_numpy()
     assert all(np.isclose(data_k, official_data_k))
     data_err = rochester.kScaleDTerror(
         events.Muon.charge, events.Muon.pt, events.Muon.eta, events.Muon.phi
     )
-    data_err = np.array(ak.flatten(data_err), dtype=float)
+    data_err = ak.flatten(data_err).compute().to_numpy()
     assert all(np.isclose(data_err, official_data_err, atol=1e-8))
 
     # test against mc
     events = NanoEventsFactory.from_root(
         {os.path.abspath("tests/samples/nano_dy.root"): "Events"},
+        permit_dask=True,
     ).events()
 
     hasgen = ~np.isnan(ak.fill_none(events.Muon.matched_gen.pt, np.nan))
@@ -424,10 +426,10 @@ def test_rochester():
         events.Muon.nTrackerLayers[~hasgen],
         mc_rand[~hasgen],
     )
-    mc_k = np.array(ak.flatten(ak.ones_like(events.Muon.pt)))
-    hasgen_flat = np.array(ak.flatten(hasgen))
-    mc_k[hasgen_flat] = np.array(ak.flatten(mc_kspread))
-    mc_k[~hasgen_flat] = np.array(ak.flatten(mc_ksmear))
+    mc_k = ak.flatten(ak.ones_like(events.Muon.pt)).compute().to_numpy()
+    hasgen_flat = ak.flatten(hasgen).compute().to_numpy()
+    mc_k[hasgen_flat] = ak.flatten(mc_kspread).compute().to_numpy()
+    mc_k[~hasgen_flat] = ak.flatten(mc_ksmear).compute().to_numpy()
     assert all(np.isclose(mc_k, official_mc_k))
 
     mc_errspread = rochester.kSpreadMCerror(
@@ -445,9 +447,9 @@ def test_rochester():
         events.Muon.nTrackerLayers[~hasgen],
         mc_rand[~hasgen],
     )
-    mc_err = np.array(ak.flatten(ak.ones_like(events.Muon.pt)))
-    mc_err[hasgen_flat] = np.array(ak.flatten(mc_errspread))
-    mc_err[~hasgen_flat] = np.array(ak.flatten(mc_errsmear))
+    mc_err = ak.flatten(ak.ones_like(events.Muon.pt)).compute().to_numpy()
+    mc_err[hasgen_flat] = ak.flatten(mc_errspread).compute().to_numpy()
+    mc_err[~hasgen_flat] = ak.flatten(mc_errsmear).compute().to_numpy()
     assert all(np.isclose(mc_err, official_mc_err, atol=1e-8))
 
 
