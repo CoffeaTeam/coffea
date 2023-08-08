@@ -410,7 +410,7 @@ def test_rochester():
     ).events()
 
     hasgen = ~np.isnan(ak.fill_none(events.Muon.matched_gen.pt, np.nan))
-    mc_rand = ak.unflatten(mc_rand, ak.num(hasgen))
+    mc_rand = ak.unflatten(dak.from_awkward(ak.Array(mc_rand), 1), ak.num(hasgen))
     mc_kspread = rochester.kSpreadMC(
         events.Muon.charge[hasgen],
         events.Muon.pt[hasgen],
