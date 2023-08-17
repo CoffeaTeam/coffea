@@ -2,6 +2,8 @@ import cloudpickle
 
 from coffea.lumi_tools import LumiData, LumiList, LumiMask
 from coffea.util import numpy as np
+import awkward as ak
+import dask_awkward as dak
 
 
 def test_lumidata():
@@ -85,6 +87,12 @@ def test_lumimask():
         assert np.all(mask == py_mask)
 
     assert np.all(lumimask(runs, lumis) == lumimask_pickle(runs, lumis))
+
+    runs_dak = dak.from_awkward(ak.Array(runs), 1)
+    lumis_dak = dak.from_awkward(ak.Array(lumis), 1)
+    assert np.all(
+        lumimask(runs_dak, lumis_dak).compute() == lumimask_pickle(runs, lumis)
+    )
 
 
 def test_lumilist():
