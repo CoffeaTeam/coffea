@@ -1,9 +1,9 @@
+import awkward as ak
 import cloudpickle
+import dask_awkward as dak
 
 from coffea.lumi_tools import LumiData, LumiList, LumiMask
 from coffea.util import numpy as np
-import awkward as ak
-import dask_awkward as dak
 
 
 def test_lumidata():
