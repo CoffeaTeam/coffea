@@ -113,6 +113,26 @@ class EDM4HEPSchema(BaseSchema):
                 form["content"]["parameters"]["collection_name"] = objname
                 branch_forms[objname] = form
             elif all(comp in components for comp in self._momentum_fields_m):
+                # print(list(branch_forms.keys()))
+
+                offset_form = {
+                    "class": "NumpyArray",
+                    "itemsize": 8,
+                    "format": "i",
+                    "primitive": "int64",
+                    "form_key": concat(
+                        *[
+                            branch_forms[f"{objname}/{objname}.momentum.x"]["form_key"],
+                            "!offsets",
+                        ]
+                    ),
+                }
+
+                branch_forms[f"G{objname}ParentsIndex"] = transforms.local2global_form(
+                    branch_forms[f"{objname}#0/{objname}#0.index"],
+                    offset_form,
+                )
+
                 form = zip_forms(
                     {
                         "x": branch_forms.pop(f"{objname}/{objname}.momentum.x"),
@@ -121,11 +141,21 @@ class EDM4HEPSchema(BaseSchema):
                         "mass": branch_forms.pop(f"{objname}/{objname}.mass"),
                         "charge": branch_forms.pop(f"{objname}/{objname}.charge"),
                         "pdgId": branch_forms.pop(f"{objname}/{objname}.PDG"),
+                        "parents_counts": transforms.startsandstops2counts_form(
+                            branch_forms.pop(f"{objname}/{objname}.parents_begin"),
+                            branch_forms.pop(f"{objname}/{objname}.parents_end"),
+                        ),
+                        "children_counts": transforms.startsandstops2counts_form(
+                            branch_forms.pop(f"{objname}/{objname}.daughters_begin"),
+                            branch_forms.pop(f"{objname}/{objname}.daughters_end"),
+                        ),
                     },
                     objname,
                     composite_behavior.get(objname, "MCTruthParticle"),
                 )
+
                 form["content"]["parameters"]["collection_name"] = objname
+
                 branch_forms[objname] = form
             elif components == {
                 "fCoordinates.fX",
