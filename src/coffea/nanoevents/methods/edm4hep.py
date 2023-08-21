@@ -1,4 +1,5 @@
 import awkward
+import dask_awkward
 import numpy
 
 from coffea.nanoevents.methods import base, vector
@@ -60,6 +61,68 @@ class MCTruthParticle(vector.LorentzVectorM, base.NanoCollection):
                 self.behavior[
                     "__original_array__"
                 ]().MarlinTrkTracksMCTruthLink.Gtrk_index,
+                _dask_array_=original,
+            )
+        raise RuntimeError("Not reachable in dask mode!")
+
+    def _apply_nested_global_index(self, index, nested_counts, _dask_array_=None):
+        """As _apply_global_index but expects one additional layer of nesting to get specified."""
+        if isinstance(index, int):
+            out = self._content()[index]
+            return awkward.Record(out, behavior=self.behavior)
+
+        def flat_take(layout):
+            idx = awkward.Array(layout)
+            return self._content()[idx.mask[idx >= 0]]
+
+        def descend(layout, depth, **kwargs):
+            if layout.purelist_depth == 1:
+                return flat_take(layout)
+
+        (index_out,) = awkward.broadcast_arrays(
+            index._meta if isinstance(index, dask_awkward.Array) else index
+        )
+        nested_counts_out = (
+            nested_counts._meta
+            if isinstance(nested_counts, dask_awkward.Array)
+            else nested_counts
+        )
+        index_out = awkward.unflatten(
+            index_out, awkward.flatten(nested_counts_out), axis=-1
+        )
+        layout_out = awkward.transform(descend, index_out.layout, highlevel=False)
+        out = awkward.Array(layout_out, behavior=self.behavior)
+
+        if isinstance(index, dask_awkward.Array):
+            return _dask_array_.map_partitions(
+                base._ClassMethodFn("_apply_nested_global_index"),
+                index,
+                nested_counts,
+                label="_apply_nested_global_index",
+                meta=out,
+            )
+        return out
+
+    @property
+    def parents(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            collection_name = self.layout.purelist_parameter("collection_name")
+            original = self.behavior["__original_array__"]()[collection_name]
+            return original._apply_nested_global_index(
+                self.behavior["__original_array__"]().GMCParticlesSkimmedParentsIndex,
+                original.parents_counts,
+                _dask_array_=original,
+            )
+        raise RuntimeError("Not reachable in dask mode!")
+
+    @property
+    def children(self, _dask_array_=None):
+        if _dask_array_ is not None:
+            collection_name = self.layout.purelist_parameter("collection_name")
+            original = self.behavior["__original_array__"]()[collection_name]
+            return original._apply_nested_global_index(
+                self.behavior["__original_array__"]().GMCParticlesSkimmedParentsIndex,
+                original.children_counts,
                 _dask_array_=original,
             )
         raise RuntimeError("Not reachable in dask mode!")

@@ -170,6 +170,26 @@ def counts2nestedindex(stack):
     stack.append(out)
 
 
+def startsandstops2counts_form(starts, stops):
+    if not starts["class"].startswith("ListOffset"):
+        raise RuntimeError
+    if not stops["class"].startswith("ListOffset"):
+        raise RuntimeError
+
+    form = copy.deepcopy(starts)
+
+    key = concat(starts["form_key"], stops["form_key"], "!startsandstops2counts")
+    form["content"]["form_key"] = concat(key, "!content")
+    return form
+
+
+def startsandstops2counts(stack):
+    stops = stack.pop()
+    starts = stack.pop()
+
+    stack.append(stops - starts)
+
+
 @numba.njit
 def _distinctParent_kernel(allpart_parent, allpart_pdg):
     out = numpy.empty(len(allpart_pdg), dtype=numpy.int64)
