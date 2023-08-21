@@ -203,13 +203,13 @@ class EDM4HEPSchema(BaseSchema):
 
                 Greco_index_form = transforms.local2global_form(
                     branch_forms[
-                        f"MCTruthRecoLink#{RECO_PARTICLES}/MCTruthRecoLink#{RECO_PARTICLES}.index"
+                        f"_MCTruthRecoLink_rec/_MCTruthRecoLink_rec.index"
                     ],
                     pfos_offsets_form,
                 )
                 Gmc_index_form = transforms.local2global_form(
                     branch_forms[
-                        f"MCTruthRecoLink#{MC_PARTICLES}/MCTruthRecoLink#{MC_PARTICLES}.index"
+                        f"_MCTruthRecoLink_sim/_MCTruthRecoLink_sim.index"
                     ],
                     mc_offsets_form,
                 )
@@ -225,16 +225,16 @@ class EDM4HEPSchema(BaseSchema):
                             "RecoMCTruthLink/RecoMCTruthLink.weight"
                         ],
                         "reco_index": branch_forms[
-                            f"MCTruthRecoLink#{RECO_PARTICLES}/MCTruthRecoLink#{RECO_PARTICLES}.index"
+                            f"_MCTruthRecoLink_rec/_MCTruthRecoLink_rec.index"
                         ],  # only the weights vary between "MCTruthRecoLink" and "RecoMCTruthLink"
                         "reco_collectionID": branch_forms[
-                            f"MCTruthRecoLink#{RECO_PARTICLES}/MCTruthRecoLink#{RECO_PARTICLES}.collectionID"
+                            f"_MCTruthRecoLink_rec/_MCTruthRecoLink_rec.collectionID"
                         ],
                         "mc_index": branch_forms[
-                            f"MCTruthRecoLink#{MC_PARTICLES}/MCTruthRecoLink#{MC_PARTICLES}.index"
+                            f"_MCTruthRecoLink_sim/_MCTruthRecoLink_sim.index"
                         ],
                         "mc_collectionID": branch_forms[
-                            f"MCTruthRecoLink#{MC_PARTICLES}/MCTruthRecoLink#{MC_PARTICLES}.collectionID"
+                            f"_MCTruthRecoLink_sim/_MCTruthRecoLink_sim.collectionID"
                         ],
                     },
                     objname,
@@ -271,13 +271,13 @@ class EDM4HEPSchema(BaseSchema):
 
                 Gcluster_index_form = transforms.local2global_form(
                     branch_forms[
-                        f"MCTruthClusterLink#{RECO_PARTICLES}/MCTruthClusterLink#{RECO_PARTICLES}.index"
+                        f"_MCTruthClusterLink_rec/_MCTruthClusterLink_rec.index"
                     ],
                     cluster_offsets_form,
                 )
                 Gmc_index_form = transforms.local2global_form(
                     branch_forms[
-                        f"MCTruthClusterLink#{MC_PARTICLES}/MCTruthClusterLink#{MC_PARTICLES}.index"
+                        f"_MCTruthClusterLink_sim/_MCTruthClusterLink_sim.index"
                     ],
                     mc_offsets_form,
                 )
@@ -293,16 +293,16 @@ class EDM4HEPSchema(BaseSchema):
                             "ClusterMCTruthLink/ClusterMCTruthLink.weight"
                         ],
                         "cluster_index": branch_forms[
-                            f"MCTruthClusterLink#{RECO_PARTICLES}/MCTruthClusterLink#{RECO_PARTICLES}.index"
+                            f"_MCTruthClusterLink_rec/_MCTruthClusterLink_rec.index"
                         ],
                         "cluster_collectionID": branch_forms[
-                            f"MCTruthClusterLink#{RECO_PARTICLES}/MCTruthClusterLink#{RECO_PARTICLES}.collectionID"
+                            f"_MCTruthClusterLink_rec/_MCTruthClusterLink_rec.collectionID"
                         ],
                         "mc_index": branch_forms[
-                            f"MCTruthClusterLink#{MC_PARTICLES}/MCTruthClusterLink#{MC_PARTICLES}.index"
+                            f"_MCTruthClusterLink_sim/_MCTruthClusterLink_sim.index"
                         ],
                         "mc_collectionID": branch_forms[
-                            f"MCTruthClusterLink#{MC_PARTICLES}/MCTruthClusterLink#{MC_PARTICLES}.collectionID"
+                            f"_MCTruthClusterLink_sim/_MCTruthClusterLink_sim.collectionID"
                         ],
                     },
                     objname,
@@ -315,13 +315,13 @@ class EDM4HEPSchema(BaseSchema):
             ):
                 trk_offsets_src = (
                     branch_forms[
-                        f"MarlinTrkTracks_{TRACKSTATE_XREF}/MarlinTrkTracks_{TRACKSTATE_XREF}.omega"
+                        f"_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.omega"
                     ]
-                    if f"MarlinTrkTracks_{TRACKSTATE_XREF}/MarlinTrkTracks_{TRACKSTATE_XREF}.omega"
+                    if f"_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.omega"
                     in branch_forms
                     else branch_forms[
                         "MarlinTrkTracks"
-                    ]  # since tracks are set up differently this should maybe be f"MarlinTrkTracks_{TRACKSTATE_XREF}"
+                    ]  
                 )
                 trk_offsets_form = {
                     "class": "NumpyArray",
@@ -347,13 +347,13 @@ class EDM4HEPSchema(BaseSchema):
 
                 Gtrk_index_form = transforms.local2global_form(
                     branch_forms[
-                        f"MCTruthMarlinTrkTracksLink#{RECO_PARTICLES}/MCTruthMarlinTrkTracksLink#{RECO_PARTICLES}.index"
+                        f"_MCTruthMarlinTrkTracksLink_rec/_MCTruthMarlinTrkTracksLink_rec.index"
                     ],
                     trk_offsets_form,
                 )
                 Gmc_index_form = transforms.local2global_form(
                     branch_forms[
-                        f"MCTruthMarlinTrkTracksLink#{MC_PARTICLES}/MCTruthMarlinTrkTracksLink#{MC_PARTICLES}.index"
+                        f"_MCTruthMarlinTrkTracksLink_sim/_MCTruthMarlinTrkTracksLink_sim.index"
                     ],
                     mc_offsets_form,
                 )
@@ -369,16 +369,16 @@ class EDM4HEPSchema(BaseSchema):
                             "MarlinTrkTracksMCTruthLink/MarlinTrkTracksMCTruthLink.weight"
                         ],
                         "trk_index": branch_forms[
-                            f"MCTruthMarlinTrkTracksLink#{RECO_PARTICLES}/MCTruthMarlinTrkTracksLink#{RECO_PARTICLES}.index"
+                            f"_MCTruthMarlinTrkTracksLink_rec/_MCTruthMarlinTrkTracksLink_rec.index"
                         ],
                         "trk_collectionID": branch_forms[
-                            f"MCTruthMarlinTrkTracksLink#{RECO_PARTICLES}/MCTruthMarlinTrkTracksLink#{RECO_PARTICLES}.collectionID"
+                            f"_MCTruthMarlinTrkTracksLink_rec/_MCTruthMarlinTrkTracksLink_rec.collectionID"
                         ],
                         "mc_index": branch_forms[
-                            f"MCTruthMarlinTrkTracksLink#{MC_PARTICLES}/MCTruthMarlinTrkTracksLink#{MC_PARTICLES}.index"
+                            f"_MCTruthMarlinTrkTracksLink_sim/_MCTruthMarlinTrkTracksLink_sim.index"
                         ],
                         "mc_collectionID": branch_forms[
-                            f"MCTruthMarlinTrkTracksLink#{MC_PARTICLES}/MCTruthMarlinTrkTracksLink#{MC_PARTICLES}.collectionID"
+                            f"_MCTruthMarlinTrkTracksLink_sim/_MCTruthMarlinTrkTracksLink_sim.collectionID"
                         ],
                     },
                     objname,
@@ -388,7 +388,7 @@ class EDM4HEPSchema(BaseSchema):
             elif objname == "PandoraClusters":
                 form = zip_forms(
                     {
-                        "pt": branch_forms[f"{objname}/{objname}.energy"],  # in mm
+                        "pt": branch_forms[f"{objname}/{objname}.energy"], 
                         "theta": branch_forms.pop(f"{objname}/{objname}.iTheta"),
                         "phi": branch_forms.pop(f"{objname}/{objname}.phi"),
                         "energy": branch_forms[f"{objname}/{objname}.energy"],
@@ -402,15 +402,15 @@ class EDM4HEPSchema(BaseSchema):
                 form = zip_forms(
                     {
                         "omega": branch_forms.pop(
-                            f"{objname}_{TRACKSTATE_XREF}/{objname}_{TRACKSTATE_XREF}.omega"
+                            f"_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.omega"
                         ),
                         "phi": branch_forms.pop(
-                            f"{objname}_{TRACKSTATE_XREF}/{objname}_{TRACKSTATE_XREF}.phi"
+                            f"_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.phi"
                         ),
                         "tanLambda": branch_forms.pop(
-                            f"{objname}_{TRACKSTATE_XREF}/{objname}_{TRACKSTATE_XREF}.tanLambda"
+                            f"_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.tanLambda"
                         ),
-                        "dEdx": branch_forms.pop(f"{objname}/{objname}.dEdx"),
+                        # "dEdx": branch_forms.pop(f"_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.dEdx"),
                     },
                     objname,
                     composite_behavior.get(objname, "Track"),
