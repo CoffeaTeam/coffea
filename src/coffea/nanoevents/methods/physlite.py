@@ -204,12 +204,12 @@ class Electron(Particle):
 
     @property
     def trackParticle(self, _dask_array_=None):
-        if _dask_array_ is not None:
-            self = _dask_array_  # TODO: is this what i should be doing?
-        trackParticles = self.trackParticles
-        return self.trackParticles[
-            tuple([slice(None) for i in range(trackParticles.ndim - 1)] + [0])
-        ]
+        trackParticles = _element_link_method(
+            self, "trackParticleLinks", "GSFTrackParticles", _dask_array_
+        )
+        # Ellipsis (..., 0) slicing not supported yet by dask_awkward
+        slicer = tuple([slice(None) for i in range(trackParticles.ndim - 1)] + [0])
+        return trackParticles[slicer]
 
     @property
     def caloClusters(self, _dask_array_=None):
