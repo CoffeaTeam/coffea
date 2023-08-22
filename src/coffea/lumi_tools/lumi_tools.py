@@ -1,6 +1,7 @@
 import json
 
 import awkward as ak
+import dask_awkward as dak
 from numba import types
 from numba.typed import Dict
 
@@ -107,9 +108,9 @@ class LumiMask:
 
         Parameters
         ----------
-            runs : numpy.ndarray
+            runs : numpy.ndarray or awkward.highlevel.Array or dask_awkward.Array
                 Vectorized list of run numbers
-            lumis : numpy.ndarray
+            lumis : numpy.ndarray or awkward.highlevel.Array or dask_awkward.Array
                 Vectorized list of lumiSection numbers
 
         Returns
@@ -118,18 +119,30 @@ class LumiMask:
                 An array of dtype `bool` where valid (run, lumi) tuples
                 will have their corresponding entry set ``True``.
         """
-        # fill numba typed dict
-        _masks = Dict.empty(key_type=types.uint32, value_type=types.uint32[:])
-        for k, v in self._masks.items():
-            _masks[k] = v
 
-        if isinstance(runs, ak.highlevel.Array):
-            runs = ak.to_numpy(runs)
-        if isinstance(lumis, ak.highlevel.Array):
-            lumis = ak.to_numpy(lumis)
-        mask_out = np.zeros(dtype="bool", shape=runs.shape)
-        LumiMask._apply_run_lumi_mask_kernel(_masks, runs, lumis, mask_out)
-        return mask_out
+        def apply(runs, lumis):
+            # fill numba typed dict
+            _masks = Dict.empty(key_type=types.uint32, value_type=types.uint32[:])
+            for k, v in self._masks.items():
+                _masks[k] = v
+
+            runs_orig = runs
+            if isinstance(runs, ak.highlevel.Array):
+                runs = ak.to_numpy(ak.typetracer.length_zero_if_typetracer(runs))
+            if isinstance(lumis, ak.highlevel.Array):
+                lumis = ak.to_numpy(ak.typetracer.length_zero_if_typetracer(lumis))
+            mask_out = np.zeros(dtype="bool", shape=runs.shape)
+            LumiMask._apply_run_lumi_mask_kernel(_masks, runs, lumis, mask_out)
+            if isinstance(runs_orig, ak.Array):
+                mask_out = ak.Array(mask_out)
+            if ak.backend(runs_orig) == "typetracer":
+                mask_out = ak.Array(mask_out.layout.to_typetracer(forget_length=True))
+            return mask_out
+
+        if isinstance(runs, dak.Array):
+            return dak.map_partitions(apply, runs, lumis)
+        else:
+            return apply(runs, lumis)
 
     # This could be run in parallel, but windows does not support it
     @staticmethod
