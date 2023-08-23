@@ -123,7 +123,12 @@ def _get_pfn_for_site(path, rules):
 
 
 def get_dataset_files_replicas(
-    dataset, whitelist_sites=None, blacklist_sites=None, regex_sites=None, mode="full"
+    dataset,
+    whitelist_sites=None,
+    blacklist_sites=None,
+    regex_sites=None,
+    mode="full",
+    client=None,
 ):
     """
     This function queries the Rucio server to get information about the location
@@ -148,6 +153,7 @@ def get_dataset_files_replicas(
         blacklist_sites: list
         regex_sites: list
         mode:  str, default "full"
+        client: rucio Client, optional
 
     Returns
     -------
@@ -163,7 +169,7 @@ def get_dataset_files_replicas(
 
     """
     sites_xrootd_prefix = get_xrootd_sites_map()
-    client = get_rucio_client()
+    client = client if client else get_rucio_client()
     outsites = []
     outfiles = []
     for filedata in client.list_replicas([{"scope": "cms", "name": dataset}]):
@@ -264,3 +270,9 @@ def get_dataset_files_replicas(
             sites_counts[site] += 1 / totfiles
 
     return outfiles, outsites, sites_counts
+
+
+def query_dataset(query, client=None):
+    client = client if client else get_rucio_client()
+    return list(client.list_dids(scope="cms", filters={"name": query, "type":"container"},long=False))
+
