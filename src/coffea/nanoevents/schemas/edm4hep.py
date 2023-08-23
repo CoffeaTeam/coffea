@@ -50,7 +50,6 @@ class EDM4HEPSchema(BaseSchema):
 
     __dask_capable__ = True
 
-    # originally this was just _momentum_fields = {"energy", "momentum.x", "momentum.y", "momentum.z"}
     _momentum_fields_e = {"energy", "momentum.x", "momentum.y", "momentum.z"}
     _momentum_fields_m = {"mass", "momentum.x", "momentum.y", "momentum.z"}
 
@@ -113,7 +112,6 @@ class EDM4HEPSchema(BaseSchema):
                 form["content"]["parameters"]["collection_name"] = objname
                 branch_forms[objname] = form
             elif all(comp in components for comp in self._momentum_fields_m):
-                # print(list(branch_forms.keys()))
 
                 offset_form = {
                     "class": "NumpyArray",
@@ -129,7 +127,7 @@ class EDM4HEPSchema(BaseSchema):
                 }
 
                 branch_forms[f"G{objname}ParentsIndex"] = transforms.local2global_form(
-                    branch_forms[f"{objname}#0/{objname}#0.index"],
+                    branch_forms[f"_MCParticlesSkimmed_parents/_MCParticlesSkimmed_parents.index"],
                     offset_form,
                 )
 
@@ -410,7 +408,6 @@ class EDM4HEPSchema(BaseSchema):
                         "tanLambda": branch_forms.pop(
                             f"_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.tanLambda"
                         ),
-                        # "dEdx": branch_forms.pop(f"_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.dEdx"),
                     },
                     objname,
                     composite_behavior.get(objname, "Track"),
