@@ -58,6 +58,7 @@ dependencies = [
   "pandas",
   "hist>=2",
   "cachetools",
+  "rucio>=32.2.0"
 ]
 dynamic = ["version"]
 
