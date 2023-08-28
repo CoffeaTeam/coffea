@@ -1,10 +1,11 @@
-import os
 import getpass
-import re
 import json
-from rucio.client import Client
-from collections import defaultdict
+import os
+import re
 import subprocess
+from collections import defaultdict
+
+from rucio.client import Client
 
 # Rucio needs the default configuration --> taken from CMS cvmfs defaults
 os.environ["RUCIO_HOME"] = "/cvmfs/cms.cern.ch/rucio/current"

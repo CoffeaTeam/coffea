@@ -1,15 +1,16 @@
-from cmd2 import Cmd
+import random
+from collections import defaultdict
+
 import cmd2
+import rucio_utils
+import yaml
+from cmd2 import Cmd
 from rich import print
-from rich.pretty import pprint
 from rich.console import Console
+from rich.pretty import pprint
+from rich.prompt import Prompt
 from rich.table import Table
 from rich.tree import Tree
-from rich.prompt import Prompt
-import rucio_utils
-from collections import defaultdict
-import random
-import yaml
 
 
 def print_dataset_query(query, dataset_list, selected, console):
@@ -142,10 +143,16 @@ class MyCmdApp(cmd2.Cmd):
         table.add_column("Replicas selected", justify="center")
         table.add_column("N. of files", justify="center")
         for i, ds in enumerate(self.selected_datasets):
-            table.add_row(str(i+1), ds, "[green bold]Y" if ds in self.replica_results else "[red]N",
-                          str(len(self.replica_results[ds])) if ds in self.replica_results else "-")
+            table.add_row(
+                str(i + 1),
+                ds,
+                "[green bold]Y" if ds in self.replica_results else "[red]N",
+                str(len(self.replica_results[ds]))
+                if ds in self.replica_results
+                else "-",
+            )
         self.console.print(table)
-            
+
     def do_replicas(self, args):
         if len(args.arg_list) == 0:
             print(
@@ -248,7 +255,7 @@ class MyCmdApp(cmd2.Cmd):
             return
 
         self.replica_results_bysite[dataset] = files_by_site
-        
+
         # Now let's print the results
         tree = Tree(label=f"[bold orange]Replicas for [green]{dataset}")
         for site, files in files_by_site.items():
@@ -280,7 +287,7 @@ class MyCmdApp(cmd2.Cmd):
             args = args[1:]
         if args.endswith('"'):
             args = args[:-1]
-        self.sites_regex = r"{}".format(args)
+        self.sites_regex = fr"{args}"
         print(f"New sites regex: [cyan]{self.sites_regex}")
 
     def do_sites_filters(self, args):
@@ -303,18 +310,22 @@ class MyCmdApp(cmd2.Cmd):
             print("[bold green]Sites filters cleared")
 
     def do_list_replicas(self, args):
-        if len(args.arg_list)==0:
+        if len(args.arg_list) == 0:
             print("[red]Please call the command with the index of a selected dataset")
         else:
             if int(args) > len(self.selected_datasets):
-                print(f"[red] Select the replica with index < {len(self.selected_datasets)}")
+                print(
+                    f"[red] Select the replica with index < {len(self.selected_datasets)}"
+                )
                 return
             else:
-                dataset = self.selected_datasets[int(args)-1]
+                dataset = self.selected_datasets[int(args) - 1]
                 if dataset not in self.replica_results:
-                    print(f"[red bold]No replica info for dataset {dataset}. You need to selected the replicas with [cyan] replicas {args}")
+                    print(
+                        f"[red bold]No replica info for dataset {dataset}. You need to selected the replicas with [cyan] replicas {args}"
+                    )
                 tree = Tree(label=f"[bold orange]Replicas for [green]{dataset}")
-                
+
                 for site, files in self.replica_results_bysite[dataset].items():
                     T = tree.add(f"[green]{site}")
                     for f in files:
@@ -323,14 +334,14 @@ class MyCmdApp(cmd2.Cmd):
                 self.console.print(tree)
 
     def do_save(self, args):
-        '''Save the replica information in yaml format'''
+        """Save the replica information in yaml format"""
         if not len(args):
             print("[red]Please provide an output filename")
         else:
             with open(args, "w") as file:
-                yaml.dump(dict(self.replica_results), file,
-                          default_flow_style=False)
+                yaml.dump(dict(self.replica_results), file, default_flow_style=False)
             print(f"[green]File {args} saved!")
+
 
 if __name__ == "__main__":
     app = MyCmdApp()
