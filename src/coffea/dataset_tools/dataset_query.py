@@ -1,14 +1,14 @@
 import random
 from collections import defaultdict
+
 import cmd2
+import rucio_utils
 import yaml
 from rich import print
 from rich.console import Console
 from rich.prompt import Prompt
 from rich.table import Table
 from rich.tree import Tree
-from rich.prompt import Prompt
-import rucio_utils
 
 
 def print_dataset_query(query, dataset_list, selected, console):
