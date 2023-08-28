@@ -9,6 +9,7 @@ from rich.prompt import Prompt
 import rucio_utils
 from collections import defaultdict
 import random
+import yaml
 
 
 def print_dataset_query(query, dataset_list, selected, console):
@@ -53,10 +54,11 @@ class MyCmdApp(cmd2.Cmd):
             {
                 "L": "login",
                 "Q": "query",
+                "QR": "query_results",
                 "R": "replicas",
                 "S": "select",
                 "LS": "list_selected",
-                "lr": "list_results",
+                "LR": "list_replicas",
             }
         )
         self.console = Console()
@@ -71,6 +73,7 @@ class MyCmdApp(cmd2.Cmd):
         self.last_replicas_results = None
 
         self.replica_results = defaultdict(list)
+        self.replica_results_bysite = {}
         super().__init__(shortcuts=shortcuts)
 
     def do_login(self, args):
@@ -104,7 +107,7 @@ class MyCmdApp(cmd2.Cmd):
             self.last_query_tree = outtree
         print("Use the command [bold red]select (S)[/] to selected the datasets")
 
-    def do_list_results(self, args):
+    def do_query_results(self, args):
         if self.last_query_list:
             print_dataset_query(
                 self.last_query,
@@ -133,9 +136,16 @@ class MyCmdApp(cmd2.Cmd):
 
     def do_list_selected(self, args):
         print("[cyan]Selected datasets:")
+        table = Table(title="Selected datasets")
+        table.add_column("Index", justify="left", style="cyan", no_wrap=True)
+        table.add_column("Dataset", style="magenta", no_wrap=True)
+        table.add_column("Replicas selected", justify="center")
+        table.add_column("N. of files", justify="center")
         for i, ds in enumerate(self.selected_datasets):
-            print(f"- [{i}] [blue]{ds}")
-
+            table.add_row(str(i+1), ds, "[green bold]Y" if ds in self.replica_results else "[red]N",
+                          str(len(self.replica_results[ds])) if ds in self.replica_results else "-")
+        self.console.print(table)
+            
     def do_replicas(self, args):
         if len(args.arg_list) == 0:
             print(
@@ -152,6 +162,8 @@ class MyCmdApp(cmd2.Cmd):
                 )
         else:
             dataset = args.arg_list[0]
+            # adding it to the selected datasets
+            self.selected_datasets.append(dataset)
 
         with self.console.status(
             f"Querying rucio for replicas: [bold red]{dataset}[/]"
@@ -235,14 +247,14 @@ class MyCmdApp(cmd2.Cmd):
             print("[orange]Doing nothing...")
             return
 
+        self.replica_results_bysite[dataset] = files_by_site
+        
         # Now let's print the results
-        tree = Tree(label=f"Replicas for [green]{dataset}")
+        tree = Tree(label=f"[bold orange]Replicas for [green]{dataset}")
         for site, files in files_by_site.items():
             T = tree.add(f"[green]{site}")
             for f in files:
                 T.add(f"[cyan]{f}")
-
-        print("Final replicas selection")
         self.console.print(tree)
 
     def do_whitelist_sites(self, args):
@@ -291,10 +303,34 @@ class MyCmdApp(cmd2.Cmd):
             print("[bold green]Sites filters cleared")
 
     def do_list_replicas(self, args):
-        print("Datasets with selected replicas: ")
-        for dataset in self.replica_results:
-            print(f"\t-[cyan]{dataset}")
+        if len(args.arg_list)==0:
+            print("[red]Please call the command with the index of a selected dataset")
+        else:
+            if int(args) > len(self.selected_datasets):
+                print(f"[red] Select the replica with index < {len(self.selected_datasets)}")
+                return
+            else:
+                dataset = self.selected_datasets[int(args)-1]
+                if dataset not in self.replica_results:
+                    print(f"[red bold]No replica info for dataset {dataset}. You need to selected the replicas with [cyan] replicas {args}")
+                tree = Tree(label=f"[bold orange]Replicas for [green]{dataset}")
+                
+                for site, files in self.replica_results_bysite[dataset].items():
+                    T = tree.add(f"[green]{site}")
+                    for f in files:
+                        T.add(f"[cyan]{f}")
 
+                self.console.print(tree)
+
+    def do_save(self, args):
+        '''Save the replica information in yaml format'''
+        if not len(args):
+            print("[red]Please provide an output filename")
+        else:
+            with open(args, "w") as file:
+                yaml.dump(dict(self.replica_results), file,
+                          default_flow_style=False)
+            print(f"[green]File {args} saved!")
 
 if __name__ == "__main__":
     app = MyCmdApp()
