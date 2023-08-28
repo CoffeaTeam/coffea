@@ -82,12 +82,12 @@ def get_xrootd_sites_map():
                 continue
             try:
                 data = json.load(open(conf))
-            except:
+            except Exception:
                 continue
             for site in data:
                 if site["type"] != "DISK":
                     continue
-                if site["rse"] == None:
+                if site["rse"] is None:
                     continue
                 for proc in site["protocols"]:
                     if proc["protocol"] == "XRootD":
@@ -187,7 +187,7 @@ def get_dataset_files_replicas(
                     meta = filedata["pfns"][rses[site][0]]
                     if (
                         meta["type"] != "DISK"
-                        or meta["volatile"] == True
+                        or meta["volatile"]
                         or filedata["states"][site] != "AVAILABLE"
                         or site not in sites_xrootd_prefix
                     ):
@@ -220,7 +220,7 @@ def get_dataset_files_replicas(
                         meta = filedata["pfns"][rses[site][0]]
                         if (
                             meta["type"] != "DISK"
-                            or meta["volatile"] == True
+                            or meta["volatile"]
                             or filedata["states"][site] != "AVAILABLE"
                             or site not in sites_xrootd_prefix
                         ):
@@ -238,7 +238,7 @@ def get_dataset_files_replicas(
                     meta = filedata["pfns"][rses[site][0]]
                     if (
                         meta["type"] != "DISK"
-                        or meta["volatile"] == True
+                        or meta["volatile"]
                         or filedata["states"][site] != "AVAILABLE"
                         or site not in sites_xrootd_prefix
                     ):
@@ -259,10 +259,9 @@ def get_dataset_files_replicas(
                 outfiles.append(outfile[0])
                 outsites.append(outsite[0])
             else:
-                raise NotImplemented(f"Mode {mode} not yet implemented!")
+                raise NotImplementedError(f"Mode {mode} not yet implemented!")
 
     # Computing replicas by site:
-    totfiles = len(outfiles)
     sites_counts = defaultdict(int)
     if mode == "full":
         for sites_by_file in outsites:
