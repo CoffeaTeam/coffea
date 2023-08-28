@@ -64,7 +64,7 @@ def get_rucio_client(proxy=None) -> Client:
 
 def get_xrootd_sites_map():
     """
-    The mapping beetween RSE (sites) and the xrootd prefix rules is read
+    The mapping between RSE (sites) and the xrootd prefix rules is read
     from `/cvmfs/cms/cern.ch/SITECONF/*site*/storage.json`.
 
     This function returns the list of xrootd prefix rules for each site.
@@ -136,7 +136,7 @@ def get_dataset_files_replicas(
     of all the replicas of the files in a CMS dataset.
 
     The sites can be filtered in 3 different ways:
-    - `whilist_sites`: list of sites to select from. If the file is not found there, raise an Expection.
+    - `whilist_sites`: list of sites to select from. If the file is not found there, raise an Exception.
     - `blacklist_sites`: list of sites to avoid. If the file has no left site, raise an Exception
     - `regex_sites`: regex expression to restrict the list of sites.
 
@@ -169,7 +169,7 @@ def get_dataset_files_replicas(
            - If `mode=="first"`, returns a list of sites for the first replica of each file.
 
         sites_counts: dict
-           Metadata couting the coverage of the dataset by site
+           Metadata counting the coverage of the dataset by site
 
     """
     sites_xrootd_prefix = get_xrootd_sites_map()
