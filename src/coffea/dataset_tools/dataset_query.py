@@ -1,13 +1,14 @@
+import random
+from collections import defaultdict
 import cmd2
+import yaml
 from rich import print
 from rich.console import Console
+from rich.prompt import Prompt
 from rich.table import Table
 from rich.tree import Tree
 from rich.prompt import Prompt
-from . import rucio_utils
-from collections import defaultdict
-import random
-import yaml
+import rucio_utils
 
 
 def print_dataset_query(query, dataset_list, selected, console):
@@ -43,7 +44,7 @@ def print_dataset_query(query, dataset_list, selected, console):
     console.print(table)
 
 
-class MyCmdApp(cmd2.Cmd):
+class DatasetQueryApp(cmd2.Cmd):
     prompt = "\033[1;34m" + "cms-datasets" + "\033[0m > "
 
     def __init__(self):
@@ -284,7 +285,7 @@ class MyCmdApp(cmd2.Cmd):
             args = args[1:]
         if args.endswith('"'):
             args = args[:-1]
-        self.sites_regex = r"{}".format(args)
+        self.sites_regex = rf"{args}"
         print(f"New sites regex: [cyan]{self.sites_regex}")
 
     def do_sites_filters(self, args):
@@ -341,5 +342,5 @@ class MyCmdApp(cmd2.Cmd):
 
 
 if __name__ == "__main__":
-    app = MyCmdApp()
+    app = DatasetQueryApp()
     app.cmdloop()
