@@ -272,7 +272,18 @@ def get_dataset_files_replicas(
     return outfiles, outsites, sites_counts
 
 
-def query_dataset(query, client=None):
+def query_dataset(query, client=None, tree=False):
     client = client if client else get_rucio_client()
-    return list(client.list_dids(scope="cms", filters={"name": query, "type":"container"},long=False))
-
+    out = list(client.list_dids(
+        scope="cms", filters={"name": query, "type":"container"},
+        long=False))
+    if tree:
+        outdict = {}
+        for dataset in out:
+            split = dataset[1:].split("/")
+            if split[0] not in outdict:
+                outdict[split[0]] = defaultdict(list)
+            outdict[split[0]][split[1]].append(split[2])
+        return outdict
+    else:
+        return out
