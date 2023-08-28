@@ -284,6 +284,6 @@ def query_dataset(query, client=None, tree=False):
             if split[0] not in outdict:
                 outdict[split[0]] = defaultdict(list)
             outdict[split[0]][split[1]].append(split[2])
-        return outdict
+        return out, outdict
     else:
         return out

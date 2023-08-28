@@ -23,11 +23,11 @@ def print_dataset_query(query, dataset_list, selected, console):
             sel = dataset in selected
             if ic ==0:
                 table.add_row(name, f"[bold]({j})[/bold] {c}/{'-'.join(tiers)}",
-                              f"[green]Y" if sel else f"[red]N",
+                              f"[green bold]Y" if sel else f"[red]N",
                               end_section = ic==ncond-1)
             else:
                 table.add_row("",  f"[bold]({j})[/bold] {c}/{'-'.join(tiers)}",
-                              f"[green]Y" if sel else f"[red]N",
+                              f"[green bold]Y" if sel else f"[red]N",
                               end_section = ic==ncond-1)
             ic+=1
             j+=1
@@ -42,13 +42,14 @@ class MyCmdApp(cmd2.Cmd):
     def __init__(self):
         shortcuts = cmd2.DEFAULT_SHORTCUTS
         shortcuts.update({ 'L': 'login', 'Q': 'query', 'R': 'replicas',
-                           'S': 'select',
+                           'S': 'select', "LS": 'list_selected',
                            'lr': 'list_results'})
         self.console = Console()
         self.rucio_client = None
         self.selected_datasets = [ ]
         self.last_query = ""
-        self.last_query_results = None
+        self.last_query_tree = None
+        self.last_query_list = None
         super().__init__(shortcuts=shortcuts)
 
     def do_login(self, args):
@@ -72,37 +73,51 @@ class MyCmdApp(cmd2.Cmd):
     def do_query(self, args):
         # Your code here
         with self.console.status(f"Querying rucio for: [bold red]{args}[/]"):    
-            out = rucio_utils.query_dataset(args.arg_list[0],
+            outlist, outtree = rucio_utils.query_dataset(args.arg_list[0],
                                             client=self.rucio_client,
                                             tree=True)
             # Now let's print the results as a tree
-            print_dataset_query(args, out,
+            print_dataset_query(args, outtree,
                                self.selected_datasets,
                                self.console)
             self.last_query = args
-            self.last_query_results = out
+            self.last_query_list = outlist
+            self.last_query_tree = outtree
+        print("Use the command [bold red]select (S)[/] to selected the datasets")
 
     def do_list_results(self, args):
-        if self.last_query_results:
-            print_dataset_query(self.last_query, self.last_query_results,
+        if self.last_query_list:
+            print_dataset_query(self.last_query, self.last_query_tree,
                             self.selected_datasets, self.console)
         else:
             print("First [bold red]query (Q)[/] for a dataset")
 
     def do_select(self, args):
-        if not self.last_query_results:
+        if not self.last_query_list:
             print("First [bold red]query (Q)[/] for a dataset")
             return
 
+        Nresults = len(self.last_query_list)
+        print("[cyan]Selected datasets:")
         for s in map(int, args.arg_list):
-            print(s)
+            if s <= Nresults:
+                self.selected_datasets.append(self.last_query_list[s-1])
+                print(f"- ({s}) {self.last_query_list[s-1]}")
+            else:
+                print(f"[red]The requested dataset is not in the list. Please insert a position <={Nresults}")
         
-    
-        
+    def do_list_selected(self, args):
+        print("[cyan]Selected datasets:")
+        for i, ds in enumerate(self.selected_datasets):
+            print(f"- [{i}] [blue]{ds}")
         
     def do_replicas(self, args):
-        # Your code here
-        self.poutput("Replicas command executed")
+        if len(args.arg_list)==0:
+            print("[red] Please provide the index of the [bold]selected[/bold] dataset to analyze")
+            return
+
+        
+    
 
 if __name__ == "__main__":
     app = MyCmdApp()
