@@ -6,13 +6,14 @@ from rich.console import Console
 from rich.table import Table
 from rich.tree import Tree
 import rucio_utils
+from collections import defaultdict
 
 
 def print_dataset_query(query, dataset_list, selected, console):
     table = Table(title=f"Query: [bold red]{query}")
-    table.add_column("name", justify="left", style="cyan", no_wrap=True)
-    table.add_column("tag", style="magenta", no_wrap=True)
-    table.add_column("selected", justify="center")
+    table.add_column("Name", justify="left", style="cyan", no_wrap=True)
+    table.add_column("Tag", style="magenta", no_wrap=True)
+    table.add_column("Selected", justify="center")
     table.row_styles = ["dim", "none"]
     j = 1
     for name, conds in dataset_list.items():
@@ -50,6 +51,10 @@ class MyCmdApp(cmd2.Cmd):
         self.last_query = ""
         self.last_query_tree = None
         self.last_query_list = None
+        self.sites_whitelist = None
+        self.sites_blacklist = None
+        self.sites_regex = None
+        self.replicas_results = defaultdict(list)
         super().__init__(shortcuts=shortcuts)
 
     def do_login(self, args):
@@ -113,10 +118,37 @@ class MyCmdApp(cmd2.Cmd):
         
     def do_replicas(self, args):
         if len(args.arg_list)==0:
-            print("[red] Please provide the index of the [bold]selected[/bold] dataset to analyze")
-            return
+            print("[red] Please provide the index of the [bold]selected[/bold] dataset to analyze or the [bold]full dataset name[/bold]")
 
+        if args.isdigit():
+            if int(args) <= len(self.selected_datasets):
+                dataset = self.selected_datasets[int(args)-1]
+            else:
+                print(f"[red]The requested dataset is not in the list. Please insert a position <={len(self.selected_datasets)}")
+        else:
+            dataset = args
+
+        with self.console.status(f"Querying rucio for replicas: [bold red]{dataset}[/]"):  
+            outfiles, outsites, sites_counts = rucio_utils.get_dataset_files_replicas(dataset,
+                                                                                  whitelist_sites=self.sites_whitelist,
+                                                                                  blacklist_sites=self.sites_blacklist,
+                                                                                  regex_sites=self.sites_regex,
+                                                                                  mode="full",
+                                                                                  client=self.rucio_client)
         
+        table = Table(title=f"[cyan]Sites availability for dataset: [red]{dataset}")
+        table.add_column("Site", justify="left", style="cyan", no_wrap=True)
+        table.add_column("Files", style="magenta", no_wrap=True)
+        table.add_column("Availability", justify="center")
+        table.row_styles = ["dim", "none"]
+        Nfiles = len(outfiles)
+
+        sorted_sites = dict(sorted(sites_counts.items(), key=lambda x:x[1], reverse=True))
+        for site, stat in sorted_sites.items():
+            table.add_row(site, f"{stat} / {Nfiles}", f"{stat*100/Nfiles:.1f}%")
+
+        self.console.print(table)
+                    
     
 
 if __name__ == "__main__":

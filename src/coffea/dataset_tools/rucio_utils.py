@@ -167,6 +167,9 @@ def get_dataset_files_replicas(
            - If `mode=="full"`, returns the list of sites where the file replica is available for each file in the dataset
            - If `mode=="first"`, returns a list of sites for the first replica of each file.
 
+        sites_counts: dict
+           Metadata couting the coverage of the dataset by site
+
     """
     sites_xrootd_prefix = get_xrootd_sites_map()
     client = client if client else get_rucio_client()
@@ -260,14 +263,14 @@ def get_dataset_files_replicas(
 
     # Computing replicas by site:
     totfiles = len(outfiles)
-    sites_counts = defaultdict(float)
+    sites_counts = defaultdict(int)
     if mode == "full":
         for sites_by_file in outsites:
             for site in sites_by_file:
-                sites_counts[site] += 1 / totfiles
+                sites_counts[site] += 1
     elif mode == "first":
         for site_by_file in outsites:
-            sites_counts[site] += 1 / totfiles
+            sites_counts[site] += 1
 
     return outfiles, outsites, sites_counts
 
