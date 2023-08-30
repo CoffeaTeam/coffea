@@ -2,7 +2,7 @@ import random
 from collections import defaultdict
 
 import cmd2
-import rucio_utils
+from . import rucio_utils
 import yaml
 from rich import print
 from rich.console import Console
@@ -342,5 +342,24 @@ class DatasetQueryApp(cmd2.Cmd):
 
 
 if __name__ == "__main__":
+    intro_msg = """[bold yellow]Welcome to the datasets discovery coffea CLI![/bold yellow]
+Use this CLI tool to query the CMS datasets and to select interactively the grid sites to use for reading the files in your analysis.
+Some basic commands:
+  - [bold cyan]query (Q)[/]: Look for datasets with * wildcards (like in DAS)
+  - [bold cyan]select (S)[/]: Select datasets to process further from query results
+  - [bold cyan]replicas (R)[/]: Query rucio to look for files replica and then select the preferred sites
+  - [bold cyan]list_selected (LS)[/]: Print a list of the selected datasets
+  - [bold cyan]list_replicas (LR) index[/]: Print the selected files replicas for the selected dataset
+  - [bold cyan]sites_filters[/]: show the active sites filters
+  - [bold cyan]sites_filters clear[/]: clear all the active sites filters
+  - [bold cyan]whitelist_sites[/]: Select sites to whitelist for replica queries
+  - [bold cyan]blacklist_sites[/]: Select sites to blacklist for replica queries
+  - [bold cyan]regex_sites[/]: Select sites with a regex for replica queries: please wrap the regex like "T[123]_(FR|IT|BE|CH|DE)_\w+"
+  - [bold cyan]save (S) file.yaml[/]: Save the replicas results to file for further processing
+  - [bold cyan]help[/]: get help!
+"""
+    console = Console()
+    console.print(intro_msg, justify="left")
+
     app = DatasetQueryApp()
     app.cmdloop()
