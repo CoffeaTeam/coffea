@@ -3,6 +3,7 @@ import math
 import awkward
 import dask
 import dask_awkward
+import math
 import numpy
 import uproot
 
@@ -46,7 +47,7 @@ def _get_steps(
                 out = numpy.array(out, dtype="int64")
                 out = numpy.stack((out[:-1], out[1:]), axis=1)
             else:
-                n_steps = num_entries // target_step_size
+                n_steps = math.ceil(num_entries // target_step_size)
                 out = numpy.array(
                     [
                         [
