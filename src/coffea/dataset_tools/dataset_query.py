@@ -2,13 +2,14 @@ import random
 from collections import defaultdict
 
 import cmd2
-from . import rucio_utils
 import yaml
 from rich import print
 from rich.console import Console
 from rich.prompt import Prompt
 from rich.table import Table
 from rich.tree import Tree
+
+from . import rucio_utils
 
 
 def print_dataset_query(query, dataset_list, selected, console):
@@ -342,7 +343,7 @@ class DatasetQueryApp(cmd2.Cmd):
 
 
 if __name__ == "__main__":
-    intro_msg = """[bold yellow]Welcome to the datasets discovery coffea CLI![/bold yellow]
+    intro_msg = r"""[bold yellow]Welcome to the datasets discovery coffea CLI![/bold yellow]
 Use this CLI tool to query the CMS datasets and to select interactively the grid sites to use for reading the files in your analysis.
 Some basic commands:
   - [bold cyan]query (Q)[/]: Look for datasets with * wildcards (like in DAS)
