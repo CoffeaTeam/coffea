@@ -1,4 +1,7 @@
+import awkward as ak
 import cloudpickle
+import dask_awkward as dak
+from dask.distributed import Client
 
 from coffea.lumi_tools import LumiData, LumiList, LumiMask
 from coffea.util import numpy as np
@@ -56,6 +59,8 @@ def test_lumidata():
 
 
 def test_lumimask():
+    client = Client()
+
     lumimask = LumiMask(
         "tests/samples/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt"
     )
@@ -85,6 +90,15 @@ def test_lumimask():
         assert np.all(mask == py_mask)
 
     assert np.all(lumimask(runs, lumis) == lumimask_pickle(runs, lumis))
+
+    runs_dak = dak.from_awkward(ak.Array(runs), 1)
+    lumis_dak = dak.from_awkward(ak.Array(lumis), 1)
+    assert np.all(
+        client.compute(lumimask(runs_dak, lumis_dak)).result()
+        == lumimask_pickle(runs, lumis)
+    )
+
+    client.close()
 
 
 def test_lumilist():
