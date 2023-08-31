@@ -118,14 +118,21 @@ class PHYSLITESchema(BaseSchema):
                     to_zip,
                     objname,
                     self.mixins.get(objname, None),
-                    bypass=True,
-                )
-                content = contents[objname]["content"]
-                content["parameters"] = dict(
-                    content.get("parameters", {}), collection_name=objname
+                    bypass=False,
                 )
             except NotImplementedError:
                 warnings.warn(f"Can't zip collection {objname}")
+            if "content" in contents[objname]:
+                # in this case we were able to zip everything together to a ListOffsetArray(RecordArray)
+                assert "List" in contents[objname]["class"]
+                content = contents[objname]["content"]
+            else:
+                # in this case this was not possible (e.g. because we also had non-list fields)
+                assert contents[objname]["class"] == "RecordArray"
+                content = contents[objname]
+            content["parameters"] = dict(
+                content.get("parameters", {}), collection_name=objname
+            )
         return contents
 
     @staticmethod
