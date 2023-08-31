@@ -105,7 +105,8 @@ def _get_target_offsets(load_column, event_index):
     # let the necessary column optimization know that we need to load this
     # column to get the offsets
     if awkward.backend(load_column) == "typetracer":
-        awkward.typetracer.touch_data(load_column)
+        # awkward.typetracer.touch_data(load_column) # available in awkward > 2.3.3
+        load_column.layout._touch_data(recursive=True)
 
     # necessary to stick it into the `NumpyArray` constructor
     # if typetracer is passed through
