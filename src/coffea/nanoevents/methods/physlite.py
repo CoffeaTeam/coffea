@@ -122,7 +122,12 @@ def _get_target_offsets(load_column, event_index):
 
 
 def _get_global_index(target, eventindex, index):
-    load_column = target[target.fields[0]]
+    for field in target.fields:
+        # fetch first column to get offsets from
+        # (but try to avoid the double-jagged ones if possible)
+        load_column = target[field]
+        if load_column.ndim < 3:
+            break
     target_offsets = _get_target_offsets(load_column, eventindex)
     return target_offsets + index
 
