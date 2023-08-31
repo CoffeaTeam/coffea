@@ -232,7 +232,7 @@ class NanoEventsFactory:
         treepath="/Events",
         entry_start=None,
         entry_stop=None,
-        chunks_per_file=None,
+        chunks_per_file=1,
         runtime_cache=None,
         persistent_cache=None,
         schemaclass=NanoAODSchema,
