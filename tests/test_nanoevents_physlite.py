@@ -1,5 +1,6 @@
 import os
 
+import dask
 import pytest
 
 from coffea.nanoevents import NanoEventsFactory, PHYSLITESchema
@@ -21,7 +22,8 @@ def events():
 
 
 def test_load_single_field_of_linked(events):
-    events.Electrons.caloClusters.calE.compute()
+    with dask.config.set({"awkward.raise-failed-meta": True}):
+        events.Electrons.caloClusters.calE.compute()
 
 
 @pytest.mark.parametrize("do_slice", [False, True])
