@@ -100,6 +100,10 @@ class PHYSLITESchema(BaseSchema):
         # zip the forms
         contents = {}
         for objname, keys_and_form in zip_groups.items():
+            if len(keys_and_form) == 1:
+                # don't zip if there is only one item
+                contents[objname] = keys_and_form[0][1]
+                continue
             to_zip = {}
             for (key, sub_key), form in keys_and_form:
                 if "." in sub_key:
