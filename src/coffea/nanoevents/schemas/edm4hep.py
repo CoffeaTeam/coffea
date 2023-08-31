@@ -127,7 +127,7 @@ class EDM4HEPSchema(BaseSchema):
                 }
 
                 branch_forms[f"G{objname}ParentsIndex"] = transforms.local2global_form(
-                    branch_forms[f"_MCParticlesSkimmed_parents/_MCParticlesSkimmed_parents.index"],
+                    branch_forms["_MCParticlesSkimmed_parents/_MCParticlesSkimmed_parents.index"],
                     offset_form,
                 )
 
@@ -201,13 +201,13 @@ class EDM4HEPSchema(BaseSchema):
 
                 Greco_index_form = transforms.local2global_form(
                     branch_forms[
-                        f"_MCTruthRecoLink_rec/_MCTruthRecoLink_rec.index"
+                        "_MCTruthRecoLink_rec/_MCTruthRecoLink_rec.index"
                     ],
                     pfos_offsets_form,
                 )
                 Gmc_index_form = transforms.local2global_form(
                     branch_forms[
-                        f"_MCTruthRecoLink_sim/_MCTruthRecoLink_sim.index"
+                        "_MCTruthRecoLink_sim/_MCTruthRecoLink_sim.index"
                     ],
                     mc_offsets_form,
                 )
@@ -223,16 +223,16 @@ class EDM4HEPSchema(BaseSchema):
                             "RecoMCTruthLink/RecoMCTruthLink.weight"
                         ],
                         "reco_index": branch_forms[
-                            f"_MCTruthRecoLink_rec/_MCTruthRecoLink_rec.index"
+                            "_MCTruthRecoLink_rec/_MCTruthRecoLink_rec.index"
                         ],  # only the weights vary between "MCTruthRecoLink" and "RecoMCTruthLink"
                         "reco_collectionID": branch_forms[
-                            f"_MCTruthRecoLink_rec/_MCTruthRecoLink_rec.collectionID"
+                            "_MCTruthRecoLink_rec/_MCTruthRecoLink_rec.collectionID"
                         ],
                         "mc_index": branch_forms[
-                            f"_MCTruthRecoLink_sim/_MCTruthRecoLink_sim.index"
+                            "_MCTruthRecoLink_sim/_MCTruthRecoLink_sim.index"
                         ],
                         "mc_collectionID": branch_forms[
-                            f"_MCTruthRecoLink_sim/_MCTruthRecoLink_sim.collectionID"
+                            "_MCTruthRecoLink_sim/_MCTruthRecoLink_sim.collectionID"
                         ],
                     },
                     objname,
@@ -269,13 +269,13 @@ class EDM4HEPSchema(BaseSchema):
 
                 Gcluster_index_form = transforms.local2global_form(
                     branch_forms[
-                        f"_MCTruthClusterLink_rec/_MCTruthClusterLink_rec.index"
+                        "_MCTruthClusterLink_rec/_MCTruthClusterLink_rec.index"
                     ],
                     cluster_offsets_form,
                 )
                 Gmc_index_form = transforms.local2global_form(
                     branch_forms[
-                        f"_MCTruthClusterLink_sim/_MCTruthClusterLink_sim.index"
+                        "_MCTruthClusterLink_sim/_MCTruthClusterLink_sim.index"
                     ],
                     mc_offsets_form,
                 )
@@ -291,16 +291,16 @@ class EDM4HEPSchema(BaseSchema):
                             "ClusterMCTruthLink/ClusterMCTruthLink.weight"
                         ],
                         "cluster_index": branch_forms[
-                            f"_MCTruthClusterLink_rec/_MCTruthClusterLink_rec.index"
+                            "_MCTruthClusterLink_rec/_MCTruthClusterLink_rec.index"
                         ],
                         "cluster_collectionID": branch_forms[
-                            f"_MCTruthClusterLink_rec/_MCTruthClusterLink_rec.collectionID"
+                            "_MCTruthClusterLink_rec/_MCTruthClusterLink_rec.collectionID"
                         ],
                         "mc_index": branch_forms[
-                            f"_MCTruthClusterLink_sim/_MCTruthClusterLink_sim.index"
+                            "_MCTruthClusterLink_sim/_MCTruthClusterLink_sim.index"
                         ],
                         "mc_collectionID": branch_forms[
-                            f"_MCTruthClusterLink_sim/_MCTruthClusterLink_sim.collectionID"
+                            "_MCTruthClusterLink_sim/_MCTruthClusterLink_sim.collectionID"
                         ],
                     },
                     objname,
@@ -313,9 +313,9 @@ class EDM4HEPSchema(BaseSchema):
             ):
                 trk_offsets_src = (
                     branch_forms[
-                        f"_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.omega"
+                        "_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.omega"
                     ]
-                    if f"_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.omega"
+                    if "_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.omega"
                     in branch_forms
                     else branch_forms[
                         "MarlinTrkTracks"
@@ -345,13 +345,13 @@ class EDM4HEPSchema(BaseSchema):
 
                 Gtrk_index_form = transforms.local2global_form(
                     branch_forms[
-                        f"_MCTruthMarlinTrkTracksLink_rec/_MCTruthMarlinTrkTracksLink_rec.index"
+                        "_MCTruthMarlinTrkTracksLink_rec/_MCTruthMarlinTrkTracksLink_rec.index"
                     ],
                     trk_offsets_form,
                 )
                 Gmc_index_form = transforms.local2global_form(
                     branch_forms[
-                        f"_MCTruthMarlinTrkTracksLink_sim/_MCTruthMarlinTrkTracksLink_sim.index"
+                        "_MCTruthMarlinTrkTracksLink_sim/_MCTruthMarlinTrkTracksLink_sim.index"
                     ],
                     mc_offsets_form,
                 )
@@ -367,16 +367,16 @@ class EDM4HEPSchema(BaseSchema):
                             "MarlinTrkTracksMCTruthLink/MarlinTrkTracksMCTruthLink.weight"
                         ],
                         "trk_index": branch_forms[
-                            f"_MCTruthMarlinTrkTracksLink_rec/_MCTruthMarlinTrkTracksLink_rec.index"
+                            "_MCTruthMarlinTrkTracksLink_rec/_MCTruthMarlinTrkTracksLink_rec.index"
                         ],
                         "trk_collectionID": branch_forms[
-                            f"_MCTruthMarlinTrkTracksLink_rec/_MCTruthMarlinTrkTracksLink_rec.collectionID"
+                            "_MCTruthMarlinTrkTracksLink_rec/_MCTruthMarlinTrkTracksLink_rec.collectionID"
                         ],
                         "mc_index": branch_forms[
-                            f"_MCTruthMarlinTrkTracksLink_sim/_MCTruthMarlinTrkTracksLink_sim.index"
+                            "_MCTruthMarlinTrkTracksLink_sim/_MCTruthMarlinTrkTracksLink_sim.index"
                         ],
                         "mc_collectionID": branch_forms[
-                            f"_MCTruthMarlinTrkTracksLink_sim/_MCTruthMarlinTrkTracksLink_sim.collectionID"
+                            "_MCTruthMarlinTrkTracksLink_sim/_MCTruthMarlinTrkTracksLink_sim.collectionID"
                         ],
                     },
                     objname,
@@ -400,13 +400,13 @@ class EDM4HEPSchema(BaseSchema):
                 form = zip_forms(
                     {
                         "omega": branch_forms.pop(
-                            f"_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.omega"
+                            "_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.omega"
                         ),
                         "phi": branch_forms.pop(
-                            f"_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.phi"
+                            "_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.phi"
                         ),
                         "tanLambda": branch_forms.pop(
-                            f"_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.tanLambda"
+                            "_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.tanLambda"
                         ),
                     },
                     objname,
