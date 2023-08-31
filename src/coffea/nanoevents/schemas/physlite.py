@@ -79,6 +79,9 @@ class PHYSLITESchema(BaseSchema):
             key_fields = key.split("/")[-1].split(".")
             top_key = key_fields[0]
             sub_key = ".".join(key_fields[1:])
+            if ak_form["class"] == "RecordArray" and not ak_form["fields"]:
+                # skip empty records (e.g. the branches ending in "." only containing the base class)
+                continue
             objname = top_key.replace("Analysis", "").replace("AuxDyn", "")
 
             zip_groups[objname].append(((key, sub_key), ak_form))
