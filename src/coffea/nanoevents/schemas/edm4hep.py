@@ -201,15 +201,11 @@ class EDM4HEPSchema(BaseSchema):
                 }
 
                 Greco_index_form = transforms.local2global_form(
-                    branch_forms[
-                        "_MCTruthRecoLink_rec/_MCTruthRecoLink_rec.index"
-                    ],
+                    branch_forms["_MCTruthRecoLink_rec/_MCTruthRecoLink_rec.index"],
                     pfos_offsets_form,
                 )
                 Gmc_index_form = transforms.local2global_form(
-                    branch_forms[
-                        "_MCTruthRecoLink_sim/_MCTruthRecoLink_sim.index"
-                    ],
+                    branch_forms["_MCTruthRecoLink_sim/_MCTruthRecoLink_sim.index"],
                     mc_offsets_form,
                 )
 
