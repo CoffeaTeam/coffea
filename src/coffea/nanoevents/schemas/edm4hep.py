@@ -112,7 +112,6 @@ class EDM4HEPSchema(BaseSchema):
                 form["content"]["parameters"]["collection_name"] = objname
                 branch_forms[objname] = form
             elif all(comp in components for comp in self._momentum_fields_m):
-
                 offset_form = {
                     "class": "NumpyArray",
                     "itemsize": 8,
@@ -127,7 +126,9 @@ class EDM4HEPSchema(BaseSchema):
                 }
 
                 branch_forms[f"G{objname}ParentsIndex"] = transforms.local2global_form(
-                    branch_forms["_MCParticlesSkimmed_parents/_MCParticlesSkimmed_parents.index"],
+                    branch_forms[
+                        "_MCParticlesSkimmed_parents/_MCParticlesSkimmed_parents.index"
+                    ],
                     offset_form,
                 )
 
@@ -317,9 +318,7 @@ class EDM4HEPSchema(BaseSchema):
                     ]
                     if "_MarlinTrkTracks_trackStates/_MarlinTrkTracks_trackStates.omega"
                     in branch_forms
-                    else branch_forms[
-                        "MarlinTrkTracks"
-                    ]  
+                    else branch_forms["MarlinTrkTracks"]
                 )
                 trk_offsets_form = {
                     "class": "NumpyArray",
@@ -386,7 +385,7 @@ class EDM4HEPSchema(BaseSchema):
             elif objname == "PandoraClusters":
                 form = zip_forms(
                     {
-                        "pt": branch_forms[f"{objname}/{objname}.energy"], 
+                        "pt": branch_forms[f"{objname}/{objname}.energy"],
                         "theta": branch_forms.pop(f"{objname}/{objname}.iTheta"),
                         "phi": branch_forms.pop(f"{objname}/{objname}.phi"),
                         "energy": branch_forms[f"{objname}/{objname}.energy"],
