@@ -327,7 +327,7 @@ class NanoEventsFactory:
                     filter_branch=_remove_not_interpretable,
                     steps_per_file=chunks_per_file,
                     **uproot_options,
-                )           
+                )
             else:
                 opener = partial(
                     uproot.dask,
