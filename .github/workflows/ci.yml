@@ -119,7 +119,7 @@ jobs:
         touch build/html/.nojekyll
     - name: Deploy documentation
       if: github.event_name == 'push' && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11
-      uses: crazy-max/ghaction-github-pages@v3
+      uses: crazy-max/ghaction-github-pages@v4
       with:
         target_branch: gh-pages
         build_dir: docs/build/html
