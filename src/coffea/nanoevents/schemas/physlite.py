@@ -53,6 +53,7 @@ class PHYSLITESchema(BaseSchema):
         "GSFTrackParticles": "TrackParticle",
         "InDetTrackParticles": "TrackParticle",
         "MuonSpectrometerTrackParticles": "TrackParticle",
+        "CaloCalTopoClusters": "NanoCollection",
     }
     """Default configuration for mixin types, based on the collection name.
 
