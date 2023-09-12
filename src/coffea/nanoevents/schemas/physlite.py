@@ -80,7 +80,12 @@ class PHYSLITESchema(BaseSchema):
             key_fields = key.split("/")[-1].split(".")
             top_key = key_fields[0]
             sub_key = ".".join(key_fields[1:])
-            objname = top_key.replace("Analysis", "").replace("AuxDyn", "")
+            if ak_form["class"] == "RecordArray" and not ak_form["fields"]:
+                # skip empty records (e.g. the branches ending in "." only containing the base class)
+                continue
+            objname = (
+                top_key.replace("Analysis", "").replace("AuxDyn", "").replace("Aux", "")
+            )
 
             zip_groups[objname].append(((key, sub_key), ak_form))
 
@@ -98,6 +103,10 @@ class PHYSLITESchema(BaseSchema):
         # zip the forms
         contents = {}
         for objname, keys_and_form in zip_groups.items():
+            if len(keys_and_form) == 1:
+                # don't zip if there is only one item
+                contents[objname] = keys_and_form[0][1]
+                continue
             to_zip = {}
             for (key, sub_key), form in keys_and_form:
                 if "." in sub_key:
@@ -119,14 +128,21 @@ class PHYSLITESchema(BaseSchema):
                     to_zip,
                     objname,
                     self.mixins.get(objname, None),
-                    bypass=True,
-                )
-                content = contents[objname]["content"]
-                content["parameters"] = dict(
-                    content.get("parameters", {}), collection_name=objname
+                    bypass=False,
                 )
             except NotImplementedError:
                 warnings.warn(f"Can't zip collection {objname}")
+            if "content" in contents[objname]:
+                # in this case we were able to zip everything together to a ListOffsetArray(RecordArray)
+                assert "List" in contents[objname]["class"]
+                content = contents[objname]["content"]
+            else:
+                # in this case this was not possible (e.g. because we also had non-list fields)
+                assert contents[objname]["class"] == "RecordArray"
+                content = contents[objname]
+            content["parameters"] = dict(
+                content.get("parameters", {}), collection_name=objname
+            )
         return contents
 
     @staticmethod
