@@ -610,13 +610,13 @@ class NminusOne:
         labels = ["initial"] + [f"N - {i}" for i in self._names] + ["N"]
         if not self._delayed_mode:
             h = hist.Hist(hist.axis.Integer(0, len(labels), name="N-1"))
-            h.fill(numpy.arange(len(labels)), weight=self._nev)
+            h.fill(numpy.arange(len(labels), dtype=int), weight=self._nev)
 
         else:
             h = hist.dask.Hist(hist.axis.Integer(0, len(labels), name="N-1"))
             for i, weight in enumerate(self._masks, 1):
                 h.fill(dask_awkward.full_like(weight, i, dtype=int), weight=weight)
-            h.fill(dask_awkward.zeros_like(weight))
+            h.fill(dask_awkward.zeros_like(weight, dtype=int))
 
         return h, labels
 
@@ -712,7 +712,7 @@ class NminusOne:
                     hist.axis.Integer(0, len(labels), name="N-1"),
                 )
                 arr = awkward.flatten(var)
-                h.fill(arr, awkward.zeros_like(arr))
+                h.fill(arr, awkward.zeros_like(arr, dtype=int))
                 for i, mask in enumerate(self.result().masks, 1):
                     arr = awkward.flatten(var[mask])
                     h.fill(arr, awkward.full_like(arr, i, dtype=int))
@@ -725,7 +725,7 @@ class NminusOne:
                     hist.axis.Integer(0, len(labels), name="N-1"),
                 )
                 arr = dask_awkward.flatten(var)
-                h.fill(arr, dask_awkward.zeros_like(arr))
+                h.fill(arr, dask_awkward.zeros_like(arr, dtype=int))
                 for i, mask in enumerate(self.result().masks, 1):
                     arr = dask_awkward.flatten(var[mask])
                     h.fill(arr, dask_awkward.full_like(arr, i, dtype=int))
@@ -856,8 +856,8 @@ class Cutflow:
             honecut = hist.Hist(hist.axis.Integer(0, len(labels), name="onecut"))
             hcutflow = honecut.copy()
             hcutflow.axes.name = ("cutflow",)
-            honecut.fill(numpy.arange(len(labels)), weight=self._nevonecut)
-            hcutflow.fill(numpy.arange(len(labels)), weight=self._nevcutflow)
+            honecut.fill(numpy.arange(len(labels), dtype=int), weight=self._nevonecut)
+            hcutflow.fill(numpy.arange(len(labels), dtype=int), weight=self._nevcutflow)
 
         else:
             honecut = hist.dask.Hist(hist.axis.Integer(0, len(labels), name="onecut"))
@@ -868,12 +868,12 @@ class Cutflow:
                 honecut.fill(
                     dask_awkward.full_like(weight, i, dtype=int), weight=weight
                 )
-            honecut.fill(dask_awkward.zeros_like(weight))
+            honecut.fill(dask_awkward.zeros_like(weight, dtype=int))
             for i, weight in enumerate(self._maskscutflow, 1):
                 hcutflow.fill(
                     dask_awkward.full_like(weight, i, dtype=int), weight=weight
                 )
-            hcutflow.fill(dask_awkward.zeros_like(weight))
+            hcutflow.fill(dask_awkward.zeros_like(weight, dtype=int))
 
         return honecut, hcutflow, labels
 
@@ -975,8 +975,8 @@ class Cutflow:
                 hcutflow.axes.name = name, "cutflow"
 
                 arr = awkward.flatten(var)
-                honecut.fill(arr, awkward.zeros_like(arr))
-                hcutflow.fill(arr, awkward.zeros_like(arr))
+                honecut.fill(arr, awkward.zeros_like(arr, dtype=int))
+                hcutflow.fill(arr, awkward.zeros_like(arr, dtype=int))
 
                 for i, mask in enumerate(self.result().masksonecut, 1):
                     arr = awkward.flatten(var[mask])
@@ -998,8 +998,8 @@ class Cutflow:
                 hcutflow.axes.name = name, "cutflow"
 
                 arr = dask_awkward.flatten(var)
-                honecut.fill(arr, dask_awkward.zeros_like(arr))
-                hcutflow.fill(arr, dask_awkward.zeros_like(arr))
+                honecut.fill(arr, dask_awkward.zeros_like(arr, dtype=int))
+                hcutflow.fill(arr, dask_awkward.zeros_like(arr, dtype=int))
 
                 for i, mask in enumerate(self.result().masksonecut, 1):
                     arr = dask_awkward.flatten(var[mask])
