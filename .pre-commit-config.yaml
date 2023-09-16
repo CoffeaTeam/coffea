@@ -12,7 +12,7 @@ ci:
 
 repos:
 - repo: https://github.com/psf/black
-  rev: 23.7.0
+  rev: 23.9.1
   hooks:
   - id: black
 
@@ -37,7 +37,7 @@ repos:
   - id: trailing-whitespace
 
 - repo: https://github.com/asottile/pyupgrade
-  rev: v3.9.0
+  rev: v3.10.1
   hooks:
   - id: pyupgrade
     args: ["--py38-plus"]
@@ -48,7 +48,7 @@ repos:
   - id: setup-cfg-fmt
 
 - repo: https://github.com/pycqa/flake8
-  rev: 6.0.0
+  rev: 6.1.0
   hooks:
   - id: flake8
     exclude: coffea/processor/templates
