@@ -494,11 +494,17 @@ class CutflowToNpz:
         return self._maskscutflow
 
     def compute(self):
-        self._nevonecut = list(dask.compute(*self._nevonecut))
-        self._nevcutflow = list(dask.compute(*self._nevcutflow))
-        self._masksonecut = list(dask.compute(*self._masksonecut))
-        self._maskscutflow = list(dask.compute(*self._maskscutflow))
-        numpy.savez(
+        self._nevonecut, self._nevcutflow = dask.compute(
+            self._nevonecut, self._nevcutflow
+        )
+        self._masksonecut, self._maskscutflow = dask.compute(
+            self._masksonecut, self._maskscutflow
+        )
+        self._nevonecut = list(self._nevonecut)
+        self._nevcutflow = list(self._nevcutflow)
+        self._masksonecut = list(self._masksonecut)
+        self._maskscutflow = list(self._maskscutflow)
+        self._saver(
             self._file,
             labels=self._labels,
             nevonecut=self._nevonecut,
@@ -581,21 +587,25 @@ class NminusOne:
 
         if self._delayed_mode:
             self._nev = list(dask.compute(*self._nev))
+
         nev = self._nev
         print("N-1 selection stats:")
         for i, name in enumerate(self._names):
-            print(
-                f"Ignoring {name:<20}: pass = {nev[i+1]:<20}\
-                all = {nev[0]:<20}\
-                -- eff = {nev[i+1]*100/nev[0]:.1f} %"
+            stats = (
+                f"Ignoring {name:<20}"
+                f"pass = {nev[i+1]:<20}"
+                f"all = {nev[0]:<20}"
+                f"-- eff = {nev[i+1]*100/nev[0]:.1f} %"
             )
+            print(stats)
 
-        if True:
-            print(
-                f"All cuts {'':<20}: pass = {nev[-1]:<20}\
-                all = {nev[0]:<20}\
-                -- eff = {nev[-1]*100/nev[0]:.1f} %"
-            )
+        stats_all = (
+            f"All cuts {'':<20}"
+            f"pass = {nev[-1]:<20}"
+            f"all = {nev[0]:<20}"
+            f"-- eff = {nev[-1]*100/nev[0]:.1f} %"
+        )
+        print(stats_all)
 
     def yieldhist(self):
         """Returns the N-1 selection yields as a ``hist.Hist`` object
@@ -824,19 +834,24 @@ class Cutflow:
         """Prints the statistics of the Cutflow"""
 
         if self._delayed_mode:
-            self._nevonecut = list(dask.compute(*self._nevonecut))
-            self._nevcutflow = list(dask.compute(*self._nevcutflow))
+            self._nevonecut, self._nevcutflow = dask.compute(
+                self._nevonecut, self._nevcutflow
+            )
+
         nevonecut = self._nevonecut
         nevcutflow = self._nevcutflow
+
         print("Cutflow stats:")
         for i, name in enumerate(self._names):
-            print(
-                f"Cut {name:<20}: pass = {nevonecut[i+1]:<20}\
-                cumulative pass = {nevcutflow[i+1]:<20}\
-                all = {nevonecut[0]:<20}\
-                --  eff = {nevonecut[i+1]*100/nevonecut[0]:.1f} %\
-                -- cumulative eff = {nevcutflow[i+1]*100/nevcutflow[0]:.1f} %"
+            stats = (
+                f"Cut {name:<20}:"
+                f"pass = {nevonecut[i+1]:<20}"
+                f"cumulative pass = {nevcutflow[i+1]:<20}"
+                f"all = {nevonecut[0]:<20}"
+                f"-- eff = {nevonecut[i+1]*100/nevonecut[0]:.1f} %{'':<20}"
+                f"-- cumulative eff = {nevcutflow[i+1]*100/nevcutflow[0]:.1f} %"
             )
+            print(stats)
 
     def yieldhist(self):
         """Returns the cutflow yields as ``hist.Hist`` objects
