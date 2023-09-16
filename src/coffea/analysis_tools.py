@@ -544,7 +544,7 @@ class NminusOne:
         labels = ["initial"] + [f"N - {i}" for i in self._names] + ["N"]
         return NminusOneResult(labels, self._nev, self._masks)
 
-    def to_npz(self, file, compressed=False, compute=True):
+    def to_npz(self, file, compressed=False, compute=False):
         """Saves the results of the N-1 selection to a .npz file
 
         Parameters
@@ -560,7 +560,7 @@ class NminusOne:
             compute : bool, optional
                 Whether to immediately start writing or to return an object
                 that the user can choose when to start writing by calling compute().
-                Default is True.
+                Default is False.
 
         Returns
         -------
@@ -790,7 +790,7 @@ class Cutflow:
             self._maskscutflow,
         )
 
-    def to_npz(self, file, compressed=False, compute=True):
+    def to_npz(self, file, compressed=False, compute=False):
         """Saves the results of the cutflow to a .npz file
 
         Parameters
@@ -806,7 +806,7 @@ class Cutflow:
             compute : bool, optional
                 Whether to immediately start writing or to return an object
                 that the user can choose when to start writing by calling compute().
-                Default is True.
+                Default is False.
 
         Returns
         -------
