@@ -418,7 +418,7 @@ class Weights:
 
 
 class NminusOneToNpz:
-    """Object to be returned by NmiusOne.to_npz()"""
+    """Object to be returned by NminusOne.to_npz()"""
 
     def __init__(self, file, labels, nev, masks, saver):
         self._file = file
