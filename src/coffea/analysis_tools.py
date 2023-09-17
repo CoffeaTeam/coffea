@@ -582,10 +582,16 @@ class NminusOne:
         else:
             return out
 
-    def print(self):
+    def print(self, compute=False):
         """Prints the statistics of the N-1 selection"""
 
-        if self._delayed_mode:
+        if self._delayed_mode and not compute:
+            warnings.warn(
+                "This will compute dask_awkward arrays. If you really want to do this now, call print(compute=True)"
+            )
+            return
+
+        if self._delayed_mode and compute:
             self._nev = list(dask.compute(*self._nev))
 
         nev = self._nev
@@ -830,10 +836,16 @@ class Cutflow:
         else:
             return out
 
-    def print(self):
+    def print(self, compute=False):
         """Prints the statistics of the Cutflow"""
 
-        if self._delayed_mode:
+        if self._delayed_mode and not compute:
+            warnings.warn(
+                "This will compute dask_awkward arrays. If you really want to do this now, call print(compute=True)"
+            )
+            return
+
+        if self._delayed_mode and compute:
             self._nevonecut, self._nevcutflow = dask.compute(
                 self._nevonecut, self._nevcutflow
             )
