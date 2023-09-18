@@ -586,6 +586,9 @@ class NminusOne:
         """Prints the statistics of the N-1 selection"""
 
         if self._delayed_mode:
+            warnings.warn(
+                "Printing the N-1 selection statistics is going to compute dask_awkward objects."
+            )
             self._nev = list(dask.compute(*self._nev))
 
         nev = self._nev
@@ -834,6 +837,9 @@ class Cutflow:
         """Prints the statistics of the Cutflow"""
 
         if self._delayed_mode:
+            warnings.warn(
+                "Printing the cutflow statistics is going to compute dask_awkward objects."
+            )
             self._nevonecut, self._nevcutflow = dask.compute(
                 self._nevonecut, self._nevcutflow
             )
