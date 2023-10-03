@@ -150,7 +150,10 @@ class _map_schema_uproot(_map_schema_base):
             },
             "form_key": None,
         }
-        return awkward.forms.form.from_dict(self.schemaclass(lform, self.version).form), self
+        return (
+            awkward.forms.form.from_dict(self.schemaclass(lform, self.version).form),
+            self,
+        )
 
     def create_column_mapping(self, tree, keys, start, stop, interp_options):
         from functools import partial
@@ -177,7 +180,9 @@ class _map_schema_uproot(_map_schema_base):
         class TranslateBufferKeys:
             def __getitem__(this, key):
                 form_key, attribute = self.parse_buffer_key(key)
-                return mapping[buffer_key(form_key=form_key, attribute=attribute, form=None)]
+                return mapping[
+                    buffer_key(form_key=form_key, attribute=attribute, form=None)
+                ]
 
         return TranslateBufferKeys()
 
