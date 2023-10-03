@@ -77,6 +77,36 @@ class _map_schema_base(ImplementsFormTransformation):
         self.metadata = metadata
         self.version = version
 
+    def keys_for_buffer_keys(self, buffer_keys):
+        base_columns = set()
+        for buffer_key in buffer_keys:
+            form_key, attribute = self.parse_buffer_key(buffer_key)
+            base_columns.update(
+                [
+                    acolumn
+                    for acolumn in urllib.parse.unquote(form_key).split(",")
+                    if not acolumn.startswith("!")
+                ]
+            )
+        return base_columns
+
+    def parse_buffer_key(self, buffer_key):
+        prefix, attribute, form_key = buffer_key.rsplit("/", maxsplit=2)
+        if attribute == "offsets":
+            return (form_key[: -len("%2C%21offsets")], attribute)
+        else:
+            return (form_key, attribute)
+
+    @property
+    def buffer_key(self):
+        return partial(self._key_formatter, "")
+
+    def _key_formatter(self, prefix, form_key, form, attribute):
+        if attribute == "offsets":
+            form_key += "%2C%21offsets"
+        return prefix + f"/{attribute}/{form_key}"
+
+    # TODO: deprecate
     def extract_form_keys_base_columns(self, form_keys):
         base_columns = []
         for form_key in form_keys:
@@ -88,11 +118,6 @@ class _map_schema_base(ImplementsFormTransformation):
                 ]
             )
         return list(set(base_columns))
-
-    def _key_formatter(self, prefix, form_key, form, attribute):
-        if attribute == "offsets":
-            form_key += "%2C%21offsets"
-        return prefix + f"/{attribute}/{form_key}"
 
 
 class _map_schema_uproot(_map_schema_base):
@@ -125,7 +150,36 @@ class _map_schema_uproot(_map_schema_base):
             },
             "form_key": None,
         }
-        return awkward.forms.form.from_dict(self.schemaclass(lform, self.version).form)
+        return awkward.forms.form.from_dict(self.schemaclass(lform, self.version).form), self
+
+    def create_column_mapping(self, tree, keys, start, stop, interp_options):
+        from functools import partial
+
+        from coffea.nanoevents.util import tuple_to_key
+
+        partition_key = (
+            str(tree.file.uuid),
+            tree.object_path,
+            f"{start}-{stop}",
+        )
+        uuidpfn = {partition_key[0]: tree.file.file_path}
+        mapping = UprootSourceMapping(
+            TrivialUprootOpener(uuidpfn, interp_options),
+            start,
+            stop,
+            cache={},
+            access_log=None,
+            use_ak_forth=True,
+        )
+        mapping.preload_column_source(partition_key[0], partition_key[1], tree)
+        buffer_key = partial(self._key_formatter, tuple_to_key(partition_key))
+
+        class TranslateBufferKeys:
+            def __getitem__(this, key):
+                form_key, attribute = self.parse_buffer_key(key)
+                return mapping[buffer_key(form_key=form_key, attribute=attribute, form=None)]
+
+        return TranslateBufferKeys()
 
     def create_column_mapping_and_key(self, tree, start, stop, interp_options):
         from functools import partial
