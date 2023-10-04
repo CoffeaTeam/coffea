@@ -513,14 +513,14 @@ def test_packed_selection_nminusone():
     ):
         assert np.all(mask == truth)
 
-    nminusone.to_npz("nminusone.npz", compressed=False)
+    nminusone.to_npz("nminusone.npz", compressed=False).compute()
     with np.load("nminusone.npz") as file:
         assert np.all(file["labels"] == labels)
         assert np.all(file["nev"] == nev)
         assert np.all(file["masks"] == masks)
     os.remove("nminusone.npz")
 
-    nminusone.to_npz("nminusone.npz", compressed=True)
+    nminusone.to_npz("nminusone.npz", compressed=True).compute()
     with np.load("nminusone.npz") as file:
         assert np.all(file["labels"] == labels)
         assert np.all(file["nev"] == nev)
@@ -619,7 +619,7 @@ def test_packed_selection_cutflow():
     ):
         assert np.all(mask == truth)
 
-    cutflow.to_npz("cutflow.npz", compressed=False)
+    cutflow.to_npz("cutflow.npz", compressed=False).compute()
     with np.load("cutflow.npz") as file:
         assert np.all(file["labels"] == labels)
         assert np.all(file["nevonecut"] == nevonecut)
@@ -628,7 +628,7 @@ def test_packed_selection_cutflow():
         assert np.all(file["maskscutflow"] == maskscutflow)
     os.remove("cutflow.npz")
 
-    cutflow.to_npz("cutflow.npz", compressed=True)
+    cutflow.to_npz("cutflow.npz", compressed=True).compute()
     with np.load("cutflow.npz") as file:
         assert np.all(file["labels"] == labels)
         assert np.all(file["nevonecut"] == nevonecut)
@@ -854,14 +854,14 @@ def test_packed_selection_nminusone_dak(optimization_enabled):
         ):
             assert np.all(mask.compute() == truth.compute())
 
-        nminusone.to_npz("nminusone.npz", compressed=False)
+        nminusone.to_npz("nminusone.npz", compressed=False).compute()
         with np.load("nminusone.npz") as file:
             assert np.all(file["labels"] == labels)
             assert np.all(file["nev"] == list(dask.compute(*nev)))
             assert np.all(file["masks"] == list(dask.compute(*masks)))
         os.remove("nminusone.npz")
 
-        nminusone.to_npz("nminusone.npz", compressed=True)
+        nminusone.to_npz("nminusone.npz", compressed=True).compute()
         with np.load("nminusone.npz") as file:
             assert np.all(file["labels"] == labels)
             assert np.all(file["nev"] == list(dask.compute(*nev)))
@@ -978,7 +978,7 @@ def test_packed_selection_cutflow_dak(optimization_enabled):
         ):
             assert np.all(mask.compute() == truth.compute())
 
-        cutflow.to_npz("cutflow.npz", compressed=False)
+        cutflow.to_npz("cutflow.npz", compressed=False).compute()
         with np.load("cutflow.npz") as file:
             assert np.all(file["labels"] == labels)
             assert np.all(file["nevonecut"] == list(dask.compute(*nevonecut)))
@@ -987,7 +987,7 @@ def test_packed_selection_cutflow_dak(optimization_enabled):
             assert np.all(file["maskscutflow"] == list(dask.compute(*maskscutflow)))
         os.remove("cutflow.npz")
 
-        cutflow.to_npz("cutflow.npz", compressed=True)
+        cutflow.to_npz("cutflow.npz", compressed=True).compute()
         with np.load("cutflow.npz") as file:
             assert np.all(file["labels"] == labels)
             assert np.all(file["nevonecut"] == list(dask.compute(*nevonecut)))
@@ -1109,14 +1109,14 @@ def test_packed_selection_nminusone_dak_uproot_only(optimization_enabled):
         ):
             assert np.all(mask.compute() == truth.compute())
 
-        nminusone.to_npz("nminusone.npz", compressed=False)
+        nminusone.to_npz("nminusone.npz", compressed=False).compute()
         with np.load("nminusone.npz") as file:
             assert np.all(file["labels"] == labels)
             assert np.all(file["nev"] == list(dask.compute(*nev)))
             assert np.all(file["masks"] == list(dask.compute(*masks)))
         os.remove("nminusone.npz")
 
-        nminusone.to_npz("nminusone.npz", compressed=True)
+        nminusone.to_npz("nminusone.npz", compressed=True).compute()
         with np.load("nminusone.npz") as file:
             assert np.all(file["labels"] == labels)
             assert np.all(file["nev"] == list(dask.compute(*nev)))
@@ -1233,7 +1233,7 @@ def test_packed_selection_cutflow_dak_uproot_only(optimization_enabled):
         ):
             assert np.all(mask.compute() == truth.compute())
 
-        cutflow.to_npz("cutflow.npz", compressed=False)
+        cutflow.to_npz("cutflow.npz", compressed=False).compute()
         with np.load("cutflow.npz") as file:
             assert np.all(file["labels"] == labels)
             assert np.all(file["nevonecut"] == list(dask.compute(*nevonecut)))
@@ -1242,7 +1242,7 @@ def test_packed_selection_cutflow_dak_uproot_only(optimization_enabled):
             assert np.all(file["maskscutflow"] == list(dask.compute(*maskscutflow)))
         os.remove("cutflow.npz")
 
-        cutflow.to_npz("cutflow.npz", compressed=True)
+        cutflow.to_npz("cutflow.npz", compressed=True).compute()
         with np.load("cutflow.npz") as file:
             assert np.all(file["labels"] == labels)
             assert np.all(file["nevonecut"] == list(dask.compute(*nevonecut)))
