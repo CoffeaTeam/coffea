@@ -91,8 +91,6 @@ class BaseSchema:
     form is accessible as a direct descendant.
     """
 
-    behavior = {}
-
     def __init__(self, base_form):
         params = dict(base_form.get("parameters", {}))
         params["__record__"] = "NanoEvents"
