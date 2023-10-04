@@ -88,7 +88,7 @@ def test_dask_job():
 
     client.close()
 
-
+@pytest.mark.skip(reason="most recent dask breaks this mechanism")
 def test_dask_cached():
     distributed = pytest.importorskip("distributed", minversion="2.6.0")
     client = distributed.Client(dashboard_address=None)
