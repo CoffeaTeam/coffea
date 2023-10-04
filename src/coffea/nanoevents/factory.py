@@ -81,11 +81,16 @@ class _map_schema_base(ImplementsFormTransformation):
         base_columns = set()
         for buffer_key in buffer_keys:
             form_key, attribute = self.parse_buffer_key(buffer_key)
+            operands = urllib.parse.unquote(form_key).split(",")
+
+            it_operands = iter(operands)
+            next(it_operands)
+
             base_columns.update(
                 [
-                    acolumn
-                    for acolumn in urllib.parse.unquote(form_key).split(",")
-                    if not acolumn.startswith("!")
+                    name
+                    for name, maybe_transform in zip(operands, it_operands)
+                    if maybe_transform == "!load"
                 ]
             )
         return base_columns
