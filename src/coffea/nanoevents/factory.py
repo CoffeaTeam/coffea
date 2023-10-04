@@ -152,7 +152,7 @@ class _map_schema_uproot(_map_schema_base):
         }
         return awkward.forms.form.from_dict(self.schemaclass(lform, self.version).form), self
 
-    def create_column_mapping(self, tree, keys, start, stop, interp_options):
+    def load_buffers(self, tree, keys, start, stop, interp_options):
         from functools import partial
 
         from coffea.nanoevents.util import tuple_to_key
