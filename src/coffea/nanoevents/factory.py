@@ -291,7 +291,7 @@ class NanoEventsFactory:
         treepath="/Events",
         entry_start=None,
         entry_stop=None,
-        chunks_per_file=1,
+        chunks_per_file=uproot._util.unset,
         runtime_cache=None,
         persistent_cache=None,
         schemaclass=NanoAODSchema,
@@ -327,7 +327,7 @@ class NanoEventsFactory:
             metadata : dict, optional
                 Arbitrary metadata to add to the `base.NanoEvents` object
             uproot_options : dict, optional
-                Any options to pass to ``uproot.open``
+                Any options to pass to ``uproot.open`` or ``uproot.dask``
             access_log : list, optional
                 Pass a list instance to record which branches were lazily accessed by this instance
             use_ak_forth:
@@ -385,6 +385,7 @@ class NanoEventsFactory:
                     ak_add_doc=True,
                     filter_branch=_remove_not_interpretable,
                     steps_per_file=chunks_per_file,
+                    **uproot_options,
                 )
             else:
                 opener = partial(
@@ -395,6 +396,7 @@ class NanoEventsFactory:
                     ak_add_doc=True,
                     filter_branch=_remove_not_interpretable,
                     steps_per_file=chunks_per_file,
+                    **uproot_options,
                 )
             return cls(map_schema, opener, None, cache=None, is_dask=True)
         elif permit_dask and not schemaclass.__dask_capable__:
