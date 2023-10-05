@@ -112,6 +112,7 @@ class BaseSourceMapping(Mapping):
             raise RuntimeError(f"Syntax error in form key {nodes}")
         out = stack.pop()
         import awkward
+
         if isinstance(out, awkward.contents.Content):
             out = awkward.to_numpy(out)
         else:
