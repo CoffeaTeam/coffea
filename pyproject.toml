@@ -37,11 +37,11 @@ classifiers = [
   "Topic :: Utilities",
 ]
 dependencies = [
-  "awkward>=2.4.2",
-  "uproot>=5.0.10",
+  "awkward>=2.4.5",
+  "uproot>=5.1.0rc1",
   "dask[array]>=2023.4.0",
-  "dask-awkward>=2023.7.1,!=2023.8.0",
-  "dask-histogram>=2023.6.0",
+  "dask-awkward>=2023.10a1,!=2023.8.0",
+  "dask-histogram>=2023.7a0",
   "correctionlib>=2.0.0",
   "pyarrow>=6.0.0",
   "fsspec",
