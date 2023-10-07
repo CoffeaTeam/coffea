@@ -1,4 +1,5 @@
 import awkward
+import dask_awkward as dak
 import numpy
 
 from coffea.lookup_tools.dense_lookup import dense_lookup
@@ -75,7 +76,7 @@ class rochester_lookup:
 
         newargs = args + (0, 0)
         default = func(*newargs)
-        result = numpy.zeros_like(default)
+        result = awkward.zeros_like(default)
         for s in range(self._nsets):
             oneOver = 1.0 / self._members[s]
             for m in range(self._members[s]):
@@ -226,12 +227,27 @@ class rochester_lookup:
         cbN_flat = awkward.flatten(cbN)
         cbS_flat = awkward.flatten(cbS)
 
-        invcdf = awkward.unflatten(
-            doublecrystalball.ppf(
-                u_flat, cbA_flat, cbA_flat, cbN_flat, cbN_flat, loc, cbS_flat
-            ),
-            counts,
-        )
+        args = (u_flat, cbA_flat, cbA_flat, cbN_flat, cbN_flat, loc, cbS_flat)
+
+        if any(isinstance(arg, dak.Array) for arg in args):
+
+            def apply(*args):
+                args_lz = [
+                    awkward.typetracer.length_zero_if_typetracer(arg) for arg in args
+                ]
+                out = awkward.Array(doublecrystalball.ppf(*args_lz))
+                if awkward.backend(args[0]) == "typetracer":
+                    out = awkward.Array(
+                        out.layout.to_typetracer(forget_length=True),
+                        behavior=out.behavior,
+                    )
+                return out
+
+            invcdf = dak.map_partitions(apply, *args)
+        else:
+            invcdf = doublecrystalball.ppf(*args)
+
+        invcdf = awkward.unflatten(invcdf, counts)
 
         x = awkward.where(
             mask,
