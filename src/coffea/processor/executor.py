@@ -694,7 +694,7 @@ class FuturesExecutor(ExecutorBase):
             An accumulator to collect the output of the function
         pool : concurrent.futures.Executor class or instance, optional
             The type of futures executor to use, defaults to ProcessPoolExecutor.
-            You can pass an instance instead of a class to re-use an executor
+            You can pass an instance instead of a class to reuse an executor
         workers : int, optional
             Number of parallel processes for futures (default 1)
         status : bool, optional
