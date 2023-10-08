@@ -67,7 +67,7 @@ def _key_formatter(prefix, form_key, form, attribute):
     return prefix + f"/{attribute}/{form_key}"
 
 
-class _map_schema_base: # ImplementsFormMapping, ImplementsFormMappingInfo
+class _map_schema_base:  # ImplementsFormMapping, ImplementsFormMappingInfo
     def __init__(
         self, schemaclass=BaseSchema, metadata=None, behavior=None, version=None
     ):
