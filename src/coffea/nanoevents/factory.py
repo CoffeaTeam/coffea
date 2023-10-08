@@ -11,7 +11,6 @@ import awkward
 import dask_awkward
 import fsspec
 import uproot
-from dask_awkward import ImplementsFormTransformation
 
 from coffea.nanoevents.mapping import (
     CachedMapping,
@@ -68,7 +67,7 @@ def _key_formatter(prefix, form_key, form, attribute):
     return prefix + f"/{attribute}/{form_key}"
 
 
-class _map_schema_base(ImplementsFormTransformation):
+class _map_schema_base: # ImplementsFormMapping, ImplementsFormMappingInfo
     def __init__(
         self, schemaclass=BaseSchema, metadata=None, behavior=None, version=None
     ):
