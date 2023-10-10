@@ -5,7 +5,7 @@ ci:
         for more information, see https://pre-commit.ci
     autofix_prs: true
     autoupdate_branch: ''
-    autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+    autoupdate_commit_msg: 'ci(pre-commit): pre-commit autoupdate'
     autoupdate_schedule: weekly
     skip: []
     submodules: false
@@ -24,7 +24,7 @@ repos:
     args: ["--profile", "black", "--filter-files"]
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.4.0
+  rev: v4.5.0
   hooks:
   - id: check-case-conflict
   - id: check-merge-conflict
@@ -37,7 +37,7 @@ repos:
   - id: trailing-whitespace
 
 - repo: https://github.com/asottile/pyupgrade
-  rev: v3.14.0
+  rev: v3.15.0
   hooks:
   - id: pyupgrade
     args: ["--py38-plus"]
