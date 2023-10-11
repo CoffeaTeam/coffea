@@ -110,19 +110,6 @@ class _map_schema_base:  # ImplementsFormMapping, ImplementsFormMappingInfo
             form_key += "%2C%21offsets"
         return prefix + f"/{attribute}/{form_key}"
 
-    # TODO: deprecate
-    def extract_form_keys_base_columns(self, form_keys):
-        base_columns = []
-        for form_key in form_keys:
-            base_columns.extend(
-                [
-                    acolumn
-                    for acolumn in urllib.parse.unquote(form_key).split(",")
-                    if not acolumn.startswith("!")
-                ]
-            )
-        return list(set(base_columns))
-
 
 class _map_schema_uproot(_map_schema_base):
     def __init__(
