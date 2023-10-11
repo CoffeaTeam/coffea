@@ -111,6 +111,15 @@ class _map_schema_base:  # ImplementsFormMapping, ImplementsFormMappingInfo
         return prefix + f"/{attribute}/{form_key}"
 
 
+class _TranslatedMapping:
+    def __init__(self, func, mapping):
+        self._func = func
+        self._mapping = mapping
+
+    def __getitem__(self, index):
+        return self._mapping[self._func(index)]
+
+
 class _map_schema_uproot(_map_schema_base):
     def __init__(
         self, schemaclass=BaseSchema, metadata=None, behavior=None, version=None
@@ -168,14 +177,15 @@ class _map_schema_uproot(_map_schema_base):
         mapping.preload_column_source(partition_key[0], partition_key[1], tree)
         buffer_key = partial(self._key_formatter, tuple_to_key(partition_key))
 
-        class TranslateBufferKeys:
-            def __getitem__(this, key):
-                form_key, attribute = self.parse_buffer_key(key)
-                return mapping[
-                    buffer_key(form_key=form_key, attribute=attribute, form=None)
-                ]
+        # The buffer-keys that dask-awkward knows about will not include the
+        # partition key. Therefore, we must translate the keys here.
+        def translate_key(index):
+            form_key, attribute = self.parse_buffer_key(index)
+            return mapping[
+                buffer_key(form_key=form_key, attribute=attribute, form=None)
+            ]
 
-        return TranslateBufferKeys()
+        return _TranslatedMapping(translate_key, mapping)
 
 
 class _map_schema_parquet(_map_schema_base):
