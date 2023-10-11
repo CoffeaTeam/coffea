@@ -839,7 +839,7 @@ def test_corrected_jets_factory(optimization_enabled):
 
         print(dak.report_necessary_columns(jets.eta))
         print(
-            dak.report_necessary_buffers(
+            dak.report_necessary_columns(
                 resosf.getScaleFactor(
                     JetEta=jets.eta,
                 )
