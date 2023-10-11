@@ -837,7 +837,7 @@ def test_corrected_jets_factory(optimization_enabled):
             **{name: evaluator[name] for name in jec_stack_names[5:6]}
         )
 
-        print(dak.report_necessary_buffers(jets.eta))
+        print(dak.report_necessary_columns(jets.eta))
         print(
             dak.report_necessary_buffers(
                 resosf.getScaleFactor(
