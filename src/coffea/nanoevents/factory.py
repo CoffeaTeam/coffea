@@ -177,29 +177,6 @@ class _map_schema_uproot(_map_schema_base):
 
         return TranslateBufferKeys()
 
-    def create_column_mapping_and_key(self, tree, start, stop, interp_options):
-        from functools import partial
-
-        from coffea.nanoevents.util import tuple_to_key
-
-        partition_key = (
-            str(tree.file.uuid),
-            tree.object_path,
-            f"{start}-{stop}",
-        )
-        uuidpfn = {partition_key[0]: tree.file.file_path}
-        mapping = UprootSourceMapping(
-            TrivialUprootOpener(uuidpfn, interp_options),
-            start,
-            stop,
-            cache={},
-            access_log=None,
-            use_ak_forth=True,
-        )
-        mapping.preload_column_source(partition_key[0], partition_key[1], tree)
-
-        return mapping, partial(self._key_formatter, tuple_to_key(partition_key))
-
 
 class _map_schema_parquet(_map_schema_base):
     def __init__(
@@ -223,31 +200,6 @@ class _map_schema_parquet(_map_schema_base):
         lform["parameters"]["metadata"] = self.metadata
 
         return awkward.forms.form.from_dict(self.schemaclass(lform, self.version).form)
-
-    def create_column_mapping_and_key(self, columns, start, stop, interp_options):
-        from functools import partial
-
-        from coffea.nanoevents.util import tuple_to_key
-
-        uuid = "NO_UUID"
-        obj_path = "NO_OBJECT_PATH"
-
-        partition_key = (
-            str(uuid),
-            obj_path,
-            f"{start}-{stop}",
-        )
-        uuidpfn = {uuid: columns}
-        mapping = PreloadedSourceMapping(
-            PreloadedOpener(uuidpfn),
-            start,
-            stop,
-            cache={},
-            access_log=None,
-        )
-        mapping.preload_column_source(partition_key[0], partition_key[1], columns)
-
-        return mapping, partial(self._key_formatter, tuple_to_key(partition_key))
 
 
 class NanoEventsFactory:
