@@ -181,9 +181,7 @@ class _map_schema_uproot(_map_schema_base):
         # partition key. Therefore, we must translate the keys here.
         def translate_key(index):
             form_key, attribute = self.parse_buffer_key(index)
-            return mapping[
-                buffer_key(form_key=form_key, attribute=attribute, form=None)
-            ]
+            return buffer_key(form_key=form_key, attribute=attribute, form=None)
 
         return _TranslatedMapping(translate_key, mapping)
 
