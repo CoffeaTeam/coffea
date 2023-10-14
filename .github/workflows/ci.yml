@@ -69,7 +69,7 @@ jobs:
         python -m pip install xgboost
         python -m pip install tritonclient[grpc,http]
         # install checked out coffea
-        python -m pip install -q -e '.[dev,parsl,dask,spark]' --upgrade
+        python -m pip install -q -e '.[dev,parsl,dask,spark]' --upgrade --upgrade-strategy eager
         python -m pip list
         java -version
     - name: Install dependencies (MacOS)
@@ -80,7 +80,7 @@ jobs:
         python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
         python -m pip install xgboost
         # install checked out coffea
-        python -m pip install -q -e '.[dev,dask,spark]' --upgrade
+        python -m pip install -q -e '.[dev,dask,spark]' --upgrade --upgrade-strategy eager
         python -m pip list
         java -version
     - name: Install dependencies (Windows)
@@ -91,7 +91,7 @@ jobs:
         python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
         python -m pip install xgboost
         # install checked out coffea
-        python -m pip install -q -e '.[dev,dask]' --upgrade
+        python -m pip install -q -e '.[dev,dask]' --upgrade --upgrade-strategy eager
         python -m pip list
         java -version
 
