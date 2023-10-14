@@ -6,4 +6,5 @@ dependencies:
   - ipykernel
   - xxhash
   - xrootd
-  - coffea==0.7.16
+  - pip:
+    - '--editable ./coffea'
