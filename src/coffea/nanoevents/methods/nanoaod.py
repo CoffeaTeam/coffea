@@ -13,12 +13,15 @@ behavior.update(candidate.behavior)
 
 class _NanoAODEvents(behavior["NanoEvents"]):
     def __repr__(self):
-        if (hasattr(self,"run") and
-                hasattr(self,"luminosityBlock") and
-                hasattr(self,"event")):
+        if (
+            hasattr(self, "run")
+            and hasattr(self, "luminosityBlock")
+            and hasattr(self, "event")
+        ):
             return f"<event {self.run}:{self.luminosityBlock}:{self.event}>"
         else:
             return "<event>"
+
 
 behavior["NanoEvents"] = _NanoAODEvents
 
