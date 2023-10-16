@@ -37,10 +37,16 @@ class NanoAODSchema(BaseSchema):
     There is a class-level variable ``warn_missing_crossrefs`` which will alter the behavior of
     NanoAODSchema. If warn_missing_crossrefs is true then when a missing global index cross-ref
     target is encountered a warning will be issued. Regardless, the cross-reference is dropped.
+
+    The same holds for ``error_missing_events_id``. If error_missing_events_id is true, then when the 'run', 'event',
+    or 'luminosityBlock' fields are missing, an exception will be thrown; if it is false, just a warning will be issued.
     """
 
     __dask_capable__ = True
     warn_missing_crossrefs = True
+    error_missing_event_ids = True
+
+    event_ids = ["run", "luminosityBlock", "event"]
 
     mixins = {
         "CaloMET": "MissingET",
@@ -204,6 +210,24 @@ class NanoAODSchema(BaseSchema):
             if "n" + name in branch_forms:
                 branch_forms["o" + name] = transforms.counts2offsets_form(
                     branch_forms["n" + name]
+                )
+
+        # Check the presence of the event_ids
+        missing_event_ids = [
+            event_id for event_id in self.event_ids if not hasattr(self, event_id)
+        ]
+        if missing_event_ids:
+            if self.error_missing_event_ids:
+                raise Exception(
+                    f"event_ids {missing_event_ids} is/are missing. "
+                    "These fields can be needed to distinguish problematic "
+                    "data collection sub-eras or to do an analysis cross-check.\n"
+                    "To prevent this error turn error_missing_event_ids to False"
+                )
+            else:
+                warnings.warn(
+                    f"Missing event_ids : {missing_event_ids}",
+                    RuntimeWarning,
                 )
 
         # Create global index virtual arrays for indirection
