@@ -214,7 +214,7 @@ class NanoAODSchema(BaseSchema):
 
         # Check the presence of the event_ids
         missing_event_ids = [
-            event_id for event_id in self.event_ids if not hasattr(self, event_id)
+            event_id for event_id in self.event_ids if event_id not in branch_forms
         ]
         if missing_event_ids:
             if self.error_missing_event_ids:
