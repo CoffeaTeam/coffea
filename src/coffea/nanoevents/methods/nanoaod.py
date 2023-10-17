@@ -13,9 +13,9 @@ behavior.update(candidate.behavior)
 
 class _NanoAODEvents(behavior["NanoEvents"]):
     def __repr__(self):
-        return f"<event {getattr(self,'run','(missing run)')}:\
-                {getattr(self,'luminosityBlock','(missing luminosityBlock)')}:\
-                {getattr(self,'event','(missing event)')}>"
+        return f"<event {getattr(self,'run','??')}:\
+                {getattr(self,'luminosityBlock','??')}:\
+                {getattr(self,'event','??')}>"
 
 
 behavior["NanoEvents"] = _NanoAODEvents
