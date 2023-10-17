@@ -37,17 +37,17 @@ classifiers = [
   "Topic :: Utilities",
 ]
 dependencies = [
-  "awkward>=2.4.2",
-  "uproot>=5.0.10",
+  "awkward>=2.4.6",
+  "uproot>=5.1.1",
   "dask[array]>=2023.4.0",
-  "dask-awkward>=2023.7.1,!=2023.8.0",
-  "dask-histogram>=2023.6.0",
-  "correctionlib>=2.0.0",
+  "dask-awkward>=2023.10.0",
+  "dask-histogram>=2023.10.0",
+  "correctionlib>=2.3.3",
   "pyarrow>=6.0.0",
   "fsspec",
   "matplotlib>=3",
-  "numba>=0.57.0",
-  "numpy>=1.22.0,<1.25",  # < 1.25 for numba 0.57 series
+  "numba>=0.58.0",
+  "numpy>=1.22.0,<1.26",  # < 1.26 for numba 0.58 series
   "scipy>=1.1.0",
   "tqdm>=4.27.0",
   "lz4",

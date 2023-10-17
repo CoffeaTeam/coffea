@@ -795,7 +795,7 @@ class FuturesExecutor(ExecutorBase):
             An accumulator to collect the output of the function
         pool : concurrent.futures.Executor class or instance, optional
             The type of futures executor to use, defaults to ProcessPoolExecutor.
-            You can pass an instance instead of a class to re-use an executor
+            You can pass an instance instead of a class to reuse an executor
         workers : int, optional
             Number of parallel processes for futures (default 1)
         status : bool, optional
@@ -1819,7 +1819,7 @@ class Runner:
                     import dask_awkward
 
                     to_compute = processor_instance.process(events)
-                    materialized = dask_awkward.necessary_columns(to_compute)
+                    # materialized = dask_awkward.report_necessary_buffers(to_compute)
                     out = dask.compute(to_compute, scheduler="single-threaded")[0]
             except Exception as e:
                 raise Exception(f"Failed processing file: {item!r}") from e
@@ -1835,11 +1835,11 @@ class Runner:
                     metrics = {}
                     if isinstance(file, uproot.ReadOnlyDirectory):
                         metrics["bytesread"] = file.file.source.num_requested_bytes
+                    # metrics["data_and_shape_buffers"] = set(materialized)
+                    # metrics["shape_only_buffers"] = set(materialized)
                     if schema is not None and issubclass(schema, schemas.BaseSchema):
-                        metrics["columns"] = set(materialized)
                         metrics["entries"] = len(events)
                     else:
-                        metrics["columns"] = set(materialized)
                         metrics["entries"] = events.size
                     metrics["processtime"] = toc - tic
                     return {"out": out, "metrics": metrics, "processed": {item}}
