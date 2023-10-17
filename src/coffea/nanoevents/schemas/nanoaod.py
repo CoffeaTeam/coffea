@@ -221,7 +221,7 @@ class NanoAODSchema(BaseSchema):
         if missing_event_ids:
             if self.error_missing_event_ids:
                 raise Exception(
-                    f"event_ids {missing_event_ids} is/are missing. "
+                    f"There are missing event ID fields: {missing_event_ids}"
                     "These fields can be needed to distinguish problematic "
                     "data collection sub-eras or to do an analysis cross-check.\n"
                     "To prevent this error turn error_missing_event_ids to False"
