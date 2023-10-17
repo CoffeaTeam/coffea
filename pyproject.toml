@@ -58,9 +58,6 @@ dependencies = [
   "pandas",
   "hist>=2",
   "cachetools",
-  "rucio-clients>=32;python_version>'3.8'",
-  "rucio-clients<32;python_version<'3.9'",
-  "cmd2"
 ]
 dynamic = ["version"]
 
@@ -87,6 +84,11 @@ servicex = [
   "tenacity",
   "servicex>=2.5.3",
   "func-adl_servicex",
+]
+rucio = [
+  "rucio-clients>=32;python_version>'3.8'",
+  "rucio-clients<32;python_version<'3.9'",
+  "cmd2",
 ]
 dev = [
   "pre-commit",
