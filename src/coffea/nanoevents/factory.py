@@ -29,8 +29,9 @@ from coffea.nanoevents.schemas import (
     PHYSLITESchema,
     TreeMakerSchema,
 )
-from coffea.nanoevents.util import key_to_tuple, tuple_to_key
+from coffea.nanoevents.util import quote, unquote, key_to_tuple, tuple_to_key
 
+_offsets_label = quote(",!offsets")
 
 def _remove_not_interpretable(branch):
     if isinstance(
@@ -63,7 +64,7 @@ def _remove_not_interpretable(branch):
 
 def _key_formatter(prefix, form_key, form, attribute):
     if attribute == "offsets":
-        form_key += "%2C%21offsets"
+        form_key += _offsets_label
     return prefix + f"/{attribute}/{form_key}"
 
 
@@ -80,7 +81,7 @@ class _map_schema_base:  # ImplementsFormMapping, ImplementsFormMappingInfo
         base_columns = set()
         for buffer_key in buffer_keys:
             form_key, attribute = self.parse_buffer_key(buffer_key)
-            operands = urllib.parse.unquote(form_key).split(",")
+            operands = unquote(form_key).split(",")
 
             it_operands = iter(operands)
             next(it_operands)
@@ -97,7 +98,7 @@ class _map_schema_base:  # ImplementsFormMapping, ImplementsFormMappingInfo
     def parse_buffer_key(self, buffer_key):
         prefix, attribute, form_key = buffer_key.rsplit("/", maxsplit=2)
         if attribute == "offsets":
-            return (form_key[: -len("%2C%21offsets")], attribute)
+            return (form_key[: -len(_offsets_label)], attribute)
         else:
             return (form_key, attribute)
 
@@ -107,7 +108,7 @@ class _map_schema_base:  # ImplementsFormMapping, ImplementsFormMappingInfo
 
     def _key_formatter(self, prefix, form_key, form, attribute):
         if attribute == "offsets":
-            form_key += "%2C%21offsets"
+            form_key += _offsets_label
         return prefix + f"/{attribute}/{form_key}"
 
 
