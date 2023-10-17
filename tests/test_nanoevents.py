@@ -161,7 +161,7 @@ def test_read_nanodata(suffix):
 def test_missing_eventIds_error():
     path = os.path.abspath("tests/samples/missing_luminosityBlock.root") + ":Events"
     with pytest.raises(
-        Exception,
+        RuntimeError,
         match="There are missing event ID fields: ['luminosityBlock'] \n\n\
                     The event ID fields ['run', 'luminosityBlock', 'event'] are necessary to perform sub-run identification \
                     (e.g. for corrections and sub-dividing data during different detector conditions),\
