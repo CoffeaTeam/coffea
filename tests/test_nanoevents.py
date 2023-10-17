@@ -175,7 +175,9 @@ def test_missing_eventIds_error():
 
 def test_missing_eventIds_warning():
     path = os.path.abspath("tests/samples/missing_luminosityBlock.root") + ":Events"
-    with pytest.warns(RuntimeWarning, match=r"Missing event_ids \: \[\'luminosityBlock\'\]"):
+    with pytest.warns(
+        RuntimeWarning, match=r"Missing event_ids \: \[\'luminosityBlock\'\]"
+    ):
         NanoAODSchema.error_missing_event_ids = False
         factory = NanoEventsFactory.from_root(path, schemaclass=NanoAODSchema)
         factory.events()
