@@ -159,7 +159,7 @@ def test_read_nanodata(suffix):
 
 
 def test_missing_eventIds_error():
-    path = os.path.abspath("tests/samples/missing_luminosityBlock.root")
+    path = os.path.abspath("tests/samples/missing_luminosityBlock.root") + ":Events"
     with pytest.raises(
         Exception,
         match="There are missing event ID fields: ['luminosityBlock'] \n\n\
@@ -174,7 +174,7 @@ def test_missing_eventIds_error():
 
 
 def test_missing_eventIds_warning():
-    path = os.path.abspath("tests/samples/missing_luminosityBlock.root")
+    path = os.path.abspath("tests/samples/missing_luminosityBlock.root") + ":Events"
     with pytest.raises(RuntimeWarning, match="Missing event_ids : ['luminosityBlock']"):
         NanoAODSchema.error_missing_event_ids = False
         factory = NanoEventsFactory.from_root(path, schemaclass=NanoAODSchema)
