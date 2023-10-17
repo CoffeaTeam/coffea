@@ -47,6 +47,8 @@ class NanoAODSchema(BaseSchema):
     error_missing_event_ids = True
 
     event_ids = ["run", "luminosityBlock", "event"]
+    """List of NanoAOD event IDs
+    """
 
     mixins = {
         "CaloMET": "MissingET",
