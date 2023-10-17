@@ -29,9 +29,10 @@ from coffea.nanoevents.schemas import (
     PHYSLITESchema,
     TreeMakerSchema,
 )
-from coffea.nanoevents.util import quote, unquote, key_to_tuple, tuple_to_key
+from coffea.nanoevents.util import key_to_tuple, quote, tuple_to_key, unquote
 
 _offsets_label = quote(",!offsets")
+
 
 def _remove_not_interpretable(branch):
     if isinstance(
