@@ -220,7 +220,7 @@ class NanoAODSchema(BaseSchema):
         ]
         if len(missing_event_ids) > 0:
             if self.error_missing_event_ids:
-                raise Exception(
+                raise RuntimeError(
                     f"There are missing event ID fields: {missing_event_ids} \n\n\
                     The event ID fields {self.event_ids} are necessary to perform sub-run identification \
                     (e.g. for corrections and sub-dividing data during different detector conditions),\
