@@ -218,7 +218,7 @@ class NanoAODSchema(BaseSchema):
         missing_event_ids = [
             event_id for event_id in self.event_ids if event_id not in branch_forms
         ]
-        if missing_event_ids:
+        if len(missing_event_ids) > 0:
             if self.error_missing_event_ids:
                 raise Exception(
                     f"There are missing event ID fields: {missing_event_ids}"
