@@ -162,12 +162,12 @@ def test_missing_eventIds_error():
     path = os.path.abspath("tests/samples/missing_luminosityBlock.root") + ":Events"
     with pytest.raises(
         RuntimeError,
-        match="There are missing event ID fields: ['luminosityBlock'] \n\n\
-                    The event ID fields ['run', 'luminosityBlock', 'event'] are necessary to perform sub-run identification \
-                    (e.g. for corrections and sub-dividing data during different detector conditions),\
-                    to cross-validate MC and Data (i.e. matching events for comparison), and to generate event displays. \
-                    It's advised to never drop these branches from the dataformat.\n\n\
-                    This error can be demoted to a warning by setting the class level variable error_missing_event_ids to False.",
+        match=r"There are missing event ID fields\: \[\'\luminosityBlock\'\] \n\n\
+                    The event ID fields \[\'run\'\, \'luminosityBlock\'\, \'event\'\] are necessary to perform sub-run identification \
+                    \(e\.g\. for corrections and sub\-dividing data during different detector conditions\)\,\
+                    to cross-validate MC and Data \(i\.e\. matching events for comparison\)\, and to generate event displays\. \
+                    It\'s advised to never drop these branches from the dataformat\.\n\n\
+                    This error can be demoted to a warning by setting the class level variable error\_missing\_event\_ids to False\.",
     ):
         factory = NanoEventsFactory.from_root(path, schemaclass=NanoAODSchema)
         factory.events()
@@ -175,7 +175,7 @@ def test_missing_eventIds_error():
 
 def test_missing_eventIds_warning():
     path = os.path.abspath("tests/samples/missing_luminosityBlock.root") + ":Events"
-    with pytest.warns(RuntimeWarning, match="Missing event_ids : ['luminosityBlock']"):
+    with pytest.warns(RuntimeWarning, match=r"Missing event_ids \: \[\'luminosityBlock\'\]"):
         NanoAODSchema.error_missing_event_ids = False
         factory = NanoEventsFactory.from_root(path, schemaclass=NanoAODSchema)
         factory.events()
