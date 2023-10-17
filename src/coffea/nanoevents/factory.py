@@ -1,6 +1,5 @@
 import io
 import pathlib
-import urllib.parse
 import warnings
 import weakref
 from functools import partial
