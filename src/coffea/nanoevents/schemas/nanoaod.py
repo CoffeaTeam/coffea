@@ -221,10 +221,12 @@ class NanoAODSchema(BaseSchema):
         if len(missing_event_ids) > 0:
             if self.error_missing_event_ids:
                 raise Exception(
-                    f"There are missing event ID fields: {missing_event_ids}"
-                    "These fields can be needed to distinguish problematic "
-                    "data collection sub-eras or to do an analysis cross-check.\n"
-                    "To prevent this error turn error_missing_event_ids to False"
+                    f"There are missing event ID fields: {missing_event_ids} \n\n\
+                    The event ID fields {self.event_ids} are necessary to perform sub-run identification \
+                    (e.g. for corrections and sub-dividing data during different detector conditions),\
+                    to cross-validate MC and Data (i.e. matching events for comparison), and to generate event displays. \
+                    It's advised to never drop these branches from the dataformat.\n\n\
+                    This error can be demoted to a warning by setting the class level variable error_missing_event_ids to False."
                 )
             else:
                 warnings.warn(
