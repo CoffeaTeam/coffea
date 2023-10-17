@@ -111,14 +111,19 @@ class BaseSourceMapping(Mapping):
         if len(stack) != 1:
             raise RuntimeError(f"Syntax error in form key {nodes}")
         out = stack.pop()
-        try:
-            out = numpy.array(out)
-        except ValueError:
-            if self._debug:
-                print(out)
-            raise RuntimeError(
-                f"Left with non-bare array after evaluating form key {nodes}"
-            )
+        import awkward
+
+        if isinstance(out, awkward.contents.Content):
+            out = awkward.to_numpy(out)
+        else:
+            try:
+                out = numpy.array(out)
+            except ValueError:
+                if self._debug:
+                    print(out)
+                raise RuntimeError(
+                    f"Left with non-bare array after evaluating form key {nodes}"
+                )
         return out
 
     @abstractmethod

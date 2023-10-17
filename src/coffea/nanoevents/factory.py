@@ -1,6 +1,5 @@
 import io
 import pathlib
-import urllib.parse
 import warnings
 import weakref
 from functools import partial
@@ -11,7 +10,6 @@ import awkward
 import dask_awkward
 import fsspec
 import uproot
-from dask_awkward import ImplementsFormTransformation
 
 from coffea.nanoevents.mapping import (
     CachedMapping,
@@ -30,7 +28,9 @@ from coffea.nanoevents.schemas import (
     PHYSLITESchema,
     TreeMakerSchema,
 )
-from coffea.nanoevents.util import key_to_tuple, tuple_to_key
+from coffea.nanoevents.util import key_to_tuple, quote, tuple_to_key, unquote
+
+_offsets_label = quote(",!offsets")
 
 
 def _remove_not_interpretable(branch):
@@ -64,11 +64,11 @@ def _remove_not_interpretable(branch):
 
 def _key_formatter(prefix, form_key, form, attribute):
     if attribute == "offsets":
-        form_key += "%2C%21offsets"
+        form_key += _offsets_label
     return prefix + f"/{attribute}/{form_key}"
 
 
-class _map_schema_base(ImplementsFormTransformation):
+class _map_schema_base:  # ImplementsFormMapping, ImplementsFormMappingInfo
     def __init__(
         self, schemaclass=BaseSchema, metadata=None, behavior=None, version=None
     ):
@@ -77,22 +77,48 @@ class _map_schema_base(ImplementsFormTransformation):
         self.metadata = metadata
         self.version = version
 
-    def extract_form_keys_base_columns(self, form_keys):
-        base_columns = []
-        for form_key in form_keys:
-            base_columns.extend(
+    def keys_for_buffer_keys(self, buffer_keys):
+        base_columns = set()
+        for buffer_key in buffer_keys:
+            form_key, attribute = self.parse_buffer_key(buffer_key)
+            operands = unquote(form_key).split(",")
+
+            it_operands = iter(operands)
+            next(it_operands)
+
+            base_columns.update(
                 [
-                    acolumn
-                    for acolumn in urllib.parse.unquote(form_key).split(",")
-                    if not acolumn.startswith("!")
+                    name
+                    for name, maybe_transform in zip(operands, it_operands)
+                    if maybe_transform == "!load"
                 ]
             )
-        return list(set(base_columns))
+        return base_columns
+
+    def parse_buffer_key(self, buffer_key):
+        prefix, attribute, form_key = buffer_key.rsplit("/", maxsplit=2)
+        if attribute == "offsets":
+            return (form_key[: -len(_offsets_label)], attribute)
+        else:
+            return (form_key, attribute)
+
+    @property
+    def buffer_key(self):
+        return partial(self._key_formatter, "")
 
     def _key_formatter(self, prefix, form_key, form, attribute):
         if attribute == "offsets":
-            form_key += "%2C%21offsets"
+            form_key += _offsets_label
         return prefix + f"/{attribute}/{form_key}"
+
+
+class _TranslatedMapping:
+    def __init__(self, func, mapping):
+        self._func = func
+        self._mapping = mapping
+
+    def __getitem__(self, index):
+        return self._mapping[self._func(index)]
 
 
 class _map_schema_uproot(_map_schema_base):
@@ -125,9 +151,12 @@ class _map_schema_uproot(_map_schema_base):
             },
             "form_key": None,
         }
-        return awkward.forms.form.from_dict(self.schemaclass(lform, self.version).form)
+        return (
+            awkward.forms.form.from_dict(self.schemaclass(lform, self.version).form),
+            self,
+        )
 
-    def create_column_mapping_and_key(self, tree, start, stop, interp_options):
+    def load_buffers(self, tree, keys, start, stop, interp_options):
         from functools import partial
 
         from coffea.nanoevents.util import tuple_to_key
@@ -147,8 +176,15 @@ class _map_schema_uproot(_map_schema_base):
             use_ak_forth=True,
         )
         mapping.preload_column_source(partition_key[0], partition_key[1], tree)
+        buffer_key = partial(self._key_formatter, tuple_to_key(partition_key))
 
-        return mapping, partial(self._key_formatter, tuple_to_key(partition_key))
+        # The buffer-keys that dask-awkward knows about will not include the
+        # partition key. Therefore, we must translate the keys here.
+        def translate_key(index):
+            form_key, attribute = self.parse_buffer_key(index)
+            return buffer_key(form_key=form_key, attribute=attribute, form=None)
+
+        return _TranslatedMapping(translate_key, mapping)
 
 
 class _map_schema_parquet(_map_schema_base):
@@ -173,31 +209,6 @@ class _map_schema_parquet(_map_schema_base):
         lform["parameters"]["metadata"] = self.metadata
 
         return awkward.forms.form.from_dict(self.schemaclass(lform, self.version).form)
-
-    def create_column_mapping_and_key(self, columns, start, stop, interp_options):
-        from functools import partial
-
-        from coffea.nanoevents.util import tuple_to_key
-
-        uuid = "NO_UUID"
-        obj_path = "NO_OBJECT_PATH"
-
-        partition_key = (
-            str(uuid),
-            obj_path,
-            f"{start}-{stop}",
-        )
-        uuidpfn = {uuid: columns}
-        mapping = PreloadedSourceMapping(
-            PreloadedOpener(uuidpfn),
-            start,
-            stop,
-            cache={},
-            access_log=None,
-        )
-        mapping.preload_column_source(partition_key[0], partition_key[1], columns)
-
-        return mapping, partial(self._key_formatter, tuple_to_key(partition_key))
 
 
 class NanoEventsFactory:
