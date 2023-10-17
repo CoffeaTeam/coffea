@@ -418,7 +418,7 @@ class Weights:
 
 
 class NminusOneToNpz:
-    """Object to be returned by NmiusOne.to_npz()"""
+    """Object to be returned by NminusOne.to_npz()"""
 
     def __init__(self, file, labels, nev, masks, saver):
         self._file = file
@@ -494,11 +494,17 @@ class CutflowToNpz:
         return self._maskscutflow
 
     def compute(self):
-        self._nevonecut = list(dask.compute(*self._nevonecut))
-        self._nevcutflow = list(dask.compute(*self._nevcutflow))
-        self._masksonecut = list(dask.compute(*self._masksonecut))
-        self._maskscutflow = list(dask.compute(*self._maskscutflow))
-        numpy.savez(
+        self._nevonecut, self._nevcutflow = dask.compute(
+            self._nevonecut, self._nevcutflow
+        )
+        self._masksonecut, self._maskscutflow = dask.compute(
+            self._masksonecut, self._maskscutflow
+        )
+        self._nevonecut = list(self._nevonecut)
+        self._nevcutflow = list(self._nevcutflow)
+        self._masksonecut = list(self._masksonecut)
+        self._maskscutflow = list(self._maskscutflow)
+        self._saver(
             self._file,
             labels=self._labels,
             nevonecut=self._nevonecut,
@@ -538,7 +544,7 @@ class NminusOne:
         labels = ["initial"] + [f"N - {i}" for i in self._names] + ["N"]
         return NminusOneResult(labels, self._nev, self._masks)
 
-    def to_npz(self, file, compressed=False, compute=True):
+    def to_npz(self, file, compressed=False, compute=False):
         """Saves the results of the N-1 selection to a .npz file
 
         Parameters
@@ -554,7 +560,7 @@ class NminusOne:
             compute : bool, optional
                 Whether to immediately start writing or to return an object
                 that the user can choose when to start writing by calling compute().
-                Default is True.
+                Default is False.
 
         Returns
         -------
@@ -580,22 +586,29 @@ class NminusOne:
         """Prints the statistics of the N-1 selection"""
 
         if self._delayed_mode:
+            warnings.warn(
+                "Printing the N-1 selection statistics is going to compute dask_awkward objects."
+            )
             self._nev = list(dask.compute(*self._nev))
+
         nev = self._nev
         print("N-1 selection stats:")
         for i, name in enumerate(self._names):
-            print(
-                f"Ignoring {name:<20}: pass = {nev[i+1]:<20}\
-                all = {nev[0]:<20}\
-                -- eff = {nev[i+1]*100/nev[0]:.1f} %"
+            stats = (
+                f"Ignoring {name:<20}"
+                f"pass = {nev[i+1]:<20}"
+                f"all = {nev[0]:<20}"
+                f"-- eff = {nev[i+1]*100/nev[0]:.1f} %"
             )
+            print(stats)
 
-        if True:
-            print(
-                f"All cuts {'':<20}: pass = {nev[-1]:<20}\
-                all = {nev[0]:<20}\
-                -- eff = {nev[-1]*100/nev[0]:.1f} %"
-            )
+        stats_all = (
+            f"All cuts {'':<20}"
+            f"pass = {nev[-1]:<20}"
+            f"all = {nev[0]:<20}"
+            f"-- eff = {nev[-1]*100/nev[0]:.1f} %"
+        )
+        print(stats_all)
 
     def yieldhist(self):
         """Returns the N-1 selection yields as a ``hist.Hist`` object
@@ -610,13 +623,13 @@ class NminusOne:
         labels = ["initial"] + [f"N - {i}" for i in self._names] + ["N"]
         if not self._delayed_mode:
             h = hist.Hist(hist.axis.Integer(0, len(labels), name="N-1"))
-            h.fill(numpy.arange(len(labels)), weight=self._nev)
+            h.fill(numpy.arange(len(labels), dtype=int), weight=self._nev)
 
         else:
             h = hist.dask.Hist(hist.axis.Integer(0, len(labels), name="N-1"))
             for i, weight in enumerate(self._masks, 1):
                 h.fill(dask_awkward.full_like(weight, i, dtype=int), weight=weight)
-            h.fill(dask_awkward.zeros_like(weight))
+            h.fill(dask_awkward.zeros_like(weight, dtype=int))
 
         return h, labels
 
@@ -712,7 +725,7 @@ class NminusOne:
                     hist.axis.Integer(0, len(labels), name="N-1"),
                 )
                 arr = awkward.flatten(var)
-                h.fill(arr, awkward.zeros_like(arr))
+                h.fill(arr, awkward.zeros_like(arr, dtype=int))
                 for i, mask in enumerate(self.result().masks, 1):
                     arr = awkward.flatten(var[mask])
                     h.fill(arr, awkward.full_like(arr, i, dtype=int))
@@ -725,7 +738,7 @@ class NminusOne:
                     hist.axis.Integer(0, len(labels), name="N-1"),
                 )
                 arr = dask_awkward.flatten(var)
-                h.fill(arr, dask_awkward.zeros_like(arr))
+                h.fill(arr, dask_awkward.zeros_like(arr, dtype=int))
                 for i, mask in enumerate(self.result().masks, 1):
                     arr = dask_awkward.flatten(var[mask])
                     h.fill(arr, dask_awkward.full_like(arr, i, dtype=int))
@@ -780,7 +793,7 @@ class Cutflow:
             self._maskscutflow,
         )
 
-    def to_npz(self, file, compressed=False, compute=True):
+    def to_npz(self, file, compressed=False, compute=False):
         """Saves the results of the cutflow to a .npz file
 
         Parameters
@@ -796,7 +809,7 @@ class Cutflow:
             compute : bool, optional
                 Whether to immediately start writing or to return an object
                 that the user can choose when to start writing by calling compute().
-                Default is True.
+                Default is False.
 
         Returns
         -------
@@ -824,19 +837,27 @@ class Cutflow:
         """Prints the statistics of the Cutflow"""
 
         if self._delayed_mode:
-            self._nevonecut = list(dask.compute(*self._nevonecut))
-            self._nevcutflow = list(dask.compute(*self._nevcutflow))
+            warnings.warn(
+                "Printing the cutflow statistics is going to compute dask_awkward objects."
+            )
+            self._nevonecut, self._nevcutflow = dask.compute(
+                self._nevonecut, self._nevcutflow
+            )
+
         nevonecut = self._nevonecut
         nevcutflow = self._nevcutflow
+
         print("Cutflow stats:")
         for i, name in enumerate(self._names):
-            print(
-                f"Cut {name:<20}: pass = {nevonecut[i+1]:<20}\
-                cumulative pass = {nevcutflow[i+1]:<20}\
-                all = {nevonecut[0]:<20}\
-                --  eff = {nevonecut[i+1]*100/nevonecut[0]:.1f} %\
-                -- cumulative eff = {nevcutflow[i+1]*100/nevcutflow[0]:.1f} %"
+            stats = (
+                f"Cut {name:<20}:"
+                f"pass = {nevonecut[i+1]:<20}"
+                f"cumulative pass = {nevcutflow[i+1]:<20}"
+                f"all = {nevonecut[0]:<20}"
+                f"-- eff = {nevonecut[i+1]*100/nevonecut[0]:.1f} %{'':<20}"
+                f"-- cumulative eff = {nevcutflow[i+1]*100/nevcutflow[0]:.1f} %"
             )
+            print(stats)
 
     def yieldhist(self):
         """Returns the cutflow yields as ``hist.Hist`` objects
@@ -856,8 +877,8 @@ class Cutflow:
             honecut = hist.Hist(hist.axis.Integer(0, len(labels), name="onecut"))
             hcutflow = honecut.copy()
             hcutflow.axes.name = ("cutflow",)
-            honecut.fill(numpy.arange(len(labels)), weight=self._nevonecut)
-            hcutflow.fill(numpy.arange(len(labels)), weight=self._nevcutflow)
+            honecut.fill(numpy.arange(len(labels), dtype=int), weight=self._nevonecut)
+            hcutflow.fill(numpy.arange(len(labels), dtype=int), weight=self._nevcutflow)
 
         else:
             honecut = hist.dask.Hist(hist.axis.Integer(0, len(labels), name="onecut"))
@@ -868,12 +889,12 @@ class Cutflow:
                 honecut.fill(
                     dask_awkward.full_like(weight, i, dtype=int), weight=weight
                 )
-            honecut.fill(dask_awkward.zeros_like(weight))
+            honecut.fill(dask_awkward.zeros_like(weight, dtype=int))
             for i, weight in enumerate(self._maskscutflow, 1):
                 hcutflow.fill(
                     dask_awkward.full_like(weight, i, dtype=int), weight=weight
                 )
-            hcutflow.fill(dask_awkward.zeros_like(weight))
+            hcutflow.fill(dask_awkward.zeros_like(weight, dtype=int))
 
         return honecut, hcutflow, labels
 
@@ -975,8 +996,8 @@ class Cutflow:
                 hcutflow.axes.name = name, "cutflow"
 
                 arr = awkward.flatten(var)
-                honecut.fill(arr, awkward.zeros_like(arr))
-                hcutflow.fill(arr, awkward.zeros_like(arr))
+                honecut.fill(arr, awkward.zeros_like(arr, dtype=int))
+                hcutflow.fill(arr, awkward.zeros_like(arr, dtype=int))
 
                 for i, mask in enumerate(self.result().masksonecut, 1):
                     arr = awkward.flatten(var[mask])
@@ -998,8 +1019,8 @@ class Cutflow:
                 hcutflow.axes.name = name, "cutflow"
 
                 arr = dask_awkward.flatten(var)
-                honecut.fill(arr, dask_awkward.zeros_like(arr))
-                hcutflow.fill(arr, dask_awkward.zeros_like(arr))
+                honecut.fill(arr, dask_awkward.zeros_like(arr, dtype=int))
+                hcutflow.fill(arr, dask_awkward.zeros_like(arr, dtype=int))
 
                 for i, mask in enumerate(self.result().masksonecut, 1):
                     arr = dask_awkward.flatten(var[mask])

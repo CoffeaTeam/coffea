@@ -13,6 +13,15 @@ def to_layout(array):
     return array.layout
 
 
+def ensure_array(arraylike):
+    if isinstance(arraylike, (awkward.contents.Content, awkward.Array)):
+        return awkward.to_numpy(arraylike)
+    elif isinstance(arraylike, awkward.index.Index):
+        return arraylike.data
+    else:
+        return numpy.asarray(arraylike)
+
+
 def data(stack):
     """Extract content from array
     (currently a noop, can probably take place of !content)
@@ -96,7 +105,7 @@ def counts2offsets(stack):
     Signature: counts,!counts2offsets
     Outputs an array with length one larger than input
     """
-    counts = numpy.array(stack.pop())
+    counts = ensure_array(stack.pop())
     offsets = numpy.empty(len(counts) + 1, dtype=numpy.int64)
     offsets[0] = 0
     numpy.cumsum(counts, out=offsets[1:])
@@ -123,11 +132,11 @@ def local2global(stack):
     Signature: index,target_offsets,!local2global
     Outputs a content array with same shape as index content
     """
-    target_offsets = numpy.asarray(stack.pop())
+    target_offsets = ensure_array(stack.pop())
     index = stack.pop()
     index = index.mask[index >= 0] + target_offsets[:-1]
     index = index.mask[index < target_offsets[1:]]
-    out = numpy.array(awkward.flatten(awkward.fill_none(index, -1), axis=None))
+    out = ensure_array(awkward.flatten(awkward.fill_none(index, -1), axis=None))
     if out.dtype != numpy.int64:
         raise RuntimeError
     stack.append(out)

@@ -26,7 +26,7 @@ jobs:
     name: pre-commit
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: actions/setup-python@v4
     - uses: pre-commit/action@v3.0.0
       with:
@@ -45,7 +45,7 @@ jobs:
     name: test coffea (${{ matrix.os }}) - python ${{ matrix.python-version }}, JDK${{ matrix.java-version }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
@@ -69,7 +69,7 @@ jobs:
         python -m pip install xgboost
         python -m pip install tritonclient[grpc,http]
         # install checked out coffea
-        python -m pip install -q -e '.[dev,parsl,dask,spark]'
+        python -m pip install -q -e '.[dev,parsl,dask,spark]' --upgrade --upgrade-strategy eager
         python -m pip list
         java -version
     - name: Install dependencies (MacOS)
@@ -80,7 +80,7 @@ jobs:
         python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
         python -m pip install xgboost
         # install checked out coffea
-        python -m pip install -q -e '.[dev,dask,spark]'
+        python -m pip install -q -e '.[dev,dask,spark]' --upgrade --upgrade-strategy eager
         python -m pip list
         java -version
     - name: Install dependencies (Windows)
@@ -91,14 +91,14 @@ jobs:
         python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
         python -m pip install xgboost
         # install checked out coffea
-        python -m pip install -q -e '.[dev,dask]'
+        python -m pip install -q -e '.[dev,dask]' --upgrade --upgrade-strategy eager
         python -m pip list
         java -version
 
     - name: Start triton server with example model
       if: matrix.os == 'ubuntu-latest'
       run: |
-        docker run -d --rm -p 8000:8000 -p 8001:8001 -p 8002:8002 -v ${{ github.workspace }}/tests/samples/triton_models_test:/models nvcr.io/nvidia/tritonserver:23.04-py3 tritonserver --model-repository=/models
+        docker run -d --rm -p 8000:8000 -p 8001:8001 -p 8002:8002 -v ${{ github.workspace }}/tests/samples/triton_models_test:/models nvcr.io/nvidia/tritonserver:23.04-pyt-python-py3 tritonserver --model-repository=/models
 
     - name: Test with pytest
       run: |
@@ -119,7 +119,7 @@ jobs:
         touch build/html/.nojekyll
     - name: Deploy documentation
       if: github.event_name == 'push' && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11
-      uses: crazy-max/ghaction-github-pages@v3
+      uses: crazy-max/ghaction-github-pages@v4
       with:
         target_branch: gh-pages
         build_dir: docs/build/html
@@ -135,7 +135,7 @@ jobs:
     name: test coffea-workqueue
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Conda
       uses: conda-incubator/setup-miniconda@v2
       env:
@@ -185,7 +185,7 @@ jobs:
     name: deploy release
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
