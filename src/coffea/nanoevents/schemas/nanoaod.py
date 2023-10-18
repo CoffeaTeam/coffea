@@ -37,10 +37,18 @@ class NanoAODSchema(BaseSchema):
     There is a class-level variable ``warn_missing_crossrefs`` which will alter the behavior of
     NanoAODSchema. If warn_missing_crossrefs is true then when a missing global index cross-ref
     target is encountered a warning will be issued. Regardless, the cross-reference is dropped.
+
+    The same holds for ``error_missing_events_id``. If error_missing_events_id is true, then when the 'run', 'event',
+    or 'luminosityBlock' fields are missing, an exception will be thrown; if it is false, just a warning will be issued.
     """
 
     __dask_capable__ = True
     warn_missing_crossrefs = True
+    error_missing_event_ids = True
+
+    event_ids = ["run", "luminosityBlock", "event"]
+    """List of NanoAOD event IDs
+    """
 
     mixins = {
         "CaloMET": "MissingET",
@@ -204,6 +212,26 @@ class NanoAODSchema(BaseSchema):
             if "n" + name in branch_forms:
                 branch_forms["o" + name] = transforms.counts2offsets_form(
                     branch_forms["n" + name]
+                )
+
+        # Check the presence of the event_ids
+        missing_event_ids = [
+            event_id for event_id in self.event_ids if event_id not in branch_forms
+        ]
+        if len(missing_event_ids) > 0:
+            if self.error_missing_event_ids:
+                raise RuntimeError(
+                    f"There are missing event ID fields: {missing_event_ids} \n\n\
+                    The event ID fields {self.event_ids} are necessary to perform sub-run identification \
+                    (e.g. for corrections and sub-dividing data during different detector conditions),\
+                    to cross-validate MC and Data (i.e. matching events for comparison), and to generate event displays. \
+                    It's advised to never drop these branches from the dataformat.\n\n\
+                    This error can be demoted to a warning by setting the class level variable error_missing_event_ids to False."
+                )
+            else:
+                warnings.warn(
+                    f"Missing event_ids : {missing_event_ids}",
+                    RuntimeWarning,
                 )
 
         # Create global index virtual arrays for indirection
