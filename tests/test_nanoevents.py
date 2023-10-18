@@ -156,3 +156,20 @@ def test_read_nanodata(suffix):
 
     crossref(events)
     crossref(events[ak.num(events.Jet) > 2])
+
+
+def test_missing_eventIds_error():
+    path = os.path.abspath("tests/samples/missing_luminosityBlock.root") + ":Events"
+    with pytest.raises(RuntimeError):
+        factory = NanoEventsFactory.from_root(path, schemaclass=NanoAODSchema)
+        factory.events()
+
+
+def test_missing_eventIds_warning():
+    path = os.path.abspath("tests/samples/missing_luminosityBlock.root") + ":Events"
+    with pytest.warns(
+        RuntimeWarning, match=r"Missing event_ids \: \[\'luminosityBlock\'\]"
+    ):
+        NanoAODSchema.error_missing_event_ids = False
+        factory = NanoEventsFactory.from_root(path, schemaclass=NanoAODSchema)
+        factory.events()
