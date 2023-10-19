@@ -174,4 +174,8 @@ def test_missing_eventIds_warning():
         factory = NanoEventsFactory.from_root(path, schemaclass=NanoAODSchema)
         events = factory.events()
 
-        events.Muon.pt.compute(scheduler="processes")
+def test_missing_eventIds_warning_dask():
+    path = os.path.abspath("tests/samples/missing_luminosityBlock.root") + ":Events"
+    NanoAODSchema.error_missing_event_ids = False
+    events = NanoEventsFactory.from_root(path, schemaclass=NanoAODSchema, permit_dask=True).events()
+    events.Muon.pt.compute(scheduler="processes")
