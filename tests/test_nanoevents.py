@@ -172,7 +172,7 @@ def test_missing_eventIds_warning():
     ):
         NanoAODSchema.error_missing_event_ids = False
         factory = NanoEventsFactory.from_root(path, schemaclass=NanoAODSchema)
-        events = factory.events()
+        factory.events()
 
 
 def test_missing_eventIds_warning_dask():
