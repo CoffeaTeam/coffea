@@ -172,6 +172,6 @@ def test_missing_eventIds_warning():
     ):
         NanoAODSchema.error_missing_event_ids = False
         factory = NanoEventsFactory.from_root(path, schemaclass=NanoAODSchema)
-        factory.events()
+        events = factory.events()
 
         events.Muon.pt.compute(scheduler="processes")
