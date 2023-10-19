@@ -61,18 +61,19 @@ def crossref(events):
     )
 
 
-suffixes = ["root", "parquet"]
+suffixes = [
+    "root",
+    #    "parquet",
+]
 
 
 @pytest.mark.parametrize("suffix", suffixes)
 def test_read_nanomc(suffix):
-    pytest.xfail("weird side effect from running other tests... passes by itself")
-
     path = os.path.abspath(f"tests/samples/nano_dy.{suffix}")
     # parquet files were converted from even older nanoaod
     nanoversion = NanoAODSchema.v6 if suffix == "root" else NanoAODSchema.v5
     factory = getattr(NanoEventsFactory, f"from_{suffix}")(
-        path, schemaclass=nanoversion
+        {path: "Events"}, schemaclass=nanoversion
     )
     events = factory.events()
 
@@ -129,13 +130,11 @@ def test_read_nanomc(suffix):
 def test_read_from_uri(suffix):
     "Make sure we can properly open the file when a uri is used"
 
-    pytest.xfail("weird side effect from running other tests... passes by itself")
-
     path = Path(os.path.abspath(f"tests/samples/nano_dy.{suffix}")).as_uri()
 
     nanoversion = NanoAODSchema.v6 if suffix == "root" else NanoAODSchema.v5
     factory = getattr(NanoEventsFactory, f"from_{suffix}")(
-        path, schemaclass=nanoversion
+        {path: "Events"}, schemaclass=nanoversion
     )
     events = factory.events()
 
@@ -144,13 +143,11 @@ def test_read_from_uri(suffix):
 
 @pytest.mark.parametrize("suffix", suffixes)
 def test_read_nanodata(suffix):
-    pytest.xfail("weird side effect from running other tests... passes by itself")
-
     path = os.path.abspath(f"tests/samples/nano_dimuon.{suffix}")
     # parquet files were converted from even older nanoaod
     nanoversion = NanoAODSchema.v6 if suffix == "root" else NanoAODSchema.v5
     factory = getattr(NanoEventsFactory, f"from_{suffix}")(
-        path, schemaclass=nanoversion
+        {path: "Events"}, schemaclass=nanoversion
     )
     events = factory.events()
 
