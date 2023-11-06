@@ -40,7 +40,7 @@ dependencies = [
   "awkward>=2.4.8",
   "uproot>=5.1.2",
   "dask[array]>=2023.4.0",
-  "dask-awkward@https://github.com/dask-contrib/dask-awkward",
+  "dask-awkward@git+https://github.com/dask-contrib/dask-awkward.git@main",
   "dask-histogram>=2023.10.0",
   "correctionlib>=2.3.3",
   "pyarrow>=6.0.0",
