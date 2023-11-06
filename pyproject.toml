@@ -40,7 +40,7 @@ dependencies = [
   "awkward>=2.4.8",
   "uproot>=5.1.2",
   "dask[array]>=2023.4.0",
-  "dask-awkward>=2023.10.0",
+  "dask-awkward @ git+https://github.com/dask-contrib/dask-awkward.git@main",
   "dask-histogram>=2023.10.0",
   "correctionlib>=2.3.3",
   "pyarrow>=6.0.0",
@@ -112,6 +112,9 @@ path = "src/coffea/__init__.py"
 
 [tool.hatch.build.hooks.vcs]
 version-file = "src/coffea/version.py"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.setuptools_scm]
 write_to = "src/coffea/_version.py"
