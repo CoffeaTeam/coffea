@@ -113,9 +113,6 @@ path = "src/coffea/__init__.py"
 [tool.hatch.build.hooks.vcs]
 version-file = "src/coffea/version.py"
 
-[tool.hatch.metadata]
-allow-direct-references = true
-
 [tool.setuptools_scm]
 write_to = "src/coffea/_version.py"
 
