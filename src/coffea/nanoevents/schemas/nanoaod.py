@@ -321,8 +321,8 @@ class NanoAODSchema(BaseSchema):
 
         return output.keys(), output.values()
 
-    @property
-    def behavior(self):
+    @classmethod
+    def behavior(cls):
         """Behaviors necessary to implement this schema"""
         from coffea.nanoevents.methods import nanoaod
 

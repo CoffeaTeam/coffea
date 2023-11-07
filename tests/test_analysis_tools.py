@@ -10,7 +10,7 @@ from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 fname = "tests/samples/nano_dy.root"
 eagerevents = NanoEventsFactory.from_root(
     {os.path.abspath(fname): "Events"},
-    schemaclass=NanoAODSchema.v6,
+    schemaclass=NanoAODSchema,
     metadata={"dataset": "DYJets"},
 ).events()
 dakevents = NanoEventsFactory.from_root(

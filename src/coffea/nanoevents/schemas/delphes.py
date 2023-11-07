@@ -297,8 +297,8 @@ class DelphesSchema(BaseSchema):
 
         return output
 
-    @property
-    def behavior(self):
+    @classmethod
+    def behavior(cls):
         """Behaviors necessary to implement this schema"""
         from coffea.nanoevents.methods import delphes
 
