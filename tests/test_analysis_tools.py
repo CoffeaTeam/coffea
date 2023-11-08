@@ -12,12 +12,12 @@ eagerevents = NanoEventsFactory.from_root(
     {os.path.abspath(fname): "Events"},
     schemaclass=NanoAODSchema,
     metadata={"dataset": "DYJets"},
+    permit_dask=False,
 ).events()
 dakevents = NanoEventsFactory.from_root(
     {os.path.abspath(fname): "Events"},
     schemaclass=NanoAODSchema,
     metadata={"dataset": "DYJets"},
-    permit_dask=True,
 ).events()
 uprootevents = uproot.dask({fname: "Events"})
 
