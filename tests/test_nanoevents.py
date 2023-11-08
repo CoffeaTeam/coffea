@@ -73,7 +73,7 @@ def test_read_nanomc(suffix):
     # parquet files were converted from even older nanoaod
     nanoversion = NanoAODSchema
     factory = getattr(NanoEventsFactory, f"from_{suffix}")(
-        {path: "Events"}, 
+        {path: "Events"},
         schemaclass=nanoversion,
         permit_dask=False,
     )
@@ -136,7 +136,7 @@ def test_read_from_uri(suffix):
 
     nanoversion = NanoAODSchema
     factory = getattr(NanoEventsFactory, f"from_{suffix}")(
-        {path: "Events"}, 
+        {path: "Events"},
         schemaclass=nanoversion,
         permit_dask=False,
     )
@@ -151,7 +151,7 @@ def test_read_nanodata(suffix):
     # parquet files were converted from even older nanoaod
     nanoversion = NanoAODSchema
     factory = getattr(NanoEventsFactory, f"from_{suffix}")(
-        {path: "Events"}, 
+        {path: "Events"},
         schemaclass=nanoversion,
         permit_dask=False,
     )
@@ -164,7 +164,9 @@ def test_read_nanodata(suffix):
 def test_missing_eventIds_error():
     path = os.path.abspath("tests/samples/missing_luminosityBlock.root") + ":Events"
     with pytest.raises(RuntimeError):
-        factory = NanoEventsFactory.from_root(path, schemaclass=NanoAODSchema, permit_dask=False)
+        factory = NanoEventsFactory.from_root(
+            path, schemaclass=NanoAODSchema, permit_dask=False
+        )
         factory.events()
 
 
@@ -174,7 +176,9 @@ def test_missing_eventIds_warning():
         RuntimeWarning, match=r"Missing event_ids \: \[\'luminosityBlock\'\]"
     ):
         NanoAODSchema.error_missing_event_ids = False
-        factory = NanoEventsFactory.from_root(path, schemaclass=NanoAODSchema, permit_dask=False)
+        factory = NanoEventsFactory.from_root(
+            path, schemaclass=NanoAODSchema, permit_dask=False
+        )
         factory.events()
 
 
