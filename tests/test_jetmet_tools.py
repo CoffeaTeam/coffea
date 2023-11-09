@@ -724,7 +724,6 @@ def test_corrected_jets_factory(optimization_enabled):
         events = NanoEventsFactory.from_root(
             {os.path.abspath("tests/samples/nano_dy.root"): "Events"},
             metadata={},
-            permit_dask=True,
         ).events()
 
         jec_stack_names = [
