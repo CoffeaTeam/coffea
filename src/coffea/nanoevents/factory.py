@@ -20,14 +20,7 @@ from coffea.nanoevents.mapping import (
     TrivialUprootOpener,
     UprootSourceMapping,
 )
-from coffea.nanoevents.schemas import (
-    BaseSchema,
-    DelphesSchema,
-    NanoAODSchema,
-    PFNanoAODSchema,
-    PHYSLITESchema,
-    TreeMakerSchema,
-)
+from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema
 from coffea.nanoevents.util import key_to_tuple, quote, tuple_to_key, unquote
 
 _offsets_label = quote(",!offsets")
@@ -240,7 +233,7 @@ class NanoEventsFactory:
     def from_root(
         cls,
         file,
-        treepath="/Events",
+        treepath=uproot._util.unset,
         entry_start=None,
         entry_stop=None,
         chunks_per_file=uproot._util.unset,
@@ -252,7 +245,7 @@ class NanoEventsFactory:
         access_log=None,
         iteritems_options={},
         use_ak_forth=True,
-        permit_dask=False,
+        delayed=True,
     ):
         """Quickly build NanoEvents from a root file
 
@@ -284,45 +277,27 @@ class NanoEventsFactory:
                 Pass a list instance to record which branches were lazily accessed by this instance
             use_ak_forth:
                 Toggle using awkward_forth to interpret branches in root file.
-            permit_dask:
-                Allow nanoevents to use dask as a backend.
+            delayed:
+                Nanoevents will use dask as a backend to construct a delayed task graph representing your analysis.
         """
+
+        if treepath is not uproot._util.unset and not isinstance(
+            file, uproot.reading.ReadOnlyDirectory
+        ):
+            raise ValueError(
+                """Specification of treename by argument to from_root is no longer supported in coffea 2023.
+            Please use one of the allow types for "files" specified by uproot: https://github.com/scikit-hep/uproot5/blob/v5.1.2/src/uproot/_dask.py#L109-L132
+            """
+            )
+
         if (
-            permit_dask
+            delayed
             and not isinstance(schemaclass, FunctionType)
             and schemaclass.__dask_capable__
         ):
-            behavior = None
-            if schemaclass is BaseSchema:
-                from coffea.nanoevents.methods import base
-
-                behavior = base.behavior
-            elif schemaclass is NanoAODSchema:
-                from coffea.nanoevents.methods import nanoaod
-
-                behavior = nanoaod.behavior
-            elif schemaclass is PFNanoAODSchema:
-                from coffea.nanoevents.methods import nanoaod
-
-                behavior = nanoaod.behavior
-            elif schemaclass is TreeMakerSchema:
-                from coffea.nanoevents.methods import base, vector
-
-                behavior = {}
-                behavior.update(base.behavior)
-                behavior.update(vector.behavior)
-            elif schemaclass is PHYSLITESchema:
-                from coffea.nanoevents.methods import physlite
-
-                behavior = physlite.behavior
-            elif schemaclass is DelphesSchema:
-                from coffea.nanoevents.methods import delphes
-
-                behavior = delphes.behavior
-
             map_schema = _map_schema_uproot(
                 schemaclass=schemaclass,
-                behavior=dict(behavior),
+                behavior=dict(schemaclass.behavior()),
                 metadata=metadata,
                 version="latest",
             )
@@ -360,7 +335,7 @@ class NanoEventsFactory:
                     **uproot_options,
                 )
             return cls(map_schema, opener, None, cache=None, is_dask=True)
-        elif permit_dask and not schemaclass.__dask_capable__:
+        elif delayed and not schemaclass.__dask_capable__:
             warnings.warn(
                 f"{schemaclass} is not dask capable despite allowing dask, generating non-dask nanoevents"
             )
@@ -369,7 +344,7 @@ class NanoEventsFactory:
             tree = file[treepath]
         elif "<class 'uproot.rootio.ROOTDirectory'>" == str(type(file)):
             raise RuntimeError(
-                "The file instance (%r) is an uproot3 type, but this module is only compatible with uproot4 or higher"
+                "The file instance (%r) is an uproot3 type, but this module is only compatible with uproot5 or higher"
                 % file
             )
         else:
@@ -414,7 +389,7 @@ class NanoEventsFactory:
     def from_parquet(
         cls,
         file,
-        treepath="/Events",
+        treepath=uproot._util.unset,
         entry_start=None,
         entry_stop=None,
         runtime_cache=None,
@@ -424,7 +399,7 @@ class NanoEventsFactory:
         parquet_options={},
         skyhook_options={},
         access_log=None,
-        permit_dask=False,
+        delayed=True,
     ):
         """Quickly build NanoEvents from a parquet file
 
@@ -453,6 +428,8 @@ class NanoEventsFactory:
                 Any options to pass to ``pyarrow.parquet.ParquetFile``
             access_log : list, optional
                 Pass a list instance to record which branches were lazily accessed by this instance
+            delayed:
+                Nanoevents will use dask as a backend to construct a delayed task graph representing your analysis.
         """
         import pyarrow
         import pyarrow.dataset as ds
@@ -468,37 +445,13 @@ class NanoEventsFactory:
         )
 
         if (
-            permit_dask
+            delayed
             and not isinstance(schemaclass, FunctionType)
             and schemaclass.__dask_capable__
         ):
-            behavior = None
-            if schemaclass is BaseSchema:
-                from coffea.nanoevents.methods import base
-
-                behavior = base.behavior
-            elif schemaclass is NanoAODSchema:
-                from coffea.nanoevents.methods import nanoaod
-
-                behavior = nanoaod.behavior
-            elif schemaclass is TreeMakerSchema:
-                from coffea.nanoevents.methods import base, vector
-
-                behavior = {}
-                behavior.update(base.behavior)
-                behavior.update(vector.behavior)
-            elif schemaclass is PHYSLITESchema:
-                from coffea.nanoevents.methods import physlite
-
-                behavior = physlite.behavior
-            elif schemaclass is DelphesSchema:
-                from coffea.nanoevents.methods import delphes
-
-                behavior = delphes.behavior
-
             map_schema = _map_schema_parquet(
                 schemaclass=schemaclass,
-                behavior=dict(behavior),
+                behavior=dict(schemaclass.behavior()),
                 metadata=metadata,
                 version="latest",
             )
@@ -511,7 +464,7 @@ class NanoEventsFactory:
             else:
                 raise TypeError("Invalid file type (%s)" % (str(type(file))))
             return cls(map_schema, opener, None, cache=None, is_dask=True)
-        elif permit_dask and not schemaclass.__dask_capable__:
+        elif delayed and not schemaclass.__dask_capable__:
             warnings.warn(
                 f"{schemaclass} is not dask capable despite allowing dask, generating non-dask nanoevents"
             )
@@ -722,7 +675,7 @@ class NanoEventsFactory:
 
         events = self._events()
         if events is None:
-            behavior = dict(self._schema.behavior)
+            behavior = dict(self._schema.behavior())
             behavior["__events_factory__"] = self
             events = awkward.from_buffers(
                 self._schema.form,

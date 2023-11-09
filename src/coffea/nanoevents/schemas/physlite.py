@@ -157,8 +157,8 @@ class PHYSLITESchema(BaseSchema):
         }
         return form
 
-    @property
-    def behavior(self):
+    @classmethod
+    def behavior(cls):
         """Behaviors necessary to implement this schema"""
         from coffea.nanoevents.methods import physlite
 

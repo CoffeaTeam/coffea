@@ -11,7 +11,7 @@ def _events():
     factory = NanoEventsFactory.from_root(
         {path: "CollectionTree"},
         schemaclass=PHYSLITESchema,
-        permit_dask=True,
+        delayed=True,
     )
     return factory.events()
 
