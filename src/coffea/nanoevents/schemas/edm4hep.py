@@ -490,8 +490,8 @@ class EDM4HEPSchema(BaseSchema):
 
         return branch_forms
 
-    @property
-    def behavior(self):
+    @classmethod
+    def behavior(cls):
         """Behaviors necessary to implement this schema"""
         from coffea.nanoevents.methods import base, edm4hep, vector
 
