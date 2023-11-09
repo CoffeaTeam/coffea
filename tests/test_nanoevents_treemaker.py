@@ -11,7 +11,7 @@ from coffea.nanoevents import NanoEventsFactory, TreeMakerSchema
 def events():
     path = os.path.abspath("tests/samples/treemaker.root")
     events = NanoEventsFactory.from_root(
-        {path: "PreSelection"}, schemaclass=TreeMakerSchema, permit_dask=True
+        {path: "PreSelection"}, schemaclass=TreeMakerSchema, delayed=True
     ).events()
     return events
 

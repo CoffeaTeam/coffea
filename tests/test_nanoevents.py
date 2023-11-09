@@ -75,7 +75,7 @@ def test_read_nanomc(suffix):
     factory = getattr(NanoEventsFactory, f"from_{suffix}")(
         {path: "Events"},
         schemaclass=nanoversion,
-        permit_dask=False,
+        delayed=False,
     )
     events = factory.events()
 
@@ -138,7 +138,7 @@ def test_read_from_uri(suffix):
     factory = getattr(NanoEventsFactory, f"from_{suffix}")(
         {path: "Events"},
         schemaclass=nanoversion,
-        permit_dask=False,
+        delayed=False,
     )
     events = factory.events()
 
@@ -153,7 +153,7 @@ def test_read_nanodata(suffix):
     factory = getattr(NanoEventsFactory, f"from_{suffix}")(
         {path: "Events"},
         schemaclass=nanoversion,
-        permit_dask=False,
+        delayed=False,
     )
     events = factory.events()
 
@@ -165,7 +165,7 @@ def test_missing_eventIds_error():
     path = os.path.abspath("tests/samples/missing_luminosityBlock.root") + ":Events"
     with pytest.raises(RuntimeError):
         factory = NanoEventsFactory.from_root(
-            path, schemaclass=NanoAODSchema, permit_dask=False
+            path, schemaclass=NanoAODSchema, delayed=False
         )
         factory.events()
 
@@ -177,7 +177,7 @@ def test_missing_eventIds_warning():
     ):
         NanoAODSchema.error_missing_event_ids = False
         factory = NanoEventsFactory.from_root(
-            path, schemaclass=NanoAODSchema, permit_dask=False
+            path, schemaclass=NanoAODSchema, delayed=False
         )
         factory.events()
 
@@ -186,6 +186,8 @@ def test_missing_eventIds_warning_dask():
     path = os.path.abspath("tests/samples/missing_luminosityBlock.root") + ":Events"
     NanoAODSchema.error_missing_event_ids = False
     events = NanoEventsFactory.from_root(
-        path, schemaclass=NanoAODSchema, permit_dask=True
+        path,
+        schemaclass=NanoAODSchema,
+        delayed=True,
     ).events()
     events.Muon.pt.compute(scheduler="processes")

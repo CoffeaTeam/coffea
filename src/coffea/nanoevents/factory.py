@@ -245,7 +245,7 @@ class NanoEventsFactory:
         access_log=None,
         iteritems_options={},
         use_ak_forth=True,
-        permit_dask=True,
+        delayed=True,
     ):
         """Quickly build NanoEvents from a root file
 
@@ -277,8 +277,8 @@ class NanoEventsFactory:
                 Pass a list instance to record which branches were lazily accessed by this instance
             use_ak_forth:
                 Toggle using awkward_forth to interpret branches in root file.
-            permit_dask:
-                Allow nanoevents to use dask as a backend.
+            delayed:
+                Nanoevents will use dask as a backend to construct a delayed task graph representing your analysis.
         """
 
         if treepath is not uproot._util.unset and not isinstance(
@@ -291,7 +291,7 @@ class NanoEventsFactory:
             )
 
         if (
-            permit_dask
+            delayed
             and not isinstance(schemaclass, FunctionType)
             and schemaclass.__dask_capable__
         ):
@@ -326,7 +326,7 @@ class NanoEventsFactory:
                     **uproot_options,
                 )
             return cls(map_schema, opener, None, cache=None, is_dask=True)
-        elif permit_dask and not schemaclass.__dask_capable__:
+        elif delayed and not schemaclass.__dask_capable__:
             warnings.warn(
                 f"{schemaclass} is not dask capable despite allowing dask, generating non-dask nanoevents"
             )
@@ -380,7 +380,7 @@ class NanoEventsFactory:
     def from_parquet(
         cls,
         file,
-        treepath="/Events",
+        treepath=uproot._util.unset,
         entry_start=None,
         entry_stop=None,
         runtime_cache=None,
@@ -390,7 +390,7 @@ class NanoEventsFactory:
         parquet_options={},
         skyhook_options={},
         access_log=None,
-        permit_dask=False,
+        delayed=True,
     ):
         """Quickly build NanoEvents from a parquet file
 
@@ -419,6 +419,8 @@ class NanoEventsFactory:
                 Any options to pass to ``pyarrow.parquet.ParquetFile``
             access_log : list, optional
                 Pass a list instance to record which branches were lazily accessed by this instance
+            delayed:
+                Nanoevents will use dask as a backend to construct a delayed task graph representing your analysis.
         """
         import pyarrow
         import pyarrow.dataset as ds
@@ -434,7 +436,7 @@ class NanoEventsFactory:
         )
 
         if (
-            permit_dask
+            delayed
             and not isinstance(schemaclass, FunctionType)
             and schemaclass.__dask_capable__
         ):
@@ -453,7 +455,7 @@ class NanoEventsFactory:
             else:
                 raise TypeError("Invalid file type (%s)" % (str(type(file))))
             return cls(map_schema, opener, None, cache=None, is_dask=True)
-        elif permit_dask and not schemaclass.__dask_capable__:
+        elif delayed and not schemaclass.__dask_capable__:
             warnings.warn(
                 f"{schemaclass} is not dask capable despite allowing dask, generating non-dask nanoevents"
             )
