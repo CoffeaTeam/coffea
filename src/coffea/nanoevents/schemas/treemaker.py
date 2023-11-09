@@ -164,8 +164,8 @@ class TreeMakerSchema(BaseSchema):
 
         return branch_forms
 
-    @property
-    def behavior(self):
+    @classmethod
+    def behavior(cls):
         """Behaviors necessary to implement this schema"""
         from coffea.nanoevents.methods import base, vector
 

@@ -10,14 +10,14 @@ from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 fname = "tests/samples/nano_dy.root"
 eagerevents = NanoEventsFactory.from_root(
     {os.path.abspath(fname): "Events"},
-    schemaclass=NanoAODSchema.v6,
+    schemaclass=NanoAODSchema,
     metadata={"dataset": "DYJets"},
+    delayed=False,
 ).events()
 dakevents = NanoEventsFactory.from_root(
     {os.path.abspath(fname): "Events"},
     schemaclass=NanoAODSchema,
     metadata={"dataset": "DYJets"},
-    permit_dask=True,
 ).events()
 uprootevents = uproot.dask({fname: "Events"})
 

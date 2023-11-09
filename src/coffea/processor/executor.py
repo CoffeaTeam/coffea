@@ -1678,7 +1678,7 @@ class Runner:
                         schemaclass=schema,
                         metadata=metadata,
                         access_log=materialized,
-                        permit_dask=True,
+                        delayed=True,
                     )
                     events = factory.events()[item.entrystart : item.entrystop]
                 elif format == "parquet":

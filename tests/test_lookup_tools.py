@@ -389,7 +389,6 @@ def test_rochester():
     # test against nanoaod
     events = NanoEventsFactory.from_root(
         {os.path.abspath("tests/samples/nano_dimuon.root"): "Events"},
-        permit_dask=True,
     ).events()
 
     data_k = rochester.kScaleDT(
@@ -406,7 +405,6 @@ def test_rochester():
     # test against mc
     events = NanoEventsFactory.from_root(
         {os.path.abspath("tests/samples/nano_dy.root"): "Events"},
-        permit_dask=True,
     ).events()
 
     hasgen = ~np.isnan(ak.fill_none(events.Muon.matched_gen.pt, np.nan))
