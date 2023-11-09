@@ -20,7 +20,6 @@ from coffea.nanoevents.mapping import (
     TrivialUprootOpener,
     UprootSourceMapping,
 )
-
 from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema
 from coffea.nanoevents.util import key_to_tuple, quote, tuple_to_key, unquote
 
