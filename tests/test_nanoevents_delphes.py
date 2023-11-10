@@ -10,7 +10,9 @@ from coffea.nanoevents import DelphesSchema, NanoEventsFactory
 def _events():
     path = os.path.abspath("tests/samples/delphes.root")
     factory = NanoEventsFactory.from_root(
-        {path: "Delphes"}, schemaclass=DelphesSchema, permit_dask=True
+        {path: "Delphes"},
+        schemaclass=DelphesSchema,
+        delayed=True,
     )
     return factory.events()
 

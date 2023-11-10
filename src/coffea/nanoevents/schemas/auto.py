@@ -109,8 +109,8 @@ class auto_schema(BaseSchema):
             v for v in output.values()
         ]
 
-    @property
-    def behavior(self):
+    @classmethod
+    def behavior(cls):
         """Behaviors necessary to implement this schema"""
         from coffea.nanoevents.methods import base, candidate
 
