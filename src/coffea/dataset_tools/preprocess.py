@@ -12,6 +12,8 @@ def _get_steps(
     maybe_step_size=None,
     align_clusters=False,
     recalculate_seen_steps=False,
+    skip_bad_files=False,
+    file_exceptions=(FileNotFoundError, OSError),
 ):
     nf_backend = awkward.backend(normed_files)
     lz_or_nf = awkward.typetracer.length_zero_if_typetracer(normed_files)
@@ -20,9 +22,12 @@ def _get_steps(
     for arg in lz_or_nf:
         try:
             the_file = uproot.open({arg.file: None})
-        except FileNotFoundError:
-            array.append(None)
-            continue
+        except file_exceptions as e:
+            if skip_bad_files:
+                array.append(None)
+                continue
+            else:
+                raise e
 
         tree = the_file[arg.object_path]
         num_entries = tree.num_entries
@@ -95,6 +100,8 @@ def preprocess(
     align_clusters=False,
     recalculate_seen_steps=False,
     files_per_batch=1,
+    skip_bad_files=False,
+    file_exceptions=(FileNotFoundError, OSError),
 ):
     out_updated = fileset.copy()
     out_available = fileset.copy()
@@ -128,6 +135,8 @@ def preprocess(
             maybe_step_size=maybe_step_size,
             align_clusters=align_clusters,
             recalculate_seen_steps=recalculate_seen_steps,
+            skip_bad_files=skip_bad_files,
+            file_exceptions=file_exceptions,
         )
 
     all_processed_files = dask.compute(files_to_preprocess)[0]
