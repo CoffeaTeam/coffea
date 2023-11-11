@@ -678,6 +678,7 @@ class LorentzVector(ThreeVector):
         axis=1,
         metric=lambda a, b: a.delta_r(b),
         return_combinations=False,
+        _dask_array_=None,
     ):
         """Return a list of a metric evaluated between this object and another.
 
@@ -698,16 +699,22 @@ class LorentzVector(ThreeVector):
             return_combinations : bool
                 If True return the combinations of inputs as well as an unzipped tuple
         """
-        if axis is None:
-            a, b = self, other
-        else:
-            a, b = awkward.unzip(
-                awkward.cartesian([self, other], axis=axis, nested=True)
+
+        def _metric_table_core(a, b, axis, metric, return_combinations):
+            if axis is None:
+                a, b = a, b
+            else:
+                a, b = awkward.unzip(awkward.cartesian([a, b], axis=axis, nested=True))
+            mval = metric(a, b)
+            if return_combinations:
+                return mval, (a, b)
+            return mval
+
+        if _dask_array_ is not None:
+            return _metric_table_core(
+                _dask_array_, other, axis, metric, return_combinations
             )
-        mval = metric(a, b)
-        if return_combinations:
-            return mval, (a, b)
-        return mval
+        return _metric_table_core(self, other, axis, metric, return_combinations)
 
     def nearest(
         self,
@@ -716,6 +723,7 @@ class LorentzVector(ThreeVector):
         metric=lambda a, b: a.delta_r(b),
         return_metric=False,
         threshold=None,
+        _dask_array_=None,
     ):
         """Return nearest object to this one
 
@@ -738,18 +746,26 @@ class LorentzVector(ThreeVector):
             threshold : Number, optional
                 If set, any objects with ``metric > threshold`` will be masked from the result
         """
-        mval, (a, b) = self.metric_table(other, axis, metric, return_combinations=True)
-        if axis is None:
-            # NotImplementedError: awkward.firsts with axis=-1
-            axis = other.layout.purelist_depth - 2
-        mmin = awkward.argmin(mval, axis=axis + 1, keepdims=True)
-        out = awkward.firsts(b[mmin], axis=axis + 1)
-        metric = awkward.firsts(mval[mmin], axis=axis + 1)
-        if threshold is not None:
-            out = out.mask[metric <= threshold]
-        if return_metric:
-            return out, metric
-        return out
+
+        def _nearest_core(x, y, axis, metric, return_metric, threshold):
+            mval, (a, b) = x.metric_table(y, axis, metric, return_combinations=True)
+            if axis is None:
+                # NotImplementedError: awkward.firsts with axis=-1
+                axis = other.layout.purelist_depth - 2
+            mmin = awkward.argmin(mval, axis=axis + 1, keepdims=True)
+            out = awkward.firsts(b[mmin], axis=axis + 1)
+            metric = awkward.firsts(mval[mmin], axis=axis + 1)
+            if threshold is not None:
+                out = out.mask[metric <= threshold]
+            if return_metric:
+                return out, metric
+            return out
+
+        if _dask_array_ is not None:
+            return _nearest_core(
+                _dask_array_, other, axis, metric, return_metric, threshold
+            )
+        return _nearest_core(self, other, axis, metric, return_metric, threshold)
 
 
 @awkward.mixin_class(behavior)
