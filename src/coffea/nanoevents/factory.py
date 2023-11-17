@@ -284,7 +284,7 @@ class NanoEventsFactory:
 
         if "handler" not in uproot_options:
             uproot_options["handler"] = uproot_fsspec.FSSpecSource
-        
+
         if treepath is not uproot._util.unset and not isinstance(
             file, uproot.reading.ReadOnlyDirectory
         ):
