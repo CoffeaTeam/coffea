@@ -8,6 +8,7 @@ from typing import Mapping
 
 import awkward
 import dask_awkward
+import fsspec
 import uproot
 from uproot.source import fsspec as uproot_fsspec
 
