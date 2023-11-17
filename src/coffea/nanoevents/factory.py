@@ -8,8 +8,8 @@ from typing import Mapping
 
 import awkward
 import dask_awkward
-import fsspec
 import uproot
+from uproot.source import fsspec as uproot_fsspec
 
 from coffea.nanoevents.mapping import (
     CachedMapping,
@@ -312,7 +312,7 @@ class NanoEventsFactory:
                     ak_add_doc=True,
                     filter_branch=_remove_not_interpretable,
                     steps_per_file=chunks_per_file,
-                    handler=uproot.source.fsspec.FSSpecSource,
+                    handler=uproot_fsspec.FSSpecSource,
                     **uproot_options,
                 )
             else:
@@ -324,7 +324,7 @@ class NanoEventsFactory:
                     ak_add_doc=True,
                     filter_branch=_remove_not_interpretable,
                     steps_per_file=chunks_per_file,
-                    handler=uproot.source.fsspec.FSSpecSource,
+                    handler=uproot_fsspec.FSSpecSource,
                     **uproot_options,
                 )
             return cls(map_schema, opener, None, cache=None, is_dask=True)
