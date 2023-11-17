@@ -282,6 +282,9 @@ class NanoEventsFactory:
                 Nanoevents will use dask as a backend to construct a delayed task graph representing your analysis.
         """
 
+        if "handler" not in uproot_options:
+            uproot_options["handler"] = uproot_fsspec.FSSpecSource
+        
         if treepath is not uproot._util.unset and not isinstance(
             file, uproot.reading.ReadOnlyDirectory
         ):
@@ -313,7 +316,6 @@ class NanoEventsFactory:
                     ak_add_doc=True,
                     filter_branch=_remove_not_interpretable,
                     steps_per_file=chunks_per_file,
-                    handler=uproot_fsspec.FSSpecSource,
                     **uproot_options,
                 )
             else:
@@ -325,7 +327,6 @@ class NanoEventsFactory:
                     ak_add_doc=True,
                     filter_branch=_remove_not_interpretable,
                     steps_per_file=chunks_per_file,
-                    handler=uproot_fsspec.FSSpecSource,
                     **uproot_options,
                 )
             return cls(map_schema, opener, None, cache=None, is_dask=True)
