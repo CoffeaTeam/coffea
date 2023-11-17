@@ -312,6 +312,7 @@ class NanoEventsFactory:
                     ak_add_doc=True,
                     filter_branch=_remove_not_interpretable,
                     steps_per_file=chunks_per_file,
+                    handler=uproot.source.fsspec.FSSpecSource,
                     **uproot_options,
                 )
             else:
@@ -323,6 +324,7 @@ class NanoEventsFactory:
                     ak_add_doc=True,
                     filter_branch=_remove_not_interpretable,
                     steps_per_file=chunks_per_file,
+                    handler=uproot.source.fsspec.FSSpecSource,
                     **uproot_options,
                 )
             return cls(map_schema, opener, None, cache=None, is_dask=True)
