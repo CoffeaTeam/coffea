@@ -836,11 +836,11 @@ def test_packed_selection_nminusone_dak(optimization_enabled):
         ]
 
         assert list(dask.compute(*nev)) == [
-            len(events),
-            len(events[nomuon & leadpt20]),
-            len(events[twoelectron & leadpt20]),
-            len(events[twoelectron & nomuon]),
-            len(events[twoelectron & nomuon & leadpt20]),
+            dak.num(events, axis=0).compute(),
+            dak.num(events[nomuon & leadpt20], axis=0).compute(),
+            dak.num(events[twoelectron & leadpt20], axis=0).compute(),
+            dak.num(events[twoelectron & nomuon], axis=0).compute(),
+            dak.num(events[twoelectron & nomuon & leadpt20], axis=0).compute(),
         ]
 
         for mask, truth in zip(
@@ -956,17 +956,17 @@ def test_packed_selection_cutflow_dak(optimization_enabled):
         assert labels == ["initial", "noMuon", "twoElectron", "leadPt20"]
 
         assert list(dask.compute(*nevonecut)) == [
-            len(events),
-            len(events[nomuon]),
-            len(events[twoelectron]),
-            len(events[leadpt20]),
+            dak.num(events, axis=0).compute(),
+            dak.num(events[nomuon], axis=0).compute(),
+            dak.num(events[twoelectron], axis=0).compute(),
+            dak.num(events[leadpt20], axis=0).compute(),
         ]
 
         assert list(dask.compute(*nevcutflow)) == [
-            len(events),
-            len(events[nomuon]),
-            len(events[nomuon & twoelectron]),
-            len(events[nomuon & twoelectron & leadpt20]),
+            dak.num(events, axis=0).compute(),
+            dak.num(events[nomuon], axis=0).compute(),
+            dak.num(events[nomuon & twoelectron], axis=0).compute(),
+            dak.num(events[nomuon & twoelectron & leadpt20], axis=0).compute(),
         ]
 
         for mask, truth in zip(masksonecut, [nomuon, twoelectron, leadpt20]):
@@ -1091,11 +1091,11 @@ def test_packed_selection_nminusone_dak_uproot_only(optimization_enabled):
         ]
 
         assert list(dask.compute(*nev)) == [
-            len(events),
-            len(events[nomuon & leadpt20]),
-            len(events[twoelectron & leadpt20]),
-            len(events[twoelectron & nomuon]),
-            len(events[twoelectron & nomuon & leadpt20]),
+            dak.num(events, axis=0).compute(),
+            dak.num(events[nomuon & leadpt20], axis=0).compute(),
+            dak.num(events[twoelectron & leadpt20], axis=0).compute(),
+            dak.num(events[twoelectron & nomuon], axis=0).compute(),
+            dak.num(events[twoelectron & nomuon & leadpt20], axis=0).compute(),
         ]
 
         for mask, truth in zip(
@@ -1211,17 +1211,17 @@ def test_packed_selection_cutflow_dak_uproot_only(optimization_enabled):
         assert labels == ["initial", "noMuon", "twoElectron", "leadPt20"]
 
         assert list(dask.compute(*nevonecut)) == [
-            len(events),
-            len(events[nomuon]),
-            len(events[twoelectron]),
-            len(events[leadpt20]),
+            dak.num(events, axis=0).compute(),
+            dak.num(events[nomuon], axis=0).compute(),
+            dak.num(events[twoelectron], axis=0).compute(),
+            dak.num(events[leadpt20], axis=0).compute(),
         ]
 
         assert list(dask.compute(*nevcutflow)) == [
-            len(events),
-            len(events[nomuon]),
-            len(events[nomuon & twoelectron]),
-            len(events[nomuon & twoelectron & leadpt20]),
+            dak.num(events, axis=0).compute(),
+            dak.num(events[nomuon], axis=0).compute(),
+            dak.num(events[nomuon & twoelectron], axis=0).compute(),
+            dak.num(events[nomuon & twoelectron & leadpt20], axis=0).compute(),
         ]
 
         for mask, truth in zip(masksonecut, [nomuon, twoelectron, leadpt20]):
