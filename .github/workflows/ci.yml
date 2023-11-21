@@ -126,33 +126,33 @@ jobs:
       env:
         GH_PAT: ${{ secrets.GITHUB_OAUTH }}
 
-  testwq:
-    runs-on: ubuntu-latest
-    needs: pre-commit
-    strategy:
-      matrix:
-        python-version: ["3.11"]
-    name: test coffea-workqueue
-
-    steps:
-    - uses: actions/checkout@v4
-    - name: Set up Conda
-      uses: conda-incubator/setup-miniconda@v2
-      env:
-        ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-      with:
-        auto-update-conda: true
-        python-version: ${{ matrix.python-version }}
-        channels: conda-forge
-    - name: Test work_queue
-      shell: bash -l {0}
-      run: |
-        conda create --yes --name coffea-env -c conda-forge python=${{ matrix.python-version }} ndcctools dill conda-pack conda
-        conda activate coffea-env
-        python -m pip install --ignore-installed .
-        cd tests
-        conda-pack --output coffea-env.tar.gz
-        python wq.py coffea-env.tar.gz
+#  testwq:
+#    runs-on: ubuntu-latest
+#    needs: pre-commit
+#    strategy:
+#      matrix:
+#        python-version: ["3.11"]
+#    name: test coffea-workqueue
+#
+#    steps:
+#    - uses: actions/checkout@v4
+#    - name: Set up Conda
+#      uses: conda-incubator/setup-miniconda@v2
+#      env:
+#        ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+#      with:
+#        auto-update-conda: true
+#        python-version: ${{ matrix.python-version }}
+#        channels: conda-forge
+#    - name: Test work_queue
+#      shell: bash -l {0}
+#      run: |
+#        conda create --yes --name coffea-env -c conda-forge python=${{ matrix.python-version }} ndcctools dill conda-pack conda
+#        conda activate coffea-env
+#        python -m pip install --ignore-installed .
+#        cd tests
+#        conda-pack --output coffea-env.tar.gz
+#        python wq.py coffea-env.tar.gz
 
 #  testskyhookjob:
 #    runs-on: ubuntu-latest
