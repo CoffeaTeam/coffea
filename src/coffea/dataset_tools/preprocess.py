@@ -1,3 +1,4 @@
+import copy
 import math
 
 import awkward
@@ -103,8 +104,8 @@ def preprocess(
     skip_bad_files=False,
     file_exceptions=(FileNotFoundError, OSError),
 ):
-    out_updated = fileset.copy()
-    out_available = fileset.copy()
+    out_updated = copy.deepcopy(fileset)
+    out_available = copy.deepcopy(fileset)
     all_ak_norm_files = {}
     files_to_preprocess = {}
     for name, info in fileset.items():
