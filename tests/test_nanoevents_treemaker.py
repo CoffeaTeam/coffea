@@ -86,7 +86,7 @@ def test_nested_collection(collection, subcollection, arr_type, element, events)
 def test_uproot_write():
     path = os.path.abspath("tests/samples/treemaker.root")
     orig_events = NanoEventsFactory.from_root(
-        {path: "PreSelection"}, schemaclass=TreeMakerSchema, permit_dask=False
+        {path: "PreSelection"}, schemaclass=TreeMakerSchema, delayed=False
     ).events()
 
     with uproot.recreate("treemaker_write_test.root") as f:
@@ -95,7 +95,7 @@ def test_uproot_write():
     test_events = NanoEventsFactory.from_root(
         {"treemaker_write_test.root": "PreSelection"},
         schemaclass=TreeMakerSchema,
-        permit_dask=False,
+        delayed=False,
     ).events()
 
     # Checking event structure
