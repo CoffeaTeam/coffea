@@ -48,7 +48,7 @@ class TreeMakerSchema(BaseSchema):
     def _build_collections(self, branch_forms):
         # Turn any special classes into the appropriate awkward form
         composite_objects = list(
-            set(k.split("/")[0].rstrip("_") for k in branch_forms if "/" in k)
+            {k.split("/")[0].rstrip("_") for k in branch_forms if "/" in k}
         )
 
         composite_behavior = {  # Dictionary for overriding the default behavior
@@ -80,7 +80,7 @@ class TreeMakerSchema(BaseSchema):
                     composite_behavior.get(objname, "PtEtaPhiELorentzVector"),
                 )
                 branch_forms[objname] = form
-            elif set(x.split(".")[-1] for x in components) == {
+            elif {x.split(".")[-1] for x in components} == {
                 "fX",
                 "fY",
                 "fZ",
