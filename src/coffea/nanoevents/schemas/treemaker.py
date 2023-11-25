@@ -9,17 +9,17 @@ class TreeMakerSchema(BaseSchema):
     generation of array collections:
 
     - Objects with vector-like quantities (momentum, coordinate points) in the
-      TreeMaker ntuples are stored using ROOT PtEtaPhiEVectors and XYZPoint
+      TreeMaker n-tuples are stored using ROOT PtEtaPhiEVectors and XYZPoint
       classes with maximum TTree splitting. These variable branches are grouped
       into a single collection with the original object name, with the
       corresponding coordinate variables names mapped to the standard variable
       names for coffea.nanoevents.methods.vector behaviors. For example:
-      - The "Jets" branch in a TreeMaker Ntuple branch stores 'PtEtaPhiEVector's
+      - The "Jets" branch in a TreeMaker n-tuple branch stores 'PtEtaPhiEVector's
         corresponding to the momentum of AK4 jets. The resulting collection after
         this first step would contain the vector variables in the form of
         Jets.pt, Jets.eta, Jets.phi, Jets.energy, and addition vector quantities
         (px) can be accessed via the usual vector behavior methods.
-      - The "PrimaryVertices" branch in a TreeMaker Ntuple branch stores
+      - The "PrimaryVertices" branch in a TreeMaker n-tuple branch stores
         'XYZPoint's corresponding to the coordinates of the primary vertices, The
         resulting collection after this first step wold contain the coordinate
         variables in the form of PrimaryVertices.x, PrimaryVertices.y,
@@ -47,51 +47,49 @@ class TreeMakerSchema(BaseSchema):
 
     def _build_collections(self, branch_forms):
         # Turn any special classes into the appropriate awkward form
-        composite_objects = list({k.split("/")[0] for k in branch_forms if "/" in k})
+        composite_objects = list(
+            set(k.split("/")[0].rstrip("_") for k in branch_forms if "/" in k)
+        )
 
         composite_behavior = {  # Dictionary for overriding the default behavior
             "Tracks": "LorentzVector"
         }
         for objname in composite_objects:
-            # grab the * from "objname/objname.*"
-            components = {
-                k[2 * len(objname) + 2 :]
+            components = {  # Extracting the various composite object names
+                k.split(".")[-1]: k
                 for k in branch_forms
-                if k.startswith(objname + "/")
+                if k.startswith(objname + "/") or
+                # Second case for skimming
+                k.startswith(objname + "_/")
             }
-            if components == {
-                "fCoordinates.fPt",
-                "fCoordinates.fEta",
-                "fCoordinates.fPhi",
-                "fCoordinates.fE",
+
+            if set(components.keys()) == {
+                "fPt",
+                "fEta",
+                "fPhi",
+                "fE",
             }:
                 form = zip_forms(
                     {
-                        "pt": branch_forms.pop(f"{objname}/{objname}.fCoordinates.fPt"),
-                        "eta": branch_forms.pop(
-                            f"{objname}/{objname}.fCoordinates.fEta"
-                        ),
-                        "phi": branch_forms.pop(
-                            f"{objname}/{objname}.fCoordinates.fPhi"
-                        ),
-                        "energy": branch_forms.pop(
-                            f"{objname}/{objname}.fCoordinates.fE"
-                        ),
+                        "pt": branch_forms.pop(components["fPt"]),
+                        "eta": branch_forms.pop(components["fEta"]),
+                        "phi": branch_forms.pop(components["fPhi"]),
+                        "energy": branch_forms.pop(components["fE"]),
                     },
                     objname,
                     composite_behavior.get(objname, "PtEtaPhiELorentzVector"),
                 )
                 branch_forms[objname] = form
-            elif components == {
-                "fCoordinates.fX",
-                "fCoordinates.fY",
-                "fCoordinates.fZ",
+            elif set(x.split(".")[-1] for x in components) == {
+                "fX",
+                "fY",
+                "fZ",
             }:
                 form = zip_forms(
                     {
-                        "x": branch_forms.pop(f"{objname}/{objname}.fCoordinates.fX"),
-                        "y": branch_forms.pop(f"{objname}/{objname}.fCoordinates.fY"),
-                        "z": branch_forms.pop(f"{objname}/{objname}.fCoordinates.fZ"),
+                        "x": branch_forms.pop(components["fX"]),
+                        "y": branch_forms.pop(components["fY"]),
+                        "z": branch_forms.pop(components["fZ"]),
                     },
                     objname,
                     composite_behavior.get(objname, "ThreeVector"),
@@ -99,11 +97,11 @@ class TreeMakerSchema(BaseSchema):
                 branch_forms[objname] = form
             else:
                 raise ValueError(
-                    f"Unrecognized class with split branches: {components}"
+                    f"Unrecognized class with split branches of object {objname}: {components.values()}"
                 )
 
         # Generating collection from branch name
-        collections = [k for k in branch_forms if "_" in k]
+        collections = [k for k in branch_forms if "_" in k and not k.startswith("n")]
         collections = {
             "_".join(k.split("_")[:-1])
             for k in collections
@@ -173,3 +171,68 @@ class TreeMakerSchema(BaseSchema):
         behavior.update(base.behavior)
         behavior.update(vector.behavior)
         return behavior
+
+    @classmethod
+    def uproot_writeable(events):
+        """
+        Converting a TreeMakerSchema event into something that is uproot
+        writeable. Based off the discussion thread here [1], but added specific
+        cased to handled the nested structures define for TreeMaker n-tuples.
+        [1] https://github.com/CoffeaTeam/coffea/discussions/735
+        """
+        import awkward as ak
+
+        def _is_compat(a):
+            """Is it a flat or 1-d jagged array?"""
+            t = ak.type(a)
+            if isinstance(t, ak._ext.ArrayType):
+                if isinstance(t.type, ak._ext.PrimitiveType):
+                    return True
+                if isinstance(t.type, ak._ext.ListType) and isinstance(
+                    t.type.type, ak._ext.PrimitiveType
+                ):
+                    return True
+            return False
+
+        def zip_composite(array):
+            # Additional naming scheme to allow composite object read back
+            _rename_lookup = {
+                "pt": "/.fPt",
+                "eta": "/.fEta",
+                "phi": "/.fPhi",
+                "energy": "/.fE",
+                "x": "/.fX",
+                "y": "/.fY",
+                "z": "/.fZ",
+            }
+            return ak.zip(
+                {
+                    _rename_lookup.get(n, n): ak.packed(ak.without_parameters(array[n]))
+                    for n in array.fields
+                    if _is_compat(array[n])
+                }
+            )
+
+        # Looping over events structure
+        out = {}
+        for bname in events.fields:
+            if events[bname].fields:
+                sub_collection = [  # Handing nested structures first
+                    x.replace("Counts", "")
+                    for x in events[bname].fields
+                    if x.endswith("Counts")
+                ]
+                if sub_collection:
+                    for subname in sub_collection:
+                        if events[bname][subname].fields:
+                            out[f"{bname}_{subname}"] = zip_composite(
+                                ak.flatten(events[bname][subname], axis=-1)
+                            )
+                        else:
+                            out[f"{bname}_{subname}"] = ak.flatten(
+                                events[bname][subname], axis=-1
+                            )
+                out[bname] = zip_composite(events[bname])
+            else:
+                out[bname] = ak.packed(ak.without_parameters(events[bname]))
+        return out
