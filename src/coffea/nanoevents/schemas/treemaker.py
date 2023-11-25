@@ -173,7 +173,7 @@ class TreeMakerSchema(BaseSchema):
         return behavior
 
     @classmethod
-    def uproot_writeable(events):
+    def uproot_writeable(cls, events):
         """
         Converting a TreeMakerSchema event into something that is uproot
         writeable. Based off the discussion thread here [1], but added specific
@@ -185,14 +185,17 @@ class TreeMakerSchema(BaseSchema):
         def _is_compat(a):
             """Is it a flat or 1-d jagged array?"""
             t = ak.type(a)
-            if isinstance(t, ak._ext.ArrayType):
-                if isinstance(t.type, ak._ext.PrimitiveType):
+            if isinstance(t, ak.types.ArrayType):
+                if isinstance(t._content, ak.types.NumpyType):
                     return True
-                if isinstance(t.type, ak._ext.ListType) and isinstance(
-                    t.type.type, ak._ext.PrimitiveType
+                if isinstance(t._content, ak.types.ListType) and isinstance(
+                    t._content._content, ak.types.NumpyType
                 ):
                     return True
             return False
+
+        def _make_packed(arr):
+            return ak.ak_to_packed.to_packed(ak.without_parameters(arr))
 
         def zip_composite(array):
             # Additional naming scheme to allow composite object read back
@@ -207,7 +210,7 @@ class TreeMakerSchema(BaseSchema):
             }
             return ak.zip(
                 {
-                    _rename_lookup.get(n, n): ak.packed(ak.without_parameters(array[n]))
+                    _rename_lookup.get(n, n): _make_packed(array[n])
                     for n in array.fields
                     if _is_compat(array[n])
                 }
@@ -229,10 +232,10 @@ class TreeMakerSchema(BaseSchema):
                                 ak.flatten(events[bname][subname], axis=-1)
                             )
                         else:
-                            out[f"{bname}_{subname}"] = ak.flatten(
-                                events[bname][subname], axis=-1
+                            out[f"{bname}_{subname}"] = _make_packed(
+                                ak.flatten(events[bname][subname], axis=-1)
                             )
                 out[bname] = zip_composite(events[bname])
             else:
-                out[bname] = ak.packed(ak.without_parameters(events[bname]))
+                out[bname] = _make_packed(events[bname])
         return out

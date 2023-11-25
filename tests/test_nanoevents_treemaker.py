@@ -105,6 +105,6 @@ def test_uproot_write():
     assert ak.all(orig_events.Jets.pt == test_events.Jets.pt)
     assert ak.all(orig_events.JetsAK8.x == test_events.JetsAK8.x)
     # Checking nested composite structure and their behavior
-    assert ak.all(orig_events.JetsAK8.subjet.pt == test_events.JetsAK8.subjet.pt)
-    assert ak.all(orig_events.JetsAK8.subjet.x == test_events.JetsAK8.subjet.x)
     assert ak.all(orig_events.Tracks.hitPattern == test_events.Tracks.hitPattern)
+    assert ak.all(orig_events.JetsAK8.subjets.pt == test_events.JetsAK8.subjets.pt)
+    assert ak.all(orig_events.JetsAK8.subjets.x == test_events.JetsAK8.subjets.x)
