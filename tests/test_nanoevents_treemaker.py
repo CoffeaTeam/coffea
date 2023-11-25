@@ -3,6 +3,7 @@ import os
 import awkward as ak
 import dask_awkward as dak
 import pytest
+import uproot
 
 from coffea.nanoevents import NanoEventsFactory, TreeMakerSchema
 
@@ -80,3 +81,30 @@ def test_nested_collection(collection, subcollection, arr_type, element, events)
             events[collection][subcollection + "Counts"].compute()
             == dak.count(events[collection][subcollection][element], axis=-1).compute()
         )
+
+
+def test_uproot_write():
+    path = os.path.abspath("tests/samples/treemaker.root")
+    orig_events = NanoEventsFactory.from_root(
+        {path: "PreSelection"}, schemaclass=TreeMakerSchema, permit_dask=False
+    ).events()
+
+    with uproot.recreate("treemaker_write_test.root") as f:
+        f["PreSelection"] = TreeMakerSchema.uproot_writeable(orig_events)
+
+    test_events = NanoEventsFactory.from_root(
+        {"treemaker_write_test.root": "PreSelection"},
+        schemaclass=TreeMakerSchema,
+        permit_dask=False,
+    ).events()
+
+    # Checking event structure
+    assert len(orig_events) == len(test_events)
+    assert ak.all(orig_events.HT == test_events.HT)
+    # Checking composite structure and their behavior
+    assert ak.all(orig_events.Jets.pt == test_events.Jets.pt)
+    assert ak.all(orig_events.JetsAK8.x == test_events.JetsAK8.x)
+    # Checking nested composite structure and their behavior
+    assert ak.all(orig_events.JetsAK8.subjet.pt == test_events.JetsAK8.subjet.pt)
+    assert ak.all(orig_events.JetsAK8.subjet.x == test_events.JetsAK8.subjet.x)
+    assert ak.all(orig_events.Tracks.hitPattern == test_events.Tracks.hitPattern)
