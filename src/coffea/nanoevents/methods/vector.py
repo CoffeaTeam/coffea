@@ -69,6 +69,18 @@ def _deltaphi_kernel(a, b):
     return (a - b + numpy.pi) % (2 * numpy.pi) - numpy.pi
 
 
+@numba.vectorize(
+    [
+        numba.float32(numba.float32, numba.float32, numba.float32, numba.float32),
+        numba.float64(numba.float64, numba.float64, numba.float64, numba.float64),
+    ]
+)
+def _delta_r_kernel(eta1, phi1, eta2, phi2):
+    deta = eta1 - eta2
+    dphi = _deltaphi_kernel(phi1, phi2)
+    return numpy.hypot(deta, dphi)
+
+
 behavior = {}
 
 
@@ -604,7 +616,7 @@ class LorentzVector(ThreeVector):
 
         :math:`\sqrt{\Delta\eta^2 + \Delta\phi^2}`
         """
-        return numpy.hypot(self.eta - other.eta, self.delta_phi(other))
+        return _delta_r_kernel(self.eta, self.phi, other.eta, other.phi)
 
     @awkward.mixin_class_method(numpy.negative)
     def negative(self):
