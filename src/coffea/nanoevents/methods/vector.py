@@ -607,9 +607,7 @@ class LorentzVector(ThreeVector):
 
     def delta_r2(self, other):
         """Squared `delta_r`"""
-        deta = self.eta - other.eta
-        dphi = self.delta_phi(other)
-        return deta * deta + dphi * dphi
+        return _delta_r_kernel(self.eta, self.phi, other.eta, other.phi) ** 2
 
     def delta_r(self, other):
         r"""Distance between two Lorentz vectors in (eta,phi) plane
