@@ -65,7 +65,7 @@ def _mass2_kernel(t, x, y, z):
         numba.float64(numba.float64, numba.float64),
     ]
 )
-def _deltaphi_kernel(a, b):
+def delta_phi(a, b):
     return (a - b + numpy.pi) % (2 * numpy.pi) - numpy.pi
 
 
@@ -75,9 +75,9 @@ def _deltaphi_kernel(a, b):
         numba.float64(numba.float64, numba.float64, numba.float64, numba.float64),
     ]
 )
-def _delta_r_kernel(eta1, phi1, eta2, phi2):
+def delta_r(eta1, phi1, eta2, phi2):
     deta = eta1 - eta2
-    dphi = _deltaphi_kernel(phi1, phi2)
+    dphi = delta_phi(phi1, phi2)
     return numpy.hypot(deta, dphi)
 
 
@@ -213,7 +213,7 @@ class TwoVector:
 
         Returns a value within [-pi, pi)
         """
-        return _deltaphi_kernel(self.phi, other.phi)
+        return delta_phi(self.phi, other.phi)
 
     def dot(self, other):
         """Compute the dot product of two vectors"""
@@ -607,14 +607,14 @@ class LorentzVector(ThreeVector):
 
     def delta_r2(self, other):
         """Squared `delta_r`"""
-        return _delta_r_kernel(self.eta, self.phi, other.eta, other.phi) ** 2
+        return delta_r(self.eta, self.phi, other.eta, other.phi) ** 2
 
     def delta_r(self, other):
         r"""Distance between two Lorentz vectors in (eta,phi) plane
 
         :math:`\sqrt{\Delta\eta^2 + \Delta\phi^2}`
         """
-        return _delta_r_kernel(self.eta, self.phi, other.eta, other.phi)
+        return delta_r(self.eta, self.phi, other.eta, other.phi)
 
     @awkward.mixin_class_method(numpy.negative)
     def negative(self):
