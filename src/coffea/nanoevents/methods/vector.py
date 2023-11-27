@@ -66,6 +66,10 @@ def _mass2_kernel(t, x, y, z):
     ]
 )
 def delta_phi(a, b):
+    """Compute difference in angle given two angles a and b
+
+    Returns a value within [-pi, pi)
+    """
     return (a - b + numpy.pi) % (2 * numpy.pi) - numpy.pi
 
 
@@ -76,6 +80,10 @@ def delta_phi(a, b):
     ]
 )
 def delta_r(eta1, phi1, eta2, phi2):
+    r"""Distance in (eta,phi) plane given two pairs of (eta,phi)
+
+    :math:`\sqrt{\Delta\eta^2 + \Delta\phi^2}`
+    """
     deta = eta1 - eta2
     dphi = delta_phi(phi1, phi2)
     return numpy.hypot(deta, dphi)
