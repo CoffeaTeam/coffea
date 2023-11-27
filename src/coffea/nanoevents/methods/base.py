@@ -161,9 +161,13 @@ class NanoEvents(Systematic):
     """
 
     @dask_awkward.dask_property
-    def metadata(self, _dask_array_=None):
+    def metadata(self):
         """Arbitrary metadata"""
         return self.layout.purelist_parameter("metadata")
+
+    @metadata.dask
+    def metadata(self, dask_array):
+        pass
 
 
 behavior[("__typestr__", "NanoEvents")] = "event"
