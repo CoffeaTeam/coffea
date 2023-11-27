@@ -167,7 +167,7 @@ class NanoEvents(Systematic):
 
     @metadata.dask
     def metadata(self, dask_array):
-        pass
+        return self.layout.purelist_parameter("metadata")
 
 
 behavior[("__typestr__", "NanoEvents")] = "event"
