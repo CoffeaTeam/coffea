@@ -67,8 +67,8 @@ class DatasetQueryApp(cmd2.Cmd):
         self.last_query = ""
         self.last_query_tree = None
         self.last_query_list = None
-        self.sites_whitelist = None
-        self.sites_blacklist = None
+        self.sites_allowlist = None
+        self.sites_blocklist = None
         self.sites_regex = None
         self.last_replicas_results = None
 
@@ -98,7 +98,7 @@ class DatasetQueryApp(cmd2.Cmd):
         # Your code here
         with self.console.status(f"Querying rucio for: [bold red]{args}[/]"):
             outlist, outtree = rucio_utils.query_dataset(
-                args.arg_list[0], client=self.rucio_client, tree=True
+                args.arg_list[0], client=self.rucio_client, tree=True, scope="cms" #TODO configure scope
             )
             # Now let's print the results as a tree
             print_dataset_query(args, outtree, self.selected_datasets, self.console)
@@ -176,8 +176,8 @@ class DatasetQueryApp(cmd2.Cmd):
         ):
             outfiles, outsites, sites_counts = rucio_utils.get_dataset_files_replicas(
                 dataset,
-                whitelist_sites=self.sites_whitelist,
-                blacklist_sites=self.sites_blacklist,
+                allowlist_sites=self.sites_allowlist,
+                blocklist_sites=self.sites_blocklist,
                 regex_sites=self.sites_regex,
                 mode="full",
                 client=self.rucio_client,
@@ -263,22 +263,22 @@ class DatasetQueryApp(cmd2.Cmd):
                 T.add(f"[cyan]{f}")
         self.console.print(tree)
 
-    def do_whitelist_sites(self, args):
-        if self.sites_whitelist is None:
-            self.sites_whitelist = args.arg_list
+    def do_allowlist_sites(self, args):
+        if self.sites_allowlist is None:
+            self.sites_allowlist = args.arg_list
         else:
-            self.sites_whitelist += args.arg_list
-        print("[green]Whitelisted sites:")
-        for s in self.sites_whitelist:
+            self.sites_allowlist += args.arg_list
+        print("[green]Allowlisted sites:")
+        for s in self.sites_allowlist:
             print(f"- {s}")
 
-    def do_blacklist_sites(self, args):
-        if self.sites_blacklist is None:
-            self.sites_blacklist = args.arg_list
+    def do_blocklist_sites(self, args):
+        if self.sites_blocklist is None:
+            self.sites_blocklist = args.arg_list
         else:
-            self.sites_blacklist += args.arg_list
-        print("[red]Blacklisted sites:")
-        for s in self.sites_blacklist:
+            self.sites_blocklist += args.arg_list
+        print("[red]Blocklisted sites:")
+        for s in self.sites_blocklist:
             print(f"- {s}")
 
     def do_regex_sites(self, args):
@@ -291,20 +291,20 @@ class DatasetQueryApp(cmd2.Cmd):
 
     def do_sites_filters(self, args):
         if args == "":
-            print("[green bold]Whitelisted sites:")
-            if self.sites_whitelist:
-                for s in self.sites_whitelist:
+            print("[green bold]Allow-listed sites:")
+            if self.sites_allowlist:
+                for s in self.sites_allowlist:
                     print(f"- {s}")
 
-            print("[bold red]Blacklisted sites:")
-            if self.sites_blacklist:
-                for s in self.sites_blacklist:
+            print("[bold red]Block-listed sites:")
+            if self.sites_blocklist:
+                for s in self.sites_blocklist:
                     print(f"- {s}")
 
             print(f"[bold cyan]Sites regex: [italics]{self.sites_regex}")
         if args == "clear":
-            self.sites_whitelist = None
-            self.sites_blacklist = None
+            self.sites_allowlist = None
+            self.sites_blocklist = None
             self.sites_regex = None
             print("[bold green]Sites filters cleared")
 
@@ -353,8 +353,8 @@ Some basic commands:
   - [bold cyan]list_replicas (LR) index[/]: Print the selected files replicas for the selected dataset
   - [bold cyan]sites_filters[/]: show the active sites filters
   - [bold cyan]sites_filters clear[/]: clear all the active sites filters
-  - [bold cyan]whitelist_sites[/]: Select sites to whitelist for replica queries
-  - [bold cyan]blacklist_sites[/]: Select sites to blacklist for replica queries
+  - [bold cyan]allowlist_sites[/]: Select sites to allowlist them for replica queries
+  - [bold cyan]blocklist_sites[/]: Select sites to blocklist them for replica queries
   - [bold cyan]regex_sites[/]: Select sites with a regex for replica queries: please wrap the regex like "T[123]_(FR|IT|BE|CH|DE)_\w+"
   - [bold cyan]save (S) file.yaml[/]: Save the replicas results to file for further processing
   - [bold cyan]help[/]: get help!
