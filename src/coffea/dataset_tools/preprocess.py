@@ -1,5 +1,9 @@
+from __future__ import annotations
+
 import copy
 import math
+from dataclasses import dataclass
+from typing import Any, Hashable
 
 import awkward
 import dask
@@ -9,13 +13,13 @@ import uproot
 
 
 def _get_steps(
-    normed_files,
-    maybe_step_size=None,
-    align_clusters=False,
-    recalculate_seen_steps=False,
-    skip_bad_files=False,
-    file_exceptions=(FileNotFoundError, OSError),
-):
+    normed_files: awkward.Array | dask_awkward.Array,
+    maybe_step_size: None | int = None,
+    align_clusters: bool = False,
+    recalculate_seen_steps: bool = False,
+    skip_bad_files: bool = False,
+    file_exceptions: Exception | Warning = (FileNotFoundError, OSError),
+) -> awkward.Array | dask_awkward.Array:
     nf_backend = awkward.backend(normed_files)
     lz_or_nf = awkward.typetracer.length_zero_if_typetracer(normed_files)
 
@@ -95,15 +99,51 @@ def _get_steps(
     return array
 
 
+@dataclass
+class UprootFileSpec:
+    object_path: str
+    steps: list[list[int]] | list[int] | None
+
+
+@dataclass
+class CoffeaFileSpec:
+    object_path: str
+    steps: list[list[int]]
+    uuid: str
+
+
+@dataclass
+class CoffeaFileSpecOptional(UprootFileSpec):
+    uuid: str | None
+
+
+@dataclass
+class DatasetSpecOptional:
+    files: (
+        dict[str, str] | list[str] | dict[str, UprootFileSpec | CoffeaFileSpecOptional]
+    )
+    metadata: dict[Hashable, Any] | None
+
+
+@dataclass
+class DatasetSpec:
+    files: dict[str, CoffeaFileSpec]
+    metadata: dict[Hashable, Any] | None
+
+
+FilesetSpecOptional = dict[str, DatasetSpecOptional]
+FilesetSpec = dict[str, DatasetSpec]
+
+
 def preprocess(
-    fileset,
-    maybe_step_size=None,
-    align_clusters=False,
-    recalculate_seen_steps=False,
-    files_per_batch=1,
-    skip_bad_files=False,
-    file_exceptions=(FileNotFoundError, OSError),
-):
+    fileset: FilesetSpecOptional,
+    maybe_step_size: None | int = None,
+    align_clusters: bool = False,
+    recalculate_seen_steps: bool = False,
+    files_per_batch: int = 1,
+    skip_bad_files: bool = False,
+    file_exceptions: Exception | Warning = (FileNotFoundError, OSError),
+) -> tuple[FilesetSpec, FilesetSpecOptional]:
     out_updated = copy.deepcopy(fileset)
     out_available = copy.deepcopy(fileset)
     all_ak_norm_files = {}
