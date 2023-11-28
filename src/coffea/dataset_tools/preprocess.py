@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 import math
 from dataclasses import dataclass
-from typing import Any, Hashable
+from typing import Any, Dict, Hashable
 
 import awkward
 import dask
@@ -131,8 +131,8 @@ class DatasetSpec:
     metadata: dict[Hashable, Any] | None
 
 
-FilesetSpecOptional = dict[str, DatasetSpecOptional]
-FilesetSpec = dict[str, DatasetSpec]
+FilesetSpecOptional = Dict[str, DatasetSpecOptional]
+FilesetSpec = Dict[str, DatasetSpec]
 
 
 def preprocess(
