@@ -1,12 +1,29 @@
 import copy
-from typing import Callable, Union
+from typing import Callable, Dict, Hashable, List, Set, Tuple, Union
+
+import dask.base
+import dask_awkward
 
 from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 from coffea.processor import ProcessorABC
 
+GenericHEPAnalysis = Callable[
+    [dask_awkward.Array],
+    Tuple[
+        Union[
+            dask.base.DaskMethodsMixin,
+            Dict[Hashable, dask.base.DaskMethodsMixin],
+            Set[dask.base.DaskMethodsMixin],
+            List[dask.base.DaskMethodsMixin],
+            Tuple[dask.base.DaskMethodsMixin],
+        ],
+        ...,
+    ],  # NOTE TO USERS: You can use nested python containers as arguments to dask.compute!
+]
 
-def apply_to_one_dataset(
-    data_manipulation: Union[ProcessorABC, Callable],
+
+def apply_to_dataset(
+    data_manipulation: Union[ProcessorABC, GenericHEPAnalysis],
     dataset,
     schemaclass=NanoAODSchema,
     metadata={},
@@ -26,13 +43,13 @@ def apply_to_one_dataset(
 
 
 def apply_to_fileset(
-    data_manipulation: Union[ProcessorABC, Callable], fileset, schemaclass=NanoAODSchema
+    data_manipulation: Union[ProcessorABC, GenericHEPAnalysis],
+    fileset,
+    schemaclass=NanoAODSchema,
 ):
     out = {}
     for name, dataset in fileset.items():
         metadata = copy.deepcopy(dataset.get("metadata", {}))
-        metadata["dataset"] = name
-        out[name] = apply_to_one_dataset(
-            data_manipulation, dataset, schemaclass, metadata
-        )
+        metadata.setdefault("dataset", name)
+        out[name] = apply_to_dataset(data_manipulation, dataset, schemaclass, metadata)
     return out
