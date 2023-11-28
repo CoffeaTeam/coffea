@@ -5,11 +5,10 @@ import re
 import subprocess
 from collections import defaultdict
 
-import tomli
 from rucio.client import Client
 
 # Rucio needs the default configuration --> taken from CMS cvmfs defaults
-if not "RUCIO_HOME" in os.environ:
+if "RUCIO_HOME" not in os.environ:
     os.environ["RUCIO_HOME"] = "/cvmfs/cms.cern.ch/rucio/current"
 
 # with open(f"{os.environ['RUCIO_HOME']}/etc/rucio.cfg", "rb") as f:
