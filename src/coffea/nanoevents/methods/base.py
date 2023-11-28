@@ -160,13 +160,9 @@ class NanoEvents(Systematic):
     This mixin class is used as the top-level type for NanoEvents objects.
     """
 
-    @dask_awkward.dask_property
+    @dask_awkward.dask_property(no_dispatch=True)
     def metadata(self):
         """Arbitrary metadata"""
-        return self.layout.purelist_parameter("metadata")
-
-    @metadata.dask
-    def metadata(self, dask_array):
         return self.layout.purelist_parameter("metadata")
 
 
