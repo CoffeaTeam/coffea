@@ -98,7 +98,10 @@ class DatasetQueryApp(cmd2.Cmd):
         # Your code here
         with self.console.status(f"Querying rucio for: [bold red]{args}[/]"):
             outlist, outtree = rucio_utils.query_dataset(
-                args.arg_list[0], client=self.rucio_client, tree=True, scope="cms" #TODO configure scope
+                args.arg_list[0],
+                client=self.rucio_client,
+                tree=True,
+                scope="cms",  # TODO configure scope
             )
             # Now let's print the results as a tree
             print_dataset_query(args, outtree, self.selected_datasets, self.console)
