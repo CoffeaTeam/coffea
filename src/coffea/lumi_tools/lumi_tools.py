@@ -31,7 +31,7 @@ class LumiData:
     seconds_per_lumi_LHC = 2**18 / (40079000 / 3564)
 
     def __init__(self, lumi_csv, is_inst_lumi=False):
-        self._is_inst_lumi = inst_lumi
+        self._is_inst_lumi = is_inst_lumi
         self._lumidata = np.loadtxt(
             lumi_csv,
             delimiter=",",
