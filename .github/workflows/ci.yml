@@ -160,7 +160,7 @@ jobs:
 #    name: test coffea-skyhook-job
 #
 #    steps:
-#    - uses: actions/checkout@3.2.0
+#    - uses: actions/checkout@3
 #    - name: Test Coffea Skyhook Bindings
 #      shell: bash -l {0}
 #      run: |
@@ -195,7 +195,7 @@ jobs:
         python -m pip install pip hatch --upgrade
         python -m hatch build -t sdist -t wheel
     - name: Publish package to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.8.10
+      uses: pypa/gh-action-pypi-publish@v1
       with:
         user: __token__
         password: ${{ secrets.PYPI_TOKEN }}
