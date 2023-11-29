@@ -137,7 +137,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Set up Conda
-      uses: conda-incubator/setup-miniconda@v2
+      uses: conda-incubator/setup-miniconda@v3
       env:
         ACTIONS_ALLOW_UNSECURE_COMMANDS: true
       with:
@@ -195,7 +195,7 @@ jobs:
         python -m pip install pip hatch --upgrade
         python -m hatch build -t sdist -t wheel
     - name: Publish package to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.8.10
+      uses: pypa/gh-action-pypi-publish@v1.8.11
       with:
         user: __token__
         password: ${{ secrets.PYPI_TOKEN }}
