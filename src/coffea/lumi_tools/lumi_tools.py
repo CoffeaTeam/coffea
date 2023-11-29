@@ -22,9 +22,16 @@ class LumiData:
         brilcalc lumi -c /cvmfs/cms.cern.ch/SITECONF/local/JobConfig/site-local-config.xml \
                  -b "STABLE BEAMS" --normtag=/cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_PHYSICS.json \
                  -u /pb --byls --output-style csv -i Cert_294927-306462_13TeV_PromptReco_Collisions17_JSON.txt > lumi2017.csv
+
+    Note that some brilcalc files may be in different units than inverse picobarns, including possibly average instantaneous luminosity.
+    You should make sure that you understand the units of the LumiData file you are using before calculating luminosity with this tool.
+    If you are using a LumiData file containing avg. inst. luminosity, make sure to set is_inst_lumi=True in the constructor of this class.
     """
 
-    def __init__(self, lumi_csv):
+    seconds_per_lumi_LHC = 2**18 / (40079000/3564)
+    
+    def __init__(self, lumi_csv, is_inst_lumi=False):
+        self._is_inst_lumi = inst_lumi
         self._lumidata = np.loadtxt(
             lumi_csv,
             delimiter=",",
@@ -58,7 +65,7 @@ class LumiData:
             runlumis = runlumis.array
         tot_lumi = np.zeros((1,), dtype=np.dtype("float64"))
         LumiData._get_lumi_kernel(runlumis[:, 0], runlumis[:, 1], self.index, tot_lumi)
-        return tot_lumi[0]
+        return tot_lumi[0] * (self.seconds_per_lumi_LHC if self._is_inst_lumi else 1.0)
 
     @staticmethod
     @numba.njit(parallel=False, fastmath=False)
