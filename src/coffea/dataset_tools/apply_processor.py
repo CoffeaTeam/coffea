@@ -15,16 +15,16 @@ from coffea.dataset_tools.preprocess import (
 from coffea.nanoevents import BaseSchema, NanoAODSchema, NanoEventsFactory
 from coffea.processor import ProcessorABC
 
-DaskOutputType = Tuple[
-    Union[
-        dask.base.DaskMethodsMixin,
-        Dict[Hashable, dask.base.DaskMethodsMixin],
-        Set[dask.base.DaskMethodsMixin],
-        List[dask.base.DaskMethodsMixin],
-        Tuple[dask.base.DaskMethodsMixin],
-    ],
-    ...,
-]  # NOTE TO USERS: You can use nested python containers as arguments to dask.compute!
+DaskOutputBaseType = Union[
+    dask.base.DaskMethodsMixin,
+    Dict[Hashable, dask.base.DaskMethodsMixin],
+    Set[dask.base.DaskMethodsMixin],
+    List[dask.base.DaskMethodsMixin],
+    Tuple[dask.base.DaskMethodsMixin],
+]
+
+# NOTE TO USERS: You can use nested python containers as arguments to dask.compute!
+DaskOutputType = Union[DaskOutputBaseType, Tuple[DaskOutputBaseType, ...]]  
 
 GenericHEPAnalysis = Callable[[dask_awkward.Array], DaskOutputType]
 
