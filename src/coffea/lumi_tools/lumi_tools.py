@@ -28,8 +28,8 @@ class LumiData:
     If you are using a LumiData file containing avg. inst. luminosity, make sure to set is_inst_lumi=True in the constructor of this class.
     """
 
-    seconds_per_lumi_LHC = 2**18 / (40079000/3564)
-    
+    seconds_per_lumi_LHC = 2**18 / (40079000 / 3564)
+
     def __init__(self, lumi_csv, is_inst_lumi=False):
         self._is_inst_lumi = inst_lumi
         self._lumidata = np.loadtxt(
