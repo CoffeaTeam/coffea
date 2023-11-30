@@ -535,3 +535,38 @@ def test_inherited_method_transpose(lcoord, threecoord, twocoord):
     assert record_arrays_equal(a - b, -(b - a))
     assert record_arrays_equal(a - c, -(c - a))
     assert record_arrays_equal(b - c, -(c - b))
+
+
+def test_dask_metric_table_and_nearest():
+    import dask
+    from dask_awkward.lib.testutils import assert_eq
+
+    from coffea.nanoevents import NanoEventsFactory
+
+    eagerevents = NanoEventsFactory.from_root(
+        {"tests/samples/nano_dy.root": "Events"},
+        delayed=False,
+    ).events()
+
+    daskevents = NanoEventsFactory.from_root(
+        {"tests/samples/nano_dy.root": "Events"},
+        delayed=True,
+    ).events()
+
+    metric_table_eager_res = eagerevents.Muon.metric_table(
+        eagerevents.Jet, return_combinations=True
+    )
+    metric_table_dask_res = dask.compute(
+        daskevents.Muon.metric_table(daskevents.Jet, return_combinations=True)[0]
+    )
+    assert_eq(metric_table_eager_res[0], metric_table_dask_res[0])
+    assert_eq(metric_table_eager_res[0][0], metric_table_dask_res[0][0])
+    assert_eq(metric_table_eager_res[0][1], metric_table_dask_res[0][1])
+
+    nearest_eager_res = eagerevents.Muon.nearest(eagerevents.Jet, return_metric=True)
+    nearest_dask_res = dask.compute(
+        daskevents.Muon.nearest(daskevents.Jet, return_metric=True)[0]
+    )
+    assert_eq(nearest_eager_res[0], nearest_dask_res[0])
+    assert_eq(nearest_eager_res[0][0], nearest_dask_res[0][0])
+    assert_eq(nearest_eager_res[0][1], nearest_dask_res[0][1])
