@@ -47,7 +47,6 @@ import numbers
 import awkward
 import numba
 import numpy
-
 from dask_awkward import dask_property
 
 
