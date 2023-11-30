@@ -37,10 +37,10 @@ classifiers = [
   "Topic :: Utilities",
 ]
 dependencies = [
-  "awkward>=2.4.8",
+  "awkward>=2.5.0",
   "uproot>=5.1.2",
   "dask[array]>=2023.4.0",
-  "dask-awkward>=2023.11.0",
+  "dask-awkward>=2023.11.4",
   "dask-histogram>=2023.10.0",
   "correctionlib>=2.3.3",
   "pyarrow>=6.0.0",
