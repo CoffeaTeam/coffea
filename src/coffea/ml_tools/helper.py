@@ -348,7 +348,6 @@ class numpy_call_wrapper(abc.ABC):
             wrap,
             *wrap.pair_to_args(*dak_args, **dak_kwargs),
             label=f"numpy_call_{self.__class__.__name__}_" + dask.base.tokenize(self),
-            opt_touch_all=False,
         )
         arr = unpack_ret_array(arr)
         return self.postprocess_awkward(arr, *args, **kwargs)
