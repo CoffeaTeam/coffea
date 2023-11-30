@@ -47,7 +47,7 @@ import numbers
 import awkward
 import numba
 import numpy
-from dask_awkward import dask_property
+from dask_awkward import dask_method
 
 
 @numba.vectorize(
@@ -717,7 +717,7 @@ class LorentzVector(ThreeVector):
             behavior=self.behavior,
         )
 
-    @dask_property
+    @dask_method
     def metric_table(
         self,
         other,
@@ -749,15 +749,15 @@ class LorentzVector(ThreeVector):
     @metric_table.dask
     def metric_table(
         self,
+        dask_array,
         other,
         axis=1,
         metric=lambda a, b: a.delta_r(b),
         return_combinations=False,
-        dask_array=None,
     ):
         return _metric_table_core(dask_array, other, axis, metric, return_combinations)
 
-    @dask_property
+    @dask_method
     def nearest(
         self,
         other,
@@ -792,12 +792,12 @@ class LorentzVector(ThreeVector):
     @nearest.dask
     def nearest(
         self,
+        dask_array,
         other,
         axis=1,
         metric=lambda a, b: a.delta_r(b),
         return_metric=False,
         threshold=None,
-        dask_array=None,
     ):
         return _nearest_core(dask_array, other, axis, metric, return_metric, threshold)
 
