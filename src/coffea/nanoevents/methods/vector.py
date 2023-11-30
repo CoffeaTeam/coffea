@@ -531,7 +531,7 @@ def _nearest_core(x, y, axis, metric, return_metric, threshold):
     mval, (a, b) = x.metric_table(y, axis, metric, return_combinations=True)
     if axis is None:
         # NotImplementedError: awkward.firsts with axis=-1
-        axis = other.layout.purelist_depth - 2
+        axis = y.layout.purelist_depth - 2
     mmin = awkward.argmin(mval, axis=axis + 1, keepdims=True)
     out = awkward.firsts(b[mmin], axis=axis + 1)
     metric = awkward.firsts(mval[mmin], axis=axis + 1)
