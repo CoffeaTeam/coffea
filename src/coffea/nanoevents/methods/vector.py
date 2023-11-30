@@ -746,7 +746,7 @@ class LorentzVector(ThreeVector):
         """
         return _metric_table_core(self, other, axis, metric, return_combinations)
 
-    @dask_property.dask
+    @metric_table.dask
     def metric_table(
         self,
         other,
@@ -789,7 +789,7 @@ class LorentzVector(ThreeVector):
         """
         return _nearest_core(self, other, axis, metric, return_metric, threshold)
 
-    @dask_property.dask
+    @nearest.dask
     def nearest(
         self,
         other,
