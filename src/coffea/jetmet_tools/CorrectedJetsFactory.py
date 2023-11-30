@@ -6,9 +6,9 @@ import dask_awkward
 import numpy
 
 _stack_parts = ["jec", "junc", "jer", "jersf"]
-_MIN_JET_ENERGY = numpy.array(1e-2, dtype=numpy.float32)
-_ONE_F32 = numpy.array(1.0, dtype=numpy.float32)
-_ZERO_F32 = numpy.array(0.0, dtype=numpy.float32)
+_MIN_JET_ENERGY = numpy.float32(1e-2)
+_ONE_F32 = numpy.float32(1.0)
+_ZERO_F32 = numpy.float32(0.0)
 _JERSF_FORM = {
     "class": "NumpyArray",
     "inner_shape": [3],
