@@ -20,7 +20,7 @@ coffea - Columnar Object Framework For Effective Analysis
     :target: https://anaconda.org/conda-forge/coffea
 
 .. image:: https://badges.gitter.im/CoffeaTeam/coffea.svg
-    :target: https://gitter.im/coffea-hep
+    :target: https://matrix.to/#/#coffea-hep_community:gitter.im
 
 .. image:: https://mybinder.org/badge_logo.svg
    :target: https://mybinder.org/v2/gh/CoffeaTeam/coffea/master?filepath=binder/
