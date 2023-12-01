@@ -572,5 +572,6 @@ def test_dask_metric_table_and_nearest():
         out_dask, metric_dask = dask.compute(
             *daskevents.Electron.nearest(daskevents.TrigObj, return_metric=True)
         )
+        # NB: make this more strict when we fix optimization and parameter dtype issues fixed!
         assert_eq(out_eager, out_dask)
         assert_eq(metric_eager, metric_dask)
