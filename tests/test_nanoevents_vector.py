@@ -543,31 +543,34 @@ def test_dask_metric_table_and_nearest():
 
     from coffea.nanoevents import NanoEventsFactory
 
-    eagerevents = NanoEventsFactory.from_root(
-        {"tests/samples/nano_dy.root": "Events"},
-        delayed=False,
-    ).events()
+    with dask.config.set({"awkward.optimization.enabled": False}):
+        eagerevents = NanoEventsFactory.from_root(
+            {"tests/samples/nano_dy.root": "Events"},
+            delayed=False,
+        ).events()
 
-    daskevents = NanoEventsFactory.from_root(
-        {"tests/samples/nano_dy.root": "Events"},
-        delayed=True,
-    ).events()
+        daskevents = NanoEventsFactory.from_root(
+            {"tests/samples/nano_dy.root": "Events"},
+            delayed=True,
+        ).events()
 
-    mval_eager, (a_eager, b_eager) = eagerevents.Electron.metric_table(
-        eagerevents.TrigObj, return_combinations=True
-    )
-    mval_dask, (a_dask, b_dask) = dask.compute(
-        *daskevents.Electron.metric_table(daskevents.TrigObj, return_combinations=True)
-    )
-    assert_eq(mval_eager, mval_dask)
-    assert_eq(a_eager, a_dask)
-    assert_eq(b_eager, b_dask)
+        mval_eager, (a_eager, b_eager) = eagerevents.Electron.metric_table(
+            eagerevents.TrigObj, return_combinations=True
+        )
+        mval_dask, (a_dask, b_dask) = dask.compute(
+            *daskevents.Electron.metric_table(
+                daskevents.TrigObj, return_combinations=True
+            )
+        )
+        assert_eq(mval_eager, mval_dask)
+        assert_eq(a_eager, a_dask)
+        assert_eq(b_eager, b_dask)
 
-    out_eager, metric_eager = eagerevents.Electron.nearest(
-        eagerevents.TrigObj, return_metric=True
-    )
-    out_dask, metric_dask = dask.compute(
-        *daskevents.Electron.nearest(daskevents.TrigObj, return_metric=True)
-    )
-    assert_eq(out_eager, out_dask)
-    assert_eq(metric_eager, metric_dask)
+        out_eager, metric_eager = eagerevents.Electron.nearest(
+            eagerevents.TrigObj, return_metric=True
+        )
+        out_dask, metric_dask = dask.compute(
+            *daskevents.Electron.nearest(daskevents.TrigObj, return_metric=True)
+        )
+        assert_eq(out_eager, out_dask)
+        assert_eq(metric_eager, metric_dask)
