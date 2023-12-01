@@ -553,21 +553,21 @@ def test_dask_metric_table_and_nearest():
         delayed=True,
     ).events()
 
-    metric_table_eager_res = eagerevents.Electron.metric_table(
+    mval_eager, (a_eager, b_eager) = eagerevents.Electron.metric_table(
         eagerevents.TrigObj, return_combinations=True
     )
-    metric_table_dask_res = dask.compute(
+    mval_dask, (a_dask, b_dask) = dask.compute(
         *daskevents.Electron.metric_table(daskevents.TrigObj, return_combinations=True)
     )
-    assert_eq(metric_table_eager_res[0], metric_table_dask_res[0])
-    assert_eq(metric_table_eager_res[0][0], metric_table_dask_res[0][0])
-    assert_eq(metric_table_eager_res[0][1], metric_table_dask_res[0][1])
+    assert_eq(mval_eager, mval_dask)
+    assert_eq(a_eager, a_dask)
+    assert_eq(b_eager, b_dask)
 
-    nearest_eager_res = eagerevents.Electron.nearest(
+    out_eager, metric_eager = eagerevents.Electron.nearest(
         eagerevents.TrigObj, return_metric=True
     )
-    nearest_dask_res = dask.compute(
+    out_dask, metric_dask = dask.compute(
         *daskevents.Electron.nearest(daskevents.TrigObj, return_metric=True)
     )
-    assert_eq(nearest_eager_res[0], nearest_dask_res[0])
-    assert_eq(nearest_eager_res[1], nearest_dask_res[1])
+    assert_eq(out_eager, out_dask)
+    assert_eq(metric_eager, metric_dask)
