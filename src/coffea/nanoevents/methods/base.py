@@ -7,6 +7,7 @@ from typing import Any, Callable, List, Tuple, Union
 import awkward
 import dask_awkward
 import numpy
+from dask_awkward import dask_method, dask_property
 
 import coffea
 from coffea.util import awkward_rewrap, rewrap_recordarray
@@ -160,7 +161,7 @@ class NanoEvents(Systematic):
     This mixin class is used as the top-level type for NanoEvents objects.
     """
 
-    @dask_awkward.dask_property(no_dispatch=True)
+    @dask_property(no_dispatch=True)
     def metadata(self):
         """Arbitrary metadata"""
         return self.layout.purelist_parameter("metadata")
@@ -177,10 +178,12 @@ class NanoCollection:
     and other advanced mixin types.
     """
 
+    @dask_method(no_dispatch=True)
     def _collection_name(self):
         """The name of the collection (i.e. the field under events where it is found)"""
         return self.layout.purelist_parameter("collection_name")
 
+    @dask_method(no_dispatch=True)
     def _getlistarray(self):
         """Do some digging to find the initial listarray"""
 
@@ -194,6 +197,7 @@ class NanoCollection:
 
         return awkward.transform(descend, self.layout, highlevel=False)
 
+    @dask_method(no_dispatch=True)
     def _content(self):
         """Internal method to get jagged collection content
 
@@ -201,7 +205,7 @@ class NanoCollection:
         Used with global indexes to resolve cross-references"""
         return self._getlistarray().content
 
-    @dask_awkward.dask_method
+    @dask_method
     def _apply_global_index(self, index):
         """Internal method to take from a collection using a flat index
 
@@ -236,6 +240,7 @@ class NanoCollection:
             label="_apply_global_index",
         )
 
+    @dask_method(no_dispatch=True)
     def _events(self):
         """Internal method to get the originally-constructed NanoEvents
 
