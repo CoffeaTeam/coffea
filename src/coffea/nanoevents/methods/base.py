@@ -228,7 +228,7 @@ class NanoCollection:
             index._meta if isinstance(index, dask_awkward.Array) else index
         )
         layout_out = awkward.transform(descend, index_out.layout, highlevel=False)
-        out = awkward.Array(layout_out, behavior=self.behavior)
+        out = awkward.Array(layout_out, behavior=self.behavior, attrs=self.attrs)
 
         return out
 
@@ -245,10 +245,12 @@ class NanoCollection:
         """Internal method to get the originally-constructed NanoEvents
 
         This can be called at any time from any collection, as long as
-        the NanoEventsFactory instance exists."""
-        if "__original_array__" in self.behavior:
-            return self.behavior["__original_array__"]()
-        return self.behavior["__events_factory__"].events()
+        the NanoEventsFactory instance exists.
+
+        This will not work automatically if you read serialized nanoevents."""
+        if "@original_array" in self.attrs:
+            return self.attrs["@original_array"]
+        return self.attrs["@events_factory"].events()
 
 
 __all__ = ["NanoCollection", "NanoEvents", "Systematic"]

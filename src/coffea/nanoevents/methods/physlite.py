@@ -42,7 +42,7 @@ def _element_link(target_collection, eventindex, index, key):
 
 def _element_link_method(self, link_name, target_name, _dask_array_):
     if _dask_array_ is not None:
-        target = _dask_array_.behavior["__original_array__"]()[target_name]
+        target = _dask_array_.attrs["@original_array"][target_name]
         links = _dask_array_[link_name]
         return _element_link(
             target,
