@@ -413,7 +413,7 @@ class Jet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic):
 
     @matched_gen.dask
     def matched_gen(self, dask_array):
-        return dask_array._events().GetJet._apply_global_index(dask_array.genJetIdxG)
+        return dask_array._events().GenJet._apply_global_index(dask_array.genJetIdxG)
 
     @dask_property
     def constituents(self):
