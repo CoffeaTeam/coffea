@@ -201,7 +201,8 @@ class NanoCollection:
         Used with global indexes to resolve cross-references"""
         return self._getlistarray().content
 
-    def _apply_global_index(self, index, _dask_array_=None):
+    @dask_awkward.dask_method
+    def _apply_global_index(self, index):
         """Internal method to take from a collection using a flat index
 
         This is often necessary to be able to still resolve cross-references on
@@ -225,14 +226,15 @@ class NanoCollection:
         layout_out = awkward.transform(descend, index_out.layout, highlevel=False)
         out = awkward.Array(layout_out, behavior=self.behavior)
 
-        if isinstance(index, dask_awkward.Array):
-            return _dask_array_.map_partitions(
-                _ClassMethodFn("_apply_global_index"),
-                index,
-                label="_apply_global_index",
-                meta=out,
-            )
         return out
+
+    @_apply_global_index.dask
+    def _apply_global_index(self, dask_array, index):
+        return dask_array.map_partitions(
+            _ClassMethodFn("_apply_global_index"),
+            index,
+            label="_apply_global_index",
+        )
 
     def _events(self):
         """Internal method to get the originally-constructed NanoEvents
