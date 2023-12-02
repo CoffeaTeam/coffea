@@ -672,8 +672,8 @@ class NanoEventsFactory:
                 self._mapping,
                 buffer_key=partial(_key_formatter, self._partition_key),
                 behavior=self._schema.behavior(),
+                attrs={"@events_factory": self},
             )
-            events.attrs["@events_factory"] = self
             self._events = weakref.ref(events)
 
         return events
