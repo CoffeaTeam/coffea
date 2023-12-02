@@ -670,7 +670,12 @@ class NanoEventsFactory:
         """Build events"""
         if self._is_dask:
             events = self._mapping(form_mapping=self._schema)
+            report = None
+            if isinstance(events, tuple):
+                events, report = events
             events.behavior["__original_array__"] = lambda: events
+            if report is not None:
+                return events, report
             return events
 
         events = self._events()
