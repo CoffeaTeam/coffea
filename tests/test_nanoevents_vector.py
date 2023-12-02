@@ -535,3 +535,43 @@ def test_inherited_method_transpose(lcoord, threecoord, twocoord):
     assert record_arrays_equal(a - b, -(b - a))
     assert record_arrays_equal(a - c, -(c - a))
     assert record_arrays_equal(b - c, -(c - b))
+
+
+def test_dask_metric_table_and_nearest():
+    import dask
+    from dask_awkward.lib.testutils import assert_eq
+
+    from coffea.nanoevents import NanoEventsFactory
+
+    with dask.config.set({"awkward.optimization.enabled": False}):
+        eagerevents = NanoEventsFactory.from_root(
+            {"tests/samples/nano_dy.root": "Events"},
+            delayed=False,
+        ).events()
+
+        daskevents = NanoEventsFactory.from_root(
+            {"tests/samples/nano_dy.root": "Events"},
+            delayed=True,
+        ).events()
+
+        mval_eager, (a_eager, b_eager) = eagerevents.Electron.metric_table(
+            eagerevents.TrigObj, return_combinations=True
+        )
+        mval_dask, (a_dask, b_dask) = dask.compute(
+            *daskevents.Electron.metric_table(
+                daskevents.TrigObj, return_combinations=True
+            )
+        )
+        assert_eq(mval_eager, mval_dask)
+        assert_eq(a_eager, a_dask)
+        assert_eq(b_eager, b_dask)
+
+        out_eager, metric_eager = eagerevents.Electron.nearest(
+            eagerevents.TrigObj, return_metric=True
+        )
+        out_dask, metric_dask = dask.compute(
+            *daskevents.Electron.nearest(daskevents.TrigObj, return_metric=True)
+        )
+        # NB: make this more strict when we fix optimization and parameter dtype issues fixed!
+        assert_eq(out_eager, out_dask)
+        assert_eq(metric_eager, metric_dask)
