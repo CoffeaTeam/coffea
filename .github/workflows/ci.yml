@@ -148,7 +148,7 @@ jobs:
       run: |
         conda create --yes --name coffea-env -c conda-forge python=${{ matrix.python-version }} ndcctools
         conda activate coffea-env
-        python -m pip install ".[dask]"
+        python -m pip install ".[dev,dask]"
     - name: Test with pytest
       run: |
         pytest tests/test_taskvine.py
