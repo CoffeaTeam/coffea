@@ -65,9 +65,9 @@ def test_taskvine_remote_env():
                 f"python={py_version}",
                 "ndcctools",
                 "pip",
-                {"pip": ["coffea=.[dask]"]},
             ],
         },
+        "pip": ["coffea"],
     }
 
     env_filename = "vine-env.tar.gz"
