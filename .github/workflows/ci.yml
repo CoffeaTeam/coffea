@@ -146,13 +146,12 @@ jobs:
     - name: Construct conda environment
       shell: bash -l {0}
       run: |
-        conda create --yes --name coffea-env -c conda-forge python=${{ matrix.python-version }} ndcctools
-        conda activate coffea-env
+        conda create --yes --prefix ./coffea-conda-test-env -c conda-forge python=${{ matrix.python-version }} ndcctools
+        conda activate ./coffea-conda-test-env
         python -m pip install ".[dev,dask]"
     - name: Test with pytest
       run: |
-        conda activate coffea-env
-        pytest tests/test_taskvine.py
+        conda run --prefix ./coffea-conda-test-env pytest tests/test_taskvine.py
 
 #  testskyhookjob:
 #    runs-on: ubuntu-latest
