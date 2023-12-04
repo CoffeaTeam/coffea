@@ -2,12 +2,10 @@ import os
 from sys import version_info
 
 import hist.dask as hda
+import pytest
 
 from coffea import processor
 from coffea.nanoevents import NanoEventsFactory
-
-
-import pytest
 
 
 def histogram_common():
