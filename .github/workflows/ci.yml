@@ -151,6 +151,7 @@ jobs:
         python -m pip install ".[dev,dask]"
     - name: Test with pytest
       run: |
+        conda activate coffea-env
         pytest tests/test_taskvine.py
 
 #  testskyhookjob:
