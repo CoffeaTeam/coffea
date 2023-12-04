@@ -7,6 +7,9 @@ from coffea import processor
 from coffea.nanoevents import NanoEventsFactory
 
 
+import pytest
+
+
 def histogram_common():
     # The opendata files are non-standard NanoAOD, so some optional data columns are missing
     processor.NanoAODSchema.warn_missing_crossrefs = False
@@ -48,6 +51,7 @@ def test_taskvine_local_env():
         assert result.sum() == 40.0
 
 
+@pytest.mark.skip(reason="need to investigate how to do conda-pack in ci")
 def test_taskvine_remote_env():
     try:
         from ndcctools.poncho import package_create
