@@ -5,7 +5,7 @@ import hist.dask as hda
 import pytest
 
 from coffea import processor
-from coffea.nanoevents import NanoEventsFactory, NanoAODSchema
+from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 
 
 def histogram_common():
