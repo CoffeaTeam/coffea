@@ -1,9 +1,10 @@
-from coffea.nanoevents import NanoEventsFactory
-from coffea import processor
+import os
+from sys import version_info
+
 import hist.dask as hda
 
-from sys import version_info
-import os
+from coffea import processor
+from coffea.nanoevents import NanoEventsFactory
 
 
 def histogram_common():
@@ -49,8 +50,8 @@ def test_taskvine_local_env():
 
 def test_taskvine_remote_env():
     try:
-        from ndcctools.taskvine import DaskVine, Factory
         from ndcctools.poncho import package_create
+        from ndcctools.taskvine import DaskVine, Factory
     except ImportError:
         print("taskvine is not installed. Omitting test.")
         return
