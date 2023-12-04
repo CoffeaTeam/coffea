@@ -64,6 +64,7 @@ def test_taskvine_remote_env():
             "dependencies": [
                 f"python={py_version}",
                 "ndcctools",
+                "pip",
                 {"pip": ["coffea=.[dask]"]},
             ],
         },
