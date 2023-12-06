@@ -11,10 +11,6 @@ from rucio.client import Client
 if "RUCIO_HOME" not in os.environ:
     os.environ["RUCIO_HOME"] = "/cvmfs/cms.cern.ch/rucio/current"
 
-# with open(f"{os.environ['RUCIO_HOME']}/etc/rucio.cfg", "rb") as f:
-#     rucio_cfg = tomli.load(f)
-#     print(rucio_cfg)
-
 
 def get_proxy_path() -> str:
     """
@@ -52,14 +48,7 @@ def get_rucio_client(proxy=None) -> Client:
     try:
         if not proxy:
             proxy = get_proxy_path()
-
-        nativeClient = Client(
-            rucio_host="https://cms-rucio.cern.ch",
-            auth_host="https://cms-rucio-auth.cern.ch",
-            account=getpass.getuser(),
-            creds={"client_cert": proxy, "client_key": proxy},
-            auth_type="x509",
-        )
+        nativeClient = Client()
         return nativeClient
 
     except Exception as e:
