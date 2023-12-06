@@ -1,9 +1,11 @@
+import json
+import os
 import random
 from collections import defaultdict
-import os
 
 import cmd2
-import yaml, json
+import yaml
+from dask.distributed import Client
 from rich import print
 from rich.console import Console
 from rich.prompt import Prompt
@@ -12,7 +14,6 @@ from rich.tree import Tree
 
 from . import rucio_utils
 from .preprocess import preprocess
-from dask.distributed import Client
 
 
 def print_dataset_query(query, dataset_list, selected, console):
