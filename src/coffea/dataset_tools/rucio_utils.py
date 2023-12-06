@@ -4,17 +4,17 @@ import os
 import re
 import subprocess
 from collections import defaultdict
-import tomli
 
 from rucio.client import Client
 
 # Rucio needs the default configuration --> taken from CMS cvmfs defaults
-if not "RUCIO_HOME" in os.environ:
+if "RUCIO_HOME" not in os.environ:
     os.environ["RUCIO_HOME"] = "/cvmfs/cms.cern.ch/rucio/current"
 
 # with open(f"{os.environ['RUCIO_HOME']}/etc/rucio.cfg", "rb") as f:
 #     rucio_cfg = tomli.load(f)
 #     print(rucio_cfg)
+
 
 def get_proxy_path() -> str:
     """
@@ -135,7 +135,7 @@ def get_dataset_files_replicas(
     regex_sites=None,
     mode="full",
     client=None,
-    scope="cms"
+    scope="cms",
 ):
     """
     This function queries the Rucio server to get information about the location
