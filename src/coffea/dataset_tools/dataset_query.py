@@ -1,3 +1,4 @@
+import gzip
 import json
 import os
 import random
@@ -361,21 +362,34 @@ class DatasetQueryApp(cmd2.Cmd):
 
     def do_preprocess(self, args):
         """Perform preprocessing for concrete fileset extraction.
-        Args:  output_name [step_size] [dask cluster url]"""
+        Args:  output_name [step_size] [align to file cluster boundaries] [dask cluster url]"""
         args_list = args.split()
         if len(args_list) < 1:
             print(
-                "Please provide an output name and optionally a step size and dask cluster url"
+                "Please provide an output name and optionally a step size, if you want to align to file clusters, or a dask cluster url"
             )
             return
         else:
             output_file = args_list[0]
             step_size = None
+            align_to_clusters = False
             dask_url = None
-        if len(args_list) == 2:
+        if len(args_list) >= 2:
             step_size = args_list[1]
-        elif len(args_list) == 3:
-            dask_url = args_list[2]
+        if len(args_list) >= 3:
+            if args_list[2] == "True":
+                align_to_clusters = True
+            elif args_list[2] == "False":
+                align_to_clusters = False
+            else:
+                raise ValueError("align_to_clusters must be either \"True\" or \"False\"")
+        if len(args_list) == 4:
+            dask_url = args_list[3]
+        if len(args_list) > 4:
+            print(
+                "preprocess accepts at most 3 commandline arguments!"
+            )
+            return
         replicas = {}
         for fileset, files in self.replica_results.items():
             replicas[fileset] = {"files": {f: "Events" for f in files}, "metadata": {}}
@@ -383,15 +397,14 @@ class DatasetQueryApp(cmd2.Cmd):
         with self.console.status(
             "[red] Preprocessing files to extract available chunks with dask[/]"
         ):
-            client = Client(dask_url) if dask_url else Client()
-            fileset = preprocess(replicas)
-            out_available, out_updated = preprocess(replicas)
+            with Client(dask_url) as _: 
+                out_available, out_updated = preprocess(replicas, maybe_step_size=step_size, align_clusters=align_to_clusters, skip_bad_files=True)
 
-        with open(f"{output_file}_available.json", "w") as file:
-            print(f"Saved available fileset chunks to {output_file}_available.json")
+        with gzip.open(f"{output_file}_available.json.gz", "w") as file:
+            print(f"Saved available fileset chunks to {output_file}_available.json.gz")
             json.dump(out_available, file, indent=2)
-        with open(f"{output_file}_all.json", "w") as file:
-            print(f"Saved all fileset chunks to {output_file}_all.json")
+        with gzip.open(f"{output_file}_all.json.gz", "w") as file:
+            print(f"Saved all fileset chunks to {output_file}_all.json.gz")
             json.dump(out_updated, file, indent=2)
 
 
