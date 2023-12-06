@@ -19,7 +19,7 @@ import coffea.processor
 import coffea.util
 
 
-class WeightStatistics(coffea.processor.AccumulatorABC):
+class WeightStatistics:
     def __init__(self, sumw=0.0, sumw2=0.0, minw=numpy.inf, maxw=-numpy.inf, n=0):
         self.sumw = sumw
         self.sumw2 = sumw2
@@ -39,6 +39,13 @@ class WeightStatistics(coffea.processor.AccumulatorABC):
         self.minw = min(self.minw, other.minw)
         self.maxw = max(self.maxw, other.maxw)
         self.n += other.n
+
+    def __add__(self, other):
+        temp = WeightStatistics(self.sumw, self.sumw2, self.minw, self.maxw, self.n)
+        return temp.add(other)
+
+    def __iadd__(self, other):
+        return self.add(other)
 
 
 class Weights:
@@ -62,7 +69,7 @@ class Weights:
         self._weight = None if size is None else numpy.ones(size)
         self._weights = {}
         self._modifiers = {}
-        self._weightStats = coffea.processor.dict_accumulator()
+        self._weightStats = {}
         self._storeIndividual = storeIndividual
 
     @property
@@ -102,8 +109,6 @@ class Weights:
         if self._storeIndividual:
             self._weights[name] = weight
         self.__add_variation(name, weight, weightUp, weightDown, shift)
-        if isinstance(self._weightStats, coffea.processor.dict_accumulator):
-            self._weightStats = {}
         self._weightStats[name] = {
             "sumw": dask_awkward.to_dask_array(weight).sum(),
             "sumw2": dask_awkward.to_dask_array(weight**2).sum(),

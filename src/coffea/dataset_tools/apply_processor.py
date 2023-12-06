@@ -1,16 +1,40 @@
-import copy
-from typing import Callable, Union
+from __future__ import annotations
 
-from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
+import copy
+from typing import Any, Callable, Dict, Hashable, List, Set, Tuple, Union
+
+import dask.base
+import dask_awkward
+
+from coffea.dataset_tools.preprocess import (
+    DatasetSpec,
+    DatasetSpecOptional,
+    FilesetSpec,
+    FilesetSpecOptional,
+)
+from coffea.nanoevents import BaseSchema, NanoAODSchema, NanoEventsFactory
 from coffea.processor import ProcessorABC
 
+DaskOutputBaseType = Union[
+    dask.base.DaskMethodsMixin,
+    Dict[Hashable, dask.base.DaskMethodsMixin],
+    Set[dask.base.DaskMethodsMixin],
+    List[dask.base.DaskMethodsMixin],
+    Tuple[dask.base.DaskMethodsMixin],
+]
 
-def apply_to_one_dataset(
-    data_manipulation: Union[ProcessorABC, Callable],
-    dataset,
-    schemaclass=NanoAODSchema,
-    metadata={},
-):
+# NOTE TO USERS: You can use nested python containers as arguments to dask.compute!
+DaskOutputType = Union[DaskOutputBaseType, Tuple[DaskOutputBaseType, ...]]
+
+GenericHEPAnalysis = Callable[[dask_awkward.Array], DaskOutputType]
+
+
+def apply_to_dataset(
+    data_manipulation: ProcessorABC | GenericHEPAnalysis,
+    dataset: DatasetSpec | DatasetSpecOptional,
+    schemaclass: BaseSchema = NanoAODSchema,
+    metadata: dict[Hashable, Any] = {},
+) -> DaskOutputType:
     files = dataset["files"]
     events = NanoEventsFactory.from_root(
         files,
@@ -26,13 +50,13 @@ def apply_to_one_dataset(
 
 
 def apply_to_fileset(
-    data_manipulation: Union[ProcessorABC, Callable], fileset, schemaclass=NanoAODSchema
-):
+    data_manipulation: ProcessorABC | GenericHEPAnalysis,
+    fileset: FilesetSpec | FilesetSpecOptional,
+    schemaclass: BaseSchema = NanoAODSchema,
+) -> dict[str, DaskOutputType]:
     out = {}
     for name, dataset in fileset.items():
         metadata = copy.deepcopy(dataset.get("metadata", {}))
-        metadata["dataset"] = name
-        out[name] = apply_to_one_dataset(
-            data_manipulation, dataset, schemaclass, metadata
-        )
+        metadata.setdefault("dataset", name)
+        out[name] = apply_to_dataset(data_manipulation, dataset, schemaclass, metadata)
     return out
