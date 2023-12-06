@@ -673,21 +673,20 @@ class NanoEventsFactory:
             report = None
             if isinstance(events, tuple):
                 events, report = events
-            events.behavior["__original_array__"] = lambda: events
+            events.attrs["@original_array"] = events
             if report is not None:
                 return events, report
             return events
 
         events = self._events()
         if events is None:
-            behavior = dict(self._schema.behavior())
-            behavior["__events_factory__"] = self
             events = awkward.from_buffers(
                 self._schema.form,
                 len(self),
                 self._mapping,
                 buffer_key=partial(_key_formatter, self._partition_key),
-                behavior=behavior,
+                behavior=self._schema.behavior(),
+                attrs={"@events_factory": self},
             )
             self._events = weakref.ref(events)
 
