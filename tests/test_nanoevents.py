@@ -3,6 +3,7 @@ from pathlib import Path
 
 import awkward as ak
 import pytest
+from distributed import Client
 
 from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 
@@ -185,9 +186,10 @@ def test_missing_eventIds_warning():
 def test_missing_eventIds_warning_dask():
     path = os.path.abspath("tests/samples/missing_luminosityBlock.root") + ":Events"
     NanoAODSchema.error_missing_event_ids = False
-    events = NanoEventsFactory.from_root(
-        path,
-        schemaclass=NanoAODSchema,
-        delayed=True,
-    ).events()
-    events.Muon.pt.compute(scheduler="processes")
+    with Client() as _:
+        events = NanoEventsFactory.from_root(
+            path,
+            schemaclass=NanoAODSchema,
+            delayed=True,
+        ).events()
+        events.Muon.pt.compute()
