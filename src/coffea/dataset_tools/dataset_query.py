@@ -362,7 +362,8 @@ class DatasetQueryApp(cmd2.Cmd):
 
     def do_preprocess(self, args):
         """Perform preprocessing for concrete fileset extraction.
-        Args:  output_name [step_size] [align to file cluster boundaries] [dask cluster url]"""
+        Args:  output_name [step_size] [align to file cluster boundaries] [dask cluster url]
+        """
         args_list = args.split()
         if len(args_list) < 1:
             print(
@@ -382,13 +383,11 @@ class DatasetQueryApp(cmd2.Cmd):
             elif args_list[2] == "False":
                 align_to_clusters = False
             else:
-                raise ValueError("align_to_clusters must be either \"True\" or \"False\"")
+                raise ValueError('align_to_clusters must be either "True" or "False"')
         if len(args_list) == 4:
             dask_url = args_list[3]
         if len(args_list) > 4:
-            print(
-                "preprocess accepts at most 3 commandline arguments!"
-            )
+            print("preprocess accepts at most 3 commandline arguments!")
             return
         replicas = {}
         for fileset, files in self.replica_results.items():
@@ -397,8 +396,13 @@ class DatasetQueryApp(cmd2.Cmd):
         with self.console.status(
             "[red] Preprocessing files to extract available chunks with dask[/]"
         ):
-            with Client(dask_url) as _: 
-                out_available, out_updated = preprocess(replicas, maybe_step_size=step_size, align_clusters=align_to_clusters, skip_bad_files=True)
+            with Client(dask_url) as _:
+                out_available, out_updated = preprocess(
+                    replicas,
+                    maybe_step_size=step_size,
+                    align_clusters=align_to_clusters,
+                    skip_bad_files=True,
+                )
 
         with gzip.open(f"{output_file}_available.json.gz", "w") as file:
             print(f"Saved available fileset chunks to {output_file}_available.json.gz")
