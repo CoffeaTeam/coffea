@@ -1,8 +1,9 @@
 import random
 from collections import defaultdict
+import os
 
 import cmd2
-import yaml
+import yaml, json
 from rich import print
 from rich.console import Console
 from rich.prompt import Prompt
@@ -10,6 +11,8 @@ from rich.table import Table
 from rich.tree import Tree
 
 from . import rucio_utils
+from .preprocess import preprocess
+from dask.distributed import Client
 
 
 def print_dataset_query(query, dataset_list, selected, console):
@@ -59,6 +62,8 @@ class DatasetQueryApp(cmd2.Cmd):
                 "S": "select",
                 "LS": "list_selected",
                 "LR": "list_replicas",
+                "O": "save",
+                "P": "preprocess",
             }
         )
         self.console = Console()
@@ -326,6 +331,7 @@ class DatasetQueryApp(cmd2.Cmd):
                     print(
                         f"[red bold]No replica info for dataset {dataset}. You need to selected the replicas with [cyan] replicas {args}"
                     )
+                    return
                 tree = Tree(label=f"[bold orange]Replicas for [green]{dataset}")
 
                 for site, files in self.replica_results_bysite[dataset].items():
@@ -338,11 +344,54 @@ class DatasetQueryApp(cmd2.Cmd):
     def do_save(self, args):
         """Save the replica information in yaml format"""
         if not len(args):
-            print("[red]Please provide an output filename")
+            print("[red]Please provide an output filename and format")
+            return
+        format = os.path.splitext(args)[1]
+        output = {}
+        for fileset, files in self.replica_results.items():
+            output[fileset] = {"files": files, "metadata": {}}
+
+        with open(args, "w") as file:
+            if format == ".yaml":
+                yaml.dump(output, file, default_flow_style=False)
+            elif format == ".json":
+                json.dump(output, file, indent=2)
+        print(f"[green]File {args} saved!")
+
+    def do_preprocess(self, args):
+        """Perform preprocessing for concrete fileset extraction.
+        Args:  output_name [step_size] [dask cluster url]"""
+        args_list = args.split()
+        if len(args_list) < 1:
+            print(
+                "Please provide an output name and optionally a step size and dask cluster url"
+            )
+            return
         else:
-            with open(args, "w") as file:
-                yaml.dump(dict(self.replica_results), file, default_flow_style=False)
-            print(f"[green]File {args} saved!")
+            output_file = args_list[0]
+            step_size = None
+            dask_url = None
+        if len(args_list) == 2:
+            step_size = args_list[1]
+        elif len(args_list) == 3:
+            dask_url = args_list[2]
+        replicas = {}
+        for fileset, files in self.replica_results.items():
+            replicas[fileset] = {"files": {f: "Events" for f in files}, "metadata": {}}
+        # init a local Dask cluster
+        with self.console.status(
+            "[red] Preprocessing files to extract available chunks with dask[/]"
+        ):
+            client = Client(dask_url) if dask_url else Client()
+            fileset = preprocess(replicas)
+            out_available, out_updated = preprocess(replicas)
+
+        with open(f"{output_file}_available.json", "w") as file:
+            print(f"Saved available fileset chunks to {output_file}_available.json")
+            json.dump(out_available, file, indent=2)
+        with open(f"{output_file}_all.json", "w") as file:
+            print(f"Saved all fileset chunks to {output_file}_all.json")
+            json.dump(out_updated, file, indent=2)
 
 
 if __name__ == "__main__":
@@ -359,7 +408,8 @@ Some basic commands:
   - [bold cyan]allowlist_sites[/]: Select sites to allowlist them for replica queries
   - [bold cyan]blocklist_sites[/]: Select sites to blocklist them for replica queries
   - [bold cyan]regex_sites[/]: Select sites with a regex for replica queries: please wrap the regex like "T[123]_(FR|IT|BE|CH|DE)_\w+"
-  - [bold cyan]save (S) file.yaml[/]: Save the replicas results to file for further processing
+  - [bold cyan]save (O) OUTPUTFILE[/]: Save the replicas results to file (json or yaml) for further processing
+  - [bold cyan]preprocess (P) OUTPUTFILE[/]: Preprocess the replicas with dask and save the fileset to the outputfile (yaml or json)
   - [bold cyan]help[/]: get help!
 """
     console = Console()
