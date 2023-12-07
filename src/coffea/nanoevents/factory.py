@@ -296,7 +296,7 @@ class NanoEventsFactory:
             warnings.warn(
                 f"""You have set steps_per_file to {steps_per_file}, this should only be used for a
                 small number of inputs (e.g. for early-stage/exploratory analysis) since it does not
-                inform dask of each chunk lengths at creation time, which can cause unexpected 
+                inform dask of each chunk lengths at creation time, which can cause unexpected
                 slowdowns at scale. If you would like to process larger datasets please specify steps
                 using the appropriate uproot "files" specification:
                     https://github.com/scikit-hep/uproot5/blob/v5.1.2/src/uproot/_dask.py#L109-L132.
