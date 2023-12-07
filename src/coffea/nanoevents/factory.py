@@ -260,7 +260,7 @@ class NanoEventsFactory:
                 Start at this entry offset in the tree (default 0)
             entry_stop : int, optional (eager mode only)
                 Stop at this entry offset in the tree (default end of tree)
-            steps_per_file: int, optional 
+            steps_per_file: int, optional
                 Partition files into this many steps (previously "chunks")
             runtime_cache : dict, optional
                 A dict-like interface to a cache object. This cache is expected to last the
@@ -296,13 +296,13 @@ class NanoEventsFactory:
         if steps_per_file is not uproot._util.unset:
             open_files = True
             warnings.warn(
-                f'''You have set steps_per_file to {steps_per_file}, this should only be used for a
+                f"""You have set steps_per_file to {steps_per_file}, this should only be used for a
                 small number of inputs for early-stage/exploratory analysis since it requires
                 opening each file first and determining each file's length. If you would like
                 to process larger datasets please specify steps using the appropriate uproot
-                "files" specification: 
+                "files" specification:
                     https://github.com/scikit-hep/uproot5/blob/v5.1.2/src/uproot/_dask.py#L109-L132.
-                ''',
+                """,
                 RuntimeWarning,
             )
 
@@ -321,7 +321,7 @@ class NanoEventsFactory:
             to_open = file
             if isinstance(file, uproot.reading.ReadOnlyDirectory):
                 to_open = file[treepath]
-            
+
             opener = partial(
                 uproot.dask,
                 to_open,
@@ -331,7 +331,7 @@ class NanoEventsFactory:
                 filter_branch=_remove_not_interpretable,
                 steps_per_file=steps_per_file,
                 **uproot_options,
-            )            
+            )
             return cls(map_schema, opener, None, cache=None, is_dask=True)
         elif delayed and not schemaclass.__dask_capable__:
             warnings.warn(
