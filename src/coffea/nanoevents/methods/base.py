@@ -327,7 +327,12 @@ class NanoCollection:
 
     @_apply_global_mapping.dask
     def _apply_global_mapping(
-        self,  dask_array, actual_from, original_from, from_map, onto_map,
+        self,
+        dask_array,
+        actual_from,
+        original_from,
+        from_map,
+        onto_map,
     ):
         return dask_array.map_partitions(
             _ClassMethodFn("_apply_global_mapping"),
@@ -338,7 +343,7 @@ class NanoCollection:
             label="_apply_global_mapping",
             meta=out,
         )
-    
+
     @dask_method
     def _apply_global_index(self, index):
         """Internal method to take from a collection using a flat index
