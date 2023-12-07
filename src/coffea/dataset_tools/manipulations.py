@@ -39,7 +39,7 @@ def get_failed_steps_for_dataset(dataset, report):
     rnames = set(numpy.unique(report.args[:, 0][:, 1:-1:]))
     if not rnames.issubset(fnames):
         raise RuntimeError(
-            f"Files: {rnames - fnames} are not in input dataset, please sure report correspond to input dataset!"
+            f"Files: {rnames - fnames} are not in input dataset, please ensure report correspond to input dataset!"
         )
 
     for failure in failures:
