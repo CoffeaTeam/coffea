@@ -341,7 +341,6 @@ class NanoCollection:
             from_map,
             onto_map,
             label="_apply_global_mapping",
-            meta=out,
         )
 
     @dask_method
