@@ -7,6 +7,7 @@ from typing import Any, Callable, List, Tuple, Union
 import awkward
 import dask_awkward
 import numpy
+from dask_awkward import dask_method, dask_property
 
 import coffea
 from coffea.util import awkward_rewrap, rewrap_recordarray
@@ -160,11 +161,10 @@ class NanoEvents(Systematic):
     This mixin class is used as the top-level type for NanoEvents objects.
     """
 
-    def get_metadata(self, _dask_array_=None):
+    @dask_property(no_dispatch=True)
+    def metadata(self):
         """Arbitrary metadata"""
         return self.layout.purelist_parameter("metadata")
-
-    metadata = property(get_metadata)
 
 
 behavior[("__typestr__", "NanoEvents")] = "event"
@@ -178,10 +178,12 @@ class NanoCollection:
     and other advanced mixin types.
     """
 
+    @dask_method(no_dispatch=True)
     def _collection_name(self):
         """The name of the collection (i.e. the field under events where it is found)"""
         return self.layout.purelist_parameter("collection_name")
 
+    @dask_method(no_dispatch=True)
     def _getlistarray(self):
         """Do some digging to find the initial listarray"""
 
@@ -195,6 +197,7 @@ class NanoCollection:
 
         return awkward.transform(descend, self.layout, highlevel=False)
 
+    @dask_method(no_dispatch=True)
     def _content(self):
         """Internal method to get jagged collection content
 
@@ -202,6 +205,7 @@ class NanoCollection:
         Used with global indexes to resolve cross-references"""
         return self._getlistarray().content
 
+    @dask_method
     def _apply_global_mapping(
         self, actual_from, original_from, from_map, onto_map, _dask_array_=None
     ):
@@ -319,20 +323,24 @@ class NanoCollection:
 
         layout_out = awkward.transform(descend, index_out.layout, highlevel=False)
         out = awkward.Array(layout_out, behavior=self.behavior)
-
-        if isinstance(from_map, dask_awkward.Array):
-            return _dask_array_.map_partitions(
-                _ClassMethodFn("_apply_global_mapping"),
-                actual_from,
-                original_from,
-                from_map,
-                onto_map,
-                label="_apply_global_mapping",
-                meta=out,
-            )
         return out
 
-    def _apply_global_index(self, index, _dask_array_=None):
+    @_apply_global_mapping.dask
+    def _apply_global_mapping(
+        self,  dask_array, actual_from, original_from, from_map, onto_map,
+    ):
+        return dask_array.map_partitions(
+            _ClassMethodFn("_apply_global_mapping"),
+            actual_from,
+            original_from,
+            from_map,
+            onto_map,
+            label="_apply_global_mapping",
+            meta=out,
+        )
+    
+    @dask_method
+    def _apply_global_index(self, index):
         """Internal method to take from a collection using a flat index
 
         This is often necessary to be able to still resolve cross-references on
@@ -354,25 +362,29 @@ class NanoCollection:
             index._meta if isinstance(index, dask_awkward.Array) else index
         )
         layout_out = awkward.transform(descend, index_out.layout, highlevel=False)
-        out = awkward.Array(layout_out, behavior=self.behavior)
+        out = awkward.Array(layout_out, behavior=self.behavior, attrs=self.attrs)
 
-        if isinstance(index, dask_awkward.Array):
-            return _dask_array_.map_partitions(
-                _ClassMethodFn("_apply_global_index"),
-                index,
-                label="_apply_global_index",
-                meta=out,
-            )
         return out
 
+    @_apply_global_index.dask
+    def _apply_global_index(self, dask_array, index):
+        return dask_array.map_partitions(
+            _ClassMethodFn("_apply_global_index"),
+            index,
+            label="_apply_global_index",
+        )
+
+    @dask_method(no_dispatch=True)
     def _events(self):
         """Internal method to get the originally-constructed NanoEvents
 
         This can be called at any time from any collection, as long as
-        the NanoEventsFactory instance exists."""
-        if "__original_array__" in self.behavior:
-            return self.behavior["__original_array__"]()
-        return self.behavior["__events_factory__"].events()
+        the NanoEventsFactory instance exists.
+
+        This will not work automatically if you read serialized nanoevents."""
+        if "@original_array" in self.attrs:
+            return self.attrs["@original_array"]
+        return self.attrs["@events_factory"].events()
 
 
 __all__ = ["NanoCollection", "NanoEvents", "Systematic"]

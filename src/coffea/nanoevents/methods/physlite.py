@@ -4,6 +4,7 @@ from numbers import Number
 import awkward
 import dask_awkward
 import numpy
+from dask_awkward import dask_property
 
 from coffea.nanoevents.methods import base, vector
 
@@ -41,7 +42,7 @@ def _element_link(target_collection, eventindex, index, key):
 
 def _element_link_method(self, link_name, target_name, _dask_array_):
     if _dask_array_ is not None:
-        target = _dask_array_.behavior["__original_array__"]()[target_name]
+        target = _dask_array_.attrs["@original_array"][target_name]
         links = _dask_array_[link_name]
         return _element_link(
             target,
@@ -187,13 +188,22 @@ class Muon(Particle):
     <https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODMuon/Root/Muon_v1.cxx>`_.
     """
 
-    @property
-    def trackParticle(self, _dask_array_=None):
+    @dask_property
+    def trackParticle(self):
         return _element_link_method(
             self,
             "combinedTrackParticleLink",
             "CombinedMuonTrackParticles",
-            _dask_array_,
+            None,
+        )
+
+    @trackParticle.dask
+    def trackParticle(self, dask_array):
+        return _element_link_method(
+            self,
+            "combinedTrackParticleLink",
+            "CombinedMuonTrackParticles",
+            dask_array,
         )
 
 
@@ -206,25 +216,46 @@ class Electron(Particle):
     <https://gitlab.cern.ch/atlas/athena/-/blob/21.2/Event/xAOD/xAODEgamma/Root/Electron_v1.cxx>`_.
     """
 
-    @property
-    def trackParticles(self, _dask_array_=None):
+    @dask_property
+    def trackParticles(self):
         return _element_link_method(
-            self, "trackParticleLinks", "GSFTrackParticles", _dask_array_
+            self, "trackParticleLinks", "GSFTrackParticles", None
         )
 
-    @property
-    def trackParticle(self, _dask_array_=None):
+    @trackParticles.dask
+    def trackParticles(self, dask_array):
+        return _element_link_method(
+            self, "trackParticleLinks", "GSFTrackParticles", dask_array
+        )
+
+    @dask_property
+    def trackParticle(self):
         trackParticles = _element_link_method(
-            self, "trackParticleLinks", "GSFTrackParticles", _dask_array_
+            self, "trackParticleLinks", "GSFTrackParticles", None
         )
         # Ellipsis (..., 0) slicing not supported yet by dask_awkward
         slicer = tuple([slice(None) for i in range(trackParticles.ndim - 1)] + [0])
         return trackParticles[slicer]
 
-    @property
-    def caloClusters(self, _dask_array_=None):
+    @trackParticle.dask
+    def trackParticle(self, dask_array):
+        trackParticles = _element_link_method(
+            self, "trackParticleLinks", "GSFTrackParticles", dask_array
+        )
+        # Ellipsis (..., 0) slicing not supported yet by dask_awkward
+        slicer = tuple([slice(None) for i in range(trackParticles.ndim - 1)] + [0])
+        return trackParticles[slicer]
+
+    @dask_property
+    def caloClusters(self):
         return _element_link_method(
-            self, "caloClusterLinks", "CaloCalTopoClusters", _dask_array_
+            self, "caloClusterLinks", "CaloCalTopoClusters", None
+        )
+
+    @caloClusters.dask
+    def caloClusters(self, dask_array):
+        return _element_link_method(
+            self, "caloClusterLinks", "CaloCalTopoClusters", dask_array
         )
 
 

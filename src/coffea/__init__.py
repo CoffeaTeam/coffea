@@ -34,11 +34,4 @@ __version__ = version.__version__
 # control severity for utils.deprecate
 deprecations_as_errors = False
 
-import copyreg
-
-import dask_awkward
-
-copyreg.pickle(dask_awkward.Array, lambda x: (lambda y: y, (None,)))
-
-
 __all__ = ["deprecations_as_errors"]
