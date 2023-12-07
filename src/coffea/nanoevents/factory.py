@@ -236,7 +236,7 @@ class NanoEventsFactory:
         treepath=uproot._util.unset,
         entry_start=None,
         entry_stop=None,
-        chunks_per_file=uproot._util.unset,
+        steps_per_file=uproot._util.unset,
         runtime_cache=None,
         persistent_cache=None,
         schemaclass=NanoAODSchema,
@@ -256,10 +256,12 @@ class NanoEventsFactory:
                 or ``uproot.dask()``) already opened file using e.g. ``uproot.open()``.
             treepath : str, optional
                 Name of the tree to read in the file. Used only if ``file`` is a ``uproot.reading.ReadOnlyDirectory``.
-            entry_start : int, optional
+            entry_start : int, optional (eager mode only)
                 Start at this entry offset in the tree (default 0)
-            entry_stop : int, optional
+            entry_stop : int, optional (eager mode only)
                 Stop at this entry offset in the tree (default end of tree)
+            steps_per_file: int, optional
+                Partition files into this many steps (previously "chunks")
             runtime_cache : dict, optional
                 A dict-like interface to a cache object. This cache is expected to last the
                 duration of the program only, and will be used to hold references to materialized
@@ -286,8 +288,20 @@ class NanoEventsFactory:
         ):
             raise ValueError(
                 """Specification of treename by argument to from_root is no longer supported in coffea 2023.
-            Please use one of the allow types for "files" specified by uproot: https://github.com/scikit-hep/uproot5/blob/v5.1.2/src/uproot/_dask.py#L109-L132
+            Please use one of the allowed types for "files" specified by uproot: https://github.com/scikit-hep/uproot5/blob/v5.1.2/src/uproot/_dask.py#L109-L132
             """
+            )
+
+        if delayed and steps_per_file is not uproot._util.unset:
+            warnings.warn(
+                f"""You have set steps_per_file to {steps_per_file}, this should only be used for a
+                small number of inputs (e.g. for early-stage/exploratory analysis) since it does not
+                inform dask of each chunk lengths at creation time, which can cause unexpected
+                slowdowns at scale. If you would like to process larger datasets please specify steps
+                using the appropriate uproot "files" specification:
+                    https://github.com/scikit-hep/uproot5/blob/v5.1.2/src/uproot/_dask.py#L109-L132.
+                """,
+                RuntimeWarning,
             )
 
         if (
@@ -302,42 +316,26 @@ class NanoEventsFactory:
                 version="latest",
             )
 
-            opener = None
+            to_open = file
             if isinstance(file, uproot.reading.ReadOnlyDirectory):
-                opener = partial(
-                    uproot.dask,
-                    file[treepath],
-                    full_paths=True,
-                    open_files=False,
-                    ak_add_doc=True,
-                    filter_branch=_remove_not_interpretable,
-                    steps_per_file=chunks_per_file,
-                    **uproot_options,
-                )
-            elif chunks_per_file is None:
-                opener = partial(
-                    uproot.dask,
-                    file,
-                    full_paths=True,
-                    open_files=False,
-                    ak_add_doc=True,
-                    filter_branch=_remove_not_interpretable,
-                )
-            else:
-                opener = partial(
-                    uproot.dask,
-                    file,
-                    full_paths=True,
-                    open_files=False,
-                    ak_add_doc=True,
-                    filter_branch=_remove_not_interpretable,
-                    steps_per_file=chunks_per_file,
-                    **uproot_options,
-                )
+                to_open = file[treepath]
+
+            opener = partial(
+                uproot.dask,
+                to_open,
+                full_paths=True,
+                open_files=False,
+                ak_add_doc=True,
+                filter_branch=_remove_not_interpretable,
+                steps_per_file=steps_per_file,
+                **uproot_options,
+            )
+
             return cls(map_schema, opener, None, cache=None, is_dask=True)
         elif delayed and not schemaclass.__dask_capable__:
             warnings.warn(
-                f"{schemaclass} is not dask capable despite allowing dask, generating non-dask nanoevents"
+                f"{schemaclass} is not dask capable despite requesting delayed mode, generating non-dask nanoevents",
+                RuntimeWarning,
             )
 
         if isinstance(file, uproot.reading.ReadOnlyDirectory):
