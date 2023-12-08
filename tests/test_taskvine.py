@@ -14,7 +14,7 @@ def histogram_common():
     # "file:/tmp/Run2012B_SingleMu.root",
     events = NanoEventsFactory.from_root(
         {os.path.abspath("tests/samples/nano_dy.root"): "Events"},
-        chunks_per_file=4,
+        steps_per_file=4,
         metadata={"dataset": "SingleMu"},
     ).events()
 

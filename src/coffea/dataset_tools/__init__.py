@@ -8,4 +8,6 @@ __all__ = [
     "apply_to_fileset",
     "max_chunks",
     "slice_chunks",
+    "get_failed_steps_for_dataset",
+    "get_failed_steps_for_fileset",
 ]

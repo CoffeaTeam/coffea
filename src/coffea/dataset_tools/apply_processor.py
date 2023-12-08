@@ -34,29 +34,51 @@ def apply_to_dataset(
     dataset: DatasetSpec | DatasetSpecOptional,
     schemaclass: BaseSchema = NanoAODSchema,
     metadata: dict[Hashable, Any] = {},
+    uproot_options: dict[str, Any] = {},
 ) -> DaskOutputType:
     files = dataset["files"]
     events = NanoEventsFactory.from_root(
         files,
         metadata=metadata,
         schemaclass=schemaclass,
+        uproot_options=uproot_options,
     ).events()
+
+    report = None
+    if isinstance(events, tuple):
+        events, report = events
+
+    out = None
     if isinstance(data_manipulation, ProcessorABC):
-        return data_manipulation.process(events)
+        out = data_manipulation.process(events)
     elif isinstance(data_manipulation, Callable):
-        return data_manipulation(events)
+        out = data_manipulation(events)
     else:
         raise ValueError("data_manipulation must either be a ProcessorABC or Callable")
+
+    if report is not None:
+        return out, report
+    return out
 
 
 def apply_to_fileset(
     data_manipulation: ProcessorABC | GenericHEPAnalysis,
     fileset: FilesetSpec | FilesetSpecOptional,
     schemaclass: BaseSchema = NanoAODSchema,
+    uproot_options: dict[str, Any] = {},
 ) -> dict[str, DaskOutputType]:
     out = {}
+    report = {}
     for name, dataset in fileset.items():
         metadata = copy.deepcopy(dataset.get("metadata", {}))
         metadata.setdefault("dataset", name)
-        out[name] = apply_to_dataset(data_manipulation, dataset, schemaclass, metadata)
+        dataset_out = apply_to_dataset(
+            data_manipulation, dataset, schemaclass, metadata
+        )
+        if isinstance(out, tuple):
+            out[name], report[name] = dataset_out
+        else:
+            out[name] = dataset_out
+    if len(report) > 0:
+        return out, report
     return out
