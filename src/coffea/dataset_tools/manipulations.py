@@ -39,7 +39,7 @@ def get_failed_steps_for_dataset(dataset, report):
     rnames = set(numpy.unique(report.args[:, 0][:, 1:-1:]))
     if not rnames.issubset(fnames):
         raise RuntimeError(
-            f"Files: {rnames - fnames} are not in input dataset, please ensure report correspond to input dataset!"
+            f"Files: {rnames - fnames} are not in input dataset, please ensure report corresponds to input dataset!"
         )
 
     for failure in failures:
@@ -56,10 +56,10 @@ def get_failed_steps_for_dataset(dataset, report):
     return failed_dataset
 
 
-def get_failed_steps_for_fileset(fileset, report):
+def get_failed_steps_for_fileset(fileset, report_dict):
     failed_fileset = {}
     for name, dataset in fileset.items():
-        failed_dataset = get_failed_steps_for_dataset(dataset, report)
+        failed_dataset = get_failed_steps_for_dataset(dataset, report_dict[name])
         if len(failed_dataset) > 0:
             failed_fileset[name] = failed_dataset
     return failed_fileset
