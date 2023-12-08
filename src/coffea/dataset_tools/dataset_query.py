@@ -171,7 +171,8 @@ class DatasetQueryApp(cmd2.Cmd):
     def do_replicas(self, args):
         if len(args.arg_list) == 0:
             print(
-                "[red] Please provide a list of indices of the [bold]selected[/bold] datasets to analyze or [bold]all[/bold] to loop on all the selected datasets"
+                "[red] Please provide a list of indices of the [bold]selected[/bold] datasets "
+                "to analyze or [bold]all[/bold] to loop on all the selected datasets"
             )
             return
 
