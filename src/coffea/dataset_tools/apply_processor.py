@@ -72,11 +72,13 @@ def apply_to_fileset(
     for name, dataset in fileset.items():
         metadata = copy.deepcopy(dataset.get("metadata", {}))
         metadata.setdefault("dataset", name)
-        out = apply_to_dataset(data_manipulation, dataset, schemaclass, metadata)
+        dataset_out = apply_to_dataset(
+            data_manipulation, dataset, schemaclass, metadata
+        )
         if isinstance(out, tuple):
-            out[name], report[name] = out
+            out[name], report[name] = dataset_out
         else:
-            out[name] = out
+            out[name] = dataset_out
     if len(report) > 0:
         return out, report
     return out
