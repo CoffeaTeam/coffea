@@ -165,113 +165,123 @@ class DatasetQueryApp(cmd2.Cmd):
     def do_replicas(self, args):
         if len(args.arg_list) == 0:
             print(
-                "[red] Please provide the index of the [bold]selected[/bold] dataset to analyze or the [bold]full dataset name[/bold]"
+                "[red] Please provide a list of indices of the [bold]selected[/bold] datasets to analyze or [bold]all[/bold] to loop on all the selected datasets"
             )
             return
 
-        if args.isdigit():
-            if int(args) <= len(self.selected_datasets):
-                dataset = self.selected_datasets[int(args) - 1]
-            else:
-                print(
-                    f"[red]The requested dataset is not in the list. Please insert a position <={len(self.selected_datasets)}"
-                )
+        if args == "all":
+            datasets = self.selected_datasets
         else:
-            dataset = args.arg_list[0]
-            # adding it to the selected datasets
-            self.selected_datasets.append(dataset)
+            for index in args.arg_list:
+                if index.isdigit():
+                    if int(index) <= len(self.selected_datasets):
+                        datasets = [self.selected_datasets[int(index) - 1]]
+                    else:
+                        print(
+                            f"[red]The requested dataset is not in the list. Please insert a position <={len(self.selected_datasets)}"
+                        )
 
-        with self.console.status(
-            f"Querying rucio for replicas: [bold red]{dataset}[/]"
-        ):
-            outfiles, outsites, sites_counts = rucio_utils.get_dataset_files_replicas(
-                dataset,
-                allowlist_sites=self.sites_allowlist,
-                blocklist_sites=self.sites_blocklist,
-                regex_sites=self.sites_regex,
-                mode="full",
-                client=self.rucio_client,
+        for dataset in datasets:
+            with self.console.status(
+                f"Querying rucio for replicas: [bold red]{dataset}[/]"
+            ):
+                (
+                    outfiles,
+                    outsites,
+                    sites_counts,
+                ) = rucio_utils.get_dataset_files_replicas(
+                    dataset,
+                    allowlist_sites=self.sites_allowlist,
+                    blocklist_sites=self.sites_blocklist,
+                    regex_sites=self.sites_regex,
+                    mode="full",
+                    client=self.rucio_client,
+                )
+                self.last_replicas_results = (outfiles, outsites, sites_counts)
+            print(f"[cyan]Sites availability for dataset: [red]{dataset}")
+            table = Table(title="Available replicas")
+            table.add_column("Index", justify="center")
+            table.add_column("Site", justify="left", style="cyan", no_wrap=True)
+            table.add_column("Files", style="magenta", no_wrap=True)
+            table.add_column("Availability", justify="center")
+            table.row_styles = ["dim", "none"]
+            Nfiles = len(outfiles)
+
+            sorted_sites = dict(
+                sorted(sites_counts.items(), key=lambda x: x[1], reverse=True)
             )
-            self.last_replicas_results = (outfiles, outsites, sites_counts)
-        print(f"[cyan]Sites availability for dataset: [red]{dataset}")
-        table = Table(title="Available replicas")
-        table.add_column("Index", justify="center")
-        table.add_column("Site", justify="left", style="cyan", no_wrap=True)
-        table.add_column("Files", style="magenta", no_wrap=True)
-        table.add_column("Availability", justify="center")
-        table.row_styles = ["dim", "none"]
-        Nfiles = len(outfiles)
+            for i, (site, stat) in enumerate(sorted_sites.items()):
+                table.add_row(
+                    str(i), site, f"{stat} / {Nfiles}", f"{stat*100/Nfiles:.1f}%"
+                )
 
-        sorted_sites = dict(
-            sorted(sites_counts.items(), key=lambda x: x[1], reverse=True)
-        )
-        for i, (site, stat) in enumerate(sorted_sites.items()):
-            table.add_row(str(i), site, f"{stat} / {Nfiles}", f"{stat*100/Nfiles:.1f}%")
-
-        self.console.print(table)
-        strategy = Prompt.ask(
-            "Select sites",
-            choices=["round-robin", "choice", "quit"],
-            default="round-robin",
-        )
-
-        files_by_site = defaultdict(list)
-
-        if strategy == "choice":
-            ind = list(
-                map(int, Prompt.ask("Enter list of sites index to be used").split(" "))
+            self.console.print(table)
+            strategy = Prompt.ask(
+                "Select sites",
+                choices=["round-robin", "choice", "quit"],
+                default="round-robin",
             )
-            sites_to_use = [list(sorted_sites.keys())[i] for i in ind]
-            print(f"Filtering replicas with [green]: {' '.join(sites_to_use)}")
 
-            output = []
-            for ifile, (files, sites) in enumerate(zip(outfiles, outsites)):
-                random.shuffle(sites_to_use)
-                found = False
-                # loop on shuffled selected sites until one is found
-                for site in sites_to_use:
-                    try:
-                        iS = sites.index(site)
-                        output.append(files[iS])
-                        files_by_site[sites[iS]].append(files[iS])
-                        found = True
-                        break  # keep only one replica
-                    except ValueError:
-                        # if the index is not found just go to the next site
-                        pass
+            files_by_site = defaultdict(list)
 
-                if not found:
-                    print(
-                        f"[bold red]No replica found compatible with sites selection for file #{ifile}. The available sites are:"
+            if strategy == "choice":
+                ind = list(
+                    map(
+                        int,
+                        Prompt.ask("Enter list of sites index to be used").split(" "),
                     )
-                    for f, s in zip(files, sites):
-                        print(f"\t- [green]{s} [cyan]{f}")
-                    return
+                )
+                sites_to_use = [list(sorted_sites.keys())[i] for i in ind]
+                print(f"Filtering replicas with [green]: {' '.join(sites_to_use)}")
 
-            self.replica_results[dataset] = output
+                output = []
+                for ifile, (files, sites) in enumerate(zip(outfiles, outsites)):
+                    random.shuffle(sites_to_use)
+                    found = False
+                    # loop on shuffled selected sites until one is found
+                    for site in sites_to_use:
+                        try:
+                            iS = sites.index(site)
+                            output.append(files[iS])
+                            files_by_site[sites[iS]].append(files[iS])
+                            found = True
+                            break  # keep only one replica
+                        except ValueError:
+                            # if the index is not found just go to the next site
+                            pass
 
-        elif strategy == "round-robin":
-            output = []
-            for ifile, (files, sites) in enumerate(zip(outfiles, outsites)):
-                # selecting randomly from the sites
-                iS = random.randint(0, len(sites) - 1)
-                output.append(files[iS])
-                files_by_site[sites[iS]].append(files[iS])
-            self.replica_results[dataset] = output
+                    if not found:
+                        print(
+                            f"[bold red]No replica found compatible with sites selection for file #{ifile}. The available sites are:"
+                        )
+                        for f, s in zip(files, sites):
+                            print(f"\t- [green]{s} [cyan]{f}")
+                        return
 
-        elif strategy == "quit":
-            print("[orange]Doing nothing...")
-            return
+                self.replica_results[dataset] = output
 
-        self.replica_results_bysite[dataset] = files_by_site
+            elif strategy == "round-robin":
+                output = []
+                for ifile, (files, sites) in enumerate(zip(outfiles, outsites)):
+                    # selecting randomly from the sites
+                    iS = random.randint(0, len(sites) - 1)
+                    output.append(files[iS])
+                    files_by_site[sites[iS]].append(files[iS])
+                self.replica_results[dataset] = output
 
-        # Now let's print the results
-        tree = Tree(label=f"[bold orange]Replicas for [green]{dataset}")
-        for site, files in files_by_site.items():
-            T = tree.add(f"[green]{site}")
-            for f in files:
-                T.add(f"[cyan]{f}")
-        self.console.print(tree)
+            elif strategy == "quit":
+                print("[orange]Doing nothing...")
+                return
+
+            self.replica_results_bysite[dataset] = files_by_site
+
+            # Now let's print the results
+            tree = Tree(label=f"[bold orange]Replicas for [green]{dataset}")
+            for site, files in files_by_site.items():
+                T = tree.add(f"[green]{site}")
+                for f in files:
+                    T.add(f"[cyan]{f}")
+            self.console.print(tree)
 
     def do_allowlist_sites(self, args):
         if self.sites_allowlist is None:
@@ -413,6 +423,14 @@ class DatasetQueryApp(cmd2.Cmd):
 
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--cli", help="Start interactive CLI for dataset discovery", action="store_true"
+    )
+    args = parser.parse_args()
+
     intro_msg = r"""[bold yellow]Welcome to the datasets discovery coffea CLI![/bold yellow]
 Use this CLI tool to query the CMS datasets and to select interactively the grid sites to use for reading the files in your analysis.
 Some basic commands:
@@ -430,8 +448,9 @@ Some basic commands:
   - [bold cyan]preprocess (P) OUTPUTFILE[/]: Preprocess the replicas with dask and save the fileset to the outputfile (yaml or json)
   - [bold cyan]help[/]: get help!
 """
-    console = Console()
-    console.print(intro_msg, justify="left")
 
-    app = DatasetQueryApp()
-    app.cmdloop()
+    if args.cli:
+        console = Console()
+        console.print(intro_msg, justify="left")
+        app = DatasetQueryApp()
+        app.cmdloop()
