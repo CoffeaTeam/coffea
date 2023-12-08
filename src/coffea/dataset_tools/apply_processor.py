@@ -40,7 +40,7 @@ def apply_to_dataset(
     events = NanoEventsFactory.from_root(
         files,
         metadata=metadata,
-        schemaclass=schemaclass,    
+        schemaclass=schemaclass,
         uproot_options=uproot_options,
     ).events()
 
