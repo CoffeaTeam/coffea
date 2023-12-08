@@ -129,16 +129,22 @@ class DatasetQueryApp(cmd2.Cmd):
             print("First [bold red]query (Q)[/] for a dataset")
 
     def do_select(self, args):
+        """Selected the datasets from the list of query results. Input a list of indices of "all"."""
         if not self.last_query_list:
             print("First [bold red]query (Q)[/] for a dataset")
             return
 
         Nresults = len(self.last_query_list)
         print("[cyan]Selected datasets:")
-        for s in map(int, args.arg_list):
-            if s <= Nresults:
-                self.selected_datasets.append(self.last_query_list[s - 1])
-                print(f"- ({s}) {self.last_query_list[s-1]}")
+        if args == "all":
+            indices = range(0, len(self.last_query_list))  # 1 based list
+        else:
+            indices = map(lambda k: int(k) - 1, args.arg_list)
+
+        for s in indices:
+            if s < Nresults:
+                self.selected_datasets.append(self.last_query_list[s])
+                print(f"- ({s+1}) {self.last_query_list[s]}")
             else:
                 print(
                     f"[red]The requested dataset is not in the list. Please insert a position <={Nresults}"
@@ -374,7 +380,7 @@ class DatasetQueryApp(cmd2.Cmd):
         """Perform preprocessing for concrete fileset extraction.
         Args:  output_name [step_size] [align to file cluster boundaries] [dask cluster url]
         """
-        args_list = args.split()
+        args_list = args.arg_list
         if len(args_list) < 1:
             print(
                 "Please provide an output name and optionally a step size, if you want to align to file clusters, or a dask cluster url"
@@ -386,7 +392,7 @@ class DatasetQueryApp(cmd2.Cmd):
             align_to_clusters = False
             dask_url = None
         if len(args_list) >= 2:
-            step_size = args_list[1]
+            step_size = int(args_list[1])
         if len(args_list) >= 3:
             if args_list[2] == "True":
                 align_to_clusters = True
@@ -413,11 +419,13 @@ class DatasetQueryApp(cmd2.Cmd):
                     align_clusters=align_to_clusters,
                     skip_bad_files=True,
                 )
+        from IPython import embed
 
-        with gzip.open(f"{output_file}_available.json.gz", "w") as file:
+        embed()
+        with gzip.open(f"{output_file}_available.json.gz", "wb") as file:
             print(f"Saved available fileset chunks to {output_file}_available.json.gz")
             json.dump(out_available, file, indent=2)
-        with gzip.open(f"{output_file}_all.json.gz", "w") as file:
+        with gzip.open(f"{output_file}_all.json.gz", "wb") as file:
             print(f"Saved all fileset chunks to {output_file}_all.json.gz")
             json.dump(out_updated, file, indent=2)
 
