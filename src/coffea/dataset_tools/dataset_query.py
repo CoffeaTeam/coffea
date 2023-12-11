@@ -548,6 +548,13 @@ Some basic commands:
         query_results_strategy="all",
         replicas_strategy="round-robin",
     ):
+        """
+        Initialize the DataDiscoverCLI by querying a set of datasets defined in `dataset_definitions`
+        and selected results and replicas following the options.
+
+        - query_results_strategy:  "all" or "manual" to be prompt for selection
+        - replicas_strategy: "round-robin", "choose" (to manually choose the sites), "manual": to be prompt for manual decision case by case
+        """
         for dataset_query, dataset_meta in dataset_definition.items():
             print(f"\nProcessing query: {dataset_query}")
             # Adding queries
@@ -617,7 +624,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--step-size", help="Step size for preprocessing", type=int, default=500000
     )
-    parser.add_argument("--dask-cluster", help="Dask cluster url", type=str, default="")
+    parser.add_argument(
+        "--dask-cluster", help="Dask cluster url", type=str, default=None
+    )
     parser.add_argument(
         "-as",
         "--allow-sites",
