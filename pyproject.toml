@@ -88,7 +88,6 @@ servicex = [
 rucio = [
   "rucio-clients>=32;python_version>'3.8'",
   "rucio-clients<32;python_version<'3.9'",
-  "cmd2",
 ]
 dev = [
   "pre-commit",

@@ -3,13 +3,13 @@ import json
 import os
 import random
 from collections import defaultdict
+from typing import List
 
-import cmd2
 import yaml
 from dask.distributed import Client
 from rich import print
 from rich.console import Console
-from rich.prompt import Prompt
+from rich.prompt import Prompt, IntPrompt, Confirm
 from rich.table import Table
 from rich.tree import Tree
 
@@ -50,24 +50,44 @@ def print_dataset_query(query, dataset_list, selected, console):
     console.print(table)
 
 
-class DatasetQueryApp(cmd2.Cmd):
-    prompt = "\033[1;34m" + "cms-datasets" + "\033[0m > "
+def get_indices_query(input_str: str, maxN: int) -> List[int]:
+    tokens = input_str.strip().split(" ")
+    final_tokens = []
+    for t in tokens:
+        if t.isdigit():
+            if int(t) > maxN:
+                print(
+                    f"[red bold]Requested index {t} larger than available elements {maxN}"
+                )
+                return False
+            final_tokens.append(int(t) - 1)  # index 0
+        elif "-" in t:
+            rng = t.split("-")
+            try:
+                for i in range(
+                    int(rng[0]), int(rng[1]) + 1
+                ):  # including the last index
+                    if i > maxN:
+                        print(
+                            f"[red bold]Requested index {t} larger than available elements {maxN}"
+                        )
+                        return False
+                    final_tokens.append(i - 1)
+            except:
+                print(
+                    "[red]Error! Bad formatting for selection string. Use e.g. 1 4 5-9"
+                )
+                return False
+        elif t == "all":
+            final_tokens = list(range(0, maxN))
+        else:
+            print("[red]Error! Bad formatting for selection string. Use e.g. 1 4 5-9")
+            return False
+    return final_tokens
 
+
+class DataDiscoveryCLI:
     def __init__(self):
-        shortcuts = cmd2.DEFAULT_SHORTCUTS
-        shortcuts.update(
-            {
-                "L": "login",
-                "Q": "query",
-                "QR": "query_results",
-                "R": "replicas",
-                "S": "select",
-                "LS": "list_selected",
-                "LR": "list_replicas",
-                "O": "save",
-                "P": "preprocess",
-            }
-        )
         self.console = Console()
         self.rucio_client = None
         self.selected_datasets = []
@@ -81,43 +101,116 @@ class DatasetQueryApp(cmd2.Cmd):
 
         self.replica_results = defaultdict(list)
         self.replica_results_bysite = {}
-        super().__init__(shortcuts=shortcuts)
 
-    def do_login(self, args):
+        self.commands = [
+            "help",
+            "login",
+            "query",
+            "query-results",
+            "select",
+            "list-selected",
+            "replicas",
+            "list-replicas",
+            "save",
+            "preprocess",
+            "allow-sites",
+            "block-sites",
+            "regex-sites",
+            "sites-filters",
+            "quit",
+        ]
+
+    def start_cli(self):
+        while True:
+            command = Prompt.ask(">", choices=self.commands)
+            if command == "help":
+                print(
+                    r"""[bold yellow]Welcome to the datasets discovery coffea CLI![/bold yellow]
+Use this CLI tool to query the CMS datasets and to select interactively the grid sites to use for reading the files in your analysis.
+Some basic commands:
+  - [bold cyan]query (Q)[/]: Look for datasets with * wildcards (like in DAS)
+  - [bold cyan]select (S)[/]: Select datasets to process further from query results
+  - [bold cyan]replicas (R)[/]: Query rucio to look for files replica and then select the preferred sites
+  - [bold cyan]list_selected (LS)[/]: Print a list of the selected datasets
+  - [bold cyan]list_replicas (LR) index[/]: Print the selected files replicas for the selected dataset
+  - [bold cyan]sites_filters[/]: show the active sites filters
+  - [bold cyan]sites_filters clear[/]: clear all the active sites filters
+  - [bold cyan]allowlist_sites[/]: Select sites to allowlist them for replica queries
+  - [bold cyan]blocklist_sites[/]: Select sites to blocklist them for replica queries
+  - [bold cyan]regex_sites[/]: Select sites with a regex for replica queries: please wrap the regex like "T[123]_(FR|IT|BE|CH|DE)_\w+"
+  - [bold cyan]save (O) OUTPUTFILE[/]: Save the replicas results to file (json or yaml) for further processing
+  - [bold cyan]preprocess (P) OUTPUTFILE[/]: Preprocess the replicas with dask and save the fileset to the outputfile (yaml or json)
+  - [bold cyan]help[/]: get help!
+            """
+                )
+            elif command == "login":
+                self.do_login()
+            elif command == "quit":
+                print("Bye!")
+                break
+            elif command == "query":
+                self.do_query()
+            elif command == "query-results":
+                self.do_query_results()
+            elif command == "select":
+                self.do_select()
+            elif command == "list-selected":
+                self.do_list_selected()
+            elif command == "replicas":
+                self.do_replicas()
+            elif command == "list-replicas":
+                self.do_list_replicas()
+            elif command == "save":
+                self.do_save()
+            elif command == "preprocess":
+                self.do_preprocess()
+            elif command == "allow-sites":
+                self.do_allowlist_sites()
+            elif command == "block-sites":
+                self.do_blocklist_sites()
+            elif command == "regex-sites":
+                self.do_regex_sites()
+            elif command == "sites-filters":
+                self.do_sites_filters()
+            else:
+                break
+
+    def do_login(self, proxy=None):
         """Login to the rucio client. Optionally a specific proxy file can be passed to the command.
         If the proxy file is not specified, `voms-proxy-info` is used"""
-        if args:
-            self.rucio_client = rucio_utils.get_rucio_client(args[0])
+        if proxy:
+            self.rucio_client = rucio_utils.get_rucio_client(proxy)
         else:
             self.rucio_client = rucio_utils.get_rucio_client()
-
         print(self.rucio_client)
-        # pprint(self.rucio_client.whoami())
 
-    def do_whoami(self, args):
+    def do_whoami(self):
         # Your code here
         if not self.rucio_client:
             print("First [bold]login (L)[/] to the rucio server")
             return
         print(self.rucio_client.whoami())
 
-    def do_query(self, args):
+    def do_query(self):
         # Your code here
-        with self.console.status(f"Querying rucio for: [bold red]{args}[/]"):
+        query = Prompt.ask(
+            "[yellow bold]Query for[/]",
+        )
+        with self.console.status(f"Querying rucio for: [bold red]{query}[/]"):
             outlist, outtree = rucio_utils.query_dataset(
-                args.arg_list[0],
+                query,
                 client=self.rucio_client,
                 tree=True,
                 scope="cms",  # TODO configure scope
             )
             # Now let's print the results as a tree
-            print_dataset_query(args, outtree, self.selected_datasets, self.console)
-            self.last_query = args
+            print_dataset_query(query, outtree, self.selected_datasets, self.console)
+            self.last_query = query
             self.last_query_list = outlist
             self.last_query_tree = outtree
         print("Use the command [bold red]select (S)[/] to selected the datasets")
 
-    def do_query_results(self, args):
+    def do_query_results(self):
         if self.last_query_list:
             print_dataset_query(
                 self.last_query,
@@ -128,20 +221,24 @@ class DatasetQueryApp(cmd2.Cmd):
         else:
             print("First [bold red]query (Q)[/] for a dataset")
 
-    def do_select(self, args):
-        """Selected the datasets from the list of query results. Input a list of indices of "all"."""
+    def do_select(self):
+        """Selected the datasets from the list of query results. Input a list of indices
+        also with range 4-6 or "all"."""
         if not self.last_query_list:
             print("First [bold red]query (Q)[/] for a dataset")
             return
 
+        selection = Prompt.ask(
+            "[yellow bold]Select datasets indices[/] (e.g 1 4 6-10)", default="all"
+        )
+        final_tokens = get_indices_query(selection, len(self.last_query_list))
+        if not final_tokens:
+            return
+
         Nresults = len(self.last_query_list)
         print("[cyan]Selected datasets:")
-        if args == "all":
-            indices = range(0, len(self.last_query_list))  # 1 based list
-        else:
-            indices = map(lambda k: int(k) - 1, args.arg_list)
 
-        for s in indices:
+        for s in final_tokens:
             if s < Nresults:
                 self.selected_datasets.append(self.last_query_list[s])
                 print(f"- ({s+1}) {self.last_query_list[s]}")
@@ -150,7 +247,7 @@ class DatasetQueryApp(cmd2.Cmd):
                     f"[red]The requested dataset is not in the list. Please insert a position <={Nresults}"
                 )
 
-    def do_list_selected(self, args):
+    def do_list_selected(self):
         print("[cyan]Selected datasets:")
         table = Table(title="Selected datasets")
         table.add_column("Index", justify="left", style="cyan", no_wrap=True)
@@ -168,42 +265,37 @@ class DatasetQueryApp(cmd2.Cmd):
             )
         self.console.print(table)
 
-    def do_replicas(self, args):
-        if len(args.arg_list) == 0:
-            print(
-                "[red] Please provide a list of indices of the [bold]selected[/bold] datasets to analyze or [bold]all[/bold] to loop on all the selected datasets"
-            )
+    def do_replicas(self):
+        selection = Prompt.ask(
+            "[yellow bold]Select datasets indices[/] (e.g 1 4 6-10)", default="all"
+        )
+        indices = get_indices_query(selection, len(self.selected_datasets))
+        if not indices:
             return
-
-        if args == "all":
-            datasets = self.selected_datasets
-        else:
-            for index in args.arg_list:
-                if index.isdigit():
-                    if int(index) <= len(self.selected_datasets):
-                        datasets = [self.selected_datasets[int(index) - 1]]
-                    else:
-                        print(
-                            f"[red]The requested dataset is not in the list. Please insert a position <={len(self.selected_datasets)}"
-                        )
+        datasets = [self.selected_datasets[ind] for ind in indices]
 
         for dataset in datasets:
             with self.console.status(
                 f"Querying rucio for replicas: [bold red]{dataset}[/]"
             ):
-                (
-                    outfiles,
-                    outsites,
-                    sites_counts,
-                ) = rucio_utils.get_dataset_files_replicas(
-                    dataset,
-                    allowlist_sites=self.sites_allowlist,
-                    blocklist_sites=self.sites_blocklist,
-                    regex_sites=self.sites_regex,
-                    mode="full",
-                    client=self.rucio_client,
-                )
+                try:
+                    (
+                        outfiles,
+                        outsites,
+                        sites_counts,
+                    ) = rucio_utils.get_dataset_files_replicas(
+                        dataset,
+                        allowlist_sites=self.sites_allowlist,
+                        blocklist_sites=self.sites_blocklist,
+                        regex_sites=self.sites_regex,
+                        mode="full",
+                        client=self.rucio_client,
+                    )
+                except Exception as e:
+                    print(f"\n[red bold] Exception: {e}[/]")
+                    return
                 self.last_replicas_results = (outfiles, outsites, sites_counts)
+
             print(f"[cyan]Sites availability for dataset: [red]{dataset}")
             table = Table(title="Available replicas")
             table.add_column("Index", justify="center")
@@ -289,122 +381,118 @@ class DatasetQueryApp(cmd2.Cmd):
                     T.add(f"[cyan]{f}")
             self.console.print(tree)
 
-    def do_allowlist_sites(self, args):
+    def do_allowlist_sites(self):
+        sites = Prompt.ask(
+            "[yellow]Restrict the available sites to (comma-separated list)"
+        ).split(",")
         if self.sites_allowlist is None:
-            self.sites_allowlist = args.arg_list
+            self.sites_allowlist = sites
         else:
-            self.sites_allowlist += args.arg_list
+            self.sites_allowlist += sites
         print("[green]Allowlisted sites:")
         for s in self.sites_allowlist:
             print(f"- {s}")
 
-    def do_blocklist_sites(self, args):
+    def do_blocklist_sites(self):
+        sites = Prompt.ask("[yellow]Exclude the sites (comma-separated list)").split(
+            ","
+        )
         if self.sites_blocklist is None:
-            self.sites_blocklist = args.arg_list
+            self.sites_blocklist = sites
         else:
-            self.sites_blocklist += args.arg_list
+            self.sites_blocklist += sites
         print("[red]Blocklisted sites:")
         for s in self.sites_blocklist:
             print(f"- {s}")
 
-    def do_regex_sites(self, args):
-        if args.startswith('"'):
-            args = args[1:]
-        if args.endswith('"'):
-            args = args[:-1]
-        self.sites_regex = rf"{args}"
-        print(f"New sites regex: [cyan]{self.sites_regex}")
+    def do_regex_sites(self):
+        regex = Prompt.ask("[yellow]Regex to restrict the available sites")
+        if len(regex):
+            self.sites_regex = rf"{regex}"
+            print(f"New sites regex: [cyan]{self.sites_regex}")
 
-    def do_sites_filters(self, args):
-        if args == "":
-            print("[green bold]Allow-listed sites:")
-            if self.sites_allowlist:
-                for s in self.sites_allowlist:
-                    print(f"- {s}")
+    def do_sites_filters(self):
+        print("[green bold]Allow-listed sites:")
+        if self.sites_allowlist:
+            for s in self.sites_allowlist:
+                print(f"- {s}")
 
-            print("[bold red]Block-listed sites:")
-            if self.sites_blocklist:
-                for s in self.sites_blocklist:
-                    print(f"- {s}")
+        print("[bold red]Block-listed sites:")
+        if self.sites_blocklist:
+            for s in self.sites_blocklist:
+                print(f"- {s}")
 
-            print(f"[bold cyan]Sites regex: [italics]{self.sites_regex}")
-        if args == "clear":
+        print(f"[bold cyan]Sites regex: [italics]{self.sites_regex}")
+
+        if Confirm.ask("Clear sites restrinction?", default=False):
             self.sites_allowlist = None
             self.sites_blocklist = None
             self.sites_regex = None
             print("[bold green]Sites filters cleared")
 
-    def do_list_replicas(self, args):
-        if len(args.arg_list) == 0:
-            print("[red]Please call the command with the index of a selected dataset")
-        else:
-            if int(args) > len(self.selected_datasets):
+    def do_list_replicas(self):
+        selection = Prompt.ask(
+            "[yellow bold]Select datasets indices[/] (e.g 1 4 6-10)", default="all"
+        )
+        indices = get_indices_query(selection, len(self.selected_datasets))
+        datasets = [self.selected_datasets[ind] for ind in indices]
+
+        for dataset in datasets:
+            if dataset not in self.replica_results:
                 print(
-                    f"[red] Select the replica with index < {len(self.selected_datasets)}"
+                    f"[red bold]No replica info for dataset {dataset}. You need to selected the replicas with [cyan] replicas [/cyan] command[/]"
                 )
                 return
-            else:
-                dataset = self.selected_datasets[int(args) - 1]
-                if dataset not in self.replica_results:
-                    print(
-                        f"[red bold]No replica info for dataset {dataset}. You need to selected the replicas with [cyan] replicas {args}"
-                    )
-                    return
-                tree = Tree(label=f"[bold orange]Replicas for [green]{dataset}")
+            tree = Tree(label=f"[bold orange]Replicas for [/][green]{dataset}[/]")
+            for site, files in self.replica_results_bysite[dataset].items():
+                T = tree.add(f"[green]{site}")
+                for f in files:
+                    T.add(f"[cyan]{f}")
 
-                for site, files in self.replica_results_bysite[dataset].items():
-                    T = tree.add(f"[green]{site}")
-                    for f in files:
-                        T.add(f"[cyan]{f}")
+            self.console.print(tree)
 
-                self.console.print(tree)
-
-    def do_save(self, args):
+    def do_save(self, filename=None):
         """Save the replica information in yaml format"""
-        if not len(args):
-            print("[red]Please provide an output filename and format")
-            return
-        format = os.path.splitext(args)[1]
+        if not filename:
+            filename = Prompt.ask(
+                "[yellow bold]Output file name (.yaml or .json)", default="output.json"
+            )
+        format = os.path.splitext(filename)[1]
         output = {}
         for fileset, files in self.replica_results.items():
             output[fileset] = {"files": files, "metadata": {}}
-
-        with open(args, "w") as file:
+        with open(filename, "w") as file:
             if format == ".yaml":
                 yaml.dump(output, file, default_flow_style=False)
             elif format == ".json":
                 json.dump(output, file, indent=2)
-        print(f"[green]File {args} saved!")
+        print(f"[green]File {filename} saved!")
 
-    def do_preprocess(self, args):
+    def do_preprocess(
+        self,
+        output_file=None,
+        step_size=None,
+        align_to_clusters=None,
+        dask_cluster=None,
+    ):
         """Perform preprocessing for concrete fileset extraction.
-        Args:  output_name [step_size] [align to file cluster boundaries] [dask cluster url]
+        Args:  output_file [step_size] [align to file cluster boundaries] [dask cluster url]
         """
-        args_list = args.arg_list
-        if len(args_list) < 1:
-            print(
-                "Please provide an output name and optionally a step size, if you want to align to file clusters, or a dask cluster url"
+        if not output_file:
+            output_file = Prompt.ask(
+                "[yellow bold]Output name", default="output_preprocessing"
             )
-            return
-        else:
-            output_file = args_list[0]
-            step_size = None
-            align_to_clusters = False
-            dask_url = None
-        if len(args_list) >= 2:
-            step_size = int(args_list[1])
-        if len(args_list) >= 3:
-            if args_list[2] == "True":
-                align_to_clusters = True
-            elif args_list[2] == "False":
-                align_to_clusters = False
-            else:
-                raise ValueError('align_to_clusters must be either "True" or "False"')
-        if len(args_list) == 4:
-            dask_url = args_list[3]
-        if len(args_list) > 4:
-            print("preprocess accepts at most 3 commandline arguments!")
-            return
+        if not step_size:
+            step_size = IntPrompt.ask("[yellow bold]Step size", default=None)
+        if align_to_clusters is None:
+            align_to_clusters = Confirm.ask(
+                "[yellow bold]Align to clusters", default=True
+            )
+        if not dask_cluster:
+            dask_cluster = Prompt.ask("[yellow bold]Dask cluster url", default="None")
+            if dask_cluster == "None":
+                dask_cluster = None
+
         replicas = {}
         for fileset, files in self.replica_results.items():
             replicas[fileset] = {"files": {f: "Events" for f in files}, "metadata": {}}
@@ -412,53 +500,21 @@ class DatasetQueryApp(cmd2.Cmd):
         with self.console.status(
             "[red] Preprocessing files to extract available chunks with dask[/]"
         ):
-            with Client(dask_url) as _:
+            with Client(dask_cluster) as _:
                 out_available, out_updated = preprocess(
                     replicas,
                     maybe_step_size=step_size,
                     align_clusters=align_to_clusters,
                     skip_bad_files=True,
                 )
-        from IPython import embed
-
-        embed()
-        with gzip.open(f"{output_file}_available.json.gz", "wb") as file:
+        with gzip.open(f"{output_file}_available.json.gz", "wt") as file:
             print(f"Saved available fileset chunks to {output_file}_available.json.gz")
             json.dump(out_available, file, indent=2)
-        with gzip.open(f"{output_file}_all.json.gz", "wb") as file:
+        with gzip.open(f"{output_file}_all.json.gz", "wt") as file:
             print(f"Saved all fileset chunks to {output_file}_all.json.gz")
             json.dump(out_updated, file, indent=2)
 
 
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--cli", help="Start interactive CLI for dataset discovery", action="store_true"
-    )
-    args = parser.parse_args()
-
-    intro_msg = r"""[bold yellow]Welcome to the datasets discovery coffea CLI![/bold yellow]
-Use this CLI tool to query the CMS datasets and to select interactively the grid sites to use for reading the files in your analysis.
-Some basic commands:
-  - [bold cyan]query (Q)[/]: Look for datasets with * wildcards (like in DAS)
-  - [bold cyan]select (S)[/]: Select datasets to process further from query results
-  - [bold cyan]replicas (R)[/]: Query rucio to look for files replica and then select the preferred sites
-  - [bold cyan]list_selected (LS)[/]: Print a list of the selected datasets
-  - [bold cyan]list_replicas (LR) index[/]: Print the selected files replicas for the selected dataset
-  - [bold cyan]sites_filters[/]: show the active sites filters
-  - [bold cyan]sites_filters clear[/]: clear all the active sites filters
-  - [bold cyan]allowlist_sites[/]: Select sites to allowlist them for replica queries
-  - [bold cyan]blocklist_sites[/]: Select sites to blocklist them for replica queries
-  - [bold cyan]regex_sites[/]: Select sites with a regex for replica queries: please wrap the regex like "T[123]_(FR|IT|BE|CH|DE)_\w+"
-  - [bold cyan]save (O) OUTPUTFILE[/]: Save the replicas results to file (json or yaml) for further processing
-  - [bold cyan]preprocess (P) OUTPUTFILE[/]: Preprocess the replicas with dask and save the fileset to the outputfile (yaml or json)
-  - [bold cyan]help[/]: get help!
-"""
-
-    if args.cli:
-        console = Console()
-        console.print(intro_msg, justify="left")
-        app = DatasetQueryApp()
-        app.cmdloop()
+    cli = DataDiscoveryCLI()
+    cli.start_cli()
