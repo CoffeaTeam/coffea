@@ -278,7 +278,7 @@ Some basic commands:
         """Query Rucio for replicas.
         Mode: - None:  ask the user about the mode
               - round-robin (take files randomly from available sites),
-              - choice: ask the user to choose the specific site
+              - choose: ask the user to choose the specific site
         """
         if selection is None:
             selection = Prompt.ask(
@@ -335,13 +335,13 @@ Some basic commands:
             if mode is None:
                 mode = Prompt.ask(
                     "Select sites",
-                    choices=["round-robin", "choice", "quit"],
+                    choices=["round-robin", "choose", "quit"],
                     default="round-robin",
                 )
 
             files_by_site = defaultdict(list)
 
-            if mode == "choice":
+            if mode == "choose":
                 ind = list(
                     map(
                         int,
@@ -432,7 +432,7 @@ Some basic commands:
             self.sites_regex = rf"{regex}"
             print(f"New sites regex: [cyan]{self.sites_regex}")
 
-    def do_sites_filters(self):
+    def do_sites_filters(self, ask_clear=True):
         print("[green bold]Allow-listed sites:")
         if self.sites_allowlist:
             for s in self.sites_allowlist:
@@ -445,11 +445,12 @@ Some basic commands:
 
         print(f"[bold cyan]Sites regex: [italics]{self.sites_regex}")
 
-        if Confirm.ask("Clear sites restrinction?", default=False):
-            self.sites_allowlist = None
-            self.sites_blocklist = None
-            self.sites_regex = None
-            print("[bold green]Sites filters cleared")
+        if ask_clear:
+            if Confirm.ask("Clear sites restrinction?", default=False):
+                self.sites_allowlist = None
+                self.sites_blocklist = None
+                self.sites_regex = None
+                print("[bold green]Sites filters cleared")
 
     def do_list_replicas(self):
         selection = Prompt.ask(
@@ -506,13 +507,13 @@ Some basic commands:
             output_file = Prompt.ask(
                 "[yellow bold]Output name", default="output_preprocessing"
             )
-        if not step_size:
+        if step_size is None:
             step_size = IntPrompt.ask("[yellow bold]Step size", default=None)
         if align_to_clusters is None:
             align_to_clusters = Confirm.ask(
                 "[yellow bold]Align to clusters", default=True
             )
-        if not dask_cluster:
+        if dask_cluster is None:
             dask_cluster = Prompt.ask("[yellow bold]Dask cluster url", default="None")
             if dask_cluster == "None":
                 dask_cluster = None
@@ -557,11 +558,26 @@ if __name__ == "__main__":
     parser.add_argument(
         "-o",
         "--output",
+        help="Output name for dataset discovery output (no fileset preprocessing)",
+        type=str,
+        required=False,
+        default="output_dataset",
+    )
+    parser.add_argument(
+        "-fo",
+        "--fileset-output",
         help="Output name for fileset",
         type=str,
         required=False,
         default="output_fileset",
     )
+    parser.add_argument(
+        "-p", "--preprocess", help="Preprocess with dask", action="store_true"
+    )
+    parser.add_argument(
+        "--step-size", help="Step size for preprocessing", type=int, default=500000
+    )
+    parser.add_argument("--dask-cluster", help="Dask cluster url", type=str, default="")
     parser.add_argument(
         "-as",
         "--allow-sites",
@@ -583,14 +599,27 @@ if __name__ == "__main__":
         type=str,
     )
     parser.add_argument(
+        "--query-results-strategy",
+        help="Mode for query results selection: [all|manual]",
+        type=str,
+        default="all",
+    )
+    parser.add_argument(
         "--replicas-strategy",
-        help="Mode for selecting replicas for datasets: [manual|round-robin|choice]",
+        help="Mode for selecting replicas for datasets: [manual|round-robin|choose]",
         default="round-robin",
         required=False,
     )
     args = parser.parse_args()
 
     cli = DataDiscoveryCLI()
+
+    if args.allow_sites:
+        cli.sites_allowlist = args.allow_sites
+    if args.block_sites:
+        cli.sites_blocklist = args.block_sites
+    if args.regex_sites:
+        cli.sites_regex = args.regex_sites
 
     if args.dataset_definition:
         # Load the dataset definition if present:
@@ -603,32 +632,45 @@ if __name__ == "__main__":
             cli.do_query(dataset_query)
             # Now selecting the results depending on the interactive mode or not.
             # Metadata are passed to the selection function to associated them with the selected dataset.
-            cli.do_select(selection="all", metadata=dataset_meta)
+            if args.query_results_strategy not in ["all", "manual"]:
+                print(
+                    "Invalid query-results-strategy option: please choose between: manual|all"
+                )
+                exit(1)
+            elif args.query_results_strategy == "manual":
+                cli.do_select(selection=None, metadata=dataset_meta)
+            else:
+                cli.do_select(selection="all", metadata=dataset_meta)
 
         # Now list all
         cli.do_list_selected()
 
-        if args.allow_sites:
-            cli.sites_allowlist = args.allow_sites
-        if args.block_sites:
-            cli.sites_blocklist = args.block_sites
-        if args.regex_sites:
-            cli.sites_regex = args.regex_sites
-
         # selecting replicas
+        cli.do_sites_filters(ask_clear=False)
+        print("Getting replicas")
         if args.replicas_strategy == "manual":
             cli.do_replicas(mode=None, selection="all")
         else:
-            if args.replicas_strategy not in ["round-robin", "choice"]:
+            if args.replicas_strategy not in ["round-robin", "choose"]:
                 print(
-                    "Invalid replicas-strategy: please choice between manual|round-robin|choice"
+                    "Invalid replicas-strategy: please choose between manual|round-robin|choose"
                 )
                 exit(1)
             cli.do_replicas(mode=args.replicas_strategy, selection="all")
 
         # Now list all
         cli.do_list_selected()
-        print("CIAO")
+
+        # Save
+        if args.output:
+            cli.do_save(filename=args.output)
+        if args.preprocess:
+            cli.do_preprocess(
+                output_file=args.fileset_output,
+                step_size=args.step_size,
+                dask_cluster=args.dask_cluster,
+                align_to_clusters=False,
+            )
 
     if args.cli:
         cli.start_cli()
