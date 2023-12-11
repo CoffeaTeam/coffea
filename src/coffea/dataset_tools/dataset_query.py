@@ -1,3 +1,4 @@
+import argparse
 import gzip
 import json
 import os
@@ -6,7 +7,6 @@ from collections import defaultdict
 from typing import List
 
 import yaml
-import argparse
 from dask.distributed import Client
 from rich import print
 from rich.console import Console
@@ -594,7 +594,7 @@ if __name__ == "__main__":
 
     if args.dataset_definition:
         # Load the dataset definition if present:
-        with open(args.dataset_definition, "r") as file:
+        with open(args.dataset_definition) as file:
             dataset_definition = json.load(file)
 
         for dataset_query, dataset_meta in dataset_definition.items():
