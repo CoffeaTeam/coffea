@@ -73,7 +73,7 @@ def get_indices_query(input_str: str, maxN: int) -> List[int]:
                         )
                         return False
                     final_tokens.append(i - 1)
-            except:
+            except Exception:
                 print(
                     "[red]Error! Bad formatting for selection string. Use e.g. 1 4 5-9"
                 )
