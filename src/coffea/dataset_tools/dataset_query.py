@@ -18,7 +18,7 @@ from . import rucio_utils
 from .preprocess import preprocess
 
 
-def print_dataset_query(query, dataset_list, selected, console):
+def print_dataset_query(query, dataset_list, console, selected=[]):
     table = Table(title=f"Query: [bold red]{query}")
     table.add_column("Name", justify="left", style="cyan", no_wrap=True)
     table.add_column("Tag", style="magenta", no_wrap=True)
@@ -208,19 +208,19 @@ Some basic commands:
                 scope="cms",  # TODO configure scope
             )
             # Now let's print the results as a tree
-            print_dataset_query(query, outtree, self.selected_datasets, self.console)
+            print_dataset_query(query, outtree, self.console, self.selected_datasets)
             self.last_query = query
             self.last_query_list = outlist
             self.last_query_tree = outtree
-        print("Use the command [bold red]select (S)[/] to selected the datasets")
+        print("Use the command [bold red]select[/] to selected the datasets")
 
     def do_query_results(self):
         if self.last_query_list:
             print_dataset_query(
                 self.last_query,
                 self.last_query_tree,
-                self.selected_datasets,
                 self.console,
+                self.selected_datasets,
             )
         else:
             print("First [bold red]query (Q)[/] for a dataset")
@@ -402,10 +402,11 @@ Some basic commands:
                     T.add(f"[cyan]{f}")
             self.console.print(tree)
 
-    def do_allowlist_sites(self):
-        sites = Prompt.ask(
-            "[yellow]Restrict the available sites to (comma-separated list)"
-        ).split(",")
+    def do_allowlist_sites(self, sites=None):
+        if sites is None:
+            sites = Prompt.ask(
+                "[yellow]Restrict the available sites to (comma-separated list)"
+            ).split(",")
         if self.sites_allowlist is None:
             self.sites_allowlist = sites
         else:
@@ -414,10 +415,11 @@ Some basic commands:
         for s in self.sites_allowlist:
             print(f"- {s}")
 
-    def do_blocklist_sites(self):
-        sites = Prompt.ask("[yellow]Exclude the sites (comma-separated list)").split(
-            ","
-        )
+    def do_blocklist_sites(self, sites=None):
+        if sites is None:
+            sites = Prompt.ask(
+                "[yellow]Exclude the sites (comma-separated list)"
+            ).split(",")
         if self.sites_blocklist is None:
             self.sites_blocklist = sites
         else:
@@ -426,8 +428,9 @@ Some basic commands:
         for s in self.sites_blocklist:
             print(f"- {s}")
 
-    def do_regex_sites(self):
-        regex = Prompt.ask("[yellow]Regex to restrict the available sites")
+    def do_regex_sites(self, regex=None):
+        if regex is None:
+            regex = Prompt.ask("[yellow]Regex to restrict the available sites")
         if len(regex):
             self.sites_regex = rf"{regex}"
             print(f"New sites regex: [cyan]{self.sites_regex}")
@@ -513,10 +516,6 @@ Some basic commands:
             align_to_clusters = Confirm.ask(
                 "[yellow bold]Align to clusters", default=True
             )
-        if dask_cluster is None:
-            dask_cluster = Prompt.ask("[yellow bold]Dask cluster url", default="None")
-            if dask_cluster == "None":
-                dask_cluster = None
 
         replicas = {}
         for fileset, files in self.replica_results.items():
@@ -541,6 +540,47 @@ Some basic commands:
         with gzip.open(f"{output_file}_all.json.gz", "wt") as file:
             print(f"Saved all fileset chunks to {output_file}_all.json.gz")
             json.dump(out_updated, file, indent=2)
+        return out_updated
+
+    def load_dataset_definition(
+        self,
+        dataset_definition,
+        query_results_strategy="all",
+        replicas_strategy="round-robin",
+    ):
+        for dataset_query, dataset_meta in dataset_definition.items():
+            print(f"\nProcessing query: {dataset_query}")
+            # Adding queries
+            self.do_query(dataset_query)
+            # Now selecting the results depending on the interactive mode or not.
+            # Metadata are passed to the selection function to associated them with the selected dataset.
+            if query_results_strategy not in ["all", "manual"]:
+                print(
+                    "Invalid query-results-strategy option: please choose between: manual|all"
+                )
+                exit(1)
+            elif query_results_strategy == "manual":
+                self.do_select(selection=None, metadata=dataset_meta)
+            else:
+                self.do_select(selection="all", metadata=dataset_meta)
+
+        # Now list all
+        self.do_list_selected()
+
+        # selecting replicas
+        self.do_sites_filters(ask_clear=False)
+        print("Getting replicas")
+        if replicas_strategy == "manual":
+            self.do_replicas(mode=None, selection="all")
+        else:
+            if replicas_strategy not in ["round-robin", "choose"]:
+                print(
+                    "Invalid replicas-strategy: please choose between manual|round-robin|choose"
+                )
+                exit(1)
+            self.do_replicas(mode=replicas_strategy, selection="all")
+        # Now list all
+        self.do_list_selected()
 
 
 if __name__ == "__main__":
@@ -622,49 +662,17 @@ if __name__ == "__main__":
         cli.sites_regex = args.regex_sites
 
     if args.dataset_definition:
-        # Load the dataset definition if present:
         with open(args.dataset_definition) as file:
-            dataset_definition = json.load(file)
-
-        for dataset_query, dataset_meta in dataset_definition.items():
-            print(f"\nProcessing query: {dataset_query}")
-            # Adding queries
-            cli.do_query(dataset_query)
-            # Now selecting the results depending on the interactive mode or not.
-            # Metadata are passed to the selection function to associated them with the selected dataset.
-            if args.query_results_strategy not in ["all", "manual"]:
-                print(
-                    "Invalid query-results-strategy option: please choose between: manual|all"
-                )
-                exit(1)
-            elif args.query_results_strategy == "manual":
-                cli.do_select(selection=None, metadata=dataset_meta)
-            else:
-                cli.do_select(selection="all", metadata=dataset_meta)
-
-        # Now list all
-        cli.do_list_selected()
-
-        # selecting replicas
-        cli.do_sites_filters(ask_clear=False)
-        print("Getting replicas")
-        if args.replicas_strategy == "manual":
-            cli.do_replicas(mode=None, selection="all")
-        else:
-            if args.replicas_strategy not in ["round-robin", "choose"]:
-                print(
-                    "Invalid replicas-strategy: please choose between manual|round-robin|choose"
-                )
-                exit(1)
-            cli.do_replicas(mode=args.replicas_strategy, selection="all")
-
-        # Now list all
-        cli.do_list_selected()
-
+            dd = json.load(file)
+        cli.load_dataset_definition(
+            dd,
+            query_results_strategy=args.query_results_strategy,
+            replicas_strategy=args.replicas_strategy,
+        )
         # Save
         if args.output:
             cli.do_save(filename=args.output)
-        if args.preprocess:
+        if preprocess:
             cli.do_preprocess(
                 output_file=args.fileset_output,
                 step_size=args.step_size,

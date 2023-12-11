@@ -271,11 +271,32 @@ def get_dataset_files_replicas(
     return outfiles, outsites, sites_counts
 
 
-def query_dataset(query, client=None, tree=False, scope="cms"):
+def query_dataset(
+    query: str, client=None, tree: bool = False, datatype="container", scope="cms"
+):
+    """
+    This function uses the rucio client to query for containers or datasets.
+
+    Parameters
+    ---------
+        query: str = query to filter datasets / containers with the rucio list_dids functions
+        client: rucio client
+        tree: bool = if True return the results splitting the dataset name in parts parts
+        datatype: "container/dataset":  rucio terminology. "Container"==CMS dataset. "Dataset" == CMS block.
+        scope: "cms". Rucio instance
+
+    Returns
+    -------
+       list of containers/datasets
+
+       if tree==True, returns the list of dataset and also a dictionary decomposing the datasets
+       names in the 1st commond part and a list of available 2nd parts.
+
+    """
     client = client if client else get_rucio_client()
     out = list(
         client.list_dids(
-            scope=scope, filters={"name": query, "type": "container"}, long=False
+            scope=scope, filters={"name": query, "type": datatype}, long=False
         )
     )
     if tree:
