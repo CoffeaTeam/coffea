@@ -6,6 +6,7 @@ from collections import defaultdict
 from typing import List
 
 import yaml
+import argparse
 from dask.distributed import Client
 from rich import print
 from rich.console import Console
@@ -91,6 +92,7 @@ class DataDiscoveryCLI:
         self.console = Console()
         self.rucio_client = None
         self.selected_datasets = []
+        self.selected_datasets_metadata = []
         self.last_query = ""
         self.last_query_tree = None
         self.last_query_list = None
@@ -100,6 +102,7 @@ class DataDiscoveryCLI:
         self.last_replicas_results = None
 
         self.replica_results = defaultdict(list)
+        self.replica_results_metadata = {}
         self.replica_results_bysite = {}
 
         self.commands = [
@@ -191,11 +194,12 @@ Some basic commands:
             return
         print(self.rucio_client.whoami())
 
-    def do_query(self):
+    def do_query(self, query=None):
         # Your code here
-        query = Prompt.ask(
-            "[yellow bold]Query for[/]",
-        )
+        if query is None:
+            query = Prompt.ask(
+                "[yellow bold]Query for[/]",
+            )
         with self.console.status(f"Querying rucio for: [bold red]{query}[/]"):
             outlist, outtree = rucio_utils.query_dataset(
                 query,
@@ -221,16 +225,17 @@ Some basic commands:
         else:
             print("First [bold red]query (Q)[/] for a dataset")
 
-    def do_select(self):
+    def do_select(self, selection=None, metadata=None):
         """Selected the datasets from the list of query results. Input a list of indices
         also with range 4-6 or "all"."""
         if not self.last_query_list:
             print("First [bold red]query (Q)[/] for a dataset")
             return
 
-        selection = Prompt.ask(
-            "[yellow bold]Select datasets indices[/] (e.g 1 4 6-10)", default="all"
-        )
+        if selection is None:
+            selection = Prompt.ask(
+                "[yellow bold]Select datasets indices[/] (e.g 1 4 6-10)", default="all"
+            )
         final_tokens = get_indices_query(selection, len(self.last_query_list))
         if not final_tokens:
             return
@@ -241,6 +246,10 @@ Some basic commands:
         for s in final_tokens:
             if s < Nresults:
                 self.selected_datasets.append(self.last_query_list[s])
+                if metadata:
+                    self.selected_datasets_metadata.append(metadata)
+                else:
+                    self.selected_datasets_metadata.append({})
                 print(f"- ({s+1}) {self.last_query_list[s]}")
             else:
                 print(
@@ -265,16 +274,25 @@ Some basic commands:
             )
         self.console.print(table)
 
-    def do_replicas(self):
-        selection = Prompt.ask(
-            "[yellow bold]Select datasets indices[/] (e.g 1 4 6-10)", default="all"
-        )
+    def do_replicas(self, mode=None, selection=None):
+        """Query Rucio for replicas.
+        Mode: - None:  ask the user about the mode
+              - round-robin (take files randomly from available sites),
+              - choice: ask the user to choose the specific site
+        """
+        if selection is None:
+            selection = Prompt.ask(
+                "[yellow bold]Select datasets indices[/] (e.g 1 4 6-10)", default="all"
+            )
         indices = get_indices_query(selection, len(self.selected_datasets))
         if not indices:
             return
-        datasets = [self.selected_datasets[ind] for ind in indices]
+        datasets = [
+            (self.selected_datasets[ind], self.selected_datasets_metadata[ind])
+            for ind in indices
+        ]
 
-        for dataset in datasets:
+        for dataset, dataset_metadata in datasets:
             with self.console.status(
                 f"Querying rucio for replicas: [bold red]{dataset}[/]"
             ):
@@ -314,15 +332,16 @@ Some basic commands:
                 )
 
             self.console.print(table)
-            strategy = Prompt.ask(
-                "Select sites",
-                choices=["round-robin", "choice", "quit"],
-                default="round-robin",
-            )
+            if mode is None:
+                mode = Prompt.ask(
+                    "Select sites",
+                    choices=["round-robin", "choice", "quit"],
+                    default="round-robin",
+                )
 
             files_by_site = defaultdict(list)
 
-            if strategy == "choice":
+            if mode == "choice":
                 ind = list(
                     map(
                         int,
@@ -357,8 +376,9 @@ Some basic commands:
                         return
 
                 self.replica_results[dataset] = output
+                self.replica_results_metadata[dataset] = dataset_metadata
 
-            elif strategy == "round-robin":
+            elif mode == "round-robin":
                 output = []
                 for ifile, (files, sites) in enumerate(zip(outfiles, outsites)):
                     # selecting randomly from the sites
@@ -366,8 +386,9 @@ Some basic commands:
                     output.append(files[iS])
                     files_by_site[sites[iS]].append(files[iS])
                 self.replica_results[dataset] = output
+                self.replica_results_metadata[dataset] = dataset_metadata
 
-            elif strategy == "quit":
+            elif mode == "quit":
                 print("[orange]Doing nothing...")
                 return
 
@@ -460,7 +481,10 @@ Some basic commands:
         format = os.path.splitext(filename)[1]
         output = {}
         for fileset, files in self.replica_results.items():
-            output[fileset] = {"files": files, "metadata": {}}
+            output[fileset] = {
+                "files": files,
+                "metadata": self.replica_results_metadata[fileset],
+            }
         with open(filename, "w") as file:
             if format == ".yaml":
                 yaml.dump(output, file, default_flow_style=False)
@@ -495,7 +519,10 @@ Some basic commands:
 
         replicas = {}
         for fileset, files in self.replica_results.items():
-            replicas[fileset] = {"files": {f: "Events" for f in files}, "metadata": {}}
+            replicas[fileset] = {
+                "files": {f: "Events" for f in files},
+                "metadata": self.replica_results_metadata[fileset],
+            }
         # init a local Dask cluster
         with self.console.status(
             "[red] Preprocessing files to extract available chunks with dask[/]"
@@ -516,5 +543,92 @@ Some basic commands:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--cli", help="Start the dataset discovery CLI", action="store_true"
+    )
+    parser.add_argument(
+        "-d",
+        "--dataset-definition",
+        help="Dataset definition file",
+        type=str,
+        required=False,
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        help="Output name for fileset",
+        type=str,
+        required=False,
+        default="output_fileset",
+    )
+    parser.add_argument(
+        "-as",
+        "--allow-sites",
+        help="List of sites to be allowlisted",
+        nargs="+",
+        type=str,
+    )
+    parser.add_argument(
+        "-bs",
+        "--block-sites",
+        help="List of sites to be blocklisted",
+        nargs="+",
+        type=str,
+    )
+    parser.add_argument(
+        "-rs",
+        "--regex-sites",
+        help="Regex string to be used to filter the sites",
+        type=str,
+    )
+    parser.add_argument(
+        "--replicas-strategy",
+        help="Mode for selecting replicas for datasets: [manual|round-robin|choice]",
+        default="round-robin",
+        required=False,
+    )
+    args = parser.parse_args()
+
     cli = DataDiscoveryCLI()
-    cli.start_cli()
+
+    if args.dataset_definition:
+        # Load the dataset definition if present:
+        with open(args.dataset_definition, "r") as file:
+            dataset_definition = json.load(file)
+
+        for dataset_query, dataset_meta in dataset_definition.items():
+            print(f"\nProcessing query: {dataset_query}")
+            # Adding queries
+            cli.do_query(dataset_query)
+            # Now selecting the results depending on the interactive mode or not.
+            # Metadata are passed to the selection function to associated them with the selected dataset.
+            cli.do_select(selection="all", metadata=dataset_meta)
+
+        # Now list all
+        cli.do_list_selected()
+
+        if args.allow_sites:
+            cli.sites_allowlist = args.allow_sites
+        if args.block_sites:
+            cli.sites_blocklist = args.block_sites
+        if args.regex_sites:
+            cli.sites_regex = args.regex_sites
+
+        # selecting replicas
+        if args.replicas_strategy == "manual":
+            cli.do_replicas(mode=None, selection="all")
+        else:
+            if args.replicas_strategy not in ["round-robin", "choice"]:
+                print(
+                    "Invalid replicas-strategy: please choice between manual|round-robin|choice"
+                )
+                exit(1)
+            cli.do_replicas(mode=args.replicas_strategy, selection="all")
+
+        # Now list all
+        cli.do_list_selected()
+        print("CIAO")
+
+    if args.cli:
+        cli.start_cli()
