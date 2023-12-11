@@ -290,7 +290,7 @@ def query_dataset(
        list of containers/datasets
 
        if tree==True, returns the list of dataset and also a dictionary decomposing the datasets
-       names in the 1st commond part and a list of available 2nd parts.
+       names in the 1st command part and a list of available 2nd parts.
 
     """
     client = client if client else get_rucio_client()
