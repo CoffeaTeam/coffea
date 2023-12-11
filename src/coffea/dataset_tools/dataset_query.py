@@ -9,7 +9,7 @@ import yaml
 from dask.distributed import Client
 from rich import print
 from rich.console import Console
-from rich.prompt import Prompt, IntPrompt, Confirm
+from rich.prompt import Confirm, IntPrompt, Prompt
 from rich.table import Table
 from rich.tree import Tree
 
