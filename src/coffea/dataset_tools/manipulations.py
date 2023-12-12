@@ -30,11 +30,11 @@ def get_failed_steps_for_dataset(dataset, report):
             "step specification is not completely in starts/stops form, failed-step extraction is not available for steps_per_file."
         )
 
-    for fdesc in dataset.values():
-        config = list(fdesc.values())[0]
-        if "steps" not in config:
+    for fname, fdesc in dataset["files"].items():
+        if "steps" not in fdesc:
             raise RuntimeError(
-                "steps specification not found in dataset, please specify steps in input dataset."
+                f"steps specification not found in file description for {fname}, "
+                "please specify steps consistently in input dataset."
             )
 
     fnames = set(dataset["files"].keys())
