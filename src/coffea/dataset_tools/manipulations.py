@@ -1,14 +1,47 @@
+from __future__ import annotations
+
 import copy
+from typing import Any
 
 import awkward
 import numpy
 
+from coffea.dataset_tools.preprocess import DatasetSpec, FilesetSpec
 
-def max_chunks(fileset, maxchunks=None):
+
+def max_chunks(fileset: FilesetSpec, maxchunks: int | None = None) -> FilesetSpec:
+    """
+    Modify the input dataset so that only the first "maxchunks" chunks of each file will be processed.
+    Parameters
+    ----------
+        fileset: FilesetSpec
+            The set of datasets reduce to max-chunks row-ranges.
+        maxchunks: int | None, default None
+            How many chunks to keep for each file.
+
+    Returns
+    -------
+        out : FilesetSpec
+            The reduced fileset with only the first maxchunks event ranges left in.
+    """
     return slice_chunks(fileset, slice(maxchunks))
 
 
-def slice_chunks(fileset, theslice=slice(None)):
+def slice_chunks(fileset: FilesetSpec, theslice: Any = slice(None)) -> FilesetSpec:
+    """
+    Modify the input dataset so that only the chunks of each file specified by the input slice are processed.
+    Parameters
+    ----------
+        fileset: FilesetSpec
+            The set of datasets to be sliced.
+        theslice: Any, default slice(None)
+            How to slice the array of row-ranges (steps) in the input fileset.
+
+    Returns
+    -------
+        out : FilesetSpec
+            The reduce fileset with only the row-ranges specific by theslice left.
+    """
     if not isinstance(theslice, slice):
         theslice = slice(theslice)
 
@@ -20,7 +53,23 @@ def slice_chunks(fileset, theslice=slice(None)):
     return out
 
 
-def get_failed_steps_for_dataset(dataset, report):
+def get_failed_steps_for_dataset(
+    dataset: DatasetSpec, report: awkward.Array
+) -> DatasetSpec:
+    """
+    Modify an input dataset to only contain the files and row-ranges for *failed* processing jobs as specified in the supplied report.
+    Parameters
+    ----------
+        dataset: DatasetSpec
+            The dataset to be reduced to only contain files and row-ranges that have previously encountered failed file access.
+        report: awkward.Array
+            The computed file-access error report from dask-awkward.
+
+    Returns
+    -------
+        out : DatasetSpec
+            The reduced dataset with only the row-ranges and files that failed processing, according to the input report.
+    """
     failed_dataset = copy.deepcopy(dataset)
     failed_dataset["files"] = {}
     failures = report[~awkward.is_none(report.exception)]
@@ -60,7 +109,23 @@ def get_failed_steps_for_dataset(dataset, report):
     return failed_dataset
 
 
-def get_failed_steps_for_fileset(fileset, report_dict):
+def get_failed_steps_for_fileset(
+    fileset: FilesetSpec, report_dict: dict[str, awkward.Array]
+):
+    """
+    Modify an input dataset to only contain the files and row-ranges for *failed* processing jobs as specified in the supplied report.
+    Parameters
+    ----------
+        fileset: FilesetSpec
+            The set of datasets to be reduced to only contain files and row-ranges that have previously encountered failed file access.
+        report_dict: dict[str, awkward.Array]
+            The computed file-access error reports from dask-awkward, indexed by dataset name.
+
+    Returns
+    -------
+        out : FilesetSpec
+            The reduced dataset with only the row-ranges and files that failed processing, according to the input report.
+    """
     failed_fileset = {}
     for name, dataset in fileset.items():
         failed_dataset = get_failed_steps_for_dataset(dataset, report_dict[name])

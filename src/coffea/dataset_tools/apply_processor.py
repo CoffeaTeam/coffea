@@ -35,7 +35,29 @@ def apply_to_dataset(
     schemaclass: BaseSchema = NanoAODSchema,
     metadata: dict[Hashable, Any] = {},
     uproot_options: dict[str, Any] = {},
-) -> DaskOutputType:
+) -> DaskOutputType | tuple[DaskOutputType, dask_awkward.Array]:
+    """
+    Apply the supplied function or processor to the supplied dataset.
+    Parameters
+    ----------
+        data_manipulation : ProcessorABC or GenericHEPAnalysis
+            The user analysis code to run on the input dataset
+        dataset: DatasetSpec | DatasetSpecOptional
+            The data to be acted upon by the data manipulation passed in.
+        schemaclass: BaseSchema, default NanoAODSchema
+            The nanoevents schema to interpret the input dataset with.
+        metadata: dict[Hashable, Any], default {}
+            Metadata for the dataset that is accessible by the input analysis. Should also be dask-serializable.
+        uproot_options: dict[str, Any], default {}
+            Options to pass to uproot. Pass at least {"allow_read_errors_with_report": True} to turn on file access reports.
+
+    Returns
+    -------
+        out : DaskOutputType
+            The output of the analysis workflow applied to the dataset
+        report : dask_awkward.Array, optional
+            The file access report for running the analysis on the input dataset. Needs to be computed in simultaneously with the analysis to be accurate.
+    """
     files = dataset["files"]
     events = NanoEventsFactory.from_root(
         files,
@@ -66,7 +88,27 @@ def apply_to_fileset(
     fileset: FilesetSpec | FilesetSpecOptional,
     schemaclass: BaseSchema = NanoAODSchema,
     uproot_options: dict[str, Any] = {},
-) -> dict[str, DaskOutputType]:
+) -> dict[str, DaskOutputType] | tuple[dict[str, DaskOutputType], dask_awkward.Array]:
+    """
+    Apply the supplied function or processor to the supplied fileset (set of datasets).
+    Parameters
+    ----------
+        data_manipulation : ProcessorABC or GenericHEPAnalysis
+            The user analysis code to run on the input dataset
+        fileset: FilesetSpec | FilesetSpecOptional
+            The data to be acted upon by the data manipulation passed in. Metadata within the fileset should be dask-serializable.
+        schemaclass: BaseSchema, default NanoAODSchema
+            The nanoevents schema to interpret the input dataset with.
+        uproot_options: dict[str, Any], default {}
+            Options to pass to uproot. Pass at least {"allow_read_errors_with_report": True} to turn on file access reports.
+
+    Returns
+    -------
+        out : dict[str, DaskOutputType]
+            The output of the analysis workflow applied to the datasets, keyed by dataset name.
+        report : dask_awkward.Array, optional
+            The file access report for running the analysis on the input dataset. Needs to be computed in simultaneously with the analysis to be accurate.
+    """
     out = {}
     report = {}
     for name, dataset in fileset.items():

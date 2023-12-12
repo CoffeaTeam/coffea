@@ -14,12 +14,38 @@ import uproot
 
 def _get_steps(
     normed_files: awkward.Array | dask_awkward.Array,
-    maybe_step_size: None | int = None,
+    maybe_step_size: int | None = None,
     align_clusters: bool = False,
     recalculate_seen_steps: bool = False,
     skip_bad_files: bool = False,
-    file_exceptions: Exception | Warning = (FileNotFoundError, OSError),
+    file_exceptions: Exception
+    | Warning
+    | tuple[Exception | Warning] = (FileNotFoundError, OSError),
 ) -> awkward.Array | dask_awkward.Array:
+    """
+    Given a list of normalized file and object paths (defined in uproot), determine the steps for each file according to the supplied processing options.
+    Parameters
+    ----------
+        normed_files: awkward.Array | dask_awkward.Array
+            The list of normalized file descriptions to process for steps.
+        maybe_step_sizes: int | None, default None
+            If specified, the size of the steps to make when analyzing the input files.
+        align_clusters: bool, default False
+            Round to the cluster size in a root file, when chunks are specified. Reduces data transfer in
+            analysis.
+        recalculate_seen_steps: bool, default False
+            If steps are present in the input normed files, force the recalculation of those steps, instead
+            of only recalculating the steps if the uuid has changed.
+        skip_bad_files: bool, False
+            Instead of failing, catch exceptions specified by file_exceptions and return null data.
+        file_exceptions: Exception | Warning | tuple[Exception | Warning], default (FileNotFoundError, OSError)
+            What exceptions to catch when skipping bad files.
+
+    Returns
+    -------
+        array : awkward.Array | dask_awkward.Array
+            The normalized file descriptions, appended with the calculated steps for those files.
+    """
     nf_backend = awkward.backend(normed_files)
     lz_or_nf = awkward.typetracer.length_zero_if_typetracer(normed_files)
 
@@ -144,6 +170,32 @@ def preprocess(
     skip_bad_files: bool = False,
     file_exceptions: Exception | Warning = (FileNotFoundError, OSError),
 ) -> tuple[FilesetSpec, FilesetSpecOptional]:
+    """
+    Given a list of normalized file and object paths (defined in uproot), determine the steps for each file according to the supplied processing options.
+    Parameters
+    ----------
+        fileset: FilesetSpecOptional
+            The set of datasets whose files will be preprocessed.
+        maybe_step_sizes: int | None, default None
+            If specified, the size of the steps to make when analyzing the input files.
+        align_clusters: bool, default False
+            Round to the cluster size in a root file, when chunks are specified. Reduces data transfer in
+            analysis.
+        recalculate_seen_steps: bool, default False
+            If steps are present in the input normed files, force the recalculation of those steps,
+            instead of only recalculating the steps if the uuid has changed.
+        skip_bad_files: bool, False
+            Instead of failing, catch exceptions specified by file_exceptions and return null data.
+        file_exceptions: Exception | Warning | tuple[Exception | Warning], default (FileNotFoundError, OSError)
+            What exceptions to catch when skipping bad files.
+
+    Returns
+    -------
+        out_available : FilesetSpec
+            The subset of files in each dataset that were successfully preprocessed, organized by dataset.
+        out_updated : FilesetSpecOptional
+            The original set of datasets including files that were not accessible, updated to include the result of preprocessing where available.
+    """
     out_updated = copy.deepcopy(fileset)
     out_available = copy.deepcopy(fileset)
     all_ak_norm_files = {}
