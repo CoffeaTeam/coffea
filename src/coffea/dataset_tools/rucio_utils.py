@@ -1,4 +1,4 @@
-import getpass
+# import getpass
 import json
 import os
 import re
@@ -8,7 +8,8 @@ from collections import defaultdict
 from rucio.client import Client
 
 # Rucio needs the default configuration --> taken from CMS cvmfs defaults
-os.environ["RUCIO_HOME"] = "/cvmfs/cms.cern.ch/rucio/current"
+if "RUCIO_HOME" not in os.environ:
+    os.environ["RUCIO_HOME"] = "/cvmfs/cms.cern.ch/rucio/current"
 
 
 def get_proxy_path() -> str:
@@ -47,14 +48,7 @@ def get_rucio_client(proxy=None) -> Client:
     try:
         if not proxy:
             proxy = get_proxy_path()
-
-        nativeClient = Client(
-            rucio_host="https://cms-rucio.cern.ch",
-            auth_host="https://cms-rucio-auth.cern.ch",
-            account=getpass.getuser(),
-            creds={"client_cert": proxy, "client_key": proxy},
-            auth_type="x509",
-        )
+        nativeClient = Client()
         return nativeClient
 
     except Exception as e:
@@ -125,19 +119,20 @@ def _get_pfn_for_site(path, rules):
 
 def get_dataset_files_replicas(
     dataset,
-    whitelist_sites=None,
-    blacklist_sites=None,
+    allowlist_sites=None,
+    blocklist_sites=None,
     regex_sites=None,
     mode="full",
     client=None,
+    scope="cms",
 ):
     """
     This function queries the Rucio server to get information about the location
     of all the replicas of the files in a CMS dataset.
 
     The sites can be filtered in 3 different ways:
-    - `whilist_sites`: list of sites to select from. If the file is not found there, raise an Exception.
-    - `blacklist_sites`: list of sites to avoid. If the file has no left site, raise an Exception
+    - `allowlist_sites`: list of sites to select from. If the file is not found there, raise an Exception.
+    - `blocklist_sites`: list of sites to avoid. If the file has no left site, raise an Exception
     - `regex_sites`: regex expression to restrict the list of sites.
 
     The fileset returned by the function is controlled by the `mode` parameter:
@@ -150,11 +145,12 @@ def get_dataset_files_replicas(
     ----------
 
         dataset: str
-        whilelist_sites: list
-        blacklist_sites: list
+        allowlist_sites: list
+        blocklist_sites: list
         regex_sites: list
         mode:  str, default "full"
         client: rucio Client, optional
+        scope:  rucio scope, "cms"
 
     Returns
     -------
@@ -176,13 +172,13 @@ def get_dataset_files_replicas(
     client = client if client else get_rucio_client()
     outsites = []
     outfiles = []
-    for filedata in client.list_replicas([{"scope": "cms", "name": dataset}]):
+    for filedata in client.list_replicas([{"scope": scope, "name": dataset}]):
         outfile = []
         outsite = []
         rses = filedata["rses"]
         found = False
-        if whitelist_sites:
-            for site in whitelist_sites:
+        if allowlist_sites:
+            for site in allowlist_sites:
                 if site in rses:
                     # Check actual availability
                     meta = filedata["pfns"][rses[site][0]]
@@ -201,13 +197,13 @@ def get_dataset_files_replicas(
 
             if not found:
                 raise Exception(
-                    f"No SITE available in the whitelist for file {filedata['name']}"
+                    f"No SITE available in the allowlist for file {filedata['name']}"
                 )
         else:
             possible_sites = list(rses.keys())
-            if blacklist_sites:
+            if blocklist_sites:
                 possible_sites = list(
-                    filter(lambda key: key not in blacklist_sites, possible_sites)
+                    filter(lambda key: key not in blocklist_sites, possible_sites)
                 )
 
             if len(possible_sites) == 0:
@@ -275,11 +271,32 @@ def get_dataset_files_replicas(
     return outfiles, outsites, sites_counts
 
 
-def query_dataset(query, client=None, tree=False):
+def query_dataset(
+    query: str, client=None, tree: bool = False, datatype="container", scope="cms"
+):
+    """
+    This function uses the rucio client to query for containers or datasets.
+
+    Parameters
+    ---------
+        query: str = query to filter datasets / containers with the rucio list_dids functions
+        client: rucio client
+        tree: bool = if True return the results splitting the dataset name in parts parts
+        datatype: "container/dataset":  rucio terminology. "Container"==CMS dataset. "Dataset" == CMS block.
+        scope: "cms". Rucio instance
+
+    Returns
+    -------
+       list of containers/datasets
+
+       if tree==True, returns the list of dataset and also a dictionary decomposing the datasets
+       names in the 1st command part and a list of available 2nd parts.
+
+    """
     client = client if client else get_rucio_client()
     out = list(
         client.list_dids(
-            scope="cms", filters={"name": query, "type": "container"}, long=False
+            scope=scope, filters={"name": query, "type": datatype}, long=False
         )
     )
     if tree:
