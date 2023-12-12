@@ -22,7 +22,7 @@ class ProcessorABC(metaclass=ABCMeta):
                 self._flag = flag
 
             def process(self, events):
-                out = {"sumw": len(events)}
+                out = {"sumw": ak.num(events, axis=0)}
 
                 # ...
 

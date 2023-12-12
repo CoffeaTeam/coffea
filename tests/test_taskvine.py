@@ -4,18 +4,17 @@ from sys import version_info
 import hist.dask as hda
 import pytest
 
-from coffea import processor
-from coffea.nanoevents import NanoEventsFactory
+from coffea.nanoevents import NanoAODSchema, NanoEventsFactory
 
 
 def histogram_common():
     # The opendata files are non-standard NanoAOD, so some optional data columns are missing
-    processor.NanoAODSchema.warn_missing_crossrefs = False
+    NanoAODSchema.warn_missing_crossrefs = False
 
     # "file:/tmp/Run2012B_SingleMu.root",
     events = NanoEventsFactory.from_root(
         {os.path.abspath("tests/samples/nano_dy.root"): "Events"},
-        chunks_per_file=4,
+        steps_per_file=4,
         metadata={"dataset": "SingleMu"},
     ).events()
 
