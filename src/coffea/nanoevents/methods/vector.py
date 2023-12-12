@@ -536,7 +536,7 @@ def _nearest_core(x, y, axis, metric, return_metric, threshold):
     out = awkward.firsts(b[mmin], axis=axis + 1)
     metric = awkward.firsts(mval[mmin], axis=axis + 1)
     if threshold is not None:
-        out = out.mask[metric <= threshold]
+        out = awkward.mask(out, metric <= threshold)
     if return_metric:
         return out, metric
     return out
