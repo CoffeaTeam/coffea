@@ -330,6 +330,7 @@ class NanoEventsFactory:
                 steps_per_file=steps_per_file,
                 **uproot_options,
             )
+
             return cls(map_schema, opener, None, cache=None, is_dask=True)
         elif delayed and not schemaclass.__dask_capable__:
             warnings.warn(
