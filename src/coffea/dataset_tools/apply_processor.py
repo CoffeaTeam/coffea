@@ -75,7 +75,7 @@ def apply_to_fileset(
         dataset_out = apply_to_dataset(
             data_manipulation, dataset, schemaclass, metadata, uproot_options
         )
-        if isinstance(out, tuple):
+        if isinstance(dataset_out, tuple):
             out[name], report[name] = dataset_out
         else:
             out[name] = dataset_out

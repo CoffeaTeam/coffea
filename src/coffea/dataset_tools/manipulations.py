@@ -21,7 +21,8 @@ def slice_chunks(fileset, theslice=slice(None)):
 
 
 def get_failed_steps_for_dataset(dataset, report):
-    failed_dataset = {}
+    failed_dataset = copy.deepcopy(dataset)
+    failed_dataset["files"] = {}
     failures = report[~awkward.is_none(report.exception)]
 
     if not awkward.all(report.args[:, 4] == "True"):
@@ -30,13 +31,16 @@ def get_failed_steps_for_dataset(dataset, report):
         )
 
     for fdesc in dataset.values():
-        if "steps" not in fdesc:
+        config = list(fdesc.values())[0]
+        if "steps" not in config:
             raise RuntimeError(
                 "steps specification not found in dataset, please specify steps in input dataset."
             )
 
-    fnames = set(dataset.keys())
-    rnames = set(numpy.unique(report.args[:, 0][:, 1:-1:]))
+    fnames = set(dataset["files"].keys())
+    rnames = (
+        set(numpy.unique(failures.args[:, 0][:, 1:-1:])) if len(failures) > 0 else set()
+    )
     if not rnames.issubset(fnames):
         raise RuntimeError(
             f"Files: {rnames - fnames} are not in input dataset, please ensure report corresponds to input dataset!"
@@ -47,11 +51,11 @@ def get_failed_steps_for_dataset(dataset, report):
 
         fname, object_path, start, stop, is_step = args_as_types
 
-        if fname in failed_dataset:
-            failed_dataset[fname]["steps"].append([start, stop])
+        if fname in failed_dataset["files"]:
+            failed_dataset["files"][fname]["steps"].append([start, stop])
         else:
-            failed_dataset[fname] = copy.deepcopy(dataset[fname])
-            failed_dataset[fname]["steps"] = [[start, stop]]
+            failed_dataset["files"][fname] = copy.deepcopy(dataset["files"][fname])
+            failed_dataset["files"][fname]["steps"] = [[start, stop]]
 
     return failed_dataset
 
@@ -60,6 +64,6 @@ def get_failed_steps_for_fileset(fileset, report_dict):
     failed_fileset = {}
     for name, dataset in fileset.items():
         failed_dataset = get_failed_steps_for_dataset(dataset, report_dict[name])
-        if len(failed_dataset) > 0:
+        if len(failed_dataset["files"]) > 0:
             failed_fileset[name] = failed_dataset
     return failed_fileset
