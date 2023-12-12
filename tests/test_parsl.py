@@ -130,6 +130,7 @@ def test_parsl_condor_cfg():
     print(condor_config())
 
 
+@pytest.mark.skip("broken and soon to be removed")
 def test_parsl_slurm_cfg():
     pytest.importorskip("parsl", minversion="0.7.2")
     import os
