@@ -1,5 +1,4 @@
 import os
-from sys import version_info
 
 import hist.dask as hda
 import pytest
