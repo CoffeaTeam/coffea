@@ -419,6 +419,7 @@ Some basic commands:
                 "files": {f: "Events" for f in files},
                 "metadata": self.replica_results_metadata[fileset],
             }
+        return output
 
     def do_allowlist_sites(self, sites=None):
         if sites is None:
