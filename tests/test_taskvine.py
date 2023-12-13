@@ -48,7 +48,10 @@ def test_taskvine_local_env():
         assert result.sum() == 40.0
 
 
-@pytest.mark.skipif("'CONDA_PREFIX' not in os.environ", reason="test needs a conda environment with coffea and ndcctools")
+@pytest.mark.skipif(
+    "'CONDA_PREFIX' not in os.environ",
+    reason="test needs a conda environment with coffea and ndcctools",
+)
 def test_taskvine_remote_env():
     try:
         from ndcctools.poncho import package_create
@@ -57,7 +60,7 @@ def test_taskvine_remote_env():
         print("taskvine is not installed. Omitting test.")
         return
     env_filename = "vine-env.tar.gz"
-    package_create.pack_env(os.environ['CONDA_PREFIX'], env_filename)
+    package_create.pack_env(os.environ["CONDA_PREFIX"], env_filename)
 
     m = DaskVine(port=0)
     env = m.declare_poncho(env_filename, cache=True)
