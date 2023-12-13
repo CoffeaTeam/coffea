@@ -14,11 +14,13 @@ class TreeMakerSchema(BaseSchema):
       into a single collection with the original object name, with the
       corresponding coordinate variables names mapped to the standard variable
       names for coffea.nanoevents.methods.vector behaviors. For example:
+
       - The "Jets" branch in a TreeMaker n-tuple branch stores 'PtEtaPhiEVector's
         corresponding to the momentum of AK4 jets. The resulting collection after
         this first step would contain the vector variables in the form of
         Jets.pt, Jets.eta, Jets.phi, Jets.energy, and addition vector quantities
         (px) can be accessed via the usual vector behavior methods.
+
       - The "PrimaryVertices" branch in a TreeMaker n-tuple branch stores
         'XYZPoint's corresponding to the coordinates of the primary vertices, The
         resulting collection after this first step wold contain the coordinate

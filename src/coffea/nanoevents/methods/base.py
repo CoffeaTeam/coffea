@@ -97,8 +97,7 @@ class Systematic:
         """
         name: str, name of the systematic variation / uncertainty source
         kind: str, the name of the kind of systematic variation
-        what: Union[str, List[str], Tuple[str]], name what gets varied,
-               this could be a list or tuple of column names
+        what: Union[str, List[str], Tuple[str]], name what gets varied, this could be a list or tuple of column names
         varying_function: Union[function, bound method], a function that describes how 'what' is varied, it must close over all non-event-data arguments.
         """
         self._ensure_systematics()

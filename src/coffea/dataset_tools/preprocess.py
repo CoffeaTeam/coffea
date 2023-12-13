@@ -172,6 +172,7 @@ def preprocess(
 ) -> tuple[FilesetSpec, FilesetSpecOptional]:
     """
     Given a list of normalized file and object paths (defined in uproot), determine the steps for each file according to the supplied processing options.
+
     Parameters
     ----------
         fileset: FilesetSpecOptional

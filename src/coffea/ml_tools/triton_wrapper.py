@@ -5,19 +5,13 @@ from typing import Dict, List, Optional
 import numpy
 
 # For triton specific handling
+_triton_import_error = None
 try:
     import tritonclient.grpc
     import tritonclient.http
     import tritonclient.utils
-except ImportError as err:
-    warnings.warn(
-        "Users should make sure the tritonclient package is installed before proceeding!\n"
-        "> pip install tritonclient[grpc,http]\n"
-        "or\n"
-        "> conda install tritonclient[grpc,http]",
-        UserWarning,
-    )
-    raise err
+except (ImportError, ModuleNotFoundError) as err:
+    _triton_import_error = err
 
 from .helper import nonserializable_attribute, numpy_call_wrapper
 
@@ -51,6 +45,16 @@ class triton_wrapper(nonserializable_attribute, numpy_call_wrapper):
         - batch_size: How the input arrays should be split up for analysis
           processing. Leave negative to have this automatically resolved.
         """
+        if _triton_import_error is not None:
+            warnings.warn(
+                "Users should make sure the tritonclient package is installed before proceeding!\n"
+                "> pip install tritonclient[grpc,http]\n"
+                "or\n"
+                "> conda install tritonclient[grpc,http]",
+                UserWarning,
+            )
+            raise _triton_import_error
+
         nonserializable_attribute.__init__(
             self, ["client", "model_metadata", "model_inputs", "model_outputs"]
         )
