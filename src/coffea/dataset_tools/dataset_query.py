@@ -276,9 +276,11 @@ Some basic commands:
 
     def do_replicas(self, mode=None, selection=None):
         """Query Rucio for replicas.
-        Mode: - None:  ask the user about the mode
+        mode: - None:  ask the user about the mode
               - round-robin (take files randomly from available sites),
-              - choose: ask the user to choose the specific site
+              - choose: ask the user to choose from a list of sites
+              - first: take the first site from the rucio query
+        selection: list of indices or 'all' to select all the selected datasets for replicas query
         """
         if selection is None:
             selection = Prompt.ask(
@@ -335,7 +337,7 @@ Some basic commands:
             if mode is None:
                 mode = Prompt.ask(
                     "Select sites",
-                    choices=["round-robin", "choose", "quit"],
+                    choices=["round-robin", "choose", "first", "quit"],
                     default="round-robin",
                 )
 
@@ -388,6 +390,14 @@ Some basic commands:
                 self.replica_results[dataset] = output
                 self.replica_results_metadata[dataset] = dataset_metadata
 
+            elif mode == "first":
+                output = []
+                for ifile, (files, sites) in enumerate(zip(outfiles, outsites)):
+                    output.append(files[0])
+                    files_by_site[sites[0]].append(files[0])
+                self.replica_results[dataset] = output
+                self.replica_results_metadata[dataset] = dataset_metadata
+
             elif mode == "quit":
                 print("[orange]Doing nothing...")
                 return
@@ -401,6 +411,14 @@ Some basic commands:
                 for f in files:
                     T.add(f"[cyan]{f}")
             self.console.print(tree)
+
+        # Building an uproot compatible output
+        output = {}
+        for fileset, files in self.replica_results.items():
+            output[fileset] = {
+                "files": {f: "Events" for f in files},
+                "metadata": self.replica_results_metadata[fileset],
+            }
 
     def do_allowlist_sites(self, sites=None):
         if sites is None:
@@ -486,7 +504,7 @@ Some basic commands:
         output = {}
         for fileset, files in self.replica_results.items():
             output[fileset] = {
-                "files": files,
+                "files": {f: "Events" for f in files},
                 "metadata": self.replica_results_metadata[fileset],
             }
         with open(filename, "w") as file:
@@ -540,7 +558,7 @@ Some basic commands:
         with gzip.open(f"{output_file}_all.json.gz", "wt") as file:
             print(f"Saved all fileset chunks to {output_file}_all.json.gz")
             json.dump(out_updated, file, indent=2)
-        return out_updated
+        return out_available, out_updated
 
     def load_dataset_definition(
         self,
@@ -553,7 +571,11 @@ Some basic commands:
         and selected results and replicas following the options.
 
         - query_results_strategy:  "all" or "manual" to be prompt for selection
-        - replicas_strategy: "round-robin", "choose" (to manually choose the sites), "manual": to be prompt for manual decision case by case
+        - replicas_strategy:
+            - "round-robin": select randomly from the available sites for each file
+            - "choose": filter the sites with a list of indices for all the files
+            - "first": take the first result returned by rucio
+            - "manual": to be prompt for manual decision dataset by dataset
         """
         for dataset_query, dataset_meta in dataset_definition.items():
             print(f"\nProcessing query: {dataset_query}")
@@ -578,16 +600,17 @@ Some basic commands:
         self.do_sites_filters(ask_clear=False)
         print("Getting replicas")
         if replicas_strategy == "manual":
-            self.do_replicas(mode=None, selection="all")
+            out_replicas = self.do_replicas(mode=None, selection="all")
         else:
-            if replicas_strategy not in ["round-robin", "choose"]:
+            if replicas_strategy not in ["round-robin", "choose", "first"]:
                 print(
-                    "Invalid replicas-strategy: please choose between manual|round-robin|choose"
+                    "Invalid replicas-strategy: please choose between manual|round-robin|choose|first"
                 )
                 exit(1)
-            self.do_replicas(mode=replicas_strategy, selection="all")
+            out_replicas = self.do_replicas(mode=replicas_strategy, selection="all")
         # Now list all
         self.do_list_selected()
+        return out_replicas
 
 
 if __name__ == "__main__":
@@ -619,7 +642,11 @@ if __name__ == "__main__":
         default="output_fileset",
     )
     parser.add_argument(
-        "-p", "--preprocess", help="Preprocess with dask", action="store_true"
+        "-p",
+        "--preprocess",
+        help="Preprocess with dask",
+        action="store_true",
+        default=False,
     )
     parser.add_argument(
         "--step-size", help="Step size for preprocessing", type=int, default=500000
@@ -655,7 +682,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--replicas-strategy",
-        help="Mode for selecting replicas for datasets: [manual|round-robin|choose]",
+        help="Mode for selecting replicas for datasets: [manual|round-robin|first|choose]",
         default="round-robin",
         required=False,
     )
@@ -681,7 +708,7 @@ if __name__ == "__main__":
         # Save
         if args.output:
             cli.do_save(filename=args.output)
-        if preprocess:
+        if args.preprocess:
             cli.do_preprocess(
                 output_file=args.fileset_output,
                 step_size=args.step_size,
