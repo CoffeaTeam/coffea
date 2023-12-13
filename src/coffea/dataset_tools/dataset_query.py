@@ -100,6 +100,7 @@ class DataDiscoveryCLI:
         self.sites_blocklist = None
         self.sites_regex = None
         self.last_replicas_results = None
+        self.final_output = None
 
         self.replica_results = defaultdict(list)
         self.replica_results_metadata = {}
@@ -413,13 +414,17 @@ Some basic commands:
             self.console.print(tree)
 
         # Building an uproot compatible output
-        output = {}
+        self.final_output = {}
         for fileset, files in self.replica_results.items():
-            output[fileset] = {
+            self.final_output[fileset] = {
                 "files": {f: "Events" for f in files},
                 "metadata": self.replica_results_metadata[fileset],
             }
-        return output
+        return self.final_output
+
+    @property
+    def as_dict(self):
+        return self.final_output
 
     def do_allowlist_sites(self, sites=None):
         if sites is None:
@@ -502,17 +507,13 @@ Some basic commands:
                 "[yellow bold]Output file name (.yaml or .json)", default="output.json"
             )
         format = os.path.splitext(filename)[1]
-        output = {}
-        for fileset, files in self.replica_results.items():
-            output[fileset] = {
-                "files": {f: "Events" for f in files},
-                "metadata": self.replica_results_metadata[fileset],
-            }
+        if not format:
+            raise Exception("[red] Please use a .json or .yaml filename for the output")
         with open(filename, "w") as file:
             if format == ".yaml":
-                yaml.dump(output, file, default_flow_style=False)
+                yaml.dump(self.final_output, file, default_flow_style=False)
             elif format == ".json":
-                json.dump(output, file, indent=2)
+                json.dump(self.final_output, file, indent=2)
         print(f"[green]File {filename} saved!")
 
     def do_preprocess(
@@ -536,19 +537,13 @@ Some basic commands:
                 "[yellow bold]Align to clusters", default=True
             )
 
-        replicas = {}
-        for fileset, files in self.replica_results.items():
-            replicas[fileset] = {
-                "files": {f: "Events" for f in files},
-                "metadata": self.replica_results_metadata[fileset],
-            }
         # init a local Dask cluster
         with self.console.status(
             "[red] Preprocessing files to extract available chunks with dask[/]"
         ):
             with Client(dask_cluster) as _:
                 out_available, out_updated = preprocess(
-                    replicas,
+                    self.final_output,
                     maybe_step_size=step_size,
                     align_clusters=align_to_clusters,
                     skip_bad_files=True,
@@ -632,7 +627,7 @@ if __name__ == "__main__":
         help="Output name for dataset discovery output (no fileset preprocessing)",
         type=str,
         required=False,
-        default="output_dataset",
+        default="output_dataset.json",
     )
     parser.add_argument(
         "-fo",
