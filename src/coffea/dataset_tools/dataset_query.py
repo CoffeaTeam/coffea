@@ -523,10 +523,10 @@ Some basic commands:
         output_file=None,
         step_size=None,
         align_to_clusters=None,
-        dask_cluster=None,
+        scheduler_url=None,
     ):
         """Perform preprocessing for concrete fileset extraction.
-        Args:  output_file [step_size] [align to file cluster boundaries] [dask cluster url]
+        Args:  output_file [step_size] [align to file cluster boundaries] [dask scheduler url]
         """
         if not output_file:
             output_file = Prompt.ask(
@@ -543,7 +543,7 @@ Some basic commands:
         with self.console.status(
             "[red] Preprocessing files to extract available chunks with dask[/]"
         ):
-            with Client(dask_cluster) as _:
+            with Client(scheduler_url) as _:
                 self.preprocessed_available, self.preprocessed_total = preprocess(
                     self.final_output,
                     maybe_step_size=step_size,
@@ -650,7 +650,7 @@ if __name__ == "__main__":
         "--step-size", help="Step size for preprocessing", type=int, default=500000
     )
     parser.add_argument(
-        "--dask-cluster", help="Dask cluster url", type=str, default=None
+        "--scheduler-url", help="Dask scheduler url", type=str, default=None
     )
     parser.add_argument(
         "-as",
@@ -710,7 +710,7 @@ if __name__ == "__main__":
             cli.do_preprocess(
                 output_file=args.fileset_output,
                 step_size=args.step_size,
-                dask_cluster=args.dask_cluster,
+                scheduler_url=args.scheduler_url,
                 align_to_clusters=False,
             )
 
