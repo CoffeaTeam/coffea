@@ -40,6 +40,7 @@ class torch_wrapper(nonserializable_attribute, numpy_call_wrapper):
                 "> conda install torch",
                 UserWarning,
             )
+            raise _torch_import_error
 
         nonserializable_attribute.__init__(self, ["model", "device"])
         self.torch_jit = torch_jit
