@@ -100,6 +100,9 @@ class DataDiscoveryCLI:
         self.sites_blocklist = None
         self.sites_regex = None
         self.last_replicas_results = None
+        self.final_output = None
+        self.preprocessed_total = None
+        self.preprocessed_available = None
 
         self.replica_results = defaultdict(list)
         self.replica_results_metadata = {}
@@ -276,9 +279,11 @@ Some basic commands:
 
     def do_replicas(self, mode=None, selection=None):
         """Query Rucio for replicas.
-        Mode: - None:  ask the user about the mode
+        mode: - None:  ask the user about the mode
               - round-robin (take files randomly from available sites),
-              - choose: ask the user to choose the specific site
+              - choose: ask the user to choose from a list of sites
+              - first: take the first site from the rucio query
+        selection: list of indices or 'all' to select all the selected datasets for replicas query
         """
         if selection is None:
             selection = Prompt.ask(
@@ -335,7 +340,7 @@ Some basic commands:
             if mode is None:
                 mode = Prompt.ask(
                     "Select sites",
-                    choices=["round-robin", "choose", "quit"],
+                    choices=["round-robin", "choose", "first", "quit"],
                     default="round-robin",
                 )
 
@@ -388,6 +393,14 @@ Some basic commands:
                 self.replica_results[dataset] = output
                 self.replica_results_metadata[dataset] = dataset_metadata
 
+            elif mode == "first":
+                output = []
+                for ifile, (files, sites) in enumerate(zip(outfiles, outsites)):
+                    output.append(files[0])
+                    files_by_site[sites[0]].append(files[0])
+                self.replica_results[dataset] = output
+                self.replica_results_metadata[dataset] = dataset_metadata
+
             elif mode == "quit":
                 print("[orange]Doing nothing...")
                 return
@@ -401,6 +414,19 @@ Some basic commands:
                 for f in files:
                     T.add(f"[cyan]{f}")
             self.console.print(tree)
+
+        # Building an uproot compatible output
+        self.final_output = {}
+        for fileset, files in self.replica_results.items():
+            self.final_output[fileset] = {
+                "files": {f: "Events" for f in files},
+                "metadata": self.replica_results_metadata[fileset],
+            }
+        return self.final_output
+
+    @property
+    def as_dict(self):
+        return self.final_output
 
     def do_allowlist_sites(self, sites=None):
         if sites is None:
@@ -483,17 +509,13 @@ Some basic commands:
                 "[yellow bold]Output file name (.yaml or .json)", default="output.json"
             )
         format = os.path.splitext(filename)[1]
-        output = {}
-        for fileset, files in self.replica_results.items():
-            output[fileset] = {
-                "files": files,
-                "metadata": self.replica_results_metadata[fileset],
-            }
+        if not format:
+            raise Exception("[red] Please use a .json or .yaml filename for the output")
         with open(filename, "w") as file:
             if format == ".yaml":
-                yaml.dump(output, file, default_flow_style=False)
+                yaml.dump(self.final_output, file, default_flow_style=False)
             elif format == ".json":
-                json.dump(output, file, indent=2)
+                json.dump(self.final_output, file, indent=2)
         print(f"[green]File {filename} saved!")
 
     def do_preprocess(
@@ -501,10 +523,10 @@ Some basic commands:
         output_file=None,
         step_size=None,
         align_to_clusters=None,
-        dask_cluster=None,
+        scheduler_url=None,
     ):
         """Perform preprocessing for concrete fileset extraction.
-        Args:  output_file [step_size] [align to file cluster boundaries] [dask cluster url]
+        Args:  output_file [step_size] [align to file cluster boundaries] [dask scheduler url]
         """
         if not output_file:
             output_file = Prompt.ask(
@@ -517,30 +539,24 @@ Some basic commands:
                 "[yellow bold]Align to clusters", default=True
             )
 
-        replicas = {}
-        for fileset, files in self.replica_results.items():
-            replicas[fileset] = {
-                "files": {f: "Events" for f in files},
-                "metadata": self.replica_results_metadata[fileset],
-            }
         # init a local Dask cluster
         with self.console.status(
             "[red] Preprocessing files to extract available chunks with dask[/]"
         ):
-            with Client(dask_cluster) as _:
-                out_available, out_updated = preprocess(
-                    replicas,
+            with Client(scheduler_url) as _:
+                self.preprocessed_available, self.preprocessed_total = preprocess(
+                    self.final_output,
                     maybe_step_size=step_size,
                     align_clusters=align_to_clusters,
                     skip_bad_files=True,
                 )
         with gzip.open(f"{output_file}_available.json.gz", "wt") as file:
             print(f"Saved available fileset chunks to {output_file}_available.json.gz")
-            json.dump(out_available, file, indent=2)
+            json.dump(self.preprocessed_total, file, indent=2)
         with gzip.open(f"{output_file}_all.json.gz", "wt") as file:
             print(f"Saved all fileset chunks to {output_file}_all.json.gz")
-            json.dump(out_updated, file, indent=2)
-        return out_updated
+            json.dump(self.preprocessed_available, file, indent=2)
+        return self.preprocessed_total, self.preprocessed_available
 
     def load_dataset_definition(
         self,
@@ -553,7 +569,11 @@ Some basic commands:
         and selected results and replicas following the options.
 
         - query_results_strategy:  "all" or "manual" to be prompt for selection
-        - replicas_strategy: "round-robin", "choose" (to manually choose the sites), "manual": to be prompt for manual decision case by case
+        - replicas_strategy:
+            - "round-robin": select randomly from the available sites for each file
+            - "choose": filter the sites with a list of indices for all the files
+            - "first": take the first result returned by rucio
+            - "manual": to be prompt for manual decision dataset by dataset
         """
         for dataset_query, dataset_meta in dataset_definition.items():
             print(f"\nProcessing query: {dataset_query}")
@@ -578,16 +598,17 @@ Some basic commands:
         self.do_sites_filters(ask_clear=False)
         print("Getting replicas")
         if replicas_strategy == "manual":
-            self.do_replicas(mode=None, selection="all")
+            out_replicas = self.do_replicas(mode=None, selection="all")
         else:
-            if replicas_strategy not in ["round-robin", "choose"]:
+            if replicas_strategy not in ["round-robin", "choose", "first"]:
                 print(
-                    "Invalid replicas-strategy: please choose between manual|round-robin|choose"
+                    "Invalid replicas-strategy: please choose between manual|round-robin|choose|first"
                 )
                 exit(1)
-            self.do_replicas(mode=replicas_strategy, selection="all")
+            out_replicas = self.do_replicas(mode=replicas_strategy, selection="all")
         # Now list all
         self.do_list_selected()
+        return out_replicas
 
 
 if __name__ == "__main__":
@@ -608,7 +629,7 @@ if __name__ == "__main__":
         help="Output name for dataset discovery output (no fileset preprocessing)",
         type=str,
         required=False,
-        default="output_dataset",
+        default="output_dataset.json",
     )
     parser.add_argument(
         "-fo",
@@ -619,13 +640,17 @@ if __name__ == "__main__":
         default="output_fileset",
     )
     parser.add_argument(
-        "-p", "--preprocess", help="Preprocess with dask", action="store_true"
+        "-p",
+        "--preprocess",
+        help="Preprocess with dask",
+        action="store_true",
+        default=False,
     )
     parser.add_argument(
         "--step-size", help="Step size for preprocessing", type=int, default=500000
     )
     parser.add_argument(
-        "--dask-cluster", help="Dask cluster url", type=str, default=None
+        "--scheduler-url", help="Dask scheduler url", type=str, default=None
     )
     parser.add_argument(
         "-as",
@@ -655,7 +680,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--replicas-strategy",
-        help="Mode for selecting replicas for datasets: [manual|round-robin|choose]",
+        help="Mode for selecting replicas for datasets: [manual|round-robin|first|choose]",
         default="round-robin",
         required=False,
     )
@@ -681,11 +706,11 @@ if __name__ == "__main__":
         # Save
         if args.output:
             cli.do_save(filename=args.output)
-        if preprocess:
+        if args.preprocess:
             cli.do_preprocess(
                 output_file=args.fileset_output,
                 step_size=args.step_size,
-                dask_cluster=args.dask_cluster,
+                scheduler_url=args.scheduler_url,
                 align_to_clusters=False,
             )
 
