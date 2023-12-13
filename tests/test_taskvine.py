@@ -48,7 +48,7 @@ def test_taskvine_local_env():
         assert result.sum() == 40.0
 
 
-@pytest.mark.skip(reason="need to investigate how to do conda-pack in ci")
+@pytest.mark.skipif("'CONDA_PREFIX' not in os.environ", reason="test needs a conda environment with coffea and ndcctools")
 def test_taskvine_remote_env():
     try:
         from ndcctools.poncho import package_create
@@ -56,23 +56,8 @@ def test_taskvine_remote_env():
     except ImportError:
         print("taskvine is not installed. Omitting test.")
         return
-
-    py_version = f"{version_info[0]}.{version_info[1]}.{version_info[2]}"
-
-    poncho_spec = {
-        "conda": {
-            "channels": ["conda-forge"],
-            "dependencies": [
-                f"python={py_version}",
-                "ndcctools",
-                "pip",
-            ],
-        },
-        "pip": ["coffea"],
-    }
-
     env_filename = "vine-env.tar.gz"
-    package_create.pack_env_from_dict(poncho_spec, env_filename)
+    package_create.pack_env(os.environ['CONDA_PREFIX'], env_filename)
 
     m = DaskVine(port=0)
     env = m.declare_poncho(env_filename, cache=True)
