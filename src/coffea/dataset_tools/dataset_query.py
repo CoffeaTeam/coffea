@@ -101,6 +101,8 @@ class DataDiscoveryCLI:
         self.sites_regex = None
         self.last_replicas_results = None
         self.final_output = None
+        self.preprocessed_total = None
+        self.preprocessed_available = None
 
         self.replica_results = defaultdict(list)
         self.replica_results_metadata = {}
@@ -542,7 +544,7 @@ Some basic commands:
             "[red] Preprocessing files to extract available chunks with dask[/]"
         ):
             with Client(dask_cluster) as _:
-                out_available, out_updated = preprocess(
+                self.preprocessed_available, self.preprocessed_total = preprocess(
                     self.final_output,
                     maybe_step_size=step_size,
                     align_clusters=align_to_clusters,
@@ -550,11 +552,11 @@ Some basic commands:
                 )
         with gzip.open(f"{output_file}_available.json.gz", "wt") as file:
             print(f"Saved available fileset chunks to {output_file}_available.json.gz")
-            json.dump(out_available, file, indent=2)
+            json.dump(self.preprocessed_total, file, indent=2)
         with gzip.open(f"{output_file}_all.json.gz", "wt") as file:
             print(f"Saved all fileset chunks to {output_file}_all.json.gz")
-            json.dump(out_updated, file, indent=2)
-        return out_available, out_updated
+            json.dump(self.preprocessed_available, file, indent=2)
+        return self.preprocessed_total, self.preprocessed_available
 
     def load_dataset_definition(
         self,
