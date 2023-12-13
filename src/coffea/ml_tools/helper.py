@@ -190,15 +190,15 @@ class numpy_call_wrapper(abc.ABC):
 
     @abc.abstractmethod
     def prepare_awkward(self, *args, **kwargs) -> Tuple:
-        """
+        r"""
         Converting awkward-array like inputs into be numpy-compatible awkward-arrays
         compatible with the `numpy_call` method. The actual conversion to numpy is
-        handled automatically. The return value should be (*args, **kwargs) pair
+        handled automatically. The return value should be (\*args, \*\*kwargs) pair
         that is compatible with the numpy_call.
 
         Consult the following documentation to find the awkward operations
         needed.
-            https://awkward-array.org/doc/main/user-guide/how-to-restructure-pad.html
+        https://awkward-array.org/doc/main/user-guide/how-to-restructure-pad.html
         """
         pass
 
