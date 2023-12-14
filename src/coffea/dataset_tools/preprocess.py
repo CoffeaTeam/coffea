@@ -20,7 +20,7 @@ def _get_steps(
     skip_bad_files: bool = False,
     file_exceptions: Exception
     | Warning
-    | tuple[Exception | Warning] = (FileNotFoundError, OSError),
+    | tuple[Exception | Warning] = (OSError,),
 ) -> awkward.Array | dask_awkward.Array:
     """
     Given a list of normalized file and object paths (defined in uproot), determine the steps for each file according to the supplied processing options.
@@ -168,7 +168,9 @@ def preprocess(
     recalculate_seen_steps: bool = False,
     files_per_batch: int = 1,
     skip_bad_files: bool = False,
-    file_exceptions: Exception | Warning = (FileNotFoundError, OSError),
+    file_exceptions: Exception
+    | Warning
+    | tuple[Exception | Warning] = (OSError,),
 ) -> tuple[FilesetSpec, FilesetSpecOptional]:
     """
     Given a list of normalized file and object paths (defined in uproot), determine the steps for each file according to the supplied processing options.
