@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import awkward as ak
@@ -69,8 +68,8 @@ suffixes = [
 
 
 @pytest.mark.parametrize("suffix", suffixes)
-def test_read_nanomc(suffix):
-    path = os.path.abspath(f"tests/samples/nano_dy.{suffix}")
+def test_read_nanomc(tests_directory, suffix):
+    path = f"{tests_directory}/samples/nano_dy.{suffix}"
     # parquet files were converted from even older nanoaod
     nanoversion = NanoAODSchema
     factory = getattr(NanoEventsFactory, f"from_{suffix}")(
@@ -130,10 +129,9 @@ def test_read_nanomc(suffix):
 
 
 @pytest.mark.parametrize("suffix", suffixes)
-def test_read_from_uri(suffix):
-    "Make sure we can properly open the file when a uri is used"
-
-    path = Path(os.path.abspath(f"tests/samples/nano_dy.{suffix}")).as_uri()
+def test_read_from_uri(tests_directory, suffix):
+    """Make sure we can properly open the file when a uri is used"""
+    path = Path(f"{tests_directory}/samples/nano_dy.{suffix}").as_uri()
 
     nanoversion = NanoAODSchema
     factory = getattr(NanoEventsFactory, f"from_{suffix}")(
@@ -147,8 +145,8 @@ def test_read_from_uri(suffix):
 
 
 @pytest.mark.parametrize("suffix", suffixes)
-def test_read_nanodata(suffix):
-    path = os.path.abspath(f"tests/samples/nano_dimuon.{suffix}")
+def test_read_nanodata(tests_directory, suffix):
+    path = f"{tests_directory}/samples/nano_dimuon.{suffix}"
     # parquet files were converted from even older nanoaod
     nanoversion = NanoAODSchema
     factory = getattr(NanoEventsFactory, f"from_{suffix}")(
@@ -162,8 +160,8 @@ def test_read_nanodata(suffix):
     crossref(events[ak.num(events.Jet) > 2])
 
 
-def test_missing_eventIds_error():
-    path = os.path.abspath("tests/samples/missing_luminosityBlock.root") + ":Events"
+def test_missing_eventIds_error(tests_directory):
+    path = f"{tests_directory}/samples/missing_luminosityBlock.root:Events"
     with pytest.raises(RuntimeError):
         factory = NanoEventsFactory.from_root(
             path, schemaclass=NanoAODSchema, delayed=False
@@ -171,8 +169,8 @@ def test_missing_eventIds_error():
         factory.events()
 
 
-def test_missing_eventIds_warning():
-    path = os.path.abspath("tests/samples/missing_luminosityBlock.root") + ":Events"
+def test_missing_eventIds_warning(tests_directory):
+    path = f"{tests_directory}/samples/missing_luminosityBlock.root:Events"
     with pytest.warns(
         RuntimeWarning, match=r"Missing event_ids \: \[\'luminosityBlock\'\]"
     ):
@@ -183,8 +181,8 @@ def test_missing_eventIds_warning():
         factory.events()
 
 
-def test_missing_eventIds_warning_dask():
-    path = os.path.abspath("tests/samples/missing_luminosityBlock.root") + ":Events"
+def test_missing_eventIds_warning_dask(tests_directory):
+    path = f"{tests_directory}/samples/missing_luminosityBlock.root:Events"
     NanoAODSchema.error_missing_event_ids = False
     with Client() as _:
         events = NanoEventsFactory.from_root(

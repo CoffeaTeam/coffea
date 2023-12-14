@@ -371,24 +371,26 @@ def test_jec_txt_effareas():
     print(evaluator["photon_id_EA_Pho"])
 
 
-def test_rochester():
+def test_rochester(tests_directory):
     rochester_data = lookup_tools.txt_converters.convert_rochester_file(
-        "tests/samples/RoccoR2018.txt.gz", loaduncs=True
+        f"{tests_directory}/samples/RoccoR2018.txt.gz", loaduncs=True
     )
     rochester = lookup_tools.rochester_lookup.rochester_lookup(rochester_data)
 
     # to test 1-to-1 agreement with official Rochester requires loading C++ files
     # instead, preload the correct scales in the sample directory
     # the script tests/samples/rochester/build_rochester.py produces these
-    official_data_k = np.load("tests/samples/nano_dimuon_rochester.npy")
-    official_data_err = np.load("tests/samples/nano_dimuon_rochester_err.npy")
-    official_mc_k = np.load("tests/samples/nano_dy_rochester.npy")
-    official_mc_err = np.load("tests/samples/nano_dy_rochester_err.npy")
-    mc_rand = np.load("tests/samples/nano_dy_rochester_rand.npy")
+    official_data_k = np.load(f"{tests_directory}/samples/nano_dimuon_rochester.npy")
+    official_data_err = np.load(
+        f"{tests_directory}/samples/nano_dimuon_rochester_err.npy"
+    )
+    official_mc_k = np.load(f"{tests_directory}/samples/nano_dy_rochester.npy")
+    official_mc_err = np.load(f"{tests_directory}/samples/nano_dy_rochester_err.npy")
+    mc_rand = np.load(f"{tests_directory}/samples/nano_dy_rochester_rand.npy")
 
     # test against nanoaod
     events = NanoEventsFactory.from_root(
-        {os.path.abspath("tests/samples/nano_dimuon.root"): "Events"},
+        {os.path.abspath(f"{tests_directory}/samples/nano_dimuon.root"): "Events"},
     ).events()
 
     data_k = rochester.kScaleDT(
@@ -404,7 +406,7 @@ def test_rochester():
 
     # test against mc
     events = NanoEventsFactory.from_root(
-        {os.path.abspath("tests/samples/nano_dy.root"): "Events"},
+        {os.path.abspath(f"{tests_directory}/samples/nano_dy.root"): "Events"},
     ).events()
 
     hasgen = ~np.isnan(ak.fill_none(events.Muon.matched_gen.pt, np.nan))
@@ -470,13 +472,13 @@ def test_dense_lookup():
     assert ak.to_list(lookup(a, a)) == [[1.0, 1.0], [1.0]]
 
 
-def test_549():
+def test_549(tests_directory):
     import awkward as ak
 
     from coffea.lookup_tools import extractor
 
     ext = extractor()
-    f_in = "tests/samples/SFttbar_2016_ele_pt.root"
+    f_in = f"{tests_directory}/samples/SFttbar_2016_ele_pt.root"
     ext.add_weight_sets(["ele_pt histo_eff_data %s" % f_in])
     ext.finalize()
     evaluator = ext.make_evaluator()
@@ -486,12 +488,12 @@ def test_549():
     )
 
 
-def test_554():
+def test_554(tests_directory):
     import uproot
 
     from coffea.lookup_tools.root_converters import convert_histo_root_file
 
-    f_in = "tests/samples/PR554_SkipReadOnlyDirectory.root"
+    f_in = f"{tests_directory}/samples/PR554_SkipReadOnlyDirectory.root"
     rf = uproot.open(f_in)
 
     # check that input file contains uproot.ReadOnlyDirectory
