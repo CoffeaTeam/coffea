@@ -11,3 +11,4 @@ Each notebook builds on the previous one so it is recommended to go through them
    notebooks/processor.ipynb
    notebooks/mltools.ipynb
    notebooks/dataset_discovery.ipynb
+   notebooks/packedselection.ipynb
