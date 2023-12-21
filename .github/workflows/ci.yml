@@ -67,7 +67,7 @@ jobs:
         # mltool installs
         python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
         python -m pip install xgboost
-        python -m pip install tritonclient[grpc,http] 'grpcio>=1.41.0' 'numpy>=1.19.1' 'packaging>=14.1' 'python-rapidjson>=0.9.1' 'aiohttp>=3.8.1,<4.0.0', 'geventhttpclient>=1.4.4,<=2.0.2'
+        python -m pip install tritonclient[grpc,http] 'grpcio>=1.41.0' 'numpy>=1.19.1' 'packaging>=14.1' 'python-rapidjson>=0.9.1' 'aiohttp>=3.8.1,<4.0.0' 'geventhttpclient>=1.4.4,<=2.0.2'
         # install checked out coffea
         python -m pip install -q -e '.[dev,parsl,dask,spark]' --upgrade --upgrade-strategy eager
         python -m pip list
