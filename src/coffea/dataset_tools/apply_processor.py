@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 from typing import Any, Callable, Dict, Hashable, List, Set, Tuple, Union
 
+import awkward
 import dask.base
 import dask_awkward
 
@@ -14,6 +15,7 @@ from coffea.dataset_tools.preprocess import (
 )
 from coffea.nanoevents import BaseSchema, NanoAODSchema, NanoEventsFactory
 from coffea.processor import ProcessorABC
+from coffea.util import decompress_form
 
 DaskOutputBaseType = Union[
     dask.base.DaskMethodsMixin,
@@ -58,11 +60,15 @@ def apply_to_dataset(
         report : dask_awkward.Array, optional
             The file access report for running the analysis on the input dataset. Needs to be computed in simultaneously with the analysis to be accurate.
     """
+    maybe_base_form = dataset.get("form", None)
+    if maybe_base_form is not None:
+        maybe_base_form = awkward.forms.from_json(decompress_form(maybe_base_form))
     files = dataset["files"]
     events = NanoEventsFactory.from_root(
         files,
         metadata=metadata,
         schemaclass=schemaclass,
+        known_base_form=maybe_base_form,
         uproot_options=uproot_options,
     ).events()
 
