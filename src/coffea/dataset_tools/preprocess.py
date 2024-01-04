@@ -323,5 +323,12 @@ def preprocess(
             compressed_union_form = compress_form(union_form_jsonstr)
             out_updated[name]["form"] = compressed_union_form
             out_available[name]["form"] = compressed_union_form
+        else:
+            out_updated[name]["form"] = None
+            out_available[name]["form"] = None
+
+        if "metadata" not in out_updated:
+            out_updated[name]["metadata"] = None
+            out_available[name]["metadata"] = None
 
     return out_available, out_updated

@@ -107,7 +107,9 @@ _runnable_result = {
                 ],
                 "uuid": "a9490124-3648-11ea-89e9-f5b55c90beef",
             }
-        }
+        },
+        "metadata": None,
+        "form": None,
     },
     "Data": {
         "files": {
@@ -123,7 +125,9 @@ _runnable_result = {
                 ],
                 "uuid": "a210a3f8-3648-11ea-a29f-f5b55c90beef",
             }
-        }
+        },
+        "metadata": None,
+        "form": None,
     },
 }
 
@@ -142,7 +146,9 @@ _updated_result = {
                 ],
                 "uuid": "a9490124-3648-11ea-89e9-f5b55c90beef",
             }
-        }
+        },
+        "metadata": None,
+        "form": None,
     },
     "Data": {
         "files": {
@@ -163,7 +169,9 @@ _updated_result = {
                 "steps": None,
                 "uuid": None,
             },
-        }
+        },
+        "metadata": None,
+        "form": None,
     },
 }
 
@@ -329,7 +337,9 @@ def test_max_chunks():
                     "steps": [[0, 7], [7, 14], [14, 21]],
                     "uuid": "a9490124-3648-11ea-89e9-f5b55c90beef",
                 }
-            }
+            },
+            "metadata": None,
+            "form": None,
         },
         "Data": {
             "files": {
@@ -338,7 +348,9 @@ def test_max_chunks():
                     "steps": [[0, 7], [7, 14], [14, 21]],
                     "uuid": "a210a3f8-3648-11ea-a29f-f5b55c90beef",
                 }
-            }
+            },
+            "metadata": None,
+            "form": None,
         },
     }
 
@@ -354,7 +366,9 @@ def test_slice_chunks():
                     "steps": [[0, 7], [14, 21], [28, 35]],
                     "uuid": "a9490124-3648-11ea-89e9-f5b55c90beef",
                 }
-            }
+            },
+            "metadata": None,
+            "form": None,
         },
         "Data": {
             "files": {
@@ -363,7 +377,9 @@ def test_slice_chunks():
                     "steps": [[0, 7], [14, 21], [28, 35]],
                     "uuid": "a210a3f8-3648-11ea-a29f-f5b55c90beef",
                 }
-            }
+            },
+            "metadata": None,
+            "form": None,
         },
     }
 

@@ -119,6 +119,8 @@ def apply_to_fileset(
     report = {}
     for name, dataset in fileset.items():
         metadata = copy.deepcopy(dataset.get("metadata", {}))
+        if metadata is None:
+            metadata = {}
         metadata.setdefault("dataset", name)
         dataset_out = apply_to_dataset(
             data_manipulation, dataset, schemaclass, metadata, uproot_options
