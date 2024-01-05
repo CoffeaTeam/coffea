@@ -5,7 +5,7 @@ import gzip
 import hashlib
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, Hashable
+from typing import Any, Callable, Dict, Hashable
 
 import awkward
 import dask
@@ -196,6 +196,7 @@ def preprocess(
     skip_bad_files: bool = False,
     file_exceptions: Exception | Warning | tuple[Exception | Warning] = (OSError,),
     calculate_form: bool = False,
+    scheduler: None | Callable | str = None,
 ) -> tuple[FilesetSpec, FilesetSpecOptional]:
     """
     Given a list of normalized file and object paths (defined in uproot), determine the steps for each file according to the supplied processing options.
@@ -218,7 +219,8 @@ def preprocess(
             What exceptions to catch when skipping bad files.
         calculate_form: bool, default False
             Extract the form of the TTree from each file in each dataset, creating the union of the forms over the dataset.
-
+        scheduler: None | Callable | str, default None
+            Specifies the scheduler that dask should use to execute the preprocessing task graph.
     Returns
     -------
         out_available : FilesetSpec
@@ -263,7 +265,7 @@ def preprocess(
             calculate_form=calculate_form,
         )
 
-    all_processed_files = dask.compute(files_to_preprocess)[0]
+    all_processed_files, = dask.compute(files_to_preprocess, scheduler=scheduler)
 
     for name, processed_files in all_processed_files.items():
         not_form = processed_files[["file", "object_path", "steps", "uuid"]]
