@@ -265,7 +265,7 @@ def preprocess(
             calculate_form=calculate_form,
         )
 
-    all_processed_files, = dask.compute(files_to_preprocess, scheduler=scheduler)
+    (all_processed_files,) = dask.compute(files_to_preprocess, scheduler=scheduler)
 
     for name, processed_files in all_processed_files.items():
         not_form = processed_files[["file", "object_path", "steps", "uuid"]]
