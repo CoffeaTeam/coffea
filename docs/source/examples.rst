@@ -8,12 +8,7 @@ Each notebook builds on the previous one so it is recommended to go through them
 
    notebooks/nanoevents.ipynb
    notebooks/applying_corrections.ipynb
-   notebooks/accumulators.ipynb
    notebooks/processor.ipynb
    notebooks/mltools.ipynb
-
-A few coffea features are now deprecated in favor of dedicated libraries:
-
-.. toctree::
-
-   notebooks/histograms.ipynb
+   notebooks/dataset_discovery.ipynb
+   notebooks/packedselection.ipynb

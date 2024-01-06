@@ -33,38 +33,40 @@ Coffea processor
 In almost all HEP analyses, each row corresponds to an independent event, and it is exceptionally rare
 to need to compute inter-row derived quantites. Due to this, horizontal scale-out is almost trivial:
 each chunk of rows can be operated on independently. Further, if the output of an analysis is restricted
-to reducible accumulators such as histograms (abstracted by `AccumulatorABC`), then outputs can even be merged via tree reduction.
-The `ProcessorABC` class is an abstraction to encapsulate analysis code so that it can be easily scaled out, leaving
-the delivery of input columns and reduction of output accumulators to the coffea framework.
+to reducible accumulators such as histograms (abstracted by `dask`, `dask-awkward`, and `dask-histogram`),
+then outputs can even be merged via tree reduction. The `ProcessorABC` class is an abstraction to encapsulate
+analysis code so that it can be easily scaled out, leaving the delivery of input columns and reduction of
+output accumulators to the coffea framework. However it is not an absolute requirement, and mere a useful
+organizational framework.
 
 .. _def-scale-out:
 
 Scale-out
 ---------
 Often, the computation requirements of a HEP data analysis exceed the resources of a single thread of execution.
-To facilitate parallelization and allow the user to access more compute resources, coffea employs various *executors*
-to ease the transition between a local analysis on a small set of test data to a full-scale analysis.
-The executors roughly fall into two categories: local and distributed.
+To facilitate parallelization and allow the user to access more compute resources, coffea employs dask,
+dask-distributed, and taskvine to ease the transition between a local analysis on a small set of test data to a
+full-scale analysis. Dask provides local schedulers and distributed schedulers, and taskvine supplies an additional
+distributed scheduler.
 
-.. _def-local-executors:
+.. _def-local-schedulers:
 
 Local executors
 ^^^^^^^^^^^^^^^
-Currently, two local executors exist: `iterative_executor` and `futures_executor`.
-The iterative executor simply processes each chunk of an input dataset in turn, using the current
-python thread. The futures executor employs python `multiprocessing` to spawn multiple python processes
-that process chunks in parallel on the machine. Processes are used rather than threads to avoid
-performance limitations due to the CPython `global interpreter lock <https://wiki.python.org/moin/GlobalInterpreterLock>`_.
+Currently, four local executors exist: `sync`, `threads`, `processes`, and `local distributed client`.
+The sync schedulersimply processes each chunk of an input dataset in turn, using the current python thread. The
+threads scheduler employs python `multithreaded` to spawn multiple python threads that process chunks in parallel
+on the machine. The processes and local distributed client schedulures use `multiprocessing` to spawn multiple python
+processes that process chunk in parallel on the machine. Process-base parallelism tends to more efficient when using
+uproot since it avoids performance limitations due to the CPython `global interpreter lock <https://wiki.python.org/moin/GlobalInterpreterLock>`_.
 
 .. _def-distributed-executors:
 
 Distributed executors
 ^^^^^^^^^^^^^^^^^^^^^
-Currently, coffea supports four types of distributed executors:
+Currently, coffea supports two types of distributed schedulers:
 
-   - the `parsl <http://parsl-project.org/>`_ distributed executor, accessed via `parsl_executor`,
-   - the `dask <https://distributed.dask.org/en/latest/>`_ distributed executor, accessed via `dask_executor`,
-   - the Apache `Spark <https://spark.apache.org/>`_ distributed executor, accessed via `run_spark_job`,
-   - and the :ref:`intro-coffea-wq` distributed executor, accessed via `work_queue_executor`.
+   - the `dask <https://distributed.dask.org/en/latest/>`_ distributed executor, accessed via the `distributed.Client` entrypoint,
+   - and the taskvine distributed scheduler.
 
-These executors use their respective underlying libraries to distribute processing tasks over multiple machines.
+These schedulers use their respective underlying libraries to distribute processing tasks over multiple machines.

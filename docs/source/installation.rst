@@ -213,8 +213,7 @@ For Developers
 
   .. code-block:: bash
 
-    flake8 coffea tests setup.py
-    black coffea tests setup.py
+    pre-commit run --all-files
     pytest tests
     pushd docs && make html && popd
 

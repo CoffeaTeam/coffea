@@ -16,10 +16,11 @@ and/or heavy dependencies.  Below lists the packages available in the ``coffea``
 
     coffea.analysis_tools
     coffea.btag_tools
-    coffea.hist
+    coffea.dataset_tools
     coffea.jetmet_tools
     coffea.lookup_tools
     coffea.lumi_tools
+    coffea.ml_tools
     coffea.nanoevents
     coffea.nanoevents.methods.base
     coffea.nanoevents.methods.candidate

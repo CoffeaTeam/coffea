@@ -67,7 +67,7 @@ jobs:
         # mltool installs
         python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
         python -m pip install xgboost
-        python -m pip install tritonclient[grpc,http]
+        python -m pip install 'tritonclient[grpc,http]!=2.41.0'
         # install checked out coffea
         python -m pip install -q -e '.[dev,parsl,dask,spark]' --upgrade --upgrade-strategy eager
         python -m pip list
@@ -148,7 +148,8 @@ jobs:
       run: |
         conda create --yes --prefix ./coffea-conda-test-env -c conda-forge python=${{ matrix.python-version }} ndcctools
         conda activate ./coffea-conda-test-env
-        python -m pip install -e ".[dev,dask]"
+        python -m pip install .
+        python -m pip install pytest
     - name: Test with pytest
       run: |
         conda run --prefix ./coffea-conda-test-env pytest tests/test_taskvine.py

@@ -2,17 +2,11 @@ import warnings
 
 import numpy
 
+_torch_import_error = None
 try:
     import torch
-except ImportError as err:
-    warnings.warn(
-        "Users should make sure the torch package is installed before proceeding!\n"
-        "> pip install torch\n"
-        "or\n"
-        "> conda install torch",
-        UserWarning,
-    )
-    raise err
+except (ImportError, ModuleNotFoundError) as err:
+    _torch_import_error = err
 
 from .helper import nonserializable_attribute, numpy_call_wrapper
 
@@ -38,6 +32,16 @@ class torch_wrapper(nonserializable_attribute, numpy_call_wrapper):
 
         - torch_jit: Path to the TorchScript file to load
         """
+        if _torch_import_error is not None:
+            warnings.warn(
+                "Users should make sure the torch package is installed before proceeding!\n"
+                "> pip install torch\n"
+                "or\n"
+                "> conda install torch",
+                UserWarning,
+            )
+            raise _torch_import_error
+
         nonserializable_attribute.__init__(self, ["model", "device"])
         self.torch_jit = torch_jit
 
