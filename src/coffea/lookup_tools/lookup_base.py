@@ -1,5 +1,4 @@
 import numbers
-import weakref
 from functools import partial
 
 import awkward
@@ -9,8 +8,7 @@ import numpy
 
 def getfunction(
     args,
-    thelookup_dask=None,
-    thelookup_wref=None,
+    thelookup,
     __non_array_args__=tuple(),
     __arg_indices__=tuple(),
     **kwargs,
@@ -47,15 +45,6 @@ def getfunction(
         for inaarg, naarg in enumerate(__non_array_args__):
             repacked_args[__arg_indices__[inaarg + len(args)]] = naarg
 
-        thelookup = None
-        if thelookup_wref is not None:
-            thelookup = thelookup_wref()
-        else:
-            from dask.distributed import worker_client
-
-            with worker_client() as client:
-                thelookup = client.compute(thelookup_dask).result()
-
         result = thelookup._evaluate(*repacked_args, **kwargs)
         out = awkward.contents.NumpyArray(result)
         if backend == "typetracer":
@@ -65,24 +54,17 @@ def getfunction(
 
 
 class _LookupXformFn:
-    def __init__(self, *args, arg_indices, thelookup_dask, thelookup_wref, **kwargs):
+    def __init__(self, *args, arg_indices, thelookup, **kwargs):
         self.getfunction = getfunction
-        self._thelookup_dask = thelookup_dask
-        self._thelookup_wref = thelookup_wref
+        self._thelookup = thelookup
         self.__non_array_args__ = args
         self.__arg_indices__ = arg_indices
         self.kwargs = kwargs
 
-    def __getstate__(self):
-        out = self.__dict__.copy()
-        out["_thelookup_wref"] = None
-        return out
-
     def __call__(self, *args):
         func = partial(
             self.getfunction,
-            thelookup_dask=self._thelookup_dask,
-            thelookup_wref=self._thelookup_wref,
+            thelookup=self._thelookup,
             __non_array_args__=self.__non_array_args__,
             __arg_indices__=self.__arg_indices__,
             **self.kwargs,
@@ -93,9 +75,8 @@ class _LookupXformFn:
 class lookup_base:
     """Base class for all objects that do some sort of value or function lookup"""
 
-    def __init__(self, dask_future):
-        self._dask_future = dask_future
-        self._weakref = weakref.ref(self)
+    def __init__(self):
+        pass
 
     def __getstate__(self):
         out = self.__dict__.copy()
@@ -124,8 +105,7 @@ class lookup_base:
         tomap = _LookupXformFn(
             *delay_args,
             arg_indices=arg_indices,
-            thelookup_dask=self._dask_future,
-            thelookup_wref=self._weakref,
+            thelookup=self,
             **kwargs,
         )
 
@@ -133,33 +113,12 @@ class lookup_base:
         if any(isinstance(x, (dask_awkward.Array)) for x in args):
             from dask.base import tokenize
 
-            zlargs = [
-                awkward.Array(
-                    arg._meta.layout.form.length_zero_array(highlevel=False),
-                    behavior=arg.behavior,
-                )
-                for arg in actual_args
-            ]
-            zlout = tomap(*zlargs)
-            meta = awkward.Array(
-                zlout.layout.to_typetracer(forget_length=True), behavior=zlout.behavior
+            return dask_awkward.map_partitions(
+                tomap,
+                *actual_args,
+                label=dask_label,
+                token=tokenize(repr(self), *args),
             )
-
-            if dask_label is not None:
-                return dask_awkward.map_partitions(
-                    tomap,
-                    *actual_args,
-                    label=dask_label,
-                    token=tokenize(self._dask_future.name, *args),
-                    meta=meta,
-                )
-            else:
-                return dask_awkward.map_partitions(
-                    tomap,
-                    *actual_args,
-                    token=tokenize(self._dask_future.name, *args),
-                    meta=meta,
-                )
 
         if all(isinstance(x, (numpy.ndarray, numbers.Number, str)) for x in args):
             return self._evaluate(*args, **kwargs)
