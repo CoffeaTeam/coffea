@@ -295,7 +295,9 @@ def test_max_files():
                     "steps": [[0, 7], [7, 14], [14, 21], [21, 28], [28, 35], [35, 40]],
                     "uuid": "a9490124-3648-11ea-89e9-f5b55c90beef",
                 }
-            }
+            },
+            "metadata": None,
+            "form": None,
         },
         "Data": {
             "files": {
@@ -304,7 +306,9 @@ def test_max_files():
                     "steps": [[0, 7], [7, 14], [14, 21], [21, 28], [28, 35], [35, 40]],
                     "uuid": "a210a3f8-3648-11ea-a29f-f5b55c90beef",
                 }
-            }
+            },
+            "metadata": None,
+            "form": None,
         },
     }
 
@@ -313,7 +317,7 @@ def test_slice_files():
     sliced_files = slice_files(_updated_result, slice(1, None, 2))
 
     assert sliced_files == {
-        "ZJets": {"files": {}},
+        "ZJets": {"files": {}, "metadata": None, "form": None},
         "Data": {
             "files": {
                 "tests/samples/nano_dimuon_not_there.root": {
@@ -321,7 +325,9 @@ def test_slice_files():
                     "steps": None,
                     "uuid": None,
                 }
-            }
+            },
+            "metadata": None,
+            "form": None,
         },
     }
 
