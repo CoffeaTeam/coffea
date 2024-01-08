@@ -3,7 +3,9 @@ from coffea.dataset_tools.manipulations import (
     get_failed_steps_for_dataset,
     get_failed_steps_for_fileset,
     max_chunks,
+    max_files,
     slice_chunks,
+    slice_files,
 )
 from coffea.dataset_tools.preprocess import preprocess
 
@@ -13,6 +15,8 @@ __all__ = [
     "apply_to_fileset",
     "max_chunks",
     "slice_chunks",
+    "max_files",
+    "slice_files",
     "get_failed_steps_for_dataset",
     "get_failed_steps_for_fileset",
 ]

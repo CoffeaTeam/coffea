@@ -6,8 +6,10 @@ from coffea.dataset_tools import (
     apply_to_fileset,
     get_failed_steps_for_fileset,
     max_chunks,
+    max_files,
     preprocess,
     slice_chunks,
+    slice_files,
 )
 from coffea.nanoevents import BaseSchema, NanoAODSchema
 from coffea.processor.test_items import NanoEventsProcessor, NanoTestProcessor
@@ -226,7 +228,49 @@ def test_preprocess_failed_file():
         )
 
 
-def test_maxchunks():
+def test_max_files():
+    maxed_files = max_files(_updated_result, 1)
+
+    assert maxed_files == {
+        "ZJets": {
+            "files": {
+                "tests/samples/nano_dy.root": {
+                    "object_path": "Events",
+                    "steps": [[0, 7], [7, 14], [14, 21], [21, 28], [28, 35], [35, 40]],
+                    "uuid": "a9490124-3648-11ea-89e9-f5b55c90beef",
+                }
+            }
+        },
+        "Data": {
+            "files": {
+                "tests/samples/nano_dimuon.root": {
+                    "object_path": "Events",
+                    "steps": [[0, 7], [7, 14], [14, 21], [21, 28], [28, 35], [35, 40]],
+                    "uuid": "a210a3f8-3648-11ea-a29f-f5b55c90beef",
+                }
+            }
+        },
+    }
+
+
+def test_slice_files():
+    sliced_files = slice_files(_updated_result, slice(1, None, 2))
+
+    assert sliced_files == {
+        "ZJets": {"files": {}},
+        "Data": {
+            "files": {
+                "tests/samples/nano_dimuon_not_there.root": {
+                    "object_path": "Events",
+                    "steps": None,
+                    "uuid": None,
+                }
+            }
+        },
+    }
+
+
+def test_max_chunks():
     max_chunked = max_chunks(_runnable_result, 3)
 
     assert max_chunked == {
@@ -251,7 +295,7 @@ def test_maxchunks():
     }
 
 
-def test_slicechunks():
+def test_slice_chunks():
     slice_chunked = slice_chunks(_runnable_result, slice(None, None, 2))
 
     assert slice_chunked == {
