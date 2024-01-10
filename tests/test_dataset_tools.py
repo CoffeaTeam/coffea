@@ -1,5 +1,6 @@
 import dask
 import pytest
+import uproot
 from distributed import Client
 
 from coffea.dataset_tools import (
@@ -13,6 +14,7 @@ from coffea.dataset_tools import (
 )
 from coffea.nanoevents import BaseSchema, NanoAODSchema
 from coffea.processor.test_items import NanoEventsProcessor, NanoTestProcessor
+from coffea.util import decompress_form
 
 _starting_fileset = {
     "ZJets": {
@@ -105,7 +107,9 @@ _runnable_result = {
                 ],
                 "uuid": "a9490124-3648-11ea-89e9-f5b55c90beef",
             }
-        }
+        },
+        "metadata": None,
+        "form": None,
     },
     "Data": {
         "files": {
@@ -121,7 +125,9 @@ _runnable_result = {
                 ],
                 "uuid": "a210a3f8-3648-11ea-a29f-f5b55c90beef",
             }
-        }
+        },
+        "metadata": None,
+        "form": None,
     },
 }
 
@@ -140,7 +146,9 @@ _updated_result = {
                 ],
                 "uuid": "a9490124-3648-11ea-89e9-f5b55c90beef",
             }
-        }
+        },
+        "metadata": None,
+        "form": None,
     },
     "Data": {
         "files": {
@@ -161,7 +169,9 @@ _updated_result = {
                 "steps": None,
                 "uuid": None,
             },
-        }
+        },
+        "metadata": None,
+        "form": None,
     },
 }
 
@@ -199,7 +209,45 @@ def test_apply_to_fileset(proc_and_schema):
         assert out["Data"]["cutflow"]["Data_mass"] == 14
 
 
+def test_apply_to_fileset_hinted_form():
+    with Client() as _:
+        dataset_runnable, dataset_updated = preprocess(
+            _starting_fileset,
+            maybe_step_size=7,
+            align_clusters=False,
+            files_per_batch=10,
+            skip_bad_files=True,
+            save_form=True,
+        )
+
+        to_compute = apply_to_fileset(
+            NanoEventsProcessor(),
+            dataset_runnable,
+            schemaclass=NanoAODSchema,
+        )
+        out = dask.compute(to_compute)[0]
+
+        assert out["ZJets"]["cutflow"]["ZJets_pt"] == 18
+        assert out["ZJets"]["cutflow"]["ZJets_mass"] == 6
+        assert out["Data"]["cutflow"]["Data_pt"] == 84
+        assert out["Data"]["cutflow"]["Data_mass"] == 66
+
+
 def test_preprocess():
+    with Client() as _:
+        dataset_runnable, dataset_updated = preprocess(
+            _starting_fileset,
+            maybe_step_size=7,
+            align_clusters=False,
+            files_per_batch=10,
+            skip_bad_files=True,
+        )
+
+        assert dataset_runnable == _runnable_result
+        assert dataset_updated == _updated_result
+
+
+def test_preprocess_calculate_form():
     with Client() as _:
         starting_fileset = _starting_fileset
 
@@ -209,10 +257,18 @@ def test_preprocess():
             align_clusters=False,
             files_per_batch=10,
             skip_bad_files=True,
+            save_form=True,
         )
 
-        assert dataset_runnable == _runnable_result
-        assert dataset_updated == _updated_result
+        raw_form_dy = uproot.dask(
+            "tests/samples/nano_dy.root:Events", open_files=False, ak_add_doc=True
+        ).layout.form.to_json()
+        raw_form_data = uproot.dask(
+            "tests/samples/nano_dimuon.root:Events", open_files=False, ak_add_doc=True
+        ).layout.form.to_json()
+
+        assert decompress_form(dataset_runnable["ZJets"]["form"]) == raw_form_dy
+        assert decompress_form(dataset_runnable["Data"]["form"]) == raw_form_data
 
 
 def test_preprocess_failed_file():
@@ -239,7 +295,9 @@ def test_max_files():
                     "steps": [[0, 7], [7, 14], [14, 21], [21, 28], [28, 35], [35, 40]],
                     "uuid": "a9490124-3648-11ea-89e9-f5b55c90beef",
                 }
-            }
+            },
+            "metadata": None,
+            "form": None,
         },
         "Data": {
             "files": {
@@ -248,7 +306,9 @@ def test_max_files():
                     "steps": [[0, 7], [7, 14], [14, 21], [21, 28], [28, 35], [35, 40]],
                     "uuid": "a210a3f8-3648-11ea-a29f-f5b55c90beef",
                 }
-            }
+            },
+            "metadata": None,
+            "form": None,
         },
     }
 
@@ -257,7 +317,7 @@ def test_slice_files():
     sliced_files = slice_files(_updated_result, slice(1, None, 2))
 
     assert sliced_files == {
-        "ZJets": {"files": {}},
+        "ZJets": {"files": {}, "metadata": None, "form": None},
         "Data": {
             "files": {
                 "tests/samples/nano_dimuon_not_there.root": {
@@ -265,7 +325,9 @@ def test_slice_files():
                     "steps": None,
                     "uuid": None,
                 }
-            }
+            },
+            "metadata": None,
+            "form": None,
         },
     }
 
@@ -281,7 +343,9 @@ def test_max_chunks():
                     "steps": [[0, 7], [7, 14], [14, 21]],
                     "uuid": "a9490124-3648-11ea-89e9-f5b55c90beef",
                 }
-            }
+            },
+            "metadata": None,
+            "form": None,
         },
         "Data": {
             "files": {
@@ -290,7 +354,9 @@ def test_max_chunks():
                     "steps": [[0, 7], [7, 14], [14, 21]],
                     "uuid": "a210a3f8-3648-11ea-a29f-f5b55c90beef",
                 }
-            }
+            },
+            "metadata": None,
+            "form": None,
         },
     }
 
@@ -306,7 +372,9 @@ def test_slice_chunks():
                     "steps": [[0, 7], [14, 21], [28, 35]],
                     "uuid": "a9490124-3648-11ea-89e9-f5b55c90beef",
                 }
-            }
+            },
+            "metadata": None,
+            "form": None,
         },
         "Data": {
             "files": {
@@ -315,7 +383,9 @@ def test_slice_chunks():
                     "steps": [[0, 7], [14, 21], [28, 35]],
                     "uuid": "a210a3f8-3648-11ea-a29f-f5b55c90beef",
                 }
-            }
+            },
+            "metadata": None,
+            "form": None,
         },
     }
 
