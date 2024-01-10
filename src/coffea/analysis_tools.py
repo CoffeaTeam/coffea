@@ -110,10 +110,10 @@ class Weights:
             self._weights[name] = weight
         self.__add_variation(name, weight, weightUp, weightDown, shift)
         self._weightStats[name] = {
-            "sumw": dask_awkward.to_dask_array(weight).sum(),
-            "sumw2": dask_awkward.to_dask_array(weight**2).sum(),
-            "minw": dask_awkward.to_dask_array(weight).min(),
-            "maxw": dask_awkward.to_dask_array(weight).max(),
+            "sumw": dask_awkward.sum(weight),
+            "sumw2": dask_awkward.sum(weight**2),
+            "minw": dask_awkward.min(weight),
+            "maxw": dask_awkward.max(weight),
         }
 
     def add(self, name, weight, weightUp=None, weightDown=None, shift=False):
@@ -220,10 +220,10 @@ class Weights:
             systName = f"{name}_{modifier}"
             self.__add_variation(systName, weight, weightUp, weightDown, shift)
         self._weightStats[name] = {
-            "sumw": dask_awkward.to_dask_array(weight).sum(),
-            "sumw2": dask_awkward.to_dask_array(weight**2).sum(),
-            "minw": dask_awkward.to_dask_array(weight).min(),
-            "maxw": dask_awkward.to_dask_array(weight).max(),
+            "sumw": dask_awkward.sum(weight),
+            "sumw2": dask_awkward.sum(weight**2),
+            "minw": dask_awkward.min(weight),
+            "maxw": dask_awkward.max(weight),
         }
 
     def add_multivariation(
