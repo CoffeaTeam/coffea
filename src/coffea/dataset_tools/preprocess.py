@@ -172,7 +172,6 @@ class DatasetSpec:
     files: dict[str, CoffeaFileSpec]
     metadata: dict[Hashable, Any] | None
     form: str | None
-    form_hash_md5: str | None
 
 
 @dataclass
