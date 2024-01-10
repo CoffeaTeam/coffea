@@ -16,14 +16,14 @@ import uproot
 from coffea.util import compress_form
 
 
-def _get_steps(
+def get_steps(
     normed_files: awkward.Array | dask_awkward.Array,
     maybe_step_size: int | None = None,
     align_clusters: bool = False,
     recalculate_seen_steps: bool = False,
     skip_bad_files: bool = False,
     file_exceptions: Exception | Warning | tuple[Exception | Warning] = (OSError,),
-    calculate_form: bool = False,
+    save_form: bool = False,
 ) -> awkward.Array | dask_awkward.Array:
     """
     Given a list of normalized file and object paths (defined in uproot), determine the steps for each file according to the supplied processing options.
@@ -43,7 +43,7 @@ def _get_steps(
             Instead of failing, catch exceptions specified by file_exceptions and return null data.
         file_exceptions: Exception | Warning | tuple[Exception | Warning], default (OSError,)
             What exceptions to catch when skipping bad files.
-        calculate_form: bool, default False
+        save_form: bool, default False
             Extract the form of the TTree from the file so we can skip opening files later.
 
     Returns
@@ -70,12 +70,12 @@ def _get_steps(
 
         form_json = None
         form_hash = None
-        if calculate_form:
+        if save_form:
             form_bytes = (
                 uproot.dask(tree, ak_add_doc=True).layout.form.to_json().encode("utf-8")
             )
 
-            form_hash = hashlib.blake2b(form_bytes).hexdigest()[:16]
+            form_hash = hashlib.md5(form_bytes).hexdigest()
             form_json = gzip.compress(form_bytes)
 
         target_step_size = num_entries if maybe_step_size is None else maybe_step_size
@@ -119,7 +119,7 @@ def _get_steps(
                 "steps": out_steps,
                 "uuid": out_uuid,
                 "form": form_json,
-                "form_hash": form_hash,
+                "form_hash_md5": form_hash,
             }
         )
 
@@ -132,7 +132,7 @@ def _get_steps(
                     "steps": [[]],
                     "uuid": "junk",
                     "form": "junk",
-                    "form_hash": "junk",
+                    "form_hash_md5": "junk",
                 },
                 None,
             ]
@@ -156,24 +156,15 @@ class UprootFileSpec:
 
 
 @dataclass
-class CoffeaFileSpec:
-    object_path: str
+class CoffeaFileSpec(UprootFileSpec):
     steps: list[list[int]]
     uuid: str
 
 
 @dataclass
-class CoffeaFileSpecOptional(UprootFileSpec):
+class CoffeaFileSpecOptional(CoffeaFileSpec):
+    steps: list[list[int]] | None
     uuid: str | None
-
-
-@dataclass
-class DatasetSpecOptional:
-    files: (
-        dict[str, str] | list[str] | dict[str, UprootFileSpec | CoffeaFileSpecOptional]
-    )
-    metadata: dict[Hashable, Any] | None
-    form: str | None
 
 
 @dataclass
@@ -181,6 +172,14 @@ class DatasetSpec:
     files: dict[str, CoffeaFileSpec]
     metadata: dict[Hashable, Any] | None
     form: str | None
+    form_hash_md5: str | None
+
+
+@dataclass
+class DatasetSpecOptional(DatasetSpec):
+    files: (
+        dict[str, str] | list[str] | dict[str, UprootFileSpec | CoffeaFileSpecOptional]
+    )
 
 
 FilesetSpecOptional = Dict[str, DatasetSpecOptional]
@@ -195,7 +194,7 @@ def preprocess(
     files_per_batch: int = 1,
     skip_bad_files: bool = False,
     file_exceptions: Exception | Warning | tuple[Exception | Warning] = (OSError,),
-    calculate_form: bool = False,
+    save_form: bool = False,
     scheduler: None | Callable | str = None,
 ) -> tuple[FilesetSpec, FilesetSpecOptional]:
     """
@@ -217,7 +216,7 @@ def preprocess(
             Instead of failing, catch exceptions specified by file_exceptions and return null data.
         file_exceptions: Exception | Warning | tuple[Exception | Warning], default (FileNotFoundError, OSError)
             What exceptions to catch when skipping bad files.
-        calculate_form: bool, default False
+        save_form: bool, default False
             Extract the form of the TTree from each file in each dataset, creating the union of the forms over the dataset.
         scheduler: None | Callable | str, default None
             Specifies the scheduler that dask should use to execute the preprocessing task graph.
@@ -255,27 +254,29 @@ def preprocess(
         )
 
         files_to_preprocess[name] = dask_awkward.map_partitions(
-            _get_steps,
+            get_steps,
             dak_norm_files,
             maybe_step_size=maybe_step_size,
             align_clusters=align_clusters,
             recalculate_seen_steps=recalculate_seen_steps,
             skip_bad_files=skip_bad_files,
             file_exceptions=file_exceptions,
-            calculate_form=calculate_form,
+            save_form=save_form,
         )
 
     (all_processed_files,) = dask.compute(files_to_preprocess, scheduler=scheduler)
 
     for name, processed_files in all_processed_files.items():
-        not_form = processed_files[["file", "object_path", "steps", "uuid"]]
+        processed_files_without_forms = processed_files[
+            ["file", "object_path", "steps", "uuid"]
+        ]
 
-        forms = processed_files[["form", "form_hash"]][
-            ~awkward.is_none(processed_files.form_hash)
+        forms = processed_files[["form", "form_hash_md5"]][
+            ~awkward.is_none(processed_files.form_hash_md5)
         ]
 
         _, unique_forms_idx = numpy.unique(
-            forms.form_hash.to_numpy(), return_index=True
+            forms.form_hash_md5.to_numpy(), return_index=True
         )
 
         dict_forms = []
@@ -303,7 +304,7 @@ def preprocess(
                 "steps": item["steps"],
                 "uuid": item["uuid"],
             }
-            for item in awkward.drop_none(not_form).to_list()
+            for item in awkward.drop_none(processed_files_without_forms).to_list()
         }
 
         files_out = {}

@@ -1,7 +1,7 @@
 """Utility functions
 
 """
-import binascii
+import base64
 import gzip
 import hashlib
 from typing import Any, List, Optional
@@ -201,11 +201,9 @@ def rewrap_recordarray(layout, depth, data):
 
 # shorthand for compressing forms
 def compress_form(formjson):
-    return binascii.b2a_base64(
-        gzip.compress(formjson.encode("utf-8")), newline=False
-    ).decode("ascii")
+    return base64.b64encode(gzip.compress(formjson.encode("utf-8"))).decode("ascii")
 
 
 # shorthand for decompressing forms
 def decompress_form(form_compressedb64):
-    return gzip.decompress(binascii.a2b_base64(form_compressedb64)).decode("utf-8")
+    return gzip.decompress(base64.b64decode(form_compressedb64)).decode("utf-8")

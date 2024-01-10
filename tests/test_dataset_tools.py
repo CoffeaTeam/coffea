@@ -217,7 +217,7 @@ def test_apply_to_fileset_hinted_form():
             align_clusters=False,
             files_per_batch=10,
             skip_bad_files=True,
-            calculate_form=True,
+            save_form=True,
         )
 
         to_compute = apply_to_fileset(
@@ -257,7 +257,7 @@ def test_preprocess_calculate_form():
             align_clusters=False,
             files_per_batch=10,
             skip_bad_files=True,
-            calculate_form=True,
+            save_form=True,
         )
 
         raw_form_dy = uproot.dask(
