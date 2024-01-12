@@ -675,7 +675,7 @@ class NanoEventsFactory:
             report = None
             if isinstance(events, tuple):
                 events, report = events
-            events.attrs["@original_array"] = events
+            events._meta.attrs["@original_array"] = events
             if report is not None:
                 return events, report
             return events
