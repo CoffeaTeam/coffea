@@ -6,6 +6,7 @@ import awkward
 import dask
 import dask_awkward
 import numpy
+from dask.base import unpack_collections
 
 
 class nonserializable_attribute:
@@ -345,7 +346,12 @@ class numpy_call_wrapper(abc.ABC):
         dak_args, dak_kwargs = self.prepare_awkward(*args, **kwargs)
         wrap = _callable_wrap((dak_args, dak_kwargs))
         packed_args = wrap.pair_to_args(*dak_args, **dak_kwargs)
-        wrap_meta = wrap(self, *tuple(arg._meta for arg in packed_args))
+
+        flattened_args, repack = unpack_collections(*packed_args, traverse=True)
+        flattened_metas = tuple(arg._meta for arg in flattened_args)
+        packed_metas = repack(flattened_metas)
+
+        wrap_meta = wrap(self, *packed_metas)
         delayed_wrapper = dask.delayed(self)
         arr = dask_awkward.lib.core.map_partitions(
             wrap,
