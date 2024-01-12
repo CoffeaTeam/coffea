@@ -5,6 +5,7 @@ from distributed import Client
 
 from coffea.dataset_tools import (
     apply_to_fileset,
+    filter_files,
     get_failed_steps_for_fileset,
     max_chunks,
     max_files,
@@ -282,6 +283,35 @@ def test_preprocess_failed_file():
             files_per_batch=10,
             skip_bad_files=False,
         )
+
+
+def test_filter_files():
+    filtered_files = filter_files(_updated_result)
+
+    assert filtered_files == {
+        "ZJets": {
+            "files": {
+                "tests/samples/nano_dy.root": {
+                    "object_path": "Events",
+                    "steps": [[0, 7], [7, 14], [14, 21], [21, 28], [28, 35], [35, 40]],
+                    "uuid": "a9490124-3648-11ea-89e9-f5b55c90beef",
+                }
+            },
+            "metadata": None,
+            "form": None,
+        },
+        "Data": {
+            "files": {
+                "tests/samples/nano_dimuon.root": {
+                    "object_path": "Events",
+                    "steps": [[0, 7], [7, 14], [14, 21], [21, 28], [28, 35], [35, 40]],
+                    "uuid": "a210a3f8-3648-11ea-a29f-f5b55c90beef",
+                }
+            },
+            "metadata": None,
+            "form": None,
+        },
+    }
 
 
 def test_max_files():

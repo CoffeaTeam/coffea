@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import copy
-from typing import Any
+from typing import Any, Callable
 
 import awkward
 import numpy
 
-from coffea.dataset_tools.preprocess import DatasetSpec, FilesetSpec
+from coffea.dataset_tools.preprocess import CoffeaFileSpec, DatasetSpec, FilesetSpec
 
 
 def max_chunks(fileset: FilesetSpec, maxchunks: int | None = None) -> FilesetSpec:
@@ -84,7 +84,7 @@ def slice_files(fileset: FilesetSpec, theslice: Any = slice(None)) -> FilesetSpe
     Returns
     -------
         out : FilesetSpec
-            The reduce fileset with only the files specific by theslice left.
+            The reduce fileset with only the files specified by theslice left.
     """
     if not isinstance(theslice, slice):
         theslice = slice(theslice)
@@ -96,6 +96,38 @@ def slice_files(fileset: FilesetSpec, theslice: Any = slice(None)) -> FilesetSpe
 
         out[name]["files"] = {fname: finfo for fname, finfo in zip(fnames, finfos)}
 
+    return out
+
+
+def _default_filter(name_and_file):
+    name, a_file = name_and_file
+    thesteps = a_file["steps"]
+    return thesteps is not None and (
+        len(thesteps) > 1 or (thesteps[0][1] - thesteps[0][0]) != 0
+    )
+
+
+def filter_files(
+    fileset: FilesetSpec,
+    thefilter: Callable[[str, CoffeaFileSpec], bool] = _default_filter,
+) -> FilesetSpec:
+    """
+    Modify the input dataset so that only the files of each dataset that pass the filter remain.
+    Parameters
+    ----------
+        fileset: FilesetSpec
+            The set of datasets to be sliced.
+        thefilter: Callable[[CoffeaFileSpec], bool], default filters empty files
+            How to filter the files in the each dataset.
+
+    Returns
+    -------
+        out : FilesetSpec
+            The reduce fileset with only the files specified by thefilter left.
+    """
+    out = copy.deepcopy(fileset)
+    for name, entry in fileset.items():
+        out[name]["files"] = dict(filter(thefilter, out[name]["files"].items()))
     return out
 
 
