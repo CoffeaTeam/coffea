@@ -14,4 +14,8 @@ class correctionlib_wrapper(lookup_base):
             inp.name if len(inp.name) > 0 else f"input{i}"
             for i, inp in enumerate(self._corr._base.inputs)
         )
-        return f"correctionlib Correction: {self._corr.name}({signature})"
+        return (
+            object.__repr__(self)
+            + "\n"
+            + f"correctionlib Correction: {self._corr.name}({signature})"
+        )

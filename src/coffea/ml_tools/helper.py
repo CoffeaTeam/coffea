@@ -274,7 +274,7 @@ class numpy_call_wrapper(abc.ABC):
                 return ret
 
         class _callable_wrap:
-            def __init__(self, inputs, wrapper):
+            def __init__(self, inputs):
                 """
                 Here we need to also store the args_len and keys argument, as
                 the map_partition method currently only works with *args like
@@ -285,7 +285,7 @@ class numpy_call_wrapper(abc.ABC):
                 assert len(inputs) == 2
                 self.args_len = len(inputs[0])
                 self.kwargs_keys = list(inputs[1].keys())
-                self.wrapper = wrapper
+                # self.wrapper = wrapper
 
             def args_to_pair(self, *args) -> Tuple:
                 """Converting *args to a (*args,**kwargs) pair"""
@@ -307,7 +307,7 @@ class numpy_call_wrapper(abc.ABC):
                         return awkward.backend(x)
                 return None
 
-            def __call__(self, *args):
+            def __call__(self, wrapper, *args):
                 """
                 Mainly translating the input *args to the (*args, **kwarg) pair
                 defined for the `__call_awkward__` method. Additional
@@ -330,8 +330,8 @@ class numpy_call_wrapper(abc.ABC):
                 (np_args, np_kwargs), _ = numpy_call_wrapper._ak_to_np_(
                     *ak_args, **ak_kwargs
                 )
-                out = self.wrapper._call_numpy(*np_args, **np_kwargs)
-                out = self.wrapper._np_to_ak_.convert(out)
+                out = wrapper._call_numpy(*np_args, **np_kwargs)
+                out = wrapper._np_to_ak_.convert(out)
 
                 # Additional packing
                 out = pack_ret_array(out)
@@ -343,11 +343,16 @@ class numpy_call_wrapper(abc.ABC):
                 return out
 
         dak_args, dak_kwargs = self.prepare_awkward(*args, **kwargs)
-        wrap = _callable_wrap((dak_args, dak_kwargs), self)
+        wrap = _callable_wrap((dak_args, dak_kwargs))
+        packed_args = wrap.pair_to_args(*dak_args, **dak_kwargs)
+        wrap_meta = wrap(self, *tuple(arg._meta for arg in packed_args))
+        delayed_wrapper = dask.delayed(self)
         arr = dask_awkward.lib.core.map_partitions(
             wrap,
-            *wrap.pair_to_args(*dak_args, **dak_kwargs),
-            label=f"numpy_call_{self.__class__.__name__}_" + dask.base.tokenize(self),
+            delayed_wrapper,
+            *packed_args,
+            label=f"numpy_call_{self.__class__.__name__}_",
+            meta=wrap_meta,
         )
         arr = unpack_ret_array(arr)
         return self.postprocess_awkward(arr, *args, **kwargs)

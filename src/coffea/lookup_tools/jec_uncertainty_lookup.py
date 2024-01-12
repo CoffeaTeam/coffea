@@ -117,7 +117,8 @@ class jec_uncertainty_lookup(lookup_base):
         return self._signature
 
     def __repr__(self):
-        out = "binned dims   : %s\n" % (self._dim_order)
+        out = object.__repr__(self) + "\n"
+        out += "binned dims   : %s\n" % (self._dim_order)
         out += "eval vars     : %s\n" % (self._eval_vars)
         out += "signature     : (%s)\n" % (",".join(self._signature))
         return out
