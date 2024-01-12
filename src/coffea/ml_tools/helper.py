@@ -352,10 +352,11 @@ class numpy_call_wrapper(abc.ABC):
         packed_metas = repack(flattened_metas)
 
         wrap_meta = wrap(self, *packed_metas)
-        delayed_wrapper = dask.delayed(self)
+        if not hasattr(self, "_delayed_wrapper"):
+            setattr(self, "_delayed_wrapper", dask.delayed(self))
         arr = dask_awkward.lib.core.map_partitions(
             wrap,
-            delayed_wrapper,
+            self._delayed_wrapper,
             *packed_args,
             label=f"numpy_call_{self.__class__.__name__}_",
             meta=wrap_meta,
