@@ -54,17 +54,16 @@ def getfunction(
 
 
 class _LookupXformFn:
-    def __init__(self, *args, arg_indices, thelookup, **kwargs):
+    def __init__(self, *args, arg_indices, **kwargs):
         self.getfunction = getfunction
-        self._thelookup = thelookup
         self.__non_array_args__ = args
         self.__arg_indices__ = arg_indices
         self.kwargs = kwargs
 
-    def __call__(self, *args):
+    def __call__(self, thelookup, *args):
         func = partial(
             self.getfunction,
-            thelookup=self._thelookup,
+            thelookup=thelookup,
             __non_array_args__=self.__non_array_args__,
             __arg_indices__=self.__arg_indices__,
             **self.kwargs,
@@ -77,12 +76,6 @@ class lookup_base:
 
     def __init__(self):
         pass
-
-    def __getstate__(self):
-        out = self.__dict__.copy()
-        if "_weakref" in out:
-            out["_weakref"] = None
-        return out
 
     def __call__(self, *args, **kwargs):
         dask_label = kwargs.pop("dask_label", None)
@@ -105,19 +98,23 @@ class lookup_base:
         tomap = _LookupXformFn(
             *delay_args,
             arg_indices=arg_indices,
-            thelookup=self,
             **kwargs,
         )
 
         # if our inputs are all dask_awkward arrays, then we should map_partitions
         if any(isinstance(x, (dask_awkward.Array)) for x in args):
-            from dask.base import tokenize
+            import dask.delayed
+
+            out_meta = tomap(self, *tuple([arg._meta for arg in actual_args]))
+
+            delayed_corr = dask.delayed(self)
 
             return dask_awkward.map_partitions(
                 tomap,
+                delayed_corr,
                 *actual_args,
                 label=dask_label,
-                token=tokenize(repr(self), *args),
+                meta=out_meta,
             )
 
         if all(isinstance(x, (numpy.ndarray, numbers.Number, str)) for x in args):
@@ -131,7 +128,7 @@ class lookup_base:
                 " numpy arrays, strings, or numbers!"
             )
 
-        return tomap(*actual_args)
+        return tomap(self, *actual_args)
 
     def _evaluate(self, *args, **kwargs):
         raise NotImplementedError
