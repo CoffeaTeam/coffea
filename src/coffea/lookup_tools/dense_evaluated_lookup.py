@@ -91,8 +91,8 @@ class dense_evaluated_lookup(lookup_base):
         return numba_apply_1d(self._values[tuple(indices)], args[self._feval_dim])
 
     def __repr__(self):
-        myrepr = object.__repr__(self)
-        myrepr = f" {self._dimension} dimensional histogram with axes:\n"
+        myrepr = object.__repr__(self) + "\n"
+        myrepr += f"{self._dimension} dimensional histogram with axes:\n"
         temp = ""
         if self._dimension == 1:
             temp = f"\t1: {self._axes}\n"
