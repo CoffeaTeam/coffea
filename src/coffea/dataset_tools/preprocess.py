@@ -112,6 +112,9 @@ def get_steps(
             out_uuid = file_uuid
             out_steps = out.tolist()
 
+        if out_steps is not None and len(out_steps) == 0:
+            out_steps = [[0, 0]]
+
         array.append(
             {
                 "file": arg.file,
@@ -129,7 +132,7 @@ def get_steps(
                 {
                     "file": "junk",
                     "object_path": "junk",
-                    "steps": [[]],
+                    "steps": [[0, 0]],
                     "uuid": "junk",
                     "form": "junk",
                     "form_hash_md5": "junk",
