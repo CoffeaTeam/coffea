@@ -107,11 +107,12 @@ class lookup_base:
 
             out_meta = tomap(self, *tuple([arg._meta for arg in actual_args]))
 
-            delayed_corr = dask.delayed(self)
+            if not hasattr(self, "_delayed_corr"):
+                setattr(self, "_delayed_corr", dask.delayed(self))
 
             return dask_awkward.map_partitions(
                 tomap,
-                delayed_corr,
+                self._delayed_corr,
                 *actual_args,
                 label=dask_label,
                 meta=out_meta,
