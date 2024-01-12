@@ -71,8 +71,8 @@ class dense_mapped_lookup(lookup_base):
         return out
 
     def __repr__(self):
-        myrepr = object.__repr__(self)
-        myrepr += f" {self._dimension} dimensional histogram with axes:\n"
+        myrepr = object.__repr__(self) + "\n"
+        myrepr += f"{self._dimension} dimensional histogram with axes:\n"
         temp = ""
         for idim, axis in enumerate(self._axes):
             temp += f"\t{idim + 1}: {axis}\n"
