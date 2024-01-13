@@ -114,7 +114,7 @@ def test_lumilist():
 
     llist1 = LumiList(runs=runslumis1[:, 0], lumis=runslumis1[:, 1])
     llist2 = LumiList(runs=runslumis2[:, 0], lumis=runslumis2[:, 1])
-    llist3 = LumiList()
+    llist3 = LumiList(delayed_default=False)
 
     llist3 += llist1
     llist3 += llist2
