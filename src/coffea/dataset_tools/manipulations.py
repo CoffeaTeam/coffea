@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import copy
-from typing import Any
+from typing import Any, Callable
 
 import awkward
 import numpy
 
-from coffea.dataset_tools.preprocess import DatasetSpec, FilesetSpec
+from coffea.dataset_tools.preprocess import CoffeaFileSpec, DatasetSpec, FilesetSpec
 
 
 def max_chunks(fileset: FilesetSpec, maxchunks: int | None = None) -> FilesetSpec:
@@ -50,6 +50,84 @@ def slice_chunks(fileset: FilesetSpec, theslice: Any = slice(None)) -> FilesetSp
         for fname, finfo in entry["files"].items():
             out[name]["files"][fname]["steps"] = finfo["steps"][theslice]
 
+    return out
+
+
+def max_files(fileset: FilesetSpec, maxfiles: int | None = None) -> FilesetSpec:
+    """
+    Modify the input dataset so that only the first "maxfiles" files of each dataset will be processed.
+    Parameters
+    ----------
+        fileset: FilesetSpec
+            The set of datasets reduce to max-files files per dataset.
+        maxfiles: int | None, default None
+            How many files to keep for each dataset.
+
+    Returns
+    -------
+        out : FilesetSpec
+            The reduced fileset with only the first maxfiles files left in.
+    """
+    return slice_files(fileset, slice(maxfiles))
+
+
+def slice_files(fileset: FilesetSpec, theslice: Any = slice(None)) -> FilesetSpec:
+    """
+    Modify the input dataset so that only the files of each dataset specified by the input slice are processed.
+    Parameters
+    ----------
+        fileset: FilesetSpec
+            The set of datasets to be sliced.
+        theslice: Any, default slice(None)
+            How to slice the array of files in the input datasets. We slice in key-order.
+
+    Returns
+    -------
+        out : FilesetSpec
+            The reduce fileset with only the files specified by theslice left.
+    """
+    if not isinstance(theslice, slice):
+        theslice = slice(theslice)
+
+    out = copy.deepcopy(fileset)
+    for name, entry in fileset.items():
+        fnames = list(entry["files"].keys())[theslice]
+        finfos = list(entry["files"].values())[theslice]
+
+        out[name]["files"] = {fname: finfo for fname, finfo in zip(fnames, finfos)}
+
+    return out
+
+
+def _default_filter(name_and_file):
+    name, a_file = name_and_file
+    thesteps = a_file["steps"]
+    return thesteps is not None and (
+        len(thesteps) > 1 or (thesteps[0][1] - thesteps[0][0]) != 0
+    )
+
+
+def filter_files(
+    fileset: FilesetSpec,
+    thefilter: Callable[[str, CoffeaFileSpec], bool] = _default_filter,
+) -> FilesetSpec:
+    """
+    Modify the input dataset so that only the files of each dataset that pass the filter remain.
+    Parameters
+    ----------
+        fileset: FilesetSpec
+            The set of datasets to be sliced.
+        thefilter: Callable[[CoffeaFileSpec], bool], default filters empty files
+            How to filter the files in the each dataset.
+
+    Returns
+    -------
+        out : FilesetSpec
+            The reduce fileset with only the files specified by thefilter left.
+    """
+    out = copy.deepcopy(fileset)
+    for name, entry in fileset.items():
+        out[name]["files"] = dict(filter(thefilter, out[name]["files"].items()))
     return out
 
 

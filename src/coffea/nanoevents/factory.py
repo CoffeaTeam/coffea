@@ -251,6 +251,7 @@ class NanoEventsFactory:
         iteritems_options={},
         use_ak_forth=True,
         delayed=True,
+        known_base_form=None,
     ):
         """Quickly build NanoEvents from a root file
 
@@ -286,6 +287,8 @@ class NanoEventsFactory:
                 Toggle using awkward_forth to interpret branches in root file.
             delayed:
                 Nanoevents will use dask as a backend to construct a delayed task graph representing your analysis.
+            known_base_form:
+                If the base form of the input file is known ahead of time we can skip opening a single file and parsing metadata.
         """
 
         if treepath is not uproot._util.unset and not isinstance(
@@ -333,6 +336,7 @@ class NanoEventsFactory:
                 ak_add_doc=True,
                 filter_branch=_remove_not_interpretable,
                 steps_per_file=steps_per_file,
+                known_base_form=known_base_form,
                 **uproot_options,
             )
 
@@ -676,7 +680,7 @@ class NanoEventsFactory:
             report = None
             if isinstance(events, tuple):
                 events, report = events
-            events.attrs["@original_array"] = events
+            events._meta.attrs["@original_array"] = events
             if report is not None:
                 return events, report
             return events

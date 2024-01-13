@@ -1,6 +1,5 @@
 from copy import deepcopy
 
-import dask
 import numba
 import numpy
 
@@ -31,6 +30,7 @@ def numbaize(fstr, varlist):
 # methods for dealing with b-tag SFs
 class dense_evaluated_lookup(lookup_base):
     def __init__(self, values, dims, feval_dim=None):
+        super().__init__()
         self._dimension = 0
         whattype = type(dims)
         if whattype == numpy.ndarray:
@@ -66,10 +66,6 @@ class dense_evaluated_lookup(lookup_base):
                 "lookup_tools.evaluator only accepts 1D functions right now!"
             )
         self._feval_dim = feval_dim[0]
-        dask_future = dask.delayed(
-            self, pure=True, name=f"denseevallookup-{dask.base.tokenize(self)}"
-        ).persist()
-        super().__init__(dask_future)
 
     def _evaluate(self, *args, **kwargs):
         indices = []
@@ -95,7 +91,8 @@ class dense_evaluated_lookup(lookup_base):
         return numba_apply_1d(self._values[tuple(indices)], args[self._feval_dim])
 
     def __repr__(self):
-        myrepr = f"{self._dimension} dimensional histogram with axes:\n"
+        myrepr = object.__repr__(self) + "\n"
+        myrepr += f"{self._dimension} dimensional histogram with axes:\n"
         temp = ""
         if self._dimension == 1:
             temp = f"\t1: {self._axes}\n"
