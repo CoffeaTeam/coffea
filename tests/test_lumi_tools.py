@@ -1,10 +1,12 @@
 import awkward as ak
 import cloudpickle
+import dask
 import dask_awkward as dak
+import numpy as np
 from dask.distributed import Client
 
 from coffea.lumi_tools import LumiData, LumiList, LumiMask
-from coffea.util import numpy as np
+from coffea.nanoevents import NanoEventsFactory
 
 
 def test_lumidata():
@@ -114,7 +116,7 @@ def test_lumilist():
 
     llist1 = LumiList(runs=runslumis1[:, 0], lumis=runslumis1[:, 1])
     llist2 = LumiList(runs=runslumis2[:, 0], lumis=runslumis2[:, 1])
-    llist3 = LumiList()
+    llist3 = LumiList(delayed_default=False)
 
     llist3 += llist1
     llist3 += llist2
@@ -127,3 +129,43 @@ def test_lumilist():
 
     llist1.clear()
     assert llist1.array.size == 0
+
+
+def test_lumilist_dask():
+    lumidata = LumiData("tests/samples/lumi_small.csv")
+
+    runslumis1 = np.zeros((10, 2), dtype=np.uint32)
+    runslumis1[:, 0] = lumidata._lumidata[0:10, 0]
+    runslumis1[:, 1] = lumidata._lumidata[0:10, 1]
+
+    runslumis2 = np.zeros((10, 2), dtype=np.uint32)
+    runslumis2[:, 0] = lumidata._lumidata[10:20, 0]
+    runslumis2[:, 1] = lumidata._lumidata[10:20, 1]
+
+    drunslumis1 = dak.from_awkward(ak.Array(runslumis1), 3)
+    drunslumis2 = dak.from_awkward(ak.Array(runslumis2), 3)
+
+    llist1 = LumiList(runs=drunslumis1[:, 0], lumis=drunslumis1[:, 1])
+    llist2 = LumiList(runs=drunslumis2[:, 0], lumis=drunslumis2[:, 1])
+    llist3 = llist1 + llist2
+
+    lumi1 = lumidata.get_lumi(llist1)
+    lumi2 = lumidata.get_lumi(llist2)
+    lumi3 = lumidata.get_lumi(llist3)
+
+    lumi1, lumi2, lumi3 = dask.compute(lumi1, lumi2, lumi3)
+
+    assert abs(lumi3 - (lumi1 + lumi2)) < 1e-4
+
+
+def test_lumilist_client_fromfile():
+    with Client() as _:
+        events = NanoEventsFactory.from_root(
+            {"tests/samples/nano_dy.root": "Events"},
+        ).events()
+
+        lumilist = LumiList(runs=events.run, lumis=events.luminosityBlock)
+
+        (result,) = dask.compute(lumilist.array)
+
+        assert result.to_list() == [[1, 13889]]
