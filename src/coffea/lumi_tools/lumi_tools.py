@@ -310,8 +310,9 @@ class LumiList:
         # TODO: re-apply unique? Or wait until end
         if isinstance(other, LumiList):
             if isinstance(self.array, dask_awkward.Array):
-                carray = awkward.concatenate([self.array, other.array], axis=0)
-                self.array = _lumilist_dak_unique(carray)
+                self.array = _lumilist_dak_unique(
+                    awkward.concatenate([self.array, other.array], axis=0)
+                )
             else:
                 self.array = numpy.r_[self.array, other.array]
         else:
