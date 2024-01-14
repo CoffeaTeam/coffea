@@ -267,9 +267,9 @@ def _lumilist_dak_unique(runs_and_lumis, split_every=8):
 
 
 def _packed_unique(runs, lumis):
-    merged = (
-        awkward.values_as_type(runs, numpy.uint64) << 32
-    ) | awkward.values_as_type(lumis, numpy.uint64)
+    merged = (awkward.values_astype(runs, numpy.uint64) << 32) | awkward.values_astype(
+        lumis, numpy.uint64
+    )
     uniques = _lumilist_dak_unique(merged)
     return (uniques >> 32), (uniques & 0xFFFFFFFF)
 
@@ -330,6 +330,13 @@ class LumiList:
             raise ValueError("Expected LumiList object, got %r" % other)
         return self
 
+    def __add__(self, other):
+        temp = LumiList(runs=other.array[:, 0], lumis=other.array[:, 1])
+        temp += self
+        return temp
+
     def clear(self):
         """Clear current lumi list"""
+        if isinstance(self.array, dask_awkward.Array):
+            raise RuntimeError("Delayed-mode LumiList cannot be cleared!")
         self.array = numpy.zeros(shape=(0, 2))
