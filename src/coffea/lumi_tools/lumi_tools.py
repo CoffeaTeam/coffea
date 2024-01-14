@@ -214,7 +214,7 @@ class LumiMask:
 
 
 def _wrap_unique(array):
-    out = numpy.unique(awkward.typetracer.length_one_if_typetracer(array))
+    out = numpy.unique(awkward.typetracer.length_one_if_typetracer(array), axis=0)
 
     if awkward.backend(array) == "typetracer":
         out = awkward.Array(
@@ -266,14 +266,6 @@ def _lumilist_dak_unique(runs_and_lumis, split_every=8):
     return new_array_object(graph, name_finalize, meta=meta, npartitions=1)
 
 
-def _packed_unique(runs, lumis):
-    merged = (awkward.values_astype(runs, numpy.uint64) << 32) | awkward.values_astype(
-        lumis, numpy.uint64
-    )
-    uniques = _lumilist_dak_unique(merged)
-    return (uniques >> 32), (uniques & 0xFFFFFFFF)
-
-
 class LumiList:
     """Mergeable list of unique (run, lumiSection) values
 
@@ -285,31 +277,30 @@ class LumiList:
             Vectorized list of run numbers
         lumis : numpy.ndarray, dask_awkward.Array
             Vectorized list of lumiSection values
-        delayed_default: bool
-
+        delayed: bool
+            Is this LumiList in delayed mode or not.
     """
 
-    def __init__(self, runs=None, lumis=None, delayed_default=True):
+    def __init__(self, runs=None, lumis=None, delayed=True):
         if (runs is None) != (lumis is None):
             raise ValueError(
                 "Both runs and lumis must be provided when given to the constructor of LumiList."
             )
 
-        if delayed_default and runs is None:
+        if delayed and runs is None:
             raise ValueError(
                 "You must supply runs and lumis when using LumiList is delayed mode."
             )
 
         self.array = None
-        if not delayed_default:
+        if not delayed:
             self.array = numpy.zeros(shape=(0, 2))
 
         if isinstance(runs, dask_awkward.Array) and isinstance(
             lumis, dask_awkward.Array
         ):
-            unq_run, unq_lumi = _packed_unique(runs, lumis)
-            self.array = awkward.concatenate(
-                [unq_run[:, None], unq_lumi[:, None]], axis=1
+            self.array = _lumilist_dak_unique(
+                awkward.concatenate([runs[:, None], lumis[:, None]], axis=1)
             )
         else:
             if runs is not None:
@@ -319,10 +310,8 @@ class LumiList:
         # TODO: re-apply unique? Or wait until end
         if isinstance(other, LumiList):
             if isinstance(self.array, dask_awkward.Array):
-                carray = awkward.concatenate([self.array, other.array], axis=0)
-                unq_run, unq_lumi = _packed_unique(carray[:, 0], carray[:, 1])
-                self.array = awkward.concatenate(
-                    [unq_run[:, None], unq_lumi[:, None]], axis=1
+                self.array = _lumilist_dak_unique(
+                    awkward.concatenate([self.array, other.array], axis=0)
                 )
             else:
                 self.array = numpy.r_[self.array, other.array]
@@ -331,7 +320,8 @@ class LumiList:
         return self
 
     def __add__(self, other):
-        temp = LumiList(runs=other.array[:, 0], lumis=other.array[:, 1])
+        temp = LumiList(delayed=False)
+        temp.array = other.array
         temp += self
         return temp
 
