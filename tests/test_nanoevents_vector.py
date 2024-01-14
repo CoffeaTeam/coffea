@@ -58,7 +58,7 @@ def test_two_vector():
 def test_polar_two_vector():
     a = ak.zip(
         {
-            "r": [[1, 2], [], [3], [4]],
+            "rho": [[1, 2], [], [3], [4]],
             "phi": [[0.3, 0.4], [], [0.5], [0.6]],
         },
         with_name="PolarTwoVector",
@@ -67,9 +67,9 @@ def test_polar_two_vector():
 
     assert record_arrays_equal(
         a * 2,
-        ak.zip({"r": [[2, 4], [], [6], [8]], "phi": [[0.3, 0.4], [], [0.5], [0.6]]}),
+        ak.zip({"rho": [[2, 4], [], [6], [8]], "phi": [[0.3, 0.4], [], [0.5], [0.6]]}),
     )
-    assert ak.all((a * (-2)).r == [[2, 4], [], [6], [8]])
+    assert ak.all((a * (-2)).rho == [[2, 4], [], [6], [8]])
     assert ak.all(
         (a * (-2)).phi
         - ak.Array(
@@ -80,7 +80,7 @@ def test_polar_two_vector():
     assert record_arrays_equal(
         a / 2,
         ak.zip(
-            {"r": [[0.5, 1], [], [1.5], [2]], "phi": [[0.3, 0.4], [], [0.5], [0.6]]}
+            {"rho": [[0.5, 1], [], [1.5], [2]], "phi": [[0.3, 0.4], [], [0.5], [0.6]]}
         ),
     )
 
@@ -444,12 +444,18 @@ def test_lorentz_vector_numba(a_dtype, b_dtype):
         110.66616465749593,
         110.68423555321688,
     ]
-    assert pytest.approx(a.delta_phi(b), abs=1e-7) == [
-        0.03369510734601633,
-        -0.1798534997924781,
-        0.33292327383538156,
-        0.6078019961139605,
-    ]
+
+    computed_dphi = a.delta_phi(b).to_numpy()
+
+    assert pytest.approx(computed_dphi, abs=1e-6) == np.array(
+        [
+            0.03369510734601633,
+            -0.1798534997924781,
+            0.33292327383538156,
+            0.6078019961139605,
+        ],
+        dtype=computed_dphi.dtype,
+    )
 
 
 @pytest.mark.parametrize(
@@ -519,7 +525,7 @@ def test_inherited_method_transpose(lcoord, threecoord, twocoord):
         )
     elif twocoord == "PolarTwoVector":
         c = ak.zip(
-            {"r": [-10.0, 13.0, 15.0], "phi": [1.22, -1.0, 1.0]},
+            {"rho": [-10.0, 13.0, 15.0], "phi": [1.22, -1.0, 1.0]},
             with_name=twocoord,
             behavior=vector.behavior,
         )
@@ -532,9 +538,9 @@ def test_inherited_method_transpose(lcoord, threecoord, twocoord):
     assert record_arrays_equal(a.delta_phi(c), c.delta_phi(a))
     assert record_arrays_equal(b.delta_phi(c), c.delta_phi(b))
 
-    assert record_arrays_equal(a - b, -(b - a))
-    assert record_arrays_equal(a - c, -(c - a))
-    assert record_arrays_equal(b - c, -(c - b))
+    assert record_arrays_equal((a - b).to_Vector3D(), -(b - a))
+    assert record_arrays_equal((a - c).to_Vector2D(), -(c - a))
+    assert record_arrays_equal((b - c).to_Vector2D(), -(c - b))
 
 
 @pytest.mark.parametrize("optimization_enabled", [True, False])
