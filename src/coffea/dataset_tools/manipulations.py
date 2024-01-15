@@ -109,7 +109,7 @@ def _default_filter(name_and_file):
 
 def filter_files(
     fileset: FilesetSpec,
-    thefilter: Callable[[str, CoffeaFileSpec], bool] = _default_filter,
+    thefilter: Callable[[tuple[str, CoffeaFileSpec]], bool] = _default_filter,
 ) -> FilesetSpec:
     """
     Modify the input dataset so that only the files of each dataset that pass the filter remain.
@@ -117,7 +117,7 @@ def filter_files(
     ----------
         fileset: FilesetSpec
             The set of datasets to be sliced.
-        thefilter: Callable[[CoffeaFileSpec], bool], default filters empty files
+        thefilter: Callable[[tuple[str, CoffeaFileSpec]], bool], default filters empty files
             How to filter the files in the each dataset.
 
     Returns
