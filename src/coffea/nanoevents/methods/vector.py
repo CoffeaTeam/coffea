@@ -663,7 +663,7 @@ class LorentzVector(MomentumAwkward4D):
     def boostvec(self):
         """The `x`, `y` and `z` components divided by `t` as a `ThreeVector`
 
-        This can be used for boosting. For cases where `|t| <= rho`, this
+        This can be used for boosting. For cases where `|t| <= r`, this
         returns the unit vector.
         """
         return self.to_beta3()
