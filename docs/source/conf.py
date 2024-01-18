@@ -77,7 +77,7 @@ def linkcode_resolve(domain, info):
     obj = reduce(getattr, [mod] + info["fullname"].split("."))
     try:
         path = inspect.getsourcefile(obj)
-        relpath = path[modpath.rfind("/src") + 1:]
+        relpath = path[modpath.rfind("/src") + 1 :]
         _, lineno = inspect.getsourcelines(obj)
     except TypeError:
         # skip property or other type that inspect doesn't like
