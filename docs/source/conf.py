@@ -25,7 +25,7 @@ print("coffea version:", coffea.__version__)
 # -- Project information -----------------------------------------------------
 
 project = "coffea"
-copyright = "2019, Fermi National Accelerator Laboratory"
+copyright = "2024, Fermi National Accelerator Laboratory"
 author = "L. Gray, N. Smith, et al. (The Coffea Team)"
 
 version = coffea.__version__.rsplit(".", 1)[0]
@@ -77,7 +77,7 @@ def linkcode_resolve(domain, info):
     obj = reduce(getattr, [mod] + info["fullname"].split("."))
     try:
         path = inspect.getsourcefile(obj)
-        relpath = path[len(modpath) + 1 :]
+        relpath = path[modpath.rfind("/src") + 1:]
         _, lineno = inspect.getsourcelines(obj)
     except TypeError:
         # skip property or other type that inspect doesn't like
