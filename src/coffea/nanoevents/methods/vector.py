@@ -42,20 +42,21 @@ A small example::
     assert np.allclose(np.array(abs(2*vec + vec4) / abs(vec)), 3)
 
 """
-from datetime import datetime
 import numbers
+from datetime import datetime
 
 import awkward
-from coffea.util import deprecate
 import numba
 import numpy
-from dask_awkward import dask_method
 import pytz
+from dask_awkward import dask_method
 
+from coffea.util import deprecate
 
 _cst = pytz.timezone("US/Central")
 _depttime = _cst.localize(datetime(2024, 6, 30, 11, 59, 59))
 deprecate(ModuleNotFoundError, version="2024.7.0", date=str(_depttime))
+
 
 @numba.vectorize(
     [
