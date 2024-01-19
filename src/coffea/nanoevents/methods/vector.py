@@ -177,6 +177,7 @@ class TwoVector:
             "ThreeVector",
             "SphericalThreeVector",
             "LorentzVector",
+            "LorentzVectorM",
             "PtEtaPhiMLorentzVector",
             "PtEtaPhiELorentzVector",
         },
@@ -380,6 +381,7 @@ class ThreeVector(TwoVector):
             "ThreeVector",
             "SphericalThreeVector",
             "LorentzVector",
+            "LorentzVectorM",
             "PtEtaPhiMLorentzVector",
             "PtEtaPhiELorentzVector",
         },
@@ -553,6 +555,11 @@ class LorentzVector(ThreeVector):
 
     @property
     def energy(self):
+        """Alias for `t`"""
+        return self.t
+
+    @property
+    def E(self):
         """Alias for `t`"""
         return self.t
 
@@ -803,6 +810,256 @@ class LorentzVector(ThreeVector):
 
 
 @awkward.mixin_class(behavior)
+class LorentzVectorM(ThreeVector):
+    """A cartesian Lorentz vector specified with mass instead of energy
+
+    A heavy emphasis towards a momentum vector interpretation is assumed.
+    (+, -, -, -) metric
+    This mixin class requires the parent class to provide items `x`, `y`, `z`, and `mass`.
+    """
+
+    @property
+    def t(self):
+        """Equivalent to `energy`"""
+        return numpy.sqrt(
+            self.mass * self.mass + self.x * self.x + self.y * self.y + self.z * self.z
+        )
+
+    @property
+    def energy(self):
+        """Alias for `t`"""
+        return self.t
+
+    @property
+    def E(self):
+        """Alias for `t`"""
+        return self.t
+
+    @property
+    def eta(self):
+        r"""Pseudorapidity
+
+        :math:`-\ln[\tan(\theta/2)] = \text{arcsinh}(z/r)`
+        """
+        return numpy.arcsinh(self.z / self.r)
+
+    @awkward.mixin_class_method(numpy.absolute)
+    def absolute(self):
+        """Magnitude of this Lorentz vector
+
+        Alias for `mass`
+        """
+        return self.mass
+
+    @awkward.mixin_class_method(numpy.add, {"LorentzVectorM"})
+    def add(self, other):
+        """Add two vectors together elementwise using `x`, `y`, `z`, and `t` components"""
+        return awkward.zip(
+            {
+                "x": self.x + other.x,
+                "y": self.y + other.y,
+                "z": self.z + other.z,
+                "t": self.t + other.t,
+            },
+            with_name="LorentzVector",
+            behavior=self.behavior,
+        )
+
+    @awkward.mixin_class_method(numpy.subtract, {"LorentzVectorM"}, transpose=False)
+    def subtract(self, other):
+        """Subtract a vector from another elementwise using `x`, `y`, `z`, and `t` components"""
+        return awkward.zip(
+            {
+                "x": self.x - other.x,
+                "y": self.y - other.y,
+                "z": self.z - other.z,
+                "t": self.t - other.t,
+            },
+            with_name="LorentzVector",
+            behavior=self.behavior,
+        )
+
+    def sum(self, axis=-1):
+        """Sum an array of vectors elementwise using `x`, `y`, `z`, and `t` components"""
+        return awkward.zip(
+            {
+                "x": awkward.sum(self.x, axis=axis),
+                "y": awkward.sum(self.y, axis=axis),
+                "z": awkward.sum(self.z, axis=axis),
+                "t": awkward.sum(self.t, axis=axis),
+            },
+            with_name="LorentzVector",
+            behavior=self.behavior,
+        )
+
+    @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
+    def multiply(self, other):
+        """Multiply this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components"""
+        return awkward.zip(
+            {
+                "x": self.x * other,
+                "y": self.y * other,
+                "z": self.z * other,
+                "t": self.t * other,
+            },
+            with_name="LorentzVector",
+            behavior=self.behavior,
+        )
+
+    def delta_r2(self, other):
+        """Squared `delta_r`"""
+        deta = self.eta - other.eta
+        dphi = self.delta_phi(other)
+        return deta * deta + dphi * dphi
+
+    def delta_r(self, other):
+        r"""Distance between two Lorentz vectors in (eta,phi) plane
+
+        :math:`\sqrt{\Delta\eta^2 + \Delta\phi^2}`
+        """
+        return numpy.hypot(self.eta - other.eta, self.delta_phi(other))
+
+    @awkward.mixin_class_method(numpy.negative)
+    def negative(self):
+        """Returns the negative of the vector"""
+        return awkward.zip(
+            {"x": -self.x, "y": -self.y, "z": -self.z, "t": -self.t},
+            with_name="LorentzVector",
+            behavior=self.behavior,
+        )
+
+    @property
+    def pvec(self):
+        """The `x`, `y` and `z` components as a `ThreeVector`"""
+        return awkward.zip(
+            {"x": self.x, "y": self.y, "z": self.z},
+            with_name="ThreeVector",
+            behavior=self.behavior,
+        )
+
+    @property
+    def boostvec(self):
+        """The `x`, `y` and `z` components divided by `t` as a `ThreeVector`
+
+        This can be used for boosting. For cases where `|t| <= rho`, this
+        returns the unit vector.
+        """
+        rho = self.rho
+        t = self.t
+        with numpy.errstate(divide="ignore"):
+            out = self.pvec * awkward.where(
+                rho == 0, 0, awkward.where(abs(t) <= rho, 1 / rho, 1 / t)
+            )
+        return out
+
+    def boost(self, other):
+        """Apply a Lorentz boost given by the `ThreeVector` `other` and return it
+
+        Note that this follows the convention that, for example in order to boost
+        a vector into its own rest frame, one needs to use the negative of its `boostvec`
+        """
+        b2 = other.rho2
+        gamma = (1 - b2) ** (-0.5)
+        mask = b2 == 0
+        b2 = awkward.where(mask, 1, b2)
+        gamma2 = awkward.where(mask, 0, (gamma - 1) / b2)
+
+        bp = self.dot(other)
+        t = self.t
+        v = gamma2 * bp * other + t * gamma * other
+
+        return awkward.zip(
+            {
+                "x": self.x + v.x,
+                "y": self.y + v.y,
+                "z": self.z + v.z,
+                "t": gamma * (t + bp),
+            },
+            with_name="LorentzVector",
+            behavior=self.behavior,
+        )
+
+    def metric_table(
+        self,
+        other,
+        axis=1,
+        metric=lambda a, b: a.delta_r(b),
+        return_combinations=False,
+    ):
+        """Return a list of a metric evaluated between this object and another.
+
+        The two arrays should be broadcast-compatible on all axes other than the specified
+        axis, which will be used to form a cartesian product. If axis=None, broadcast arrays directly.
+        The return shape will be that of ``self`` with a new axis with shape of ``other`` appended
+        at the specified axis depths.
+
+        Parameters
+        ----------
+            other : awkward.Array
+                Another array with same shape in all but ``axis``
+            axis : int, optional
+                The axis to form the cartesian product (default 1). If None, the metric
+                is directly evaluated on the input arrays (i.e. they should broadcast)
+            metric : callable
+                A function of two arguments, returning a scalar. The default metric is `delta_r`.
+            return_combinations : bool
+                If True return the combinations of inputs as well as an unzipped tuple
+        """
+        if axis is None:
+            a, b = self, other
+        else:
+            a, b = awkward.unzip(
+                awkward.cartesian([self, other], axis=axis, nested=True)
+            )
+        mval = metric(a, b)
+        if return_combinations:
+            return mval, (a, b)
+        return mval
+
+    def nearest(
+        self,
+        other,
+        axis=1,
+        metric=lambda a, b: a.delta_r(b),
+        return_metric=False,
+        threshold=None,
+    ):
+        """Return nearest object to this one
+
+        Finds item in ``other`` satisfying ``min(metric(self, other))``.
+        The two arrays should be broadcast-compatible on all axes other than the specified
+        axis, which will be used to form a cartesian product. If axis=None, broadcast arrays directly.
+        The return shape will be that of ``self``.
+
+        Parameters
+        ----------
+            other : awkward.Array
+                Another array with same shape in all but ``axis``
+            axis : int, optional
+                The axis to form the cartesian product (default 1). If None, the metric
+                is directly evaluated on the input arrays (i.e. they should broadcast)
+            metric : callable
+                A function of two arguments, returning a scalar. The default metric is `delta_r`.
+            return_metric : bool, optional
+                If true, return both the closest object and its metric (default false)
+            threshold : Number, optional
+                If set, any objects with ``metric > threshold`` will be masked from the result
+        """
+        mval, (a, b) = self.metric_table(other, axis, metric, return_combinations=True)
+        if axis is None:
+            # NotImplementedError: awkward.firsts with axis=-1
+            axis = other.layout.purelist_depth - 2
+        mmin = awkward.argmin(mval, axis=axis + 1, keepdims=True)
+        out = awkward.firsts(b[mmin], axis=axis + 1)
+        metric = awkward.firsts(mval[mmin], axis=axis + 1)
+        if threshold is not None:
+            out = out.mask[metric <= threshold]
+        if return_metric:
+            return out, metric
+        return out
+
+
+@awkward.mixin_class(behavior)
 class PtEtaPhiMLorentzVector(LorentzVector, SphericalThreeVector):
     """A Lorentz vector using pseudorapidity and mass
 
@@ -1043,12 +1300,127 @@ class PtEtaPhiELorentzVector(LorentzVector, SphericalThreeVector):
         )
 
 
+@awkward.mixin_class(behavior)
+class PtThetaPhiELorentzVector(LorentzVector, SphericalThreeVector):
+    """A Lorentz vector using theta and energy
+
+    This mixin class requires the parent class to provide items `pt`, `theta`, `phi`, and `energy`.
+    Some additional properties are overridden for performance
+    """
+
+    @property
+    def E(self):
+        """Alias for `t`"""
+        return self.t
+
+    @property
+    def theta(self):
+        r"""polar angle"""
+        return self["theta"]
+
+    @property
+    def pt(self):
+        """Alias for `r`"""
+        return self["pt"]
+
+    @property
+    def eta(self):
+        r"""Pseudorapidity
+
+        :math:`-\ln\tan(\theta/2) = \text{arcsinh}(z/r)`
+        """
+        return -numpy.log(numpy.tan(self["theta"] / 2))
+
+    @property
+    def phi(self):
+        r"""Azimuthal angle relative to X axis in XY plane
+
+        :math:`\text{arctan2}(y, x)`
+        """
+        return self["phi"]
+
+    @property
+    def energy(self):
+        """Alias for `t`"""
+        return self["energy"]
+
+    @property
+    def t(self):
+        r"""Cartesian time component
+
+        :math:`\sqrt{\rho^2+m^2}`
+        """
+        return self["energy"]
+
+    @property
+    def rho(self):
+        r"""Distance from origin in 3D
+
+        :math:`\sqrt{x^2+y^2+z^2} = \sqrt{r^2+z^2}`
+        """
+        return self.pt * numpy.cosh(self.eta)
+
+    @property
+    def r(self):
+        r"""Distance from origin in XY plane
+
+        :math:`\sqrt{x^2+y^2} = \rho \sin(\theta)`
+        """
+        return self.pt
+
+    @property
+    def z(self):
+        r"""Cartesian z value
+
+        :math:`r \sinh(\eta)`
+        """
+        return self.pt * numpy.sinh(self.eta)
+
+    @property
+    def rho2(self):
+        """Squared `rho`"""
+        return self.rho * self.rho
+
+    @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
+    def multiply(self, other):
+        """Multiply this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components
+
+        In reality, this directly adjusts `pt`, `eta`, `phi` and `energy` for performance
+        """
+        return awkward.zip(
+            {
+                "pt": self.pt * abs(other),
+                "eta": self.eta * numpy.sign(other),
+                "phi": self.phi % (2 * numpy.pi) - (numpy.pi * (other < 0)),
+                "energy": self.energy * other,
+            },
+            with_name="PtEtaPhiELorentzVector",
+            behavior=self.behavior,
+        )
+
+    @awkward.mixin_class_method(numpy.negative)
+    def negative(self):
+        """Returns the negative of the vector"""
+        return awkward.zip(
+            {
+                "pt": self.pt,
+                "eta": -self.eta,
+                "phi": self.phi % (2 * numpy.pi) - numpy.pi,
+                "energy": -self.energy,
+            },
+            with_name="PtEtaPhiELorentzVector",
+            behavior=self.behavior,
+        )
+
+
 __all__ = [
     "TwoVector",
     "PolarTwoVector",
     "ThreeVector",
     "SphericalThreeVector",
     "LorentzVector",
+    "LorentzVectorM",
     "PtEtaPhiMLorentzVector",
     "PtEtaPhiELorentzVector",
+    "PtThetaPhiELorentzVector",
 ]

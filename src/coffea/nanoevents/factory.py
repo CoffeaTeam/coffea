@@ -51,6 +51,11 @@ def _remove_not_interpretable(branch):
             f"Skipping {branch.name} as it is it cannot be represented as an Awkward array"
         )
         return False
+    except uproot.interpretation.identify.UnknownInterpretation:
+        warnings.warn(
+            f"Skipping {branch.name} as it is it cannot be interpreted by Uproot"
+        )
+        return False
     else:
         return True
 

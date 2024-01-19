@@ -205,6 +205,144 @@ class NanoCollection:
         return self._getlistarray().content
 
     @dask_method
+    def _apply_global_mapping(
+        self, actual_from, original_from, from_map, onto_map, _dask_array_=None
+    ):
+        """Internal method to take from a collection using a flat mapping
+           (i.e. two flat indices that need to be sorted and taken from)
+
+        This is often necessary to be able to still resolve cross-references on
+        reduced arrays or single records.
+        """
+
+        def flat_take(layout):
+            idx = awkward.Array(layout)
+            return self._content()[idx.mask[idx >= 0]]
+
+        def descend(layout, depth, **kwargs):
+            if layout.purelist_depth == 1:
+                return flat_take(layout)
+
+        def maybe_meta(array):
+            return array._meta if isinstance(array, dask_awkward.Array) else array
+
+        maybe_actual_from_meta = maybe_meta(actual_from)
+        maybe_original_from_meta = maybe_meta(original_from)
+        maybe_from_map_meta = maybe_meta(from_map)
+        maybe_onto_map_meta = maybe_meta(onto_map)
+
+        actual_index = None
+        actual_offsets = None
+        if awkward.backend(maybe_from_map_meta) != "typetracer" and isinstance(
+            maybe_actual_from_meta.layout.content, awkward.contents.IndexedArray
+        ):
+            actual_offsets = awkward.Array(maybe_actual_from_meta.layout.offsets.data)
+            actual_index = awkward.Array(
+                maybe_actual_from_meta.layout.content.index.data
+            )
+
+        sorter = awkward.argsort(maybe_from_map_meta)
+        sorted_from = (maybe_from_map_meta)[sorter]
+        sorted_onto = (maybe_onto_map_meta)[sorter]
+
+        original_index_local = awkward.local_index(maybe_original_from_meta)
+        original_offsets = awkward.Array(
+            awkward.typetracer.length_zero_if_typetracer(
+                original_index_local
+            ).layout.offsets.data
+        )
+        original_index = awkward.flatten(original_index_local + original_offsets[:-1])
+
+        sparse_index = awkward.unflatten(
+            awkward.typetracer.length_zero_if_typetracer(sorted_from),
+            awkward.flatten(
+                awkward.run_lengths(
+                    awkward.typetracer.length_zero_if_typetracer(sorted_from)
+                )
+            ),
+            axis=1,
+        )
+        sparse_index = awkward.flatten(awkward.firsts(sparse_index, axis=-1))
+        sparse_index_from_zero = awkward.local_index(sparse_index)
+
+        original_index = awkward.typetracer.length_zero_if_typetracer(
+            original_index
+        ).to_numpy()
+        masked_from_index = numpy.full_like(original_index, -1)
+        masked_from_index[sparse_index] = sparse_index_from_zero
+        masked_from_index = awkward.unflatten(
+            awkward.Array(masked_from_index),
+            original_offsets[1:] - original_offsets[:-1],
+        )
+
+        index = awkward.unflatten(
+            awkward.typetracer.length_zero_if_typetracer(sorted_onto),
+            awkward.flatten(
+                awkward.run_lengths(
+                    awkward.typetracer.length_zero_if_typetracer(sorted_from)
+                ),
+                axis=1,
+            ),
+            axis=1,
+        )
+
+        if actual_index is None:
+            index = awkward.Array(
+                awkward.contents.ListOffsetArray(
+                    masked_from_index.layout.offsets,
+                    awkward.contents.IndexedOptionArray(
+                        awkward.index.Index64(awkward.flatten(masked_from_index)),
+                        index.layout.content,
+                    ),
+                ),
+                behavior=index.behavior,
+            )
+        else:
+            index = awkward.Array(
+                awkward.contents.ListOffsetArray(
+                    awkward.index.Index64(actual_offsets),
+                    awkward.contents.IndexedOptionArray(
+                        awkward.index.Index64(
+                            awkward.flatten(masked_from_index)[actual_index]
+                        ),
+                        index.layout.content,
+                    ),
+                ),
+                behavior=index.behavior,
+            )
+
+        if awkward.backend(sorter) == "typetracer":
+            index = awkward.Array(
+                index.layout.to_typetracer(forget_length=True), behavior=index.behavior
+            )
+
+        (index_out,) = awkward.broadcast_arrays(
+            index,
+        )
+
+        layout_out = awkward.transform(descend, index_out.layout, highlevel=False)
+        out = awkward.Array(layout_out, behavior=self.behavior)
+        return out
+
+    @_apply_global_mapping.dask
+    def _apply_global_mapping(
+        self,
+        dask_array,
+        actual_from,
+        original_from,
+        from_map,
+        onto_map,
+    ):
+        return dask_array.map_partitions(
+            _ClassMethodFn("_apply_global_mapping"),
+            actual_from,
+            original_from,
+            from_map,
+            onto_map,
+            label="_apply_global_mapping",
+        )
+
+    @dask_method
     def _apply_global_index(self, index):
         """Internal method to take from a collection using a flat index
 
