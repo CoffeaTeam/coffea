@@ -111,15 +111,9 @@ dev = [
 #[project.entry-points."dask.sizeof"]
 #coffea = "coffea.sizeof:register"
 
-[tool.hatch.version]
-source = "vcs"
-path = "src/coffea/__init__.py"
-
-[tool.hatch.build.hooks.vcs]
-version-file = "src/coffea/version.py"
-
-[tool.setuptools_scm]
-write_to = "src/coffea/_version.py"
+[tool.hatch]
+version.source = "vcs"
+build.hooks.vcs.version-file = "src/coffea/_version.py"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
