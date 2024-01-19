@@ -181,7 +181,7 @@ def deprecate(
     warning = f"""In version {version}{date}, this will be {will_be}.
 To raise these warnings as errors (and get stack traces to find out where they're called), run
     import warnings
-    warnings.filterwarnings("error", module="awkward.*")
+    warnings.filterwarnings("error", module="coffea.*")
 after the first `import awkward` or use `@pytest.mark.filterwarnings("error:::coffea.*")` in pytest.
 Issue: {message}."""
     warnings.warn(warning, category, stacklevel=stacklevel + 1)
