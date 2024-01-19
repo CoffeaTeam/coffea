@@ -23,8 +23,6 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
-import coffea
-
 ak = awkward
 dak = dask_awkward
 np = numpy
