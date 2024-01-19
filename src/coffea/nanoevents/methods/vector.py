@@ -55,7 +55,12 @@ from coffea.util import deprecate
 
 _cst = pytz.timezone("US/Central")
 _depttime = _cst.localize(datetime(2024, 6, 30, 11, 59, 59))
-deprecate(ModuleNotFoundError, version="2024.7.0", date=str(_depttime))
+deprecate(
+    "coffea.nanoevents.methods.vector will be removed and replaced with scikit-hep vector. Consider using that package!", 
+    version="2024.7.0", 
+    date=str(_depttime),
+    category=FutureWarning,
+)
 
 
 @numba.vectorize(
