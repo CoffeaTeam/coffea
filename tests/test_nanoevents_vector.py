@@ -537,13 +537,14 @@ def test_inherited_method_transpose(lcoord, threecoord, twocoord):
     assert record_arrays_equal(b - c, -(c - b))
 
 
-def test_dask_metric_table_and_nearest():
+@pytest.mark.parametrize("optimization_enabled", [True, False])
+def test_dask_metric_table_and_nearest(optimization_enabled):
     import dask
     from dask_awkward.lib.testutils import assert_eq
 
     from coffea.nanoevents import NanoEventsFactory
 
-    with dask.config.set({"awkward.optimization.enabled": False}):
+    with dask.config.set({"awkward.optimization.enabled": optimization_enabled}):
         eagerevents = NanoEventsFactory.from_root(
             {"tests/samples/nano_dy.root": "Events"},
             delayed=False,
