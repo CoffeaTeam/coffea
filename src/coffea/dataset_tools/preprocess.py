@@ -108,7 +108,7 @@ def get_steps(
                 )
                 if numpy.any(step_mask):
                     warnings.warn(
-                        f"steps: {out[step_mask]} with align_cluster=True are "
+                        f"In file {arg.file}, steps: {out[step_mask]} with align_cluster=True are "
                         f"{step_size_safety_factor*100:.0f}% larger than target "
                         f"step size: {target_step_size}!"
                     )
