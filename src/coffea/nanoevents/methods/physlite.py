@@ -95,7 +95,7 @@ def _get_target_offsets(load_column, event_index):
     ):
         # wrap in map_partitions if dask arrays
         return dask_awkward.map_partitions(
-            _get_target_offsets, load_column, event_index
+            _get_target_offsets, load_column, event_index, label="get_target_offsets"
         )
 
     offsets = load_column.layout.offsets.data
