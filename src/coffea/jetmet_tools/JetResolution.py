@@ -159,7 +159,7 @@ class JetResolution:
                 resos.append(
                     func(
                         *args,
-                        dask_label=f"{self._campaign}-{self._dataera}-{self._datatype}-{self._levels[i]}-{self._jettype}",
+                        dask_label=f"{self._campaign}_{self._dataera}_{self._datatype}_{self._levels[i]}_{self._jettype}",
                     )
                 )
             else:

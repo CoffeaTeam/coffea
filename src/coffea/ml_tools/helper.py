@@ -358,7 +358,7 @@ class numpy_call_wrapper(abc.ABC):
             wrap,
             self._delayed_wrapper,
             *packed_args,
-            label=f"numpy_call_{self.__class__.__name__}_",
+            label=f"numpy_call_{self.__class__.__name__}",
             meta=wrap_meta,
         )
         arr = unpack_ret_array(arr)
