@@ -4,6 +4,7 @@ import copy
 import gzip
 import hashlib
 import math
+import warnings
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Hashable
 
@@ -24,6 +25,7 @@ def get_steps(
     skip_bad_files: bool = False,
     file_exceptions: Exception | Warning | tuple[Exception | Warning] = (OSError,),
     save_form: bool = False,
+    step_size_safety_factor: float = 0.5,
 ) -> awkward.Array | dask_awkward.Array:
     """
     Given a list of normalized file and object paths (defined in uproot), determine the steps for each file according to the supplied processing options.
@@ -45,6 +47,9 @@ def get_steps(
             What exceptions to catch when skipping bad files.
         save_form: bool, default False
             Extract the form of the TTree from the file so we can skip opening files later.
+        step_size_safety_factor: float, default 0.5
+            When using align_clusters, if a resulting step is larger than maybe_step_size by this factor
+            warn the user that the resulting steps may be highly irregular.
 
     Returns
     -------
@@ -96,6 +101,18 @@ def get_steps(
                     out.append(clusters[-1])
                 out = numpy.array(out, dtype="int64")
                 out = numpy.stack((out[:-1], out[1:]), axis=1)
+
+                step_mask = (
+                    out[:, 1] - out[:, 0]
+                    > (1 + step_size_safety_factor) * target_step_size
+                )
+                if numpy.any(step_mask):
+                    warnings.warn(
+                        f"In file {arg.file}, steps: {out[step_mask]} with align_cluster=True are "
+                        f"{step_size_safety_factor*100:.0f}% larger than target "
+                        f"step size: {target_step_size}!"
+                    )
+
             else:
                 n_steps = math.ceil(num_entries / target_step_size)
                 out = numpy.array(
