@@ -434,6 +434,6 @@ class CorrectedJetsFactory:
             _AwkwardRewrapFn(gfunc=rewrap_recordarray),
             out,
             jets,
-            label="corrected-jets",
+            label="corrected_jets",
             meta=out_meta,
         )
