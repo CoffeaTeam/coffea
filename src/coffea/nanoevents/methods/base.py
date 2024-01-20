@@ -236,7 +236,7 @@ class NanoCollection:
         return dask_array.map_partitions(
             _ClassMethodFn("_apply_global_index"),
             index,
-            label="_apply_global_index",
+            label="apply_global_index",
         )
 
     @dask_method(no_dispatch=True)
