@@ -118,34 +118,6 @@ behavior = {}
 behavior.update(vector.backends.awkward.behavior)
 
 
-class TwoVectorArray:
-    pass
-
-
-class PolarTwoVectorArray:
-    pass
-
-
-class ThreeVectorArray:
-    pass
-
-
-class SphericalThreeVectorArray:
-    pass
-
-
-class LorentzVectorArray:
-    pass
-
-
-class PtEtaPhiMLorentzVectorArray:
-    pass
-
-
-class PtEtaPhiELorentzVectorArray:
-    pass
-
-
 @awkward.mixin_class(behavior)
 class TwoVector(MomentumAwkward2D):
     """A cartesian 2-dimensional vector
@@ -994,33 +966,33 @@ class PtEtaPhiELorentzVector(LorentzVector):
         )
 
 
-TwoVectorArray.ProjectionClass2D = TwoVectorArray
-TwoVectorArray.ProjectionClass3D = ThreeVectorArray
-TwoVectorArray.ProjectionClass4D = LorentzVectorArray
+TwoVectorArray.ProjectionClass2D = TwoVectorArray  # noqa: F821                                                                                                                                                                                   
+TwoVectorArray.ProjectionClass3D = ThreeVectorArray  # noqa: F821                                                                                                                                                                                 
+TwoVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821                                                                                                                                                                               
 
-PolarTwoVectorArray.ProjectionClass2D = PolarTwoVectorArray
-PolarTwoVectorArray.ProjectionClass3D = SphericalThreeVectorArray
-PolarTwoVectorArray.ProjectionClass4D = LorentzVectorArray
+PolarTwoVectorArray.ProjectionClass2D = PolarTwoVectorArray  # noqa: F821                                                                                                                                                                         
+PolarTwoVectorArray.ProjectionClass3D = SphericalThreeVectorArray  # noqa: F821                                                                                                                                                                   
+PolarTwoVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821                                                                                                                                                                          
 
-ThreeVectorArray.ProjectionClass2D = TwoVectorArray
-ThreeVectorArray.ProjectionClass3D = ThreeVectorArray
-ThreeVectorArray.ProjectionClass4D = LorentzVectorArray
+ThreeVectorArray.ProjectionClass2D = TwoVectorArray  # noqa: F821                                                                                                                                                                                 
+ThreeVectorArray.ProjectionClass3D = ThreeVectorArray  # noqa: F821                                                                                                                                                                               
+ThreeVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821                                                                                                                                                                             
 
-SphericalThreeVectorArray.ProjectionClass2D = TwoVectorArray
-SphericalThreeVectorArray.ProjectionClass3D = SphericalThreeVectorArray
-SphericalThreeVectorArray.ProjectionClass4D = LorentzVectorArray
+SphericalThreeVectorArray.ProjectionClass2D = TwoVectorArray  # noqa: F821                                                                                                                                                                        
+SphericalThreeVectorArray.ProjectionClass3D = SphericalThreeVectorArray  # noqa: F821                                                                                                                                                             
+SphericalThreeVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821                                                                                                                                                                    
 
-LorentzVectorArray.ProjectionClass2D = TwoVectorArray
-LorentzVectorArray.ProjectionClass3D = ThreeVectorArray
-LorentzVectorArray.ProjectionClass4D = LorentzVectorArray
+LorentzVectorArray.ProjectionClass2D = TwoVectorArray  # noqa: F821                                                                                                                                                                               
+LorentzVectorArray.ProjectionClass3D = ThreeVectorArray  # noqa: F821                                                                                                                                                                             
+LorentzVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821                                                                                                                                                                           
 
-PtEtaPhiMLorentzVectorArray.ProjectionClass2D = TwoVectorArray
-PtEtaPhiMLorentzVectorArray.ProjectionClass3D = ThreeVectorArray
-PtEtaPhiMLorentzVectorArray.ProjectionClass4D = LorentzVectorArray
+PtEtaPhiMLorentzVectorArray.ProjectionClass2D = TwoVectorArray  # noqa: F821                                                                                                                                                                      
+PtEtaPhiMLorentzVectorArray.ProjectionClass3D = ThreeVectorArray  # noqa: F821                                                                                                                                                                    
+PtEtaPhiMLorentzVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821                                                                                                                                                                  
 
-PtEtaPhiELorentzVectorArray.ProjectionClass2D = TwoVectorArray
-PtEtaPhiELorentzVectorArray.ProjectionClass3D = ThreeVectorArray
-PtEtaPhiELorentzVectorArray.ProjectionClass4D = LorentzVectorArray
+PtEtaPhiELorentzVectorArray.ProjectionClass2D = TwoVectorArray  # noqa: F821                                                                                                                                                                      
+PtEtaPhiELorentzVectorArray.ProjectionClass3D = ThreeVectorArray  # noqa: F821                                                                                                                                                                    
+PtEtaPhiELorentzVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821
 
 __all__ = [
     "TwoVector",
