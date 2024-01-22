@@ -4,7 +4,7 @@ coffea - Columnar Object Framework For Effective Analysis
 .. image:: https://zenodo.org/badge/159673139.svg
    :target: https://zenodo.org/badge/latestdoi/159673139
 
-.. image:: https://github.com/CoffeaTeam/coffea/workflows/CI%2FCD/badge.svg
+.. image:: https://github.com/CoffeaTeam/coffea/actions/workflows/ci.yml/badge.svg
     :target: https://github.com/CoffeaTeam/coffea/actions?query=workflow%3ACI%2FCD+event%3Aschedule+branch%3Amaster
 
 .. image:: https://codecov.io/gh/CoffeaTeam/coffea/branch/master/graph/badge.svg?event=schedule
