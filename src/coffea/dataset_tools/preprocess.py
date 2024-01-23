@@ -253,7 +253,6 @@ def preprocess(
     file_exceptions: Exception | Warning | tuple[Exception | Warning] = (OSError,),
     save_form: bool = False,
     scheduler: None | Callable | str = None,
-    split_every: int = 8,
     uproot_options: dict = {},
     step_size_safety_factor: float = 0.5,
 ) -> tuple[FilesetSpec, FilesetSpecOptional]:
@@ -280,8 +279,6 @@ def preprocess(
             Extract the form of the TTree from each file in each dataset, creating the union of the forms over the dataset.
         scheduler: None | Callable | str, default None
             Specifies the scheduler that dask should use to execute the preprocessing task graph.
-        split_every: int, default 8
-            How many inputs for each tree reduce step, controls parallelism vs. memory use.
         uproot_options: dict, default {}
             Options to pass to get_steps for opening files with uproot.
         step_size_safety_factor: float, default 0.5
