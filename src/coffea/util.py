@@ -11,6 +11,7 @@ import dask_awkward
 import hist
 import numba
 import numpy
+import uproot
 from rich.progress import (
     BarColumn,
     Column,
@@ -207,3 +208,37 @@ def compress_form(formjson):
 # shorthand for decompressing forms
 def decompress_form(form_compressedb64):
     return gzip.decompress(base64.b64decode(form_compressedb64)).decode("utf-8")
+
+
+def _remove_not_interpretable(branch, emit_warning=True):
+    if isinstance(
+        branch.interpretation, uproot.interpretation.identify.uproot.AsGrouped
+    ):
+        for name, interpretation in branch.interpretation.subbranches.items():
+            if isinstance(
+                interpretation, uproot.interpretation.identify.UnknownInterpretation
+            ):
+                if emit_warning:
+                    warnings.warn(
+                        f"Skipping {branch.name} as it is not interpretable by Uproot"
+                    )
+                return False
+    if isinstance(
+        branch.interpretation, uproot.interpretation.identify.UnknownInterpretation
+    ):
+        if emit_warning:
+            warnings.warn(
+                f"Skipping {branch.name} as it is not interpretable by Uproot"
+            )
+        return False
+
+    try:
+        _ = branch.interpretation.awkward_form(None)
+    except uproot.interpretation.objects.CannotBeAwkward:
+        if emit_warning:
+            warnings.warn(
+                f"Skipping {branch.name} as it is it cannot be represented as an Awkward array"
+            )
+        return False
+    else:
+        return True
