@@ -5,6 +5,7 @@ import hashlib
 import math
 import warnings
 from dataclasses import dataclass
+from functools import partial
 from typing import Any, Callable, Dict, Hashable
 
 import awkward
@@ -14,7 +15,7 @@ import numpy
 import uproot
 from uproot._util import no_filter
 
-from coffea.util import compress_form, decompress_form
+from coffea.util import _remove_not_interpretable, compress_form, decompress_form
 
 
 def get_steps(
@@ -81,7 +82,7 @@ def get_steps(
                 recursive=True,
                 filter_name=no_filter,
                 filter_typename=no_filter,
-                filter_branch=no_filter,
+                filter_branch=partial(_remove_not_interpretable, emit_warning=False),
                 full_paths=False,
             )
             form_str = uproot._dask._get_ttree_form(
