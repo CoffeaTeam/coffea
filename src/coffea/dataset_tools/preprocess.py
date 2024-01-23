@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-import gzip
 import hashlib
 import math
 import warnings
@@ -13,8 +12,9 @@ import dask
 import dask_awkward
 import numpy
 import uproot
+from uproot._util import no_filter
 
-from coffea.util import compress_form
+from coffea.util import compress_form, decompress_form
 
 
 def get_steps(
@@ -26,6 +26,7 @@ def get_steps(
     file_exceptions: Exception | Warning | tuple[Exception | Warning] = (OSError,),
     save_form: bool = False,
     step_size_safety_factor: float = 0.5,
+    uproot_options: dict = {},
 ) -> awkward.Array | dask_awkward.Array:
     """
     Given a list of normalized file and object paths (defined in uproot), determine the steps for each file according to the supplied processing options.
@@ -62,7 +63,7 @@ def get_steps(
     array = [] if nf_backend != "typetracer" else lz_or_nf
     for arg in lz_or_nf:
         try:
-            the_file = uproot.open({arg.file: None})
+            the_file = uproot.open({arg.file: None}, **uproot_options)
         except file_exceptions as e:
             if skip_bad_files:
                 array.append(None)
@@ -76,12 +77,22 @@ def get_steps(
         form_json = None
         form_hash = None
         if save_form:
-            form_bytes = (
-                uproot.dask(tree, ak_add_doc=True).layout.form.to_json().encode("utf-8")
+            common_keys = tree.keys(
+                recursive=True,
+                filter_name=no_filter,
+                filter_typename=no_filter,
+                filter_branch=no_filter,
+                full_paths=False,
             )
+            form_str = uproot._dask._get_ttree_form(
+                awkward,
+                tree,
+                common_keys,
+                ak_add_doc=True,
+            ).to_json()
 
-            form_hash = hashlib.md5(form_bytes).hexdigest()
-            form_json = gzip.compress(form_bytes)
+            form_hash = hashlib.md5(form_str.encode("utf-8")).hexdigest()
+            form_json = compress_form(form_str)
 
         target_step_size = num_entries if step_size is None else step_size
 
@@ -241,6 +252,9 @@ def preprocess(
     file_exceptions: Exception | Warning | tuple[Exception | Warning] = (OSError,),
     save_form: bool = False,
     scheduler: None | Callable | str = None,
+    split_every: int = 8,
+    uproot_options: dict = {},
+    step_size_safety_factor: float = 0.5,
 ) -> tuple[FilesetSpec, FilesetSpecOptional]:
     """
     Given a list of normalized file and object paths (defined in uproot), determine the steps for each file according to the supplied processing options.
@@ -265,6 +279,13 @@ def preprocess(
             Extract the form of the TTree from each file in each dataset, creating the union of the forms over the dataset.
         scheduler: None | Callable | str, default None
             Specifies the scheduler that dask should use to execute the preprocessing task graph.
+        split_every: int, default 8
+            How many inputs for each tree reduce step, controls parallelism vs. memory use.
+        uproot_options: dict, default {}
+            Options to pass to get_steps for opening files with uproot.
+        step_size_safety_factor: float, default 0.5
+            When using align_clusters, if a resulting step is larger than step_size by this factor
+            warn the user that the resulting steps may be highly irregular.
     Returns
     -------
         out_available : FilesetSpec
@@ -289,7 +310,6 @@ def preprocess(
         dak_norm_files = dask_awkward.from_awkward(
             ak_norm_files, math.ceil(len(ak_norm_files) / files_per_batch)
         )
-
         files_to_preprocess[name] = dask_awkward.map_partitions(
             get_steps,
             dak_norm_files,
@@ -299,6 +319,8 @@ def preprocess(
             skip_bad_files=skip_bad_files,
             file_exceptions=file_exceptions,
             save_form=save_form,
+            step_size_safety_factor=step_size_safety_factor,
+            uproot_options=uproot_options,
         )
 
     (all_processed_files,) = dask.compute(files_to_preprocess, scheduler=scheduler)
@@ -318,9 +340,7 @@ def preprocess(
 
         dict_forms = []
         for form in forms[unique_forms_idx].form:
-            dict_form = awkward.forms.from_json(
-                gzip.decompress(form).decode("utf-8")
-            ).to_dict()
+            dict_form = awkward.forms.from_json(decompress_form(form)).to_dict()
             fields = dict_form.pop("fields")
             dict_form["contents"] = {
                 field: content for field, content in zip(fields, dict_form["contents"])
