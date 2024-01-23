@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import copy
-import gzip
 import hashlib
 import math
 import warnings
 from dataclasses import dataclass
+from functools import partial
 from typing import Any, Callable, Dict, Hashable
 
 import awkward
@@ -13,19 +13,21 @@ import dask
 import dask_awkward
 import numpy
 import uproot
+from uproot._util import no_filter
 
-from coffea.util import compress_form
+from coffea.util import _remove_not_interpretable, compress_form, decompress_form
 
 
 def get_steps(
     normed_files: awkward.Array | dask_awkward.Array,
-    maybe_step_size: int | None = None,
+    step_size: int | None = None,
     align_clusters: bool = False,
-    recalculate_seen_steps: bool = False,
+    recalculate_steps: bool = False,
     skip_bad_files: bool = False,
     file_exceptions: Exception | Warning | tuple[Exception | Warning] = (OSError,),
     save_form: bool = False,
     step_size_safety_factor: float = 0.5,
+    uproot_options: dict = {},
 ) -> awkward.Array | dask_awkward.Array:
     """
     Given a list of normalized file and object paths (defined in uproot), determine the steps for each file according to the supplied processing options.
@@ -33,12 +35,12 @@ def get_steps(
     ----------
         normed_files: awkward.Array | dask_awkward.Array
             The list of normalized file descriptions to process for steps.
-        maybe_step_sizes: int | None, default None
+        step_size: int | None, default None
             If specified, the size of the steps to make when analyzing the input files.
         align_clusters: bool, default False
             Round to the cluster size in a root file, when chunks are specified. Reduces data transfer in
             analysis.
-        recalculate_seen_steps: bool, default False
+        recalculate_steps: bool, default False
             If steps are present in the input normed files, force the recalculation of those steps, instead
             of only recalculating the steps if the uuid has changed.
         skip_bad_files: bool, False
@@ -48,7 +50,7 @@ def get_steps(
         save_form: bool, default False
             Extract the form of the TTree from the file so we can skip opening files later.
         step_size_safety_factor: float, default 0.5
-            When using align_clusters, if a resulting step is larger than maybe_step_size by this factor
+            When using align_clusters, if a resulting step is larger than step_size by this factor
             warn the user that the resulting steps may be highly irregular.
 
     Returns
@@ -62,7 +64,7 @@ def get_steps(
     array = [] if nf_backend != "typetracer" else lz_or_nf
     for arg in lz_or_nf:
         try:
-            the_file = uproot.open({arg.file: None})
+            the_file = uproot.open({arg.file: None}, **uproot_options)
         except file_exceptions as e:
             if skip_bad_files:
                 array.append(None)
@@ -76,21 +78,31 @@ def get_steps(
         form_json = None
         form_hash = None
         if save_form:
-            form_bytes = (
-                uproot.dask(tree, ak_add_doc=True).layout.form.to_json().encode("utf-8")
+            common_keys = tree.keys(
+                recursive=True,
+                filter_name=no_filter,
+                filter_typename=no_filter,
+                filter_branch=partial(_remove_not_interpretable, emit_warning=False),
+                full_paths=False,
             )
+            form_str = uproot._dask._get_ttree_form(
+                awkward,
+                tree,
+                common_keys,
+                ak_add_doc=True,
+            ).to_json()
 
-            form_hash = hashlib.md5(form_bytes).hexdigest()
-            form_json = gzip.compress(form_bytes)
+            form_hash = hashlib.md5(form_str.encode("utf-8")).hexdigest()
+            form_json = compress_form(form_str)
 
-        target_step_size = num_entries if maybe_step_size is None else maybe_step_size
+        target_step_size = num_entries if step_size is None else step_size
 
         file_uuid = str(the_file.file.uuid)
 
         out_uuid = arg.uuid
         out_steps = arg.steps
 
-        if out_uuid != file_uuid or recalculate_seen_steps:
+        if out_uuid != file_uuid or recalculate_steps:
             if align_clusters:
                 clusters = tree.common_entry_offsets()
                 out = [0]
@@ -205,16 +217,44 @@ FilesetSpecOptional = Dict[str, DatasetSpecOptional]
 FilesetSpec = Dict[str, DatasetSpec]
 
 
+def _normalize_file_info(file_info):
+    normed_files = None
+    if isinstance(file_info, list) or (
+        isinstance(file_info, dict) and "files" not in file_info
+    ):
+        normed_files = uproot._util.regularize_files(file_info, steps_allowed=True)
+    elif isinstance(file_info, dict) and "files" in file_info:
+        normed_files = uproot._util.regularize_files(
+            file_info["files"], steps_allowed=True
+        )
+
+    for ifile in range(len(normed_files)):
+        maybe_finfo = None
+        if isinstance(file_info, dict) and "files" not in file_info:
+            maybe_finfo = file_info.get(normed_files[ifile][0], None)
+        elif isinstance(file_info, dict) and "files" in file_info:
+            maybe_finfo = file_info["files"].get(normed_files[ifile][0], None)
+        maybe_uuid = (
+            None if not isinstance(maybe_finfo, dict) else maybe_finfo.get("uuid", None)
+        )
+        this_file = normed_files[ifile]
+        this_file += (3 - len(this_file)) * (None,) + (maybe_uuid,)
+        normed_files[ifile] = this_file
+    return normed_files
+
+
 def preprocess(
     fileset: FilesetSpecOptional,
-    maybe_step_size: None | int = None,
+    step_size: None | int = None,
     align_clusters: bool = False,
-    recalculate_seen_steps: bool = False,
+    recalculate_steps: bool = False,
     files_per_batch: int = 1,
     skip_bad_files: bool = False,
     file_exceptions: Exception | Warning | tuple[Exception | Warning] = (OSError,),
     save_form: bool = False,
     scheduler: None | Callable | str = None,
+    uproot_options: dict = {},
+    step_size_safety_factor: float = 0.5,
 ) -> tuple[FilesetSpec, FilesetSpecOptional]:
     """
     Given a list of normalized file and object paths (defined in uproot), determine the steps for each file according to the supplied processing options.
@@ -223,12 +263,12 @@ def preprocess(
     ----------
         fileset: FilesetSpecOptional
             The set of datasets whose files will be preprocessed.
-        maybe_step_sizes: int | None, default None
+        step_size: int | None, default None
             If specified, the size of the steps to make when analyzing the input files.
         align_clusters: bool, default False
             Round to the cluster size in a root file, when chunks are specified. Reduces data transfer in
             analysis.
-        recalculate_seen_steps: bool, default False
+        recalculate_steps: bool, default False
             If steps are present in the input normed files, force the recalculation of those steps,
             instead of only recalculating the steps if the uuid has changed.
         skip_bad_files: bool, False
@@ -239,6 +279,11 @@ def preprocess(
             Extract the form of the TTree from each file in each dataset, creating the union of the forms over the dataset.
         scheduler: None | Callable | str, default None
             Specifies the scheduler that dask should use to execute the preprocessing task graph.
+        uproot_options: dict, default {}
+            Options to pass to get_steps for opening files with uproot.
+        step_size_safety_factor: float, default 0.5
+            When using align_clusters, if a resulting step is larger than step_size by this factor
+            warn the user that the resulting steps may be highly irregular.
     Returns
     -------
         out_available : FilesetSpec
@@ -248,19 +293,11 @@ def preprocess(
     """
     out_updated = copy.deepcopy(fileset)
     out_available = copy.deepcopy(fileset)
+
     all_ak_norm_files = {}
     files_to_preprocess = {}
     for name, info in fileset.items():
-        norm_files = uproot._util.regularize_files(info["files"], steps_allowed=True)
-        for ifile in range(len(norm_files)):
-            the_file_info = norm_files[ifile]
-            maybe_finfo = info["files"].get(the_file_info[0], None)
-            maybe_uuid = (
-                None
-                if not isinstance(maybe_finfo, dict)
-                else maybe_finfo.get("uuid", None)
-            )
-            norm_files[ifile] += (3 - len(norm_files[ifile])) * (None,) + (maybe_uuid,)
+        norm_files = _normalize_file_info(info)
         fields = ["file", "object_path", "steps", "uuid"]
         ak_norm_files = awkward.from_iter(norm_files)
         ak_norm_files = awkward.Array(
@@ -271,16 +308,17 @@ def preprocess(
         dak_norm_files = dask_awkward.from_awkward(
             ak_norm_files, math.ceil(len(ak_norm_files) / files_per_batch)
         )
-
         files_to_preprocess[name] = dask_awkward.map_partitions(
             get_steps,
             dak_norm_files,
-            maybe_step_size=maybe_step_size,
+            step_size=step_size,
             align_clusters=align_clusters,
-            recalculate_seen_steps=recalculate_seen_steps,
+            recalculate_steps=recalculate_steps,
             skip_bad_files=skip_bad_files,
             file_exceptions=file_exceptions,
             save_form=save_form,
+            step_size_safety_factor=step_size_safety_factor,
+            uproot_options=uproot_options,
         )
 
     (all_processed_files,) = dask.compute(files_to_preprocess, scheduler=scheduler)
@@ -300,9 +338,7 @@ def preprocess(
 
         dict_forms = []
         for form in forms[unique_forms_idx].form:
-            dict_form = awkward.forms.from_json(
-                gzip.decompress(form).decode("utf-8")
-            ).to_dict()
+            dict_form = awkward.forms.from_json(decompress_form(form)).to_dict()
             fields = dict_form.pop("fields")
             dict_form["contents"] = {
                 field: content for field, content in zip(fields, dict_form["contents"])
@@ -337,8 +373,16 @@ def preprocess(
                 "uuid": item["uuid"],
             }
 
-        out_updated[name]["files"] = files_out
-        out_available[name]["files"] = files_available
+        if "files" in out_updated[name]:
+            out_updated[name]["files"] = files_out
+            out_available[name]["files"] = files_available
+        else:
+            out_updated[name] = {"files": files_out, "metadata": None, "form": None}
+            out_available[name] = {
+                "files": files_available,
+                "metadata": None,
+                "form": None,
+            }
 
         compressed_union_form = None
         if union_form_jsonstr is not None:

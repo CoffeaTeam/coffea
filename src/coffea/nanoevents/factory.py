@@ -22,37 +22,9 @@ from coffea.nanoevents.mapping import (
 )
 from coffea.nanoevents.schemas import BaseSchema, NanoAODSchema
 from coffea.nanoevents.util import key_to_tuple, quote, tuple_to_key, unquote
+from coffea.util import _remove_not_interpretable
 
 _offsets_label = quote(",!offsets")
-
-
-def _remove_not_interpretable(branch):
-    if isinstance(
-        branch.interpretation, uproot.interpretation.identify.uproot.AsGrouped
-    ):
-        for name, interpretation in branch.interpretation.subbranches.items():
-            if isinstance(
-                interpretation, uproot.interpretation.identify.UnknownInterpretation
-            ):
-                warnings.warn(
-                    f"Skipping {branch.name} as it is not interpretable by Uproot"
-                )
-                return False
-    if isinstance(
-        branch.interpretation, uproot.interpretation.identify.UnknownInterpretation
-    ):
-        warnings.warn(f"Skipping {branch.name} as it is not interpretable by Uproot")
-        return False
-
-    try:
-        _ = branch.interpretation.awkward_form(None)
-    except uproot.interpretation.objects.CannotBeAwkward:
-        warnings.warn(
-            f"Skipping {branch.name} as it is it cannot be represented as an Awkward array"
-        )
-        return False
-    else:
-        return True
 
 
 def _key_formatter(prefix, form_key, form, attribute):
