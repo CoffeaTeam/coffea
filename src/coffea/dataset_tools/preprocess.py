@@ -35,7 +35,7 @@ def get_steps(
     ----------
         normed_files: awkward.Array | dask_awkward.Array
             The list of normalized file descriptions to process for steps.
-        step_sizes: int | None, default None
+        step_size: int | None, default None
             If specified, the size of the steps to make when analyzing the input files.
         align_clusters: bool, default False
             Round to the cluster size in a root file, when chunks are specified. Reduces data transfer in
@@ -263,7 +263,7 @@ def preprocess(
     ----------
         fileset: FilesetSpecOptional
             The set of datasets whose files will be preprocessed.
-        step_sizes: int | None, default None
+        step_size: int | None, default None
             If specified, the size of the steps to make when analyzing the input files.
         align_clusters: bool, default False
             Round to the cluster size in a root file, when chunks are specified. Reduces data transfer in
