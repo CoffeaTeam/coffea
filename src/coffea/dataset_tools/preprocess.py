@@ -19,9 +19,9 @@ from coffea.util import compress_form
 
 def get_steps(
     normed_files: awkward.Array | dask_awkward.Array,
-    maybe_step_size: int | None = None,
+    step_size: int | None = None,
     align_clusters: bool = False,
-    recalculate_seen_steps: bool = False,
+    recalculate_steps: bool = False,
     skip_bad_files: bool = False,
     file_exceptions: Exception | Warning | tuple[Exception | Warning] = (OSError,),
     save_form: bool = False,
@@ -33,12 +33,12 @@ def get_steps(
     ----------
         normed_files: awkward.Array | dask_awkward.Array
             The list of normalized file descriptions to process for steps.
-        maybe_step_sizes: int | None, default None
+        step_sizes: int | None, default None
             If specified, the size of the steps to make when analyzing the input files.
         align_clusters: bool, default False
             Round to the cluster size in a root file, when chunks are specified. Reduces data transfer in
             analysis.
-        recalculate_seen_steps: bool, default False
+        recalculate_steps: bool, default False
             If steps are present in the input normed files, force the recalculation of those steps, instead
             of only recalculating the steps if the uuid has changed.
         skip_bad_files: bool, False
@@ -48,7 +48,7 @@ def get_steps(
         save_form: bool, default False
             Extract the form of the TTree from the file so we can skip opening files later.
         step_size_safety_factor: float, default 0.5
-            When using align_clusters, if a resulting step is larger than maybe_step_size by this factor
+            When using align_clusters, if a resulting step is larger than step_size by this factor
             warn the user that the resulting steps may be highly irregular.
 
     Returns
@@ -83,14 +83,14 @@ def get_steps(
             form_hash = hashlib.md5(form_bytes).hexdigest()
             form_json = gzip.compress(form_bytes)
 
-        target_step_size = num_entries if maybe_step_size is None else maybe_step_size
+        target_step_size = num_entries if step_size is None else step_size
 
         file_uuid = str(the_file.file.uuid)
 
         out_uuid = arg.uuid
         out_steps = arg.steps
 
-        if out_uuid != file_uuid or recalculate_seen_steps:
+        if out_uuid != file_uuid or recalculate_steps:
             if align_clusters:
                 clusters = tree.common_entry_offsets()
                 out = [0]
@@ -205,11 +205,37 @@ FilesetSpecOptional = Dict[str, DatasetSpecOptional]
 FilesetSpec = Dict[str, DatasetSpec]
 
 
+def _normalize_file_info(file_info):
+    normed_files = None
+    if isinstance(file_info, list) or (
+        isinstance(file_info, dict) and "files" not in file_info
+    ):
+        normed_files = uproot._util.regularize_files(file_info, steps_allowed=True)
+    elif isinstance(file_info, dict) and "files" in file_info:
+        normed_files = uproot._util.regularize_files(
+            file_info["files"], steps_allowed=True
+        )
+
+    for ifile in range(len(normed_files)):
+        maybe_finfo = None
+        if isinstance(file_info, dict) and "files" not in file_info:
+            maybe_finfo = file_info.get(normed_files[ifile][0], None)
+        elif isinstance(file_info, dict) and "files" in file_info:
+            maybe_finfo = file_info["files"].get(normed_files[ifile][0], None)
+        maybe_uuid = (
+            None if not isinstance(maybe_finfo, dict) else maybe_finfo.get("uuid", None)
+        )
+        this_file = normed_files[ifile]
+        this_file += (3 - len(this_file)) * (None,) + (maybe_uuid,)
+        normed_files[ifile] = this_file
+    return normed_files
+
+
 def preprocess(
     fileset: FilesetSpecOptional,
-    maybe_step_size: None | int = None,
+    step_size: None | int = None,
     align_clusters: bool = False,
-    recalculate_seen_steps: bool = False,
+    recalculate_steps: bool = False,
     files_per_batch: int = 1,
     skip_bad_files: bool = False,
     file_exceptions: Exception | Warning | tuple[Exception | Warning] = (OSError,),
@@ -223,12 +249,12 @@ def preprocess(
     ----------
         fileset: FilesetSpecOptional
             The set of datasets whose files will be preprocessed.
-        maybe_step_sizes: int | None, default None
+        step_sizes: int | None, default None
             If specified, the size of the steps to make when analyzing the input files.
         align_clusters: bool, default False
             Round to the cluster size in a root file, when chunks are specified. Reduces data transfer in
             analysis.
-        recalculate_seen_steps: bool, default False
+        recalculate_steps: bool, default False
             If steps are present in the input normed files, force the recalculation of those steps,
             instead of only recalculating the steps if the uuid has changed.
         skip_bad_files: bool, False
@@ -248,19 +274,11 @@ def preprocess(
     """
     out_updated = copy.deepcopy(fileset)
     out_available = copy.deepcopy(fileset)
+
     all_ak_norm_files = {}
     files_to_preprocess = {}
     for name, info in fileset.items():
-        norm_files = uproot._util.regularize_files(info["files"], steps_allowed=True)
-        for ifile in range(len(norm_files)):
-            the_file_info = norm_files[ifile]
-            maybe_finfo = info["files"].get(the_file_info[0], None)
-            maybe_uuid = (
-                None
-                if not isinstance(maybe_finfo, dict)
-                else maybe_finfo.get("uuid", None)
-            )
-            norm_files[ifile] += (3 - len(norm_files[ifile])) * (None,) + (maybe_uuid,)
+        norm_files = _normalize_file_info(info)
         fields = ["file", "object_path", "steps", "uuid"]
         ak_norm_files = awkward.from_iter(norm_files)
         ak_norm_files = awkward.Array(
@@ -275,9 +293,9 @@ def preprocess(
         files_to_preprocess[name] = dask_awkward.map_partitions(
             get_steps,
             dak_norm_files,
-            maybe_step_size=maybe_step_size,
+            step_size=step_size,
             align_clusters=align_clusters,
-            recalculate_seen_steps=recalculate_seen_steps,
+            recalculate_steps=recalculate_steps,
             skip_bad_files=skip_bad_files,
             file_exceptions=file_exceptions,
             save_form=save_form,
@@ -337,8 +355,16 @@ def preprocess(
                 "uuid": item["uuid"],
             }
 
-        out_updated[name]["files"] = files_out
-        out_available[name]["files"] = files_available
+        if "files" in out_updated[name]:
+            out_updated[name]["files"] = files_out
+            out_available[name]["files"] = files_available
+        else:
+            out_updated[name] = {"files": files_out, "metadata": None, "form": None}
+            out_available[name] = {
+                "files": files_available,
+                "metadata": None,
+                "form": None,
+            }
 
         compressed_union_form = None
         if union_form_jsonstr is not None:

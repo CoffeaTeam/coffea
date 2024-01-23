@@ -17,6 +17,22 @@ from coffea.nanoevents import BaseSchema, NanoAODSchema
 from coffea.processor.test_items import NanoEventsProcessor, NanoTestProcessor
 from coffea.util import decompress_form
 
+_starting_fileset_list = {
+    "ZJets": ["tests/samples/nano_dy.root:Events"],
+    "Data": [
+        "tests/samples/nano_dimuon.root:Events",
+        "tests/samples/nano_dimuon_not_there.root:Events",
+    ],
+}
+
+_starting_fileset_dict = {
+    "ZJets": {"tests/samples/nano_dy.root": "Events"},
+    "Data": {
+        "tests/samples/nano_dimuon.root": "Events",
+        "tests/samples/nano_dimuon_not_there.root": "Events",
+    },
+}
+
 _starting_fileset = {
     "ZJets": {
         "files": {
@@ -214,7 +230,7 @@ def test_apply_to_fileset_hinted_form():
     with Client() as _:
         dataset_runnable, dataset_updated = preprocess(
             _starting_fileset,
-            maybe_step_size=7,
+            step_size=7,
             align_clusters=False,
             files_per_batch=10,
             skip_bad_files=True,
@@ -234,11 +250,14 @@ def test_apply_to_fileset_hinted_form():
         assert out["Data"]["cutflow"]["Data_mass"] == 66
 
 
-def test_preprocess():
+@pytest.mark.parametrize(
+    "the_fileset", [_starting_fileset_list, _starting_fileset_dict, _starting_fileset]
+)
+def test_preprocess(the_fileset):
     with Client() as _:
         dataset_runnable, dataset_updated = preprocess(
-            _starting_fileset,
-            maybe_step_size=7,
+            the_fileset,
+            step_size=7,
             align_clusters=False,
             files_per_batch=10,
             skip_bad_files=True,
@@ -254,7 +273,7 @@ def test_preprocess_calculate_form():
 
         dataset_runnable, dataset_updated = preprocess(
             starting_fileset,
-            maybe_step_size=7,
+            step_size=7,
             align_clusters=False,
             files_per_batch=10,
             skip_bad_files=True,
@@ -278,7 +297,7 @@ def test_preprocess_failed_file():
 
         dataset_runnable, dataset_updated = preprocess(
             starting_fileset,
-            maybe_step_size=7,
+            step_size=7,
             align_clusters=False,
             files_per_batch=10,
             skip_bad_files=False,
