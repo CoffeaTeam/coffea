@@ -126,14 +126,15 @@ def get_steps(
                     )
 
             else:
-                n_steps = math.ceil(num_entries / target_step_size)
+                n_steps_target = max(round(num_entries / target_step_size), 1)
+                actual_step_size = math.ceil(num_entries / n_steps_target)
                 out = numpy.array(
                     [
                         [
-                            i * target_step_size,
-                            min((i + 1) * target_step_size, num_entries),
+                            i * actual_step_size,
+                            min((i + 1) * actual_step_size, num_entries),
                         ]
-                        for i in range(n_steps)
+                        for i in range(n_steps_target)
                     ],
                     dtype="int64",
                 )
