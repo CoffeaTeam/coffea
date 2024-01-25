@@ -142,8 +142,6 @@ def get_steps(
             out_uuid = file_uuid
             out_steps = out.tolist()
 
-        print(out_steps)
-
         if out_steps is not None and len(out_steps) == 0:
             out_steps = [[0, 0]]
 
