@@ -23,8 +23,6 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
-import coffea
-
 ak = awkward
 dak = dask_awkward
 np = numpy
@@ -166,22 +164,27 @@ def rich_bar():
     )
 
 
-# lifted from awkward - https://github.com/scikit-hep/awkward-1.0/blob/5fe31a916bf30df6c2ea10d4094f6f1aefcf3d0c/src/awkward/_util.py#L47-L61 # noqa
+# lifted from awkward - https://github.com/scikit-hep/awkward/blob/2b80da6b60bd5f0437b66f266387f1ab4bf98fe1/src/awkward/_errors.py#L421 # noqa
 # drive our deprecations-as-errors as with awkward
-def deprecate(exception, version, date=None):
-    if coffea.deprecations_as_errors:
-        raise exception
+def deprecate(
+    message,
+    version,
+    date=None,
+    will_be="an error",
+    category=DeprecationWarning,
+    stacklevel=2,
+):
+    if date is None:
+        date = ""
     else:
-        if date is None:
-            date = ""
-        else:
-            date = " (target date: " + date + ")"
-        message = """In coffea version {}{}, this will be an error.
-(Set coffea.deprecations_as_errors = True to get a stack trace now.)
-{}: {}""".format(
-            version, date, type(exception).__name__, str(exception)
-        )
-        warnings.warn(message, FutureWarning)
+        date = " (target date: " + date + ")"
+    warning = f"""In version {version}{date}, this will be {will_be}.
+To raise these warnings as errors (and get stack traces to find out where they're called), run
+    import warnings
+    warnings.filterwarnings("error", module="coffea.*")
+after the first `import coffea` or use `@pytest.mark.filterwarnings("error:::coffea.*")` in pytest.
+Issue: {message}."""
+    warnings.warn(warning, category, stacklevel=stacklevel + 1)
 
 
 # re-nest a record array into a ListArray

@@ -43,11 +43,28 @@ A small example::
 
 """
 import numbers
+from datetime import datetime
 
 import awkward
 import numba
 import numpy
+import pytz
 from dask_awkward import dask_method
+
+from coffea.util import deprecate
+
+_cst = pytz.timezone("US/Central")
+_depttime = _cst.localize(datetime(2024, 6, 30, 11, 59, 59))
+deprecate(
+    (
+        "coffea.nanoevents.methods.vector will be removed and replaced with scikit-hep vector. "
+        "Nanoevents schemas internal to coffea will be migrated. "
+        "Otherwise please consider using that package!"
+    ),
+    version="2024.7.0",
+    date=str(_depttime),
+    category=FutureWarning,
+)
 
 
 @numba.vectorize(
