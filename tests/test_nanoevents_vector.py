@@ -10,7 +10,7 @@ ATOL = 1e-8
 
 def assert_record_arrays_equal(a, b, check_type=False):
     if check_type:
-        assert type(a) == type(b)
+        assert type(a) is type(b)
     assert ak.fields(a) == ak.fields(b)
     assert all(ak.all(a[f] == b[f]) for f in ak.fields(a))
 
