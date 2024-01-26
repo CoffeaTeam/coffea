@@ -2,15 +2,24 @@ import awkward as ak
 import numpy as np
 import pytest
 
+from numpy.testing import assert_allclose
 from coffea.nanoevents.methods import vector
 
 ATOL = 1e-8
 
 
-def record_arrays_equal(a, b):
-    return (ak.fields(a) == ak.fields(b)) and all(
-        ak.all(a[f] == b[f]) for f in ak.fields(a)
-    )
+def assert_record_arrays_equal(a, b, check_type=False):
+    if check_type:
+        assert type(a) == type(b)
+    assert ak.fields(a) == ak.fields(b)
+    assert all(ak.all(a[f] == b[f]) for f in ak.fields(a))
+
+
+def assert_awkward_allclose(actual, desired):
+    flat_actual = ak.flatten(actual, axis=None)
+    flat_desired = ak.flatten(desired, axis=None)
+    # we should check None values, but not used in these tests
+    assert_allclose(flat_actual, flat_desired)
 
 
 def test_two_vector():
@@ -25,31 +34,31 @@ def test_two_vector():
         behavior=vector.behavior,
     )
 
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         -a, ak.zip({"x": [[-1, -2], [], [-3], [-4]], "y": [[-5, -6], [], [-7], [-8]]})
     )
 
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         a + b,
         ak.zip({"x": [[12, 14], [], [16], [18]], "y": [[20, 22], [], [24], [26]]}),
     )
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         a - b,
         ak.zip(
             {"x": [[-10, -10], [], [-10], [-10]], "y": [[-10, -10], [], [-10], [-10]]}
         ),
     )
 
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         a * 2, ak.zip({"x": [[2, 4], [], [6], [8]], "y": [[10, 12], [], [14], [16]]})
     )
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         a / 2,
         ak.zip({"x": [[0.5, 1], [], [1.5], [2]], "y": [[2.5, 3], [], [3.5], [4]]}),
     )
 
-    assert record_arrays_equal(a.dot(b), ak.Array([[86, 120], [], [158], [200]]))
-    assert record_arrays_equal(b.dot(a), ak.Array([[86, 120], [], [158], [200]]))
+    assert_awkward_allclose(a.dot(b), ak.Array([[86, 120], [], [158], [200]]))
+    assert_awkward_allclose(b.dot(a), ak.Array([[86, 120], [], [158], [200]]))
 
     assert ak.all(abs(a.unit.r - 1) < ATOL)
     assert ak.all(abs(a.unit.phi - a.phi) < ATOL)
@@ -65,7 +74,7 @@ def test_polar_two_vector():
         behavior=vector.behavior,
     )
 
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         a * 2,
         ak.zip({"rho": [[2, 4], [], [6], [8]], "phi": [[0.3, 0.4], [], [0.5], [0.6]]}),
     )
@@ -77,7 +86,7 @@ def test_polar_two_vector():
         )
         < ATOL
     )
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         a / 2,
         ak.zip(
             {"rho": [[0.5, 1], [], [1.5], [2]], "phi": [[0.3, 0.4], [], [0.5], [0.6]]}
@@ -86,7 +95,7 @@ def test_polar_two_vector():
 
     assert ak.all(abs((-a).x + a.x) < ATOL)
     assert ak.all(abs((-a).y + a.y) < ATOL)
-    assert record_arrays_equal(a * (-1), -a)
+    assert_record_arrays_equal(a * (-1), -a)
 
     assert ak.all(a.unit.phi == a.phi)
 
@@ -111,7 +120,7 @@ def test_three_vector():
         behavior=vector.behavior,
     )
 
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         -a,
         ak.zip(
             {
@@ -122,7 +131,7 @@ def test_three_vector():
         ),
     )
 
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         a + b,
         ak.zip(
             {
@@ -132,7 +141,7 @@ def test_three_vector():
             }
         ),
     )
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         a - b,
         ak.zip(
             {
@@ -142,7 +151,7 @@ def test_three_vector():
             }
         ),
     )
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         b - a,
         ak.zip(
             {
@@ -153,7 +162,7 @@ def test_three_vector():
         ),
     )
 
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         a * 2,
         ak.zip(
             {
@@ -163,7 +172,7 @@ def test_three_vector():
             }
         ),
     )
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         a / 2,
         ak.zip(
             {
@@ -177,7 +186,7 @@ def test_three_vector():
     assert ak.all(a.dot(b) == ak.Array([[170, 154], [], [162], [284]]))
     assert ak.all(b.dot(a) == ak.Array([[170, 154], [], [162], [284]]))
 
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         a.cross(b),
         ak.zip(
             {
@@ -187,7 +196,7 @@ def test_three_vector():
             }
         ),
     )
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         b.cross(a),
         ak.zip(
             {
@@ -216,7 +225,7 @@ def test_spherical_three_vector():
     assert ak.all(abs((-a).x + a.x) < ATOL)
     assert ak.all(abs((-a).y + a.y) < ATOL)
     assert ak.all(abs((-a).z + a.z) < ATOL)
-    assert record_arrays_equal(a * (-1), -a)
+    assert_record_arrays_equal(a * (-1), -a, check_type=True)
 
 
 def test_lorentz_vector():
@@ -241,7 +250,7 @@ def test_lorentz_vector():
         behavior=vector.behavior,
     )
 
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         -a,
         ak.zip(
             {
@@ -253,7 +262,7 @@ def test_lorentz_vector():
         ),
     )
 
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         a + b,
         ak.zip(
             {
@@ -264,7 +273,7 @@ def test_lorentz_vector():
             }
         ),
     )
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         a - b,
         ak.zip(
             {
@@ -276,7 +285,7 @@ def test_lorentz_vector():
         ),
     )
 
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         a * 2,
         ak.zip(
             {
@@ -287,7 +296,7 @@ def test_lorentz_vector():
             }
         ),
     )
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         a / 2,
         ak.zip(
             {
@@ -299,7 +308,7 @@ def test_lorentz_vector():
         ),
     )
 
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         a.pvec,
         ak.zip(
             {
@@ -344,7 +353,7 @@ def test_pt_eta_phi_m_lorentz_vector():
         )
         < ATOL
     )
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         a / 2,
         ak.zip(
             {
@@ -355,7 +364,7 @@ def test_pt_eta_phi_m_lorentz_vector():
             }
         ),
     )
-    assert record_arrays_equal(a * (-1), -a)
+    assert_record_arrays_equal(a * (-1), -a, check_type=True)
 
     boosted = a.boost(-a.boostvec)
     assert ak.all(abs(boosted.x) < ATOL)
@@ -390,7 +399,7 @@ def test_pt_eta_phi_e_lorentz_vector():
         )
         < ATOL
     )
-    assert record_arrays_equal(
+    assert_record_arrays_equal(
         a / 2,
         ak.zip(
             {
@@ -401,7 +410,7 @@ def test_pt_eta_phi_e_lorentz_vector():
             }
         ),
     )
-    assert record_arrays_equal(a * (-1), -a)
+    assert_record_arrays_equal(a * (-1), -a, check_type=True)
 
     boosted = a.boost(-a.boostvec)
     assert ak.all(abs(boosted.x) < ATOL)
@@ -530,17 +539,17 @@ def test_inherited_method_transpose(lcoord, threecoord, twocoord):
             behavior=vector.behavior,
         )
 
-    assert record_arrays_equal(a + b, b + a)
-    assert record_arrays_equal(a + c, c + a)
-    assert record_arrays_equal(b + c, c + b)
+    assert_record_arrays_equal(a + b, b + a, check_type=True)
+    assert_record_arrays_equal(a + c, c + a, check_type=True)
+    assert_record_arrays_equal(b + c, c + b, check_type=True)
 
-    assert record_arrays_equal(a.delta_phi(b), b.delta_phi(a))
-    assert record_arrays_equal(a.delta_phi(c), c.delta_phi(a))
-    assert record_arrays_equal(b.delta_phi(c), c.delta_phi(b))
+    assert_allclose(a.delta_phi(b), -b.delta_phi(a))
+    assert_allclose(a.delta_phi(c), -c.delta_phi(a))
+    assert_allclose(b.delta_phi(c), -c.delta_phi(b))
 
-    assert record_arrays_equal((a - b).to_Vector3D(), -(b - a))
-    assert record_arrays_equal((a - c).to_Vector2D(), -(c - a))
-    assert record_arrays_equal((b - c).to_Vector2D(), -(c - b))
+    assert_record_arrays_equal((a - b), -(b - a), check_type=True)
+    assert_record_arrays_equal((a - c), -(c - a), check_type=True)
+    assert_record_arrays_equal((b - c), -(c - b), check_type=True)
 
 
 @pytest.mark.parametrize("optimization_enabled", [True, False])
