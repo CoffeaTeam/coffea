@@ -1,8 +1,8 @@
 import awkward as ak
 import numpy as np
 import pytest
-
 from numpy.testing import assert_allclose
+
 from coffea.nanoevents.methods import vector
 
 ATOL = 1e-8
