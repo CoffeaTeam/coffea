@@ -5,17 +5,16 @@ import hashlib
 import math
 import warnings
 from dataclasses import dataclass
-from functools import partial
 from typing import Any, Callable, Dict, Hashable
 
 import awkward
 import dask
+import dask.base
 import dask_awkward
 import numpy
 import uproot
-from uproot._util import no_filter
 
-from coffea.util import _remove_not_interpretable, compress_form, decompress_form
+from coffea.util import compress_form, decompress_form
 
 
 def get_steps(
@@ -78,19 +77,8 @@ def get_steps(
         form_json = None
         form_hash = None
         if save_form:
-            common_keys = tree.keys(
-                recursive=True,
-                filter_name=no_filter,
-                filter_typename=no_filter,
-                filter_branch=partial(_remove_not_interpretable, emit_warning=False),
-                full_paths=False,
-            )
-            form_str = uproot._dask._get_ttree_form(
-                awkward,
-                tree,
-                common_keys,
-                ak_add_doc=True,
-            ).to_json()
+            form_str = uproot.dask(tree, ak_add_doc=True).layout.form.to_json()
+            dask.base.function_cache.popitem()
 
             form_hash = hashlib.md5(form_str.encode("utf-8")).hexdigest()
             form_json = compress_form(form_str)
