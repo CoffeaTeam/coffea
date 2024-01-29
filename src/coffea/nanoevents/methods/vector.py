@@ -158,7 +158,6 @@ class TwoVector(MomentumAwkward2D):
             behavior=self.behavior,
         )
 
-    @awkward.mixin_class_method(numpy.add, {"TwoVector"})
     def add(self, other):
         """Add two vectors together elementwise using `x` and `y` components"""
         return awkward.zip(
@@ -167,18 +166,6 @@ class TwoVector(MomentumAwkward2D):
             behavior=self.behavior,
         )
 
-    @awkward.mixin_class_method(
-        numpy.subtract,
-        {
-            "TwoVector",
-            "ThreeVector",
-            "SphericalThreeVector",
-            "LorentzVector",
-            "PtEtaPhiMLorentzVector",
-            "PtEtaPhiELorentzVector",
-        },
-        transpose=False,
-    )
     def subtract(self, other):
         """Subtract a vector from another elementwise using `x` and `y` components"""
         return awkward.zip(
@@ -298,17 +285,13 @@ class ThreeVector(MomentumAwkward3D):
             behavior=self.behavior,
         )
 
-    @awkward.mixin_class_method(
-        numpy.add, {"ThreeVector", "TwoVector", "PolarTwoVector"}
-    )
     def add(self, other):
         """Add two vectors together elementwise using `x`, `y`, and `z` components"""
-        other_3d = other.to_Vector3D()
         return awkward.zip(
             {
-                "x": self.x + other_3d.x,
-                "y": self.y + other_3d.y,
-                "z": self.z + other_3d.z,
+                "x": self.x + other.x,
+                "y": self.y + other.y,
+                "z": self.z + other.z,
             },
             with_name="ThreeVector",
             behavior=self.behavior,
@@ -320,28 +303,14 @@ class ThreeVector(MomentumAwkward3D):
         This is realized by using the multiplication functionality"""
         return self.multiply(1 / other)
 
-    @awkward.mixin_class_method(
-        numpy.subtract,
-        {
-            "TwoVector",
-            "PolarTwoVector",
-            "ThreeVector",
-            "SphericalThreeVector",
-            "LorentzVector",
-            "PtEtaPhiMLorentzVector",
-            "PtEtaPhiELorentzVector",
-        },
-        transpose=False,
-    )
     def subtract(self, other):
         """Subtract a vector from another elementwise using `x`, `y`, and `z` components"""
-        other_3d = other.to_Vector3D()
 
         return awkward.zip(
             {
-                "x": self.x - other_3d.x,
-                "y": self.y - other_3d.y,
-                "z": self.z - other_3d.z,
+                "x": self.x - other.x,
+                "y": self.y - other.y,
+                "z": self.z - other.z,
             },
             with_name="ThreeVector",
             behavior=self.behavior,
@@ -512,51 +481,28 @@ class LorentzVector(MomentumAwkward4D):
         """
         return self.mass
 
-    @awkward.mixin_class_method(
-        numpy.add,
-        {
-            "LorentzVector",
-            "ThreeVector",
-            "SphericalThreeVector",
-            "TwoVector",
-            "PolarTwoVector",
-        },
-    )
     def add(self, other):
         """Add two vectors together elementwise using `x`, `y`, `z`, and `t` components"""
-        other_4d = other.to_Vector4D()
         return awkward.zip(
             {
-                "x": self.x + other_4d.x,
-                "y": self.y + other_4d.y,
-                "z": self.z + other_4d.z,
-                "t": self.t + other_4d.t,
+                "x": self.x + other.x,
+                "y": self.y + other.y,
+                "z": self.z + other.z,
+                "t": self.t + other.t,
             },
             with_name="LorentzVector",
             behavior=self.behavior,
         )
 
-    @awkward.mixin_class_method(
-        numpy.subtract,
-        {
-            "LorentzVector",
-            "ThreeVector",
-            "SphericalThreeVector",
-            "TwoVector",
-            "PolarTwoVector",
-        },
-        transpose=False,
-    )
     def subtract(self, other):
         """Subtract a vector from another elementwise using `x`, `y`, `z`, and `t` components"""
-        other_4d = other.to_Vector4D()
 
         return awkward.zip(
             {
-                "x": self.x - other_4d.x,
-                "y": self.y - other_4d.y,
-                "z": self.z - other_4d.z,
-                "t": self.t - other_4d.t,
+                "x": self.x - other.x,
+                "y": self.y - other.y,
+                "z": self.z - other.z,
+                "t": self.t - other.t,
             },
             with_name="LorentzVector",
             behavior=self.behavior,
@@ -964,6 +910,24 @@ class PtEtaPhiELorentzVector(LorentzVector):
             with_name="PtEtaPhiELorentzVector",
             behavior=self.behavior,
         )
+
+
+_binary_dispatch_cls = {
+    "TwoVector": TwoVector,
+    "PolarTwoVector": TwoVector,
+    "ThreeVector": ThreeVector,
+    "SphericalThreeVector": ThreeVector,
+    "LorentzVector": LorentzVector,
+    "PtEtaPhiMLorentzVector": LorentzVector,
+    "PtEtaPhiELorentzVector": LorentzVector,
+}
+_rank = [TwoVector, ThreeVector, LorentzVector]
+
+for lhs, lhs_to in _binary_dispatch_cls.items():
+    for rhs, rhs_to in _binary_dispatch_cls.items():
+        out_to = min(lhs_to, rhs_to, key=_rank.index)
+        behavior[(numpy.add, lhs, rhs)] = out_to.add
+        behavior[(numpy.subtract, lhs, rhs)] = out_to.subtract
 
 
 TwoVectorArray.ProjectionClass2D = TwoVectorArray  # noqa: F821
