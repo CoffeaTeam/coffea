@@ -2,6 +2,7 @@
 
 See https://cp3.irmp.ucl.ac.be/projects/delphes/wiki/WorkBook/RootTreeDescription for details.
 """
+
 import awkward
 import numpy
 
@@ -30,64 +31,56 @@ def _set_repr_name(classname):
 
 
 @awkward.mixin_class(behavior)
-class Event:
-    ...
+class Event: ...
 
 
 _set_repr_name("Event")
 
 
 @awkward.mixin_class(behavior)
-class LHEFEvent(Event):
-    ...
+class LHEFEvent(Event): ...
 
 
 _set_repr_name("LHEFEvent")
 
 
 @awkward.mixin_class(behavior)
-class HepMCEvent(Event):
-    ...
+class HepMCEvent(Event): ...
 
 
 _set_repr_name("HepMCEvent")
 
 
 @awkward.mixin_class(behavior)
-class LHCOEvent(Event):
-    ...
+class LHCOEvent(Event): ...
 
 
 _set_repr_name("LHCOEvent")
 
 
 @awkward.mixin_class(behavior)
-class Weight(base.NanoCollection):
-    ...
+class Weight(base.NanoCollection): ...
 
 
 _set_repr_name("Weight")
 
 
 @awkward.mixin_class(behavior)
-class WeightLHEF(Event):
-    ...
+class WeightLHEF(Event): ...
 
 
 _set_repr_name("WeightLHEF")
 
 
 @awkward.mixin_class(behavior)
-class Rho(base.NanoCollection):
-    ...
+class Rho(base.NanoCollection): ...
 
 
 _set_repr_name("Rho")
 
 
 @awkward.mixin_class(behavior)
-class ScalarHT(base.NanoCollection):
-    ...
+class ScalarHT(base.NanoCollection): ...
 
 
 _set_repr_name("ScalarHT")
@@ -190,40 +183,35 @@ _set_repr_name("MasslessParticle")
 
 
 @awkward.mixin_class(behavior)
-class Photon(MasslessParticle, base.NanoCollection):
-    ...
+class Photon(MasslessParticle, base.NanoCollection): ...
 
 
 _set_repr_name("Photon")
 
 
 @awkward.mixin_class(behavior)
-class Electron(MasslessParticle, base.NanoCollection):
-    ...
+class Electron(MasslessParticle, base.NanoCollection): ...
 
 
 _set_repr_name("Electron")
 
 
 @awkward.mixin_class(behavior)
-class Muon(MasslessParticle, base.NanoCollection):
-    ...
+class Muon(MasslessParticle, base.NanoCollection): ...
 
 
 _set_repr_name("Muon")
 
 
 @awkward.mixin_class(behavior)
-class Jet(Particle, base.NanoCollection):
-    ...
+class Jet(Particle, base.NanoCollection): ...
 
 
 _set_repr_name("Jet")
 
 
 @awkward.mixin_class(behavior)
-class Track(Particle, base.NanoCollection):
-    ...
+class Track(Particle, base.NanoCollection): ...
 
 
 _set_repr_name("Track")

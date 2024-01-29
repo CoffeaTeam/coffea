@@ -1,6 +1,7 @@
 """Utility functions
 
 """
+
 import base64
 import gzip
 import hashlib

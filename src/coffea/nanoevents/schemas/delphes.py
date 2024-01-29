@@ -282,13 +282,13 @@ class DelphesSchema(BaseSchema):
             for index, parameter in enumerate(output[name]["content"]["fields"]):
                 if "parameters" not in output[name]["content"]["contents"][index]:
                     continue
-                output[name]["content"]["contents"][index]["parameters"][
-                    "__doc__"
-                ] = self.docstrings.get(
-                    parameter,
-                    output[name]["content"]["contents"][index]["parameters"].get(
-                        "__doc__", "no docstring available"
-                    ),
+                output[name]["content"]["contents"][index]["parameters"]["__doc__"] = (
+                    self.docstrings.get(
+                        parameter,
+                        output[name]["content"]["contents"][index]["parameters"].get(
+                            "__doc__", "no docstring available"
+                        ),
+                    )
                 )
 
             # handle branches named like [4] and [5]

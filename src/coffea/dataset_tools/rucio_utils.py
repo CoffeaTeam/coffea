@@ -91,9 +91,9 @@ def get_xrootd_sites_map():
                         if "prefix" not in proc:
                             if "rules" in proc:
                                 for rule in proc["rules"]:
-                                    sites_xrootd_access[site["rse"]][
-                                        rule["lfn"]
-                                    ] = rule["pfn"]
+                                    sites_xrootd_access[site["rse"]][rule["lfn"]] = (
+                                        rule["pfn"]
+                                    )
                         else:
                             sites_xrootd_access[site["rse"]] = proc["prefix"]
         json.dump(sites_xrootd_access, open(".sites_map.json", "w"))
