@@ -127,6 +127,8 @@ filterwarnings = [
   "ignore:There is no current event loop",
 ]
 
+[tool.ruff]
+line-length = 160
+
 [tool.ruff.lint]
 ignore = ["F403", "F405", "E402"]
-line-length = 160
