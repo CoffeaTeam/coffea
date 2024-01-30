@@ -715,12 +715,16 @@ def test_jet_resolution_sf_2d(optimization_enabled):
 def test_corrected_jets_factory(optimization_enabled):
     import os
 
+    from distributed import Client
+
     from coffea.jetmet_tools import CorrectedJetsFactory, CorrectedMETFactory, JECStack
 
     events = None
     from coffea.nanoevents import NanoEventsFactory
 
-    with dask.config.set({"awkward.optimization.enabled": True}):
+    with Client(), dask.config.set(
+        {"awkward.optimization.enabled": optimization_enabled}
+    ):
         events = NanoEventsFactory.from_root(
             {os.path.abspath("tests/samples/nano_dy.root"): "Events"},
             metadata={},
