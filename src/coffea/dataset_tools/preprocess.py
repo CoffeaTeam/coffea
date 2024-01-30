@@ -333,22 +333,22 @@ def preprocess(
             forms.form_hash_md5.to_numpy(), return_index=True
         )
 
-        dict_forms = []
+        dataset_forms = []
         for form in forms[unique_forms_idx].form:
-            dict_form = awkward.forms.from_json(decompress_form(form)).to_dict()
-            fields = dict_form.pop("fields")
-            dict_form["contents"] = {
-                field: content for field, content in zip(fields, dict_form["contents"])
-            }
-            dict_forms.append(dict_form)
+            dataset_forms.append(awkward.forms.from_json(decompress_form(form)))
 
-        union_form = {}
+        union_array = None
         union_form_jsonstr = None
-        while len(dict_forms):
-            form = dict_forms.pop()
-            union_form.update(form)
-        if len(union_form) > 0:
-            union_form_jsonstr = awkward.forms.from_dict(union_form).to_json()
+        while len(dataset_forms):
+            new_array = dataset_forms.pop().length_zero_array()
+            if union_array is None:
+                union_array = new_array
+            else:
+                union_array = awkward.merge_union_of_records(
+                    awkward.concatenate([union_array, form.length_zero_array()])
+                )
+        if union_array is not None:
+            union_form_jsonstr = union_array.form.to_json()
 
         files_available = {
             item["file"]: {
