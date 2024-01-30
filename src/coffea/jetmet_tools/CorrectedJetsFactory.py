@@ -253,9 +253,9 @@ class CorrectedJetsFactory:
             jersfargs = {
                 k: out_dict[jer_name_map[k]] for k in self.jec_stack.jersf.signature
             }
-            out_dict[
-                "jet_energy_resolution_scale_factor"
-            ] = self.jec_stack.jersf.getScaleFactor(**jersfargs)
+            out_dict["jet_energy_resolution_scale_factor"] = (
+                self.jec_stack.jersf.getScaleFactor(**jersfargs)
+            )
 
             out_dict["jet_resolution_rand_gauss"] = dask_awkward.map_partitions(
                 rand_gauss,

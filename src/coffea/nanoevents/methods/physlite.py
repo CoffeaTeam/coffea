@@ -1,4 +1,5 @@
 """Mixins for the ATLAS PHYSLITE schema - work in progress."""
+
 from numbers import Number
 
 import awkward

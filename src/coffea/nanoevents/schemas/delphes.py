@@ -67,7 +67,6 @@ class DelphesSchema(BaseSchema):
         "LHCOEvent": "LHCOEvent",
         "Rho": "Rho",
         "ScalarHT": "ScalarHT",
-        "MissingET": "MissingET",
     }
 
     # These are stored as length-1 vectors unnecessarily
@@ -92,7 +91,6 @@ class DelphesSchema(BaseSchema):
         "Beta": "(sum pt of charged pile-up constituents)/(sum pt of charged constituents)",
         "BetaStar": "(sum pt of charged constituents coming from hard interaction)/(sum pt of charged constituents)",
         "Charge": "charge",
-        "Constituents": "references to constituents",
         "Constituents": "references to constituents",
         "CrossSection": "cross-section in [pb]",
         "CrossSectionError": "cross-section error [pb]",
@@ -282,13 +280,13 @@ class DelphesSchema(BaseSchema):
             for index, parameter in enumerate(output[name]["content"]["fields"]):
                 if "parameters" not in output[name]["content"]["contents"][index]:
                     continue
-                output[name]["content"]["contents"][index]["parameters"][
-                    "__doc__"
-                ] = self.docstrings.get(
-                    parameter,
-                    output[name]["content"]["contents"][index]["parameters"].get(
-                        "__doc__", "no docstring available"
-                    ),
+                output[name]["content"]["contents"][index]["parameters"]["__doc__"] = (
+                    self.docstrings.get(
+                        parameter,
+                        output[name]["content"]["contents"][index]["parameters"].get(
+                            "__doc__", "no docstring available"
+                        ),
+                    )
                 )
 
             # handle branches named like [4] and [5]

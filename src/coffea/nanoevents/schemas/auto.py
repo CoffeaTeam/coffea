@@ -85,9 +85,7 @@ class auto_schema(BaseSchema):
             record_name = (
                 "PtEtaPhiMCandidate"
                 if is_4vector_mass
-                else "PtEtaPhiECandidate"
-                if is_4vector_E
-                else "NanoCollection"
+                else "PtEtaPhiECandidate" if is_4vector_E else "NanoCollection"
             )
 
             record = _build_record_array(

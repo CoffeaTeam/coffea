@@ -1,4 +1,5 @@
 """Basic NanoEvents and NanoCollection mixins"""
+
 import re
 from abc import abstractmethod
 from functools import partial

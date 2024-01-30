@@ -42,6 +42,7 @@ A small example::
     assert np.allclose(np.array(abs(2*vec + vec4) / abs(vec)), 3)
 
 """
+
 import numbers
 from datetime import datetime
 

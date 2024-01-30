@@ -3,6 +3,7 @@
 These helper classes were previously part of ``coffea.processor``
 but have been migrated and updated to be compatible with awkward-array 1.0
 """
+
 import warnings
 from collections import namedtuple
 

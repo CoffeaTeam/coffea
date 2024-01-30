@@ -4,6 +4,7 @@ This provides just a Lorentz vector with charge, but maybe
 in the future it will provide some sort of composite candidate building tool
 that automatically resolves duplicates in the chain.
 """
+
 import awkward
 import numpy
 

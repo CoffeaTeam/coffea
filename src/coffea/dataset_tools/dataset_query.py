@@ -271,9 +271,11 @@ Some basic commands:
                 str(i + 1),
                 ds,
                 "[green bold]Y" if ds in self.replica_results else "[red]N",
-                str(len(self.replica_results[ds]))
-                if ds in self.replica_results
-                else "-",
+                (
+                    str(len(self.replica_results[ds]))
+                    if ds in self.replica_results
+                    else "-"
+                ),
             )
         self.console.print(table)
 

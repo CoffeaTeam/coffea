@@ -1,4 +1,5 @@
 """Mixins for the ATLAS PHYSLITE schema - work in progress."""
+
 import awkward
 import numpy
 

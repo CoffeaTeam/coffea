@@ -77,15 +77,19 @@ class torch_wrapper(nonserializable_attribute, numpy_call_wrapper):
         as numpy array.
         """
         args = [
-            torch.from_numpy(arr)
-            if arr.flags["WRITEABLE"]
-            else torch.from_numpy(numpy.copy(arr))
+            (
+                torch.from_numpy(arr)
+                if arr.flags["WRITEABLE"]
+                else torch.from_numpy(numpy.copy(arr))
+            )
             for arr in args
         ]
         kwargs = {
-            key: torch.from_numpy(arr)
-            if arr.flags["WRITEABLE"]
-            else torch.from_numpy(numpy.copy(arr))
+            key: (
+                torch.from_numpy(arr)
+                if arr.flags["WRITEABLE"]
+                else torch.from_numpy(numpy.copy(arr))
+            )
             for key, arr in kwargs.items()
         }
         with torch.no_grad():

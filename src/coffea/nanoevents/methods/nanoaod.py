@@ -1,4 +1,5 @@
 """Mixins for the CMS NanoAOD schema"""
+
 import warnings
 
 import awkward
