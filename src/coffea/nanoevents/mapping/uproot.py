@@ -2,6 +2,7 @@ import json
 import warnings
 
 import awkward
+import numpy
 import uproot
 
 from coffea.nanoevents.mapping.base import BaseSourceMapping, UUIDOpener
@@ -48,6 +49,11 @@ def _lazify_form(form, prefix, docstr=None):
         )
         if parameters:
             form["parameters"] = parameters
+    elif form["class"] == "IndexedOptionArray":
+        if form["content"]["primitive"] != "bool":
+            raise CannotBeNanoEvents("Only boolean IndexedOptionArrays are allowed!")
+        form = form["content"]
+        form["form_key"] = quote(prefix)
     elif form["class"] == "RecordArray":
         newfields, newcontents = [], []
         for field, value in zip(form["fields"], form["contents"]):
@@ -152,10 +158,14 @@ class UprootSourceMapping(BaseSourceMapping):
         self._cache[key] = source
 
     def get_column_handle(self, columnsource, name):
-        return columnsource[name]
+        return columnsource[name] if name in columnsource else None
 
     def extract_column(self, columnhandle, start, stop, use_ak_forth=True):
         # make sure uproot is single-core since our calling context might not be
+        if columnhandle is None:
+            return awkward.contents.NumpyArray(
+                numpy.full(stop - start, False, dtype=bool)
+            )
         interp = columnhandle.interpretation
         interp._forth = use_ak_forth
         return columnhandle.array(

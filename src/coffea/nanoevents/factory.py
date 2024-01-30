@@ -103,9 +103,16 @@ class _map_schema_uproot(_map_schema_base):
         branch_forms = {}
         for ifield, field in enumerate(form.fields):
             iform = form.contents[ifield].to_dict()
-            branch_forms[field] = _lazify_form(
-                iform, f"{field},!load", docstr=iform["parameters"]["__doc__"]
-            )
+            if len(iform["parameters"]) > 0:
+                branch_forms[field] = _lazify_form(
+                    iform, f"{field},!load", docstr=iform["parameters"]["__doc__"]
+                )
+            else:
+                branch_forms[field] = _lazify_form(
+                    iform,
+                    f"{field},!load",
+                    docstr=iform["content"]["parameters"]["__doc__"],
+                )
         lform = {
             "class": "RecordArray",
             "contents": [item for item in branch_forms.values()],

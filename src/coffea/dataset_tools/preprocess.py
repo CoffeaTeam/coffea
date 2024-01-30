@@ -340,15 +340,18 @@ def preprocess(
         union_array = None
         union_form_jsonstr = None
         while len(dataset_forms):
-            new_array = dataset_forms.pop().length_zero_array()
+            new_array = awkward.Array(dataset_forms.pop().length_zero_array())
             if union_array is None:
                 union_array = new_array
             else:
-                union_array = awkward.merge_union_of_records(
-                    awkward.concatenate([union_array, new_array])
+                union_array = awkward.to_packed(
+                    awkward.merge_union_of_records(
+                        awkward.concatenate([union_array, new_array]), axis=0
+                    )
                 )
+                union_array.layout.parameters.update(new_array.layout.parameters)
         if union_array is not None:
-            union_form_jsonstr = union_array.form.to_json()
+            union_form_jsonstr = union_array.layout.form.to_json()
 
         files_available = {
             item["file"]: {
