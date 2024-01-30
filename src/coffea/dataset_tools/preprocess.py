@@ -345,7 +345,7 @@ def preprocess(
                 union_array = new_array
             else:
                 union_array = awkward.merge_union_of_records(
-                    awkward.concatenate([union_array, new_array.length_zero_array()])
+                    awkward.concatenate([union_array, new_array])
                 )
         if union_array is not None:
             union_form_jsonstr = union_array.form.to_json()
