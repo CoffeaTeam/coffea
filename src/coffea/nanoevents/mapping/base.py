@@ -56,11 +56,11 @@ class BaseSourceMapping(Mapping):
         self._cache[key] = source
 
     @abstractmethod
-    def get_column_handle(self, columnsource, name):
+    def get_column_handle(self, columnsource, name, allow_missing):
         pass
 
     @abstractmethod
-    def extract_column(self, columnhandle, start, stop, **kwargs):
+    def extract_column(self, columnhandle, start, stop, allow_missing, **kwargs):
         pass
 
     @classmethod
@@ -87,16 +87,21 @@ class BaseSourceMapping(Mapping):
             elif node == "!skip":
                 skip = True
                 continue
-            elif node == "!load":
+            elif node.startswith("!load"):
                 handle_name = stack.pop()
                 if self._access_log is not None:
                     self._access_log.append(handle_name)
+                allow_missing = node == "!loadallowmissing"
                 handle = self.get_column_handle(
-                    self._column_source(uuid, treepath), handle_name
+                    self._column_source(uuid, treepath), handle_name, allow_missing
                 )
                 stack.append(
                     self.extract_column(
-                        handle, start, stop, use_ak_forth=self._use_ak_forth
+                        handle,
+                        start,
+                        stop,
+                        allow_missing,
+                        use_ak_forth=self._use_ak_forth,
                     )
                 )
             elif node.startswith("!"):

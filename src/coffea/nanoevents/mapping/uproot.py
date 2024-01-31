@@ -40,7 +40,16 @@ def _lazify_form(form, prefix, docstr=None):
             form["content"], prefix + ",!content", docstr=docstr
         )
     elif form["class"] == "NumpyArray":
-        form["form_key"] = quote(prefix)
+        load_switch = ""
+        if "__allow_array_creation__" in parameters:
+            if form["primitive"] != "bool":
+                raise ValueError(
+                    "Only boolean NumpyArrays can be created dynamically if "
+                    "missing in file!"
+                )
+            load_switch = "allowmissing"
+            parameters.pop("__allow_array_creation__")
+        form["form_key"] = quote(prefix + load_switch)
         if parameters:
             form["parameters"] = parameters
     elif form["class"] == "RegularArray":
@@ -49,11 +58,6 @@ def _lazify_form(form, prefix, docstr=None):
         )
         if parameters:
             form["parameters"] = parameters
-    elif form["class"] == "IndexedOptionArray":
-        if form["content"]["primitive"] != "bool":
-            raise CannotBeNanoEvents("Only boolean IndexedOptionArrays are allowed!")
-        form = form["content"]
-        form["form_key"] = quote(prefix)
     elif form["class"] == "RecordArray":
         newfields, newcontents = [], []
         for field, value in zip(form["fields"], form["contents"]):
@@ -83,6 +87,10 @@ def _lazify_parameters(form_parameters, docstr=None):
         parameters["__array__"] = form_parameters["__array__"]
     if docstr is not None:
         parameters["__doc__"] = docstr
+    if "__allow_array_creation__" in form_parameters:
+        parameters["__allow_array_creation__"] = form_parameters[
+            "__allow_array_creation__"
+        ]
     return parameters
 
 
@@ -157,15 +165,24 @@ class UprootSourceMapping(BaseSourceMapping):
         key = self.key_root() + tuple_to_key((uuid, path_in_source))
         self._cache[key] = source
 
-    def get_column_handle(self, columnsource, name):
-        return columnsource[name] if name in columnsource else None
+    def get_column_handle(self, columnsource, name, allow_missing):
+        if allow_missing:
+            return columnsource[name] if name in columnsource else None
+        return columnsource[name]
 
-    def extract_column(self, columnhandle, start, stop, use_ak_forth=True):
+    def extract_column(
+        self, columnhandle, start, stop, allow_missing, use_ak_forth=True
+    ):
         # make sure uproot is single-core since our calling context might not be
-        if columnhandle is None:
+        if allow_missing and columnhandle is None:
             return awkward.contents.NumpyArray(
                 numpy.full(stop - start, False, dtype=bool)
             )
+        elif not allow_missing and columnhandle is None:
+            raise RuntimeError(
+                "Received columnhandle of None when missing column in file is not allowed!"
+            )
+
         interp = columnhandle.interpretation
         interp._forth = use_ak_forth
         return columnhandle.array(

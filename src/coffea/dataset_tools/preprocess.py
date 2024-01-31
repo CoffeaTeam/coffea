@@ -351,7 +351,33 @@ def preprocess(
                 )
                 union_array.layout.parameters.update(new_array.layout.parameters)
         if union_array is not None:
-            union_form_jsonstr = union_array.layout.form.to_json()
+            union_form = union_array.layout.form
+
+            for icontent, content in enumerate(union_form.contents):
+                if isinstance(content, awkward.forms.IndexedOptionForm):
+                    the_content = content.content
+                    if (
+                        not isinstance(the_content, awkward.forms.NumpyForm)
+                        or the_content.primitive != "bool"
+                    ):
+                        raise ValueError(
+                            "IndexedOptionArrays can only contain NumpyArrays of "
+                            "bools in mergers of flat-tuple-like schemas!"
+                        )
+                    parameters = (
+                        the_content.parameters.copy()
+                        if the_content.parameters is not None
+                        else {}
+                    )
+                    parameters["__allow_array_creation__"] = None
+                    union_form.contents[icontent] = awkward.forms.NumpyForm(
+                        the_content.primitive,
+                        the_content.inner_shape,
+                        parameters=parameters,
+                        form_key=the_content.form_key,
+                    )
+
+            union_form_jsonstr = union_form.to_json()
 
         files_available = {
             item["file"]: {
