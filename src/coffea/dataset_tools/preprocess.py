@@ -355,26 +355,25 @@ def preprocess(
 
             for icontent, content in enumerate(union_form.contents):
                 if isinstance(content, awkward.forms.IndexedOptionForm):
-                    the_content = content.content
                     if (
-                        not isinstance(the_content, awkward.forms.NumpyForm)
-                        or the_content.primitive != "bool"
+                        not isinstance(content.content, awkward.forms.NumpyForm)
+                        or content.content.primitive != "bool"
                     ):
                         raise ValueError(
                             "IndexedOptionArrays can only contain NumpyArrays of "
                             "bools in mergers of flat-tuple-like schemas!"
                         )
                     parameters = (
-                        the_content.parameters.copy()
-                        if the_content.parameters is not None
+                        content.content.parameters.copy()
+                        if content.content.parameters is not None
                         else {}
                     )
-                    parameters["__allow_array_creation__"] = None
-                    union_form.contents[icontent] = awkward.forms.NumpyForm(
-                        the_content.primitive,
-                        the_content.inner_shape,
+                    # re-create IndexOptionForm with parameters of lower level array
+                    union_form.contents[icontent] = awkward.forms.IndexedOptionForm(
+                        content.index,
+                        content.content,
                         parameters=parameters,
-                        form_key=the_content.form_key,
+                        form_key=content.form_key,
                     )
 
             union_form_jsonstr = union_form.to_json()

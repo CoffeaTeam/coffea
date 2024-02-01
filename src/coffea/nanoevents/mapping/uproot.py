@@ -40,21 +40,27 @@ def _lazify_form(form, prefix, docstr=None):
             form["content"], prefix + ",!content", docstr=docstr
         )
     elif form["class"] == "NumpyArray":
-        load_switch = ""
-        if "__allow_array_creation__" in parameters:
-            if form["primitive"] != "bool":
-                raise ValueError(
-                    "Only boolean NumpyArrays can be created dynamically if "
-                    "missing in file!"
-                )
-            load_switch = "allowmissing"
-            parameters.pop("__allow_array_creation__")
-        form["form_key"] = quote(prefix + load_switch)
+        form["form_key"] = quote(prefix)
         if parameters:
             form["parameters"] = parameters
     elif form["class"] == "RegularArray":
         form["content"] = _lazify_form(
             form["content"], prefix + ",!content", docstr=docstr
+        )
+        if parameters:
+            form["parameters"] = parameters
+    elif form["class"] == "IndexedOptionArray":
+        if (
+            form["content"]["class"] != "NumpyArray"
+            or form["content"]["primitive"] != "bool"
+        ):
+            raise ValueError(
+                "Only boolean NumpyArrays can be created dynamically if "
+                "missing in file!"
+            )
+        form["form_key"] = quote(prefix + "allowmissing,!index")
+        form["content"] = _lazify_form(
+            form["content"], prefix + "allowmissing,!content", docstr=docstr
         )
         if parameters:
             form["parameters"] = parameters
@@ -87,10 +93,6 @@ def _lazify_parameters(form_parameters, docstr=None):
         parameters["__array__"] = form_parameters["__array__"]
     if docstr is not None:
         parameters["__doc__"] = docstr
-    if "__allow_array_creation__" in form_parameters:
-        parameters["__allow_array_creation__"] = form_parameters[
-            "__allow_array_creation__"
-        ]
     return parameters
 
 
@@ -175,8 +177,10 @@ class UprootSourceMapping(BaseSourceMapping):
     ):
         # make sure uproot is single-core since our calling context might not be
         if allow_missing and columnhandle is None:
-            return awkward.contents.NumpyArray(
-                numpy.full(stop - start, False, dtype=bool)
+
+            return awkward.contents.IndexedOptionArray(
+                awkward.index.Index64(numpy.full(stop - start, -1, dtype=numpy.int64)),
+                awkward.contents.NumpyArray(numpy.array([], dtype=bool)),
             )
         elif not allow_missing and columnhandle is None:
             raise RuntimeError(
@@ -185,13 +189,22 @@ class UprootSourceMapping(BaseSourceMapping):
 
         interp = columnhandle.interpretation
         interp._forth = use_ak_forth
-        return columnhandle.array(
+
+        the_array = columnhandle.array(
             interp,
             entry_start=start,
             entry_stop=stop,
             decompression_executor=uproot.source.futures.TrivialExecutor(),
             interpretation_executor=uproot.source.futures.TrivialExecutor(),
         )
+
+        if allow_missing:
+            the_array = awkward.contents.IndexedOptionArray(
+                awkward.index.Index64(numpy.arange(stop - start, dtype=numpy.int64)),
+                awkward.contents.NumpyArray(the_array),
+            )
+
+        return the_array
 
     def __len__(self):
         return self._stop - self._start
