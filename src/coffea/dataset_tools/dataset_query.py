@@ -3,6 +3,7 @@ import gzip
 import json
 import os
 import random
+import sys
 from collections import defaultdict
 from typing import List
 
@@ -587,7 +588,7 @@ Some basic commands:
                 print(
                     "Invalid query-results-strategy option: please choose between: manual|all"
                 )
-                exit(1)
+                sys.exit(1)
             elif query_results_strategy == "manual":
                 self.do_select(selection=None, metadata=dataset_meta)
             else:
@@ -606,7 +607,7 @@ Some basic commands:
                 print(
                     "Invalid replicas-strategy: please choose between manual|round-robin|choose|first"
                 )
-                exit(1)
+                sys.exit(1)
             out_replicas = self.do_replicas(mode=replicas_strategy, selection="all")
         # Now list all
         self.do_list_selected()
