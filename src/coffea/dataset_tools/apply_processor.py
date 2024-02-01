@@ -86,6 +86,12 @@ def _apply_analysis(analysis, events_and_maybe_report):
     return out
 
 
+def _apply_analysis_wire(analysis, events_and_maybe_report_wire):
+    events_and_maybe_report = _unpack_meta_from_wire(events_and_maybe_report_wire)
+    out = _apply_analysis(analysis, events_and_maybe_report)
+    return _pack_meta_to_wire(out)
+
+
 def apply_to_dataset(
     data_manipulation: ProcessorABC | GenericHEPAnalysis,
     dataset: DatasetSpec | DatasetSpecOptional,
@@ -134,18 +140,19 @@ def apply_to_dataset(
     if isinstance(data_manipulation, ProcessorABC):
         analysis = data_manipulation.process
     elif isinstance(data_manipulation, Callable):
-        out = data_manipulation
+        analysis = data_manipulation
     else:
         raise ValueError("data_manipulation must either be a ProcessorABC or Callable")
 
     out = None
     if parallelize_with_dask:
-        out = dask.delayed(partial(_apply_analysis, analysis, events_and_maybe_report))
+        wired_events = _pack_meta_to_wire(events_and_maybe_report)
+        out = dask.delayed(partial(_apply_analysis_wire, analysis, wired_events))()
     else:
         out = _apply_analysis(analysis, events_and_maybe_report)
 
     report = None
-    if isinstance(out, tuple):
+    if isinstance(out, tuple) and not parallelize_with_dask:
         out, report = out
 
     if report is not None:
@@ -158,6 +165,8 @@ def apply_to_fileset(
     fileset: FilesetSpec | FilesetSpecOptional,
     schemaclass: BaseSchema = NanoAODSchema,
     uproot_options: dict[str, Any] = {},
+    parallelize_with_dask: bool = False,
+    scheduler: Callable | str | None = None,
 ) -> dict[str, DaskOutputType] | tuple[dict[str, DaskOutputType], dask_awkward.Array]:
     """
     Apply the supplied function or processor to the supplied fileset (set of datasets).
@@ -171,6 +180,10 @@ def apply_to_fileset(
             The nanoevents schema to interpret the input dataset with.
         uproot_options: dict[str, Any], default {}
             Options to pass to uproot. Pass at least {"allow_read_errors_with_report": True} to turn on file access reports.
+        parallelize_with_dask: bool, default False
+            Create dask.delayed objects that will return the the computable dask collections for the analysis when computed.
+        scheduler: Callable | str | None, default None
+            If parallelize_with_dask is True, this specifies the dask scheduler used to calculate task graphs in parallel.
 
     Returns
     -------
@@ -180,6 +193,7 @@ def apply_to_fileset(
             The file access report for running the analysis on the input dataset. Needs to be computed in simultaneously with the analysis to be accurate.
     """
     out = {}
+    analyses_to_compute = {}
     report = {}
     for name, dataset in fileset.items():
         metadata = copy.deepcopy(dataset.get("metadata", {}))
@@ -187,12 +201,30 @@ def apply_to_fileset(
             metadata = {}
         metadata.setdefault("dataset", name)
         dataset_out = apply_to_dataset(
-            data_manipulation, dataset, schemaclass, metadata, uproot_options
+            data_manipulation,
+            dataset,
+            schemaclass,
+            metadata,
+            uproot_options,
+            parallelize_with_dask,
         )
-        if isinstance(dataset_out, tuple) and len(dataset_out) > 1:
+
+        if parallelize_with_dask:
+            analyses_to_compute[name] = dataset_out
+        elif isinstance(dataset_out, tuple):
             out[name], report[name] = dataset_out
         else:
             out[name] = dataset_out[0]
+
+    if parallelize_with_dask:
+        (calculated_graphs,) = dask.compute(analyses_to_compute, scheduler=scheduler)
+        for name, dataset_out_wire in calculated_graphs.items():
+            dataset_out = _unpack_meta_from_wire(dataset_out_wire)
+            if isinstance(dataset_out, tuple):
+                out[name], report[name] = dataset_out
+            else:
+                out[name] = dataset_out[0]
+
     if len(report) > 0:
         return out, report
     return out

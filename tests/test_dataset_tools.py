@@ -285,7 +285,8 @@ def test_tuple_data_manipulation_output(allow_read_errors_with_report):
     "proc_and_schema",
     [(NanoTestProcessor, BaseSchema), (NanoEventsProcessor, NanoAODSchema)],
 )
-def test_apply_to_fileset(proc_and_schema):
+@pytest.mark.parametrize("delayed_taskgraph_calc", [True, False])
+def test_apply_to_fileset(proc_and_schema, delayed_taskgraph_calc):
     proc, schemaclass = proc_and_schema
 
     with Client() as _:
@@ -293,6 +294,7 @@ def test_apply_to_fileset(proc_and_schema):
             proc(),
             _runnable_result,
             schemaclass=schemaclass,
+            parallelize_with_dask=delayed_taskgraph_calc,
         )
         out = dask.compute(to_compute)[0]
 
@@ -305,6 +307,7 @@ def test_apply_to_fileset(proc_and_schema):
             proc(),
             max_chunks(_runnable_result, 1),
             schemaclass=schemaclass,
+            parallelize_with_dask=delayed_taskgraph_calc,
         )
         out = dask.compute(to_compute)[0]
 
@@ -536,13 +539,15 @@ def test_slice_chunks():
     }
 
 
-def test_recover_failed_chunks():
+@pytest.mark.parametrize("delayed_taskgraph_calc", [True, False])
+def test_recover_failed_chunks(delayed_taskgraph_calc):
     with Client() as _:
         to_compute = apply_to_fileset(
             NanoEventsProcessor(),
             _starting_fileset_with_steps,
             schemaclass=NanoAODSchema,
             uproot_options={"allow_read_errors_with_report": True},
+            parallelize_with_dask=delayed_taskgraph_calc,
         )
         out, reports = dask.compute(*to_compute)
 
