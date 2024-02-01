@@ -3,7 +3,6 @@ import gzip
 import json
 import os
 import random
-import sys
 from collections import defaultdict
 from typing import List
 
@@ -585,10 +584,9 @@ Some basic commands:
             # Now selecting the results depending on the interactive mode or not.
             # Metadata are passed to the selection function to associated them with the selected dataset.
             if query_results_strategy not in ["all", "manual"]:
-                print(
+                raise ValueError(
                     "Invalid query-results-strategy option: please choose between: manual|all"
                 )
-                sys.exit(1)
             elif query_results_strategy == "manual":
                 self.do_select(selection=None, metadata=dataset_meta)
             else:
@@ -604,10 +602,9 @@ Some basic commands:
             out_replicas = self.do_replicas(mode=None, selection="all")
         else:
             if replicas_strategy not in ["round-robin", "choose", "first"]:
-                print(
+                raise ValueError(
                     "Invalid replicas-strategy: please choose between manual|round-robin|choose|first"
                 )
-                sys.exit(1)
             out_replicas = self.do_replicas(mode=replicas_strategy, selection="all")
         # Now list all
         self.do_list_selected()
