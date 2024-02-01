@@ -105,7 +105,7 @@ jobs:
         pytest --cov-report=xml --cov=coffea --deselect=test_taskvine
     - name: Upload codecov
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
     - name: Install graphviz
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11
       uses: ts-graphviz/setup-graphviz@v1
