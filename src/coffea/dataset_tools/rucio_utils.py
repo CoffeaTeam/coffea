@@ -123,6 +123,7 @@ def get_dataset_files_replicas(
     blocklist_sites=None,
     regex_sites=None,
     mode="full",
+    partial_allowed=False,
     client=None,
     scope="cms",
 ):
@@ -150,6 +151,7 @@ def get_dataset_files_replicas(
         regex_sites: list
         mode:  str, default "full"
         client: rucio Client, optional
+        partial_allowed: bool, default False
         scope:  rucio scope, "cms"
 
     Returns
@@ -195,7 +197,7 @@ def get_dataset_files_replicas(
                     outsite.append(site)
                     found = True
 
-            if not found:
+            if not found and not partial_allowed:
                 raise Exception(
                     f"No SITE available in the allowlist for file {filedata['name']}"
                 )
@@ -206,7 +208,7 @@ def get_dataset_files_replicas(
                     filter(lambda key: key not in blocklist_sites, possible_sites)
                 )
 
-            if len(possible_sites) == 0:
+            if len(possible_sites) == 0  and not partial_allowed:
                 raise Exception(f"No SITE available for file {filedata['name']}")
 
             # now check for regex
@@ -246,7 +248,7 @@ def get_dataset_files_replicas(
                     outsite.append(site)
                     found = True
 
-        if not found:
+        if not found and not partial_allowed:
             raise Exception(f"No SITE available for file {filedata['name']}")
         else:
             if mode == "full":
