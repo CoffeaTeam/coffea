@@ -208,7 +208,7 @@ def get_dataset_files_replicas(
                     filter(lambda key: key not in blocklist_sites, possible_sites)
                 )
 
-            if len(possible_sites) == 0  and not partial_allowed:
+            if len(possible_sites) == 0 and not partial_allowed:
                 raise Exception(f"No SITE available for file {filedata['name']}")
 
             # now check for regex
