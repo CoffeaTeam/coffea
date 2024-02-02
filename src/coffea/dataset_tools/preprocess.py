@@ -189,12 +189,14 @@ class UprootFileSpec:
 @dataclass
 class CoffeaFileSpec(UprootFileSpec):
     steps: list[list[int]]
+    num_entries: int
     uuid: str
 
 
 @dataclass
 class CoffeaFileSpecOptional(CoffeaFileSpec):
     steps: list[list[int]] | None
+    num_entriees: int | None
     uuid: str | None
 
 
