@@ -145,7 +145,9 @@ def apply_to_dataset(
 
     out = None
     if parallelize_with_dask:
-        wired_events = _pack_meta_to_wire(events_and_maybe_report)
+        if not isinstance(events_and_maybe_report, tuple):
+            events_and_maybe_report = (events_and_maybe_report,)
+        wired_events = _pack_meta_to_wire(*events_and_maybe_report)
         out = dask.delayed(partial(_apply_analysis_wire, analysis, wired_events))()
     else:
         out = analysis(events)
@@ -214,7 +216,10 @@ def apply_to_fileset(
     if parallelize_with_dask:
         (calculated_graphs,) = dask.compute(analyses_to_compute, scheduler=scheduler)
         for name, dataset_out_wire in calculated_graphs.items():
-            dataset_out = _unpack_meta_from_wire(dataset_out_wire)
+            to_unwire = dataset_out_wire
+            if not isinstance(dataset_out_wire, tuple):
+                to_unwire = (dataset_out_wire,)
+            dataset_out = _unpack_meta_from_wire(*to_unwire)
             if isinstance(dataset_out, tuple):
                 out[name], report[name] = dataset_out
             else:
