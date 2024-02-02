@@ -73,22 +73,16 @@ def _unpack_meta_from_wire(*collections):
     return packed_out
 
 
-def _apply_analysis(analysis, events_and_maybe_report):
-    events = events_and_maybe_report
+def _apply_analysis_wire(analysis, events_and_maybe_report_wire):
+    events = _unpack_meta_from_wire(events_and_maybe_report_wire)
     report = None
-    if isinstance(events_and_maybe_report, tuple):
-        events, report = events_and_maybe_report
+    if isinstance(events, tuple):
+        events, report = events
+    events._meta.attrs["@original_array"] = events
 
     out = analysis(events)
-
     if report is not None:
-        return out, report
-    return out
-
-
-def _apply_analysis_wire(analysis, events_and_maybe_report_wire):
-    events_and_maybe_report = _unpack_meta_from_wire(events_and_maybe_report_wire)
-    out = _apply_analysis(analysis, events_and_maybe_report)
+        return _pack_meta_to_wire(out, report)
     return _pack_meta_to_wire(out)
 
 
@@ -136,6 +130,11 @@ def apply_to_dataset(
         uproot_options=uproot_options,
     ).events()
 
+    events = events_and_maybe_report
+    report = None
+    if isinstance(events, tuple):
+        events, report = events
+
     analysis = None
     if isinstance(data_manipulation, ProcessorABC):
         analysis = data_manipulation.process
@@ -149,11 +148,7 @@ def apply_to_dataset(
         wired_events = _pack_meta_to_wire(events_and_maybe_report)
         out = dask.delayed(partial(_apply_analysis_wire, analysis, wired_events))()
     else:
-        out = _apply_analysis(analysis, events_and_maybe_report)
-
-    report = None
-    if isinstance(out, tuple) and not parallelize_with_dask:
-        out, report = out
+        out = analysis(events)
 
     if report is not None:
         return out, report
