@@ -330,7 +330,7 @@ def preprocess(
             ["file", "object_path", "steps", "num_entries", "uuid"]
         ]
 
-        forms = processed_files[["form", "form_hash_md5", "num_entries"]][
+        forms = processed_files[["file", "form", "form_hash_md5", "num_entries"]][
             ~awkward.is_none(processed_files.form_hash_md5)
         ]
 
@@ -339,13 +339,23 @@ def preprocess(
         )
 
         dataset_forms = []
-        for formstr, num_entries in zip(
-            forms[unique_forms_idx].form, forms[unique_forms_idx].num_entries
+        unique_forms = forms[unique_forms_idx]
+        for thefile, formstr, num_entries in zip(
+            unique_forms.file, unique_forms.form, unique_forms.num_entries
         ):
             # skip trivially filled or empty files
             form = awkward.forms.from_json(decompress_form(formstr))
             if num_entries >= 0 and set(form.fields) != _trivial_file_fields:
                 dataset_forms.append(form)
+            else:
+                warnings.warn(
+                    f"{thefile} has fields {form.fields} and num_entries={num_entries} "
+                    "and has been skipped during form-union determination. You will need "
+                    "to skip this file when processing. You can either manually remove it "
+                    "or, if it is an empty file, dynamically remove it with the function "
+                    "dataset_tools.filter_files which takes the output of preprocess and "
+                    ", by default, removes empty files each dataset in a fileset."
+                )
 
         union_array = None
         union_form_jsonstr = None
