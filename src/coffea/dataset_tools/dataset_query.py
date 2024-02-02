@@ -548,7 +548,7 @@ Some basic commands:
             with Client(scheduler_url) as _:
                 self.preprocessed_available, self.preprocessed_total = preprocess(
                     self.final_output,
-                    maybe_step_size=step_size,
+                    step_size=step_size,
                     align_clusters=align_to_clusters,
                     skip_bad_files=True,
                 )
