@@ -146,6 +146,7 @@ def get_steps(
                 "file": arg.file,
                 "object_path": arg.object_path,
                 "steps": out_steps,
+                "num_entries": num_entries,
                 "uuid": out_uuid,
                 "form": form_json,
                 "form_hash_md5": form_hash,
@@ -159,6 +160,7 @@ def get_steps(
                     "file": "junk",
                     "object_path": "junk",
                     "steps": [[0, 0]],
+                    "num_entries": 0,
                     "uuid": "junk",
                     "form": "junk",
                     "form_hash_md5": "junk",
@@ -235,9 +237,12 @@ def _normalize_file_info(file_info):
             None if not isinstance(maybe_finfo, dict) else maybe_finfo.get("uuid", None)
         )
         this_file = normed_files[ifile]
-        this_file += (3 - len(this_file)) * (None,) + (maybe_uuid,)
+        this_file += (4 - len(this_file)) * (None,) + (maybe_uuid,)
         normed_files[ifile] = this_file
     return normed_files
+
+
+_trivial_file_fields = {"run", "luminosityBlock", "event"}
 
 
 def preprocess(
@@ -295,7 +300,7 @@ def preprocess(
     files_to_preprocess = {}
     for name, info in fileset.items():
         norm_files = _normalize_file_info(info)
-        fields = ["file", "object_path", "steps", "uuid"]
+        fields = ["file", "object_path", "steps", "num_entries", "uuid"]
         ak_norm_files = awkward.from_iter(norm_files)
         ak_norm_files = awkward.Array(
             {field: ak_norm_files[str(ifield)] for ifield, field in enumerate(fields)}
@@ -322,10 +327,10 @@ def preprocess(
 
     for name, processed_files in all_processed_files.items():
         processed_files_without_forms = processed_files[
-            ["file", "object_path", "steps", "uuid"]
+            ["file", "object_path", "steps", "num_entries", "uuid"]
         ]
 
-        forms = processed_files[["form", "form_hash_md5"]][
+        forms = processed_files[["form", "form_hash_md5", "num_entries"]][
             ~awkward.is_none(processed_files.form_hash_md5)
         ]
 
@@ -334,8 +339,13 @@ def preprocess(
         )
 
         dataset_forms = []
-        for form in forms[unique_forms_idx].form:
-            dataset_forms.append(awkward.forms.from_json(decompress_form(form)))
+        for formstr, num_entries in zip(
+            forms[unique_forms_idx].form, forms[unique_forms_idx].num_entries
+        ):
+            # skip trivially filled or empty files
+            form = awkward.forms.from_json(decompress_form(formstr))
+            if num_entries >= 0 and set(form.fields) != _trivial_file_fields:
+                dataset_forms.append(form)
 
         union_array = None
         union_form_jsonstr = None
@@ -382,6 +392,7 @@ def preprocess(
             item["file"]: {
                 "object_path": item["object_path"],
                 "steps": item["steps"],
+                "num_entries": item["num_entries"],
                 "uuid": item["uuid"],
             }
             for item in awkward.drop_none(processed_files_without_forms).to_list()
@@ -389,12 +400,13 @@ def preprocess(
 
         files_out = {}
         for proc_item, orig_item in zip(
-            processed_files.to_list(), all_ak_norm_files[name].to_list()
+            processed_files_without_forms.to_list(), all_ak_norm_files[name].to_list()
         ):
             item = orig_item if proc_item is None else proc_item
             files_out[item["file"]] = {
                 "object_path": item["object_path"],
                 "steps": item["steps"],
+                "num_entries": item["num_entries"],
                 "uuid": item["uuid"],
             }
 
