@@ -58,6 +58,7 @@ def _lazify_form(form, prefix, docstr=None):
                 "Only boolean NumpyArrays can be created dynamically if "
                 "missing in file!"
             )
+        assert prefix.endswith("!load")
         form["form_key"] = quote(prefix + "allowmissing,!index")
         form["content"] = _lazify_form(
             form["content"], prefix + "allowmissing,!content", docstr=docstr
