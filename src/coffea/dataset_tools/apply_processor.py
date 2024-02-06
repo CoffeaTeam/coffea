@@ -17,7 +17,7 @@ from coffea.dataset_tools.preprocess import (
 )
 from coffea.nanoevents import BaseSchema, NanoAODSchema, NanoEventsFactory
 from coffea.processor import ProcessorABC
-from coffea.util import decompress_form
+from coffea.util import decompress_form, load, save
 
 DaskOutputBaseType = Union[
     dask.base.DaskMethodsMixin,
@@ -48,8 +48,6 @@ def _pack_meta_to_wire(*collections):
                 attrs=unpacked[i]._meta.attrs,
             )
     packed_out = repacker(output)
-    if len(packed_out) == 1:
-        return packed_out[0]
     return packed_out
 
 
@@ -68,21 +66,13 @@ def _unpack_meta_from_wire(*collections):
                 attrs=unpacked[i]._meta.attrs,
             )
     packed_out = repacker(output)
-    if len(packed_out) == 1:
-        return packed_out[0]
     return packed_out
 
 
-def _apply_analysis_wire(analysis, events_and_maybe_report_wire):
-    events = _unpack_meta_from_wire(events_and_maybe_report_wire)
-    report = None
-    if isinstance(events, tuple):
-        events, report = events
+def _apply_analysis_wire(analysis, events_wire):
+    (events,) = _unpack_meta_from_wire(events_wire)
     events._meta.attrs["@original_array"] = events
-
     out = analysis(events)
-    if report is not None:
-        return _pack_meta_to_wire(out, report)
     return _pack_meta_to_wire(out)
 
 
@@ -145,16 +135,19 @@ def apply_to_dataset(
 
     out = None
     if parallelize_with_dask:
-        if not isinstance(events_and_maybe_report, tuple):
-            events_and_maybe_report = (events_and_maybe_report,)
-        wired_events = _pack_meta_to_wire(*events_and_maybe_report)
+        (wired_events,) = _pack_meta_to_wire(events)
         out = dask.delayed(partial(_apply_analysis_wire, analysis, wired_events))()
     else:
         out = analysis(events)
 
     if report is not None:
+<<<<<<< HEAD
         return out, report
     return (out,)
+=======
+        return events, out, report
+    return events, out
+>>>>>>> aae802b3 (provide interface for serializing taskgraphs to/from disk)
 
 
 def apply_to_fileset(
@@ -184,11 +177,14 @@ def apply_to_fileset(
 
     Returns
     -------
+        events: dict[str, dask_awkward.Array]
+            The NanoEvents objects the analysis function was applied to.
         out : dict[str, DaskOutputType]
             The output of the analysis workflow applied to the datasets, keyed by dataset name.
         report : dask_awkward.Array, optional
             The file access report for running the analysis on the input dataset. Needs to be computed in simultaneously with the analysis to be accurate.
     """
+    events = {}
     out = {}
     analyses_to_compute = {}
     report = {}
@@ -207,24 +203,92 @@ def apply_to_fileset(
         )
 
         if parallelize_with_dask:
-            analyses_to_compute[name] = dataset_out
-        elif isinstance(dataset_out, tuple):
-            out[name], report[name] = dataset_out
+            if len(dataset_out) == 3:
+                events[name], analyses_to_compute[name], report[name] = dataset_out
+            elif len(dataset_out) == 2:
+                events[name], analyses_to_compute[name] = dataset_out
+            else:
+                raise ValueError(
+                    "apply_to_dataset only returns (events, outputs) or (events, outputs, reports)"
+                )
+        elif isinstance(dataset_out, tuple) and len(dataset_out) == 3:
+            events[name], out[name], report[name] = dataset_out
+        elif isinstance(dataset_out, tuple) and len(dataset_out) == 2:
+            events[name], out[name] = dataset_out[0]
         else:
-            out[name] = dataset_out[0]
+            raise ValueError(
+                "apply_to_dataset only returns (events, outputs) or (events, outputs, reports)"
+            )
 
     if parallelize_with_dask:
         (calculated_graphs,) = dask.compute(analyses_to_compute, scheduler=scheduler)
         for name, dataset_out_wire in calculated_graphs.items():
-            to_unwire = dataset_out_wire
-            if not isinstance(dataset_out_wire, tuple):
-                to_unwire = (dataset_out_wire,)
-            dataset_out = _unpack_meta_from_wire(*to_unwire)
-            if isinstance(dataset_out, tuple):
-                out[name], report[name] = dataset_out
-            else:
-                out[name] = dataset_out[0]
+            (out[name],) = _unpack_meta_from_wire(*dataset_out_wire)
 
     if len(report) > 0:
-        return out, report
-    return out
+        return events, out, report
+    return events, out
+
+
+def save_taskgraph(filename, events, *data_products, optimize_graph=False):
+    """
+    Save a task graph and its originating nanoevents to a file
+    Parameters
+    ----------
+        filename: str
+            Where to save the resulting serialized taskgraph and nanoevents.
+            Suggested postfix ".hlg", after dask's HighLevelGraph object.
+        events: dict[str, dask_awkward.Array]
+            A dictionary of nanoevents objects.
+        data_products: dict[str, DaskOutputBaseType]
+            The data products resulting from applying an analysis to
+            a NanoEvents object. This may include report objects.
+        optimize_graph: bool, default False
+            Whether or not to save the task graph in its optimized form.
+
+    Returns
+    -------
+    """
+    (events_wire,) = _pack_meta_to_wire(events)
+
+    if len(data_products) == 0:
+        raise ValueError(
+            "You must supply at least one analysis data product to save a task graph!"
+        )
+
+    data_products_out = data_products
+    if optimize_graph:
+        data_products_out = dask.optimize(data_products)
+
+    data_products_wire = _pack_meta_to_wire(*data_products_out)
+
+    save(
+        {
+            "events": events_wire,
+            "data_products": data_products_wire,
+            "optimized": optimize_graph,
+        },
+        filename,
+    )
+
+
+def load_taskgraph(filename):
+    """
+    Load a task graph and its originating nanoevents from a file.
+    Parameters
+    ----------
+        filename: str
+            The file from which to load the task graph.
+    Returns
+    _______
+    """
+    graph_information_wire = load(filename)
+
+    (events,) = _unpack_meta_from_wire(graph_information_wire["events"])
+    (data_products,) = _unpack_meta_from_wire(*graph_information_wire["data_products"])
+    optimized = graph_information_wire["optimized"]
+
+    for dataset_name in events:
+        events[dataset_name]._meta.attrs["@original_array"] = events[dataset_name]
+
+    return events, data_products, optimized
