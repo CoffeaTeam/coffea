@@ -78,7 +78,7 @@ def get_steps(
         form_hash = None
         if save_form:
             form_str = uproot.dask(
-                tree, 
+                tree,
                 ak_add_doc=True,
                 filter_name=no_filter,
                 filter_typename=no_filter,
