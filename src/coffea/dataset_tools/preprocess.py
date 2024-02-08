@@ -14,7 +14,7 @@ import dask_awkward
 import numpy
 import uproot
 
-from coffea.util import compress_form, decompress_form
+from coffea.util import _remove_not_interpretable, compress_form, decompress_form
 
 
 def get_steps(
@@ -77,7 +77,13 @@ def get_steps(
         form_json = None
         form_hash = None
         if save_form:
-            form_str = uproot.dask(tree, ak_add_doc=True).layout.form.to_json()
+            form_str = uproot.dask(
+                tree, 
+                ak_add_doc=True,
+                filter_name=no_filter,
+                filter_typename=no_filter,
+                filter_branch=partial(_remove_not_interpretable, emit_warning=False),
+            ).layout.form.to_json()
             dask.base.function_cache.popitem()
 
             form_hash = hashlib.md5(form_str.encode("utf-8")).hexdigest()
