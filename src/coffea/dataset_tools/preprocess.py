@@ -5,6 +5,7 @@ import hashlib
 import math
 import warnings
 from dataclasses import dataclass
+from functools import partial
 from typing import Any, Callable, Dict, Hashable
 
 import awkward
@@ -13,6 +14,7 @@ import dask.base
 import dask_awkward
 import numpy
 import uproot
+from uproot._util import no_filter
 
 from coffea.util import _remove_not_interpretable, compress_form, decompress_form
 
