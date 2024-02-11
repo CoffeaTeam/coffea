@@ -5,9 +5,11 @@ from functools import partial
 from typing import Any, Callable, Dict, Hashable, List, Set, Tuple, Union
 
 import awkward
+import cloudpickle
 import dask.base
 import dask.delayed
 import dask_awkward
+import lz4.frame
 
 from coffea.dataset_tools.preprocess import (
     DatasetSpec,
@@ -73,7 +75,8 @@ def _apply_analysis_wire(analysis, events_wire):
     (events,) = _unpack_meta_from_wire(events_wire)
     events._meta.attrs["@original_array"] = events
     out = analysis(events)
-    return _pack_meta_to_wire(out)
+    out_wire = _pack_meta_to_wire(out)
+    return out_wire
 
 
 def apply_to_dataset(
@@ -136,7 +139,15 @@ def apply_to_dataset(
     out = None
     if parallelize_with_dask:
         (wired_events,) = _pack_meta_to_wire(events)
-        out = dask.delayed(partial(_apply_analysis_wire, analysis, wired_events))()
+        out = dask.delayed(
+            lambda: lz4.frame.compress(
+                cloudpickle.dumps(
+                    partial(_apply_analysis_wire, analysis, wired_events)()
+                ),
+                compression_level=6,
+            )
+        )()
+        dask.base.function_cache.clear()
     else:
         out = analysis(events)
 
@@ -222,7 +233,10 @@ def apply_to_fileset(
 
     if parallelize_with_dask:
         (calculated_graphs,) = dask.compute(analyses_to_compute, scheduler=scheduler)
-        for name, dataset_out_wire in calculated_graphs.items():
+        for name, compressed_taskgraph in calculated_graphs.items():
+            dataset_out_wire = cloudpickle.loads(
+                lz4.frame.decompress(compressed_taskgraph)
+            )
             (out[name],) = _unpack_meta_from_wire(*dataset_out_wire)
 
     if len(report) > 0:
