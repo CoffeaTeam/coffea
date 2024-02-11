@@ -39,7 +39,7 @@ classifiers = [
 dependencies = [
   "awkward>=2.5.2",
   "uproot>=5.2.2",
-  "dask[array]!=2024.2.0,>=2023.4.0",
+  "dask[array]<2024.2.0,>=2023.4.0",
   "dask-awkward>=2024.2.0",
   "dask-histogram>=2024.2.0",
   "correctionlib>=2.3.3",
@@ -67,7 +67,7 @@ Homepage = "https://github.com/coffeateam/coffea"
 
 [project.optional-dependencies]
 dask = [
-  "distributed!=2024.2.0,>=2023.4.0",
+  "distributed<2024.2.0,>=2023.4.0",
   "bokeh!=3.0.*,>=2.4.2",
   "blosc",
 ]
