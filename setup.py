@@ -112,6 +112,10 @@ EXTRAS_REQUIRE["dev"] = [
     "pyinstrument",
     "ipython",
 ]
+EXTRAS_REQUIRE["rucio"] = [
+    "rucio-clients>=32;python_version>'3.8'",
+    "rucio-clients<32;python_version<'3.9'",
+]
 
 setup(
     name="coffea",
