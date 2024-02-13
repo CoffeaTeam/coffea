@@ -2,6 +2,7 @@ import json
 import warnings
 
 import awkward
+import numpy
 import uproot
 
 from coffea.nanoevents.mapping.base import BaseSourceMapping, UUIDOpener
@@ -45,6 +46,22 @@ def _lazify_form(form, prefix, docstr=None):
     elif form["class"] == "RegularArray":
         form["content"] = _lazify_form(
             form["content"], prefix + ",!content", docstr=docstr
+        )
+        if parameters:
+            form["parameters"] = parameters
+    elif form["class"] == "IndexedOptionArray":
+        if (
+            form["content"]["class"] != "NumpyArray"
+            or form["content"]["primitive"] != "bool"
+        ):
+            raise ValueError(
+                "Only boolean NumpyArrays can be created dynamically if "
+                "missing in file!"
+            )
+        assert prefix.endswith("!load")
+        form["form_key"] = quote(prefix + "allowmissing,!index")
+        form["content"] = _lazify_form(
+            form["content"], prefix + "allowmissing,!content", docstr=docstr
         )
         if parameters:
             form["parameters"] = parameters
@@ -151,20 +168,44 @@ class UprootSourceMapping(BaseSourceMapping):
         key = self.key_root() + tuple_to_key((uuid, path_in_source))
         self._cache[key] = source
 
-    def get_column_handle(self, columnsource, name):
+    def get_column_handle(self, columnsource, name, allow_missing):
+        if allow_missing:
+            return columnsource[name] if name in columnsource else None
         return columnsource[name]
 
-    def extract_column(self, columnhandle, start, stop, use_ak_forth=True):
+    def extract_column(
+        self, columnhandle, start, stop, allow_missing, use_ak_forth=True
+    ):
         # make sure uproot is single-core since our calling context might not be
+        if allow_missing and columnhandle is None:
+
+            return awkward.contents.IndexedOptionArray(
+                awkward.index.Index64(numpy.full(stop - start, -1, dtype=numpy.int64)),
+                awkward.contents.NumpyArray(numpy.array([], dtype=bool)),
+            )
+        elif not allow_missing and columnhandle is None:
+            raise RuntimeError(
+                "Received columnhandle of None when missing column in file is not allowed!"
+            )
+
         interp = columnhandle.interpretation
         interp._forth = use_ak_forth
-        return columnhandle.array(
+
+        the_array = columnhandle.array(
             interp,
             entry_start=start,
             entry_stop=stop,
             decompression_executor=uproot.source.futures.TrivialExecutor(),
             interpretation_executor=uproot.source.futures.TrivialExecutor(),
         )
+
+        if allow_missing:
+            the_array = awkward.contents.IndexedOptionArray(
+                awkward.index.Index64(numpy.arange(stop - start, dtype=numpy.int64)),
+                awkward.contents.NumpyArray(the_array),
+            )
+
+        return the_array
 
     def __len__(self):
         return self._stop - self._start

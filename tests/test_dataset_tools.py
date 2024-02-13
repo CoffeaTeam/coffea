@@ -122,6 +122,7 @@ _runnable_result = {
                     [28, 35],
                     [35, 40],
                 ],
+                "num_entries": 40,
                 "uuid": "a9490124-3648-11ea-89e9-f5b55c90beef",
             }
         },
@@ -140,6 +141,7 @@ _runnable_result = {
                     [28, 35],
                     [35, 40],
                 ],
+                "num_entries": 40,
                 "uuid": "a210a3f8-3648-11ea-a29f-f5b55c90beef",
             }
         },
@@ -161,6 +163,7 @@ _updated_result = {
                     [28, 35],
                     [35, 40],
                 ],
+                "num_entries": 40,
                 "uuid": "a9490124-3648-11ea-89e9-f5b55c90beef",
             }
         },
@@ -179,11 +182,13 @@ _updated_result = {
                     [28, 35],
                     [35, 40],
                 ],
+                "num_entries": 40,
                 "uuid": "a210a3f8-3648-11ea-a29f-f5b55c90beef",
             },
             "tests/samples/nano_dimuon_not_there.root": {
                 "object_path": "Events",
                 "steps": None,
+                "num_entries": None,
                 "uuid": None,
             },
         },
@@ -313,6 +318,7 @@ def test_filter_files():
                 "tests/samples/nano_dy.root": {
                     "object_path": "Events",
                     "steps": [[0, 7], [7, 14], [14, 21], [21, 28], [28, 35], [35, 40]],
+                    "num_entries": 40,
                     "uuid": "a9490124-3648-11ea-89e9-f5b55c90beef",
                 }
             },
@@ -324,6 +330,7 @@ def test_filter_files():
                 "tests/samples/nano_dimuon.root": {
                     "object_path": "Events",
                     "steps": [[0, 7], [7, 14], [14, 21], [21, 28], [28, 35], [35, 40]],
+                    "num_entries": 40,
                     "uuid": "a210a3f8-3648-11ea-a29f-f5b55c90beef",
                 }
             },
@@ -342,6 +349,7 @@ def test_max_files():
                 "tests/samples/nano_dy.root": {
                     "object_path": "Events",
                     "steps": [[0, 7], [7, 14], [14, 21], [21, 28], [28, 35], [35, 40]],
+                    "num_entries": 40,
                     "uuid": "a9490124-3648-11ea-89e9-f5b55c90beef",
                 }
             },
@@ -353,6 +361,7 @@ def test_max_files():
                 "tests/samples/nano_dimuon.root": {
                     "object_path": "Events",
                     "steps": [[0, 7], [7, 14], [14, 21], [21, 28], [28, 35], [35, 40]],
+                    "num_entries": 40,
                     "uuid": "a210a3f8-3648-11ea-a29f-f5b55c90beef",
                 }
             },
@@ -372,6 +381,7 @@ def test_slice_files():
                 "tests/samples/nano_dimuon_not_there.root": {
                     "object_path": "Events",
                     "steps": None,
+                    "num_entries": None,
                     "uuid": None,
                 }
             },
@@ -390,6 +400,7 @@ def test_max_chunks():
                 "tests/samples/nano_dy.root": {
                     "object_path": "Events",
                     "steps": [[0, 7], [7, 14], [14, 21]],
+                    "num_entries": 40,
                     "uuid": "a9490124-3648-11ea-89e9-f5b55c90beef",
                 }
             },
@@ -401,6 +412,7 @@ def test_max_chunks():
                 "tests/samples/nano_dimuon.root": {
                     "object_path": "Events",
                     "steps": [[0, 7], [7, 14], [14, 21]],
+                    "num_entries": 40,
                     "uuid": "a210a3f8-3648-11ea-a29f-f5b55c90beef",
                 }
             },
@@ -419,6 +431,7 @@ def test_slice_chunks():
                 "tests/samples/nano_dy.root": {
                     "object_path": "Events",
                     "steps": [[0, 7], [14, 21], [28, 35]],
+                    "num_entries": 40,
                     "uuid": "a9490124-3648-11ea-89e9-f5b55c90beef",
                 }
             },
@@ -430,6 +443,7 @@ def test_slice_chunks():
                 "tests/samples/nano_dimuon.root": {
                     "object_path": "Events",
                     "steps": [[0, 7], [14, 21], [28, 35]],
+                    "num_entries": 40,
                     "uuid": "a210a3f8-3648-11ea-a29f-f5b55c90beef",
                 }
             },

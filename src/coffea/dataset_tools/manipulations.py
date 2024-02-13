@@ -101,10 +101,8 @@ def slice_files(fileset: FilesetSpec, theslice: Any = slice(None)) -> FilesetSpe
 
 def _default_filter(name_and_spec):
     name, spec = name_and_spec
-    thesteps = spec["steps"]
-    return thesteps is not None and (
-        len(thesteps) > 1 or (thesteps[0][1] - thesteps[0][0]) > 0
-    )
+    num_entries = spec["num_entries"]
+    return num_entries is not None and num_entries > 0
 
 
 def filter_files(
