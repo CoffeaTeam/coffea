@@ -115,6 +115,7 @@ EXTRAS_REQUIRE["dev"] = [
 EXTRAS_REQUIRE["rucio"] = [
     "rucio-clients>=32;python_version>'3.8'",
     "rucio-clients<32;python_version<'3.9'",
+    "pyyaml",
 ]
 
 setup(
