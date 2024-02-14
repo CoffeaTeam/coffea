@@ -86,7 +86,7 @@ def apply_to_dataset(
 
     if report is not None:
         return out, report
-    return out
+    return (out,)
 
 
 def apply_to_fileset(
@@ -125,10 +125,10 @@ def apply_to_fileset(
         dataset_out = apply_to_dataset(
             data_manipulation, dataset, schemaclass, metadata, uproot_options
         )
-        if isinstance(dataset_out, tuple):
+        if isinstance(dataset_out, tuple) and len(dataset_out) > 1:
             out[name], report[name] = dataset_out
         else:
-            out[name] = dataset_out
+            out[name] = dataset_out[0]
     if len(report) > 0:
         return out, report
     return out

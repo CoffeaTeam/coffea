@@ -198,6 +198,89 @@ _updated_result = {
 }
 
 
+def _my_analysis_output_2(events):
+    return events.Electron.pt, events.Muon.pt
+
+
+def _my_analysis_output_3(events):
+    return events.Electron.pt, events.Muon.pt, events.Tau.pt
+
+
+@pytest.mark.parametrize("allow_read_errors_with_report", [True, False])
+def test_tuple_data_manipulation_output(allow_read_errors_with_report):
+    import dask_awkward
+
+    out = apply_to_fileset(
+        _my_analysis_output_2,
+        _runnable_result,
+        uproot_options={"allow_read_errors_with_report": allow_read_errors_with_report},
+    )
+
+    if allow_read_errors_with_report:
+        assert isinstance(out, tuple)
+        assert len(out) == 2
+        out, report = out
+        assert isinstance(out, dict)
+        assert isinstance(report, dict)
+        assert out.keys() == {"ZJets", "Data"}
+        assert report.keys() == {"ZJets", "Data"}
+        assert isinstance(out["ZJets"], tuple)
+        assert isinstance(out["Data"], tuple)
+        assert len(out["ZJets"]) == 2
+        assert len(out["Data"]) == 2
+        for i, j in zip(out["ZJets"], out["Data"]):
+            assert isinstance(i, dask_awkward.Array)
+            assert isinstance(j, dask_awkward.Array)
+        assert isinstance(report["ZJets"], dask_awkward.Array)
+        assert isinstance(report["Data"], dask_awkward.Array)
+    else:
+        assert isinstance(out, dict)
+        assert len(out) == 2
+        assert out.keys() == {"ZJets", "Data"}
+        assert isinstance(out["ZJets"], tuple)
+        assert isinstance(out["Data"], tuple)
+        assert len(out["ZJets"]) == 2
+        assert len(out["Data"]) == 2
+        for i, j in zip(out["ZJets"], out["Data"]):
+            assert isinstance(i, dask_awkward.Array)
+            assert isinstance(j, dask_awkward.Array)
+
+    out = apply_to_fileset(
+        _my_analysis_output_3,
+        _runnable_result,
+        uproot_options={"allow_read_errors_with_report": allow_read_errors_with_report},
+    )
+
+    if allow_read_errors_with_report:
+        assert isinstance(out, tuple)
+        assert len(out) == 2
+        out, report = out
+        assert isinstance(out, dict)
+        assert isinstance(report, dict)
+        assert out.keys() == {"ZJets", "Data"}
+        assert report.keys() == {"ZJets", "Data"}
+        assert isinstance(out["ZJets"], tuple)
+        assert isinstance(out["Data"], tuple)
+        assert len(out["ZJets"]) == 3
+        assert len(out["Data"]) == 3
+        for i, j in zip(out["ZJets"], out["Data"]):
+            assert isinstance(i, dask_awkward.Array)
+            assert isinstance(j, dask_awkward.Array)
+        assert isinstance(report["ZJets"], dask_awkward.Array)
+        assert isinstance(report["Data"], dask_awkward.Array)
+    else:
+        assert isinstance(out, dict)
+        assert len(out) == 2
+        assert out.keys() == {"ZJets", "Data"}
+        assert isinstance(out["ZJets"], tuple)
+        assert isinstance(out["Data"], tuple)
+        assert len(out["ZJets"]) == 3
+        assert len(out["Data"]) == 3
+        for i, j in zip(out["ZJets"], out["Data"]):
+            assert isinstance(i, dask_awkward.Array)
+            assert isinstance(j, dask_awkward.Array)
+
+
 @pytest.mark.parametrize(
     "proc_and_schema",
     [(NanoTestProcessor, BaseSchema), (NanoEventsProcessor, NanoAODSchema)],
