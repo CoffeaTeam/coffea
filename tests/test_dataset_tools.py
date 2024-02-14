@@ -198,6 +198,115 @@ _updated_result = {
 }
 
 
+def _my_analysis_output_2(events):
+    return events.Electron.pt, events.Muon.pt
+
+
+def _my_analysis_output_3(events):
+    return events.Electron.pt, events.Muon.pt, events.Tau.pt
+
+
+@pytest.mark.parametrize("compute_output", [True, False])
+@pytest.mark.parametrize("allow_read_errors_with_report", [True, False])
+def test_tuple_data_manipulation_output(compute_output, allow_read_errors_with_report):
+
+    with Client() as _:
+        to_compute = apply_to_fileset(
+            _my_analysis_output_2,
+            _runnable_result,
+            uproot_options={
+                "allow_read_errors_with_report": allow_read_errors_with_report
+            },
+        )
+        if compute_output:
+            out = dask.compute(to_compute)[0]
+        else:
+            out = to_compute
+
+        if allow_read_errors_with_report:
+            assert len(out) == 2
+            out, report = out
+            assert out.keys() == {"ZJets", "Data"}
+            assert report.keys() == {"ZJets", "Data"}
+            assert len(out["ZJets"]) == 2
+            assert len(out["Data"]) == 2
+            if compute_output:
+                assert len(report["ZJets"]) == 6
+                assert len(report["Data"]) == 6
+                assert report["ZJets"].fields == [
+                    "call_time",
+                    "duration",
+                    "args",
+                    "kwargs",
+                    "exception",
+                    "message",
+                    "fqdn",
+                    "hostname",
+                ]
+                assert report["Data"].fields == [
+                    "call_time",
+                    "duration",
+                    "args",
+                    "kwargs",
+                    "exception",
+                    "message",
+                    "fqdn",
+                    "hostname",
+                ]
+        else:
+            assert len(out) == 2
+            assert out.keys() == {"ZJets", "Data"}
+            assert len(out["ZJets"]) == 2
+            assert len(out["Data"]) == 2
+
+        to_compute = apply_to_fileset(
+            _my_analysis_output_3,
+            _runnable_result,
+            uproot_options={
+                "allow_read_errors_with_report": allow_read_errors_with_report
+            },
+        )
+        if compute_output:
+            out = dask.compute(to_compute)[0]
+        else:
+            out = to_compute
+
+        if allow_read_errors_with_report:
+            assert len(out) == 2
+            out, report = out
+            assert out.keys() == {"ZJets", "Data"}
+            assert report.keys() == {"ZJets", "Data"}
+            assert len(out["ZJets"]) == 3
+            assert len(out["Data"]) == 3
+            if compute_output:
+                assert len(report["ZJets"]) == 6
+                assert len(report["Data"]) == 6
+                assert report["ZJets"].fields == [
+                    "call_time",
+                    "duration",
+                    "args",
+                    "kwargs",
+                    "exception",
+                    "message",
+                    "fqdn",
+                    "hostname",
+                ]
+                assert report["Data"].fields == [
+                    "call_time",
+                    "duration",
+                    "args",
+                    "kwargs",
+                    "exception",
+                    "message",
+                    "fqdn",
+                    "hostname",
+                ]
+        else:
+            assert len(out) == 2
+            assert out.keys() == {"ZJets", "Data"}
+            assert len(out["ZJets"]) == 3
+
+
 @pytest.mark.parametrize(
     "proc_and_schema",
     [(NanoTestProcessor, BaseSchema), (NanoEventsProcessor, NanoAODSchema)],
