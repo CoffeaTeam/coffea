@@ -139,26 +139,25 @@ def apply_to_dataset(
     out = None
     if parallelize_with_dask:
         (wired_events,) = _pack_meta_to_wire(events)
-        out = dask.delayed(
-            lambda: lz4.frame.compress(
-                cloudpickle.dumps(
-                    partial(_apply_analysis_wire, analysis, wired_events)()
-                ),
-                compression_level=6,
-            )
-        )()
+        out = (
+            dask.delayed(
+                lambda: lz4.frame.compress(
+                    cloudpickle.dumps(
+                        partial(_apply_analysis_wire, analysis, wired_events)()
+                    ),
+                    compression_level=6,
+                )
+            )(),
+        )
         dask.base.function_cache.clear()
     else:
         out = analysis(events)
+        if not isinstance(out, tuple):
+            out = (out,)
 
     if report is not None:
-<<<<<<< HEAD
-        return out, report
-    return (out,)
-=======
         return events, out, report
     return events, out
->>>>>>> aae802b3 (provide interface for serializing taskgraphs to/from disk)
 
 
 def apply_to_fileset(
