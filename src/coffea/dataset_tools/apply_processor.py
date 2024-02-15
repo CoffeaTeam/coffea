@@ -139,16 +139,14 @@ def apply_to_dataset(
     out = None
     if parallelize_with_dask:
         (wired_events,) = _pack_meta_to_wire(events)
-        out = (
-            dask.delayed(
-                lambda: lz4.frame.compress(
-                    cloudpickle.dumps(
-                        partial(_apply_analysis_wire, analysis, wired_events)()
-                    ),
-                    compression_level=6,
-                )
-            )(),
-        )
+        out = dask.delayed(
+            lambda: lz4.frame.compress(
+                cloudpickle.dumps(
+                    partial(_apply_analysis_wire, analysis, wired_events)()
+                ),
+                compression_level=6,
+            )
+        )()
         dask.base.function_cache.clear()
     else:
         out = analysis(events)
@@ -217,6 +215,7 @@ def apply_to_fileset(
                 events[name], analyses_to_compute[name], report[name] = dataset_out
             elif len(dataset_out) == 2:
                 events[name], analyses_to_compute[name] = dataset_out
+                print(dataset_out)
             else:
                 raise ValueError(
                     "apply_to_dataset only returns (events, outputs) or (events, outputs, reports)"
@@ -224,7 +223,7 @@ def apply_to_fileset(
         elif isinstance(dataset_out, tuple) and len(dataset_out) == 3:
             events[name], out[name], report[name] = dataset_out
         elif isinstance(dataset_out, tuple) and len(dataset_out) == 2:
-            events[name], out[name] = dataset_out[0]
+            events[name], out[name] = dataset_out
         else:
             raise ValueError(
                 "apply_to_dataset only returns (events, outputs) or (events, outputs, reports)"
@@ -237,6 +236,10 @@ def apply_to_fileset(
                 lz4.frame.decompress(compressed_taskgraph)
             )
             (out[name],) = _unpack_meta_from_wire(*dataset_out_wire)
+
+    for name in out:
+        if isinstance(out[name], tuple) and len(out[name]) == 1:
+            out[name] = out[name][0]
 
     if len(report) > 0:
         return events, out, report

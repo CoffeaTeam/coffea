@@ -220,8 +220,8 @@ def test_tuple_data_manipulation_output(allow_read_errors_with_report):
 
     if allow_read_errors_with_report:
         assert isinstance(out, tuple)
-        assert len(out) == 2
-        out, report = out
+        assert len(out) == 3
+        _, out, report = out
         assert isinstance(out, dict)
         assert isinstance(report, dict)
         assert out.keys() == {"ZJets", "Data"}
@@ -236,8 +236,10 @@ def test_tuple_data_manipulation_output(allow_read_errors_with_report):
         assert isinstance(report["ZJets"], dask_awkward.Array)
         assert isinstance(report["Data"], dask_awkward.Array)
     else:
-        assert isinstance(out, dict)
+        assert isinstance(out, tuple)
         assert len(out) == 2
+        _, out = out
+        assert isinstance(out, dict)
         assert out.keys() == {"ZJets", "Data"}
         assert isinstance(out["ZJets"], tuple)
         assert isinstance(out["Data"], tuple)
@@ -255,8 +257,8 @@ def test_tuple_data_manipulation_output(allow_read_errors_with_report):
 
     if allow_read_errors_with_report:
         assert isinstance(out, tuple)
-        assert len(out) == 2
-        out, report = out
+        assert len(out) == 3
+        _, out, report = out
         assert isinstance(out, dict)
         assert isinstance(report, dict)
         assert out.keys() == {"ZJets", "Data"}
@@ -271,8 +273,10 @@ def test_tuple_data_manipulation_output(allow_read_errors_with_report):
         assert isinstance(report["ZJets"], dask_awkward.Array)
         assert isinstance(report["Data"], dask_awkward.Array)
     else:
-        assert isinstance(out, dict)
+        assert isinstance(out, tuple)
         assert len(out) == 2
+        _, out = out
+        assert isinstance(out, dict)
         assert out.keys() == {"ZJets", "Data"}
         assert isinstance(out["ZJets"], tuple)
         assert isinstance(out["Data"], tuple)
