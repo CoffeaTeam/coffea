@@ -69,7 +69,8 @@ Homepage = "https://github.com/coffeateam/coffea"
 dask = [
   "distributed<2024.2.0,>=2023.4.0",
   "bokeh!=3.0.*,>=2.4.2",
-  "blosc",
+  "blosc2;python_version>'3.8'",
+  "blosc;python_version<'3.9'",
 ]
 spark = [
   "ipywidgets",
