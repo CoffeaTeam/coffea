@@ -374,7 +374,7 @@ class Weights:
         weights to exclude, but not both at the same time. The method
         can only be used if the individual weights are stored via the
         ``storeIndividual`` argument in the `Weights` initializer.
-        
+
 
         Parameters
         ----------
@@ -418,11 +418,12 @@ class Weights:
         if modifier is None:
             return w
         elif modifier.replace("Down", "").replace("Up", "") not in names:
-            raise ValueError(f"Modifier {modifier} is not in the list of included weights")
+            raise ValueError(
+                f"Modifier {modifier} is not in the list of included weights"
+            )
         elif "Down" in modifier and modifier not in self._modifiers:
             return w / self._modifiers[modifier.replace("Down", "Up")]
         return w * self._modifiers[modifier]
-
 
     @property
     def variations(self):
