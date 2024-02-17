@@ -393,7 +393,9 @@ class Weights:
                 The weight vector, corresponding to only the effect of the
                 corrections specified.
         """
-        return self._partial_weight(include=tuple(include), exclude=tuple(exclude), modifier=modifier)
+        return self._partial_weight(
+            include=tuple(include), exclude=tuple(exclude), modifier=modifier
+        )
 
     @lru_cache
     def _partial_weight(self, include, exclude, modifier=None):
