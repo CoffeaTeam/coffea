@@ -6,6 +6,7 @@ but have been migrated and updated to be compatible with awkward-array 1.0
 
 import warnings
 from collections import namedtuple
+from functools import lru_cache
 
 import awkward
 import dask.array
@@ -346,6 +347,7 @@ class Weights:
         elif isinstance(weight, dask_awkward.Array):
             self.__add_variation_delayed(name, weight, weightUp, weightDown, shift)
 
+    @lru_cache
     def weight(self, modifier=None):
         """Current event weight vector
 
@@ -391,6 +393,12 @@ class Weights:
                 The weight vector, corresponding to only the effect of the
                 corrections specified.
         """
+        return self._partial_weight(
+            include=tuple(include), exclude=tuple(exclude), modifier=modifier
+        )
+
+    @lru_cache
+    def _partial_weight(self, include, exclude, modifier=None):
         if not self._storeIndividual:
             raise ValueError(
                 "To be able to request weight exclusion, use storeIndividual=True when creating Weights object."
@@ -1204,6 +1212,7 @@ class PackedSelection:
         for name, selection in selections.items():
             self.add(name, selection, fill_value)
 
+    @lru_cache
     def require(self, **names):
         """Return a mask vector corresponding to specific requirements
 
