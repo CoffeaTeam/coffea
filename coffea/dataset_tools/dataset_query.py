@@ -413,7 +413,7 @@ Some basic commands:
         self.final_output = {}
         for fileset, files in self.replica_results.items():
             self.final_output[fileset] = {
-                "files": {f: "Events" for f in files},
+                "files": files,
                 "metadata": self.replica_results_metadata[fileset],
             }
         return self.final_output
