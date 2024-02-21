@@ -216,6 +216,7 @@ def test_tuple_data_manipulation_output(allow_read_errors_with_report):
         _my_analysis_output_2,
         _runnable_result,
         uproot_options={"allow_read_errors_with_report": allow_read_errors_with_report},
+        return_events=True,
     )
 
     if allow_read_errors_with_report:
@@ -253,6 +254,7 @@ def test_tuple_data_manipulation_output(allow_read_errors_with_report):
         _my_analysis_output_3,
         _runnable_result,
         uproot_options={"allow_read_errors_with_report": allow_read_errors_with_report},
+        return_events=True,
     )
 
     if allow_read_errors_with_report:
@@ -301,6 +303,7 @@ def test_apply_to_fileset(proc_and_schema, delayed_taskgraph_calc):
             _runnable_result,
             schemaclass=schemaclass,
             parallelize_with_dask=delayed_taskgraph_calc,
+            return_events=True,
         )
         out = dask.compute(to_compute)[0]
 
@@ -314,6 +317,7 @@ def test_apply_to_fileset(proc_and_schema, delayed_taskgraph_calc):
             max_chunks(_runnable_result, 1),
             schemaclass=schemaclass,
             parallelize_with_dask=delayed_taskgraph_calc,
+            return_events=True,
         )
         out = dask.compute(to_compute)[0]
 
@@ -338,6 +342,7 @@ def test_apply_to_fileset_hinted_form():
             NanoEventsProcessor(),
             dataset_runnable,
             schemaclass=NanoAODSchema,
+            return_events=True,
         )
         out = dask.compute(to_compute)[0]
 
@@ -554,6 +559,7 @@ def test_recover_failed_chunks(delayed_taskgraph_calc):
             schemaclass=NanoAODSchema,
             uproot_options={"allow_read_errors_with_report": True},
             parallelize_with_dask=delayed_taskgraph_calc,
+            return_events=True,
         )
         out, reports = dask.compute(to_compute, reports)
 
@@ -597,6 +603,7 @@ def test_task_graph_serialization(proc_and_schema, with_report):
             schemaclass=schemaclass,
             parallelize_with_dask=False,
             uproot_options={"allow_read_errors_with_report": with_report},
+            return_events=True,
         )
 
         events = output[0]
