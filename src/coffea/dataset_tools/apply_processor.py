@@ -86,7 +86,11 @@ def apply_to_dataset(
     metadata: dict[Hashable, Any] = {},
     uproot_options: dict[str, Any] = {},
     parallelize_with_dask: bool = False,
-) -> DaskOutputType | tuple[DaskOutputType, dask_awkward.Array]:
+) -> (
+    DaskOutputType
+    | tuple[DaskOutputType, dask_awkward.Array]
+    | tuple[dask_awkward.Array, DaskOutputType, dask_awkward.Array]
+):
     """
     Apply the supplied function or processor to the supplied dataset.
     Parameters
@@ -103,6 +107,8 @@ def apply_to_dataset(
             Options to pass to uproot. Pass at least {"allow_read_errors_with_report": True} to turn on file access reports.
         parallelize_with_dask: bool, default False
             Create dask.delayed objects that will return the the computable dask collections for the analysis when computed.
+        return_events: bool, default True
+            Return the created events object, or not.
 
     Returns
     -------
@@ -165,7 +171,16 @@ def apply_to_fileset(
     uproot_options: dict[str, Any] = {},
     parallelize_with_dask: bool = False,
     scheduler: Callable | str | None = None,
-) -> dict[str, DaskOutputType] | tuple[dict[str, DaskOutputType], dask_awkward.Array]:
+    return_events: bool = False,
+) -> (
+    dict[str, DaskOutputType]
+    | tuple[dict[str, DaskOutputType], dict[str, dask_awkward.Array]]
+    | tuple[
+        dict[str, dask_awkward.Array],
+        dict[str, DaskOutputType],
+        dict[str, dask_awkward.Array],
+    ]
+):
     """
     Apply the supplied function or processor to the supplied fileset (set of datasets).
     Parameters
@@ -242,8 +257,8 @@ def apply_to_fileset(
             out[name] = out[name][0]
 
     if len(report) > 0:
-        return events, out, report
-    return events, out
+        return (events, out, report) if return_events else (out, report)
+    return (events, out) if return_events else out
 
 
 def save_taskgraph(filename, events, *data_products, optimize_graph=False):
