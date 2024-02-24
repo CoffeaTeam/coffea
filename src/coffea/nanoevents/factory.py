@@ -232,7 +232,6 @@ class NanoEventsFactory:
         known_base_form=None,
         decompression_executor=None,
         interpretation_executor=None,
-        
     ):
         """Quickly build NanoEvents from a root file
 
@@ -273,7 +272,7 @@ class NanoEventsFactory:
             decompression_executor (None or Executor with a ``submit`` method):
                 see: https://github.com/scikit-hep/uproot5/blob/main/src/uproot/_dask.py#L109
             interpretation_executor (None or Executor with a ``submit`` method):
-                see: https://github.com/scikit-hep/uproot5/blob/main/src/uproot/_dask.py#L113 
+                see: https://github.com/scikit-hep/uproot5/blob/main/src/uproot/_dask.py#L113
         """
 
         if treepath is not uproot._util.unset and not isinstance(
