@@ -121,7 +121,16 @@ class _map_schema_uproot(_map_schema_base):
             self,
         )
 
-    def load_buffers(self, tree, keys, start, stop, interp_options):
+    def load_buffers(
+        self, 
+        tree, 
+        keys, 
+        start, 
+        stop, 
+        decompression_executor,
+        interpretation_executor,
+        interp_options,
+    ):
         from functools import partial
 
         from coffea.nanoevents.util import tuple_to_key
