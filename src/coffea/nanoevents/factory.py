@@ -148,6 +148,8 @@ class _map_schema_uproot(_map_schema_base):
             cache={},
             access_log=None,
             use_ak_forth=True,
+            decompression_executor=decompression_executor,
+            interpretation_executor=interpretation_executor,
         )
         mapping.preload_column_source(partition_key[0], partition_key[1], tree)
         buffer_key = partial(self._key_formatter, tuple_to_key(partition_key))
