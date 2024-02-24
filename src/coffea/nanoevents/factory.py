@@ -122,11 +122,11 @@ class _map_schema_uproot(_map_schema_base):
         )
 
     def load_buffers(
-        self, 
-        tree, 
-        keys, 
-        start, 
-        stop, 
+        self,
+        tree,
+        keys,
+        start,
+        stop,
         decompression_executor,
         interpretation_executor,
         interp_options,
