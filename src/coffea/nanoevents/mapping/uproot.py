@@ -102,9 +102,23 @@ class UprootSourceMapping(BaseSourceMapping):
     _fix_awkward_form_of_iter = False
 
     def __init__(
-        self, fileopener, start, stop, cache=None, access_log=None, use_ak_forth=False
+        self,
+        fileopener,
+        start,
+        stop,
+        cache=None,
+        access_log=None,
+        use_ak_forth=False,
+        decompression_executor=None,
+        interpretation_executor=None,
     ):
         super().__init__(fileopener, start, stop, cache, access_log, use_ak_forth)
+        self.decompression_executor = (
+            decompression_executor or uproot.source.futures.TrivialExecutor()
+        )
+        self.interpretation_executor = (
+            interpretation_executor or uproot.source.futures.TrivialExecutor()
+        )
 
     @classmethod
     def _extract_base_form(cls, tree, iteritems_options={}):
@@ -195,8 +209,8 @@ class UprootSourceMapping(BaseSourceMapping):
             interp,
             entry_start=start,
             entry_stop=stop,
-            decompression_executor=uproot.source.futures.TrivialExecutor(),
-            interpretation_executor=uproot.source.futures.TrivialExecutor(),
+            decompression_executor=self.decompression_executor,
+            interpretation_executor=self.interpretation_executor,
         )
 
         if allow_missing:

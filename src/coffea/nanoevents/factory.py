@@ -121,7 +121,16 @@ class _map_schema_uproot(_map_schema_base):
             self,
         )
 
-    def load_buffers(self, tree, keys, start, stop, interp_options):
+    def load_buffers(
+        self,
+        tree,
+        keys,
+        start,
+        stop,
+        decompression_executor,
+        interpretation_executor,
+        interp_options,
+    ):
         from functools import partial
 
         from coffea.nanoevents.util import tuple_to_key
@@ -139,6 +148,8 @@ class _map_schema_uproot(_map_schema_base):
             cache={},
             access_log=None,
             use_ak_forth=True,
+            decompression_executor=decompression_executor,
+            interpretation_executor=interpretation_executor,
         )
         mapping.preload_column_source(partition_key[0], partition_key[1], tree)
         buffer_key = partial(self._key_formatter, tuple_to_key(partition_key))
@@ -219,6 +230,8 @@ class NanoEventsFactory:
         use_ak_forth=True,
         delayed=True,
         known_base_form=None,
+        decompression_executor=None,
+        interpretation_executor=None,
     ):
         """Quickly build NanoEvents from a root file
 
@@ -256,6 +269,10 @@ class NanoEventsFactory:
                 Nanoevents will use dask as a backend to construct a delayed task graph representing your analysis.
             known_base_form:
                 If the base form of the input file is known ahead of time we can skip opening a single file and parsing metadata.
+            decompression_executor (None or Executor with a ``submit`` method):
+                see: https://github.com/scikit-hep/uproot5/blob/main/src/uproot/_dask.py#L109
+            interpretation_executor (None or Executor with a ``submit`` method):
+                see: https://github.com/scikit-hep/uproot5/blob/main/src/uproot/_dask.py#L113
         """
 
         if treepath is not uproot._util.unset and not isinstance(
@@ -304,6 +321,8 @@ class NanoEventsFactory:
                 filter_branch=_remove_not_interpretable,
                 steps_per_file=steps_per_file,
                 known_base_form=known_base_form,
+                decompression_executor=decompression_executor,
+                interpretation_executor=interpretation_executor,
                 **uproot_options,
             )
 
