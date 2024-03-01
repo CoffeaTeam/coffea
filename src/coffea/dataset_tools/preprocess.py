@@ -442,7 +442,7 @@ def preprocess(
             out_updated[name]["form"] = None
             out_available[name]["form"] = None
 
-        if "metadata" not in out_updated:
+        if "metadata" not in out_updated[name]:
             out_updated[name]["metadata"] = None
             out_available[name]["metadata"] = None
 
