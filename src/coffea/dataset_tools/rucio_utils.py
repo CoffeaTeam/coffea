@@ -2,8 +2,8 @@
 import json
 import os
 import re
-import time
 import subprocess
+import time
 from collections import defaultdict
 
 from rucio.client import Client
@@ -100,9 +100,9 @@ def get_xrootd_sites_map():
                         if "prefix" not in proc:
                             if "rules" in proc:
                                 for rule in proc["rules"]:
-                                    sites_xrootd_access[site["rse"]][
-                                        rule["lfn"]
-                                    ] = rule["pfn"]
+                                    sites_xrootd_access[site["rse"]][rule["lfn"]] = (
+                                        rule["pfn"]
+                                    )
                         else:
                             sites_xrootd_access[site["rse"]] = proc["prefix"]
 
