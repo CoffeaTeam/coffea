@@ -86,7 +86,9 @@ def get_steps(
                 filter_typename=no_filter,
                 filter_branch=partial(_remove_not_interpretable, emit_warning=False),
             ).layout.form.to_json()
-            dask.base.function_cache.popitem()
+            # the function cache needs to be popped if present to prevent memory growth
+            if hasattr(dask.base, "function_cache"):
+                dask.base.function_cache.popitem()
 
             form_hash = hashlib.md5(form_str.encode("utf-8")).hexdigest()
             form_json = compress_form(form_str)
