@@ -153,7 +153,8 @@ def apply_to_dataset(
                 compression_level=6,
             )
         )()
-        dask.base.function_cache.clear()
+        if hasattr(dask.base, "function_cache"):
+            dask.base.function_cache.clear()
     else:
         out = analysis(events)
         if not isinstance(out, tuple):
