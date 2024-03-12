@@ -125,7 +125,7 @@ def _get_pfn_for_site(path, rules):
                 return pfn
     else:
         # not adding any slash as the path usually starts with it
-        return rules + path
+        return rules + "/" + path.removeprefix("/")
 
 
 def get_dataset_files_replicas(
