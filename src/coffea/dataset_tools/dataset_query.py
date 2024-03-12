@@ -352,7 +352,9 @@ Some basic commands:
                 ind = list(
                     map(
                         int,
-                        Prompt.ask("Enter list of sites index to be used", default="0").split(" "),
+                        Prompt.ask(
+                            "Enter list of sites index to be used", default="0"
+                        ).split(" "),
                     )
                 )
                 sites_to_use = [list(sorted_sites.keys())[i] for i in ind]
