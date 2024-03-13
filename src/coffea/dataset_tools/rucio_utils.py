@@ -3,6 +3,7 @@ import json
 import os
 import re
 import subprocess
+import time
 from collections import defaultdict
 
 from rucio.client import Client
@@ -64,8 +65,16 @@ def get_xrootd_sites_map():
     This function returns the list of xrootd prefix rules for each site.
     """
     sites_xrootd_access = defaultdict(dict)
-    # TODO Do not rely on local sites_map cache. Just reload it?
-    if not os.path.exists(".sites_map.json"):
+    # Check if the cache file has been modified in the last 10 minutes
+    cache_valid = False
+    if os.path.exists(".sites_map.json"):
+        file_time = os.path.getmtime(".sites_map.json")
+        current_time = time.time()
+        ten_minutes_ago = current_time - 600
+        if file_time > ten_minutes_ago:
+            cache_valid = True
+
+    if not os.path.exists(".sites_map.json") or not cache_valid:
         print("Loading SITECONF info")
         sites = [
             (s, "/cvmfs/cms.cern.ch/SITECONF/" + s + "/storage.json")
@@ -96,6 +105,7 @@ def get_xrootd_sites_map():
                                     )
                         else:
                             sites_xrootd_access[site["rse"]] = proc["prefix"]
+
         json.dump(sites_xrootd_access, open(".sites_map.json", "w"))
 
     return json.load(open(".sites_map.json"))
@@ -114,7 +124,8 @@ def _get_pfn_for_site(path, rules):
                     pfn = pfn.replace(f"${i+1}", grs[i])
                 return pfn
     else:
-        return rules + "/" + path
+        # not adding any slash as the path usually starts with it
+        return rules + "/" + path.removeprefix("/")
 
 
 def get_dataset_files_replicas(
