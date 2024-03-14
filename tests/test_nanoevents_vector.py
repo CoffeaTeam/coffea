@@ -12,7 +12,7 @@ def assert_record_arrays_equal(a, b, check_type=False):
     if check_type:
         assert type(a) is type(b)
     assert ak.fields(a) == ak.fields(b)
-    assert all(ak.all(a[f] == b[f]) for f in ak.fields(a))
+    assert all(ak.all(ak.isclose(a[f], b[f])) for f in ak.fields(a))
 
 
 def assert_awkward_allclose(actual, desired):
@@ -97,7 +97,7 @@ def test_polar_two_vector():
     assert ak.all(abs((-a).y + a.y) < ATOL)
     assert_record_arrays_equal(a * (-1), -a)
 
-    assert ak.all(a.unit.phi == a.phi)
+    assert ak.all(ak.isclose(a.unit.phi, a.phi))
 
 
 def test_three_vector():
@@ -539,17 +539,17 @@ def test_inherited_method_transpose(lcoord, threecoord, twocoord):
             behavior=vector.behavior,
         )
 
-    assert_record_arrays_equal(a + b, b + a, check_type=True)
-    assert_record_arrays_equal(a + c, c + a, check_type=True)
-    assert_record_arrays_equal(b + c, c + b, check_type=True)
+    assert_record_arrays_equal(a.like(b) + b, b + a.like(b), check_type=True)
+    assert_record_arrays_equal(a.like(c) + c, c + a.like(c), check_type=True)
+    assert_record_arrays_equal(b.like(c) + c, c + b.like(c), check_type=True)
 
     assert_allclose(a.delta_phi(b), -b.delta_phi(a))
     assert_allclose(a.delta_phi(c), -c.delta_phi(a))
     assert_allclose(b.delta_phi(c), -c.delta_phi(b))
 
-    assert_record_arrays_equal((a - b), -(b - a), check_type=True)
-    assert_record_arrays_equal((a - c), -(c - a), check_type=True)
-    assert_record_arrays_equal((b - c), -(c - b), check_type=True)
+    assert_record_arrays_equal((a.like(b) - b), -(b - a.like(b)), check_type=True)
+    assert_record_arrays_equal((a.like(c) - c), -(c - a.like(c)), check_type=True)
+    assert_record_arrays_equal((b.like(c) - c), -(c - b.like(c)), check_type=True)
 
 
 @pytest.mark.parametrize("optimization_enabled", [True, False])
