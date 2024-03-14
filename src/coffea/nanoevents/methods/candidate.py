@@ -70,4 +70,7 @@ class PtEtaPhiECandidate(Candidate, vector.PtEtaPhiELorentzVector):
     pass
 
 
+PtEtaPhiMCandidate.MomentumClass = PtEtaPhiMCandidate
+PtEtaPhiECandidate.MomentumClass = PtEtaPhiECandidate
+
 __all__ = ["Candidate", "PtEtaPhiMCandidate", "PtEtaPhiECandidate"]
