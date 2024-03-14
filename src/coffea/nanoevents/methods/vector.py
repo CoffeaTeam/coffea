@@ -175,7 +175,7 @@ class TwoVector(MomentumAwkward2D):
         """Divide this vector by a scalar elementwise using its cartesian components
 
         This is realized by using the multiplication functionality"""
-        return self.multiply(1 / other)
+        return self.scale(1 / other)
 
     def delta_phi(self, other):
         """Compute difference in angle between two vectors
@@ -250,7 +250,7 @@ class ThreeVector(MomentumAwkward3D):
     def divide(self, other):
         """Divide this vector by a scalar elementwise using its cartesian components
         This is realized by using the multiplication functionality"""
-        return self.multiply(1 / other)
+        return self.scale(1 / other)
 
     def sum(self, axis=-1):
         """Sum an array of vectors elementwise using `x`, `y`, and `z` components"""
