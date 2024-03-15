@@ -70,6 +70,7 @@ class PtEtaPhiECandidate(Candidate, vector.PtEtaPhiELorentzVector):
     pass
 
 
+Candidate.MomentumClass = Candidate
 PtEtaPhiMCandidate.MomentumClass = PtEtaPhiMCandidate
 PtEtaPhiECandidate.MomentumClass = PtEtaPhiECandidate
 
