@@ -152,27 +152,7 @@ class TwoVector(MomentumAwkward2D):
     @awkward.mixin_class_method(numpy.negative)
     def negative(self):
         """Returns the negative of the vector"""
-        return awkward.zip(
-            {"x": -self.x, "y": -self.y},
-            with_name="TwoVector",
-            behavior=self.behavior,
-        )
-
-    def add(self, other):
-        """Add two vectors together elementwise using `x` and `y` components"""
-        return awkward.zip(
-            {"x": self.x + other.x, "y": self.y + other.y},
-            with_name="TwoVector",
-            behavior=self.behavior,
-        )
-
-    def subtract(self, other):
-        """Subtract a vector from another elementwise using `x` and `y` components"""
-        return awkward.zip(
-            {"x": self.x - other.x, "y": self.y - other.y},
-            with_name="TwoVector",
-            behavior=self.behavior,
-        )
+        return self.scale(-1)
 
     def sum(self, axis=-1):
         """Sum an array of vectors elementwise using `x` and `y` components"""
@@ -188,18 +168,14 @@ class TwoVector(MomentumAwkward2D):
     @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
         """Multiply this vector by a scalar elementwise using `x` and `y` components"""
-        return awkward.zip(
-            {"x": self.x * other, "y": self.y * other},
-            with_name="TwoVector",
-            behavior=self.behavior,
-        )
+        return self.scale(other)
 
     @awkward.mixin_class_method(numpy.divide, {numbers.Number})
     def divide(self, other):
         """Divide this vector by a scalar elementwise using its cartesian components
 
         This is realized by using the multiplication functionality"""
-        return self.multiply(1 / other)
+        return self.scale(1 / other)
 
     def delta_phi(self, other):
         """Compute difference in angle between two vectors
@@ -228,23 +204,12 @@ class PolarTwoVector(TwoVector):
 
         In reality, this directly adjusts `r` and `phi` for performance
         """
-        return awkward.zip(
-            {
-                "rho": self.r * abs(other),
-                "phi": self.phi % (2 * numpy.pi) - (numpy.pi * (other < 0)),
-            },
-            with_name="PolarTwoVector",
-            behavior=self.behavior,
-        )
+        return self.scale(other)
 
     @awkward.mixin_class_method(numpy.negative)
     def negative(self):
         """Returns the negative of the vector"""
-        return awkward.zip(
-            {"rho": self.r, "phi": self.phi % (2 * numpy.pi) - numpy.pi},
-            with_name="PolarTwoVector",
-            behavior=self.behavior,
-        )
+        return self.scale(-1)
 
 
 @awkward.mixin_class(behavior)
@@ -279,42 +244,13 @@ class ThreeVector(MomentumAwkward3D):
     @awkward.mixin_class_method(numpy.negative)
     def negative(self):
         """Returns the negative of the vector"""
-        return awkward.zip(
-            {"x": -self.x, "y": -self.y, "z": -self.z},
-            with_name="ThreeVector",
-            behavior=self.behavior,
-        )
-
-    def add(self, other):
-        """Add two vectors together elementwise using `x`, `y`, and `z` components"""
-        return awkward.zip(
-            {
-                "x": self.x + other.x,
-                "y": self.y + other.y,
-                "z": self.z + other.z,
-            },
-            with_name="ThreeVector",
-            behavior=self.behavior,
-        )
+        return self.scale(-1)
 
     @awkward.mixin_class_method(numpy.divide, {numbers.Number})
     def divide(self, other):
         """Divide this vector by a scalar elementwise using its cartesian components
         This is realized by using the multiplication functionality"""
-        return self.multiply(1 / other)
-
-    def subtract(self, other):
-        """Subtract a vector from another elementwise using `x`, `y`, and `z` components"""
-
-        return awkward.zip(
-            {
-                "x": self.x - other.x,
-                "y": self.y - other.y,
-                "z": self.z - other.z,
-            },
-            with_name="ThreeVector",
-            behavior=self.behavior,
-        )
+        return self.scale(1 / other)
 
     def sum(self, axis=-1):
         """Sum an array of vectors elementwise using `x`, `y`, and `z` components"""
@@ -331,27 +267,7 @@ class ThreeVector(MomentumAwkward3D):
     @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
         """Multiply this vector by a scalar elementwise using `x`, `y`, and `z` components"""
-        return awkward.zip(
-            {"x": self.x * other, "y": self.y * other, "z": self.z * other},
-            with_name="ThreeVector",
-            behavior=self.behavior,
-        )
-
-    def dot(self, other):
-        """Compute the dot product of two vectors"""
-        return self.x * other.x + self.y * other.y + self.z * other.z
-
-    def cross(self, other):
-        """Compute the cross product of two vectors"""
-        return awkward.zip(
-            {
-                "x": self.y * other.z - self.z * other.y,
-                "y": self.z * other.x - self.x * other.z,
-                "z": self.x * other.y - self.y * other.x,
-            },
-            with_name="ThreeVector",
-            behavior=self.behavior,
-        )
+        return self.scale(other)
 
     def delta_phi(self, other):
         """Compute difference in angle between two vectors
@@ -388,28 +304,12 @@ class SphericalThreeVector(ThreeVector):
 
         In reality, this directly adjusts `r`, `theta` and `phi` for performance
         """
-        return awkward.zip(
-            {
-                "rho": self.rho * abs(other),
-                "theta": (numpy.sign(other) * self.theta + numpy.pi) % numpy.pi,
-                "phi": self.phi % (2 * numpy.pi) - numpy.pi * (other < 0),
-            },
-            with_name="SphericalThreeVector",
-            behavior=self.behavior,
-        )
+        return self.scale(other)
 
     @awkward.mixin_class_method(numpy.negative)
     def negative(self):
         """Returns the negative of the vector"""
-        return awkward.zip(
-            {
-                "rho": self.rho,
-                "theta": (-self.theta + numpy.pi) % numpy.pi,
-                "phi": self.phi % (2 * numpy.pi) - numpy.pi,
-            },
-            with_name="SphericalThreeVector",
-            behavior=self.behavior,
-        )
+        return self.scale(-1)
 
 
 def _metric_table_core(a, b, axis, metric, return_combinations):
@@ -481,33 +381,6 @@ class LorentzVector(MomentumAwkward4D):
         """
         return self.mass
 
-    def add(self, other):
-        """Add two vectors together elementwise using `x`, `y`, `z`, and `t` components"""
-        return awkward.zip(
-            {
-                "x": self.x + other.x,
-                "y": self.y + other.y,
-                "z": self.z + other.z,
-                "t": self.t + other.t,
-            },
-            with_name="LorentzVector",
-            behavior=self.behavior,
-        )
-
-    def subtract(self, other):
-        """Subtract a vector from another elementwise using `x`, `y`, `z`, and `t` components"""
-
-        return awkward.zip(
-            {
-                "x": self.x - other.x,
-                "y": self.y - other.y,
-                "z": self.z - other.z,
-                "t": self.t - other.t,
-            },
-            with_name="LorentzVector",
-            behavior=self.behavior,
-        )
-
     def sum(self, axis=-1):
         """Sum an array of vectors elementwise using `x`, `y`, `z`, and `t` components"""
         return awkward.zip(
@@ -524,22 +397,13 @@ class LorentzVector(MomentumAwkward4D):
     @awkward.mixin_class_method(numpy.multiply, {numbers.Number})
     def multiply(self, other):
         """Multiply this vector by a scalar elementwise using `x`, `y`, `z`, and `t` components"""
-        return awkward.zip(
-            {
-                "x": self.x * other,
-                "y": self.y * other,
-                "z": self.z * other,
-                "t": self.t * other,
-            },
-            with_name="LorentzVector",
-            behavior=self.behavior,
-        )
+        return self.scale(other)
 
     @awkward.mixin_class_method(numpy.divide, {numbers.Number})
     def divide(self, other):
         """Divide this vector by a scalar elementwise using its cartesian components
         This is realized by using the multiplication functionality"""
-        return self.multiply(1 / other)
+        return self.scale(1 / other)
 
     def delta_r2(self, other):
         """Squared `delta_r`"""
@@ -562,11 +426,7 @@ class LorentzVector(MomentumAwkward4D):
     @awkward.mixin_class_method(numpy.negative)
     def negative(self):
         """Returns the negative of the vector"""
-        return awkward.zip(
-            {"x": -self.x, "y": -self.y, "z": -self.z, "t": -self.t},
-            with_name="LorentzVector",
-            behavior=self.behavior,
-        )
+        return self.scale(-1)
 
     @property
     def pvec(self):
@@ -795,6 +655,12 @@ class PtEtaPhiMLorentzVector(LorentzVector):
             behavior=self.behavior,
         )
 
+    @awkward.mixin_class_method(numpy.divide, {numbers.Number})
+    def divide(self, other):
+        """Divide this vector by a scalar elementwise using its cartesian components
+        This is realized by using the multiplication functionality"""
+        return self.multiply(1 / other)
+
 
 @awkward.mixin_class(behavior)
 class PtEtaPhiELorentzVector(LorentzVector):
@@ -911,6 +777,12 @@ class PtEtaPhiELorentzVector(LorentzVector):
             behavior=self.behavior,
         )
 
+    @awkward.mixin_class_method(numpy.divide, {numbers.Number})
+    def divide(self, other):
+        """Divide this vector by a scalar elementwise using its cartesian components
+        This is realized by using the multiplication functionality"""
+        return self.multiply(1 / other)
+
 
 _binary_dispatch_cls = {
     "TwoVector": TwoVector,
@@ -933,30 +805,37 @@ for lhs, lhs_to in _binary_dispatch_cls.items():
 TwoVectorArray.ProjectionClass2D = TwoVectorArray  # noqa: F821
 TwoVectorArray.ProjectionClass3D = ThreeVectorArray  # noqa: F821
 TwoVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821
+TwoVectorArray.MomentumClass = PolarTwoVectorArray  # noqa: F821
 
 PolarTwoVectorArray.ProjectionClass2D = PolarTwoVectorArray  # noqa: F821
 PolarTwoVectorArray.ProjectionClass3D = SphericalThreeVectorArray  # noqa: F821
 PolarTwoVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821
+PolarTwoVectorArray.MomentumClass = PolarTwoVectorArray  # noqa: F821
 
 ThreeVectorArray.ProjectionClass2D = TwoVectorArray  # noqa: F821
 ThreeVectorArray.ProjectionClass3D = ThreeVectorArray  # noqa: F821
 ThreeVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821
+ThreeVectorArray.MomentumClass = SphericalThreeVectorArray  # noqa: F821
 
-SphericalThreeVectorArray.ProjectionClass2D = TwoVectorArray  # noqa: F821
+SphericalThreeVectorArray.ProjectionClass2D = PolarTwoVectorArray  # noqa: F821
 SphericalThreeVectorArray.ProjectionClass3D = SphericalThreeVectorArray  # noqa: F821
 SphericalThreeVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821
+SphericalThreeVectorArray.MomentumClass = SphericalThreeVectorArray  # noqa: F821
 
 LorentzVectorArray.ProjectionClass2D = TwoVectorArray  # noqa: F821
 LorentzVectorArray.ProjectionClass3D = ThreeVectorArray  # noqa: F821
 LorentzVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821
+LorentzVectorArray.MomentumClass = LorentzVectorArray  # noqa: F821
 
 PtEtaPhiMLorentzVectorArray.ProjectionClass2D = TwoVectorArray  # noqa: F821
 PtEtaPhiMLorentzVectorArray.ProjectionClass3D = ThreeVectorArray  # noqa: F821
 PtEtaPhiMLorentzVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821
+PtEtaPhiMLorentzVectorArray.MomentumClass = LorentzVectorArray  # noqa: F821
 
 PtEtaPhiELorentzVectorArray.ProjectionClass2D = TwoVectorArray  # noqa: F821
 PtEtaPhiELorentzVectorArray.ProjectionClass3D = ThreeVectorArray  # noqa: F821
 PtEtaPhiELorentzVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821
+PtEtaPhiELorentzVectorArray.MomentumClass = LorentzVectorArray  # noqa: F821
 
 __all__ = [
     "TwoVector",
