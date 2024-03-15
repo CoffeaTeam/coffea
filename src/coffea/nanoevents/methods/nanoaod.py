@@ -446,6 +446,9 @@ class Jet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic):
         )
 
 
+JetArray.MomentumClass = JetArray  # noqa: F821
+
+
 _set_repr_name("Jet")
 
 
