@@ -49,7 +49,7 @@ class Candidate(vector.LorentzVector):
 
 
 @awkward.mixin_class(vector.behavior)
-class PtEtaPhiMCandidate(Candidate, vector.PtEtaPhiMCandidate):
+class PtEtaPhiMCandidate(Candidate, vector.PtEtaPhiMLorentzVector):
     """A Lorentz vector in eta, mass coordinates with charge
 
     This mixin class requires the parent class to provide items `pt`, `eta`, `phi`, `mass`, and `charge`.
