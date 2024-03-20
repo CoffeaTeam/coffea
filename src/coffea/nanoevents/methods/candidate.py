@@ -10,8 +10,10 @@ import numpy
 
 from coffea.nanoevents.methods import vector
 
+behavior = dict(vector.behavior)
 
-@awkward.mixin_class(vector.behavior)
+
+@awkward.mixin_class(behavior)
 class Candidate(vector.LorentzVector):
     """A Lorentz vector with charge
 
@@ -48,7 +50,7 @@ class Candidate(vector.LorentzVector):
         )
 
 
-@awkward.mixin_class(vector.behavior)
+@awkward.mixin_class(behavior)
 class PtEtaPhiMCandidate(Candidate, vector.PtEtaPhiMLorentzVector):
     """A Lorentz vector in eta, mass coordinates with charge
 
@@ -58,7 +60,7 @@ class PtEtaPhiMCandidate(Candidate, vector.PtEtaPhiMLorentzVector):
     pass
 
 
-@awkward.mixin_class(vector.behavior)
+@awkward.mixin_class(behavior)
 class PtEtaPhiECandidate(Candidate, vector.PtEtaPhiELorentzVector):
     """A Lorentz vector in eta, energy coordinates with charge
 
@@ -79,8 +81,8 @@ for lhs, lhs_to in vector._binary_dispatch_cls.items():
     for rhs, rhs_to in vector._binary_dispatch_cls.items():
         if lhs == "Candidate" or rhs == "Candidate":
             out_to = min(lhs_to, rhs_to, key=vector._rank.index)
-            vector.behavior[(numpy.add, lhs, rhs)] = out_to.add
-            vector.behavior[(numpy.subtract, lhs, rhs)] = out_to.subtract
+            behavior[(numpy.add, lhs, rhs)] = out_to.add
+            behavior[(numpy.subtract, lhs, rhs)] = out_to.subtract
 
 CandidateArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
 CandidateArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
