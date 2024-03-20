@@ -10,10 +10,8 @@ import numpy
 
 from coffea.nanoevents.methods import vector
 
-behavior = dict(vector.behavior)
 
-
-@awkward.mixin_class(behavior)
+@awkward.mixin_class(vector.behavior)
 class Candidate(vector.LorentzVector):
     """A Lorentz vector with charge
 
@@ -50,8 +48,8 @@ class Candidate(vector.LorentzVector):
         )
 
 
-@awkward.mixin_class(behavior)
-class PtEtaPhiMCandidate(Candidate, vector.PtEtaPhiMLorentzVector):
+@awkward.mixin_class(vector.behavior)
+class PtEtaPhiMCandidate(Candidate, vector.PtEtaPhiMCandidate):
     """A Lorentz vector in eta, mass coordinates with charge
 
     This mixin class requires the parent class to provide items `pt`, `eta`, `phi`, `mass`, and `charge`.
@@ -60,7 +58,7 @@ class PtEtaPhiMCandidate(Candidate, vector.PtEtaPhiMLorentzVector):
     pass
 
 
-@awkward.mixin_class(behavior)
+@awkward.mixin_class(vector.behavior)
 class PtEtaPhiECandidate(Candidate, vector.PtEtaPhiELorentzVector):
     """A Lorentz vector in eta, energy coordinates with charge
 
@@ -70,8 +68,33 @@ class PtEtaPhiECandidate(Candidate, vector.PtEtaPhiELorentzVector):
     pass
 
 
-Candidate.MomentumClass = Candidate
-PtEtaPhiMCandidate.MomentumClass = PtEtaPhiMCandidate
-PtEtaPhiECandidate.MomentumClass = PtEtaPhiECandidate
+vector._binary_dispatch_cls.update(
+    {
+        "Candidate": Candidate,
+    }
+)
+vector._rank += [Candidate]
+
+for lhs, lhs_to in vector._binary_dispatch_cls.items():
+    for rhs, rhs_to in vector._binary_dispatch_cls.items():
+        if lhs == "Candidate" or rhs == "Candidate":
+            out_to = min(lhs_to, rhs_to, key=vector._rank.index)
+            vector.behavior[(numpy.add, lhs, rhs)] = out_to.add
+            vector.behavior[(numpy.subtract, lhs, rhs)] = out_to.subtract
+
+CandidateArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+CandidateArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+CandidateArray.ProjectionClass4D = vector.LorentzVectorArray  # noqa: F821
+CandidateArray.MomentumClass = CandidateArray  # noqa: F821
+
+PtEtaPhiMCandidateArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+PtEtaPhiMCandidateArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+PtEtaPhiMCandidateArray.ProjectionClass4D = vector.LorentzVectorArray  # noqa: F821
+PtEtaPhiMCandidateArray.MomentumClass = PtEtaPhiMCandidateArray  # noqa: F821
+
+PtEtaPhiECandidateArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+PtEtaPhiECandidateArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+PtEtaPhiECandidateArray.ProjectionClass4D = vector.LorentzVectorArray  # noqa: F821
+PtEtaPhiECandidate.MomentumClass = PtEtaPhiECandidateArray  # noqa: F821
 
 __all__ = ["Candidate", "PtEtaPhiMCandidate", "PtEtaPhiECandidate"]
