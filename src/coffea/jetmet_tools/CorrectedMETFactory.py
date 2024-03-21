@@ -36,7 +36,7 @@ class CorrectedMETFactory:
 
         self.name_map = name_map
 
-    def build(self, in_MET, type1_MET,in_corrected_jets):
+    def build(self, in_MET, type1_MET, in_corrected_jets):
         if not isinstance(
             in_MET, (awkward.highlevel.Array, dask_awkward.Array)
         ) or not isinstance(
