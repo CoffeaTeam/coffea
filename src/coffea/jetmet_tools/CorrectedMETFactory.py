@@ -7,8 +7,8 @@ def corrected_polar_met(
     met_pt, met_phi, jet_pt, jet_phi, positive=None, dx=None, dy=None
 ):
     sj, cj = numpy.sin(jet_phi), numpy.cos(jet_phi)
-    x = met_pt * numpy.cos(met_phi) + awkward.sum(jet_pt * cj, axis=1)
-    y = met_pt * numpy.sin(met_phi) + awkward.sum(jet_pt * sj, axis=1)
+    x = met_pt * numpy.cos(met_phi) - awkward.sum(jet_pt * cj, axis=1)
+    y = met_pt * numpy.sin(met_phi) - awkward.sum(jet_pt * sj, axis=1)
     if positive is not None and dx is not None and dy is not None:
         x = x + dx if positive else x - dx
         y = y + dy if positive else y - dy
