@@ -1,0 +1,6 @@
+slice_files
+===========
+
+.. currentmodule:: coffea.dataset_tools
+
+.. autofunction:: slice_files

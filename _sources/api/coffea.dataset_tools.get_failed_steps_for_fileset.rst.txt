@@ -1,0 +1,6 @@
+get_failed_steps_for_fileset
+============================
+
+.. currentmodule:: coffea.dataset_tools
+
+.. autofunction:: get_failed_steps_for_fileset

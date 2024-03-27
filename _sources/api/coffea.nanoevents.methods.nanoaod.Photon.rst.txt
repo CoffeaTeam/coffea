@@ -1,0 +1,35 @@
+Photon
+======
+
+.. currentmodule:: coffea.nanoevents.methods.nanoaod
+
+.. autoclass:: Photon
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~Photon.LOOSE
+      ~Photon.MEDIUM
+      ~Photon.TIGHT
+      ~Photon.isLoose
+      ~Photon.isMedium
+      ~Photon.isTight
+      ~Photon.mass
+      ~Photon.matched_electron
+      ~Photon.matched_gen
+      ~Photon.matched_jet
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: LOOSE
+   .. autoattribute:: MEDIUM
+   .. autoattribute:: TIGHT
+   .. autoattribute:: isLoose
+   .. autoattribute:: isMedium
+   .. autoattribute:: isTight
+   .. autoattribute:: mass
+   .. autoattribute:: matched_electron
+   .. autoattribute:: matched_gen
+   .. autoattribute:: matched_jet

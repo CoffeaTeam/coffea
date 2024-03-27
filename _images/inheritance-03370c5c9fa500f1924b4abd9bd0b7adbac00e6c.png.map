@@ -1,0 +1,9 @@
+<map id="inheritancee2b5e0cf76" name="inheritancee2b5e0cf76">
+<area shape="rect" id="node1" href="../api/coffea.analysis_tools.Cutflow.html#coffea.analysis_tools.Cutflow" target="_top" title="Object to be returned by PackedSelection.cutflow()" alt="" coords="38,301,110,327"/>
+<area shape="rect" id="node2" href="../api/coffea.analysis_tools.CutflowToNpz.html#coffea.analysis_tools.CutflowToNpz" target="_top" title="Object to be returned by Cutflow.to_npz()" alt="" coords="19,252,129,277"/>
+<area shape="rect" id="node3" href="../api/coffea.analysis_tools.NminusOne.html#coffea.analysis_tools.NminusOne" target="_top" title="Object to be returned by PackedSelection.nminusone()" alt="" coords="25,203,123,228"/>
+<area shape="rect" id="node4" href="../api/coffea.analysis_tools.NminusOneToNpz.html#coffea.analysis_tools.NminusOneToNpz" target="_top" title="Object to be returned by NminusOne.to_npz()" alt="" coords="5,153,143,179"/>
+<area shape="rect" id="node5" href="../api/coffea.analysis_tools.PackedSelection.html#coffea.analysis_tools.PackedSelection" target="_top" title="Store several boolean arrays in a compact manner" alt="" coords="11,104,137,129"/>
+<area shape="rect" id="node6" href="../api/coffea.analysis_tools.WeightStatistics.html#coffea.analysis_tools.WeightStatistics" target="_top" title="WeightStatistics" alt="" coords="11,55,137,80"/>
+<area shape="rect" id="node7" href="../api/coffea.analysis_tools.Weights.html#coffea.analysis_tools.Weights" target="_top" title="Container for event weights and associated systematic shifts" alt="" coords="37,5,111,31"/>
+</map>
