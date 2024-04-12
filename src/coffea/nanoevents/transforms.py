@@ -477,7 +477,8 @@ def nestedindex(stack):
 
 def item(stack):
     field = stack.pop()
-    stack.append(stack.pop()[field])
+    array = stack.pop()
+    stack.append(array[field])
 
 
 def eventindex(stack):

@@ -86,6 +86,18 @@ class _TranslatedMapping:
         return self._mapping[self._func(index)]
 
 
+class _OnlySliceableAs:
+    """A workaround for how PreloadedSourceMapping works"""
+    def __init__(self, array, expected_slice):
+        self._array = array
+        self._expected_slice = expected_slice
+
+    def __getitem__(self, s):
+        if s != self._expected_slice:
+            raise RuntimeError(f"Mismatched slice: {s} vs. {self._expected_slice}")
+        return self._array
+
+
 class _map_schema_uproot(_map_schema_base):
     def __init__(
         self, schemaclass=BaseSchema, metadata=None, behavior=None, version=None
@@ -141,17 +153,24 @@ class _map_schema_uproot(_map_schema_base):
             f"{start}-{stop}",
         )
         uuidpfn = {partition_key[0]: tree.file.file_path}
-        mapping = UprootSourceMapping(
-            TrivialUprootOpener(uuidpfn, interp_options),
-            start,
-            stop,
-            cache={},
-            access_log=None,
-            use_ak_forth=True,
+        arrays = tree.arrays(
+            keys,
+            entry_start=start,
+            entry_stop=stop,
+            ak_add_doc=interp_options["ak_add_doc"],
             decompression_executor=decompression_executor,
             interpretation_executor=interpretation_executor,
+            how=dict,
         )
-        mapping.preload_column_source(partition_key[0], partition_key[1], tree)
+        source_arrays = {
+            k: _OnlySliceableAs(v, slice(start, stop))
+            for k, v in arrays.items()
+        }
+        mapping = PreloadedSourceMapping(
+            PreloadedOpener(uuidpfn), start, stop, access_log=None
+        )
+        mapping.preload_column_source(partition_key[0], partition_key[1], source_arrays)
+
         buffer_key = partial(self._key_formatter, tuple_to_key(partition_key))
 
         # The buffer-keys that dask-awkward knows about will not include the
