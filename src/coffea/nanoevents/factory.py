@@ -88,6 +88,7 @@ class _TranslatedMapping:
 
 class _OnlySliceableAs:
     """A workaround for how PreloadedSourceMapping works"""
+
     def __init__(self, array, expected_slice):
         self._array = array
         self._expected_slice = expected_slice
@@ -163,8 +164,7 @@ class _map_schema_uproot(_map_schema_base):
             how=dict,
         )
         source_arrays = {
-            k: _OnlySliceableAs(v, slice(start, stop))
-            for k, v in arrays.items()
+            k: _OnlySliceableAs(v, slice(start, stop)) for k, v in arrays.items()
         }
         mapping = PreloadedSourceMapping(
             PreloadedOpener(uuidpfn), start, stop, access_log=None

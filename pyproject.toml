@@ -38,7 +38,7 @@ classifiers = [
 ]
 dependencies = [
   "awkward>=2.6.3",
-  "uproot>=5.3.0",
+  "uproot!=5.3.3,>=5.3.0",
   "dask[array]>=2024.3.0;python_version>'3.8'",
   "dask[array]>=2023.4.0;python_version<'3.9'",
   "dask-awkward>=2024.3.0",
