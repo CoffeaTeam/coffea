@@ -314,7 +314,20 @@ def preprocess(
         dak_norm_files = dask_awkward.from_awkward(
             ak_norm_files, math.ceil(len(ak_norm_files) / files_per_batch)
         )
-        files_to_preprocess[name] = dask_awkward.map_partitions(
+
+        concat_fn = partial(
+            awkward.concatenate,
+            axis=0,
+        )
+
+        split_every = 8
+
+        files_trl_label = f"{name}"
+        files_trl_token = dask.base.tokenize(dak_norm_files, concat_fn, split_every)
+        files_trl_name = f"{files_trl_label}-{files_trl_token}"
+        files_trl_tree_node_name = f"{files_trl_label}-tree-node-{files_trl_token}"
+
+        files_part = dask_awkward.map_partitions(
             get_steps,
             dak_norm_files,
             step_size=step_size,
@@ -325,6 +338,29 @@ def preprocess(
             save_form=save_form,
             step_size_safety_factor=step_size_safety_factor,
             uproot_options=uproot_options,
+            meta=dask_awkward.lib.core.empty_typetracer(),
+        )
+
+        files_trl = dask_awkward.layers.layers.AwkwardTreeReductionLayer(
+            name=files_trl_name,
+            name_input=files_part.name,
+            npartitions_input=files_part.npartitions,
+            concat_func=concat_fn,
+            tree_node_func=lambda x: x,
+            finalize_func=lambda x: x,
+            split_every=split_every,
+            tree_node_name=files_trl_tree_node_name,
+        )
+
+        files_graph = dask.highlevelgraph.HighLevelGraph.from_collections(
+            files_trl_name, files_trl, dependencies=[files_part]
+        )
+
+        files_to_preprocess[name] = dask_awkward.lib.core.new_array_object(
+            files_graph,
+            files_trl_name,
+            meta=dask_awkward.lib.core.empty_typetracer(),
+            npartitions=len(files_trl.output_partitions),
         )
 
     (all_processed_files,) = dask.compute(files_to_preprocess, scheduler=scheduler)
