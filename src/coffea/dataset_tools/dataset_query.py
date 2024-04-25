@@ -556,11 +556,11 @@ Some basic commands:
                 )
         with gzip.open(f"{output_file}_available.json.gz", "wt") as file:
             print(f"Saved available fileset chunks to {output_file}_available.json.gz")
-            json.dump(self.preprocessed_total, file, indent=2)
+            json.dump(self.preprocessed_available, file, indent=2)
         with gzip.open(f"{output_file}_all.json.gz", "wt") as file:
             print(f"Saved all fileset chunks to {output_file}_all.json.gz")
-            json.dump(self.preprocessed_available, file, indent=2)
-        return self.preprocessed_total, self.preprocessed_available
+            json.dump(self.preprocessed_total, file, indent=2)
+        return self.preprocessed_available, self.preprocessed_total
 
     def load_dataset_definition(
         self,
