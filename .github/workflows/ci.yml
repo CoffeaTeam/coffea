@@ -40,7 +40,7 @@ jobs:
         os: [ubuntu-latest, macOS-latest, windows-latest]
         java-version: [17]
         java-distribution: ["corretto"]
-        python-version: ["3.8", "3.12"]
+        python-version: ["3.9", "3.12"]
 
     name: test coffea (${{ matrix.os }}) - python ${{ matrix.python-version }}, JDK${{ matrix.java-version }}
 
