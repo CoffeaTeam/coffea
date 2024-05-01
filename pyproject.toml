@@ -59,6 +59,8 @@ dependencies = [
   "pandas",
   "hist>=2",
   "cachetools",
+  "requests",
+  "aiohttp",
 ]
 dynamic = ["version"]
 
