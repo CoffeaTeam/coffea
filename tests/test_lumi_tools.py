@@ -3,6 +3,7 @@ import cloudpickle
 import dask
 import dask_awkward as dak
 import numpy as np
+import pytest
 from dask.distributed import Client
 
 from coffea.lumi_tools import LumiData, LumiList, LumiMask
@@ -60,12 +61,17 @@ def test_lumidata():
     assert len(results["index"][lumidata]) == len(results["index"][lumidata_pickle])
 
 
-def test_lumimask():
+@pytest.mark.parametrize(
+    "jsonfile",
+    [
+        "tests/samples/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt",
+        "https://raw.githubusercontent.com/CoffeaTeam/coffea/master/tests/samples/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt",
+    ],
+)
+def test_lumimask(jsonfile):
     client = Client()
 
-    lumimask = LumiMask(
-        "tests/samples/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt"
-    )
+    lumimask = LumiMask(jsonfile)
 
     # pickle & unpickle
     lumimask_pickle = cloudpickle.loads(cloudpickle.dumps(lumimask))
