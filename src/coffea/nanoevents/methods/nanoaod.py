@@ -304,6 +304,10 @@ class Photon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic)
         return 0.0 * self.pt
 
     @property
+    def charge(self):
+        return 0.0 * self.pt
+
+    @property
     def isLoose(self):
         """Returns a boolean array marking loose cut-based photons"""
         return (self.cutBasedBitmap & (1 << self.LOOSE)) != 0
