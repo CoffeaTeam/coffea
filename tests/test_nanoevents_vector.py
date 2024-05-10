@@ -606,6 +606,17 @@ def test_photon_zero_mass_charge(optimization_enabled):
             delayed=True,
         ).events()
 
+        np.testing.assert_allclose(ak.flatten(eagerevents.Photon.mass), 0.0, atol=1e-5)
+        np.testing.assert_allclose(
+            ak.flatten(daskevents.Photon.mass).compute(), 0.0, atol=1e-5
+        )
+        np.testing.assert_allclose(
+            ak.flatten(eagerevents.Photon.charge), 0.0, atol=1e-5
+        )
+        np.testing.assert_allclose(
+            ak.flatten(daskevents.Photon.charge).compute(), 0.0, atol=1e-5
+        )
+
         eagerdiphotonevents = eagerevents[ak.num(eagerevents.Photon) == 2]
         daskdiphotonevents = daskevents[ak.num(daskevents.Photon) == 2]
         eagerdiphotons = ak.zip(
