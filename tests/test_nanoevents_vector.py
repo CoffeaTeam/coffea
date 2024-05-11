@@ -633,4 +633,24 @@ def test_photon_zero_mass_charge(optimization_enabled):
         )
         eagerdiphotons["mass"] = (eagerdiphotons.tag + eagerdiphotons.probe).mass
         daskdiphotons["mass"] = (daskdiphotons.tag + daskdiphotons.probe).mass
+        eagermll = np.sqrt(
+            2
+            * eagerdiphotons.tag.pt
+            * eagerdiphotons.probe.pt
+            * (
+                np.cosh(eagerdiphotons.tag.eta - eagerdiphotons.probe.eta)
+                - np.cos(eagerdiphotons.tag.phi - eagerdiphotons.probe.phi)
+            )
+        )
+        daskmll = np.sqrt(
+            2
+            * daskdiphotons.tag.pt
+            * daskdiphotons.probe.pt
+            * (
+                np.cosh(daskdiphotons.tag.eta - daskdiphotons.probe.eta)
+                - np.cos(daskdiphotons.tag.phi - daskdiphotons.probe.phi)
+            )
+        )
+        assert_eq(eagerdiphotons.mass, eagermll)
+        assert_eq(daskdiphotons.mass, daskmll)
         assert_eq(eagerdiphotons.mass, daskdiphotons.mass)
