@@ -310,16 +310,22 @@ class Photon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic)
     @property
     def isLoose(self):
         """Returns a boolean array marking loose cut-based photons"""
+        if "cutBased" in self.fields:
+            return (self.cutBased & (1 << self.LOOSE)) != 0
         return (self.cutBasedBitmap & (1 << self.LOOSE)) != 0
 
     @property
     def isMedium(self):
         """Returns a boolean array marking medium cut-based photons"""
+        if "cutBased" in self.fields:
+            return (self.cutBased & (1 << self.MEDIUM)) != 0
         return (self.cutBasedBitmap & (1 << self.MEDIUM)) != 0
 
     @property
     def isTight(self):
         """Returns a boolean array marking tight cut-based photons"""
+        if "cutBased" in self.fields:
+            return (self.cutBased & (1 << self.TIGHT)) != 0
         return (self.cutBasedBitmap & (1 << self.TIGHT)) != 0
 
     @dask_property
