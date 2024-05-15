@@ -292,12 +292,25 @@ _set_repr_name("Tau")
 class Photon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
     """NanoAOD photon object"""
 
-    LOOSE = 0
-    "cutBasedBitmap bit position"
-    MEDIUM = 1
-    "cutBasedBitmap bit position"
-    TIGHT = 2
-    "cutBasedBitmap bit position"
+    @classmethod
+    def _initialize_cutbased(cls, fields):
+        """Initialize cut-based selection values based on the fields"""
+        if "cutBased" in fields:
+            cls.FAIL = 0
+            """cutBased selection minimum value"""
+            cls.LOOSE = 1
+            """cutBased selection minimum value"""
+            cls.MEDIUM = 2
+            """cutBased selection minimum value"""
+            cls.TIGHT = 3
+            """cutBased selection minimum value"""
+        else:
+            cls.LOOSE = 0
+            """cutBased bit position"""
+            cls.MEDIUM = 1
+            """cutBased bit position"""
+            cls.TIGHT = 2
+            """cutBased bit position"""
 
     @property
     def mass(self):
@@ -310,22 +323,25 @@ class Photon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic)
     @property
     def isLoose(self):
         """Returns a boolean array marking loose cut-based photons"""
+        self._initialize_cutbased(self.fields)
         if "cutBased" in self.fields:
-            return (self.cutBased & (1 << self.LOOSE)) != 0
+            return self.cutBased >= self.LOOSE
         return (self.cutBasedBitmap & (1 << self.LOOSE)) != 0
 
     @property
     def isMedium(self):
         """Returns a boolean array marking medium cut-based photons"""
+        self._initialize_cutbased(self.fields)
         if "cutBased" in self.fields:
-            return (self.cutBased & (1 << self.MEDIUM)) != 0
+            return self.cutBased >= self.MEDIUM
         return (self.cutBasedBitmap & (1 << self.MEDIUM)) != 0
 
     @property
     def isTight(self):
         """Returns a boolean array marking tight cut-based photons"""
+        self._initialize_cutbased(self.fields)
         if "cutBased" in self.fields:
-            return (self.cutBased & (1 << self.TIGHT)) != 0
+            return self.cutBased >= self.TIGHT
         return (self.cutBasedBitmap & (1 << self.TIGHT)) != 0
 
     @dask_property
