@@ -1,11 +1,9 @@
-import sys
-
 import awkward as ak
 import numpy as np
 import pytest
 from dummy_distributions import dummy_jagged_eta_pt
 
-from coffea import hist
+from coffea.jitters import hist
 
 
 def test_hist():
@@ -217,38 +215,6 @@ def test_hist():
     assert h_less.sum("vocalization", "height", "mass", "animal").values()[()] == 1004.0
 
 
-def test_export1d():
-    import os
-
-    import uproot3
-
-    from coffea.hist.export import export1d
-
-    counts, test_eta, test_pt = dummy_jagged_eta_pt()
-    h_regular_bins = hist.Hist("regular_joe", hist.Bin("x", "x", 20, 0, 200))
-    h_regular_bins.fill(x=test_pt)
-
-    hout = export1d(h_regular_bins)
-
-    filename = "test_export1d.root"
-
-    with uproot3.create(filename) as fout:
-        fout["regular_joe"] = hout
-        fout.close()
-
-    with uproot3.open(filename) as fin:
-        hin = fin["regular_joe"]
-
-    assert np.all(hin.edges == hout.edges)
-    assert np.all(hin.values == hout.values)
-
-    del hin
-    del fin
-
-    if os.path.exists(filename):
-        os.remove(filename)
-
-
 def test_hist_serdes():
     import pickle
 
@@ -291,89 +257,8 @@ def test_hist_serdes_labels():
     assert h._axes == hnew._axes
 
 
-@pytest.mark.skipif(
-    sys.version_info < (3, 4),
-    reason="requires python3.4 or higher, test file is pickle proto 4",
-)
-def test_hist_compat():
-    from coffea.util import load
-
-    test = load("tests/samples/old_hist_format.coffea")
-
-    expected_bins = np.array(
-        [
-            -np.inf,
-            0.0,
-            20.0,
-            40.0,
-            60.0,
-            80.0,
-            100.0,
-            120.0,
-            140.0,
-            160.0,
-            180.0,
-            200.0,
-            220.0,
-            240.0,
-            260.0,
-            280.0,
-            300.0,
-            320.0,
-            340.0,
-            360.0,
-            380.0,
-            400.0,
-            420.0,
-            440.0,
-            460.0,
-            480.0,
-            500.0,
-            520.0,
-            540.0,
-            560.0,
-            580.0,
-            600.0,
-            620.0,
-            640.0,
-            660.0,
-            680.0,
-            700.0,
-            720.0,
-            740.0,
-            760.0,
-            780.0,
-            800.0,
-            820.0,
-            840.0,
-            860.0,
-            880.0,
-            900.0,
-            920.0,
-            940.0,
-            960.0,
-            980.0,
-            1000.0,
-            1020.0,
-            1040.0,
-            1060.0,
-            1080.0,
-            1100.0,
-            1120.0,
-            1140.0,
-            1160.0,
-            1180.0,
-            1200.0,
-            np.inf,
-            np.nan,
-        ]
-    )
-    assert np.all(test._axes[2]._interval_bins[:-1] == expected_bins[:-1])
-    assert np.isnan(test._axes[2]._interval_bins[-1])
-
-
 def test_issue_247():
-    from coffea import hist
+    from coffea.jitters import hist
 
     h = hist.Hist("stuff", hist.Bin("old", "old", 20, -1, 1))
     h.fill(old=h.axis("old").centers())

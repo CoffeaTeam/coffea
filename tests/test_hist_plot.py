@@ -22,7 +22,7 @@ def fill_lepton_kinematics():
     ak.behavior.update(candidate.behavior)
 
     # histogram creation and manipulation
-    from coffea import hist
+    from coffea.jitters import hist
 
     fin = uproot.open("HZZ.root")
     tree = fin["events"]
@@ -67,7 +67,7 @@ def test_plot1d():
 
     plt.switch_backend("agg")
 
-    from coffea import hist
+    from coffea.jitters import hist
 
     lepton_kinematics = fill_lepton_kinematics()
 
@@ -96,7 +96,7 @@ def test_plot2d():
     # matplotlib
     import matplotlib.pyplot as plt
 
-    from coffea import hist
+    from coffea.jitters import hist
 
     plt.switch_backend("agg")
 
@@ -115,7 +115,7 @@ def test_plotratio():
     # matplotlib
     import matplotlib.pyplot as plt
 
-    from coffea import hist
+    from coffea.jitters import hist
 
     plt.switch_backend("agg")
 
@@ -238,7 +238,7 @@ def test_plotgrid():
     # matplotlib
     import matplotlib.pyplot as plt
 
-    from coffea import hist
+    from coffea.jitters import hist
 
     plt.switch_backend("agg")
 
@@ -268,7 +268,7 @@ def test_plotgrid():
 
 
 def test_clopper_pearson_interval():
-    from coffea.hist.plot import clopper_pearson_interval
+    from coffea.jitters.hist.plot import clopper_pearson_interval
 
     # Reference values for CL=0.6800 calculated with ROOT's TEfficiency
     num = np.array([1.0, 5.0, 10.0, 10.0])
@@ -293,7 +293,7 @@ def test_clopper_pearson_interval():
 
 
 def test_normal_interval():
-    from coffea.hist.plot import normal_interval
+    from coffea.jitters.hist.plot import normal_interval
 
     # Reference weighted efficiency and error from ROOTs TEfficiency
 
