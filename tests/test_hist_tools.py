@@ -3,6 +3,8 @@ import numpy as np
 import pytest
 from dummy_distributions import dummy_jagged_eta_pt
 
+pytest.importorskip("cupy")
+
 from coffea.jitters import hist
 
 
