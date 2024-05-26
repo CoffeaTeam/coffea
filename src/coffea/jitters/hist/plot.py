@@ -263,8 +263,8 @@ def plot1d(
                     the_slice = (the_slice[1], the_slice[0])
                 sumw = sumw[the_slice]
                 sumw2 = sumw2[the_slice]
-            plot_info["sumw"].append(sumw)
-            plot_info["sumw2"].append(sumw2)
+            plot_info["sumw"].append(sumw.get())
+            plot_info["sumw2"].append(sumw2.get())
 
         def w2err(sumw, sumw2):
             err = []

@@ -7,6 +7,7 @@ from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 
 import awkward
+import cupy
 import numpy
 
 # Python 2 and 3 compatibility
@@ -22,6 +23,19 @@ except ImportError:
     from collections.abc import Sequence
 
 MaybeSumSlice = namedtuple("MaybeSumSlice", ["start", "stop", "sum"])
+
+_replace_nans = cupy.ElementwiseKernel("T v", "T x", "x = isnan(x)?v:x", "replace_nans")
+
+_clip_bins = cupy.ElementwiseKernel(
+    "T Nbins, T lo, T hi, T id",
+    "T idx",
+    """
+    const T floored = floor((id - lo) * float(Nbins) / (hi - lo)) + 1;
+    idx = floored < 0 ? 0 : floored;
+    idx = floored > Nbins ? Nbins + 1 : floored;
+    """,
+    "clip_bins",
+)
 
 
 def assemble_blocks(array, ndslice, depth=0):
@@ -481,8 +495,8 @@ class Bin(DenseAxis):
             self._lo = self._bins[0]
             self._hi = self._bins[-1]
             # to make searchsorted differentiate inf from nan
-            self._bins = numpy.append(self._bins, numpy.inf)
-            self._interval_bins = numpy.r_[-numpy.inf, self._bins, numpy.nan]
+            self._bins = cupy.append(self._bins, cupy.inf)
+            self._interval_bins = cupy.r_[-cupy.inf, self._bins, cupy.nan]
             self._bin_names = numpy.full(self._interval_bins[:-1].size, None)
         elif isinstance(n_or_arr, numbers.Integral):
             if lo is None or hi is None:
@@ -493,11 +507,11 @@ class Bin(DenseAxis):
             self._lo = lo
             self._hi = hi
             self._bins = n_or_arr
-            self._interval_bins = numpy.r_[
-                -numpy.inf,
-                numpy.linspace(self._lo, self._hi, self._bins + 1),
-                numpy.inf,
-                numpy.nan,
+            self._interval_bins = cupy.r_[
+                -cupy.inf,
+                cupy.linspace(self._lo, self._hi, self._bins + 1),
+                cupy.inf,
+                cupy.nan,
             ]
             self._bin_names = numpy.full(self._interval_bins[:-1].size, None)
         else:
@@ -528,7 +542,7 @@ class Bin(DenseAxis):
         if "_intervals" in d:  # convert old hists to new serialization format
             _old_intervals = d.pop("_intervals")
             interval_bins = [i._lo for i in _old_intervals] + [_old_intervals[-1]._hi]
-            d["_interval_bins"] = numpy.array(interval_bins)
+            d["_interval_bins"] = cupy.array(interval_bins)
             d["_bin_names"] = numpy.array(
                 [interval._label for interval in _old_intervals]
             )
@@ -548,23 +562,28 @@ class Bin(DenseAxis):
         Returns an integer corresponding to the index in the axis where the histogram would be filled.
         The integer range includes flow bins: ``0 = underflow, n+1 = overflow, n+2 = nanflow``
         """
-        isarray = isinstance(identifier, (awkward.Array, numpy.ndarray))
+        isarray = isinstance(identifier, (awkward.Array, cupy.ndarray, numpy.ndarray))
         if isarray or isinstance(identifier, numbers.Number):
-            if isarray:
-                identifier = numpy.asarray(identifier)
+            identifier = awkward.to_cupy(identifier)  # cupy.asarray(identifier)
             if self._uniform:
-                idx = numpy.clip(
-                    numpy.floor(
-                        (identifier - self._lo)
-                        * float(self._bins)
-                        / (self._hi - self._lo)
+                idx = None
+                if isarray:
+                    idx = cupy.zeros_like(identifier)
+                    _clip_bins(float(self._bins), self._lo, self._hi, identifier, idx)
+                else:
+                    idx = numpy.clip(
+                        numpy.floor(
+                            (identifier - self._lo)
+                            * float(self._bins)
+                            / (self._hi - self._lo)
+                        )
+                        + 1,
+                        0,
+                        self._bins + 1,
                     )
-                    + 1,
-                    0,
-                    self._bins + 1,
-                )
-                if isinstance(idx, numpy.ndarray):
-                    idx[numpy.isnan(idx)] = self.size - 1
+
+                if isinstance(idx, (cupy.ndarray, numpy.ndarray)):
+                    _replace_nans(self.size - 1, idx)
                     idx = idx.astype(int)
                 elif numpy.isnan(idx):
                     idx = self.size - 1
@@ -572,7 +591,7 @@ class Bin(DenseAxis):
                     idx = int(idx)
                 return idx
             else:
-                return numpy.searchsorted(self._bins, identifier, side="right")
+                return cupy.searchsorted(self._bins, identifier, side="right")
         elif isinstance(identifier, Interval):
             if identifier.nan():
                 return self.size - 1
@@ -1095,7 +1114,9 @@ class Hist(AccumulatorABC):
         dense_idx = tuple(dense_idx)
 
         def dense_op(array):
-            return numpy.block(assemble_blocks(array, dense_idx))
+            as_numpy = array.get()
+            blocked = numpy.block(assemble_blocks(as_numpy, dense_idx))
+            return cupy.asarray(blocked)
 
         out = Hist(self._label, *new_dims, dtype=self._dtype)
         if self._sumw2 is not None:
@@ -1139,10 +1160,10 @@ class Hist(AccumulatorABC):
 
         """
         weight = values.pop("weight", None)
-        if isinstance(weight, (awkward.Array, numpy.ndarray)):
-            weight = numpy.asarray(weight)
+        if isinstance(weight, (awkward.Array, cupy.ndarray, numpy.ndarray)):
+            weight = cupy.array(weight)
         if isinstance(weight, numbers.Number):
-            weight = numpy.atleast_1d(weight)
+            weight = cupy.atleast_1d(weight)
         if not all(d.name in values for d in self._axes):
             missing = ", ".join(d.name for d in self._axes if d.name not in values)
             raise ValueError(
@@ -1161,44 +1182,46 @@ class Hist(AccumulatorABC):
 
         sparse_key = tuple(d.index(values[d.name]) for d in self.sparse_axes())
         if sparse_key not in self._sumw:
-            self._sumw[sparse_key] = numpy.zeros(
+            self._sumw[sparse_key] = cupy.zeros(
                 shape=self._dense_shape, dtype=self._dtype
             )
             if self._sumw2 is not None:
-                self._sumw2[sparse_key] = numpy.zeros(
+                self._sumw2[sparse_key] = cupy.zeros(
                     shape=self._dense_shape, dtype=self._dtype
                 )
 
         if self.dense_dim() > 0:
             dense_indices = tuple(
-                d.index(values[d.name]) for d in self._axes if isinstance(d, DenseAxis)
+                cupy.asarray(d.index(values[d.name]))
+                for d in self._axes
+                if isinstance(d, DenseAxis)
             )
-            xy = numpy.atleast_1d(
-                numpy.ravel_multi_index(dense_indices, self._dense_shape)
+            xy = cupy.atleast_1d(
+                cupy.ravel_multi_index(dense_indices, self._dense_shape)
             )
             if weight is not None:
-                self._sumw[sparse_key][:] += numpy.bincount(
+                self._sumw[sparse_key][:] += cupy.bincount(
                     xy, weights=weight, minlength=numpy.array(self._dense_shape).prod()
                 ).reshape(self._dense_shape)
-                self._sumw2[sparse_key][:] += numpy.bincount(
+                self._sumw2[sparse_key][:] += cupy.bincount(
                     xy,
                     weights=weight**2,
                     minlength=numpy.array(self._dense_shape).prod(),
                 ).reshape(self._dense_shape)
             else:
-                self._sumw[sparse_key][:] += numpy.bincount(
+                self._sumw[sparse_key][:] += cupy.bincount(
                     xy, weights=None, minlength=numpy.array(self._dense_shape).prod()
                 ).reshape(self._dense_shape)
                 if self._sumw2 is not None:
-                    self._sumw2[sparse_key][:] += numpy.bincount(
+                    self._sumw2[sparse_key][:] += cupy.bincount(
                         xy,
                         weights=None,
                         minlength=numpy.array(self._dense_shape).prod(),
                     ).reshape(self._dense_shape)
         else:
             if weight is not None:
-                self._sumw[sparse_key] += numpy.sum(weight)
-                self._sumw2[sparse_key] += numpy.sum(weight**2)
+                self._sumw[sparse_key] += cupy.sum(weight)
+                self._sumw2[sparse_key] += cupy.sum(weight**2)
             else:
                 self._sumw[sparse_key] += 1.0
                 if self._sumw2 is not None:
@@ -1604,14 +1627,14 @@ class Hist(AccumulatorABC):
             for sparse_key, sumw in values.items():
                 index = tuple(expandkey(sparse_key))
                 view = out.view(flow=True)
-                view[index] = sumw
+                view[index] = sumw.get()
         else:
             values = self.values(sumw2=True, overflow="all")
             for sparse_key, (sumw, sumw2) in values.items():
                 index = tuple(expandkey(sparse_key))
                 view = out.view(flow=True)
-                view[index].value = sumw
-                view[index].variance = sumw2
+                view[index].value = sumw.get()
+                view[index].variance = sumw2.get()
 
         return out
 
