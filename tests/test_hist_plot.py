@@ -5,6 +5,8 @@ import requests
 
 from coffea.util import numpy as np
 
+pytest.importorskip("cupy")
+
 url = (
     "https://github.com/scikit-hep/uproot3/blob/master/tests/samples/HZZ.root?raw=true"
 )
