@@ -4,6 +4,7 @@ from functools import partial
 import awkward
 import dask.delayed
 import dask_awkward
+import fsspec
 import numba
 import numpy
 from dask.base import tokenize
@@ -141,7 +142,7 @@ class LumiMask:
     """
 
     def __init__(self, jsonfile):
-        with open(jsonfile) as fin:
+        with fsspec.open(jsonfile) as fin:
             goldenjson = json.load(fin)
 
         self._masks = {}

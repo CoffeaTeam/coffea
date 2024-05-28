@@ -601,3 +601,71 @@ def test_dask_metric_table_and_nearest(optimization_enabled):
         )
         assert_eq(out_eager_thresh, out_dask_thresh)
         assert_eq(metric_eager_thresh, metric_dask_thresh)
+
+
+@pytest.mark.parametrize("optimization_enabled", [True, False])
+def test_photon_zero_mass_charge(optimization_enabled):
+    import dask
+    from dask_awkward.lib.testutils import assert_eq
+
+    from coffea.nanoevents import NanoEventsFactory
+
+    with dask.config.set({"awkward.optimization.enabled": optimization_enabled}):
+        eagerevents = NanoEventsFactory.from_root(
+            {"tests/samples/nano_dy.root": "Events"},
+            delayed=False,
+        ).events()
+
+        daskevents = NanoEventsFactory.from_root(
+            {"tests/samples/nano_dy.root": "Events"},
+            delayed=True,
+        ).events()
+
+        np.testing.assert_allclose(ak.flatten(eagerevents.Photon.mass), 0.0, atol=1e-5)
+        np.testing.assert_allclose(
+            ak.flatten(daskevents.Photon.mass).compute(), 0.0, atol=1e-5
+        )
+        np.testing.assert_allclose(
+            ak.flatten(eagerevents.Photon.charge), 0.0, atol=1e-5
+        )
+        np.testing.assert_allclose(
+            ak.flatten(daskevents.Photon.charge).compute(), 0.0, atol=1e-5
+        )
+
+        eagerdiphotonevents = eagerevents[ak.num(eagerevents.Photon) == 2]
+        daskdiphotonevents = daskevents[ak.num(daskevents.Photon) == 2]
+        eagerdiphotons = ak.zip(
+            {
+                "tag": eagerdiphotonevents.Photon[:, 0],
+                "probe": eagerdiphotonevents.Photon[:, 1],
+            }
+        )
+        daskdiphotons = ak.zip(
+            {
+                "tag": daskdiphotonevents.Photon[:, 0],
+                "probe": daskdiphotonevents.Photon[:, 1],
+            }
+        )
+        eagerdiphotons["mass"] = (eagerdiphotons.tag + eagerdiphotons.probe).mass
+        daskdiphotons["mass"] = (daskdiphotons.tag + daskdiphotons.probe).mass
+        eagermll = np.sqrt(
+            2
+            * eagerdiphotons.tag.pt
+            * eagerdiphotons.probe.pt
+            * (
+                np.cosh(eagerdiphotons.tag.eta - eagerdiphotons.probe.eta)
+                - np.cos(eagerdiphotons.tag.phi - eagerdiphotons.probe.phi)
+            )
+        )
+        daskmll = np.sqrt(
+            2
+            * daskdiphotons.tag.pt
+            * daskdiphotons.probe.pt
+            * (
+                np.cosh(daskdiphotons.tag.eta - daskdiphotons.probe.eta)
+                - np.cos(daskdiphotons.tag.phi - daskdiphotons.probe.phi)
+            )
+        )
+        assert_eq(eagerdiphotons.mass, eagermll)
+        assert_eq(daskdiphotons.mass, daskmll)
+        assert_eq(eagerdiphotons.mass, daskdiphotons.mass)
