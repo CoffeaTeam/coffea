@@ -125,8 +125,8 @@ def test_plotratio():
 
     # Add some pseudodata to a pt histogram so we can make a nice data/mc plot
     pthist = lepton_kinematics.sum("eta")
-    bin_values = pthist.axis("pt").centers()
-    poisson_means = pthist.sum("flavor").values()[()]
+    bin_values = pthist.axis("pt").centers().get()
+    poisson_means = pthist.sum("flavor").values()[()].get()
     values = np.repeat(bin_values, np.random.poisson(poisson_means))
     pthist.fill(flavor="pseudodata", pt=values)
 

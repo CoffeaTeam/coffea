@@ -283,7 +283,7 @@ def test_issue_247():
 def test_issue_333():
     axis = hist.Bin("channel", "Channel b1", 50, 0, 2000)
     temp = np.arange(0, 2000, 40, dtype=np.int16)
-    assert np.all(axis.index(temp) == np.arange(50) + 1)
+    assert np.all(axis.index(temp).get() == np.arange(50) + 1)
 
 
 def test_issue_394():

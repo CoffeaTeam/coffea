@@ -231,7 +231,7 @@ def plot1d(
     elif isinstance(axis, DenseAxis):
         ax.set_xlabel(axis.label)
         ax.set_ylabel(hist.label)
-        edges = axis.edges(overflow=overflow)
+        edges = axis.edges(overflow=overflow).get()
         if order is None:
             identifiers = (
                 hist.identifiers(overlay, overflow=overlay_overflow)
@@ -417,12 +417,14 @@ def plotratio(
     elif isinstance(axis, DenseAxis):
         ax.set_xlabel(axis.label)
         ax.set_ylabel(num.label)
-        edges = axis.edges(overflow=overflow)
-        centers = axis.centers(overflow=overflow)
+        edges = axis.edges(overflow=overflow).get()
+        centers = axis.centers(overflow=overflow).get()
         ranges = (edges[1:] - edges[:-1]) / 2 if xerr else None
 
         sumw_num, sumw2_num = num.values(sumw2=True, overflow=overflow)[()]
         sumw_denom, sumw2_denom = denom.values(sumw2=True, overflow=overflow)[()]
+        sumw_num, sumw2_num = sumw_num.get(), sumw2_num.get()
+        sumw_denom, sumw2_denom = sumw_denom.get(), sumw2_denom.get()
 
         rsumw = sumw_num / sumw_denom
         if unc == "clopper-pearson":
@@ -557,9 +559,10 @@ def plot2d(
     if isinstance(xaxis, SparseAxis) or isinstance(yaxis, SparseAxis):
         raise NotImplementedError("Plot a sparse axis (e.g. bar chart or labeled bins)")
     else:
-        xedges = xaxis.edges(overflow=xoverflow)
-        yedges = yaxis.edges(overflow=yoverflow)
+        xedges = xaxis.edges(overflow=xoverflow).get()
+        yedges = yaxis.edges(overflow=yoverflow).get()
         sumw, sumw2 = hist.values(sumw2=True, overflow="allnan")[()]
+        sumw, sumw2 = sumw.get(), sumw2.get()
         if transpose:
             sumw = sumw.T
             sumw2 = sumw2.T

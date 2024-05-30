@@ -487,9 +487,9 @@ class Bin(DenseAxis):
     def __init__(self, name, label, n_or_arr, lo=None, hi=None):
         super().__init__(name, label)
         self._lazy_intervals = None
-        if isinstance(n_or_arr, (list, numpy.ndarray)):
+        if isinstance(n_or_arr, (list, numpy.ndarray, cupy.ndarray)):
             self._uniform = False
-            self._bins = numpy.array(n_or_arr, dtype="d")
+            self._bins = cupy.array(n_or_arr, dtype="d")
             if not all(numpy.sort(self._bins) == self._bins):
                 raise ValueError("Binning not sorted!")
             self._lo = self._bins[0]
@@ -583,7 +583,10 @@ class Bin(DenseAxis):
                     )
 
                 if isinstance(idx, (cupy.ndarray, numpy.ndarray)):
-                    _replace_nans(self.size - 1, idx)
+                    _replace_nans(
+                        self.size - 1,
+                        idx if idx.dtype.kind == "f" else idx.astype(cupy.float32),
+                    )
                     idx = idx.astype(int)
                 elif numpy.isnan(idx):
                     idx = self.size - 1
@@ -596,7 +599,13 @@ class Bin(DenseAxis):
             if identifier.nan():
                 return self.size - 1
             for idx, interval in enumerate(self._intervals):
-                if interval._lo <= identifier._lo and interval._hi >= identifier._hi:
+                if (
+                    interval._lo <= identifier._lo
+                    or cupy.isclose(interval._lo, identifier._lo)
+                ) and (
+                    interval._hi >= identifier._hi
+                    or cupy.isclose(interval._hi, identifier._hi)
+                ):
                     return idx
             raise ValueError(
                 "Axis %r has no interval that fully contains identifier %r"
@@ -759,10 +768,10 @@ class Bin(DenseAxis):
                 See `Hist.sum` description for the allowed values.
         """
         if self._uniform:
-            out = numpy.linspace(self._lo, self._hi, self._bins + 1)
+            out = cupy.linspace(self._lo, self._hi, self._bins + 1)
         else:
             out = self._bins[:-1].copy()
-        out = numpy.r_[
+        out = cupy.r_[
             2 * out[0] - out[1], out, 2 * out[-1] - out[-2], 3 * out[-1] - 2 * out[-2]
         ]
         return out[overflow_behavior(overflow)]
