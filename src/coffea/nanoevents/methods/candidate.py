@@ -97,6 +97,6 @@ PtEtaPhiMCandidateArray.MomentumClass = PtEtaPhiMCandidateArray  # noqa: F821
 PtEtaPhiECandidateArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
 PtEtaPhiECandidateArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
 PtEtaPhiECandidateArray.ProjectionClass4D = vector.LorentzVectorArray  # noqa: F821
-PtEtaPhiECandidate.MomentumClass = PtEtaPhiECandidateArray  # noqa: F821
+PtEtaPhiECandidateArray.MomentumClass = PtEtaPhiECandidateArray  # noqa: F821
 
 __all__ = ["Candidate", "PtEtaPhiMCandidate", "PtEtaPhiECandidate"]
