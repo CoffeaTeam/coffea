@@ -1,4 +1,5 @@
 """Mixins for the CMS NanoAOD schema"""
+
 import awkward
 import warnings
 from coffea.nanoevents.methods import base, vector, candidate
@@ -218,31 +219,46 @@ _set_repr_name("Tau")
 class Photon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
     """NanoAOD photon object"""
 
-    LOOSE = 0
-    "cutBasedBitmap bit position"
-    MEDIUM = 1
-    "cutBasedBitmap bit position"
-    TIGHT = 2
-    "cutBasedBitmap bit position"
+    FAIL = 0
+    "cutBased selection minimum value"
+    LOOSE = 1
+    "cutBased selection minimum value"
+    MEDIUM = 2
+    "cutBased selection minimum value"
+    TIGHT = 3
+    "cutBased selection minimum value"
 
     @property
     def mass(self):
         return 0.0 * self.pt
 
     @property
+    def charge(self):
+        return 0.0 * self.pt
+
+    @property
     def isLoose(self):
         """Returns a boolean array marking loose cut-based photons"""
-        return (self.cutBasedBitmap & (1 << self.LOOSE)) != 0
+        # For NanoAOD v9+ the cutBasedBitmap was changed to a cutBased integer
+        if "cutBased" in self.fields:
+            return self.cutBased >= self.LOOSE
+        return (self.cutBasedBitmap & (1 << (self.LOOSE - 1))) != 0
 
     @property
     def isMedium(self):
         """Returns a boolean array marking medium cut-based photons"""
-        return (self.cutBasedBitmap & (1 << self.MEDIUM)) != 0
+        # For NanoAOD v9+ the cutBasedBitmap was changed to a cutBased integer
+        if "cutBased" in self.fields:
+            return self.cutBased >= self.MEDIUM
+        return (self.cutBasedBitmap & (1 << (self.MEDIUM - 1))) != 0
 
     @property
     def isTight(self):
         """Returns a boolean array marking tight cut-based photons"""
-        return (self.cutBasedBitmap & (1 << self.TIGHT)) != 0
+        # For NanoAOD v9+ the cutBasedBitmap was changed to a cutBased integer
+        if "cutBased" in self.fields:
+            return self.cutBased >= self.TIGHT
+        return (self.cutBasedBitmap & (1 << (self.TIGHT - 1))) != 0
 
     @property
     def matched_electron(self):
