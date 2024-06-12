@@ -66,6 +66,7 @@ def get_steps(
     for arg in lz_or_nf:
         try:
             the_file = uproot.open({arg.file: None}, **uproot_options)
+            tree = the_file[arg.object_path]
         except file_exceptions as e:
             if skip_bad_files:
                 array.append(None)
@@ -73,7 +74,6 @@ def get_steps(
             else:
                 raise e
 
-        tree = the_file[arg.object_path]
         num_entries = tree.num_entries
 
         form_json = None
