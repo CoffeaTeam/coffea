@@ -2,6 +2,7 @@ import dask
 import pytest
 import uproot
 from distributed import Client
+from uproot.exceptions import KeyInFileError
 
 from coffea.dataset_tools import (
     apply_to_fileset,
@@ -13,10 +14,9 @@ from coffea.dataset_tools import (
     slice_chunks,
     slice_files,
 )
-from coffea.nanoevents import BaseSchema, NanoAODSchema, DelphesSchema
+from coffea.nanoevents import BaseSchema, NanoAODSchema
 from coffea.processor.test_items import NanoEventsProcessor, NanoTestProcessor
 from coffea.util import decompress_form
-from uproot.exceptions import KeyInFileError
 
 _starting_fileset_list = {
     "ZJets": ["tests/samples/nano_dy.root:Events"],
@@ -392,6 +392,7 @@ def test_preprocess_failed_file():
             skip_bad_files=False,
         )
 
+
 def test_preprocess_with_file_exceptions():
     fileset = {
         "Data": {
@@ -402,7 +403,7 @@ def test_preprocess_with_file_exceptions():
         },
     }
 
-    with Client() as _: # should not throw uproot.exceptions.KeyInFileError
+    with Client() as _:  # should not throw uproot.exceptions.KeyInFileError
         dataset_runnable, dataset_updated = preprocess(
             fileset,
             step_size=10,
@@ -411,14 +412,14 @@ def test_preprocess_with_file_exceptions():
             file_exceptions=KeyInFileError,
             skip_bad_files=True,
         )
-    
-    assert dataset_runnable ==  {
-        'Data': {
-            'files': {
-                'tests/samples/delphes.root': {
-                    'num_entries': 25,
-                    'object_path': 'Delphes',
-                    'steps': [
+
+    assert dataset_runnable == {
+        "Data": {
+            "files": {
+                "tests/samples/delphes.root": {
+                    "num_entries": 25,
+                    "object_path": "Delphes",
+                    "steps": [
                         [
                             0,
                             13,
@@ -428,11 +429,11 @@ def test_preprocess_with_file_exceptions():
                             25,
                         ],
                     ],
-                    'uuid': 'ad4cd5ec-123e-11ec-92f6-93e3aac0beef',
+                    "uuid": "ad4cd5ec-123e-11ec-92f6-93e3aac0beef",
                 },
             },
-            'form': None,
-            'metadata': None,
+            "form": None,
+            "metadata": None,
         },
     }
 
