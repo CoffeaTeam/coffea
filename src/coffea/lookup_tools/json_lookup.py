@@ -12,6 +12,7 @@ deprecate(
     category=FutureWarning,
 )
 
+
 class json_lookup:
     def __init__(self, wrapped_values):
         self.values = wrapped_values
