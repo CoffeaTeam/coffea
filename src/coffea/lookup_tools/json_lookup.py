@@ -1,7 +1,8 @@
 from datetime import datetime
 
-from coffea.util import deprecate
 import pytz
+
+from coffea.util import deprecate
 
 _cst = pytz.timezone("US/Central")
 _depttime = _cst.localize(datetime(2024, 7, 31, 11, 59, 59))
