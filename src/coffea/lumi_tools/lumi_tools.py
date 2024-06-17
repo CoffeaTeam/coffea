@@ -56,8 +56,8 @@ class LumiData:
             delimiter=",",
             usecols=(0, 1, 6, 7),
             converters={
-                0: lambda s: s.split(b":")[0],
-                1: lambda s: s.split(b":")[
+                0: lambda s: s.split(":")[0],
+                1: lambda s: s.split(":")[
                     0
                 ],  # not sure what lumi:0 means, appears to be always zero (DAQ off before beam dump?)
             },
