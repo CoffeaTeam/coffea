@@ -61,6 +61,7 @@ class LumiData:
                     0
                 ],  # not sure what lumi:0 means, appears to be always zero (DAQ off before beam dump?)
             },
+            encoding="utf-8",
         )
         self.index = None
         self.index_delayed = None
