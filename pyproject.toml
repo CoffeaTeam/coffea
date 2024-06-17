@@ -48,7 +48,7 @@ dependencies = [
   "fsspec-xrootd>=0.2.3",
   "matplotlib>=3",
   "numba>=0.58.1",
-  "numpy<2,>=1.22.0",
+  "numpy>=1.22.0",
   "scipy>=1.1.0",
   "tqdm>=4.27.0",
   "lz4",
