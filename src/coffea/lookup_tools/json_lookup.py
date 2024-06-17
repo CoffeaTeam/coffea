@@ -1,3 +1,17 @@
+import pytz
+
+_cst = pytz.timezone("US/Central")
+_depttime = _cst.localize(datetime(2024, 7, 31, 11, 59, 59))
+deprecate(
+    (
+        "coffea.lookup_tools.json_lookup will be removed by August 2024. "
+        "Please use lumi_tools or correctionlib instead!"
+    ),
+    version="2024.8.0",
+    date=str(_depttime),
+    category=FutureWarning,
+)
+
 class json_lookup:
     def __init__(self, wrapped_values):
         self.values = wrapped_values
