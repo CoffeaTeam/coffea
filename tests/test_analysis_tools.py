@@ -556,9 +556,11 @@ def test_packed_selection_nminusone():
                 twoelectron & nomuon & leadpt20,
             ]
         ):
-            counts = h[:, i].counts()
+            counts = h[:, i].counts(flow=True)
+            counts[1] += counts[0]
+            counts[-2] += counts[-1]
             c, e = np.histogram(ak.flatten(array[truth]), bins=edges)
-            assert np.all(counts == c)
+            assert np.all(np.isclose(counts[1:-1], c))
 
 
 def test_packed_selection_cutflow():
@@ -660,9 +662,11 @@ def test_packed_selection_cutflow():
         for i, truth in enumerate(
             [np.ones(40, dtype=bool), nomuon, twoelectron, leadpt20]
         ):
-            counts = h[:, i].counts()
+            counts = h[:, i].counts(flow=True)
+            counts[1] += counts[0]
+            counts[-2] += counts[-1]
             c, e = np.histogram(ak.flatten(array[truth]), bins=edges)
-            assert np.all(counts == c)
+            assert np.all(np.isclose(counts[1:-1], c))
 
     for h, array in zip(hcutflows, [events.Electron.pt, events.Electron.phi]):
         edges = h.axes[0].edges
@@ -674,9 +678,11 @@ def test_packed_selection_cutflow():
                 nomuon & twoelectron & leadpt20,
             ]
         ):
-            counts = h[:, i].counts()
+            counts = h[:, i].counts(flow=True)
+            counts[1] += counts[0]
+            counts[-2] += counts[-1]
             c, e = np.histogram(ak.flatten(array[truth]), bins=edges)
-            assert np.all(counts == c)
+            assert np.all(np.isclose(counts[1:-1], c))
 
 
 @pytest.mark.parametrize("optimization_enabled", [True, False])
@@ -911,9 +917,11 @@ def test_packed_selection_nminusone_dak(optimization_enabled):
                     twoelectron.compute() & nomuon.compute() & leadpt20.compute(),
                 ]
             ):
-                counts = h[:, i].counts()
+                counts = h[:, i].counts(flow=True)
+                counts[1] += counts[0]
+                counts[-2] += counts[-1]
                 c, e = np.histogram(dak.flatten(array[truth]).compute(), bins=edges)
-                assert np.all(counts == c)
+                assert np.all(np.isclose(counts[1:-1], c))
 
 
 @pytest.mark.parametrize("optimization_enabled", [True, False])
@@ -1026,9 +1034,11 @@ def test_packed_selection_cutflow_dak(optimization_enabled):
                     leadpt20.compute(),
                 ]
             ):
-                counts = h[:, i].counts()
+                counts = h[:, i].counts(flow=True)
+                counts[1] += counts[0]
+                counts[-2] += counts[-1]
                 c, e = np.histogram(dak.flatten(array[truth]).compute(), bins=edges)
-                assert np.all(counts == c)
+                assert np.all(np.isclose(counts[1:-1], c))
 
         for h, array in zip(hcutflows, [events.Electron.pt, events.Electron.phi]):
             edges = h.axes[0].edges
@@ -1040,9 +1050,11 @@ def test_packed_selection_cutflow_dak(optimization_enabled):
                     (nomuon & twoelectron & leadpt20).compute(),
                 ]
             ):
-                counts = h[:, i].counts()
+                counts = h[:, i].counts(flow=True)
+                counts[1] += counts[0]
+                counts[-2] += counts[-1]
                 c, e = np.histogram(dak.flatten(array[truth]).compute(), bins=edges)
-                assert np.all(counts == c)
+                assert np.all(np.isclose(counts[1:-1], c))
 
 
 @pytest.mark.parametrize("optimization_enabled", [True, False])
@@ -1166,9 +1178,11 @@ def test_packed_selection_nminusone_dak_uproot_only(optimization_enabled):
                     twoelectron.compute() & nomuon.compute() & leadpt20.compute(),
                 ]
             ):
-                counts = h[:, i].counts()
+                counts = h[:, i].counts(flow=True)
+                counts[1] += counts[0]
+                counts[-2] += counts[-1]
                 c, e = np.histogram(dak.flatten(array[truth]).compute(), bins=edges)
-                assert np.all(counts == c)
+                assert np.all(np.isclose(counts[1:-1], c))
 
 
 @pytest.mark.parametrize("optimization_enabled", [True, False])
@@ -1281,9 +1295,11 @@ def test_packed_selection_cutflow_dak_uproot_only(optimization_enabled):
                     leadpt20.compute(),
                 ]
             ):
-                counts = h[:, i].counts()
+                counts = h[:, i].counts(flow=True)
+                counts[1] += counts[0]
+                counts[-2] += counts[-1]
                 c, e = np.histogram(dak.flatten(array[truth]).compute(), bins=edges)
-                assert np.all(counts == c)
+                assert np.all(np.isclose(counts[1:-1], c))
 
         for h, array in zip(hcutflows, [events.Electron_pt, events.Electron_phi]):
             edges = h.axes[0].edges
@@ -1295,6 +1311,8 @@ def test_packed_selection_cutflow_dak_uproot_only(optimization_enabled):
                     (nomuon & twoelectron & leadpt20).compute(),
                 ]
             ):
-                counts = h[:, i].counts()
+                counts = h[:, i].counts(flow=True)
+                counts[1] += counts[0]
+                counts[-2] += counts[-1]
                 c, e = np.histogram(dak.flatten(array[truth]).compute(), bins=edges)
-                assert np.all(counts == c)
+                assert np.all(np.isclose(counts[1:-1], c))
