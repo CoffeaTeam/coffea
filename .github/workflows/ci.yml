@@ -97,7 +97,7 @@ jobs:
         python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
         uv pip install --system xgboost
         # install checked out coffea
-        uv pip install --system -q '.[dev,dask]' --upgrade
+        uv pip install --system -q '.[dev,dask]' 'numpy<2' --upgrade
         uv pip list --system
         java -version
 
