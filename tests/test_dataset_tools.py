@@ -2,6 +2,7 @@ import dask
 import pytest
 import uproot
 from distributed import Client
+from uproot.exceptions import KeyInFileError
 
 from coffea.dataset_tools import (
     apply_to_fileset,
@@ -390,6 +391,51 @@ def test_preprocess_failed_file():
             files_per_batch=10,
             skip_bad_files=False,
         )
+
+
+def test_preprocess_with_file_exceptions():
+    fileset = {
+        "Data": {
+            "files": {
+                "tests/samples/delphes.root": "Delphes",
+                "tests/samples/bad_delphes.root": "Delphes",
+            }
+        },
+    }
+
+    with Client() as _:  # should not throw uproot.exceptions.KeyInFileError
+        dataset_runnable, dataset_updated = preprocess(
+            fileset,
+            step_size=10,
+            align_clusters=False,
+            files_per_batch=10,
+            file_exceptions=KeyInFileError,
+            skip_bad_files=True,
+        )
+
+    assert dataset_runnable == {
+        "Data": {
+            "files": {
+                "tests/samples/delphes.root": {
+                    "num_entries": 25,
+                    "object_path": "Delphes",
+                    "steps": [
+                        [
+                            0,
+                            13,
+                        ],
+                        [
+                            13,
+                            25,
+                        ],
+                    ],
+                    "uuid": "ad4cd5ec-123e-11ec-92f6-93e3aac0beef",
+                },
+            },
+            "form": None,
+            "metadata": None,
+        },
+    }
 
 
 def test_filter_files():

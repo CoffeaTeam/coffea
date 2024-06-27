@@ -97,7 +97,7 @@ jobs:
         python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
         uv pip install --system xgboost
         # install checked out coffea
-        uv pip install --system -q '.[dev,dask]' --upgrade
+        uv pip install --system -q '.[dev,dask]' 'numpy<2' --upgrade
         uv pip list --system
         java -version
 
@@ -206,11 +206,11 @@ jobs:
     - name: Verify the distribution
       run: pipx run twine check --strict dist/*
     - name: Generate artifact attestation for sdist and wheel
-      uses: actions/attest-build-provenance@173725a1209d09b31f9d30a3890cf2757ebbff0d # v1.1.2
+      uses: actions/attest-build-provenance@bdd51370e0416ac948727f861e03c2f05d32d78e # v1.3.2
       with:
         subject-path: "dist/coffea-*"
     - name: Publish package to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.8.14
+      uses: pypa/gh-action-pypi-publish@v1.9.0
       with:
         user: __token__
         password: ${{ secrets.PYPI_TOKEN }}
