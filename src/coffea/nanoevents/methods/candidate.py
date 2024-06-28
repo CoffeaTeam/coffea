@@ -70,19 +70,9 @@ class PtEtaPhiECandidate(Candidate, vector.PtEtaPhiELorentzVector):
     pass
 
 
-vector._binary_dispatch_cls.update(
-    {
-        "Candidate": Candidate,
-    }
+awkward.behavior.update(
+    awkward._util.copy_behaviors(vector.LorentzVector, Candidate, behavior)
 )
-vector._rank += [Candidate]
-
-for lhs, lhs_to in vector._binary_dispatch_cls.items():
-    for rhs, rhs_to in vector._binary_dispatch_cls.items():
-        if lhs == "Candidate" or rhs == "Candidate":
-            out_to = min(lhs_to, rhs_to, key=vector._rank.index)
-            behavior[(numpy.add, lhs, rhs)] = out_to.add
-            behavior[(numpy.subtract, lhs, rhs)] = out_to.subtract
 
 CandidateArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
 CandidateArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
