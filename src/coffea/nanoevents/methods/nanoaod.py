@@ -298,6 +298,14 @@ class LowPtElectron(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Syst
 
 
 _set_repr_name("LowPtElectron")
+awkward.behavior.update(
+    awkward._util.copy_behaviors(candidate.PtEtaPhiMCandidate, LowPtElectron, behavior)
+)
+
+LowPtElectronArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+LowPtElectronArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+LowPtElectronArray.ProjectionClass4D = LowPtElectronArray  # noqa: F821
+LowPtElectronArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
