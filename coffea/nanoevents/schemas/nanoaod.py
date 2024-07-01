@@ -57,6 +57,7 @@ class NanoAODSchema(BaseSchema):
         "SubJet": "PtEtaPhiMCollection",
         # Candidate: lorentz + charge
         "Electron": "Electron",
+        "LowPtElectron": "LowPtElectron",
         "Muon": "Muon",
         "Photon": "Photon",
         "FsrPhoton": "FsrPhoton",
@@ -75,6 +76,9 @@ class NanoAODSchema(BaseSchema):
         "Electron_genPartIdx": "GenPart",
         "Electron_jetIdx": "Jet",
         "Electron_photonIdx": "Photon",
+        "LowPtElectron_electronIdx": "Electron",
+        "LowPtElectron_genPartIdx": "GenPart",
+        "LowPtElectron_photonIdx": "Photon",
         "FatJet_genJetAK8Idx": "GenJetAK8",
         "FatJet_subJetIdx1": "SubJet",
         "FatJet_subJetIdx2": "SubJet",
