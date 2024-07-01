@@ -180,6 +180,26 @@ _set_repr_name("Electron")
 
 
 @awkward.mixin_class(behavior)
+class LowPtElectron(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
+    """NanoAOD low-pt electron object"""
+
+    @property
+    def matched_gen(self):
+        return self._events().GenPart._apply_global_index(self.genPartIdxG)
+
+    @property
+    def matched_electron(self):
+        return self._events().Electron._apply_global_index(self.electronIdxG)
+
+    @property
+    def matched_photon(self):
+        return self._events().Photon._apply_global_index(self.photonIdxG)
+
+
+_set_repr_name("LowPtElectron")
+
+
+@awkward.mixin_class(behavior)
 class Muon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
     """NanoAOD muon object"""
 
@@ -501,6 +521,7 @@ __all__ = [
     "GenParticle",
     "GenVisTau",
     "Electron",
+    "LowPtElectron",
     "Muon",
     "Tau",
     "Photon",
