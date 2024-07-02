@@ -1,0 +1,37 @@
+triton_wrapper
+==============
+
+.. currentmodule:: coffea.ml_tools
+
+.. autoclass:: triton_wrapper
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~triton_wrapper.batch_size
+      ~triton_wrapper.batch_size_fallback
+      ~triton_wrapper.client_args
+      ~triton_wrapper.http_client_concurrency
+      ~triton_wrapper.pmod
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~triton_wrapper.numpy_call
+      ~triton_wrapper.validate_numpy_input
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: batch_size
+   .. autoattribute:: batch_size_fallback
+   .. autoattribute:: client_args
+   .. autoattribute:: http_client_concurrency
+   .. autoattribute:: pmod
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: numpy_call
+   .. automethod:: validate_numpy_input

@@ -1,0 +1,29 @@
+PHYSLITESchema
+==============
+
+.. currentmodule:: coffea.nanoevents
+
+.. autoclass:: PHYSLITESchema
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~PHYSLITESchema.mixins
+      ~PHYSLITESchema.truth_collections
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~PHYSLITESchema.behavior
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: mixins
+   .. autoattribute:: truth_collections
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: behavior

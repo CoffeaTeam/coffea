@@ -1,0 +1,6 @@
+slice_chunks
+============
+
+.. currentmodule:: coffea.dataset_tools
+
+.. autofunction:: slice_chunks

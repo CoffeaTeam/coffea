@@ -1,0 +1,25 @@
+NminusOne
+=========
+
+.. currentmodule:: coffea.analysis_tools
+
+.. autoclass:: NminusOne
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~NminusOne.plot_vars
+      ~NminusOne.print
+      ~NminusOne.result
+      ~NminusOne.to_npz
+      ~NminusOne.yieldhist
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: plot_vars
+   .. automethod:: print
+   .. automethod:: result
+   .. automethod:: to_npz
+   .. automethod:: yieldhist

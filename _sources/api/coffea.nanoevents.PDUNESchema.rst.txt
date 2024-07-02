@@ -1,0 +1,29 @@
+PDUNESchema
+===========
+
+.. currentmodule:: coffea.nanoevents
+
+.. autoclass:: PDUNESchema
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~PDUNESchema.mixins
+      ~PDUNESchema.top_objects
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~PDUNESchema.behavior
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: mixins
+   .. autoattribute:: top_objects
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: behavior

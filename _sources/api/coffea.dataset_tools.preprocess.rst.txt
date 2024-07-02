@@ -1,0 +1,6 @@
+preprocess
+==========
+
+.. currentmodule:: coffea.dataset_tools
+
+.. autofunction:: preprocess
