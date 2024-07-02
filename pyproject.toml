@@ -92,6 +92,9 @@ rucio = [
   "rucio-clients>=32;python_version>'3.8'",
   "rucio-clients<32;python_version<'3.9'",
 ]
+gpu = [
+  "cupy-cuda12x>=13.1.0"
+]
 dev = [
   "pre-commit",
   "flake8",
