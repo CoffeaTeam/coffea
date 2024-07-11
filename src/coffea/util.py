@@ -246,3 +246,10 @@ def _remove_not_interpretable(branch, emit_warning=True):
         return False
     else:
         return True
+
+
+def register_projection_classes(vec_class, proj_2d, proj_3d, proj_4d, momentum_class):
+    vec_class.ProjectionClass2D = proj_2d
+    vec_class.ProjectionClass3D = proj_3d
+    vec_class.ProjectionClass4D = proj_4d
+    vec_class.MomentumClass = momentum_class
