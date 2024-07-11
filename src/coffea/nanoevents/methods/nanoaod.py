@@ -280,6 +280,48 @@ register_projection_classes(
 
 
 @awkward.mixin_class(behavior)
+class LowPtElectron(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
+    """NanoAOD low-pt electron object"""
+
+    @dask_property
+    def matched_gen(self):
+        return self._events().GenPart._apply_global_index(self.genPartIdxG)
+
+    @matched_gen.dask
+    def matched_gen(self, dask_array):
+        return dask_array._events().GenPart._apply_global_index(dask_array.genPartIdxG)
+
+    @dask_property
+    def matched_electron(self):
+        return self._events().Electron._apply_global_index(self.electronIdxG)
+
+    @matched_electron.dask
+    def matched_electron(self, dask_array):
+        return dask_array._events().Electron._apply_global_index(
+            dask_array.electronIdxG
+        )
+
+    @dask_property
+    def matched_photon(self):
+        return self._events().Photon._apply_global_index(self.photonIdxG)
+
+    @matched_photon.dask
+    def matched_photon(self, dask_array):
+        return dask_array._events().Photon._apply_global_index(dask_array.photonIdxG)
+
+
+_set_repr_name("LowPtElectron")
+awkward.behavior.update(
+    awkward._util.copy_behaviors(candidate.PtEtaPhiMCandidate, LowPtElectron, behavior)
+)
+
+LowPtElectronArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+LowPtElectronArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+LowPtElectronArray.ProjectionClass4D = LowPtElectronArray  # noqa: F821
+LowPtElectronArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
+
+
+@awkward.mixin_class(behavior)
 class Muon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
     """NanoAOD muon object"""
 
@@ -780,6 +822,7 @@ __all__ = [
     "GenParticle",
     "GenVisTau",
     "Electron",
+    "LowPtElectron",
     "Muon",
     "Tau",
     "Photon",
