@@ -22,6 +22,23 @@ import coffea.util
 
 
 class WeightStatistics:
+    """
+    Container for statistics about the weight, including the sum of squared weights
+    and number of entries.
+    
+    Parameters
+    ----------
+        sumw: float
+            The sum of weights
+        sumw2: float
+            The sum of squared weights
+        minw: float
+            The minimum weight
+        maxw: float
+            The maximum weight
+        n: int
+            The number of entries
+    """
     def __init__(self, sumw=0.0, sumw2=0.0, minw=numpy.inf, maxw=-numpy.inf, n=0):
         self.sumw = sumw
         self.sumw2 = sumw2
@@ -36,6 +53,17 @@ class WeightStatistics:
         return WeightStatistics()
 
     def add(self, other):
+        """Add two WeightStatistics objects together.
+        
+        Adds the sum of weights, the sum of squared weights, and the number of entries.
+        Takes the minimum and maximum across the two WeightStatistics objects. Modifies
+        this object in place.
+
+        Parameters
+        ----------
+            other: WeightStatistics
+                The other WeightStatistics object to add to this one
+        """
         self.sumw += other.sumw
         self.sumw2 += other.sumw2
         self.minw = min(self.minw, other.minw)
@@ -76,6 +104,8 @@ class Weights:
 
     @property
     def weightStatistics(self):
+        """Statistics about the weight, including the sum of squared weights
+        and number of entries."""
         return self._weightStats
 
     def __add_eager(self, name, weight, weightUp, weightDown, shift):
@@ -349,7 +379,7 @@ class Weights:
 
     @lru_cache
     def weight(self, modifier=None):
-        """Current event weight vector
+        """Returns the current event weight vector
 
         Parameters
         ----------
@@ -1102,6 +1132,14 @@ class PackedSelection:
 
     @property
     def delayed_mode(self):
+        """
+        Is the PackedSelection in delayed mode?
+        
+        Returns
+        -------
+            res: bool
+                True if the PackedSelection is in delayed mode
+        """
         if isinstance(self._data, dask_awkward.Array):
             return True
         elif isinstance(self._data, numpy.ndarray):
@@ -1114,6 +1152,14 @@ class PackedSelection:
 
     @property
     def maxitems(self):
+        """
+        What is the maximum supported number of selections in this PackedSelection?
+
+        Returns
+        -------
+            res: bool
+                The maximum supported number of selections
+        """
         return PackedSelection._supported_types[self._dtype]
 
     def __add_delayed(self, name, selection, fill_value):
