@@ -9,6 +9,7 @@ import awkward
 import numpy
 
 from coffea.nanoevents.methods import vector
+from coffea.util import register_projection_classes
 
 behavior = dict(vector.behavior)
 
@@ -70,23 +71,29 @@ class PtEtaPhiECandidate(Candidate, vector.PtEtaPhiELorentzVector):
     pass
 
 
-awkward.behavior.update(
-    awkward._util.copy_behaviors(vector.LorentzVector, Candidate, behavior)
+behavior.update(awkward._util.copy_behaviors(vector.LorentzVector, Candidate, behavior))
+
+register_projection_classes(
+    CandidateArray,  # noqa: F821
+    vector.PolarTwoVectorArray,
+    vector.SphericalThreeVectorArray,
+    vector.LorentzVectorArray,
+    CandidateArray,  # noqa: F821
+)
+register_projection_classes(
+    PtEtaPhiMCandidateArray,  # noqa: F821
+    vector.PolarTwoVectorArray,
+    vector.SphericalThreeVectorArray,
+    vector.LorentzVectorArray,
+    PtEtaPhiMCandidateArray,  # noqa: F821
+)
+register_projection_classes(
+    PtEtaPhiECandidateArray,  # noqa: F821
+    vector.PolarTwoVectorArray,
+    vector.SphericalThreeVectorArray,
+    vector.LorentzVectorArray,
+    PtEtaPhiECandidateArray,  # noqa: F821
 )
 
-CandidateArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
-CandidateArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
-CandidateArray.ProjectionClass4D = vector.LorentzVectorArray  # noqa: F821
-CandidateArray.MomentumClass = CandidateArray  # noqa: F821
-
-PtEtaPhiMCandidateArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
-PtEtaPhiMCandidateArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
-PtEtaPhiMCandidateArray.ProjectionClass4D = vector.LorentzVectorArray  # noqa: F821
-PtEtaPhiMCandidateArray.MomentumClass = PtEtaPhiMCandidateArray  # noqa: F821
-
-PtEtaPhiECandidateArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
-PtEtaPhiECandidateArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
-PtEtaPhiECandidateArray.ProjectionClass4D = vector.LorentzVectorArray  # noqa: F821
-PtEtaPhiECandidateArray.MomentumClass = PtEtaPhiECandidateArray  # noqa: F821
 
 __all__ = ["Candidate", "PtEtaPhiMCandidate", "PtEtaPhiECandidate"]
