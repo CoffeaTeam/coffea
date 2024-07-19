@@ -194,9 +194,7 @@ class MasslessParticle(Particle, base.NanoCollection):
 
 
 _set_repr_name("MasslessParticle")
-behavior.update(
-    awkward._util.copy_behaviors(Particle, MasslessParticle, behavior)
-)
+behavior.update(awkward._util.copy_behaviors(Particle, MasslessParticle, behavior))
 
 MasslessParticleArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
 MasslessParticleArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
@@ -209,9 +207,7 @@ class Photon(MasslessParticle, base.NanoCollection): ...
 
 
 _set_repr_name("Photon")
-behavior.update(
-    awkward._util.copy_behaviors(MasslessParticle, Photon, behavior)
-)
+behavior.update(awkward._util.copy_behaviors(MasslessParticle, Photon, behavior))
 
 PhotonArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
 PhotonArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
@@ -224,9 +220,7 @@ class Electron(MasslessParticle, base.NanoCollection): ...
 
 
 _set_repr_name("Electron")
-behavior.update(
-    awkward._util.copy_behaviors(MasslessParticle, Electron, behavior)
-)
+behavior.update(awkward._util.copy_behaviors(MasslessParticle, Electron, behavior))
 
 ElectronArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
 ElectronArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
