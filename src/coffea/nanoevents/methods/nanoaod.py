@@ -6,7 +6,6 @@ import awkward
 from dask_awkward import dask_property
 
 from coffea.nanoevents.methods import base, candidate, vector
-from coffea.util import register_projection_classes
 
 behavior = {}
 behavior.update(base.behavior)
@@ -39,19 +38,16 @@ class PtEtaPhiMCollection(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     pass
 
 
-behavior.update(
+awkward.behavior.update(
     awkward._util.copy_behaviors(
         vector.PtEtaPhiMLorentzVector, PtEtaPhiMCollection, behavior
     )
 )
 
-register_projection_classes(
-    PtEtaPhiMCollectionArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    PtEtaPhiMCollectionArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+PtEtaPhiMCollectionArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+PtEtaPhiMCollectionArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+PtEtaPhiMCollectionArray.ProjectionClass4D = PtEtaPhiMCollectionArray  # noqa: F821
+PtEtaPhiMCollectionArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
@@ -160,17 +156,14 @@ class GenParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
 
 
 _set_repr_name("GenParticle")
-behavior.update(
+awkward.behavior.update(
     awkward._util.copy_behaviors(vector.PtEtaPhiMLorentzVector, GenParticle, behavior)
 )
 
-register_projection_classes(
-    GenParticleArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    GenParticleArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+GenParticleArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+GenParticleArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+GenParticleArray.ProjectionClass4D = GenParticleArray  # noqa: F821
+GenParticleArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
@@ -191,17 +184,14 @@ class GenVisTau(candidate.PtEtaPhiMCandidate, base.NanoCollection):
 
 
 _set_repr_name("GenVisTau")
-behavior.update(
+awkward.behavior.update(
     awkward._util.copy_behaviors(vector.PtEtaPhiMLorentzVector, GenVisTau, behavior)
 )
 
-register_projection_classes(
-    GenVisTauArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    GenVisTauArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+GenVisTauArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+GenVisTauArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+GenVisTauArray.ProjectionClass4D = GenVisTauArray  # noqa: F821
+GenVisTauArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
@@ -266,17 +256,14 @@ class Electron(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systemati
 
 
 _set_repr_name("Electron")
-behavior.update(
+awkward.behavior.update(
     awkward._util.copy_behaviors(candidate.PtEtaPhiMCandidate, Electron, behavior)
 )
 
-register_projection_classes(
-    ElectronArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    ElectronArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+ElectronArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+ElectronArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+ElectronArray.ProjectionClass4D = ElectronArray  # noqa: F821
+ElectronArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
@@ -353,17 +340,14 @@ class Muon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
 
 
 _set_repr_name("Muon")
-behavior.update(
+awkward.behavior.update(
     awkward._util.copy_behaviors(candidate.PtEtaPhiMCandidate, Muon, behavior)
 )
 
-register_projection_classes(
-    MuonArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    MuonArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+MuonArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+MuonArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+MuonArray.ProjectionClass4D = MuonArray  # noqa: F821
+MuonArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
@@ -388,17 +372,14 @@ class Tau(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
 
 
 _set_repr_name("Tau")
-behavior.update(
+awkward.behavior.update(
     awkward._util.copy_behaviors(candidate.PtEtaPhiMCandidate, Tau, behavior)
 )
 
-register_projection_classes(
-    TauArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    TauArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+TauArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+TauArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+TauArray.ProjectionClass4D = TauArray  # noqa: F821
+TauArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
@@ -474,17 +455,14 @@ class Photon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic)
 
 
 _set_repr_name("Photon")
-behavior.update(
+awkward.behavior.update(
     awkward._util.copy_behaviors(candidate.PtEtaPhiMCandidate, Photon, behavior)
 )
 
-register_projection_classes(
-    PhotonArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    PhotonArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+PhotonArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+PhotonArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+PhotonArray.ProjectionClass4D = PhotonArray  # noqa: F821
+PhotonArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
@@ -501,17 +479,14 @@ class FsrPhoton(candidate.PtEtaPhiMCandidate, base.NanoCollection):
 
 
 _set_repr_name("FsrPhoton")
-behavior.update(
+awkward.behavior.update(
     awkward._util.copy_behaviors(candidate.PtEtaPhiMCandidate, FsrPhoton, behavior)
 )
 
-register_projection_classes(
-    FsrPhotonArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    FsrPhotonArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+FsrPhotonArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+FsrPhotonArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+FsrPhotonArray.ProjectionClass4D = FsrPhotonArray  # noqa: F821
+FsrPhotonArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
@@ -582,17 +557,14 @@ class Jet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic):
 
 
 _set_repr_name("Jet")
-behavior.update(
+awkward.behavior.update(
     awkward._util.copy_behaviors(vector.PtEtaPhiMLorentzVector, Jet, behavior)
 )
 
-register_projection_classes(
-    JetArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    JetArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+JetArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+JetArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+JetArray.ProjectionClass4D = JetArray  # noqa: F821
+JetArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
@@ -655,17 +627,14 @@ class FatJet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic
 
 
 _set_repr_name("FatJet")
-behavior.update(
+awkward.behavior.update(
     awkward._util.copy_behaviors(vector.PtEtaPhiMLorentzVector, FatJet, behavior)
 )
 
-register_projection_classes(
-    FatJetArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    FatJetArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+FatJetArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+FatJetArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+FatJetArray.ProjectionClass4D = FatJetArray  # noqa: F821
+FatJetArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
@@ -678,17 +647,14 @@ class MissingET(vector.PolarTwoVector, base.NanoCollection, base.Systematic):
 
 
 _set_repr_name("MissingET")
-behavior.update(
+awkward.behavior.update(
     awkward._util.copy_behaviors(vector.PolarTwoVector, MissingET, behavior)
 )
 
-register_projection_classes(
-    MissingETArray,  # noqa: F821
-    MissingETArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-    MissingETArray,  # noqa: F821
-)
+MissingETArray.ProjectionClass2D = MissingETArray  # noqa: F821
+MissingETArray.ProjectionClass3D = vector.SphericalThreeVectorArray  # noqa: F821
+MissingETArray.ProjectionClass4D = vector.LorentzVectorArray  # noqa: F821
+MissingETArray.MomentumClass = MissingETArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)

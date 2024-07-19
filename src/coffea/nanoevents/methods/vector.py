@@ -58,7 +58,7 @@ from vector.backends.awkward import (
     MomentumAwkward4D,
 )
 
-from coffea.util import deprecate, register_projection_classes
+from coffea.util import deprecate
 
 _cst = pytz.timezone("US/Central")
 _depttime = _cst.localize(datetime(2024, 6, 30, 11, 59, 59))
@@ -802,56 +802,40 @@ for lhs, lhs_to in _binary_dispatch_cls.items():
         behavior[(numpy.subtract, lhs, rhs)] = out_to.subtract
 
 
-register_projection_classes(
-    TwoVectorArray,  # noqa: F821
-    TwoVectorArray,  # noqa: F821
-    ThreeVectorArray,  # noqa: F821
-    LorentzVectorArray,  # noqa: F821
-    PolarTwoVectorArray,  # noqa: F821
-)
-register_projection_classes(
-    PolarTwoVectorArray,  # noqa: F821
-    PolarTwoVectorArray,  # noqa: F821
-    SphericalThreeVectorArray,  # noqa: F821
-    LorentzVectorArray,  # noqa: F821
-    PolarTwoVectorArray,  # noqa: F821
-)
-register_projection_classes(
-    ThreeVectorArray,  # noqa: F821
-    TwoVectorArray,  # noqa: F821
-    ThreeVectorArray,  # noqa: F821
-    LorentzVectorArray,  # noqa: F821
-    SphericalThreeVectorArray,  # noqa: F821
-)
-register_projection_classes(
-    SphericalThreeVectorArray,  # noqa: F821
-    PolarTwoVectorArray,  # noqa: F821
-    SphericalThreeVectorArray,  # noqa: F821
-    LorentzVectorArray,  # noqa: F821
-    SphericalThreeVectorArray,  # noqa: F821
-)
-register_projection_classes(
-    LorentzVectorArray,  # noqa: F821
-    TwoVectorArray,  # noqa: F821
-    ThreeVectorArray,  # noqa: F821
-    LorentzVectorArray,  # noqa: F821
-    LorentzVectorArray,  # noqa: F821
-)
-register_projection_classes(
-    PtEtaPhiMLorentzVectorArray,  # noqa: F821
-    TwoVectorArray,  # noqa: F821
-    ThreeVectorArray,  # noqa: F821
-    LorentzVectorArray,  # noqa: F821
-    LorentzVectorArray,  # noqa: F821
-)
-register_projection_classes(
-    PtEtaPhiELorentzVectorArray,  # noqa: F821
-    TwoVectorArray,  # noqa: F821
-    ThreeVectorArray,  # noqa: F821
-    LorentzVectorArray,  # noqa: F821
-    LorentzVectorArray,  # noqa: F821
-)
+TwoVectorArray.ProjectionClass2D = TwoVectorArray  # noqa: F821
+TwoVectorArray.ProjectionClass3D = ThreeVectorArray  # noqa: F821
+TwoVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821
+TwoVectorArray.MomentumClass = PolarTwoVectorArray  # noqa: F821
 
+PolarTwoVectorArray.ProjectionClass2D = PolarTwoVectorArray  # noqa: F821
+PolarTwoVectorArray.ProjectionClass3D = SphericalThreeVectorArray  # noqa: F821
+PolarTwoVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821
+PolarTwoVectorArray.MomentumClass = PolarTwoVectorArray  # noqa: F821
+
+ThreeVectorArray.ProjectionClass2D = TwoVectorArray  # noqa: F821
+ThreeVectorArray.ProjectionClass3D = ThreeVectorArray  # noqa: F821
+ThreeVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821
+ThreeVectorArray.MomentumClass = SphericalThreeVectorArray  # noqa: F821
+
+SphericalThreeVectorArray.ProjectionClass2D = PolarTwoVectorArray  # noqa: F821
+SphericalThreeVectorArray.ProjectionClass3D = SphericalThreeVectorArray  # noqa: F821
+SphericalThreeVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821
+SphericalThreeVectorArray.MomentumClass = SphericalThreeVectorArray  # noqa: F821
+
+LorentzVectorArray.ProjectionClass2D = TwoVectorArray  # noqa: F821
+LorentzVectorArray.ProjectionClass3D = ThreeVectorArray  # noqa: F821
+LorentzVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821
+LorentzVectorArray.MomentumClass = LorentzVectorArray  # noqa: F821
+
+PtEtaPhiMLorentzVectorArray.ProjectionClass2D = TwoVectorArray  # noqa: F821
+PtEtaPhiMLorentzVectorArray.ProjectionClass3D = ThreeVectorArray  # noqa: F821
+PtEtaPhiMLorentzVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821
+PtEtaPhiMLorentzVectorArray.MomentumClass = LorentzVectorArray  # noqa: F821
+
+PtEtaPhiELorentzVectorArray.ProjectionClass2D = TwoVectorArray  # noqa: F821
+PtEtaPhiELorentzVectorArray.ProjectionClass3D = ThreeVectorArray  # noqa: F821
+PtEtaPhiELorentzVectorArray.ProjectionClass4D = LorentzVectorArray  # noqa: F821
+PtEtaPhiELorentzVectorArray.MomentumClass = LorentzVectorArray  # noqa: F821
 
 __all__ = [
     "TwoVector",

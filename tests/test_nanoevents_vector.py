@@ -543,13 +543,6 @@ def test_inherited_method_transpose(lcoord, threecoord, twocoord):
     assert_record_arrays_equal(a.like(c) + c, c + a.like(c), check_type=True)
     assert_record_arrays_equal(b.like(c) + c, c + b.like(c), check_type=True)
 
-    with pytest.raises(TypeError):
-        a + b == b + a
-    with pytest.raises(TypeError):
-        a + c == c + a
-    with pytest.raises(TypeError):
-        b + c == c + b
-
     assert_allclose(a.delta_phi(b), -b.delta_phi(a))
     assert_allclose(a.delta_phi(c), -c.delta_phi(a))
     assert_allclose(b.delta_phi(c), -c.delta_phi(b))
@@ -557,13 +550,6 @@ def test_inherited_method_transpose(lcoord, threecoord, twocoord):
     assert_record_arrays_equal((a.like(b) - b), -(b - a.like(b)), check_type=True)
     assert_record_arrays_equal((a.like(c) - c), -(c - a.like(c)), check_type=True)
     assert_record_arrays_equal((b.like(c) - c), -(c - b.like(c)), check_type=True)
-
-    with pytest.raises(TypeError):
-        a - b == -(b - a)
-    with pytest.raises(TypeError):
-        a - c == -(c - a)
-    with pytest.raises(TypeError):
-        b - c == -(c - b)
 
 
 @pytest.mark.parametrize("optimization_enabled", [True, False])
