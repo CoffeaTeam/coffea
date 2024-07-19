@@ -38,7 +38,7 @@ class PtEtaPhiMCollection(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     pass
 
 
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors(
         vector.PtEtaPhiMLorentzVector, PtEtaPhiMCollection, behavior
     )
@@ -156,7 +156,7 @@ class GenParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
 
 
 _set_repr_name("GenParticle")
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors(vector.PtEtaPhiMLorentzVector, GenParticle, behavior)
 )
 
@@ -184,7 +184,7 @@ class GenVisTau(candidate.PtEtaPhiMCandidate, base.NanoCollection):
 
 
 _set_repr_name("GenVisTau")
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors(vector.PtEtaPhiMLorentzVector, GenVisTau, behavior)
 )
 
@@ -256,7 +256,7 @@ class Electron(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systemati
 
 
 _set_repr_name("Electron")
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors(candidate.PtEtaPhiMCandidate, Electron, behavior)
 )
 
@@ -340,7 +340,7 @@ class Muon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
 
 
 _set_repr_name("Muon")
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors(candidate.PtEtaPhiMCandidate, Muon, behavior)
 )
 
@@ -372,7 +372,7 @@ class Tau(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
 
 
 _set_repr_name("Tau")
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors(candidate.PtEtaPhiMCandidate, Tau, behavior)
 )
 
@@ -455,7 +455,7 @@ class Photon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic)
 
 
 _set_repr_name("Photon")
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors(candidate.PtEtaPhiMCandidate, Photon, behavior)
 )
 
@@ -479,7 +479,7 @@ class FsrPhoton(candidate.PtEtaPhiMCandidate, base.NanoCollection):
 
 
 _set_repr_name("FsrPhoton")
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors(candidate.PtEtaPhiMCandidate, FsrPhoton, behavior)
 )
 
@@ -557,7 +557,7 @@ class Jet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic):
 
 
 _set_repr_name("Jet")
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors(vector.PtEtaPhiMLorentzVector, Jet, behavior)
 )
 
@@ -627,7 +627,7 @@ class FatJet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic
 
 
 _set_repr_name("FatJet")
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors(vector.PtEtaPhiMLorentzVector, FatJet, behavior)
 )
 
@@ -647,7 +647,7 @@ class MissingET(vector.PolarTwoVector, base.NanoCollection, base.Systematic):
 
 
 _set_repr_name("MissingET")
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors(vector.PolarTwoVector, MissingET, behavior)
 )
 

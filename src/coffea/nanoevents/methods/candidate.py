@@ -70,9 +70,7 @@ class PtEtaPhiECandidate(Candidate, vector.PtEtaPhiELorentzVector):
     pass
 
 
-awkward.behavior.update(
-    awkward._util.copy_behaviors(vector.LorentzVector, Candidate, behavior)
-)
+behavior.update(awkward._util.copy_behaviors(vector.LorentzVector, Candidate, behavior))
 
 CandidateArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
 CandidateArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821

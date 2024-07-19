@@ -143,7 +143,7 @@ class Particle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
 
 
 _set_repr_name("Particle")
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors(vector.PtEtaPhiMLorentzVector, Particle, behavior)
 )
 
@@ -189,7 +189,7 @@ class TrackParticle(vector.LorentzVector, base.NanoCollection):
 
 
 _set_repr_name("TrackParticle")
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors(vector.LorentzVector, TrackParticle, behavior)
 )
 
@@ -225,7 +225,7 @@ class Muon(Particle):
 
 
 _set_repr_name("Muon")
-awkward.behavior.update(awkward._util.copy_behaviors(Particle, Muon, behavior))
+behavior.update(awkward._util.copy_behaviors(Particle, Muon, behavior))
 
 MuonArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
 MuonArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
@@ -283,7 +283,7 @@ class Electron(Particle):
 
 
 _set_repr_name("Electron")
-awkward.behavior.update(awkward._util.copy_behaviors(Particle, Electron, behavior))
+behavior.update(awkward._util.copy_behaviors(Particle, Electron, behavior))
 
 ElectronArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
 ElectronArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
@@ -331,7 +331,7 @@ class TruthParticle(vector.LorentzVector, base.NanoCollection):
 
 
 _set_repr_name("TruthParticle")
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors(vector.LorentzVector, TruthParticle, behavior)
 )
 

@@ -130,9 +130,7 @@ class Vertex(vector.LorentzVector):
 
 
 _set_repr_name("Vertex")
-awkward.behavior.update(
-    awkward._util.copy_behaviors(vector.LorentzVector, Vertex, behavior)
-)
+behavior.update(awkward._util.copy_behaviors(vector.LorentzVector, Vertex, behavior))
 
 VertexArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
 VertexArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
@@ -178,7 +176,7 @@ class Particle(vector.PtEtaPhiMLorentzVector):
 
 
 _set_repr_name("Particle")
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors(vector.PtEtaPhiMLorentzVector, Particle, behavior)
 )
 
@@ -196,7 +194,7 @@ class MasslessParticle(Particle, base.NanoCollection):
 
 
 _set_repr_name("MasslessParticle")
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors(Particle, MasslessParticle, behavior)
 )
 
@@ -211,7 +209,7 @@ class Photon(MasslessParticle, base.NanoCollection): ...
 
 
 _set_repr_name("Photon")
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors(MasslessParticle, Photon, behavior)
 )
 
@@ -226,7 +224,7 @@ class Electron(MasslessParticle, base.NanoCollection): ...
 
 
 _set_repr_name("Electron")
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors(MasslessParticle, Electron, behavior)
 )
 
@@ -241,7 +239,7 @@ class Muon(MasslessParticle, base.NanoCollection): ...
 
 
 _set_repr_name("Muon")
-awkward.behavior.update(awkward._util.copy_behaviors(MasslessParticle, Muon, behavior))
+behavior.update(awkward._util.copy_behaviors(MasslessParticle, Muon, behavior))
 
 MuonArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
 MuonArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
@@ -254,7 +252,7 @@ class Jet(Particle, base.NanoCollection): ...
 
 
 _set_repr_name("Jet")
-awkward.behavior.update(awkward._util.copy_behaviors(Particle, Jet, behavior))
+behavior.update(awkward._util.copy_behaviors(Particle, Jet, behavior))
 
 JetArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
 JetArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
@@ -267,7 +265,7 @@ class Track(Particle, base.NanoCollection): ...
 
 
 _set_repr_name("Track")
-awkward.behavior.update(awkward._util.copy_behaviors(Particle, Track, behavior))
+behavior.update(awkward._util.copy_behaviors(Particle, Track, behavior))
 
 TrackArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
 TrackArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
@@ -283,7 +281,7 @@ class Tower(MasslessParticle, base.NanoCollection):
 
 
 _set_repr_name("Tower")
-awkward.behavior.update(awkward._util.copy_behaviors(MasslessParticle, Tower, behavior))
+behavior.update(awkward._util.copy_behaviors(MasslessParticle, Tower, behavior))
 
 TowerArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
 TowerArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
