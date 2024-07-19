@@ -3,7 +3,7 @@ import numpy
 import warnings
 from functools import partial
 import operator
-
+import correctionlib as clib
 
 _stack_parts = ["jec", "junc", "jer", "jersf"]
 _MIN_JET_ENERGY = numpy.array(1e-2, dtype=numpy.float32)
@@ -97,9 +97,18 @@ def jer_smear(
     smearfact = awkward._util.wrap(smearfact, awkward._util.behaviorof(jetPt))
     return smearfact
 
+def get_corr_inputs(jets, corr_obj, name_map):
+    """
+    Helper function for getting values of input variables
+    given a dictionary and a correction object.
+    Source:
+    https://gitlab.cern.ch/cms-nanoAOD/jsonpog-integration/-/blob/master/examples/jercExample.py?ref_type=heads
+    """
+    input_values = [awkward.flatten(jets[name_map[inp.name]]) for inp in corr_obj.inputs]
+    return input_values
 
 class CorrectedJetsFactory(object):
-    def __init__(self, name_map, jec_stack):
+    def __init__(self, name_map, jec_stack, jec_names, jec_year):
         # from PhysicsTools/PatUtils/interface/SmearedJetProducerT.h#L283
         self.forceStochastic = False
 
@@ -118,6 +127,9 @@ class CorrectedJetsFactory(object):
             )
             name_map["ptRaw"] = name_map["JetMass"] + "_raw"
 
+        # In principle, we can get rid of all this stuff when adopting correction_lib, since this is handled
+        # with the get_corr_input function
+        ''' 
         total_signature = set()
         for part in _stack_parts:
             attr = getattr(jec_stack, part)
@@ -131,7 +143,7 @@ class CorrectedJetsFactory(object):
                 + " Cannot evaluate jet corrections!"
                 + " Please supply mappings for these variables!"
             )
-
+        '''
         if "ptGenJet" not in name_map:
             warnings.warn(
                 'Input JaggedCandidateArray must have "ptGenJet" in order to apply hybrid JER smearing method. Stochastic smearing will be applied.'
@@ -140,7 +152,11 @@ class CorrectedJetsFactory(object):
 
         self.real_sig = [v for k, v in name_map.items()]
         self.name_map = name_map
-        self.jec_stack = jec_stack
+        self.jec_stack = jec_stack ## to be removed after the porting is completed
+        self.jec_names = jec_names
+        self.jec_year = jec_year
+        ## the last element of jec_names has to be a boolean, specifying if the use wants to save the different correction levels
+        self.separated = self.jec_names.pop()
 
     def uncertainties(self):
         out = ["JER"] if self.jec_stack.jer is not None else []
@@ -171,6 +187,31 @@ class CorrectedJetsFactory(object):
         out_dict = dict(in_dict)
 
         # take care of nominal JEC (no JER if available)
+        ## General setup to use correction-lib
+        clib_json = self.jec_year
+        json_path = (f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/{clib_json}/jet_jerc.json.gz")
+        cset = clib.CorrectionSet.from_file(json_path)
+
+        if self.separated:
+            corrections_list = []
+
+        total_correction = None
+        # total correction is calculated as product of the levels in jec_names.
+        # The user can either pass the list of levels, or the compound correction directly
+        # in the first case, user can also choose to save the separate correction levels
+        for key in self.jec_names:
+            sf = cset[key]
+            inputs = get_corr_inputs(jets=jets, corr_obj=sf, name_map=self.name_map)
+            correction = sf.evaluate(*inputs).astype(dtype=numpy.float32)
+            if total_correction is None:
+                total_correction = numpy.ones_like(correction, dtype=numpy.float32)
+            total_correction *= correction
+            if self.separated:
+                corrections_list.append(
+                    [correction, key]
+                )
+        total_correction = awkward.Array(total_correction)
+
         out_dict[self.name_map["JetPt"] + "_orig"] = out_dict[self.name_map["JetPt"]]
         out_dict[self.name_map["JetMass"] + "_orig"] = out_dict[
             self.name_map["JetMass"]
@@ -182,17 +223,8 @@ class CorrectedJetsFactory(object):
         jec_name_map = dict(self.name_map)
         jec_name_map["JetPt"] = jec_name_map["ptRaw"]
         jec_name_map["JetMass"] = jec_name_map["massRaw"]
-        if self.jec_stack.jec is not None:
-            jec_args = {
-                k: out_dict[jec_name_map[k]] for k in self.jec_stack.jec.signature
-            }
-            out_dict["jet_energy_correction"] = self.jec_stack.jec.getCorrection(
-                **jec_args, form=scalar_form, lazy_cache=lazy_cache
-            )
-        else:
-            out_dict["jet_energy_correction"] = awkward.without_parameters(
-                awkward.ones_like(out_dict[self.name_map["JetPt"]])
-            )
+
+        out_dict["jet_energy_correction"] = total_correction
 
         # finally the lazy binding to the JEC
         init_pt = partial(
@@ -219,6 +251,35 @@ class CorrectedJetsFactory(object):
         out_dict[self.name_map["JetPt"] + "_jec"] = out_dict[self.name_map["JetPt"]]
         out_dict[self.name_map["JetMass"] + "_jec"] = out_dict[self.name_map["JetMass"]]
 
+        # if the user wants to save separately the level corrections, here that is done
+        if self.separated:
+            for correction_lvl, lvl_tag in corrections_list:
+                jec_lvl_tag = "_jec_" + lvl_tag
+
+                out_dict[f"jet_energy_correction_{lvl_tag}"] = total_correction
+                init_pt_lvl = partial(
+                    awkward.virtual,
+                    operator.mul,
+                    args=(out_dict[f"jet_energy_correction_{lvl_tag}"], out_dict[self.name_map["ptRaw"]]),
+                    cache=lazy_cache,
+                )
+                init_mass_lvl = partial(
+                    awkward.virtual,
+                    operator.mul,
+                    args=(
+                        out_dict[f"jet_energy_correction_{lvl_tag}"],
+                        out_dict[self.name_map["massRaw"]],
+                    ),
+                    cache=lazy_cache,
+                )
+
+                out_dict[self.name_map["JetPt"] + f"_{lvl_tag}"] = init_pt_lvl(length=len(out), form=scalar_form)
+                out_dict[self.name_map["JetMass"] + f"_{lvl_tag}"] = init_mass_lvl(length=len(out), form=scalar_form)
+
+                out_dict[self.name_map["JetPt"] + jec_lvl_tag] = out_dict[self.name_map["JetPt"] + f"_{lvl_tag}"]
+                out_dict[self.name_map["JetMass"] + jec_lvl_tag] = out_dict[self.name_map["JetMass"] + f"_{lvl_tag}"]
+
+        
         # in jer we need to have a stash for the intermediate JEC products
         has_jer = False
         if self.jec_stack.jer is not None and self.jec_stack.jersf is not None:
