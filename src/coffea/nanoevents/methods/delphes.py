@@ -7,7 +7,6 @@ import awkward
 import numpy
 
 from coffea.nanoevents.methods import base, candidate, vector
-from coffea.util import register_projection_classes
 
 behavior = {}
 behavior.update(base.behavior)
@@ -133,13 +132,10 @@ class Vertex(vector.LorentzVector):
 _set_repr_name("Vertex")
 behavior.update(awkward._util.copy_behaviors(vector.LorentzVector, Vertex, behavior))
 
-register_projection_classes(
-    VertexArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    VertexArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+VertexArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+VertexArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+VertexArray.ProjectionClass4D = VertexArray  # noqa: F821
+VertexArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
@@ -184,13 +180,10 @@ behavior.update(
     awkward._util.copy_behaviors(vector.PtEtaPhiMLorentzVector, Particle, behavior)
 )
 
-register_projection_classes(
-    ParticleArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    ParticleArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+ParticleArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+ParticleArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+ParticleArray.ProjectionClass4D = ParticleArray  # noqa: F821
+ParticleArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
@@ -203,13 +196,10 @@ class MasslessParticle(Particle, base.NanoCollection):
 _set_repr_name("MasslessParticle")
 behavior.update(awkward._util.copy_behaviors(Particle, MasslessParticle, behavior))
 
-register_projection_classes(
-    MasslessParticleArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    MasslessParticleArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+MasslessParticleArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+MasslessParticleArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+MasslessParticleArray.ProjectionClass4D = MasslessParticleArray  # noqa: F821
+MasslessParticleArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
@@ -219,13 +209,10 @@ class Photon(MasslessParticle, base.NanoCollection): ...
 _set_repr_name("Photon")
 behavior.update(awkward._util.copy_behaviors(MasslessParticle, Photon, behavior))
 
-register_projection_classes(
-    PhotonArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    PhotonArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+PhotonArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+PhotonArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+PhotonArray.ProjectionClass4D = PhotonArray  # noqa: F821
+PhotonArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
@@ -235,13 +222,10 @@ class Electron(MasslessParticle, base.NanoCollection): ...
 _set_repr_name("Electron")
 behavior.update(awkward._util.copy_behaviors(MasslessParticle, Electron, behavior))
 
-register_projection_classes(
-    ElectronArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    ElectronArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+ElectronArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+ElectronArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+ElectronArray.ProjectionClass4D = ElectronArray  # noqa: F821
+ElectronArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
@@ -251,13 +235,10 @@ class Muon(MasslessParticle, base.NanoCollection): ...
 _set_repr_name("Muon")
 behavior.update(awkward._util.copy_behaviors(MasslessParticle, Muon, behavior))
 
-register_projection_classes(
-    MuonArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    MuonArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+MuonArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+MuonArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+MuonArray.ProjectionClass4D = MuonArray  # noqa: F821
+MuonArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
@@ -267,13 +248,10 @@ class Jet(Particle, base.NanoCollection): ...
 _set_repr_name("Jet")
 behavior.update(awkward._util.copy_behaviors(Particle, Jet, behavior))
 
-register_projection_classes(
-    JetArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    JetArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+JetArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+JetArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+JetArray.ProjectionClass4D = JetArray  # noqa: F821
+JetArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
@@ -283,13 +261,10 @@ class Track(Particle, base.NanoCollection): ...
 _set_repr_name("Track")
 behavior.update(awkward._util.copy_behaviors(Particle, Track, behavior))
 
-register_projection_classes(
-    TrackArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    TrackArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+TrackArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+TrackArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+TrackArray.ProjectionClass4D = TrackArray  # noqa: F821
+TrackArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
@@ -302,13 +277,10 @@ class Tower(MasslessParticle, base.NanoCollection):
 _set_repr_name("Tower")
 behavior.update(awkward._util.copy_behaviors(MasslessParticle, Tower, behavior))
 
-register_projection_classes(
-    TowerArray,  # noqa: F821
-    vector.TwoVectorArray,  # noqa: F821
-    vector.ThreeVectorArray,  # noqa: F821
-    TowerArray,  # noqa: F821
-    vector.LorentzVectorArray,  # noqa: F821
-)
+TowerArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+TowerArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+TowerArray.ProjectionClass4D = TowerArray  # noqa: F821
+TowerArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
 
 __all__ = [
