@@ -145,7 +145,7 @@ class Particle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
 
 _set_repr_name("Particle")
 behavior.update(
-    awkward._util.copy_behaviors(vector.PtEtaPhiMLorentzVector, Particle, behavior)
+    awkward._util.copy_behaviors("PtEtaPhiMLorentzVector", "Particle", behavior)
 )
 
 register_projection_classes(
@@ -194,7 +194,7 @@ class TrackParticle(vector.LorentzVector, base.NanoCollection):
 
 _set_repr_name("TrackParticle")
 behavior.update(
-    awkward._util.copy_behaviors(vector.LorentzVector, TrackParticle, behavior)
+    awkward._util.copy_behaviors("LorentzVector", "TrackParticle", behavior)
 )
 
 register_projection_classes(
@@ -232,7 +232,7 @@ class Muon(Particle):
 
 
 _set_repr_name("Muon")
-behavior.update(awkward._util.copy_behaviors(Particle, Muon, behavior))
+behavior.update(awkward._util.copy_behaviors("Particle", "Muon", behavior))
 
 register_projection_classes(
     MuonArray,  # noqa: F821
@@ -293,7 +293,7 @@ class Electron(Particle):
 
 
 _set_repr_name("Electron")
-behavior.update(awkward._util.copy_behaviors(Particle, Electron, behavior))
+behavior.update(awkward._util.copy_behaviors("Particle", "Electron", behavior))
 
 register_projection_classes(
     ElectronArray,  # noqa: F821
@@ -345,7 +345,7 @@ class TruthParticle(vector.LorentzVector, base.NanoCollection):
 
 _set_repr_name("TruthParticle")
 behavior.update(
-    awkward._util.copy_behaviors(vector.LorentzVector, TruthParticle, behavior)
+    awkward._util.copy_behaviors("LorentzVector", "TruthParticle", behavior)
 )
 
 register_projection_classes(

@@ -41,7 +41,7 @@ class PtEtaPhiMCollection(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
 
 behavior.update(
     awkward._util.copy_behaviors(
-        vector.PtEtaPhiMLorentzVector, PtEtaPhiMCollection, behavior
+        "PtEtaPhiMLorentzVector", "PtEtaPhiMCollection", behavior
     )
 )
 
@@ -161,7 +161,7 @@ class GenParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
 
 _set_repr_name("GenParticle")
 behavior.update(
-    awkward._util.copy_behaviors(vector.PtEtaPhiMLorentzVector, GenParticle, behavior)
+    awkward._util.copy_behaviors("PtEtaPhiMLorentzVector", "GenParticle", behavior)
 )
 
 register_projection_classes(
@@ -192,7 +192,7 @@ class GenVisTau(candidate.PtEtaPhiMCandidate, base.NanoCollection):
 
 _set_repr_name("GenVisTau")
 behavior.update(
-    awkward._util.copy_behaviors(vector.PtEtaPhiMLorentzVector, GenVisTau, behavior)
+    awkward._util.copy_behaviors("PtEtaPhiMLorentzVector", "GenVisTau", behavior)
 )
 
 register_projection_classes(
@@ -267,7 +267,7 @@ class Electron(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systemati
 
 _set_repr_name("Electron")
 behavior.update(
-    awkward._util.copy_behaviors(candidate.PtEtaPhiMCandidate, Electron, behavior)
+    awkward._util.copy_behaviors("PtEtaPhiMCandidate", "Electron", behavior)
 )
 
 register_projection_classes(
@@ -312,7 +312,7 @@ class LowPtElectron(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Syst
 
 _set_repr_name("LowPtElectron")
 awkward.behavior.update(
-    awkward._util.copy_behaviors(candidate.PtEtaPhiMCandidate, LowPtElectron, behavior)
+    awkward._util.copy_behaviors("PtEtaPhiMCandidate", "LowPtElectron", behavior)
 )
 
 LowPtElectronArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
@@ -353,9 +353,7 @@ class Muon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
 
 
 _set_repr_name("Muon")
-behavior.update(
-    awkward._util.copy_behaviors(candidate.PtEtaPhiMCandidate, Muon, behavior)
-)
+behavior.update(awkward._util.copy_behaviors("PtEtaPhiMCandidate", "Muon", behavior))
 
 register_projection_classes(
     MuonArray,  # noqa: F821
@@ -388,9 +386,7 @@ class Tau(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
 
 
 _set_repr_name("Tau")
-behavior.update(
-    awkward._util.copy_behaviors(candidate.PtEtaPhiMCandidate, Tau, behavior)
-)
+behavior.update(awkward._util.copy_behaviors("PtEtaPhiMCandidate", "Tau", behavior))
 
 register_projection_classes(
     TauArray,  # noqa: F821
@@ -474,9 +470,7 @@ class Photon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic)
 
 
 _set_repr_name("Photon")
-behavior.update(
-    awkward._util.copy_behaviors(candidate.PtEtaPhiMCandidate, Photon, behavior)
-)
+behavior.update(awkward._util.copy_behaviors("PtEtaPhiMCandidate", "Photon", behavior))
 
 register_projection_classes(
     PhotonArray,  # noqa: F821
@@ -502,7 +496,7 @@ class FsrPhoton(candidate.PtEtaPhiMCandidate, base.NanoCollection):
 
 _set_repr_name("FsrPhoton")
 behavior.update(
-    awkward._util.copy_behaviors(candidate.PtEtaPhiMCandidate, FsrPhoton, behavior)
+    awkward._util.copy_behaviors("PtEtaPhiMCandidate", "FsrPhoton", behavior)
 )
 
 register_projection_classes(
@@ -582,9 +576,7 @@ class Jet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic):
 
 
 _set_repr_name("Jet")
-behavior.update(
-    awkward._util.copy_behaviors(vector.PtEtaPhiMLorentzVector, Jet, behavior)
-)
+behavior.update(awkward._util.copy_behaviors("PtEtaPhiMLorentzVector", "Jet", behavior))
 
 register_projection_classes(
     JetArray,  # noqa: F821
@@ -656,7 +648,7 @@ class FatJet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic
 
 _set_repr_name("FatJet")
 behavior.update(
-    awkward._util.copy_behaviors(vector.PtEtaPhiMLorentzVector, FatJet, behavior)
+    awkward._util.copy_behaviors("PtEtaPhiMLorentzVector", "FatJet", behavior)
 )
 
 register_projection_classes(
@@ -678,9 +670,7 @@ class MissingET(vector.PolarTwoVector, base.NanoCollection, base.Systematic):
 
 
 _set_repr_name("MissingET")
-behavior.update(
-    awkward._util.copy_behaviors(vector.PolarTwoVector, MissingET, behavior)
-)
+behavior.update(awkward._util.copy_behaviors("PolarTwoVector", "MissingET", behavior))
 
 register_projection_classes(
     MissingETArray,  # noqa: F821

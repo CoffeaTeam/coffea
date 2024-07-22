@@ -131,7 +131,7 @@ class Vertex(vector.LorentzVector):
 
 
 _set_repr_name("Vertex")
-behavior.update(awkward._util.copy_behaviors(vector.LorentzVector, Vertex, behavior))
+behavior.update(awkward._util.copy_behaviors("LorentzVector", "Vertex", behavior))
 
 register_projection_classes(
     VertexArray,  # noqa: F821
@@ -181,7 +181,7 @@ class Particle(vector.PtEtaPhiMLorentzVector):
 
 _set_repr_name("Particle")
 behavior.update(
-    awkward._util.copy_behaviors(vector.PtEtaPhiMLorentzVector, Particle, behavior)
+    awkward._util.copy_behaviors("PtEtaPhiMLorentzVector", "Particle", behavior)
 )
 
 register_projection_classes(
@@ -201,7 +201,7 @@ class MasslessParticle(Particle, base.NanoCollection):
 
 
 _set_repr_name("MasslessParticle")
-behavior.update(awkward._util.copy_behaviors(Particle, MasslessParticle, behavior))
+behavior.update(awkward._util.copy_behaviors("Particle", "MasslessParticle", behavior))
 
 register_projection_classes(
     MasslessParticleArray,  # noqa: F821
@@ -217,7 +217,7 @@ class Photon(MasslessParticle, base.NanoCollection): ...
 
 
 _set_repr_name("Photon")
-behavior.update(awkward._util.copy_behaviors(MasslessParticle, Photon, behavior))
+behavior.update(awkward._util.copy_behaviors("MasslessParticle", "Photon", behavior))
 
 register_projection_classes(
     PhotonArray,  # noqa: F821
@@ -233,7 +233,7 @@ class Electron(MasslessParticle, base.NanoCollection): ...
 
 
 _set_repr_name("Electron")
-behavior.update(awkward._util.copy_behaviors(MasslessParticle, Electron, behavior))
+behavior.update(awkward._util.copy_behaviors("MasslessParticle", "Electron", behavior))
 
 register_projection_classes(
     ElectronArray,  # noqa: F821
@@ -249,7 +249,7 @@ class Muon(MasslessParticle, base.NanoCollection): ...
 
 
 _set_repr_name("Muon")
-behavior.update(awkward._util.copy_behaviors(MasslessParticle, Muon, behavior))
+behavior.update(awkward._util.copy_behaviors("MasslessParticle", "Muon", behavior))
 
 register_projection_classes(
     MuonArray,  # noqa: F821
@@ -265,7 +265,7 @@ class Jet(Particle, base.NanoCollection): ...
 
 
 _set_repr_name("Jet")
-behavior.update(awkward._util.copy_behaviors(Particle, Jet, behavior))
+behavior.update(awkward._util.copy_behaviors("Particle", "Jet", behavior))
 
 register_projection_classes(
     JetArray,  # noqa: F821
@@ -281,7 +281,7 @@ class Track(Particle, base.NanoCollection): ...
 
 
 _set_repr_name("Track")
-behavior.update(awkward._util.copy_behaviors(Particle, Track, behavior))
+behavior.update(awkward._util.copy_behaviors("Particle", "Track", behavior))
 
 register_projection_classes(
     TrackArray,  # noqa: F821
@@ -300,7 +300,7 @@ class Tower(MasslessParticle, base.NanoCollection):
 
 
 _set_repr_name("Tower")
-behavior.update(awkward._util.copy_behaviors(MasslessParticle, Tower, behavior))
+behavior.update(awkward._util.copy_behaviors("MasslessParticle", "Tower", behavior))
 
 register_projection_classes(
     TowerArray,  # noqa: F821

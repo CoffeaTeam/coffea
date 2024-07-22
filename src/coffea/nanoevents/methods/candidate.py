@@ -71,7 +71,7 @@ class PtEtaPhiECandidate(Candidate, vector.PtEtaPhiELorentzVector):
     pass
 
 
-behavior.update(awkward._util.copy_behaviors(vector.LorentzVector, Candidate, behavior))
+behavior.update(awkward._util.copy_behaviors("LorentzVector", "Candidate", behavior))
 
 register_projection_classes(
     CandidateArray,  # noqa: F821
