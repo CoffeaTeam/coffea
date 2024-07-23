@@ -311,7 +311,7 @@ class LowPtElectron(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Syst
 
 
 _set_repr_name("LowPtElectron")
-awkward.behavior.update(
+behavior.update(
     awkward._util.copy_behaviors("PtEtaPhiMCandidate", "LowPtElectron", behavior)
 )
 
