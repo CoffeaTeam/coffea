@@ -528,6 +528,12 @@ Some basic commands:
         step_size=None,
         align_to_clusters=None,
         scheduler_url=None,
+        recalculate_steps=False,
+        files_per_batch=1,
+        file_exceptions=(OSError,),
+        save_form=False,
+        uproot_options={},
+        step_size_safety_factor=0.5,
     ):
         """Perform preprocessing for concrete fileset extraction.
         Args:  output_file [step_size] [align to file cluster boundaries] [dask scheduler url]
@@ -547,13 +553,21 @@ Some basic commands:
         with self.console.status(
             "[red] Preprocessing files to extract available chunks with dask[/]"
         ):
-            with Client(scheduler_url) as _:
+            with Client(scheduler_url) as ddcsched:
                 self.preprocessed_available, self.preprocessed_total = preprocess(
                     self.final_output,
                     step_size=step_size,
                     align_clusters=align_to_clusters,
                     skip_bad_files=True,
+                    recalculate_steps=recalculate_steps,
+                    files_per_batch=files_per_batch,
+                    file_exceptions=file_exceptions,
+                    save_form=save_form,
+                    scheduler=ddcsched,
+                    uproot_options=uproot_options,
+                    step_size_safety_factor=step_size_safety_factor,
                 )
+
         with gzip.open(f"{output_file}_available.json.gz", "wt") as file:
             print(f"Saved available fileset chunks to {output_file}_available.json.gz")
             json.dump(self.preprocessed_available, file, indent=2)
