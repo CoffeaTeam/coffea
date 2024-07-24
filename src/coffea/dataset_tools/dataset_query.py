@@ -10,7 +10,7 @@ import yaml
 from dask.distributed import Client
 from rich import print
 from rich.console import Console
-from rich.prompt import Confirm, IntPrompt, Prompt
+from rich.prompt import Confirm, IntPrompt, FloatPrompt, Prompt
 from rich.table import Table
 from rich.tree import Tree
 
@@ -528,10 +528,10 @@ Some basic commands:
         step_size=None,
         align_to_clusters=None,
         scheduler_url=None,
-        recalculate_steps=False,
-        files_per_batch=1,
+        recalculate_steps=None,
+        files_per_batch=None,
         file_exceptions=(OSError,),
-        save_form=False,
+        save_form=None,
         uproot_options={},
         step_size_safety_factor=0.5,
     ):
@@ -548,6 +548,14 @@ Some basic commands:
             align_to_clusters = Confirm.ask(
                 "[yellow bold]Align to clusters", default=True
             )
+        if recalculate_steps is None:
+            recalculate_steps = Confirm.ask("[yellow bold]Recalculate steps", default=False)
+        if files_per_batch is None:
+            files_per_batch = IntPrompt.ask("[yellow bold]Files per batch", default=1)
+        if save_form is None:
+            save_form = Confirm.ask("[yellow bold]Save form", default=False)
+        if step_size_safety_factor is None:
+            step_size_safety_factor = FloatPrompt.ask("[yellow bold]Step size safety factor", default=0.5)
 
         # init a local Dask cluster
         with self.console.status(
