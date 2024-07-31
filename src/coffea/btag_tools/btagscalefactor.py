@@ -21,15 +21,15 @@ class BTagScaleFactor:
             If set true, keep the parsed dataframe as an attribute (.df) for later inspection
     """
 
-    _LOOSE, _MEDIUM, _TIGHT, _RESHAPE = range(4)
+    LOOSE, MEDIUM, TIGHT, RESHAPE = range(4)
     _FLAV_B, _FLAV_C, _FLAV_UDSG = range(3)
     _flavor = numpy.array([0, 4, 5, 6])
     _flavor2btvflavor = {0: _FLAV_UDSG, 4: _FLAV_C, 5: _FLAV_B}
     _wpString = {
-        "loose": _LOOSE,
-        "medium": _MEDIUM,
-        "tight": _TIGHT,
-        "reshape": _RESHAPE,
+        "loose": LOOSE,
+        "medium": MEDIUM,
+        "tight": TIGHT,
+        "reshape": RESHAPE,
     }
     _expectedColumns = [
         "OperatingPoint",
@@ -96,13 +96,13 @@ class BTagScaleFactor:
                 f"The BTag csv file {filename} is in the new UL format which is not supported by coffea.btag_tools.\n"
                 "Instead one can use correctionlib for UL scale factors."
             )
-        cut = (df["jetFlavor"] == self.FLAV_B) & (df["measurementType"] == methods[0])
+        cut = (df["jetFlavor"] == self._FLAV_B) & (df["measurementType"] == methods[0])
         if len(methods) > 1:
-            cut |= (df["jetFlavor"] == self.FLAV_C) & (
+            cut |= (df["jetFlavor"] == self._FLAV_C) & (
                 df["measurementType"] == methods[1]
             )
         if len(methods) > 2:
-            cut |= (df["jetFlavor"] == self.FLAV_UDSG) & (
+            cut |= (df["jetFlavor"] == self._FLAV_UDSG) & (
                 df["measurementType"] == methods[2]
             )
         cut &= df["OperatingPoint"] == workingpoint
@@ -170,7 +170,7 @@ class BTagScaleFactor:
                 flavor, eta, pt, discr = (x[idx] for x in bin_low_edges)
                 mapping[idx] = findbin(flavor, eta, pt, discr)
 
-            if self.workingpoint == BTagScaleFactor._RESHAPE:
+            if self.workingpoint == BTagScaleFactor.RESHAPE:
                 self._corrections[syst] = dense_mapped_lookup(
                     (self._flavor, edges_eta, edges_pt, edges_discr),
                     mapping,
@@ -214,7 +214,7 @@ class BTagScaleFactor:
         """
         if systematic not in self._corrections:
             raise ValueError("Unrecognized systematic: %s" % systematic)
-        if self.workingpoint == BTagScaleFactor._RESHAPE:
+        if self.workingpoint == BTagScaleFactor.RESHAPE:
             if discr is None:
                 raise ValueError("RESHAPE scale factor requires a discriminant array")
             return self._corrections[systematic](
