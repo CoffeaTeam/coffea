@@ -4,7 +4,7 @@ import json
 import os
 import random
 from collections import defaultdict
-from typing import List, Any, Hashable, Dict
+from typing import Dict, List
 
 import yaml
 from dask.distributed import Client
@@ -15,14 +15,14 @@ from rich.table import Table
 from rich.tree import Tree
 
 from . import rucio_utils
-from .preprocess import preprocess, FilesetSpecOptional
+from .preprocess import preprocess
 
 
 def print_dataset_query(
     query: str,
-    dataset_list: Dict[str, Dict[str,list[str]]],
+    dataset_list: Dict[str, Dict[str, list[str]]],
     console: Console,
-    selected: list[str] = []
+    selected: list[str] = [],
 ) -> None:
     """
     Pretty-print the results of a rucio query in a table.
@@ -112,6 +112,7 @@ class DataDiscoveryCLI:
     It can be accessed in a Python script or interpreter via this class, or from the
     command line (as in `python -m coffea.dataset_tools.dataset_query --help`).
     """
+
     def __init__(self):
         self.console = Console()
         self.rucio_client = None
@@ -224,7 +225,7 @@ Some basic commands:
     def do_query(self, query=None):
         """
         Look for datasets with * wildcards (like in DAS)
-        
+
         Parameters
         ----------
             query: str | None, default None
@@ -264,7 +265,7 @@ Some basic commands:
         """
         Selected the datasets from the list of query results. Input a list of indices
         also with range 4-6 or "all".
-        
+
         Parameters
         ----------
             selection: list[str] | None, default None
@@ -326,7 +327,7 @@ Some basic commands:
     def do_replicas(self, mode=None, selection=None):
         """
         Query Rucio for replicas.
-        
+
         Parameters
         ----------
             mode: str, default None
@@ -487,7 +488,7 @@ Some basic commands:
     def do_allowlist_sites(self, sites=None):
         """
         Restrict the grid sites available for replicas query only to the requested list
-        
+
         Parameters
         ----------
             sites: list[str] | None, default None
@@ -510,7 +511,7 @@ Some basic commands:
     def do_blocklist_sites(self, sites=None):
         """
         Exclude grid sites from the available sites for replicas query
-        
+
         Parameters
         ----------
             sites: list[str] | None, default None
@@ -531,9 +532,9 @@ Some basic commands:
             print(f"- {s}")
 
     def do_regex_sites(self, regex=None):
-        """
+        r"""
         Select sites with a regex for replica queries: e.g.  "T[123]_(FR|IT|BE|CH|DE)_\w+"
-        
+
         Parameters
         ----------
             regex: str | None, default None
@@ -549,7 +550,7 @@ Some basic commands:
         """
         Show the active sites filters (allowed, disallowed, and regex) and ask to clear
         them
-        
+
         Parameters
         ----------
             ask_clear: bool, default True
@@ -600,7 +601,7 @@ Some basic commands:
     def do_save(self, filename=None):
         """
         Save the replica information in yaml format
-        
+
         Parameters:
             filename: str | None, default None
                 The name of the file to save the information into

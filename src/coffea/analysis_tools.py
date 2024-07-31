@@ -25,7 +25,7 @@ class WeightStatistics:
     """
     Container for statistics about the weight, including the sum of squared weights
     and number of entries.
-    
+
     Parameters
     ----------
         sumw: float
@@ -39,6 +39,7 @@ class WeightStatistics:
         n: int
             The number of entries
     """
+
     def __init__(self, sumw=0.0, sumw2=0.0, minw=numpy.inf, maxw=-numpy.inf, n=0):
         self.sumw = sumw
         self.sumw2 = sumw2
@@ -54,7 +55,7 @@ class WeightStatistics:
 
     def add(self, other):
         """Add two WeightStatistics objects together.
-        
+
         Adds the sum of weights, the sum of squared weights, and the number of entries.
         Takes the minimum and maximum across the two WeightStatistics objects. Modifies
         this object in place.
@@ -1134,7 +1135,7 @@ class PackedSelection:
     def delayed_mode(self):
         """
         Is the PackedSelection in delayed mode?
-        
+
         Returns
         -------
             res: bool

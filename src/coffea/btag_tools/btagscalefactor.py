@@ -25,7 +25,12 @@ class BTagScaleFactor:
     _FLAV_B, _FLAV_C, _FLAV_UDSG = range(3)
     _flavor = numpy.array([0, 4, 5, 6])
     _flavor2btvflavor = {0: _FLAV_UDSG, 4: _FLAV_C, 5: _FLAV_B}
-    _wpString = {"loose": _LOOSE, "medium": _MEDIUM, "tight": _TIGHT, "reshape": _RESHAPE}
+    _wpString = {
+        "loose": _LOOSE,
+        "medium": _MEDIUM,
+        "tight": _TIGHT,
+        "reshape": _RESHAPE,
+    }
     _expectedColumns = [
         "OperatingPoint",
         "measurementType",
