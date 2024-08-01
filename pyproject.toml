@@ -95,7 +95,7 @@ rucio = [
 ]
 gpu = [
   "cupy-cuda12x>=13.1.0",
-  "numba-cuda>=0.0.13"
+  "numba-cuda>=0.0.13",
 ]
 dev = [
   "pre-commit",
