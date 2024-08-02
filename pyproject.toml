@@ -101,7 +101,7 @@ dev = [
   "pytest-mpl",
   "pytest-asyncio",
   "pytest-mock",
-  "sphinx",
+  "sphinx<8",
   "nbsphinx",
   "sphinx-rtd-theme",
   "sphinx-automodapi",
