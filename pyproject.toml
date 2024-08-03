@@ -37,7 +37,7 @@ classifiers = [
   "Topic :: Utilities",
 ]
 dependencies = [
-  "awkward>=2.6.6",
+  "awkward>=2.6.7",
   "uproot>=5.3.0,!=5.3.3,!=5.3.4,!=5.3.5",
   "dask[array]>=2024.3.0;python_version>'3.8'",
   "dask[array]>=2023.4.0;python_version<'3.9'",
@@ -102,7 +102,7 @@ dev = [
   "pytest-mpl",
   "pytest-asyncio",
   "pytest-mock",
-  "sphinx",
+  "sphinx<8",
   "nbsphinx",
   "sphinx-rtd-theme",
   "sphinx-automodapi",
