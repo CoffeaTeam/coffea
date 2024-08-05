@@ -1,5 +1,7 @@
+import json
 import os
 
+import awkward as ak
 import dask
 import pytest
 
@@ -7,7 +9,9 @@ from coffea.nanoevents import NanoEventsFactory, PHYSLITESchema
 
 
 def _events():
-    path = os.path.abspath("tests/samples/DAOD_PHYSLITE_21.2.108.0.art.pool.root")
+    # old testing file
+    # path = os.path.abspath("tests/samples/DAOD_PHYSLITE_21.2.108.0.art.pool.root")
+    path = os.path.abspath("tests/samples/PHYSLITE_example.root")
     factory = NanoEventsFactory.from_root(
         {path: "CollectionTree"},
         schemaclass=PHYSLITESchema,
@@ -39,3 +43,96 @@ def test_electron_track_links(events, do_slice):
                     event.GSFTrackParticles[track_index].z0
                     == trackParticles[i][j][link_index].z0
                 )
+
+
+def mock_empty(form, behavior={}):
+    return ak.Array(
+        form.length_zero_array(),
+        behavior=behavior,
+    )
+
+
+def test_electron_forms():
+    def filter_name(name):
+        return name in [
+            "AnalysisElectronsAuxDyn.pt",
+            "AnalysisElectronsAuxDyn.eta",
+            "AnalysisElectronsAuxDyn.phi",
+            "AnalysisElectronsAuxDyn.m",
+        ]
+
+    path = os.path.abspath("tests/samples/DAOD_PHYSLITE_21.2.108.0.art.pool.root")
+    events = NanoEventsFactory.from_root(
+        {path: "CollectionTree"},
+        schemaclass=PHYSLITESchema,
+        uproot_options=dict(filter_name=filter_name),
+    ).events()
+
+    mocked, _, _ = ak.to_buffers(mock_empty(events.form))
+
+    expected_json = {
+        "class": "RecordArray",
+        "fields": ["Electrons"],
+        "contents": [
+            {
+                "class": "ListOffsetArray",
+                "offsets": "i64",
+                "content": {
+                    "class": "RecordArray",
+                    "fields": ["pt", "_eventindex", "eta", "phi", "m"],
+                    "contents": [
+                        {
+                            "class": "NumpyArray",
+                            "primitive": "float32",
+                            "inner_shape": [],
+                            "parameters": {"__doc__": "AnalysisElectronsAuxDyn.pt"},
+                            "form_key": "node3",
+                        },
+                        {
+                            "class": "NumpyArray",
+                            "primitive": "int64",
+                            "inner_shape": [],
+                            "parameters": {},
+                            "form_key": "node4",
+                        },
+                        {
+                            "class": "NumpyArray",
+                            "primitive": "float32",
+                            "inner_shape": [],
+                            "parameters": {"__doc__": "AnalysisElectronsAuxDyn.eta"},
+                            "form_key": "node5",
+                        },
+                        {
+                            "class": "NumpyArray",
+                            "primitive": "float32",
+                            "inner_shape": [],
+                            "parameters": {"__doc__": "AnalysisElectronsAuxDyn.phi"},
+                            "form_key": "node6",
+                        },
+                        {
+                            "class": "NumpyArray",
+                            "primitive": "float32",
+                            "inner_shape": [],
+                            "parameters": {"__doc__": "AnalysisElectronsAuxDyn.m"},
+                            "form_key": "node7",
+                        },
+                    ],
+                    "parameters": {
+                        "__record__": "Electron",
+                        "collection_name": "Electrons",
+                    },
+                    "form_key": "node2",
+                },
+                "parameters": {},
+                "form_key": "node1",
+            }
+        ],
+        "parameters": {
+            "__doc__": "CollectionTree",
+            "__record__": "NanoEvents",
+            "metadata": {},
+        },
+        "form_key": "node0",
+    }
+
+    assert json.dumps(expected_json) == mocked.to_json()

@@ -36,6 +36,14 @@ _hash_to_target_name = {
 
 
 def _element_link(target_collection, eventindex, index, key):
+    # check to make sure both the target_collection and the eventindex are both dask-awkward arrays or both awkward arrays
+    if isinstance(target_collection, dask_awkward.Array) != isinstance(
+        eventindex, dask_awkward.Array
+    ):
+        raise ValueError(
+            "element linking must be done on two dask_awkward arrays or two akward arrays not a mix of the two"
+        )
+
     global_index = _get_global_index(target_collection, eventindex, index)
     global_index = awkward.where(key != 0, global_index, -1)
     return target_collection._apply_global_index(global_index)
@@ -249,14 +257,12 @@ class Electron(Particle):
 
     @dask_property
     def caloClusters(self):
-        return _element_link_method(
-            self, "caloClusterLinks", "CaloCalTopoClusters", None
-        )
+        return _element_link_method(self, "caloClusterLinks", "egammaClusters", None)
 
     @caloClusters.dask
     def caloClusters(self, dask_array):
         return _element_link_method(
-            self, "caloClusterLinks", "CaloCalTopoClusters", dask_array
+            self, "caloClusterLinks", "egammaClusters", dask_array
         )
 
 
