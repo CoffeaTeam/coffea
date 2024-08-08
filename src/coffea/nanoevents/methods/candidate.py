@@ -12,6 +12,8 @@ from coffea.nanoevents.methods import vector
 
 behavior = dict(vector.behavior)
 
+behavior.update(awkward._util.copy_behaviors("LorentzVector", "Candidate", behavior))
+
 
 @awkward.mixin_class(behavior)
 class Candidate(vector.LorentzVector):
@@ -69,8 +71,6 @@ class PtEtaPhiECandidate(Candidate, vector.PtEtaPhiELorentzVector):
 
     pass
 
-
-behavior.update(awkward._util.copy_behaviors("LorentzVector", "Candidate", behavior))
 
 CandidateArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
 CandidateArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
