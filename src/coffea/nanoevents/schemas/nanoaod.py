@@ -375,3 +375,19 @@ class PFNanoAODSchema(NanoAODSchema):
         "JetSVs_sVIdx": "SV",
         "SubJet_subGenJetAK8Idx": "SubGenJetAK8",
     }
+
+
+class ScoutingNanoAODSchema(NanoAODSchema):
+    """ScoutingNano schema builder"""
+
+    mixins = {
+        **NanoAODSchema.mixins,
+        "ScoutingJet": "Jet",
+        "ScoutingFatJet": "FatJet",
+        "ScoutingMET": "MissingET",
+        "ScoutingMuon": "Muon",
+        "ScoutingPhoton": "Photon",
+        "ScoutingPrimaryVertex": "Vertex",
+        "ScoutingElectron": "Electron",
+    }
+    all_cross_references = {**NanoAODSchema.all_cross_references}
