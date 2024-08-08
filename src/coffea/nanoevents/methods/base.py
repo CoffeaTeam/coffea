@@ -154,6 +154,9 @@ for kind in systematics.__all__:
     Systematic.add_kind(kind)
 
 
+behavior[("__typestr__", "NanoEvents")] = "event"
+
+
 @awkward.mixin_class(behavior)
 class NanoEvents(Systematic):
     """NanoEvents mixin class
@@ -165,9 +168,6 @@ class NanoEvents(Systematic):
     def metadata(self):
         """Arbitrary metadata"""
         return self.layout.purelist_parameter("metadata")
-
-
-behavior[("__typestr__", "NanoEvents")] = "event"
 
 
 @awkward.mixin_class(behavior)
