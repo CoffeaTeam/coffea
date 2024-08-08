@@ -919,12 +919,12 @@ def test_corrected_jets_factory(optimization_enabled):
         toc = time.time()
 
         print("setup corrected MET time =", toc - tic)
-
+        rawmet = events.RawMET
         met = events.MET
         tic = time.time()
         # prof = pyinstrument.Profiler()
         # prof.start()
-        corrected_met = met_factory.build(met, corrected_jets)
+        corrected_met = met_factory.build(rawmet, met, corrected_jets)
         # prof.stop()
         toc = time.time()
 
