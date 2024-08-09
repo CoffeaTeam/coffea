@@ -1,0 +1,6 @@
+filter_files
+============
+
+.. currentmodule:: coffea.dataset_tools
+
+.. autofunction:: filter_files

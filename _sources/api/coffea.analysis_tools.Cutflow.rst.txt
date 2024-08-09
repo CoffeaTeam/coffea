@@ -1,0 +1,25 @@
+Cutflow
+=======
+
+.. currentmodule:: coffea.analysis_tools
+
+.. autoclass:: Cutflow
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~Cutflow.plot_vars
+      ~Cutflow.print
+      ~Cutflow.result
+      ~Cutflow.to_npz
+      ~Cutflow.yieldhist
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: plot_vars
+   .. automethod:: print
+   .. automethod:: result
+   .. automethod:: to_npz
+   .. automethod:: yieldhist

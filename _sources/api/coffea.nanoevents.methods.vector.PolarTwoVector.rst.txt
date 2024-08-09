@@ -1,0 +1,19 @@
+PolarTwoVector
+==============
+
+.. currentmodule:: coffea.nanoevents.methods.vector
+
+.. autoclass:: PolarTwoVector
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~PolarTwoVector.multiply
+      ~PolarTwoVector.negative
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: multiply
+   .. automethod:: negative

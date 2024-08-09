@@ -1,0 +1,29 @@
+SphericalThreeVector
+====================
+
+.. currentmodule:: coffea.nanoevents.methods.vector
+
+.. autoclass:: SphericalThreeVector
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~SphericalThreeVector.r
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~SphericalThreeVector.multiply
+      ~SphericalThreeVector.negative
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: r
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: multiply
+   .. automethod:: negative
