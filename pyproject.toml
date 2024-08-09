@@ -43,6 +43,7 @@ dependencies = [
   "dask[array]>=2023.4.0;python_version<'3.9'",
   "dask-awkward>=2024.3.0",
   "dask-histogram>=2024.3.0",
+  "vector>=1.4.1",
   "correctionlib>=2.6.0",
   "pyarrow>=6.0.0",
   "fsspec-xrootd>=0.2.3",
