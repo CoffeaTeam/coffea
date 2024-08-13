@@ -9,8 +9,6 @@ from coffea.nanoevents import NanoEventsFactory, PHYSLITESchema
 
 
 def _events():
-    # old testing file
-    # path = os.path.abspath("tests/samples/DAOD_PHYSLITE_21.2.108.0.art.pool.root")
     path = os.path.abspath("tests/samples/PHYSLITE_example.root")
     factory = NanoEventsFactory.from_root(
         {path: "CollectionTree"},
@@ -30,8 +28,9 @@ def test_load_single_field_of_linked(events):
         events.Electrons.caloClusters.calE.compute()
 
 
-# temporarily disabled because of uproot issue #1267 https://github.com/scikit-hep/uproot5/issues/1267
-"""
+@pytest.mark.skip(
+    reason="temporarily disabled because of uproot issue #1267 https://github.com/scikit-hep/uproot5/issues/1267"
+)
 @pytest.mark.parametrize("do_slice", [False, True])
 def test_electron_track_links(events, do_slice):
     if do_slice:
@@ -45,7 +44,6 @@ def test_electron_track_links(events, do_slice):
                     event.GSFTrackParticles[track_index].z0
                     == trackParticles[i][j][link_index].z0
                 )
-"""
 
 
 def mock_empty(form, behavior={}):
