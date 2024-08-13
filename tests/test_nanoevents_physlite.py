@@ -8,13 +8,13 @@ import pytest
 from coffea.nanoevents import NanoEventsFactory, PHYSLITESchema
 
 
-def _events(filter = None):
+def _events(filter=None):
     path = os.path.abspath("tests/samples/PHYSLITE_example.root")
     factory = NanoEventsFactory.from_root(
         {path: "CollectionTree"},
         schemaclass=PHYSLITESchema,
         delayed=True,
-        uproot_options=dict(filter_name=filter)
+        uproot_options=dict(filter_name=filter),
     )
     return factory.events()
 
