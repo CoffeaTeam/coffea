@@ -8,12 +8,13 @@ import pytest
 from coffea.nanoevents import NanoEventsFactory, PHYSLITESchema
 
 
-def _events():
+def _events(filter = None):
     path = os.path.abspath("tests/samples/PHYSLITE_example.root")
     factory = NanoEventsFactory.from_root(
         {path: "CollectionTree"},
         schemaclass=PHYSLITESchema,
         delayed=True,
+        uproot_options=dict(filter_name=filter)
     )
     return factory.events()
 
@@ -62,12 +63,7 @@ def test_electron_forms():
             "AnalysisElectronsAuxDyn.m",
         ]
 
-    path = os.path.abspath("tests/samples/DAOD_PHYSLITE_21.2.108.0.art.pool.root")
-    events = NanoEventsFactory.from_root(
-        {path: "CollectionTree"},
-        schemaclass=PHYSLITESchema,
-        uproot_options=dict(filter_name=filter_name),
-    ).events()
+    events = _events(filter_name)
 
     mocked, _, _ = ak.to_buffers(mock_empty(events.form))
 
