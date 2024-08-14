@@ -347,7 +347,6 @@ class Weights:
         elif isinstance(weight, dask_awkward.Array):
             self.__add_variation_delayed(name, weight, weightUp, weightDown, shift)
 
-    @lru_cache
     def weight(self, modifier=None):
         """Current event weight vector
 
@@ -397,7 +396,6 @@ class Weights:
             include=tuple(include), exclude=tuple(exclude), modifier=modifier
         )
 
-    @lru_cache
     def _partial_weight(self, include, exclude, modifier=None):
         if not self._storeIndividual:
             raise ValueError(
