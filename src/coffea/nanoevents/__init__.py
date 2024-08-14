@@ -10,6 +10,7 @@ from coffea.nanoevents.schemas import (
     PDUNESchema,
     PFNanoAODSchema,
     PHYSLITESchema,
+    ScoutingNanoAODSchema,
     TreeMakerSchema,
 )
 
@@ -22,4 +23,5 @@ __all__ = [
     "PHYSLITESchema",
     "DelphesSchema",
     "PDUNESchema",
+    "ScoutingNanoAODSchema",
 ]
