@@ -347,32 +347,6 @@ class LorentzVector(MomentumAwkward4D):
     This mixin class requires the parent class to provide items `x`, `y`, `z`, and `t`.
     """
 
-    @property
-    def energy(self):
-        """Alias for `t`"""
-        return self.t
-
-    @property
-    def eta(self):
-        r"""Pseudorapidity
-
-        :math:`-\ln[\tan(\theta/2)] = \text{arcsinh}(z/r)`
-        """
-        return numpy.arcsinh(self.z / self.r)
-
-    @property
-    def mass2(self):
-        """Squared `mass`"""
-        return _mass2_kernel(self.t, self.x, self.y, self.z)
-
-    @property
-    def mass(self):
-        r"""Invariant mass (+, -, -, -)
-
-        :math:`\sqrt{t^2-x^2-y^2-z^2}`
-        """
-        return numpy.sqrt(self.mass2)
-
     @awkward.mixin_class_method(numpy.absolute)
     def absolute(self):
         """Magnitude of this Lorentz vector
