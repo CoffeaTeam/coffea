@@ -509,7 +509,7 @@ class Jet(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
     @property
     def charge(self):
         return 0.0 * self.pt
-        
+
     @property
     def isLoose(self):
         """Returns a boolean array marking loose jets according to jetId index"""
@@ -573,9 +573,7 @@ JetArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
 JetArray.ProjectionClass4D = JetArray  # noqa: F821
 JetArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
-behavior.update(
-    awkward._util.copy_behaviors("PtEtaPhiMCandidate", "FatJet", behavior)
-)
+behavior.update(awkward._util.copy_behaviors("PtEtaPhiMCandidate", "FatJet", behavior))
 
 
 @awkward.mixin_class(behavior)
@@ -592,7 +590,7 @@ class FatJet(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic)
     @property
     def charge(self):
         return 0.0 * self.pt
-        
+
     @property
     def isLoose(self):
         """Returns a boolean array marking loose jets according to jetId index"""
