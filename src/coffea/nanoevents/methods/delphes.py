@@ -194,7 +194,7 @@ behavior.update(awkward._util.copy_behaviors("Particle", "MasslessParticle", beh
 class MasslessParticle(Particle, base.NanoCollection):
     @property
     def mass(self):
-        return 0.0 * self.pt
+        return awkward.zeros_like(self.pt)
 
 
 _set_repr_name("MasslessParticle")
