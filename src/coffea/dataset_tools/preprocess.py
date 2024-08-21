@@ -365,7 +365,7 @@ def preprocess(
 
     (all_processed_files,) = dask.compute(files_to_preprocess, scheduler=scheduler)
 
-    if len(ak.drop_none(all_processed_files, axis=0)) == 0:
+    if len(awkward.drop_none(all_processed_files, axis=0)) == 0:
         raise Exception(
             "There was no populated list of files returned from querying your input dataset."
             "\nPlease check your xrootd endpoints, and avoid redirectors."
