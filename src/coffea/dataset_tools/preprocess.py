@@ -374,7 +374,7 @@ def preprocess(
                 f"\nInput dataset: {name}"
                 f"\nAs parsed for querying: {all_ak_norm_files[name]}"
             )
-        
+
         processed_files_without_forms = processed_files[
             ["file", "object_path", "steps", "num_entries", "uuid"]
         ]
