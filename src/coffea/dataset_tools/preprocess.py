@@ -365,6 +365,14 @@ def preprocess(
 
     (all_processed_files,) = dask.compute(files_to_preprocess, scheduler=scheduler)
 
+    if len(ak.drop_none(all_processed_files, axis=0)) == 0:
+        raise Exception(
+                "There was no populated list of files returned from querying your input dataset."
+                "\nPlease check your xrootd endpoints, and avoid redirectors."
+                f"\nInput dataset:\n{fileset}"
+                f"\nAs parsed for querying:\n{files_to_preprocess.to_list()}"
+            )
+    
     for name, processed_files in all_processed_files.items():
         processed_files_without_forms = processed_files[
             ["file", "object_path", "steps", "num_entries", "uuid"]
