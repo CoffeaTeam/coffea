@@ -376,7 +376,7 @@ def preprocess(
                 "There was no populated list of files returned from querying your input dataset."
                 "\nPlease check your xrootd endpoints, and avoid redirectors."
                 f"\nInput dataset: {name}"
-                f"\nAs parsed for querying: {ak.to_list(all_ak_norm_files[name])}"
+                f"\nAs parsed for querying: {awkward.to_list(all_ak_norm_files[name])}"
             )
 
             if not allow_empty_datasets:
