@@ -261,6 +261,7 @@ def preprocess(
     scheduler: None | Callable | str = None,
     uproot_options: dict = {},
     step_size_safety_factor: float = 0.5,
+    allow_empty_datasets = False,
 ) -> tuple[FilesetSpec, FilesetSpecOptional]:
     """
     Given a list of normalized file and object paths (defined in uproot), determine the steps for each file according to the supplied processing options.
@@ -290,6 +291,9 @@ def preprocess(
         step_size_safety_factor: float, default 0.5
             When using align_clusters, if a resulting step is larger than step_size by this factor
             warn the user that the resulting steps may be highly irregular.
+        allow_empty_datasets: bool, default False
+            When a dataset query comes back completely empty, this is normally considered a processing error.
+            Toggle this argument to True to change this to warnings and allow incomplete returned filesets.
     Returns
     -------
         out_available : FilesetSpec
@@ -368,12 +372,19 @@ def preprocess(
     for name, processed_files in all_processed_files.items():
 
         if len(awkward.drop_none(processed_files, axis=0)) == 0:
-            raise Exception(
+            ds_empty_msg = (
                 "There was no populated list of files returned from querying your input dataset."
                 "\nPlease check your xrootd endpoints, and avoid redirectors."
                 f"\nInput dataset: {name}"
-                f"\nAs parsed for querying: {all_ak_norm_files[name]}"
+                f"\nAs parsed for querying: {ak.to_list(all_ak_norm_files[name])}"
             )
+                
+            if not allow_empty_datasets:
+                raise Exception(ds_empty_msg)
+
+            warnings.warn(ds_empty_msg)
+            del out_available[name]
+            continue
 
         processed_files_without_forms = processed_files[
             ["file", "object_path", "steps", "num_entries", "uuid"]
