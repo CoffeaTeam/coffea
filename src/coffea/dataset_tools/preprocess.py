@@ -261,7 +261,7 @@ def preprocess(
     scheduler: None | Callable | str = None,
     uproot_options: dict = {},
     step_size_safety_factor: float = 0.5,
-    allow_empty_datasets=False,
+    allow_empty_datasets: bool = False,
 ) -> tuple[FilesetSpec, FilesetSpecOptional]:
     """
     Given a list of normalized file and object paths (defined in uproot), determine the steps for each file according to the supplied processing options.
