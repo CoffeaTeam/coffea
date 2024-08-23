@@ -534,6 +534,7 @@ Some basic commands:
         save_form=None,
         uproot_options={},
         step_size_safety_factor=0.5,
+        allow_empty_datasets=False,
     ):
         """Perform preprocessing for concrete fileset extraction.
         Args:  output_file [step_size] [align to file cluster boundaries] [dask scheduler url]
@@ -578,6 +579,7 @@ Some basic commands:
                     scheduler=ddcsched,
                     uproot_options=uproot_options,
                     step_size_safety_factor=step_size_safety_factor,
+                    allow_empty_datasets=allow_empty_datasets,
                 )
 
         with gzip.open(f"{output_file}_available.json.gz", "wt") as file:
