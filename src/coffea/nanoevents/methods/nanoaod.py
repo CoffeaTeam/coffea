@@ -403,11 +403,11 @@ class Photon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic)
 
     @property
     def mass(self):
-        return 0.0 * self.pt
+        return awkward.zeros_like(self.pt)
 
     @property
     def charge(self):
-        return 0.0 * self.pt
+        return awkward.zeros_like(self.pt)
 
     @property
     def isLoose(self):
@@ -492,11 +492,11 @@ FsrPhotonArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
 FsrPhotonArray.ProjectionClass4D = FsrPhotonArray  # noqa: F821
 FsrPhotonArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
-behavior.update(awkward._util.copy_behaviors("PtEtaPhiMLorentzVector", "Jet", behavior))
+behavior.update(awkward._util.copy_behaviors("PtEtaPhiMCandidate", "Jet", behavior))
 
 
 @awkward.mixin_class(behavior)
-class Jet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic):
+class Jet(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
     """NanoAOD narrow radius jet object"""
 
     LOOSE = 0
@@ -505,6 +505,10 @@ class Jet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic):
     "jetId bit position"
     TIGHTLEPVETO = 2
     "jetId bit position"
+
+    @property
+    def charge(self):
+        return awkward.zeros_like(self.pt)
 
     @property
     def isLoose(self):
@@ -569,13 +573,11 @@ JetArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
 JetArray.ProjectionClass4D = JetArray  # noqa: F821
 JetArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
 
-behavior.update(
-    awkward._util.copy_behaviors("PtEtaPhiMLorentzVector", "FatJet", behavior)
-)
+behavior.update(awkward._util.copy_behaviors("PtEtaPhiMCandidate", "FatJet", behavior))
 
 
 @awkward.mixin_class(behavior)
-class FatJet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic):
+class FatJet(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
     """NanoAOD large radius jet object"""
 
     LOOSE = 0
@@ -584,6 +586,10 @@ class FatJet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic
     "jetId bit position"
     TIGHTLEPVETO = 2
     "jetId bit position"
+
+    @property
+    def charge(self):
+        return awkward.zeros_like(self.pt)
 
     @property
     def isLoose(self):
