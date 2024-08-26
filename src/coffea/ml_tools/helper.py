@@ -159,7 +159,8 @@ class numpy_call_wrapper(abc.ABC):
         {awkward.Array: awkward.to_numpy}, default_conv=container_converter.no_action
     )
     _np_to_ak_ = container_converter(
-        {numpy.ndarray: awkward.from_regular}, default_conv=container_converter.no_action
+        {numpy.ndarray: awkward.from_regular},
+        default_conv=container_converter.no_action,
     )
 
     def __init__(self):

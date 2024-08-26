@@ -6,8 +6,8 @@ conversion and the handling of dask are mostly abstract away.
 """
 
 from coffea.ml_tools.helper import numpy_call_wrapper
-from coffea.ml_tools.torch_wrapper import torch_wrapper
 from coffea.ml_tools.tf_wrapper import tf_wrapper
+from coffea.ml_tools.torch_wrapper import torch_wrapper
 from coffea.ml_tools.triton_wrapper import triton_wrapper
 from coffea.ml_tools.xgboost_wrapper import xgboost_wrapper
 
