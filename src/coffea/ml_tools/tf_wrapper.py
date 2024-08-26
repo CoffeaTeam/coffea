@@ -67,11 +67,22 @@ class tf_wrapper(nonserializable_attribute, numpy_call_wrapper):
         """
         Evaluating the numpy inputs via the model. Here we are assuming all
         inputs can be trivially passed to the underlying model instance after a trivial
-        `tensorflow.convert_to_tensor method`. The return result will also be cased as
-        non-available Returning the results also as as numpy array.
-
-        TODO: Non-copy conversions?
+        `tensorflow.convert_to_tensor method`.
         """
-        args = [tensorflow.convert_to_tensor(arr) for arr in args]
-        kwargs = {key: tensorflow.convert_to_tensor(arr) for key, arr in kwargs.items()}
+        args = [
+            (
+                tensorflow.convert_to_tensor(arr)
+                if arr.flags["WRITEABLE"]
+                else tensorflow.convert_to_tensor(numpy.copy(arr))
+            )
+            for arr in args
+        ]
+        kwargs = {
+            key: (
+                tensorflow.convert_to_tensor(arr)
+                if arr.flags["WRITABLE"]
+                else tensorflow.convert_to_tensor(numpy.copy(arr))
+            )
+            for key, arr in kwargs.items()
+        }
         return self.model(*args, **kwargs).numpy()
