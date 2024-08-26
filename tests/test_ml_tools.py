@@ -173,10 +173,8 @@ def test_tensorflow():
             # Padding PFCandidate list length to target length (64)
             cands = ak.pad_none(jets.pfcands, 64, axis=1)
             # Folding features into inner most axis
-            cands = ak.unflatten(
-                ak.concatenate([ak.fill_none(cands[f], 100) for f in features], axis=1),
-                len(features),
-                axis=-1,
+            cands = ak.concatenate(
+                [cands[f][..., np.newaxis] for f in features], axis=2
             )
             # This should now be a trivially convert-able via ak.to_numpy
 
@@ -213,7 +211,6 @@ def test_xgboost():
 
     class xgboost_test(xgboost_wrapper):
         def prepare_awkward(self, events):
-            ak = self.get_awkward_lib(events)
             ret = ak.concatenate(
                 [events[name][:, np.newaxis] for name in feature_list], axis=1
             )
