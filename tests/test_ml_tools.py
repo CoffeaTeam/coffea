@@ -170,13 +170,22 @@ def test_tensorflow():
         def prepare_awkward(self, jets):
             # List of PF candidate features used for computation
             features = [f"feat{i}" for i in range(1, 19)]
-            # Padding PFCandidate list length to target length (64)
-            cands = ak.pad_none(jets.pfcands, 64, axis=1)
-            # Folding features into inner most axis
+
             cands = ak.concatenate(
-                [cands[f][..., np.newaxis] for f in features], axis=2
+                [
+                    # Filling pad with dummy value
+                    ak.fill_none(
+                        ak.pad_none(jets.pfcands[f], 64),
+                        0,
+                        axis=1,
+                    )[..., np.newaxis]
+                    for f in features
+                ],
+                axis=2,
             )
-            # This should now be a trivially convert-able via ak.to_numpy
+            cands = ak.flatten(cands, axis=None)  # Flatten everything
+            cands = ak.unflatten(cands, 18)  # Number of features
+            cands = ak.unflatten(cands, 64)
 
             return [cands], {}
 
@@ -194,7 +203,7 @@ def test_tensorflow():
     dak_res = tfw(dak_jets)
 
     assert np.all(np.isclose(ak_res, dak_res.compute()))
-    expected_columns = {f"pfcands.feat{i}" for i in range(1, 19)}
+    expected_columns = {"ncands"} | {f"pfcands.feat{i}" for i in range(1, 19)}
     columns = set(list(dak.necessary_columns(dak_res).values())[0])
     assert columns == expected_columns
     client.close()
