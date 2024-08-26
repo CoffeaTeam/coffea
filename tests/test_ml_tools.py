@@ -24,6 +24,11 @@ def prepare_jets_array(njets):
             "phi": ak.from_regular(np.random.random(size=(njets, NFEAT))),
             "feat1": ak.from_regular(np.random.random(size=(njets, NFEAT))),
             "feat2": ak.from_regular(np.random.random(size=(njets, NFEAT))),
+            # Extra features for testing Tensorflow model for PFCandidate classification
+            **{
+                f"feat{i}": ak.from_regular(np.random.random(size=(njets, NFEAT)))
+                for i in range(3, 19)
+            },
         }
     )
 
@@ -37,8 +42,8 @@ def prepare_jets_array(njets):
     return ak_jets, dak_jets
 
 
-def common_prepare_awkward(array_lib, jets):
-    ak = array_lib
+def common_prepare_awkward(jets):
+    """Common jet parsing routing for pytorch and triton inference"""
 
     def my_pad(arr):
         return ak.fill_none(ak.pad_none(arr, 100, axis=1, clip=True), 0.0)
@@ -81,10 +86,9 @@ def test_triton():
     # Defining custom wrapper function with awkward padding requirements.
     class triton_wrapper_test(triton_wrapper):
         def prepare_awkward(self, output_list, jets):
-            ak = self.get_awkward_lib(jets)
             return [], {
                 "output_list": output_list,
-                "input_dict": common_prepare_awkward(ak, jets),
+                "input_dict": common_prepare_awkward(jets),
             }
 
     # Running the evaluation in lazy and non-lazy forms
@@ -127,8 +131,7 @@ def test_torch():
 
     class torch_wrapper_test(torch_wrapper):
         def prepare_awkward(self, jets):
-            ak = self.get_awkward_lib(jets)
-            default = common_prepare_awkward(ak, jets)
+            default = common_prepare_awkward(jets)
             return [], {
                 "points": ak.values_astype(default["points"], np.float32),
                 "features": ak.values_astype(default["features"], np.float32),
@@ -151,6 +154,49 @@ def test_torch():
         "pfcands.feat1",
         "pfcands.feat2",
     }
+    columns = set(list(dak.necessary_columns(dak_res).values())[0])
+    assert columns == expected_columns
+    client.close()
+
+
+def test_tensorflow():
+    _ = pytest.importorskip("tensorflow")
+
+    from coffea.ml_tools.tf_wrapper import tf_wrapper
+
+    client = Client()  # Spawn local cluster
+
+    class tf_wrapper_test(tf_wrapper):
+        def prepare_awkward(self, jets):
+            # List of PF candidate features used for computation
+            features = [f"feat{i}" for i in range(1, 19)]
+            # Padding PFCandidate list length to target length (64)
+            cands = ak.pad_none(jets.pfcands, 64, axis=1)
+            # Folding features into inner most axis
+            cands = ak.unflatten(
+                ak.concatenate([ak.fill_none(cands[f], 100) for f in features], axis=1),
+                len(features),
+                axis=-1,
+            )
+            # This should now be a trivially convert-able via ak.to_numpy
+
+            return [cands], {}
+
+        def postprocess_awkward(self, ret, jets):
+            # First arguments is the return object of the models method
+            ret = ret[:, :, 0]  # Flattening to get  the per candidate entry
+            ret = ret[ak.local_index(ret) < jets.ncands]
+            return ret
+
+    # The tensorflow model here is used to classify jet constitutes
+    tfw = tf_wrapper_test("tests/samples/tf_model.keras")
+    ak_jets, dak_jets = prepare_jets_array(njets=256)
+
+    ak_res = tfw(ak_jets)
+    dak_res = tfw(dak_jets)
+
+    assert np.all(np.isclose(ak_res, dak_res.compute()))
+    expected_columns = {f"pfcands.feat{i}" for i in range(1, 19)}
     columns = set(list(dak.necessary_columns(dak_res).values())[0])
     assert columns == expected_columns
     client.close()
