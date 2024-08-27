@@ -41,33 +41,58 @@ class tf_wrapper(nonserializable_attribute, numpy_call_wrapper):
             )
             raise _tf_import_error
 
-        nonserializable_attribute.__init__(self, ["model", "device"])
+        nonserializable_attribute.__init__(self, ["model"])
         self.tf_model = tf_model
-
-    def _create_device(self):
-        """
-        TODO: is this needed?
-        """
-        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def _create_model(self):
         """
-        Loading in the model from the model file. Tensorflow automatically
-        determines if GPU are available or not and load the resources
-        accordingly.
+        Loading in the model from the model file. We simply rely on Tensorflow
+        to automatically load the accelerator resources.
+        # TODO: More control over accelerator resources?
         """
         return tensorflow.keras.models.load_model(self.tf_model)
 
     def validate_numpy_input(self, *args: numpy.array, **kwargs: numpy.array) -> None:
-        # Pytorch's model.parameters is not a reliable way to extract input
-        # information for arbitrary models, so we will leave this to the user.
-        super().validate_numpy_input(*args, **kwargs)
+        """
+        Here we are assuming that the model contains the required information
+        for parsing the input numpy array(s), and that the input numpy array(s)
+        is the first argument of the user method call.
+        """
+        model_input = self.model.input_shape
+        input_arr = args[0]  # Getting the input array
+
+        def _equal_shape(mod_in: tuple, arr_shape: tuple) -> None:
+            """Tuple of input shape and array shape"""
+            assert len(mod_in) == len(
+                arr_shape
+            ), f"Mismatch number of axis (model: {mod_in}; received: {arr_shape})"
+            match = [
+                (m == a if m is not None else True) for m, a in zip(mod_in, arr_shape)
+            ]
+            assert numpy.all(
+                match
+            ), f"Mismatch shape (model: {mod_in}; recieved: {arr_shape})"
+
+        if isinstance(model_input, tuple):
+            # Single input model
+            _equal_shape(model_input, input_arr.shape)
+        else:
+            assert len(input_arr) == len(
+                model_input
+            ), f"Mismatch number of inputs (model: {len(model_input)}; received: {len(input_arr)})"
+            for model_shape, arr in zip(model_input, input_arr):
+                _equal_shape(model_shape, arr.shape)
 
     def numpy_call(self, *args: numpy.array, **kwargs: numpy.array) -> numpy.array:
         """
-        Evaluating the numpy inputs via the model. Here we are assuming all
-        inputs can be trivially passed to the underlying model instance after a trivial
-        `tensorflow.convert_to_tensor method`.
+        Evaluating the numpy inputs via the `model.__call__` method. With a
+        trivial conversion for tensors for the numpy inputs.
+
+        TODO: Do we need to evaluate using `predict` [1]? Since array batching
+        is already handled by dask.
+
+        [1]
+        https://keras.io/getting_started/faq/#whats-the-difference-between-model-methods-predict-and-call
         """
         args = [
             (

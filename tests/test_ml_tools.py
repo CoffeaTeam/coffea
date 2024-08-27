@@ -185,7 +185,7 @@ def test_tensorflow():
             )
             cands = ak.flatten(cands, axis=None)  # Flatten everything
             cands = ak.unflatten(cands, 18)  # Number of features
-            cands = ak.unflatten(cands, 64)
+            cands = ak.unflatten(cands, 64)  # Number of target entries
 
             return [cands], {}
 
