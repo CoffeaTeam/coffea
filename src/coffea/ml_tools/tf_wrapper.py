@@ -71,7 +71,7 @@ class tf_wrapper(nonserializable_attribute, numpy_call_wrapper):
             ]
             assert numpy.all(
                 match
-            ), f"Mismatch shape (model: {mod_in}; recieved: {arr_shape})"
+            ), f"Mismatch shape (model: {mod_in}; received: {arr_shape})"
 
         if isinstance(model_input, tuple):
             # Single input model
