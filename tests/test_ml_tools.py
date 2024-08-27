@@ -191,7 +191,8 @@ def test_tensorflow():
 
         def postprocess_awkward(self, ret, jets):
             # First arguments is the return object of the models method
-            ret = ret[:, :, 0]  # Flattening to get  the per candidate entry
+            ret = ret[:, :, 0]  # Flattening to get the per candidate entry
+            ret = ak.from_regular(ret)  # Making this into a jagged array
             ret = ret[ak.local_index(ret) < jets.ncands]
             return ret
 
