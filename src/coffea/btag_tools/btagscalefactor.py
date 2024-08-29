@@ -21,11 +21,11 @@ class BTagScaleFactor:
             If set true, keep the parsed dataframe as an attribute (.df) for later inspection
     """
 
-    _LOOSE, _MEDIUM, _TIGHT, _RESHAPE = range(4)
-    _FLAV_B, _FLAV_C, _FLAV_UDSG = range(3)
+    LOOSE, MEDIUM, TIGHT, RESHAPE = range(4)
+    FLAV_B, FLAV_C, FLAV_UDSG = range(3)
     _flavor = numpy.array([0, 4, 5, 6])
-    _flavor2btvflavor = {0: _FLAV_UDSG, 4: _FLAV_C, 5: _FLAV_B}
-    _wpString = {"loose": _LOOSE, "medium": _MEDIUM, "tight": _TIGHT, "reshape": _RESHAPE}
+    _flavor2btvflavor = {0: FLAV_UDSG, 4: FLAV_C, 5: FLAV_B}
+    _wpString = {"loose": LOOSE, "medium": MEDIUM, "tight": TIGHT, "reshape": RESHAPE}
     _expectedColumns = [
         "OperatingPoint",
         "measurementType",
@@ -165,7 +165,7 @@ class BTagScaleFactor:
                 flavor, eta, pt, discr = (x[idx] for x in bin_low_edges)
                 mapping[idx] = findbin(flavor, eta, pt, discr)
 
-            if self.workingpoint == BTagScaleFactor._RESHAPE:
+            if self.workingpoint == BTagScaleFactor.RESHAPE:
                 self._corrections[syst] = dense_mapped_lookup(
                     (self._flavor, edges_eta, edges_pt, edges_discr),
                     mapping,
@@ -209,7 +209,7 @@ class BTagScaleFactor:
         """
         if systematic not in self._corrections:
             raise ValueError("Unrecognized systematic: %s" % systematic)
-        if self.workingpoint == BTagScaleFactor._RESHAPE:
+        if self.workingpoint == BTagScaleFactor.RESHAPE:
             if discr is None:
                 raise ValueError("RESHAPE scale factor requires a discriminant array")
             return self._corrections[systematic](
