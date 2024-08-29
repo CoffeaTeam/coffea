@@ -157,13 +157,22 @@ def get_dataset_files_replicas(
     ----------
 
         dataset: str
+            The dataset to search for.
         allowlist_sites: list
+            List of sites to select from. If the file is not found there, raise an Exception.
         blocklist_sites: list
+            List of sites to avoid. If the file has no left site, raise an Exception.
         regex_sites: list
+            Regex expression to restrict the list of sites.
         mode:  str, default "full"
+            One of "full", "first", "best", or "roundrobin". Behavior of each described above.
         client: rucio Client, optional
+            The rucio client to use. If not provided, one will be generated for you.
         partial_allowed: bool, default False
+            If False, throws an exception if any file in the dataset cannot be found. If True,
+            will find as many files from the dataset as it can.
         scope:  rucio scope, "cms"
+            The scope for rucio to search through.
 
     Returns
     -------
