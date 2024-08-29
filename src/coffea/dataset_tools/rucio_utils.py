@@ -301,18 +301,21 @@ def query_dataset(
 
     Parameters
     ---------
-        query: str = query to filter datasets / containers with the rucio list_dids functions
-        client: rucio client
-        tree: bool = if True return the results splitting the dataset name in parts parts
-        datatype: "container/dataset":  rucio terminology. "Container"==CMS dataset. "Dataset" == CMS block.
-        scope: "cms". Rucio instance
+        query: str
+            Query to filter datasets / containers with the rucio list_dids functions
+        client: rucio Client
+            The rucio client to use. If not provided, one will be generated for you
+        tree: bool, default False
+            If True, return the results splitting the dataset name in parts
+        datatype: str, default "container"
+            Options are "container", "datset".  rucio terminology. "Container"==CMS dataset. "Dataset" == CMS block.
+        scope: str, defualt "cms"
+            Rucio instance
 
     Returns
     -------
-       list of containers/datasets
-
-       if tree==True, returns the list of dataset and also a dictionary decomposing the datasets
-       names in the 1st command part and a list of available 2nd parts.
+       List of containers/datasets. If tree==True, returns the list of dataset and also a dictionary decomposing
+       the datasets names in the 1st command part and a list of available 2nd parts.
 
     """
     client = client if client else get_rucio_client()
