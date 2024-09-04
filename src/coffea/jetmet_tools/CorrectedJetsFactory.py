@@ -218,7 +218,8 @@ class CorrectedJetsFactory:
         
         Returns
         -------
-            Awkward array of jets, representing the corrected jets.
+            Awkward array of jets, representing the corrected jets, with shape matching
+            `injets`.
         """
         if not isinstance(injets, (awkward.highlevel.Array, dask_awkward.Array)):
             raise Exception("input jets must be an (dask_)awkward array of some kind!")
