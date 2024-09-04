@@ -16,7 +16,7 @@ class JECStack:
     (eg: FactorizedJetCorrector). If they are not set, correctors will be created, using
     the info in `corrections` as input.
 
-    Paramters
+    Parameters
     ---------
         corrections: dict[str,lookup_base]
             A dict-like of function names and functions. The function depends on the type
@@ -121,6 +121,10 @@ class JECStack:
 
     @property
     def blank_name_map(self):
+        """
+        A dictionary in the form of the `name_map` input parameter for
+        `CorrectedJetsFactory`, with all keys mapped to None.
+        """
         out = {
             "massRaw",
             "ptRaw",
@@ -148,16 +152,28 @@ class JECStack:
 
     @property
     def jec(self):
+        """
+        The stack's FactorizedJetCorrector object.
+        """
         return self._jec
 
     @property
     def junc(self):
+        """
+        The stack's JetCorrectionUncertainty object.
+        """
         return self._junc
 
     @property
     def jer(self):
+        """
+        The stack's JetResolution object.
+        """
         return self._jer
 
     @property
     def jersf(self):
+        """
+        The stack's JetResolutionScaleFactor object.
+        """
         return self._jersf
