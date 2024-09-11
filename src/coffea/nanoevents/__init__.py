@@ -4,8 +4,10 @@
 
 from coffea.nanoevents.factory import NanoEventsFactory
 from coffea.nanoevents.schemas import (
+    FCC,
     BaseSchema,
     DelphesSchema,
+    FCCSchema,
     NanoAODSchema,
     PDUNESchema,
     PFNanoAODSchema,
@@ -24,4 +26,6 @@ __all__ = [
     "DelphesSchema",
     "PDUNESchema",
     "ScoutingNanoAODSchema",
+    "FCC",
+    "FCCSchema",
 ]
