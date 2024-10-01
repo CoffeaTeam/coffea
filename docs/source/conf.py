@@ -114,6 +114,8 @@ pygments_style = "sphinx"
 html_theme = "sphinx_rtd_theme"
 todo_include_todos = False
 htmlhelp_basename = "coffeadoc"
+html_logo = "logo/coffea_favicon.png"
+html_favicon = "logo/coffea_favicon.png"
 
 
 # Add any paths that contain custom static files (such as style sheets) here,
