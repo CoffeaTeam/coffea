@@ -4,11 +4,11 @@ import numpy
 
 
 def corrected_polar_met(
-    met_pt, met_phi, jet_pt, jet_phi, jet_pt_orig, positive=None, dx=None, dy=None
+    met_pt, met_phi, jet_pt, jet_phi, positive=None, dx=None, dy=None
 ):
     sj, cj = numpy.sin(jet_phi), numpy.cos(jet_phi)
-    x = met_pt * numpy.cos(met_phi) + awkward.sum((jet_pt - jet_pt_orig) * cj, axis=1)
-    y = met_pt * numpy.sin(met_phi) + awkward.sum((jet_pt - jet_pt_orig) * sj, axis=1)
+    x = met_pt * numpy.cos(met_phi) - awkward.sum(jet_pt * cj, axis=1)
+    y = met_pt * numpy.sin(met_phi) - awkward.sum(jet_pt * sj, axis=1)
     if positive is not None and dx is not None and dy is not None:
         x = x + dx if positive else x - dx
         y = y + dy if positive else y - dy
@@ -36,7 +36,7 @@ class CorrectedMETFactory:
 
         self.name_map = name_map
 
-    def build(self, in_MET, in_corrected_jets):
+    def build(self, in_MET, type1_MET, in_corrected_jets):
         if not isinstance(
             in_MET, (awkward.highlevel.Array, dask_awkward.Array)
         ) or not isinstance(
@@ -60,7 +60,6 @@ class CorrectedMETFactory:
                 raw_met[self.name_map["METphi"]],
                 corrected_jets[self.name_map["JetPt"]],
                 corrected_jets[self.name_map["JetPhi"]],
-                corrected_jets[self.name_map["ptRaw"]],
                 positive=positive,
                 dx=dx,
                 dy=dy,
@@ -144,10 +143,10 @@ class CorrectedMETFactory:
 
         out_dict["MET_UnclusteredEnergy"] = dask_awkward.map_partitions(
             create_variants,
-            MET,
+            type1_MET,
             corrected_jets,
-            MET[self.name_map["UnClusteredEnergyDeltaX"]],
-            MET[self.name_map["UnClusteredEnergyDeltaY"]],
+            type1_MET[self.name_map["UnClusteredEnergyDeltaX"]],
+            type1_MET[self.name_map["UnClusteredEnergyDeltaY"]],
             label="UnclusteredEnergy_met",
         )
 
