@@ -130,6 +130,7 @@ def index_range(begin, end):
         return awkward.Array(
             awkward.Array([[[]]]).layout.to_typetracer(forget_length=True)
         )
+
     return index_range_numba_wrap(begin_end, awkward.ArrayBuilder()).snapshot()
 
 
@@ -216,6 +217,8 @@ class MCParticle(MomentumCandidate, base.NanoCollection):
         ranges = dask_awkward.map_partitions(
             index_range, dask_array.daughters.begin, dask_array.daughters.end
         )
+        # print(dask_awkward.num(dask_array, axis=0).compute())
+        # print(dask_awkward.num(dask_array._events().Particleidx1.index, axis=0).compute())
         daughters = dask_awkward.map_partitions(
             map_index_to_array, dask_array._events().Particleidx1.index, ranges, axis=2
         )
@@ -314,15 +317,15 @@ class ReconstructedParticle(MomentumCandidate, base.NanoCollection):
 
     @dask_property
     def matched_gen(self):
-        sel = awkward.broadcast_arrays(True, self)[0]
         index = self._events().MCRecoAssociations.reco_mc_index[:, :, 1]
-        return self._events().Particle[index[sel]]
+        index = index._apply_global_index(self.E)
+        return self._events().Particle._apply_global_index(index)
 
     @matched_gen.dask
     def matched_gen(self, dask_array):
-        sel = awkward.broadcast_arrays(True, dask_array)[0]
         index = dask_array._events().MCRecoAssociations.reco_mc_index[:, :, 1]
-        return dask_array._events().Particle[index[sel]]
+        index = index._apply_global_index(self.E)
+        return dask_array._events().Particle._apply_global_index(index)
 
 
 _set_repr_name("ReconstructedParticle")
