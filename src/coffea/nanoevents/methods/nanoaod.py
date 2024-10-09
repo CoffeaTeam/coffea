@@ -31,11 +31,29 @@ def _set_repr_name(classname):
     behavior[classname].__repr__ = namefcn
 
 
+behavior.update(
+    awkward._util.copy_behaviors(
+        "PtEtaPhiMLorentzVector", "PtEtaPhiMCollection", behavior
+    )
+)
+
+
 @awkward.mixin_class(behavior)
 class PtEtaPhiMCollection(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
     """Generic collection that has Lorentz vector properties"""
 
     pass
+
+
+PtEtaPhiMCollectionArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+PtEtaPhiMCollectionArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+PtEtaPhiMCollectionArray.ProjectionClass4D = PtEtaPhiMCollectionArray  # noqa: F821
+PtEtaPhiMCollectionArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
+
+
+behavior.update(
+    awkward._util.copy_behaviors("PtEtaPhiMLorentzVector", "GenParticle", behavior)
+)
 
 
 @awkward.mixin_class(behavior)
@@ -145,6 +163,15 @@ class GenParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
 
 _set_repr_name("GenParticle")
 
+GenParticleArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+GenParticleArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+GenParticleArray.ProjectionClass4D = GenParticleArray  # noqa: F821
+GenParticleArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
+
+behavior.update(
+    awkward._util.copy_behaviors("PtEtaPhiMLorentzVector", "GenVisTau", behavior)
+)
+
 
 @awkward.mixin_class(behavior)
 class GenVisTau(candidate.PtEtaPhiMCandidate, base.NanoCollection):
@@ -164,6 +191,15 @@ class GenVisTau(candidate.PtEtaPhiMCandidate, base.NanoCollection):
 
 
 _set_repr_name("GenVisTau")
+
+GenVisTauArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+GenVisTauArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+GenVisTauArray.ProjectionClass4D = GenVisTauArray  # noqa: F821
+GenVisTauArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
+
+behavior.update(
+    awkward._util.copy_behaviors("PtEtaPhiMCandidate", "Electron", behavior)
+)
 
 
 @awkward.mixin_class(behavior)
@@ -229,6 +265,15 @@ class Electron(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systemati
 
 _set_repr_name("Electron")
 
+ElectronArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+ElectronArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+ElectronArray.ProjectionClass4D = ElectronArray  # noqa: F821
+ElectronArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
+
+behavior.update(
+    awkward._util.copy_behaviors("PtEtaPhiMCandidate", "LowPtElectron", behavior)
+)
+
 
 @awkward.mixin_class(behavior)
 class LowPtElectron(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
@@ -262,6 +307,13 @@ class LowPtElectron(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Syst
 
 
 _set_repr_name("LowPtElectron")
+
+LowPtElectronArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+LowPtElectronArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+LowPtElectronArray.ProjectionClass4D = LowPtElectronArray  # noqa: F821
+LowPtElectronArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
+
+behavior.update(awkward._util.copy_behaviors("PtEtaPhiMCandidate", "Muon", behavior))
 
 
 @awkward.mixin_class(behavior)
@@ -297,6 +349,13 @@ class Muon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
 
 _set_repr_name("Muon")
 
+MuonArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+MuonArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+MuonArray.ProjectionClass4D = MuonArray  # noqa: F821
+MuonArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
+
+behavior.update(awkward._util.copy_behaviors("PtEtaPhiMCandidate", "Tau", behavior))
+
 
 @awkward.mixin_class(behavior)
 class Tau(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
@@ -321,6 +380,13 @@ class Tau(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
 
 _set_repr_name("Tau")
 
+TauArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+TauArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+TauArray.ProjectionClass4D = TauArray  # noqa: F821
+TauArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
+
+behavior.update(awkward._util.copy_behaviors("PtEtaPhiMCandidate", "Photon", behavior))
+
 
 @awkward.mixin_class(behavior)
 class Photon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
@@ -337,11 +403,11 @@ class Photon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic)
 
     @property
     def mass(self):
-        return 0.0 * self.pt
+        return awkward.zeros_like(self.pt)
 
     @property
     def charge(self):
-        return 0.0 * self.pt
+        return awkward.zeros_like(self.pt)
 
     @property
     def isLoose(self):
@@ -396,6 +462,15 @@ class Photon(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic)
 
 _set_repr_name("Photon")
 
+PhotonArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+PhotonArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+PhotonArray.ProjectionClass4D = PhotonArray  # noqa: F821
+PhotonArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
+
+behavior.update(
+    awkward._util.copy_behaviors("PtEtaPhiMCandidate", "FsrPhoton", behavior)
+)
+
 
 @awkward.mixin_class(behavior)
 class FsrPhoton(candidate.PtEtaPhiMCandidate, base.NanoCollection):
@@ -412,9 +487,16 @@ class FsrPhoton(candidate.PtEtaPhiMCandidate, base.NanoCollection):
 
 _set_repr_name("FsrPhoton")
 
+FsrPhotonArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+FsrPhotonArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+FsrPhotonArray.ProjectionClass4D = FsrPhotonArray  # noqa: F821
+FsrPhotonArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
+
+behavior.update(awkward._util.copy_behaviors("PtEtaPhiMCandidate", "Jet", behavior))
+
 
 @awkward.mixin_class(behavior)
-class Jet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic):
+class Jet(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
     """NanoAOD narrow radius jet object"""
 
     LOOSE = 0
@@ -423,6 +505,10 @@ class Jet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic):
     "jetId bit position"
     TIGHTLEPVETO = 2
     "jetId bit position"
+
+    @property
+    def charge(self):
+        return awkward.zeros_like(self.pt)
 
     @property
     def isLoose(self):
@@ -482,9 +568,16 @@ class Jet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic):
 
 _set_repr_name("Jet")
 
+JetArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+JetArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+JetArray.ProjectionClass4D = JetArray  # noqa: F821
+JetArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
+
+behavior.update(awkward._util.copy_behaviors("PtEtaPhiMCandidate", "FatJet", behavior))
+
 
 @awkward.mixin_class(behavior)
-class FatJet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic):
+class FatJet(candidate.PtEtaPhiMCandidate, base.NanoCollection, base.Systematic):
     """NanoAOD large radius jet object"""
 
     LOOSE = 0
@@ -493,6 +586,10 @@ class FatJet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic
     "jetId bit position"
     TIGHTLEPVETO = 2
     "jetId bit position"
+
+    @property
+    def charge(self):
+        return awkward.zeros_like(self.pt)
 
     @property
     def isLoose(self):
@@ -544,6 +641,13 @@ class FatJet(vector.PtEtaPhiMLorentzVector, base.NanoCollection, base.Systematic
 
 _set_repr_name("FatJet")
 
+FatJetArray.ProjectionClass2D = vector.TwoVectorArray  # noqa: F821
+FatJetArray.ProjectionClass3D = vector.ThreeVectorArray  # noqa: F821
+FatJetArray.ProjectionClass4D = FatJetArray  # noqa: F821
+FatJetArray.MomentumClass = vector.LorentzVectorArray  # noqa: F821
+
+behavior.update(awkward._util.copy_behaviors("PolarTwoVector", "MissingET", behavior))
+
 
 @awkward.mixin_class(behavior)
 class MissingET(vector.PolarTwoVector, base.NanoCollection, base.Systematic):
@@ -555,6 +659,11 @@ class MissingET(vector.PolarTwoVector, base.NanoCollection, base.Systematic):
 
 
 _set_repr_name("MissingET")
+
+MissingETArray.ProjectionClass2D = MissingETArray  # noqa: F821
+MissingETArray.ProjectionClass3D = vector.SphericalThreeVectorArray  # noqa: F821
+MissingETArray.ProjectionClass4D = vector.LorentzVectorArray  # noqa: F821
+MissingETArray.MomentumClass = MissingETArray  # noqa: F821
 
 
 @awkward.mixin_class(behavior)
