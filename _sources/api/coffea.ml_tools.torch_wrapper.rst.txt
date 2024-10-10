@@ -1,0 +1,19 @@
+torch_wrapper
+=============
+
+.. currentmodule:: coffea.ml_tools
+
+.. autoclass:: torch_wrapper
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~torch_wrapper.numpy_call
+      ~torch_wrapper.validate_numpy_input
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: numpy_call
+   .. automethod:: validate_numpy_input

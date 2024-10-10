@@ -1,0 +1,287 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cutflow &mdash; coffea 2024.9.1.dev4+g01eb603c documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=0c1a8051"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=83e3a9fa"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="CutflowToNpz" href="coffea.analysis_tools.CutflowToNpz.html" />
+    <link rel="prev" title="coffea.analysis_tools" href="../modules/coffea.analysis_tools.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            coffea
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installing coffea</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Coffea by Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Coffea concepts</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../reference.html">API Reference Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../modules/coffea.analysis_tools.html">coffea.analysis_tools</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../modules/coffea.analysis_tools.html#classes">Classes</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Cutflow</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.analysis_tools.CutflowToNpz.html">CutflowToNpz</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.analysis_tools.NminusOne.html">NminusOne</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.analysis_tools.NminusOneToNpz.html">NminusOneToNpz</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.analysis_tools.PackedSelection.html">PackedSelection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.analysis_tools.WeightStatistics.html">WeightStatistics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="coffea.analysis_tools.Weights.html">Weights</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.analysis_tools.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.btag_tools.html">coffea.btag_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.dataset_tools.html">coffea.dataset_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.jetmet_tools.html">coffea.jetmet_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.lookup_tools.html">coffea.lookup_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.lumi_tools.html">coffea.lumi_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.ml_tools.html">coffea.ml_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.html">coffea.nanoevents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.base.html">coffea.nanoevents.methods.base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.candidate.html">coffea.nanoevents.methods.candidate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.nanoaod.html">coffea.nanoevents.methods.nanoaod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.nanoevents.methods.vector.html">coffea.nanoevents.methods.vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.processor.html">coffea.processor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/coffea.util.html">coffea.util</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">coffea</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../reference.html">API Reference Guide</a></li>
+          <li class="breadcrumb-item"><a href="../modules/coffea.analysis_tools.html">coffea.analysis_tools</a></li>
+      <li class="breadcrumb-item active">Cutflow</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/coffea.analysis_tools.Cutflow.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="cutflow">
+<h1>Cutflow<a class="headerlink" href="#cutflow" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="coffea.analysis_tools.Cutflow">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">coffea.analysis_tools.</span></span><span class="sig-name descname"><span class="pre">Cutflow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nevonecut</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nevcutflow</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">masksonecut</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maskscutflow</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delayed_mode</span></span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/01eb603cd89dc69c72eb17afa20f50841bdce479//opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/coffea/analysis_tools.py#L774"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#coffea.analysis_tools.Cutflow" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Object to be returned by PackedSelection.cutflow()</p>
+<p class="rubric">Methods Summary</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.analysis_tools.Cutflow.plot_vars" title="coffea.analysis_tools.Cutflow.plot_vars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_vars</span></code></a>(vars[, axes, bins, start, stop, ...])</p></td>
+<td><p>Plot the histograms of variables for each step of the N-1 selection</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.analysis_tools.Cutflow.print" title="coffea.analysis_tools.Cutflow.print"><code class="xref py py-obj docutils literal notranslate"><span class="pre">print</span></code></a>()</p></td>
+<td><p>Prints the statistics of the Cutflow</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.analysis_tools.Cutflow.result" title="coffea.analysis_tools.Cutflow.result"><code class="xref py py-obj docutils literal notranslate"><span class="pre">result</span></code></a>()</p></td>
+<td><p>Returns the results of the cutflow as a namedtuple</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.analysis_tools.Cutflow.to_npz" title="coffea.analysis_tools.Cutflow.to_npz"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_npz</span></code></a>(file[, compressed, compute])</p></td>
+<td><p>Saves the results of the cutflow to a .npz file</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.analysis_tools.Cutflow.yieldhist" title="coffea.analysis_tools.Cutflow.yieldhist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">yieldhist</span></code></a>()</p></td>
+<td><p>Returns the cutflow yields as <code class="docutils literal notranslate"><span class="pre">hist.Hist</span></code> objects</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="coffea.analysis_tools.Cutflow.plot_vars">
+<span class="sig-name descname"><span class="pre">plot_vars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vars</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edges</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/01eb603cd89dc69c72eb17afa20f50841bdce479//opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/coffea/analysis_tools.py#L925"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#coffea.analysis_tools.Cutflow.plot_vars" title="Link to this definition"></a></dt>
+<dd><p>Plot the histograms of variables for each step of the N-1 selection</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vars</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><em>dict</em></a>) – A dictionary in the form <code class="docutils literal notranslate"><span class="pre">{name:</span> <span class="pre">array}</span></code> where <code class="docutils literal notranslate"><span class="pre">name</span></code> is the name of the variable,
+and <code class="docutils literal notranslate"><span class="pre">array</span></code> is the corresponding array of values.
+The arrays must be the same length as each mask of the cutflow.</p></li>
+<li><p><strong>axes</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a><em> of </em><em>hist.axis objects</em><em>, </em><em>optional</em>) – The axes objects to histogram the variables on. This will override all the following arguments that define axes.
+Must be the same length as <code class="docutils literal notranslate"><span class="pre">vars</span></code>.</p></li>
+<li><p><strong>bins</strong> (<em>iterable</em><em> of </em><em>integers</em><em> or </em><em>Nones</em><em>, </em><em>optional</em>) – The number of bins for each variable histogram. If not specified, it defaults to 20.
+Must be the same length as <code class="docutils literal notranslate"><span class="pre">vars</span></code>.</p></li>
+<li><p><strong>start</strong> (<em>iterable</em><em> of </em><em>floats</em><em> or </em><em>integers</em><em> or </em><em>Nones</em><em>, </em><em>optional</em>) – The lower edge of the first bin for each variable histogram. If not specified, it defaults to the minimum value of the variable array.
+Must be the same length as <code class="docutils literal notranslate"><span class="pre">vars</span></code>.</p></li>
+<li><p><strong>stop</strong> (<em>iterable</em><em> of </em><em>floats</em><em> or </em><em>integers</em><em> or </em><em>Nones</em><em>, </em><em>optional</em>) – The upper edge of the last bin for each variable histogram. If not specified, it defaults to the maximum value of the variable array.
+Must be the same length as <code class="docutils literal notranslate"><span class="pre">vars</span></code>.</p></li>
+<li><p><strong>edges</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a><em> of </em><em>iterables</em><em> of </em><em>floats</em><em> or </em><em>integers</em><em>, </em><em>optional</em>) – The bin edges for each variable histogram. This overrides <code class="docutils literal notranslate"><span class="pre">bins</span></code>, <code class="docutils literal notranslate"><span class="pre">start</span></code>, and <code class="docutils literal notranslate"><span class="pre">stop</span></code> if specified.
+Must be the same length as <code class="docutils literal notranslate"><span class="pre">vars</span></code>.</p></li>
+<li><p><strong>transform</strong> (<em>iterable</em><em> of </em><em>hist.axis.transform objects</em><em> or </em><em>Nones</em><em>, </em><em>optional</em>) – The transforms to apply to each variable histogram axis. If not specified, it defaults to None.
+Must be the same length as <code class="docutils literal notranslate"><span class="pre">vars</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>histsonecut</strong> (<em>list of hist.Hist or hist.dask.Hist objects</em>) – A list of 1D histograms of the variables of events surviving each cut alone.
+The first axis is the variable, the second axis is the cuts.</p></li>
+<li><p><strong>histscutflow</strong> (<em>list of hist.Hist or hist.dask.Hist objects</em>) – A list of 1D histograms of the variables of events surviving the cumulative cutflow.
+The first axis is the variable, the second axis is the cuts.</p></li>
+<li><p><strong>labels</strong> (<em>list of strings</em>) – The bin labels of the y axis of the histograms.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="coffea.analysis_tools.Cutflow.print">
+<span class="sig-name descname"><span class="pre">print</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/01eb603cd89dc69c72eb17afa20f50841bdce479//opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/coffea/analysis_tools.py#L860"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#coffea.analysis_tools.Cutflow.print" title="Link to this definition"></a></dt>
+<dd><p>Prints the statistics of the Cutflow</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="coffea.analysis_tools.Cutflow.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/01eb603cd89dc69c72eb17afa20f50841bdce479//opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/coffea/analysis_tools.py#L790"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#coffea.analysis_tools.Cutflow.result" title="Link to this definition"></a></dt>
+<dd><p>Returns the results of the cutflow as a namedtuple</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><p><strong>result</strong> – A namedtuple with the following attributes:</p>
+<dl class="simple">
+<dt>nevonecut<span class="classifier">list of integers or dask_awkward.lib.core.Scalar objects</span></dt><dd><p>The number of events that survive each cut alone as a list of integers or delayed integers</p>
+</dd>
+<dt>nevcutflow<span class="classifier">list of integers or dask_awkward.lib.core.Scalar objects</span></dt><dd><p>The number of events that survive the cumulative cutflow as a list of integers or delayed integers</p>
+</dd>
+<dt>masksonecut<span class="classifier">list of boolean numpy.ndarray or dask_awkward.lib.core.Array objects</span></dt><dd><p>The boolean mask vectors of which events pass each cut alone as a list of materialized or delayed boolean arrays</p>
+</dd>
+<dt>maskscutflow<span class="classifier">list of boolean numpy.ndarray or dask_awkward.lib.core.Array objects</span></dt><dd><p>The boolean mask vectors of which events pass the cumulative cutflow a list of materialized or delayed boolean arrays</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>CutflowResult</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="coffea.analysis_tools.Cutflow.to_npz">
+<span class="sig-name descname"><span class="pre">to_npz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compressed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compute</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/01eb603cd89dc69c72eb17afa20f50841bdce479//opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/coffea/analysis_tools.py#L820"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#coffea.analysis_tools.Cutflow.to_npz" title="Link to this definition"></a></dt>
+<dd><p>Saves the results of the cutflow to a .npz file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> or </em><em>file</em>) – Either the filename (string) or an open file (file-like object)
+where the data will be saved. If file is a string or a Path, the
+<code class="docutils literal notranslate"><span class="pre">.npz</span></code> extension will be appended to the filename if it is not
+already there.</p></li>
+<li><p><strong>compressed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em>, </em><em>optional</em>) – If True, the data will be compressed in the <code class="docutils literal notranslate"><span class="pre">.npz</span></code> file.
+Default is False.</p></li>
+<li><p><strong>compute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em>, </em><em>optional</em>) – Whether to immediately start writing or to return an object
+that the user can choose when to start writing by calling compute().
+Default is False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>out</strong> – If <code class="docutils literal notranslate"><span class="pre">compute=True</span></code>, returns None. Otherwise, returns an object
+that can be used to start writing the data by calling compute().</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="coffea.analysis_tools.CutflowToNpz.html#coffea.analysis_tools.CutflowToNpz" title="coffea.analysis_tools.CutflowToNpz">CutflowToNpz</a> or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="coffea.analysis_tools.Cutflow.yieldhist">
+<span class="sig-name descname"><span class="pre">yieldhist</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/01eb603cd89dc69c72eb17afa20f50841bdce479//opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/coffea/analysis_tools.py#L886"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#coffea.analysis_tools.Cutflow.yieldhist" title="Link to this definition"></a></dt>
+<dd><p>Returns the cutflow yields as <code class="docutils literal notranslate"><span class="pre">hist.Hist</span></code> objects</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><strong>honecut</strong> (<em>hist.Hist or hist.dask.Hist</em>) – Histogram of the number of events surviving each cut alone</p></li>
+<li><p><strong>hcutflow</strong> (<em>hist.Hist or hist.dask.Hist</em>) – Histogram of the number of events surviving the cumulative cutflow</p></li>
+<li><p><strong>labels</strong> (<em>list of strings</em>) – The bin labels of the histograms</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../modules/coffea.analysis_tools.html" class="btn btn-neutral float-left" title="coffea.analysis_tools" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="coffea.analysis_tools.CutflowToNpz.html" class="btn btn-neutral float-right" title="CutflowToNpz" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Fermi National Accelerator Laboratory.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

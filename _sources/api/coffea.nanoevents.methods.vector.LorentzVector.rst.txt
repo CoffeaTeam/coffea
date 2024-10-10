@@ -1,0 +1,47 @@
+LorentzVector
+=============
+
+.. currentmodule:: coffea.nanoevents.methods.vector
+
+.. autoclass:: LorentzVector
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~LorentzVector.boostvec
+      ~LorentzVector.metric_table
+      ~LorentzVector.nearest
+      ~LorentzVector.pvec
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~LorentzVector.absolute
+      ~LorentzVector.delta_phi
+      ~LorentzVector.delta_r
+      ~LorentzVector.delta_r2
+      ~LorentzVector.divide
+      ~LorentzVector.multiply
+      ~LorentzVector.negative
+      ~LorentzVector.sum
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: boostvec
+   .. autoattribute:: metric_table
+   .. autoattribute:: nearest
+   .. autoattribute:: pvec
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: absolute
+   .. automethod:: delta_phi
+   .. automethod:: delta_r
+   .. automethod:: delta_r2
+   .. automethod:: divide
+   .. automethod:: multiply
+   .. automethod:: negative
+   .. automethod:: sum

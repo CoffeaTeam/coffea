@@ -1,0 +1,6 @@
+decompress_form
+===============
+
+.. currentmodule:: coffea.util
+
+.. autofunction:: decompress_form

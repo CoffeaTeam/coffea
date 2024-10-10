@@ -1,0 +1,37 @@
+CutflowToNpz
+============
+
+.. currentmodule:: coffea.analysis_tools
+
+.. autoclass:: CutflowToNpz
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~CutflowToNpz.file
+      ~CutflowToNpz.labels
+      ~CutflowToNpz.maskscutflow
+      ~CutflowToNpz.masksonecut
+      ~CutflowToNpz.nevcutflow
+      ~CutflowToNpz.nevonecut
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~CutflowToNpz.compute
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: file
+   .. autoattribute:: labels
+   .. autoattribute:: maskscutflow
+   .. autoattribute:: masksonecut
+   .. autoattribute:: nevcutflow
+   .. autoattribute:: nevonecut
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: compute

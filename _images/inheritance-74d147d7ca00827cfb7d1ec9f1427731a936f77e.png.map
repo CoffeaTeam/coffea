@@ -1,0 +1,12 @@
+<map id="inheritance0f677b02d9" name="inheritance0f677b02d9">
+<area shape="rect" id="node1" href="../api/coffea.nanoevents.methods.candidate.Candidate.html#coffea.nanoevents.methods.candidate.Candidate" target="_top" title="A Lorentz vector with charge" alt="" coords="641,48,674,58"/>
+<area shape="rect" id="node18" href="../api/coffea.nanoevents.methods.candidate.PtEtaPhiECandidate.html#coffea.nanoevents.methods.candidate.PtEtaPhiECandidate" target="_top" title="A Lorentz vector in eta, energy coordinates with charge" alt="" coords="709,35,765,44"/>
+<area shape="rect" id="node20" href="../api/coffea.nanoevents.methods.candidate.PtEtaPhiMCandidate.html#coffea.nanoevents.methods.candidate.PtEtaPhiMCandidate" target="_top" title="A Lorentz vector in eta, mass coordinates with charge" alt="" coords="708,58,766,67"/>
+<area shape="rect" id="node2" href="../api/coffea.nanoevents.methods.vector.LorentzVector.html#coffea.nanoevents.methods.vector.LorentzVector" target="_top" title="A cartesian Lorentz vector" alt="" coords="565,48,607,58"/>
+<area shape="rect" id="node19" href="../api/coffea.nanoevents.methods.vector.PtEtaPhiELorentzVector.html#coffea.nanoevents.methods.vector.PtEtaPhiELorentzVector" target="_top" title="A Lorentz vector using pseudorapidity and energy" alt="" coords="625,30,690,39"/>
+<area shape="rect" id="node21" href="../api/coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector.html#coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector" target="_top" title="A Lorentz vector using pseudorapidity and mass" alt="" coords="625,67,691,76"/>
+<area shape="rect" id="node11" title="Four dimensional momentum vector class for the Awkward backend." alt="" coords="411,57,464,67"/>
+<area shape="rect" id="node9" title="Four dimensional momentum vector class for the Awkward backend." alt="" coords="483,48,548,58"/>
+<area shape="rect" id="node23" title="Attributes:" alt="" coords="2,58,45,67"/>
+<area shape="rect" id="node25" title="Mixin class for Awkward vectors." alt="" coords="333,85,379,94"/>
+</map>

@@ -1,0 +1,6 @@
+max_files
+=========
+
+.. currentmodule:: coffea.dataset_tools
+
+.. autofunction:: max_files

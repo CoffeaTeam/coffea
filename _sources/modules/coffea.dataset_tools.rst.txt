@@ -1,0 +1,5 @@
+coffea.dataset_tools
+====================
+
+.. automodapi:: coffea.dataset_tools
+    :no-heading:

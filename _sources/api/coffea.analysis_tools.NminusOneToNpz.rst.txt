@@ -1,0 +1,33 @@
+NminusOneToNpz
+==============
+
+.. currentmodule:: coffea.analysis_tools
+
+.. autoclass:: NminusOneToNpz
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~NminusOneToNpz.file
+      ~NminusOneToNpz.labels
+      ~NminusOneToNpz.masks
+      ~NminusOneToNpz.nev
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~NminusOneToNpz.compute
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: file
+   .. autoattribute:: labels
+   .. autoattribute:: masks
+   .. autoattribute:: nev
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: compute

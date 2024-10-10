@@ -1,0 +1,6 @@
+compress_form
+=============
+
+.. currentmodule:: coffea.util
+
+.. autofunction:: compress_form

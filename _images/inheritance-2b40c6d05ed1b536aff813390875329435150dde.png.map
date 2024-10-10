@@ -1,0 +1,9 @@
+<map id="inheritancebd8c59e195" name="inheritancebd8c59e195">
+<area shape="rect" id="node1" href="https://docs.python.org/3/library/abc.html#abc.ABC" target="_top" title="Helper class that provides a standard way to create an ABC using" alt="" coords="5,104,77,129"/>
+<area shape="rect" id="node3" href="../api/coffea.ml_tools.numpy_call_wrapper.html#coffea.ml_tools.numpy_call_wrapper" target="_top" title="Wrapper for awkward.to_numpy evaluations for dask_awkward array inputs." alt="" coords="139,104,296,129"/>
+<area shape="rect" id="node2" title="Generalizing the container for non&#45;serializable objects." alt="" coords="125,55,309,80"/>
+<area shape="rect" id="node4" href="../api/coffea.ml_tools.tf_wrapper.html#coffea.ml_tools.tf_wrapper" target="_top" title="Wrapper for running tensorflow inference with awkward/dask&#45;awkward inputs." alt="" coords="379,104,471,129"/>
+<area shape="rect" id="node5" href="../api/coffea.ml_tools.torch_wrapper.html#coffea.ml_tools.torch_wrapper" target="_top" title="Wrapper for running pytorch with awkward/dask&#45;awkward inputs." alt="" coords="367,153,482,179"/>
+<area shape="rect" id="node6" href="../api/coffea.ml_tools.triton_wrapper.html#coffea.ml_tools.triton_wrapper" target="_top" title="Wrapper for running triton inference." alt="" coords="366,5,483,31"/>
+<area shape="rect" id="node7" href="../api/coffea.ml_tools.xgboost_wrapper.html#coffea.ml_tools.xgboost_wrapper" target="_top" title="Very simple wrapper for xgbooster inference. The xgboost.Booster object is" alt="" coords="357,55,492,80"/>
+</map>

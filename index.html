@@ -1,0 +1,1097 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>coffea - Columnar Object Framework For Effective Analysis &mdash; coffea 2024.9.1.dev4+g01eb603c documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=fd3f3429" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=0c1a8051"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=83e3a9fa"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installing coffea" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            coffea
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installing coffea</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Coffea by Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts.html">Coffea concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">API Reference Guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">coffea</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">coffea - Columnar Object Framework For Effective Analysis</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="coffea-columnar-object-framework-for-effective-analysis">
+<h1>coffea - Columnar Object Framework For Effective Analysis<a class="headerlink" href="#coffea-columnar-object-framework-for-effective-analysis" title="Link to this heading"></a></h1>
+<a class="reference external image-reference" href="https://zenodo.org/badge/latestdoi/159673139"><img alt="https://zenodo.org/badge/159673139.svg" src="https://zenodo.org/badge/159673139.svg" />
+</a>
+<a class="reference external image-reference" href="https://github.com/CoffeaTeam/coffea/actions?query=workflow%3ACI%2FCD+event%3Aschedule+branch%3Amaster"><img alt="https://github.com/CoffeaTeam/coffea/actions/workflows/ci.yml/badge.svg" src="https://github.com/CoffeaTeam/coffea/actions/workflows/ci.yml/badge.svg" />
+</a>
+<a class="reference external image-reference" href="https://codecov.io/gh/CoffeaTeam/coffea"><img alt="https://codecov.io/gh/CoffeaTeam/coffea/branch/master/graph/badge.svg?event=schedule" src="https://codecov.io/gh/CoffeaTeam/coffea/branch/master/graph/badge.svg?event=schedule" />
+</a>
+<a class="reference external image-reference" href="https://badge.fury.io/py/coffea"><img alt="https://badge.fury.io/py/coffea.svg" src="https://badge.fury.io/py/coffea.svg" />
+</a>
+<a class="reference external image-reference" href="https://img.shields.io/pypi/dm/coffea"><img alt="https://img.shields.io/pypi/dm/coffea.svg" src="https://img.shields.io/pypi/dm/coffea.svg" />
+</a>
+<a class="reference external image-reference" href="https://anaconda.org/conda-forge/coffea"><img alt="https://img.shields.io/conda/vn/conda-forge/coffea.svg" src="https://img.shields.io/conda/vn/conda-forge/coffea.svg" />
+</a>
+<a class="reference external image-reference" href="https://matrix.to/#/#coffea-hep_community:gitter.im"><img alt="https://badges.gitter.im/CoffeaTeam/coffea.svg" src="https://badges.gitter.im/CoffeaTeam/coffea.svg" />
+</a>
+<a class="reference external image-reference" href="https://mybinder.org/v2/gh/CoffeaTeam/coffea/master?filepath=binder/"><img alt="https://mybinder.org/badge_logo.svg" src="https://mybinder.org/badge_logo.svg" />
+</a>
+<p>Basic tools and wrappers for enabling not-too-alien syntax when running columnar Collider HEP analysis.</p>
+<p>coffea is a prototype package for pulling together all the typical needs
+of a high-energy collider physics (HEP) experiment analysis using the scientific
+python ecosystem. It makes use of <a class="reference external" href="https://github.com/scikit-hep/uproot4">uproot</a>
+and <a class="reference external" href="https://github.com/scikit-hep/awkward-1.0">awkward-array</a> to provide an
+array-based syntax for manipulating HEP event data in an efficient and numpythonic
+way. There are sub-packages that implement histogramming, plotting, and look-up
+table functionalities that are needed to convey scientific insight, apply transformations
+to data, and correct for discrepancies in Monte Carlo simulations compared to data.</p>
+<p>coffea also supplies facilities for horizontally scaling an analysis in order to reduce
+time-to-insight in a way that is largely independent of the resource the analysis
+is being executed on. By making use of modern <em>big-data</em> technologies like
+<a class="reference external" href="https://spark.apache.org/">Apache Spark</a>,  <a class="reference external" href="https://github.com/Parsl/parsl">parsl</a>,
+<a class="reference external" href="https://dask.org">Dask</a> , and <a class="reference external" href="http://ccl.cse.nd.edu/software/workqueue">Work Queue</a>,
+it is possible with coffea to scale a HEP analysis from a testing
+on a laptop to: a large multi-core server, computing clusters, and super-computers without
+the need to alter or otherwise adapt the analysis code itself.</p>
+<p>coffea is a HEP community project collaborating with <a class="reference external" href="http://iris-hep.org/">iris-hep</a>
+and is currently a prototype. We welcome input to improve its quality as we progress towards
+a sensible refactorization into the scientific python ecosystem and a first release. Please
+feel free to contribute at our <a class="reference external" href="https://github.com/CoffeaTeam/coffea">github repo</a>!</p>
+</section>
+<section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h1>
+<p>Install coffea like any other Python package:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>coffea
+</pre></div>
+</div>
+<p>or similar (use <code class="docutils literal notranslate"><span class="pre">sudo</span></code>, <code class="docutils literal notranslate"><span class="pre">--user</span></code>, <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code>, or pip-in-conda if you wish).
+For more details, see the <a class="reference external" href="https://coffeateam.github.io/coffea/installation.html">Installing coffea</a> section of the documentation.</p>
+</section>
+<section id="strict-dependencies">
+<h1>Strict dependencies<a class="headerlink" href="#strict-dependencies" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="http://docs.python-guide.org/en/latest/starting/installation/">Python</a> (3.8+)</p></li>
+</ul>
+<p>The following are installed automatically when you install coffea with pip:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://scipy.org/install.html">numpy</a> (1.22+);</p></li>
+<li><p><a class="reference external" href="https://github.com/scikit-hep/uproot5">uproot</a> for interacting with ROOT files and handling their data transparently;</p></li>
+<li><p><a class="reference external" href="https://github.com/scikit-hep/awkward">awkward-array</a> to manipulate complex-structured columnar data, such as jagged arrays;</p></li>
+<li><p><a class="reference external" href="https://numba.pydata.org/">numba</a> just-in-time compilation of python functions;</p></li>
+<li><p><a class="reference external" href="https://scipy.org/scipylib/index.html">scipy</a> for many statistical functions;</p></li>
+<li><p><a class="reference external" href="https://matplotlib.org/">matplotlib</a> as a plotting backend;</p></li>
+<li><p>and other utility packages, as enumerated in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>.</p></li>
+</ul>
+</section>
+<section id="documentation">
+<h1>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h1>
+<p>All documentation is hosted at <a class="reference external" href="https://coffeateam.github.io/coffea/">https://coffeateam.github.io/coffea/</a></p>
+</section>
+<section id="citation">
+<h1>Citation<a class="headerlink" href="#citation" title="Link to this heading"></a></h1>
+<p>If you would like to cite this code in your work, you can use the zenodo DOI indicated in <code class="docutils literal notranslate"><span class="pre">CITATION.cff</span></code>, or the <a class="reference external" href="https://zenodo.org/badge/latestdoi/159673139">latest DOI</a>. You may also cite the proceedings:</p>
+<ul class="simple">
+<li><p>“N. Smith et al 2020 EPJ Web Conf. 245 06012”</p></li>
+<li><p>“L. Gray et al 2023 J. Phys.: Conf. Ser. 2438 012033”</p></li>
+</ul>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installing coffea</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#quick-start">Quick start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#platform-support">Platform support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#install-coffea">Install coffea</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#install-optional-dependencies">Install optional dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#virtual-environment">Virtual environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#pre-built-images">Pre-built images</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#install-via-cvmfs">Install via cvmfs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#creating-a-portable-virtual-environment">Creating a portable virtual environment</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#container-based">Container-based</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#lcg-based">LCG-based</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#for-developers">For Developers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Coffea by Example</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/nanoevents.html">Reading data with coffea NanoEvents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/applying_corrections.html">Applying corrections to columnar data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/applying_corrections.html#Coffea-lookup_tools">Coffea lookup_tools</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="notebooks/applying_corrections.html#Opening-a-root-file-and-using-it-as-a-lookup-table">Opening a root file and using it as a lookup table</a></li>
+<li class="toctree-l4"><a class="reference internal" href="notebooks/applying_corrections.html#Building-and-using-your-own-correction-from-a-histogram">Building and using your own correction from a histogram</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/applying_corrections.html#CMS-high-level-tools">CMS high-level tools</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="notebooks/applying_corrections.html#Applying-energy-scale-transformations-with-jetmet_tools">Applying energy scale transformations with jetmet_tools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="notebooks/applying_corrections.html#Applying-CMS-b-tagging-corrections-with-btag_tools">Applying CMS b-tagging corrections with btag_tools</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/applying_corrections.html#Using-correctionlib">Using correctionlib</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/processor.html">Coffea Processors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/processor.html#Getting-fancy">Getting fancy</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/mltools.html">Running inference tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/mltools.html#Why-these-wrapper-tools-are-needed">Why these wrapper tools are needed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/mltools.html#Example-using-ParticleNet-like-jet-variable-calculation-using-PyTorch">Example using ParticleNet-like jet variable calculation using PyTorch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/mltools.html#Comments-about-generalizing-to-other-ML-tools">Comments about generalizing to other ML tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/mltools.html#Additional-comments-on-common-prepare_awkward-patterns">Additional comments on common <code class="docutils literal notranslate"><span class="pre">prepare_awkward</span></code> patterns</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="notebooks/mltools.html#Casting-multiple-fields-a-collection-to-be-separate-axis">Casting multiple fields a collection to be separate axis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="notebooks/mltools.html#Fixing-collection-dimensions">Fixing collection dimensions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/dataset_discovery.html">Dataset discovery tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/dataset_discovery.html#Using-Rucio-utils-directly">Using Rucio utils directly</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="notebooks/dataset_discovery.html#Dataset-replicas">Dataset replicas</a></li>
+<li class="toctree-l4"><a class="reference internal" href="notebooks/dataset_discovery.html#Filtering-sites">Filtering sites</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/dataset_discovery.html#Using-the-DataDiscoveryCLI">Using the DataDiscoveryCLI</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="notebooks/dataset_discovery.html#id1">Filtering sites</a></li>
+<li class="toctree-l4"><a class="reference internal" href="notebooks/dataset_discovery.html#Save-the-replicas-metadata">Save the replicas metadata</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/dataset_discovery.html#DataDiscoveryCLI-from-shell">DataDiscoveryCLI from shell</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebooks/dataset_discovery.html#Preprocess-the-fileset-with-dask">Preprocess the fileset with dask</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/packedselection.html">PackedSelection in Coffea 2023</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="concepts.html">Coffea concepts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="concepts.html#columnar-analysis">Columnar analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts.html#coffea-processor">Coffea processor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts.html#scale-out">Scale-out</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="concepts.html#local-executors">Local executors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="concepts.html#distributed-executors">Distributed executors</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">API Reference Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.analysis_tools.html">coffea.analysis_tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.analysis_tools.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.analysis_tools.Cutflow.html">Cutflow</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.analysis_tools.Cutflow.html#coffea.analysis_tools.Cutflow"><code class="docutils literal notranslate"><span class="pre">Cutflow</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.Cutflow.html#coffea.analysis_tools.Cutflow.plot_vars"><code class="docutils literal notranslate"><span class="pre">Cutflow.plot_vars()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.Cutflow.html#coffea.analysis_tools.Cutflow.print"><code class="docutils literal notranslate"><span class="pre">Cutflow.print()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.Cutflow.html#coffea.analysis_tools.Cutflow.result"><code class="docutils literal notranslate"><span class="pre">Cutflow.result()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.Cutflow.html#coffea.analysis_tools.Cutflow.to_npz"><code class="docutils literal notranslate"><span class="pre">Cutflow.to_npz()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.Cutflow.html#coffea.analysis_tools.Cutflow.yieldhist"><code class="docutils literal notranslate"><span class="pre">Cutflow.yieldhist()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.analysis_tools.CutflowToNpz.html">CutflowToNpz</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.analysis_tools.CutflowToNpz.html#coffea.analysis_tools.CutflowToNpz"><code class="docutils literal notranslate"><span class="pre">CutflowToNpz</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.CutflowToNpz.html#coffea.analysis_tools.CutflowToNpz.file"><code class="docutils literal notranslate"><span class="pre">CutflowToNpz.file</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.CutflowToNpz.html#coffea.analysis_tools.CutflowToNpz.labels"><code class="docutils literal notranslate"><span class="pre">CutflowToNpz.labels</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.CutflowToNpz.html#coffea.analysis_tools.CutflowToNpz.maskscutflow"><code class="docutils literal notranslate"><span class="pre">CutflowToNpz.maskscutflow</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.CutflowToNpz.html#coffea.analysis_tools.CutflowToNpz.masksonecut"><code class="docutils literal notranslate"><span class="pre">CutflowToNpz.masksonecut</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.CutflowToNpz.html#coffea.analysis_tools.CutflowToNpz.nevcutflow"><code class="docutils literal notranslate"><span class="pre">CutflowToNpz.nevcutflow</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.CutflowToNpz.html#coffea.analysis_tools.CutflowToNpz.nevonecut"><code class="docutils literal notranslate"><span class="pre">CutflowToNpz.nevonecut</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.CutflowToNpz.html#coffea.analysis_tools.CutflowToNpz.compute"><code class="docutils literal notranslate"><span class="pre">CutflowToNpz.compute()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.analysis_tools.NminusOne.html">NminusOne</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.analysis_tools.NminusOne.html#coffea.analysis_tools.NminusOne"><code class="docutils literal notranslate"><span class="pre">NminusOne</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.NminusOne.html#coffea.analysis_tools.NminusOne.plot_vars"><code class="docutils literal notranslate"><span class="pre">NminusOne.plot_vars()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.NminusOne.html#coffea.analysis_tools.NminusOne.print"><code class="docutils literal notranslate"><span class="pre">NminusOne.print()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.NminusOne.html#coffea.analysis_tools.NminusOne.result"><code class="docutils literal notranslate"><span class="pre">NminusOne.result()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.NminusOne.html#coffea.analysis_tools.NminusOne.to_npz"><code class="docutils literal notranslate"><span class="pre">NminusOne.to_npz()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.NminusOne.html#coffea.analysis_tools.NminusOne.yieldhist"><code class="docutils literal notranslate"><span class="pre">NminusOne.yieldhist()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.analysis_tools.NminusOneToNpz.html">NminusOneToNpz</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.analysis_tools.NminusOneToNpz.html#coffea.analysis_tools.NminusOneToNpz"><code class="docutils literal notranslate"><span class="pre">NminusOneToNpz</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.NminusOneToNpz.html#coffea.analysis_tools.NminusOneToNpz.file"><code class="docutils literal notranslate"><span class="pre">NminusOneToNpz.file</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.NminusOneToNpz.html#coffea.analysis_tools.NminusOneToNpz.labels"><code class="docutils literal notranslate"><span class="pre">NminusOneToNpz.labels</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.NminusOneToNpz.html#coffea.analysis_tools.NminusOneToNpz.masks"><code class="docutils literal notranslate"><span class="pre">NminusOneToNpz.masks</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.NminusOneToNpz.html#coffea.analysis_tools.NminusOneToNpz.nev"><code class="docutils literal notranslate"><span class="pre">NminusOneToNpz.nev</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.NminusOneToNpz.html#coffea.analysis_tools.NminusOneToNpz.compute"><code class="docutils literal notranslate"><span class="pre">NminusOneToNpz.compute()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.analysis_tools.PackedSelection.html">PackedSelection</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.analysis_tools.PackedSelection.html#coffea.analysis_tools.PackedSelection"><code class="docutils literal notranslate"><span class="pre">PackedSelection</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.PackedSelection.html#coffea.analysis_tools.PackedSelection.delayed_mode"><code class="docutils literal notranslate"><span class="pre">PackedSelection.delayed_mode</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.PackedSelection.html#coffea.analysis_tools.PackedSelection.maxitems"><code class="docutils literal notranslate"><span class="pre">PackedSelection.maxitems</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.PackedSelection.html#coffea.analysis_tools.PackedSelection.names"><code class="docutils literal notranslate"><span class="pre">PackedSelection.names</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.PackedSelection.html#coffea.analysis_tools.PackedSelection.add"><code class="docutils literal notranslate"><span class="pre">PackedSelection.add()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.PackedSelection.html#coffea.analysis_tools.PackedSelection.add_multiple"><code class="docutils literal notranslate"><span class="pre">PackedSelection.add_multiple()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.PackedSelection.html#coffea.analysis_tools.PackedSelection.all"><code class="docutils literal notranslate"><span class="pre">PackedSelection.all()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.PackedSelection.html#coffea.analysis_tools.PackedSelection.allfalse"><code class="docutils literal notranslate"><span class="pre">PackedSelection.allfalse()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.PackedSelection.html#coffea.analysis_tools.PackedSelection.any"><code class="docutils literal notranslate"><span class="pre">PackedSelection.any()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.PackedSelection.html#coffea.analysis_tools.PackedSelection.cutflow"><code class="docutils literal notranslate"><span class="pre">PackedSelection.cutflow()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.PackedSelection.html#coffea.analysis_tools.PackedSelection.nminusone"><code class="docutils literal notranslate"><span class="pre">PackedSelection.nminusone()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.PackedSelection.html#coffea.analysis_tools.PackedSelection.require"><code class="docutils literal notranslate"><span class="pre">PackedSelection.require()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.analysis_tools.WeightStatistics.html">WeightStatistics</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.analysis_tools.WeightStatistics.html#coffea.analysis_tools.WeightStatistics"><code class="docutils literal notranslate"><span class="pre">WeightStatistics</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.WeightStatistics.html#coffea.analysis_tools.WeightStatistics.add"><code class="docutils literal notranslate"><span class="pre">WeightStatistics.add()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.WeightStatistics.html#coffea.analysis_tools.WeightStatistics.identity"><code class="docutils literal notranslate"><span class="pre">WeightStatistics.identity()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.analysis_tools.Weights.html">Weights</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.analysis_tools.Weights.html#coffea.analysis_tools.Weights"><code class="docutils literal notranslate"><span class="pre">Weights</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.Weights.html#coffea.analysis_tools.Weights.variations"><code class="docutils literal notranslate"><span class="pre">Weights.variations</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.Weights.html#coffea.analysis_tools.Weights.weightStatistics"><code class="docutils literal notranslate"><span class="pre">Weights.weightStatistics</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.Weights.html#coffea.analysis_tools.Weights.add"><code class="docutils literal notranslate"><span class="pre">Weights.add()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.Weights.html#coffea.analysis_tools.Weights.add_multivariation"><code class="docutils literal notranslate"><span class="pre">Weights.add_multivariation()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.Weights.html#coffea.analysis_tools.Weights.partial_weight"><code class="docutils literal notranslate"><span class="pre">Weights.partial_weight()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.analysis_tools.Weights.html#coffea.analysis_tools.Weights.weight"><code class="docutils literal notranslate"><span class="pre">Weights.weight()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.analysis_tools.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.btag_tools.html">coffea.btag_tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.btag_tools.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.btag_tools.BTagScaleFactor.html">BTagScaleFactor</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.btag_tools.BTagScaleFactor.html#coffea.btag_tools.BTagScaleFactor"><code class="docutils literal notranslate"><span class="pre">BTagScaleFactor</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.btag_tools.BTagScaleFactor.html#coffea.btag_tools.BTagScaleFactor.FLAV_B"><code class="docutils literal notranslate"><span class="pre">BTagScaleFactor.FLAV_B</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.btag_tools.BTagScaleFactor.html#coffea.btag_tools.BTagScaleFactor.FLAV_C"><code class="docutils literal notranslate"><span class="pre">BTagScaleFactor.FLAV_C</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.btag_tools.BTagScaleFactor.html#coffea.btag_tools.BTagScaleFactor.FLAV_UDSG"><code class="docutils literal notranslate"><span class="pre">BTagScaleFactor.FLAV_UDSG</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.btag_tools.BTagScaleFactor.html#coffea.btag_tools.BTagScaleFactor.LOOSE"><code class="docutils literal notranslate"><span class="pre">BTagScaleFactor.LOOSE</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.btag_tools.BTagScaleFactor.html#coffea.btag_tools.BTagScaleFactor.MEDIUM"><code class="docutils literal notranslate"><span class="pre">BTagScaleFactor.MEDIUM</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.btag_tools.BTagScaleFactor.html#coffea.btag_tools.BTagScaleFactor.RESHAPE"><code class="docutils literal notranslate"><span class="pre">BTagScaleFactor.RESHAPE</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.btag_tools.BTagScaleFactor.html#coffea.btag_tools.BTagScaleFactor.TIGHT"><code class="docutils literal notranslate"><span class="pre">BTagScaleFactor.TIGHT</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.btag_tools.BTagScaleFactor.html#coffea.btag_tools.BTagScaleFactor.__call__"><code class="docutils literal notranslate"><span class="pre">BTagScaleFactor.__call__()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.btag_tools.BTagScaleFactor.html#coffea.btag_tools.BTagScaleFactor.eval"><code class="docutils literal notranslate"><span class="pre">BTagScaleFactor.eval()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.btag_tools.BTagScaleFactor.html#coffea.btag_tools.BTagScaleFactor.readcsv"><code class="docutils literal notranslate"><span class="pre">BTagScaleFactor.readcsv()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.btag_tools.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.dataset_tools.html">coffea.dataset_tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.dataset_tools.html#functions">Functions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.dataset_tools.preprocess.html">preprocess</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.dataset_tools.preprocess.html#coffea.dataset_tools.preprocess"><code class="docutils literal notranslate"><span class="pre">preprocess()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.dataset_tools.apply_to_dataset.html">apply_to_dataset</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.dataset_tools.apply_to_dataset.html#coffea.dataset_tools.apply_to_dataset"><code class="docutils literal notranslate"><span class="pre">apply_to_dataset()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.dataset_tools.apply_to_fileset.html">apply_to_fileset</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.dataset_tools.apply_to_fileset.html#coffea.dataset_tools.apply_to_fileset"><code class="docutils literal notranslate"><span class="pre">apply_to_fileset()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.dataset_tools.max_chunks.html">max_chunks</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.dataset_tools.max_chunks.html#coffea.dataset_tools.max_chunks"><code class="docutils literal notranslate"><span class="pre">max_chunks()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.dataset_tools.slice_chunks.html">slice_chunks</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.dataset_tools.slice_chunks.html#coffea.dataset_tools.slice_chunks"><code class="docutils literal notranslate"><span class="pre">slice_chunks()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.dataset_tools.filter_files.html">filter_files</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.dataset_tools.filter_files.html#coffea.dataset_tools.filter_files"><code class="docutils literal notranslate"><span class="pre">filter_files()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.dataset_tools.max_files.html">max_files</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.dataset_tools.max_files.html#coffea.dataset_tools.max_files"><code class="docutils literal notranslate"><span class="pre">max_files()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.dataset_tools.slice_files.html">slice_files</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.dataset_tools.slice_files.html#coffea.dataset_tools.slice_files"><code class="docutils literal notranslate"><span class="pre">slice_files()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.dataset_tools.get_failed_steps_for_dataset.html">get_failed_steps_for_dataset</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.dataset_tools.get_failed_steps_for_dataset.html#coffea.dataset_tools.get_failed_steps_for_dataset"><code class="docutils literal notranslate"><span class="pre">get_failed_steps_for_dataset()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.dataset_tools.get_failed_steps_for_fileset.html">get_failed_steps_for_fileset</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.dataset_tools.get_failed_steps_for_fileset.html#coffea.dataset_tools.get_failed_steps_for_fileset"><code class="docutils literal notranslate"><span class="pre">get_failed_steps_for_fileset()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.jetmet_tools.html">coffea.jetmet_tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.jetmet_tools.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.jetmet_tools.FactorizedJetCorrector.html">FactorizedJetCorrector</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.jetmet_tools.FactorizedJetCorrector.html#coffea.jetmet_tools.FactorizedJetCorrector"><code class="docutils literal notranslate"><span class="pre">FactorizedJetCorrector</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.FactorizedJetCorrector.html#coffea.jetmet_tools.FactorizedJetCorrector.signature"><code class="docutils literal notranslate"><span class="pre">FactorizedJetCorrector.signature</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.FactorizedJetCorrector.html#coffea.jetmet_tools.FactorizedJetCorrector.getCorrection"><code class="docutils literal notranslate"><span class="pre">FactorizedJetCorrector.getCorrection()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.FactorizedJetCorrector.html#coffea.jetmet_tools.FactorizedJetCorrector.getSubCorrections"><code class="docutils literal notranslate"><span class="pre">FactorizedJetCorrector.getSubCorrections()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.jetmet_tools.JetResolution.html">JetResolution</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.jetmet_tools.JetResolution.html#coffea.jetmet_tools.JetResolution"><code class="docutils literal notranslate"><span class="pre">JetResolution</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.JetResolution.html#coffea.jetmet_tools.JetResolution.signature"><code class="docutils literal notranslate"><span class="pre">JetResolution.signature</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.JetResolution.html#coffea.jetmet_tools.JetResolution.getResolution"><code class="docutils literal notranslate"><span class="pre">JetResolution.getResolution()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.jetmet_tools.JetResolutionScaleFactor.html">JetResolutionScaleFactor</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.jetmet_tools.JetResolutionScaleFactor.html#coffea.jetmet_tools.JetResolutionScaleFactor"><code class="docutils literal notranslate"><span class="pre">JetResolutionScaleFactor</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.JetResolutionScaleFactor.html#coffea.jetmet_tools.JetResolutionScaleFactor.signature"><code class="docutils literal notranslate"><span class="pre">JetResolutionScaleFactor.signature</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.JetResolutionScaleFactor.html#coffea.jetmet_tools.JetResolutionScaleFactor.getScaleFactor"><code class="docutils literal notranslate"><span class="pre">JetResolutionScaleFactor.getScaleFactor()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.jetmet_tools.JetCorrectionUncertainty.html">JetCorrectionUncertainty</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.jetmet_tools.JetCorrectionUncertainty.html#coffea.jetmet_tools.JetCorrectionUncertainty"><code class="docutils literal notranslate"><span class="pre">JetCorrectionUncertainty</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.JetCorrectionUncertainty.html#coffea.jetmet_tools.JetCorrectionUncertainty.levels"><code class="docutils literal notranslate"><span class="pre">JetCorrectionUncertainty.levels</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.JetCorrectionUncertainty.html#coffea.jetmet_tools.JetCorrectionUncertainty.signature"><code class="docutils literal notranslate"><span class="pre">JetCorrectionUncertainty.signature</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.JetCorrectionUncertainty.html#coffea.jetmet_tools.JetCorrectionUncertainty.getUncertainty"><code class="docutils literal notranslate"><span class="pre">JetCorrectionUncertainty.getUncertainty()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.jetmet_tools.JECStack.html">JECStack</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.jetmet_tools.JECStack.html#coffea.jetmet_tools.JECStack"><code class="docutils literal notranslate"><span class="pre">JECStack</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.JECStack.html#coffea.jetmet_tools.JECStack.blank_name_map"><code class="docutils literal notranslate"><span class="pre">JECStack.blank_name_map</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.JECStack.html#coffea.jetmet_tools.JECStack.jec"><code class="docutils literal notranslate"><span class="pre">JECStack.jec</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.JECStack.html#coffea.jetmet_tools.JECStack.jer"><code class="docutils literal notranslate"><span class="pre">JECStack.jer</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.JECStack.html#coffea.jetmet_tools.JECStack.jersf"><code class="docutils literal notranslate"><span class="pre">JECStack.jersf</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.JECStack.html#coffea.jetmet_tools.JECStack.junc"><code class="docutils literal notranslate"><span class="pre">JECStack.junc</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.jetmet_tools.CorrectedJetsFactory.html">CorrectedJetsFactory</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.jetmet_tools.CorrectedJetsFactory.html#coffea.jetmet_tools.CorrectedJetsFactory"><code class="docutils literal notranslate"><span class="pre">CorrectedJetsFactory</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.CorrectedJetsFactory.html#coffea.jetmet_tools.CorrectedJetsFactory.build"><code class="docutils literal notranslate"><span class="pre">CorrectedJetsFactory.build()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.CorrectedJetsFactory.html#coffea.jetmet_tools.CorrectedJetsFactory.uncertainties"><code class="docutils literal notranslate"><span class="pre">CorrectedJetsFactory.uncertainties()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.jetmet_tools.CorrectedMETFactory.html">CorrectedMETFactory</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.jetmet_tools.CorrectedMETFactory.html#coffea.jetmet_tools.CorrectedMETFactory"><code class="docutils literal notranslate"><span class="pre">CorrectedMETFactory</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.CorrectedMETFactory.html#coffea.jetmet_tools.CorrectedMETFactory.build"><code class="docutils literal notranslate"><span class="pre">CorrectedMETFactory.build()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.jetmet_tools.CorrectedMETFactory.html#coffea.jetmet_tools.CorrectedMETFactory.uncertainties"><code class="docutils literal notranslate"><span class="pre">CorrectedMETFactory.uncertainties()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.jetmet_tools.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.lookup_tools.html">coffea.lookup_tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.lookup_tools.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.lookup_tools.extractor.html">extractor</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.lookup_tools.extractor.html#coffea.lookup_tools.extractor"><code class="docutils literal notranslate"><span class="pre">extractor</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.lookup_tools.extractor.html#coffea.lookup_tools.extractor.add_weight_set"><code class="docutils literal notranslate"><span class="pre">extractor.add_weight_set()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.lookup_tools.extractor.html#coffea.lookup_tools.extractor.add_weight_sets"><code class="docutils literal notranslate"><span class="pre">extractor.add_weight_sets()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.lookup_tools.extractor.html#coffea.lookup_tools.extractor.extract_from_file"><code class="docutils literal notranslate"><span class="pre">extractor.extract_from_file()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.lookup_tools.extractor.html#coffea.lookup_tools.extractor.finalize"><code class="docutils literal notranslate"><span class="pre">extractor.finalize()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.lookup_tools.extractor.html#coffea.lookup_tools.extractor.import_file"><code class="docutils literal notranslate"><span class="pre">extractor.import_file()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.lookup_tools.extractor.html#coffea.lookup_tools.extractor.make_evaluator"><code class="docutils literal notranslate"><span class="pre">extractor.make_evaluator()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.lookup_tools.evaluator.html">evaluator</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.lookup_tools.evaluator.html#coffea.lookup_tools.evaluator"><code class="docutils literal notranslate"><span class="pre">evaluator</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.lookup_tools.evaluator.html#coffea.lookup_tools.evaluator.keys"><code class="docutils literal notranslate"><span class="pre">evaluator.keys()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.lookup_tools.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.lumi_tools.html">coffea.lumi_tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.lumi_tools.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.lumi_tools.LumiData.html">LumiData</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.lumi_tools.LumiData.html#coffea.lumi_tools.LumiData"><code class="docutils literal notranslate"><span class="pre">LumiData</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.lumi_tools.LumiData.html#coffea.lumi_tools.LumiData.seconds_per_lumi_LHC"><code class="docutils literal notranslate"><span class="pre">LumiData.seconds_per_lumi_LHC</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.lumi_tools.LumiData.html#coffea.lumi_tools.LumiData.get_lumi"><code class="docutils literal notranslate"><span class="pre">LumiData.get_lumi()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.lumi_tools.LumiList.html">LumiList</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.lumi_tools.LumiList.html#coffea.lumi_tools.LumiList"><code class="docutils literal notranslate"><span class="pre">LumiList</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.lumi_tools.LumiList.html#coffea.lumi_tools.LumiList.clear"><code class="docutils literal notranslate"><span class="pre">LumiList.clear()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.lumi_tools.LumiMask.html">LumiMask</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.lumi_tools.LumiMask.html#coffea.lumi_tools.LumiMask"><code class="docutils literal notranslate"><span class="pre">LumiMask</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.lumi_tools.LumiMask.html#coffea.lumi_tools.LumiMask.__call__"><code class="docutils literal notranslate"><span class="pre">LumiMask.__call__()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.lumi_tools.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.ml_tools.html">coffea.ml_tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.ml_tools.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.ml_tools.numpy_call_wrapper.html">numpy_call_wrapper</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.ml_tools.numpy_call_wrapper.html#coffea.ml_tools.numpy_call_wrapper"><code class="docutils literal notranslate"><span class="pre">numpy_call_wrapper</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.numpy_call_wrapper.html#coffea.ml_tools.numpy_call_wrapper.__call__"><code class="docutils literal notranslate"><span class="pre">numpy_call_wrapper.__call__()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.numpy_call_wrapper.html#coffea.ml_tools.numpy_call_wrapper.get_awkward_lib"><code class="docutils literal notranslate"><span class="pre">numpy_call_wrapper.get_awkward_lib()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.numpy_call_wrapper.html#coffea.ml_tools.numpy_call_wrapper.numpy_call"><code class="docutils literal notranslate"><span class="pre">numpy_call_wrapper.numpy_call()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.numpy_call_wrapper.html#coffea.ml_tools.numpy_call_wrapper.postprocess_awkward"><code class="docutils literal notranslate"><span class="pre">numpy_call_wrapper.postprocess_awkward()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.numpy_call_wrapper.html#coffea.ml_tools.numpy_call_wrapper.prepare_awkward"><code class="docutils literal notranslate"><span class="pre">numpy_call_wrapper.prepare_awkward()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.numpy_call_wrapper.html#coffea.ml_tools.numpy_call_wrapper.validate_numpy_input"><code class="docutils literal notranslate"><span class="pre">numpy_call_wrapper.validate_numpy_input()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.ml_tools.torch_wrapper.html">torch_wrapper</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.ml_tools.torch_wrapper.html#coffea.ml_tools.torch_wrapper"><code class="docutils literal notranslate"><span class="pre">torch_wrapper</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.torch_wrapper.html#coffea.ml_tools.torch_wrapper.numpy_call"><code class="docutils literal notranslate"><span class="pre">torch_wrapper.numpy_call()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.torch_wrapper.html#coffea.ml_tools.torch_wrapper.validate_numpy_input"><code class="docutils literal notranslate"><span class="pre">torch_wrapper.validate_numpy_input()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.ml_tools.triton_wrapper.html">triton_wrapper</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.ml_tools.triton_wrapper.html#coffea.ml_tools.triton_wrapper"><code class="docutils literal notranslate"><span class="pre">triton_wrapper</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.triton_wrapper.html#coffea.ml_tools.triton_wrapper.batch_size"><code class="docutils literal notranslate"><span class="pre">triton_wrapper.batch_size</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.triton_wrapper.html#coffea.ml_tools.triton_wrapper.batch_size_fallback"><code class="docutils literal notranslate"><span class="pre">triton_wrapper.batch_size_fallback</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.triton_wrapper.html#coffea.ml_tools.triton_wrapper.client_args"><code class="docutils literal notranslate"><span class="pre">triton_wrapper.client_args</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.triton_wrapper.html#coffea.ml_tools.triton_wrapper.http_client_concurrency"><code class="docutils literal notranslate"><span class="pre">triton_wrapper.http_client_concurrency</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.triton_wrapper.html#coffea.ml_tools.triton_wrapper.pmod"><code class="docutils literal notranslate"><span class="pre">triton_wrapper.pmod</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.triton_wrapper.html#coffea.ml_tools.triton_wrapper.numpy_call"><code class="docutils literal notranslate"><span class="pre">triton_wrapper.numpy_call()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.triton_wrapper.html#coffea.ml_tools.triton_wrapper.validate_numpy_input"><code class="docutils literal notranslate"><span class="pre">triton_wrapper.validate_numpy_input()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.ml_tools.xgboost_wrapper.html">xgboost_wrapper</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.ml_tools.xgboost_wrapper.html#coffea.ml_tools.xgboost_wrapper"><code class="docutils literal notranslate"><span class="pre">xgboost_wrapper</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.xgboost_wrapper.html#coffea.ml_tools.xgboost_wrapper.numpy_call"><code class="docutils literal notranslate"><span class="pre">xgboost_wrapper.numpy_call()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.xgboost_wrapper.html#coffea.ml_tools.xgboost_wrapper.validate_numpy_input"><code class="docutils literal notranslate"><span class="pre">xgboost_wrapper.validate_numpy_input()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.ml_tools.tf_wrapper.html">tf_wrapper</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.ml_tools.tf_wrapper.html#coffea.ml_tools.tf_wrapper"><code class="docutils literal notranslate"><span class="pre">tf_wrapper</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.tf_wrapper.html#coffea.ml_tools.tf_wrapper.numpy_call"><code class="docutils literal notranslate"><span class="pre">tf_wrapper.numpy_call()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.ml_tools.tf_wrapper.html#coffea.ml_tools.tf_wrapper.validate_numpy_input"><code class="docutils literal notranslate"><span class="pre">tf_wrapper.validate_numpy_input()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.ml_tools.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.nanoevents.html">coffea.nanoevents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.NanoEventsFactory.html">NanoEventsFactory</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.NanoEventsFactory.html#coffea.nanoevents.NanoEventsFactory"><code class="docutils literal notranslate"><span class="pre">NanoEventsFactory</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.NanoEventsFactory.html#coffea.nanoevents.NanoEventsFactory.events"><code class="docutils literal notranslate"><span class="pre">NanoEventsFactory.events()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.NanoEventsFactory.html#coffea.nanoevents.NanoEventsFactory.from_parquet"><code class="docutils literal notranslate"><span class="pre">NanoEventsFactory.from_parquet()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.NanoEventsFactory.html#coffea.nanoevents.NanoEventsFactory.from_preloaded"><code class="docutils literal notranslate"><span class="pre">NanoEventsFactory.from_preloaded()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.NanoEventsFactory.html#coffea.nanoevents.NanoEventsFactory.from_root"><code class="docutils literal notranslate"><span class="pre">NanoEventsFactory.from_root()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.BaseSchema.html">BaseSchema</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.BaseSchema.html#coffea.nanoevents.BaseSchema"><code class="docutils literal notranslate"><span class="pre">BaseSchema</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.BaseSchema.html#coffea.nanoevents.BaseSchema.form"><code class="docutils literal notranslate"><span class="pre">BaseSchema.form</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.BaseSchema.html#coffea.nanoevents.BaseSchema.behavior"><code class="docutils literal notranslate"><span class="pre">BaseSchema.behavior()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.NanoAODSchema.html">NanoAODSchema</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.NanoAODSchema.html#coffea.nanoevents.NanoAODSchema"><code class="docutils literal notranslate"><span class="pre">NanoAODSchema</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.NanoAODSchema.html#coffea.nanoevents.NanoAODSchema.all_cross_references"><code class="docutils literal notranslate"><span class="pre">NanoAODSchema.all_cross_references</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.NanoAODSchema.html#coffea.nanoevents.NanoAODSchema.error_missing_event_ids"><code class="docutils literal notranslate"><span class="pre">NanoAODSchema.error_missing_event_ids</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.NanoAODSchema.html#coffea.nanoevents.NanoAODSchema.event_ids"><code class="docutils literal notranslate"><span class="pre">NanoAODSchema.event_ids</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.NanoAODSchema.html#coffea.nanoevents.NanoAODSchema.mixins"><code class="docutils literal notranslate"><span class="pre">NanoAODSchema.mixins</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.NanoAODSchema.html#coffea.nanoevents.NanoAODSchema.nested_index_items"><code class="docutils literal notranslate"><span class="pre">NanoAODSchema.nested_index_items</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.NanoAODSchema.html#coffea.nanoevents.NanoAODSchema.nested_items"><code class="docutils literal notranslate"><span class="pre">NanoAODSchema.nested_items</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.NanoAODSchema.html#coffea.nanoevents.NanoAODSchema.special_items"><code class="docutils literal notranslate"><span class="pre">NanoAODSchema.special_items</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.NanoAODSchema.html#coffea.nanoevents.NanoAODSchema.warn_missing_crossrefs"><code class="docutils literal notranslate"><span class="pre">NanoAODSchema.warn_missing_crossrefs</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.NanoAODSchema.html#coffea.nanoevents.NanoAODSchema.behavior"><code class="docutils literal notranslate"><span class="pre">NanoAODSchema.behavior()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.NanoAODSchema.html#coffea.nanoevents.NanoAODSchema.v5"><code class="docutils literal notranslate"><span class="pre">NanoAODSchema.v5()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.NanoAODSchema.html#coffea.nanoevents.NanoAODSchema.v6"><code class="docutils literal notranslate"><span class="pre">NanoAODSchema.v6()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.NanoAODSchema.html#coffea.nanoevents.NanoAODSchema.v7"><code class="docutils literal notranslate"><span class="pre">NanoAODSchema.v7()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.PFNanoAODSchema.html">PFNanoAODSchema</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.PFNanoAODSchema.html#coffea.nanoevents.PFNanoAODSchema"><code class="docutils literal notranslate"><span class="pre">PFNanoAODSchema</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.PFNanoAODSchema.html#coffea.nanoevents.PFNanoAODSchema.all_cross_references"><code class="docutils literal notranslate"><span class="pre">PFNanoAODSchema.all_cross_references</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.PFNanoAODSchema.html#coffea.nanoevents.PFNanoAODSchema.mixins"><code class="docutils literal notranslate"><span class="pre">PFNanoAODSchema.mixins</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.TreeMakerSchema.html">TreeMakerSchema</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.TreeMakerSchema.html#coffea.nanoevents.TreeMakerSchema"><code class="docutils literal notranslate"><span class="pre">TreeMakerSchema</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.TreeMakerSchema.html#coffea.nanoevents.TreeMakerSchema.behavior"><code class="docutils literal notranslate"><span class="pre">TreeMakerSchema.behavior()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.TreeMakerSchema.html#coffea.nanoevents.TreeMakerSchema.uproot_writeable"><code class="docutils literal notranslate"><span class="pre">TreeMakerSchema.uproot_writeable()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.PHYSLITESchema.html">PHYSLITESchema</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.PHYSLITESchema.html#coffea.nanoevents.PHYSLITESchema"><code class="docutils literal notranslate"><span class="pre">PHYSLITESchema</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.PHYSLITESchema.html#coffea.nanoevents.PHYSLITESchema.mixins"><code class="docutils literal notranslate"><span class="pre">PHYSLITESchema.mixins</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.PHYSLITESchema.html#coffea.nanoevents.PHYSLITESchema.truth_collections"><code class="docutils literal notranslate"><span class="pre">PHYSLITESchema.truth_collections</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.PHYSLITESchema.html#coffea.nanoevents.PHYSLITESchema.behavior"><code class="docutils literal notranslate"><span class="pre">PHYSLITESchema.behavior()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.DelphesSchema.html">DelphesSchema</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.DelphesSchema.html#coffea.nanoevents.DelphesSchema"><code class="docutils literal notranslate"><span class="pre">DelphesSchema</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.DelphesSchema.html#coffea.nanoevents.DelphesSchema.docstrings"><code class="docutils literal notranslate"><span class="pre">DelphesSchema.docstrings</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.DelphesSchema.html#coffea.nanoevents.DelphesSchema.mixins"><code class="docutils literal notranslate"><span class="pre">DelphesSchema.mixins</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.DelphesSchema.html#coffea.nanoevents.DelphesSchema.singletons"><code class="docutils literal notranslate"><span class="pre">DelphesSchema.singletons</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.DelphesSchema.html#coffea.nanoevents.DelphesSchema.warn_missing_crossrefs"><code class="docutils literal notranslate"><span class="pre">DelphesSchema.warn_missing_crossrefs</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.DelphesSchema.html#coffea.nanoevents.DelphesSchema.behavior"><code class="docutils literal notranslate"><span class="pre">DelphesSchema.behavior()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.DelphesSchema.html#coffea.nanoevents.DelphesSchema.v1"><code class="docutils literal notranslate"><span class="pre">DelphesSchema.v1()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.PDUNESchema.html">PDUNESchema</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.PDUNESchema.html#coffea.nanoevents.PDUNESchema"><code class="docutils literal notranslate"><span class="pre">PDUNESchema</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.PDUNESchema.html#coffea.nanoevents.PDUNESchema.mixins"><code class="docutils literal notranslate"><span class="pre">PDUNESchema.mixins</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.PDUNESchema.html#coffea.nanoevents.PDUNESchema.top_objects"><code class="docutils literal notranslate"><span class="pre">PDUNESchema.top_objects</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.PDUNESchema.html#coffea.nanoevents.PDUNESchema.behavior"><code class="docutils literal notranslate"><span class="pre">PDUNESchema.behavior()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.ScoutingNanoAODSchema.html">ScoutingNanoAODSchema</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.ScoutingNanoAODSchema.html#coffea.nanoevents.ScoutingNanoAODSchema"><code class="docutils literal notranslate"><span class="pre">ScoutingNanoAODSchema</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.ScoutingNanoAODSchema.html#coffea.nanoevents.ScoutingNanoAODSchema.all_cross_references"><code class="docutils literal notranslate"><span class="pre">ScoutingNanoAODSchema.all_cross_references</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.ScoutingNanoAODSchema.html#coffea.nanoevents.ScoutingNanoAODSchema.mixins"><code class="docutils literal notranslate"><span class="pre">ScoutingNanoAODSchema.mixins</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.nanoevents.methods.base.html">coffea.nanoevents.methods.base</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.methods.base.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.base.NanoCollection.html">NanoCollection</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.base.NanoCollection.html#coffea.nanoevents.methods.base.NanoCollection"><code class="docutils literal notranslate"><span class="pre">NanoCollection</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.base.NanoEvents.html">NanoEvents</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.base.NanoEvents.html#coffea.nanoevents.methods.base.NanoEvents"><code class="docutils literal notranslate"><span class="pre">NanoEvents</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.base.NanoEvents.html#coffea.nanoevents.methods.base.NanoEvents.metadata"><code class="docutils literal notranslate"><span class="pre">NanoEvents.metadata</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.base.Systematic.html">Systematic</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.base.Systematic.html#coffea.nanoevents.methods.base.Systematic"><code class="docutils literal notranslate"><span class="pre">Systematic</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.base.Systematic.html#coffea.nanoevents.methods.base.Systematic.systematics"><code class="docutils literal notranslate"><span class="pre">Systematic.systematics</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.base.Systematic.html#coffea.nanoevents.methods.base.Systematic.add_kind"><code class="docutils literal notranslate"><span class="pre">Systematic.add_kind()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.base.Systematic.html#coffea.nanoevents.methods.base.Systematic.add_systematic"><code class="docutils literal notranslate"><span class="pre">Systematic.add_systematic()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.base.Systematic.html#coffea.nanoevents.methods.base.Systematic.describe_variations"><code class="docutils literal notranslate"><span class="pre">Systematic.describe_variations()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.base.Systematic.html#coffea.nanoevents.methods.base.Systematic.explodes_how"><code class="docutils literal notranslate"><span class="pre">Systematic.explodes_how()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.methods.base.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.nanoevents.methods.candidate.html">coffea.nanoevents.methods.candidate</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.methods.candidate.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.candidate.Candidate.html">Candidate</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.candidate.Candidate.html#coffea.nanoevents.methods.candidate.Candidate"><code class="docutils literal notranslate"><span class="pre">Candidate</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.candidate.Candidate.html#coffea.nanoevents.methods.candidate.Candidate.add"><code class="docutils literal notranslate"><span class="pre">Candidate.add()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.candidate.Candidate.html#coffea.nanoevents.methods.candidate.Candidate.sum"><code class="docutils literal notranslate"><span class="pre">Candidate.sum()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.candidate.PtEtaPhiMCandidate.html">PtEtaPhiMCandidate</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.candidate.PtEtaPhiMCandidate.html#coffea.nanoevents.methods.candidate.PtEtaPhiMCandidate"><code class="docutils literal notranslate"><span class="pre">PtEtaPhiMCandidate</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.candidate.PtEtaPhiECandidate.html">PtEtaPhiECandidate</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.candidate.PtEtaPhiECandidate.html#coffea.nanoevents.methods.candidate.PtEtaPhiECandidate"><code class="docutils literal notranslate"><span class="pre">PtEtaPhiECandidate</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.methods.candidate.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.nanoevents.methods.nanoaod.html">coffea.nanoevents.methods.nanoaod</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.methods.nanoaod.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.PtEtaPhiMCollection.html">PtEtaPhiMCollection</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.PtEtaPhiMCollection.html#coffea.nanoevents.methods.nanoaod.PtEtaPhiMCollection"><code class="docutils literal notranslate"><span class="pre">PtEtaPhiMCollection</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.GenParticle.html">GenParticle</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.GenParticle.html#coffea.nanoevents.methods.nanoaod.GenParticle"><code class="docutils literal notranslate"><span class="pre">GenParticle</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.GenParticle.html#coffea.nanoevents.methods.nanoaod.GenParticle.FLAGS"><code class="docutils literal notranslate"><span class="pre">GenParticle.FLAGS</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.GenParticle.html#coffea.nanoevents.methods.nanoaod.GenParticle.children"><code class="docutils literal notranslate"><span class="pre">GenParticle.children</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.GenParticle.html#coffea.nanoevents.methods.nanoaod.GenParticle.distinctChildren"><code class="docutils literal notranslate"><span class="pre">GenParticle.distinctChildren</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.GenParticle.html#coffea.nanoevents.methods.nanoaod.GenParticle.distinctChildrenDeep"><code class="docutils literal notranslate"><span class="pre">GenParticle.distinctChildrenDeep</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.GenParticle.html#coffea.nanoevents.methods.nanoaod.GenParticle.distinctParent"><code class="docutils literal notranslate"><span class="pre">GenParticle.distinctParent</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.GenParticle.html#coffea.nanoevents.methods.nanoaod.GenParticle.parent"><code class="docutils literal notranslate"><span class="pre">GenParticle.parent</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.GenParticle.html#coffea.nanoevents.methods.nanoaod.GenParticle.hasFlags"><code class="docutils literal notranslate"><span class="pre">GenParticle.hasFlags()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.GenVisTau.html">GenVisTau</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.GenVisTau.html#coffea.nanoevents.methods.nanoaod.GenVisTau"><code class="docutils literal notranslate"><span class="pre">GenVisTau</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.GenVisTau.html#coffea.nanoevents.methods.nanoaod.GenVisTau.parent"><code class="docutils literal notranslate"><span class="pre">GenVisTau.parent</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Electron.html">Electron</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Electron.html#coffea.nanoevents.methods.nanoaod.Electron"><code class="docutils literal notranslate"><span class="pre">Electron</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Electron.html#coffea.nanoevents.methods.nanoaod.Electron.FAIL"><code class="docutils literal notranslate"><span class="pre">Electron.FAIL</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Electron.html#coffea.nanoevents.methods.nanoaod.Electron.LOOSE"><code class="docutils literal notranslate"><span class="pre">Electron.LOOSE</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Electron.html#coffea.nanoevents.methods.nanoaod.Electron.MEDIUM"><code class="docutils literal notranslate"><span class="pre">Electron.MEDIUM</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Electron.html#coffea.nanoevents.methods.nanoaod.Electron.TIGHT"><code class="docutils literal notranslate"><span class="pre">Electron.TIGHT</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Electron.html#coffea.nanoevents.methods.nanoaod.Electron.VETO"><code class="docutils literal notranslate"><span class="pre">Electron.VETO</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Electron.html#coffea.nanoevents.methods.nanoaod.Electron.isLoose"><code class="docutils literal notranslate"><span class="pre">Electron.isLoose</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Electron.html#coffea.nanoevents.methods.nanoaod.Electron.isMedium"><code class="docutils literal notranslate"><span class="pre">Electron.isMedium</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Electron.html#coffea.nanoevents.methods.nanoaod.Electron.isTight"><code class="docutils literal notranslate"><span class="pre">Electron.isTight</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Electron.html#coffea.nanoevents.methods.nanoaod.Electron.isVeto"><code class="docutils literal notranslate"><span class="pre">Electron.isVeto</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Electron.html#coffea.nanoevents.methods.nanoaod.Electron.matched_gen"><code class="docutils literal notranslate"><span class="pre">Electron.matched_gen</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Electron.html#coffea.nanoevents.methods.nanoaod.Electron.matched_jet"><code class="docutils literal notranslate"><span class="pre">Electron.matched_jet</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Electron.html#coffea.nanoevents.methods.nanoaod.Electron.matched_photon"><code class="docutils literal notranslate"><span class="pre">Electron.matched_photon</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.LowPtElectron.html">LowPtElectron</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.LowPtElectron.html#coffea.nanoevents.methods.nanoaod.LowPtElectron"><code class="docutils literal notranslate"><span class="pre">LowPtElectron</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.LowPtElectron.html#coffea.nanoevents.methods.nanoaod.LowPtElectron.matched_electron"><code class="docutils literal notranslate"><span class="pre">LowPtElectron.matched_electron</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.LowPtElectron.html#coffea.nanoevents.methods.nanoaod.LowPtElectron.matched_gen"><code class="docutils literal notranslate"><span class="pre">LowPtElectron.matched_gen</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.LowPtElectron.html#coffea.nanoevents.methods.nanoaod.LowPtElectron.matched_photon"><code class="docutils literal notranslate"><span class="pre">LowPtElectron.matched_photon</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Muon.html">Muon</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Muon.html#coffea.nanoevents.methods.nanoaod.Muon"><code class="docutils literal notranslate"><span class="pre">Muon</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Muon.html#coffea.nanoevents.methods.nanoaod.Muon.matched_fsrPhoton"><code class="docutils literal notranslate"><span class="pre">Muon.matched_fsrPhoton</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Muon.html#coffea.nanoevents.methods.nanoaod.Muon.matched_gen"><code class="docutils literal notranslate"><span class="pre">Muon.matched_gen</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Muon.html#coffea.nanoevents.methods.nanoaod.Muon.matched_jet"><code class="docutils literal notranslate"><span class="pre">Muon.matched_jet</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Tau.html">Tau</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Tau.html#coffea.nanoevents.methods.nanoaod.Tau"><code class="docutils literal notranslate"><span class="pre">Tau</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Tau.html#coffea.nanoevents.methods.nanoaod.Tau.matched_gen"><code class="docutils literal notranslate"><span class="pre">Tau.matched_gen</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Tau.html#coffea.nanoevents.methods.nanoaod.Tau.matched_jet"><code class="docutils literal notranslate"><span class="pre">Tau.matched_jet</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Photon.html">Photon</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Photon.html#coffea.nanoevents.methods.nanoaod.Photon"><code class="docutils literal notranslate"><span class="pre">Photon</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Photon.html#coffea.nanoevents.methods.nanoaod.Photon.FAIL"><code class="docutils literal notranslate"><span class="pre">Photon.FAIL</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Photon.html#coffea.nanoevents.methods.nanoaod.Photon.LOOSE"><code class="docutils literal notranslate"><span class="pre">Photon.LOOSE</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Photon.html#coffea.nanoevents.methods.nanoaod.Photon.MEDIUM"><code class="docutils literal notranslate"><span class="pre">Photon.MEDIUM</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Photon.html#coffea.nanoevents.methods.nanoaod.Photon.TIGHT"><code class="docutils literal notranslate"><span class="pre">Photon.TIGHT</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Photon.html#coffea.nanoevents.methods.nanoaod.Photon.charge"><code class="docutils literal notranslate"><span class="pre">Photon.charge</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Photon.html#coffea.nanoevents.methods.nanoaod.Photon.isLoose"><code class="docutils literal notranslate"><span class="pre">Photon.isLoose</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Photon.html#coffea.nanoevents.methods.nanoaod.Photon.isMedium"><code class="docutils literal notranslate"><span class="pre">Photon.isMedium</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Photon.html#coffea.nanoevents.methods.nanoaod.Photon.isTight"><code class="docutils literal notranslate"><span class="pre">Photon.isTight</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Photon.html#coffea.nanoevents.methods.nanoaod.Photon.mass"><code class="docutils literal notranslate"><span class="pre">Photon.mass</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Photon.html#coffea.nanoevents.methods.nanoaod.Photon.matched_electron"><code class="docutils literal notranslate"><span class="pre">Photon.matched_electron</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Photon.html#coffea.nanoevents.methods.nanoaod.Photon.matched_gen"><code class="docutils literal notranslate"><span class="pre">Photon.matched_gen</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Photon.html#coffea.nanoevents.methods.nanoaod.Photon.matched_jet"><code class="docutils literal notranslate"><span class="pre">Photon.matched_jet</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.FsrPhoton.html">FsrPhoton</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.FsrPhoton.html#coffea.nanoevents.methods.nanoaod.FsrPhoton"><code class="docutils literal notranslate"><span class="pre">FsrPhoton</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.FsrPhoton.html#coffea.nanoevents.methods.nanoaod.FsrPhoton.matched_muon"><code class="docutils literal notranslate"><span class="pre">FsrPhoton.matched_muon</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Jet.html">Jet</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Jet.html#coffea.nanoevents.methods.nanoaod.Jet"><code class="docutils literal notranslate"><span class="pre">Jet</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Jet.html#coffea.nanoevents.methods.nanoaod.Jet.LOOSE"><code class="docutils literal notranslate"><span class="pre">Jet.LOOSE</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Jet.html#coffea.nanoevents.methods.nanoaod.Jet.TIGHT"><code class="docutils literal notranslate"><span class="pre">Jet.TIGHT</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Jet.html#coffea.nanoevents.methods.nanoaod.Jet.TIGHTLEPVETO"><code class="docutils literal notranslate"><span class="pre">Jet.TIGHTLEPVETO</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Jet.html#coffea.nanoevents.methods.nanoaod.Jet.charge"><code class="docutils literal notranslate"><span class="pre">Jet.charge</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Jet.html#coffea.nanoevents.methods.nanoaod.Jet.constituents"><code class="docutils literal notranslate"><span class="pre">Jet.constituents</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Jet.html#coffea.nanoevents.methods.nanoaod.Jet.isLoose"><code class="docutils literal notranslate"><span class="pre">Jet.isLoose</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Jet.html#coffea.nanoevents.methods.nanoaod.Jet.isTight"><code class="docutils literal notranslate"><span class="pre">Jet.isTight</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Jet.html#coffea.nanoevents.methods.nanoaod.Jet.isTightLeptonVeto"><code class="docutils literal notranslate"><span class="pre">Jet.isTightLeptonVeto</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Jet.html#coffea.nanoevents.methods.nanoaod.Jet.matched_electrons"><code class="docutils literal notranslate"><span class="pre">Jet.matched_electrons</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Jet.html#coffea.nanoevents.methods.nanoaod.Jet.matched_gen"><code class="docutils literal notranslate"><span class="pre">Jet.matched_gen</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Jet.html#coffea.nanoevents.methods.nanoaod.Jet.matched_muons"><code class="docutils literal notranslate"><span class="pre">Jet.matched_muons</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.FatJet.html">FatJet</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.FatJet.html#coffea.nanoevents.methods.nanoaod.FatJet"><code class="docutils literal notranslate"><span class="pre">FatJet</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.FatJet.html#coffea.nanoevents.methods.nanoaod.FatJet.LOOSE"><code class="docutils literal notranslate"><span class="pre">FatJet.LOOSE</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.FatJet.html#coffea.nanoevents.methods.nanoaod.FatJet.TIGHT"><code class="docutils literal notranslate"><span class="pre">FatJet.TIGHT</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.FatJet.html#coffea.nanoevents.methods.nanoaod.FatJet.TIGHTLEPVETO"><code class="docutils literal notranslate"><span class="pre">FatJet.TIGHTLEPVETO</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.FatJet.html#coffea.nanoevents.methods.nanoaod.FatJet.charge"><code class="docutils literal notranslate"><span class="pre">FatJet.charge</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.FatJet.html#coffea.nanoevents.methods.nanoaod.FatJet.constituents"><code class="docutils literal notranslate"><span class="pre">FatJet.constituents</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.FatJet.html#coffea.nanoevents.methods.nanoaod.FatJet.isLoose"><code class="docutils literal notranslate"><span class="pre">FatJet.isLoose</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.FatJet.html#coffea.nanoevents.methods.nanoaod.FatJet.isTight"><code class="docutils literal notranslate"><span class="pre">FatJet.isTight</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.FatJet.html#coffea.nanoevents.methods.nanoaod.FatJet.isTightLeptonVeto"><code class="docutils literal notranslate"><span class="pre">FatJet.isTightLeptonVeto</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.FatJet.html#coffea.nanoevents.methods.nanoaod.FatJet.matched_gen"><code class="docutils literal notranslate"><span class="pre">FatJet.matched_gen</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.FatJet.html#coffea.nanoevents.methods.nanoaod.FatJet.subjets"><code class="docutils literal notranslate"><span class="pre">FatJet.subjets</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.MissingET.html">MissingET</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.MissingET.html#coffea.nanoevents.methods.nanoaod.MissingET"><code class="docutils literal notranslate"><span class="pre">MissingET</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.MissingET.html#coffea.nanoevents.methods.nanoaod.MissingET.r"><code class="docutils literal notranslate"><span class="pre">MissingET.r</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Vertex.html">Vertex</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Vertex.html#coffea.nanoevents.methods.nanoaod.Vertex"><code class="docutils literal notranslate"><span class="pre">Vertex</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.Vertex.html#coffea.nanoevents.methods.nanoaod.Vertex.pos"><code class="docutils literal notranslate"><span class="pre">Vertex.pos</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.SecondaryVertex.html">SecondaryVertex</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.SecondaryVertex.html#coffea.nanoevents.methods.nanoaod.SecondaryVertex"><code class="docutils literal notranslate"><span class="pre">SecondaryVertex</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.SecondaryVertex.html#coffea.nanoevents.methods.nanoaod.SecondaryVertex.p4"><code class="docutils literal notranslate"><span class="pre">SecondaryVertex.p4</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.AssociatedPFCand.html">AssociatedPFCand</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.AssociatedPFCand.html#coffea.nanoevents.methods.nanoaod.AssociatedPFCand"><code class="docutils literal notranslate"><span class="pre">AssociatedPFCand</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.AssociatedPFCand.html#coffea.nanoevents.methods.nanoaod.AssociatedPFCand.collection_map"><code class="docutils literal notranslate"><span class="pre">AssociatedPFCand.collection_map</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.AssociatedPFCand.html#coffea.nanoevents.methods.nanoaod.AssociatedPFCand.jet"><code class="docutils literal notranslate"><span class="pre">AssociatedPFCand.jet</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.AssociatedPFCand.html#coffea.nanoevents.methods.nanoaod.AssociatedPFCand.pf"><code class="docutils literal notranslate"><span class="pre">AssociatedPFCand.pf</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.AssociatedSV.html">AssociatedSV</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.AssociatedSV.html#coffea.nanoevents.methods.nanoaod.AssociatedSV"><code class="docutils literal notranslate"><span class="pre">AssociatedSV</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.AssociatedSV.html#coffea.nanoevents.methods.nanoaod.AssociatedSV.collection_map"><code class="docutils literal notranslate"><span class="pre">AssociatedSV.collection_map</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.AssociatedSV.html#coffea.nanoevents.methods.nanoaod.AssociatedSV.jet"><code class="docutils literal notranslate"><span class="pre">AssociatedSV.jet</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.AssociatedSV.html#coffea.nanoevents.methods.nanoaod.AssociatedSV.sv"><code class="docutils literal notranslate"><span class="pre">AssociatedSV.sv</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.PFCand.html">PFCand</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.nanoaod.PFCand.html#coffea.nanoevents.methods.nanoaod.PFCand"><code class="docutils literal notranslate"><span class="pre">PFCand</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.methods.nanoaod.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.nanoevents.methods.vector.html">coffea.nanoevents.methods.vector</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.methods.vector.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.TwoVector.html">TwoVector</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.TwoVector.html#coffea.nanoevents.methods.vector.TwoVector"><code class="docutils literal notranslate"><span class="pre">TwoVector</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.TwoVector.html#coffea.nanoevents.methods.vector.TwoVector.r"><code class="docutils literal notranslate"><span class="pre">TwoVector.r</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.TwoVector.html#coffea.nanoevents.methods.vector.TwoVector.r2"><code class="docutils literal notranslate"><span class="pre">TwoVector.r2</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.TwoVector.html#coffea.nanoevents.methods.vector.TwoVector.unit"><code class="docutils literal notranslate"><span class="pre">TwoVector.unit</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.TwoVector.html#coffea.nanoevents.methods.vector.TwoVector.absolute"><code class="docutils literal notranslate"><span class="pre">TwoVector.absolute()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.TwoVector.html#coffea.nanoevents.methods.vector.TwoVector.delta_phi"><code class="docutils literal notranslate"><span class="pre">TwoVector.delta_phi()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.TwoVector.html#coffea.nanoevents.methods.vector.TwoVector.divide"><code class="docutils literal notranslate"><span class="pre">TwoVector.divide()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.TwoVector.html#coffea.nanoevents.methods.vector.TwoVector.multiply"><code class="docutils literal notranslate"><span class="pre">TwoVector.multiply()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.TwoVector.html#coffea.nanoevents.methods.vector.TwoVector.negative"><code class="docutils literal notranslate"><span class="pre">TwoVector.negative()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.TwoVector.html#coffea.nanoevents.methods.vector.TwoVector.sum"><code class="docutils literal notranslate"><span class="pre">TwoVector.sum()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.PolarTwoVector.html">PolarTwoVector</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.PolarTwoVector.html#coffea.nanoevents.methods.vector.PolarTwoVector"><code class="docutils literal notranslate"><span class="pre">PolarTwoVector</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.PolarTwoVector.html#coffea.nanoevents.methods.vector.PolarTwoVector.multiply"><code class="docutils literal notranslate"><span class="pre">PolarTwoVector.multiply()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.PolarTwoVector.html#coffea.nanoevents.methods.vector.PolarTwoVector.negative"><code class="docutils literal notranslate"><span class="pre">PolarTwoVector.negative()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.ThreeVector.html">ThreeVector</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.ThreeVector.html#coffea.nanoevents.methods.vector.ThreeVector"><code class="docutils literal notranslate"><span class="pre">ThreeVector</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.ThreeVector.html#coffea.nanoevents.methods.vector.ThreeVector.r"><code class="docutils literal notranslate"><span class="pre">ThreeVector.r</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.ThreeVector.html#coffea.nanoevents.methods.vector.ThreeVector.r2"><code class="docutils literal notranslate"><span class="pre">ThreeVector.r2</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.ThreeVector.html#coffea.nanoevents.methods.vector.ThreeVector.unit"><code class="docutils literal notranslate"><span class="pre">ThreeVector.unit</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.ThreeVector.html#coffea.nanoevents.methods.vector.ThreeVector.absolute"><code class="docutils literal notranslate"><span class="pre">ThreeVector.absolute()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.ThreeVector.html#coffea.nanoevents.methods.vector.ThreeVector.delta_phi"><code class="docutils literal notranslate"><span class="pre">ThreeVector.delta_phi()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.ThreeVector.html#coffea.nanoevents.methods.vector.ThreeVector.divide"><code class="docutils literal notranslate"><span class="pre">ThreeVector.divide()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.ThreeVector.html#coffea.nanoevents.methods.vector.ThreeVector.multiply"><code class="docutils literal notranslate"><span class="pre">ThreeVector.multiply()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.ThreeVector.html#coffea.nanoevents.methods.vector.ThreeVector.negative"><code class="docutils literal notranslate"><span class="pre">ThreeVector.negative()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.ThreeVector.html#coffea.nanoevents.methods.vector.ThreeVector.sum"><code class="docutils literal notranslate"><span class="pre">ThreeVector.sum()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.SphericalThreeVector.html">SphericalThreeVector</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.SphericalThreeVector.html#coffea.nanoevents.methods.vector.SphericalThreeVector"><code class="docutils literal notranslate"><span class="pre">SphericalThreeVector</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.SphericalThreeVector.html#coffea.nanoevents.methods.vector.SphericalThreeVector.r"><code class="docutils literal notranslate"><span class="pre">SphericalThreeVector.r</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.SphericalThreeVector.html#coffea.nanoevents.methods.vector.SphericalThreeVector.multiply"><code class="docutils literal notranslate"><span class="pre">SphericalThreeVector.multiply()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.SphericalThreeVector.html#coffea.nanoevents.methods.vector.SphericalThreeVector.negative"><code class="docutils literal notranslate"><span class="pre">SphericalThreeVector.negative()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.LorentzVector.html">LorentzVector</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.LorentzVector.html#coffea.nanoevents.methods.vector.LorentzVector"><code class="docutils literal notranslate"><span class="pre">LorentzVector</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.LorentzVector.html#coffea.nanoevents.methods.vector.LorentzVector.boostvec"><code class="docutils literal notranslate"><span class="pre">LorentzVector.boostvec</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.LorentzVector.html#coffea.nanoevents.methods.vector.LorentzVector.metric_table"><code class="docutils literal notranslate"><span class="pre">LorentzVector.metric_table</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.LorentzVector.html#coffea.nanoevents.methods.vector.LorentzVector.nearest"><code class="docutils literal notranslate"><span class="pre">LorentzVector.nearest</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.LorentzVector.html#coffea.nanoevents.methods.vector.LorentzVector.pvec"><code class="docutils literal notranslate"><span class="pre">LorentzVector.pvec</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.LorentzVector.html#coffea.nanoevents.methods.vector.LorentzVector.absolute"><code class="docutils literal notranslate"><span class="pre">LorentzVector.absolute()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.LorentzVector.html#coffea.nanoevents.methods.vector.LorentzVector.delta_phi"><code class="docutils literal notranslate"><span class="pre">LorentzVector.delta_phi()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.LorentzVector.html#coffea.nanoevents.methods.vector.LorentzVector.delta_r"><code class="docutils literal notranslate"><span class="pre">LorentzVector.delta_r()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.LorentzVector.html#coffea.nanoevents.methods.vector.LorentzVector.delta_r2"><code class="docutils literal notranslate"><span class="pre">LorentzVector.delta_r2()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.LorentzVector.html#coffea.nanoevents.methods.vector.LorentzVector.divide"><code class="docutils literal notranslate"><span class="pre">LorentzVector.divide()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.LorentzVector.html#coffea.nanoevents.methods.vector.LorentzVector.multiply"><code class="docutils literal notranslate"><span class="pre">LorentzVector.multiply()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.LorentzVector.html#coffea.nanoevents.methods.vector.LorentzVector.negative"><code class="docutils literal notranslate"><span class="pre">LorentzVector.negative()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.LorentzVector.html#coffea.nanoevents.methods.vector.LorentzVector.sum"><code class="docutils literal notranslate"><span class="pre">LorentzVector.sum()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector.html">PtEtaPhiMLorentzVector</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector.html#coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector"><code class="docutils literal notranslate"><span class="pre">PtEtaPhiMLorentzVector</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector.html#coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector.divide"><code class="docutils literal notranslate"><span class="pre">PtEtaPhiMLorentzVector.divide()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector.html#coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector.multiply"><code class="docutils literal notranslate"><span class="pre">PtEtaPhiMLorentzVector.multiply()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector.html#coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector.negative"><code class="docutils literal notranslate"><span class="pre">PtEtaPhiMLorentzVector.negative()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.PtEtaPhiELorentzVector.html">PtEtaPhiELorentzVector</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.PtEtaPhiELorentzVector.html#coffea.nanoevents.methods.vector.PtEtaPhiELorentzVector"><code class="docutils literal notranslate"><span class="pre">PtEtaPhiELorentzVector</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.PtEtaPhiELorentzVector.html#coffea.nanoevents.methods.vector.PtEtaPhiELorentzVector.divide"><code class="docutils literal notranslate"><span class="pre">PtEtaPhiELorentzVector.divide()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.PtEtaPhiELorentzVector.html#coffea.nanoevents.methods.vector.PtEtaPhiELorentzVector.multiply"><code class="docutils literal notranslate"><span class="pre">PtEtaPhiELorentzVector.multiply()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.nanoevents.methods.vector.PtEtaPhiELorentzVector.html#coffea.nanoevents.methods.vector.PtEtaPhiELorentzVector.negative"><code class="docutils literal notranslate"><span class="pre">PtEtaPhiELorentzVector.negative()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.nanoevents.methods.vector.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.processor.html">coffea.processor</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.processor.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.processor.ProcessorABC.html">ProcessorABC</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.processor.ProcessorABC.html#coffea.processor.ProcessorABC"><code class="docutils literal notranslate"><span class="pre">ProcessorABC</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.processor.ProcessorABC.html#coffea.processor.ProcessorABC.postprocess"><code class="docutils literal notranslate"><span class="pre">ProcessorABC.postprocess()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.processor.ProcessorABC.html#coffea.processor.ProcessorABC.process"><code class="docutils literal notranslate"><span class="pre">ProcessorABC.process()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.processor.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules/coffea.util.html">coffea.util</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.util.html#functions">Functions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.util.awkward_rewrap.html">awkward_rewrap</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.util.awkward_rewrap.html#coffea.util.awkward_rewrap"><code class="docutils literal notranslate"><span class="pre">awkward_rewrap()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.util.compress_form.html">compress_form</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.util.compress_form.html#coffea.util.compress_form"><code class="docutils literal notranslate"><span class="pre">compress_form()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.util.decompress_form.html">decompress_form</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.util.decompress_form.html#coffea.util.decompress_form"><code class="docutils literal notranslate"><span class="pre">decompress_form()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.util.deprecate.html">deprecate</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.util.deprecate.html#coffea.util.deprecate"><code class="docutils literal notranslate"><span class="pre">deprecate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.util.load.html">load</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.util.load.html#coffea.util.load"><code class="docutils literal notranslate"><span class="pre">load()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.util.rewrap_recordarray.html">rewrap_recordarray</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.util.rewrap_recordarray.html#coffea.util.rewrap_recordarray"><code class="docutils literal notranslate"><span class="pre">rewrap_recordarray()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.util.rich_bar.html">rich_bar</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.util.rich_bar.html#coffea.util.rich_bar"><code class="docutils literal notranslate"><span class="pre">rich_bar()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.util.save.html">save</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.util.save.html#coffea.util.save"><code class="docutils literal notranslate"><span class="pre">save()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.util.html#classes">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/coffea.util.SpeedColumn.html">SpeedColumn</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="api/coffea.util.SpeedColumn.html#coffea.util.SpeedColumn"><code class="docutils literal notranslate"><span class="pre">SpeedColumn</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="api/coffea.util.SpeedColumn.html#coffea.util.SpeedColumn.render"><code class="docutils literal notranslate"><span class="pre">SpeedColumn.render()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modules/coffea.util.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation.html" class="btn btn-neutral float-right" title="Installing coffea" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Fermi National Accelerator Laboratory.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
