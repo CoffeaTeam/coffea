@@ -4,6 +4,7 @@ import numba
 import numpy
 from dask_awkward.lib.core import dask_property
 
+from coffea.nanoevents import transforms
 from coffea.nanoevents.methods import base, vector
 
 behavior = {}
@@ -128,7 +129,7 @@ def index_range(begin, end):
             end
         )  # force touching of the necessary data
         return awkward.Array(
-            awkward.Array([[[]]]).layout.to_typetracer(forget_length=True)
+            awkward.Array([[[0]]]).layout.to_typetracer(forget_length=True)
         )
 
     return index_range_numba_wrap(begin_end, awkward.ArrayBuilder()).snapshot()
@@ -188,7 +189,23 @@ MomentumCandidateArray.MomentumClass = MomentumCandidateArray  # noqa: F821
 @awkward.mixin_class(behavior)
 class MCParticle(MomentumCandidate, base.NanoCollection):
     """Generated Monte Carlo particles"""
-
+    
+    @property
+    def alt_get_daughters_index(self):
+        """
+        Obtain the indexes of the daughters of each and every MCParticle
+        - The output is a doubly nested awkward array
+        - Needs the presence of Particleidx1 collection
+        - The Particleidx1.index contains info about the daughters
+        """
+        ranges = index_range(self.daughters.begin, self.daughters.end)
+        
+        return awkward.values_astype(
+            map_index_to_array(self._events().Particleidx1.index, ranges, axis=2),
+            "int64",
+        )
+    
+    
     # Daughters
     @dask_property
     def get_daughters_index(self):
@@ -203,26 +220,6 @@ class MCParticle(MomentumCandidate, base.NanoCollection):
             map_index_to_array(self._events().Particleidx1.index, ranges, axis=2),
             "int64",
         )
-
-    @get_daughters_index.dask
-    def get_daughters_index(self, dask_array):
-        """
-        Obtain the indexes of the daughters of each and every MCParticle
-        - The output is a doubly nested awkward array
-        - Needs the presence of Particleidx1 collection
-        - The Particleidx1.index contains info about the daughters
-
-        Note: Seems like all the functions need to mapped manually
-        """
-        ranges = dask_awkward.map_partitions(
-            index_range, dask_array.daughters.begin, dask_array.daughters.end
-        )
-        # print(dask_awkward.num(dask_array, axis=0).compute())
-        # print(dask_awkward.num(dask_array._events().Particleidx1.index, axis=0).compute())
-        daughters = dask_awkward.map_partitions(
-            map_index_to_array, dask_array._events().Particleidx1.index, ranges, axis=2
-        )
-        return awkward.values_astype(daughters, "int32")
 
     @dask_property
     def get_daughters(self):
@@ -254,6 +251,8 @@ class MCParticle(MomentumCandidate, base.NanoCollection):
         - The Particleidx0.index contains info about the parents
         """
         ranges = index_range(self.parents.begin, self.parents.end)
+        # rangesG = index_range(self.parents.beginG, self.parents.endG)
+        # Explore how to map the global index to produces doubly nested output
         return awkward.values_astype(
             map_index_to_array(self._events().Particleidx0.index, ranges, axis=2),
             "int64",
@@ -314,20 +313,43 @@ class ReconstructedParticle(MomentumCandidate, base.NanoCollection):
     def match_collection(self, idx):
         """Returns matched particles"""
         return self[idx.index]
+    
+    @dask_property
+    def match_muons(self):
+        """Returns matched muons"""
+        m = self._events().ReconstructedParticles._apply_global_index(self.Muonidx0_indexGlobal)
+        return awkward.drop_none(m, behavior = self.behavior)
+        
+    @match_muons.dask
+    def match_muons(self, dask_array):
+        """Returns matched muons"""
+        m = dask_array._events().ReconstructedParticles._apply_global_index(dask_array.Muonidx0_indexGlobal)
+        return awkward.drop_none(m, behavior = self.behavior)
+        
+    @dask_property
+    def match_electrons(self):
+        """Returns matched electrons"""
+        e = self._events().ReconstructedParticles._apply_global_index(self.Electronidx0_indexGlobal)
+        return awkward.drop_none(e, behavior = self.behavior)
+        
+    @match_electrons.dask
+    def match_electrons(self, dask_array):
+        """Returns matched electrons"""
+        e = dask_array._events().ReconstructedParticles._apply_global_index(dask_array.Electronidx0_indexGlobal)
+        return awkward.drop_none(e, behavior = self.behavior)
 
     @dask_property
-    def matched_gen(self):
-        index = self._events().MCRecoAssociations.reco_mc_index[:, :, 1]
-        index = index._apply_global_index(self.E)
-        return self._events().Particle._apply_global_index(index)
+    def match_gen(self):
+        # The indices may have a size greater or smaller than the Particle collection, in axis=1
+        prepared = self._events().Particle[self._events().MCRecoAssociations.mc.index]
+        return prepared._apply_global_index(self.MCRecoAssociationsidx0_indexGlobal)
 
-    @matched_gen.dask
-    def matched_gen(self, dask_array):
-        index = dask_array._events().MCRecoAssociations.reco_mc_index[:, :, 1]
-        index = index._apply_global_index(self.E)
-        return dask_array._events().Particle._apply_global_index(index)
-
-
+    @match_gen.dask
+    def match_gen(self, dask_array):
+        # The indices may have a size greater or smaller than the Particle collection, in axis=1
+        prepared = dask_array._events().Particle[dask_array._events().MCRecoAssociations.mc.index]
+        return prepared._apply_global_index(dask_array.MCRecoAssociationsidx0_indexGlobal)
+    
 _set_repr_name("ReconstructedParticle")
 behavior.update(
     awkward._util.copy_behaviors(MomentumCandidate, ReconstructedParticle, behavior)
