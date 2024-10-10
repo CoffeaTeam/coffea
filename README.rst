@@ -1,3 +1,9 @@
+.. image:: docs/source/logo/coffea_logo.svg
+    :align: center
+    :width: 250px
+    :alt: logo
+
+
 coffea - Columnar Object Framework For Effective Analysis
 =========================================================
 
