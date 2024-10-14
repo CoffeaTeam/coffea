@@ -1,6 +1,4 @@
 import awkward
-import dask_awkward
-import numba
 import numpy
 from dask_awkward.lib.core import dask_property
 
@@ -23,114 +21,6 @@ def _set_repr_name(classname):
         return classname
 
     behavior[classname].__repr__ = namefcn
-
-
-def map_index_to_array(array, index, axis=1):
-    """
-    DESCRIPTION: Creates a slice of input array according to the input index.
-    INPUTS: array (Singly nested)
-            index (Singly or Doubly nested)
-            axis (By default 1, use axis = 2 if index is doubly nested )
-    EXAMPLE:
-            a = awkward.Array([
-                [44,33,23,22],
-                [932,24,456,78],
-                [22,345,78,90,98,24]
-            ])
-
-            a_index = awkward.Array([
-                [0,1,2],
-                [0,1],
-                []
-            ])
-
-            a2_index = awkward.Array([
-                [[0],[0,1],[2]],
-                [[0,1]],
-                []
-            ])
-            >> map_index_to_array(a, a_index)
-                [[44, 33, 23],
-                 [932, 24],
-                 []]
-                ---------------------
-                type: 3 * var * int64
-            >> map_index_to_array(a, a2_index, axis=2)
-                [[[44], [44, 33], [23]],
-                 [[932, 24]],
-                 []]
-                ---------------------------
-                type: 3 * var * var * int64
-
-    """
-    if axis == 1:
-        return array[index]
-    elif axis == 2:
-        axis2_counts_array = awkward.num(index, axis=axis)
-        flat_axis2_counts_array = awkward.flatten(axis2_counts_array, axis=1)
-        flat_index = awkward.flatten(index, axis=axis)
-        trimmed_flat_array = array[flat_index]
-        trimmed_array = awkward.unflatten(
-            trimmed_flat_array, flat_axis2_counts_array, axis=1
-        )
-        return trimmed_array
-    else:
-        raise AttributeError("Only axis = 1 or axis = 2 supported at the moment.")
-
-
-# Function required to create a range array from a begin and end array
-@numba.njit
-def index_range_numba_wrap(begin_end, builder):
-    for ev in begin_end:
-        builder.begin_list()
-        for j in ev:
-            builder.begin_list()
-            for k in range(j[0], j[1]):
-                builder.integer(k)
-            builder.end_list()
-        builder.end_list()
-    return builder
-
-
-def index_range(begin, end):
-    """
-    Function required to create a range array from a begin and end array
-    Example: If,
-            begin = [
-                        [0, 2, 4, 3, ...],
-                        [1, 0, 4, 6, ...]
-                        ...
-                    ]
-            end = [
-                        [1, 2, 5, 5, ...],
-                        [3, 1, 7, 6, ...]
-                        ...
-                    ]
-            then, output is,
-            output = [
-                        [[0], [], [4], [3,4], ...],
-                        [[1,2], [0], [4,5,6], [], ...]
-                        ...
-                    ]
-    """
-    begin_end = awkward.concatenate(
-        (begin[:, :, numpy.newaxis], end[:, :, numpy.newaxis]), axis=2
-    )
-    if awkward.backend(begin) == "typetracer" or awkward.backend(end) == "typetracer":
-        # To make the function dask compatible
-        # here we fake the output of numba wrapper function since
-        # operating on length-zero data returns the wrong layout!
-        # We need the axis 2, therefore, we should return the typetracer layout of [[[]]]
-        awkward.typetracer.length_zero_if_typetracer(
-            begin
-        )  # force touching of the necessary data
-        awkward.typetracer.length_zero_if_typetracer(
-            end
-        )  # force touching of the necessary data
-        return awkward.Array(
-            awkward.Array([[[]]]).layout.to_typetracer(forget_length=True)
-        )
-    return index_range_numba_wrap(begin_end, awkward.ArrayBuilder()).snapshot()
 
 
 @awkward.mixin_class(behavior)
@@ -192,34 +82,22 @@ class MCParticle(MomentumCandidate, base.NanoCollection):
     @dask_property
     def get_daughters_index(self):
         """
-        Obtain the indexes of the daughters of each and every MCParticle
+        Obtain the global indices of the daughters of each and every MCParticle
         - The output is a doubly nested awkward array
         - Needs the presence of Particleidx1 collection
         - The Particleidx1.index contains info about the daughters
         """
-        ranges = index_range(self.daughters.begin, self.daughters.end)
-        return awkward.values_astype(
-            map_index_to_array(self._events().Particleidx1.index, ranges, axis=2),
-            "int64",
-        )
+        return self.daughters.Particleidx1_rangesG
 
     @get_daughters_index.dask
     def get_daughters_index(self, dask_array):
         """
-        Obtain the indexes of the daughters of each and every MCParticle
+        Obtain the global indices of the daughters of each and every MCParticle
         - The output is a doubly nested awkward array
         - Needs the presence of Particleidx1 collection
         - The Particleidx1.index contains info about the daughters
-
-        Note: Seems like all the functions need to mapped manually
         """
-        ranges = dask_awkward.map_partitions(
-            index_range, dask_array.daughters.begin, dask_array.daughters.end
-        )
-        daughters = dask_awkward.map_partitions(
-            map_index_to_array, dask_array._events().Particleidx1.index, ranges, axis=2
-        )
-        return awkward.values_astype(daughters, "int32")
+        return dask_array.daughters.Particleidx1_rangesG
 
     @dask_property
     def get_daughters(self):
@@ -229,7 +107,7 @@ class MCParticle(MomentumCandidate, base.NanoCollection):
         - Needs the presence of Particleidx1 collection
         - The Particleidx1.index contains info about the daughters
         """
-        return map_index_to_array(self, self.get_daughters_index, axis=2)
+        return self._events().Particle._apply_global_index(self.get_daughters_index)
 
     @get_daughters.dask
     def get_daughters(self, dask_array):
@@ -239,40 +117,30 @@ class MCParticle(MomentumCandidate, base.NanoCollection):
         - Needs the presence of Particleidx1 collection
         - The Particleidx1.index contains info about the daughters
         """
-        return map_index_to_array(dask_array, dask_array.get_daughters_index, axis=2)
+        return dask_array._events().Particle._apply_global_index(
+            dask_array.get_daughters_index
+        )
 
     # Parents
     @dask_property
     def get_parents_index(self):
         """
-        Obtain the indexes of the parents of each and every MCParticle
+        Obtain the global indices of the parents of each and every MCParticle
         - The output is a doubly nested awkward array
         - Needs the presence of Particleidx0 collection
         - The Particleidx0.index contains info about the parents
         """
-        ranges = index_range(self.parents.begin, self.parents.end)
-        return awkward.values_astype(
-            map_index_to_array(self._events().Particleidx0.index, ranges, axis=2),
-            "int64",
-        )
+        return self.parents.Particleidx0_rangesG
 
     @get_parents_index.dask
     def get_parents_index(self, dask_array):
         """
-        Obtain the indexes of the parents of each and every MCParticle
+        Obtain the indices of the parents of each and every MCParticle
         - The output is a doubly nested awkward array
         - Needs the presence of Particleidx0 collection
         - The Particleidx0.index contains info about the parents
-
-        Note: Seems like all the functions need to mapped manually
         """
-        ranges = dask_awkward.map_partitions(
-            index_range, dask_array.parents.begin, dask_array.parents.end
-        )
-        daughters = dask_awkward.map_partitions(
-            map_index_to_array, dask_array._events().Particleidx0.index, ranges, axis=2
-        )
-        return awkward.values_astype(daughters, "int32")
+        return dask_array.parents.Particleidx0_rangesG
 
     @dask_property
     def get_parents(self):
@@ -282,7 +150,7 @@ class MCParticle(MomentumCandidate, base.NanoCollection):
         - Needs the presence of Particleidx0 collection
         - The Particleidx0.index contains info about the parents
         """
-        return map_index_to_array(self, self.get_parents_index, axis=2)
+        return self._events().Particle._apply_global_index(self.get_parents_index)
 
     @get_parents.dask
     def get_parents(self, dask_array):
@@ -292,7 +160,9 @@ class MCParticle(MomentumCandidate, base.NanoCollection):
         - Needs the presence of Particleidx0 collection
         - The Particleidx0.index contains info about the parents
         """
-        return map_index_to_array(dask_array, dask_array.get_parents_index, axis=2)
+        return dask_array._events().Particle._apply_global_index(
+            dask_array.get_parents_index
+        )
 
 
 _set_repr_name("MCParticle")
@@ -309,20 +179,56 @@ class ReconstructedParticle(MomentumCandidate, base.NanoCollection):
     """Reconstructed particle"""
 
     def match_collection(self, idx):
-        """Returns matched particles"""
+        """Returns matched particles; pass on an ObjectID array."""
         return self[idx.index]
 
     @dask_property
-    def matched_gen(self):
-        sel = awkward.broadcast_arrays(True, self)[0]
-        index = self._events().MCRecoAssociations.reco_mc_index[:, :, 1]
-        return self._events().Particle[index[sel]]
+    def match_muons(self):
+        """Returns matched muons; drops none values"""
+        m = self._events().ReconstructedParticles._apply_global_index(
+            self.Muonidx0_indexGlobal
+        )
+        return awkward.drop_none(m, behavior=self.behavior)
 
-    @matched_gen.dask
-    def matched_gen(self, dask_array):
-        sel = awkward.broadcast_arrays(True, dask_array)[0]
-        index = dask_array._events().MCRecoAssociations.reco_mc_index[:, :, 1]
-        return dask_array._events().Particle[index[sel]]
+    @match_muons.dask
+    def match_muons(self, dask_array):
+        """Returns matched muons; drops none values"""
+        m = dask_array._events().ReconstructedParticles._apply_global_index(
+            dask_array.Muonidx0_indexGlobal
+        )
+        return awkward.drop_none(m, behavior=self.behavior)
+
+    @dask_property
+    def match_electrons(self):
+        """Returns matched electrons; drops none values"""
+        e = self._events().ReconstructedParticles._apply_global_index(
+            self.Electronidx0_indexGlobal
+        )
+        return awkward.drop_none(e, behavior=self.behavior)
+
+    @match_electrons.dask
+    def match_electrons(self, dask_array):
+        """Returns matched electrons; drops none values"""
+        e = dask_array._events().ReconstructedParticles._apply_global_index(
+            dask_array.Electronidx0_indexGlobal
+        )
+        return awkward.drop_none(e, behavior=self.behavior)
+
+    @dask_property
+    def match_gen(self):
+        """Returns the Gen level (MC) particle corresponding to the ReconstructedParticle"""
+        prepared = self._events().Particle[self._events().MCRecoAssociations.mc.index]
+        return prepared._apply_global_index(self.MCRecoAssociationsidx0_indexGlobal)
+
+    @match_gen.dask
+    def match_gen(self, dask_array):
+        """Returns the Gen level (MC) particle corresponding to the ReconstructedParticle"""
+        prepared = dask_array._events().Particle[
+            dask_array._events().MCRecoAssociations.mc.index
+        ]
+        return prepared._apply_global_index(
+            dask_array.MCRecoAssociationsidx0_indexGlobal
+        )
 
 
 _set_repr_name("ReconstructedParticle")

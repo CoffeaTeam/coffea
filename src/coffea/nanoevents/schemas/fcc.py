@@ -1,8 +1,10 @@
 import copy
 import re
 
+from coffea.nanoevents import transforms
 from coffea.nanoevents.methods import vector
 from coffea.nanoevents.schemas.base import BaseSchema, zip_forms
+from coffea.nanoevents.util import concat
 
 # Collection Regex #
 # Any branch name with a forward slash '/'
@@ -116,6 +118,16 @@ class FCCSchema(BaseSchema):
         ],
         "spin": ["spin.x", "spin.y", "spin.z"],
     }
+
+    # Cross-References : format: {<index branch name> : <target collection name>}
+    all_cross_references = {
+        "MCRecoAssociations#1.index": "Particle",  # MC to Reco connection
+        "MCRecoAssociations#0.index": "ReconstructedParticles",  # Reco to MC connection
+        "Muon#0.index": "ReconstructedParticles",  # Matched Muons
+        "Electron#0.index": "ReconstructedParticles",  # Matched Electrons
+    }
+
+    mc_relations = {"parents": "Particle#0.index", "daughters": "Particle#1.index"}
 
     def __init__(self, base_form, version="latest"):
         super().__init__(base_form)
@@ -372,7 +384,7 @@ class FCCSchema(BaseSchema):
     def _create_subcollections(self, branch_forms, all_collections):
         """
         Creates 3-vectors,
-        zip _begin and _end branches,
+        zip _begin and _end branches, and creates begin_end_counts and global indexes for mc parents or daughters
         zip colorFlow.a and colorFlow.a branches
         (Does not zip the momentum fields that are required for
         the overall LorentzVector behavior of a collection)
@@ -389,18 +401,61 @@ class FCCSchema(BaseSchema):
         # Zip _begin and _end branches
         # Example: 'Jet/Jet.clusters_begin', 'Jet/Jet.clusters_end' --> 'Jet/Jet.clusters'
         begin_end_collection = set({})
-        for name in field_names:
-            if name.endswith("_begin"):
-                begin_end_collection.add(name.split("_begin")[0])
-            elif name.endswith("_end"):
-                begin_end_collection.add(name.split("_end")[0])
+        for fullname in field_names:
+            if fullname.endswith("_begin"):
+                begin_end_collection.add(fullname.split("_begin")[0])
+            elif fullname.endswith("_end"):
+                begin_end_collection.add(fullname.split("_end")[0])
         for name in begin_end_collection:
             begin_end_content = {
                 k[len(name) + 1 :]: branch_forms.pop(k)
                 for k in field_names
                 if k.startswith(name)
             }
-            branch_forms[name] = zip_forms(sort_dict(begin_end_content), name)
+            # Get the offset for this collection
+            offset_form = {
+                "class": "NumpyArray",
+                "itemsize": 8,
+                "format": "i",
+                "primitive": "int64",
+                "form_key": concat(
+                    begin_end_content[list(begin_end_content.keys())[0]]["form_key"],
+                    "!offsets",
+                ),
+            }
+
+            # Pick up begin and end branch
+            begin = [
+                begin_end_content[k]
+                for k in begin_end_content.keys()
+                if k.endswith("begin")
+            ]
+            end = [
+                begin_end_content[k]
+                for k in begin_end_content.keys()
+                if k.endswith("end")
+            ]
+
+            # Create counts from begin and end by subtracting them
+            counts_content = {
+                "begin_end_counts": transforms.begin_and_end_to_counts_form(
+                    *begin, *end
+                )
+            }
+
+            # Generate Parents and Daughters global indexers
+            ranges_content = {}
+            for key, target in self.mc_relations.items():
+                col_name = target.split(".")[0]
+                if name.endswith(key):
+                    range_name = f"{col_name.replace("#","idx")}_ranges"
+                    ranges_content[range_name + "G"] = transforms.index_range_form(
+                        *begin, *end, branch_forms[f"{col_name}/{target}"]
+                    )
+
+            to_zip = {**begin_end_content, **counts_content, **ranges_content}
+
+            branch_forms[name] = zip_forms(sort_dict(to_zip), name, offsets=offset_form)
 
         # Zip colorFlow.a and colorFlow.b branches
         # Example: 'Particle/Particle.colorFlow.a', 'Particle/Particle.colorFlow.b' --> 'Particle/Particle.colorFlow'
@@ -435,6 +490,50 @@ class FCCSchema(BaseSchema):
                     )
         return branch_forms
 
+    def _global_indexers(self, branch_forms, all_collections):
+        """
+        Create global indexers from cross-references
+        (except parent and daughter cross-references which are dealt in subcollection level)
+        """
+        for cross_ref, target in self.all_cross_references.items():
+            collection_name, index_name = cross_ref.split(".")
+
+            # pick up the available fields from target collection to get an offset from
+            available_fields = [
+                name
+                for name in branch_forms.keys()
+                if name.startswith(f"{target}/{target}.")
+            ]
+
+            # By default the idxs have different shape at axis=1 in comparison to target
+            # So one needs to fill the empty spaces with -1 which could be removed later
+            compatible_index = transforms.grow_local_index_to_target_shape_form(
+                branch_forms[f"{collection_name}/{collection_name}.{index_name}"],
+                branch_forms[available_fields[0]],
+            )
+
+            # Pick up the offset from an available field
+            offset_form = {
+                "class": "NumpyArray",
+                "itemsize": 8,
+                "format": "i",
+                "primitive": "int64",
+                "form_key": concat(
+                    *[
+                        branch_forms[available_fields[0]]["form_key"],
+                        "!offsets",
+                    ]
+                ),
+            }
+
+            # Convert local indices to global indices
+            replaced_name = collection_name.replace("#", "idx")
+            branch_forms[f"{target}/{target}.{replaced_name}_{index_name}Global"] = (
+                transforms.local2global_form(compatible_index, offset_form)
+            )
+
+        return branch_forms
+
     def _build_collections(self, field_names, input_contents):
         """
         Builds all the collections with the necessary behaviors defined in the mixins dictionary
@@ -454,6 +553,9 @@ class FCCSchema(BaseSchema):
         # Create subcollections before creating collections
         # Example: Jet.referencePoint.x, Jet.referencePoint.y, Jet.referencePoint.z --> Jet.referencePoint
         branch_forms = self._create_subcollections(branch_forms, all_collections)
+
+        # Create Global Indexers for all cross references
+        branch_forms = self._global_indexers(branch_forms, all_collections)
 
         # Process the Hash-Tagged '#' branches
         output, branch_forms = self._idx_collections(
@@ -500,6 +602,8 @@ class FCC:
 
     Note: For now, only one variant is available, called the latest version, that points
           to the fcc.FCCSchema class. This schema has been made keeping the Spring2021 pre-generated samples.
+          Its also tested with Winter2023 samples with the uproot_options={"filter_name": lambda x : "PARAMETERS" not in x}
+          parameter when loading the fileset. This removes the "PARAMETERS" branch that is unreadable in uproot afaik.
           More Schema variants could be added later.
     """
 
