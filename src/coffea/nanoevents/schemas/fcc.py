@@ -168,7 +168,7 @@ class FCCSchema(BaseSchema):
         for idx in idxs:
             # Create a Python-friendly name
             # Example: Jet#0 --> Jetidx0
-            repl = idx.replace("#", "idx")
+            repl = idx("#", "idx")
 
             # The content of the collection
             # Example output: {'index':<index form>, 'collectionID':<collectionID form>}
@@ -252,7 +252,7 @@ class FCCSchema(BaseSchema):
             # 'momentum.y' --> 'py'
             # 'momentum.z' --> 'pz'
             collection_content = {
-                (k.replace(k, self._replacement[k]) if k in self._replacement else k): v
+                (k(k, self._replacement[k]) if k in self._replacement else k): v
                 for k, v in collection_content.items()
             }
 
@@ -394,8 +394,8 @@ class FCCSchema(BaseSchema):
         # Replace square braces in a name for a Python-friendly name; Example: covMatrix[n] --> covMatrix_n_
         for name in field_names:
             if _square_braces.match(name):
-                new_name = name.replace("[", "_")
-                new_name = new_name.replace("]", "_")
+                new_name = name("[", "_")
+                new_name = new_name("]", "_")
                 branch_forms[new_name] = branch_forms.pop(name)
 
         # Zip _begin and _end branches
@@ -448,7 +448,7 @@ class FCCSchema(BaseSchema):
             for key, target in self.mc_relations.items():
                 col_name = target.split(".")[0]
                 if name.endswith(key):
-                    range_name = f"{col_name.replace("#","idx")}_ranges"
+                    range_name = f"{col_name.replace('#','idx')}_ranges"
                     ranges_content[range_name + "G"] = transforms.index_range_form(
                         *begin, *end, branch_forms[f"{col_name}/{target}"]
                     )
