@@ -126,6 +126,10 @@ class GenParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
 
     @dask_property
     def children(self):
+        """
+        Accessor to direct children of this particle (not grandchildren). Includes particles
+        with the same PDG ID as this particle.
+        """
         return self._events().GenPart._apply_global_index(self.childrenIdxG)
 
     @children.dask
@@ -134,6 +138,12 @@ class GenParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
 
     @dask_property
     def distinctChildren(self):
+        """
+        Accessor to direct children of this particle which do not have the same PDG ID as
+        this particle. Note that this implies the summed four-momentum of the distinctChildren
+        may not sum to the four-momentum of this particle (for example, if this particle
+        radiates another particle type). If that behavior is desired, see `distinctChildrenDeep`.
+        """
         return self._events().GenPart._apply_global_index(self.distinctChildrenIdxG)
 
     @distinctChildren.dask
@@ -144,7 +154,12 @@ class GenParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
 
     @dask_property
     def distinctChildrenDeep(self):
-        """Accessor to distinct child particles with different PDG id, or last ones in the chain"""
+        """
+        Accessor to distinct child particles with different PDG id, or last ones in the chain.
+        Note that this does not always find the correct children, since this sometimes depends
+        on the MC generator! See `here <https://github.com/CoffeaTeam/coffea/pull/698>` for more
+        information.
+        """
         warnings.warn(
             "distinctChildrenDeep may not give correct answers for all generators!"
         )
