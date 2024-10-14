@@ -98,7 +98,7 @@ def apply_to_fileset(
 ) -> dict[str, DaskOutputType] | tuple[dict[str, DaskOutputType], dask_awkward.Array]:
     """
     Apply the supplied function or processor to the supplied fileset (set of datasets).
-    
+
     Parameters
     ----------
         data_manipulation : ProcessorABC or GenericHEPAnalysis

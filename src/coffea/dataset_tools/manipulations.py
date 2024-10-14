@@ -196,7 +196,7 @@ def get_failed_steps_for_fileset(
 ):
     """
     Modify an input dataset to only contain the files and row-ranges for *failed* processing jobs as specified in the supplied report.
-    
+
     Parameters
     ----------
         fileset: FilesetSpec
