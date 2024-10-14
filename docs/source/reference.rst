@@ -28,3 +28,8 @@ and/or heavy dependencies.  Below lists the packages available in the ``coffea``
     coffea.nanoevents.methods.vector
     coffea.processor
     coffea.util
+
+.. automodule:: coffea.dataset_tools.dataset_query
+    :members:
+.. automodule:: coffea.dataset_tools.rucio_utils
+    :members:
