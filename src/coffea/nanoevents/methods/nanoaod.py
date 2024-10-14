@@ -705,6 +705,7 @@ class MissingET(vector.PolarTwoVector, base.NanoCollection, base.Systematic):
 
     @property
     def r(self):
+        """Distance from origin in XY plane"""
         return self["pt"]
 
 
