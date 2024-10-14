@@ -214,11 +214,9 @@ class NanoAODSchema(BaseSchema):
         # Create offsets virtual arrays
         for name in collections:
             if "n" + name in branch_forms:
-                if name == 'Electron': print(branch_forms[name+'_phi'],"\n",branch_forms["n" + name])
                 branch_forms["o" + name] = transforms.counts2offsets_form(
                     branch_forms["n" + name]
                 )
-                if name == 'Electron': print(branch_forms["o" + name])
 
         # Check the presence of the event_ids
         missing_event_ids = [
@@ -261,7 +259,6 @@ class NanoAODSchema(BaseSchema):
             branch_forms[indexer + "G"] = transforms.local2global_form(
                 branch_forms[indexer], branch_forms["o" + target]
             )
-            if indexer=="Electron_jetIdx" : print(branch_forms[indexer + "G"])
 
         # Create nested indexer from Idx1, Idx2, ... arrays
         for name, indexers in self.nested_items.items():

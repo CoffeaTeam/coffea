@@ -141,6 +141,62 @@ def local2global(stack):
         raise RuntimeError
     stack.append(out)
 
+
+def local2nestedglobal_form(index, target):
+    if not index["class"].startswith("ListOffset"):
+        raise RuntimeError
+    if not target["class"].startswith("ListOffset"):
+        raise RuntimeError
+    form = copy.deepcopy(index)
+    form["content"]["form_key"] = concat(
+        index["form_key"],target["form_key"], "!local2nestedglobal", "!content"
+    )
+    form["form_key"] = concat(
+        index["form_key"], target["form_key"], "!local2nestedglobal"
+    )
+    form["content"]["itemsize"] = 8
+    form["content"]["primitive"] = "int64"
+    return form
+
+
+def local2nestedglobal(stack):
+    '''
+    It is assumed that 'index' is already flattened across axis = 1
+    and
+    target is an example target branch
+    '''
+    target = stack.pop()
+    index = stack.pop()
+
+    counts1 = awkward.num(target, axis=1)
+    counts2 = awkward.num(index, axis=1) # This is, in reality, flattened counts for axis = 2
+    
+    print(target)
+    print(len(target))
+    print(index)
+    print(len(index))
+    print(counts1)
+    print(len(counts1))
+    print(counts2)
+    print(len(counts2))
+    
+    # One needs to unflatten index at axis = 1 and then flatten index at axis = 2
+    index = awkward.unflatten(index, counts1, axis=0)
+    print(index)
+    print(len(index))
+    index = awkward.flatten(index, axis=2)
+    
+    stack2 = [index, target.layout.offsets.data]
+    local2global(stack2)
+    index = stack2.pop()
+
+    # Unflatten across axis = 2
+    out = awkward.unflatten(index, counts2, axis=0)
+
+    # The output is nested and is already flattened across axis = 1
+    stack.append(out)
+
+
 @numba.njit
 def _grow_local_index_to_target_shape_kernel(index, all_index, builder):
     for i in range(len(all_index)):
@@ -155,6 +211,7 @@ def _grow_local_index_to_target_shape_kernel(index, all_index, builder):
         builder.end_list()
 
     return builder
+
 
 def grow_local_index_to_target_shape_form(index, target):
     if not index["class"].startswith("ListOffset"):
@@ -182,75 +239,100 @@ def grow_local_index_to_target_shape(stack):
     target = stack.pop()
     index = stack.pop()
     all_index = awkward.local_index(target, axis = 1)
-    
+
     useable_index = awkward.Array(_grow_local_index_to_target_shape_kernel(
         awkward.Array(index),
         awkward.Array(all_index),
         awkward.ArrayBuilder()
     ).snapshot())
-    
+
     stack.append(useable_index)
 
-@numba.njit
-def _index_range_kernel(begin_end, builder):
-    for ev in begin_end:
-        builder.begin_list()
-        for j in ev:
-            builder.begin_list()
-            for k in range(j[0], j[1]):
-                builder.integer(k)
-            builder.end_list()
-        builder.end_list()
-    return builder
-
-def index_range_form(begin,end):
+def begin_and_end_to_counts_form(begin, end):
     if not begin["class"].startswith("ListOffset"):
         raise RuntimeError
     if not end["class"].startswith("ListOffset"):
         raise RuntimeError
+
+    form = copy.deepcopy(begin)
+
+    key = concat(begin["form_key"], end["form_key"], "!begin_and_end_to_counts")
+    form["content"]["form_key"] = concat(key, "!content")
+    return form
+
+
+def begin_and_end_to_counts(stack):
+    end = stack.pop()
+    begin = stack.pop()
+
+    stack.append(end - begin)
+
+@numba.njit
+def _index_range_kernel(begin_end, target, builder):
+    for ev in range(len(begin_end)):
+        builder.begin_list()
+        for j in range(len(begin_end[ev])):
+            builder.begin_list()
+            for k in range(begin_end[ev][j][0], begin_end[ev][j][1]):
+                # builder.integer(k)
+                builder.integer(target[ev][k])
+            builder.end_list()
+        builder.end_list()
+    return builder
+
+
+def index_range_form(begin, end, target):
+    if not begin["class"].startswith("ListOffset"):
+        raise RuntimeError
+    if not end["class"].startswith("ListOffset"):
+        raise RuntimeError
+    if not target["class"].startswith("ListOffset"):
+        raise RuntimeError
     form = {
         "class": "ListOffsetArray",
         "offsets": "i64",
-        "content": copy.deepcopy(begin),
+        "content": {
+            "class": "ListOffsetArray",
+            "offsets": "i64",
+            "content": {
+                "class":"NumpyArray",
+                "itemsize":8,
+                "format":"i",
+                "primitive":"int64",
+                "form_key": concat(begin["form_key"], end["form_key"], target["form_key"], "!index_range", "!content")
+            },
+            "form_key": concat(begin["form_key"], end["form_key"], target["form_key"], "!index_range")
+        },
+        "form_key": concat(begin["form_key"], end["form_key"], target["form_key"])
     }
-    form["content"]["content"]["itemsize"] = 8
-    form["content"]["content"]["primitive"] = "int64"
-    form["content"]["content"]["parameters"] = {}
-    key = concat(
-        begin["form_key"], end["form_key"], "!index_range"
-    )
-    form["form_key"] = begin["form_key"]
-    form["content"]["form_key"] = key
-    form["content"]["content"]["form_key"] = concat(key, "!content")
     return form
-    
+
+
 def index_range(stack):
-    """
-    Function required to create a range array from a begin and end array
-    Example: If,
-            begin = [
-                        [0, 2, 4, 3, ...],
-                        [1, 0, 4, 6, ...]
-                        ...
-                    ]
-            end = [
-                        [1, 2, 5, 5, ...],
-                        [3, 1, 7, 6, ...]
-                        ...
-                    ]
-            then, output is,
-            output = [
-                        [[0], [], [4], [3,4], ...],
-                        [[1,2], [0], [4,5,6], [], ...]
-                        ...
-                    ]
-    """
+    
+    target = stack.pop()
     end = stack.pop()
     begin = stack.pop()
     begin_end = awkward.concatenate(
         (begin[:, :, numpy.newaxis], end[:, :, numpy.newaxis]), axis=2
     )
-    stack.append(awkward.Array(_index_range_kernel(begin_end, awkward.ArrayBuilder()).snapshot()))
+
+    out = awkward.Array(_index_range_kernel(begin_end, target, awkward.ArrayBuilder()).snapshot())
+    
+    # Convert to global index
+    outG = out
+    counts1 = awkward.num(outG, axis=1)
+    counts2 = awkward.flatten(awkward.num(outG, axis=2), axis=1)
+    
+    outG = awkward.flatten(outG, axis=2)
+    stack2 = [outG, begin.layout.offsets.data]
+    local2global(stack2)
+    outG = stack2.pop()
+    
+    outG = awkward.unflatten(outG, counts2, axis=0)
+    
+    stack.append(outG)
+
 
 def counts2nestedindex_form(local_counts, target_offsets):
     if not local_counts["class"].startswith("ListOffset"):
@@ -365,6 +447,12 @@ def _children_kernel(offsets_in, parentidx):
             offset0 = offset0 + 1
 
     return offsets1_out, content1_out[:offset1]
+    out = awkward.Array(
+            awkward.contents.ListOffsetArray(
+                awkward.index.Index64(coffsets),
+                awkward.contents.NumpyArray(ccontent),
+            )
+        )
 
 
 def children_form(offsets, globalparents):

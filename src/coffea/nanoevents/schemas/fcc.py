@@ -123,10 +123,15 @@ class FCCSchema(BaseSchema):
     all_cross_references = {
         "MCRecoAssociations#1.index": "Particle", #MC to Reco connection
         "MCRecoAssociations#0.index": "ReconstructedParticles", #Reco to MC connection
-        "Particle#0.index":"Particle", #Parents
-        "Particle#1.index":"Particle", #Daughters
+        # "Particle#0.index":"Particle", #Parents
+        # "Particle#1.index":"Particle", #Daughters
         "Muon#0.index":"ReconstructedParticles", #Matched Muons
         "Electron#0.index":"ReconstructedParticles", #Matched Electrons
+    }
+
+    mc_relations = {
+        "parents" : "Particle#0.index",
+        "daughters" : "Particle#1.index"
     }
 
     def __init__(self, base_form, version="latest"):
@@ -391,6 +396,7 @@ class FCCSchema(BaseSchema):
         """
         field_names = list(branch_forms.keys())
 
+
         # Replace square braces in a name for a Python-friendly name; Example: covMatrix[n] --> covMatrix_n_
         for name in field_names:
             if _square_braces.match(name):
@@ -419,11 +425,46 @@ class FCCSchema(BaseSchema):
                 "primitive": "int64",
                 "form_key": concat(begin_end_content[list(begin_end_content.keys())[0]]["form_key"],"!offsets"),
             }
-            begin_end_content_global = {
-                k+"G": transforms.local2global_form(begin_end_content[k], offset_form)
+
+            # begin_end_content_global = {
+            #     k+"G": transforms.local2global_form(begin_end_content[k], offset_form)
+            #     for k in begin_end_content.keys()
+            # }
+
+            begin = [
+                begin_end_content[k]
                 for k in begin_end_content.keys()
+                if k.endswith("begin")
+            ]
+            end = [
+                begin_end_content[k]
+                for k in begin_end_content.keys()
+                if k.endswith("end")
+            ]
+            counts_content = {
+                "begin_end_counts": transforms.begin_and_end_to_counts_form(*begin, *end)
             }
-            branch_forms[name] = zip_forms(sort_dict({**begin_end_content,**begin_end_content_global}), name)
+            # Parents and Daughters
+            ranges_content = {}
+            for key, target in self.mc_relations.items():
+                col_name = target.split(".")[0]
+                if name.endswith(key):
+                    range_name = f"{col_name.replace("#","idx")}_ranges"
+                    ranges_content[range_name+"G"] = transforms.index_range_form(
+                        *begin,
+                        *end,
+                        branch_forms[f"{col_name}/{target}"]
+                    )
+
+            to_zip = {**begin_end_content, **counts_content, **ranges_content}
+
+            branch_forms[name] = zip_forms(
+                sort_dict(
+                    to_zip
+                ),
+                name,
+                offsets=offset_form
+            )
 
         # Zip colorFlow.a and colorFlow.b branches
         # Example: 'Particle/Particle.colorFlow.a', 'Particle/Particle.colorFlow.b' --> 'Particle/Particle.colorFlow'
@@ -465,14 +506,14 @@ class FCCSchema(BaseSchema):
 
             #pick up the available fields from target collection to get an offset from
             available_fields = [name for name in branch_forms.keys() if name.startswith(f"{target}/{target}.")]
-            
+
             # By default the idxs have different shape at axis=1 in comparison to target
             # So one needs to fill the empty spaces with -1 which could be removed later
             compatible_index = transforms.grow_local_index_to_target_shape_form(
                 branch_forms[f"{collection_name}/{collection_name}.{index_name}"],
                 branch_forms[available_fields[0]]
             )
-            
+
             offset_form = {
                 "class": "NumpyArray",
                 "itemsize": 8,
@@ -480,13 +521,13 @@ class FCCSchema(BaseSchema):
                 "primitive": "int64",
                 "form_key": concat(*[branch_forms[available_fields[0]]["form_key"],"!offsets",]),
             }
-            
+
             replaced_name = collection_name.replace('#', 'idx')
             branch_forms[f"{target}/{target}.{replaced_name}_{index_name}Global"] = transforms.local2global_form(
                 compatible_index,
                 offset_form
             )
-            
+
         return branch_forms
 
     def _build_collections(self, field_names, input_contents):
