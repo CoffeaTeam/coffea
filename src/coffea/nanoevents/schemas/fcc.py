@@ -168,7 +168,7 @@ class FCCSchema(BaseSchema):
         for idx in idxs:
             # Create a Python-friendly name
             # Example: Jet#0 --> Jetidx0
-            repl = idx("#", "idx")
+            repl = idx.replace("#", "idx")
 
             # The content of the collection
             # Example output: {'index':<index form>, 'collectionID':<collectionID form>}
@@ -252,7 +252,7 @@ class FCCSchema(BaseSchema):
             # 'momentum.y' --> 'py'
             # 'momentum.z' --> 'pz'
             collection_content = {
-                (k(k, self._replacement[k]) if k in self._replacement else k): v
+                (k.replace(k, self._replacement[k]) if k in self._replacement else k): v
                 for k, v in collection_content.items()
             }
 
@@ -394,8 +394,8 @@ class FCCSchema(BaseSchema):
         # Replace square braces in a name for a Python-friendly name; Example: covMatrix[n] --> covMatrix_n_
         for name in field_names:
             if _square_braces.match(name):
-                new_name = name("[", "_")
-                new_name = new_name("]", "_")
+                new_name = name.replace("[", "_")
+                new_name = new_name.replace("]", "_")
                 branch_forms[new_name] = branch_forms.pop(name)
 
         # Zip _begin and _end branches
