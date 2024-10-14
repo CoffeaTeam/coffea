@@ -106,6 +106,9 @@ class GenParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
 
     @dask_property
     def parent(self):
+        """
+        Accessor to the direct parent of this particle.
+        """
         return self._events().GenPart._apply_global_index(self.genPartIdxMotherG)
 
     @parent.dask
@@ -116,6 +119,9 @@ class GenParticle(vector.PtEtaPhiMLorentzVector, base.NanoCollection):
 
     @dask_property
     def distinctParent(self):
+        """
+        Accessor to distinct (different PDG id) parent particle.
+        """
         return self._events().GenPart._apply_global_index(self.distinctParentIdxG)
 
     @distinctParent.dask
