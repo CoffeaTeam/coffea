@@ -596,7 +596,7 @@ class NanoEventsFactory:
                 Arbitrary metadata to add to the `base.NanoEvents` object
             access_log : list, optional
                 Pass a list instance to record which branches were lazily accessed by this instance
-        
+
         Returns
         -------
             out: NanoEventsFactory

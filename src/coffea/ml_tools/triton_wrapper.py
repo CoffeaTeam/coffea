@@ -45,7 +45,7 @@ class triton_wrapper(nonserializable_attribute, numpy_call_wrapper):
     ----------
         model_url: str
             A string in the format of: `triton+<protocol>://<address>/<model>/<version>`
-        
+
         client_args: dict[str,str], optional
             Optional keyword arguments to pass to the underlying `InferenceServerClient` objects.
 
@@ -187,7 +187,7 @@ class triton_wrapper(nonserializable_attribute, numpy_call_wrapper):
                 required `tritonclient.InferRequestedOutput` objects. This is identical
                 to the first argument the user passes in when calling the `triton_wrapper`
                 instance.
-            
+
             input_dict: dict[str,np.array]
                 Dictionary with the model's input-names as the key and the
                 appropriate numpy array as the dictionary value. This dictionary is

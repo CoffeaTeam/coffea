@@ -128,7 +128,7 @@ class extractor:
     def import_file(self, thefile):
         """
         Cache the whole contents of a file for later processing
-        
+
         Parameters
         ----------
         thefile: str
@@ -152,7 +152,7 @@ class extractor:
     def extract_from_file(self, thefile, name):
         """
         Import a file and then extract a lookup set
-        
+
         Parameters
         ----------
         thefile: str
@@ -199,7 +199,7 @@ class extractor:
     def make_evaluator(self):
         """
         Produce an evaluator based on the finalized extractor
-        
+
         Returns
         -------
         An evaluator based on the names, weight types, and weights of the finalized extractor.

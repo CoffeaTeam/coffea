@@ -11,7 +11,7 @@ class JECStack:
     """
     Mostly used as an input to `CorrectedJetsFactory`. Hosts and organizes multiple
     corrections under one object.
-    
+
     jec, junc, etc. can be explicitly set by passing in the appropriate corrector class
     (eg: FactorizedJetCorrector). If they are not set, correctors will be created, using
     the info in `corrections` as input.
@@ -35,6 +35,7 @@ class JECStack:
             If provided, overrides the jersf that would be created from `corrections` in
             the stack.
     """
+
     def __init__(self, corrections, jec=None, junc=None, jer=None, jersf=None):
         self._jec = None
         self._junc = None

@@ -186,7 +186,7 @@ class TreeMakerSchema(BaseSchema):
         ----------
             events: TreeMakerSchema events
                 The TreeMakerSchema events to be turned into something uproot-writeable
-        
+
         Returns
         -------
             out: dict
