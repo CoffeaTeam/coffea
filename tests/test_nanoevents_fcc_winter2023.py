@@ -9,6 +9,7 @@ from coffea.nanoevents.methods.vector import LorentzVectorRecord
 
 
 def _events(**kwargs):
+    # Path to original sample: /eos/experiment/fcc/ee/generation/DelphesEvents/winter2023/IDEA/wzp6_ee_mumuH_Hbb_ecm240/events_159112833.root
     path = os.path.abspath("tests/samples/test_FCC_Winter2023.root")
     factory = NanoEventsFactory.from_root(
         {path: "events"}, schemaclass=FCC.get_schema(version="latest"), **kwargs
