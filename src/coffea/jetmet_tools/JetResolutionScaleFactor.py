@@ -47,7 +47,7 @@ class JetResolutionScaleFactor:
         jersf = JetResolutionScaleFactor(name1=corrL1,...)
         jetResSF = jersf.getScaleFactor(JetParameter1=jet.parameter1,...)
 
-    in which `jetResSF` are the scale factors, with the same shape as the input paramters.
+    in which `jetResSF` are the scale factors, with the same shape as the input parameters.
     In order to see which parameters must be passed to `getScaleFactor`, one can do
     `jersf.signature`.
 

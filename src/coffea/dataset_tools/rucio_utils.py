@@ -308,8 +308,8 @@ def query_dataset(
         tree: bool, default False
             If True, return the results splitting the dataset name in parts
         datatype: str, default "container"
-            Options are "container", "datset".  rucio terminology. "Container"==CMS dataset. "Dataset" == CMS block.
-        scope: str, defualt "cms"
+            Options are "container", "dataset".  rucio terminology. "Container"==CMS dataset. "Dataset" == CMS block.
+        scope: str, default "cms"
             Rucio instance
 
     Returns
