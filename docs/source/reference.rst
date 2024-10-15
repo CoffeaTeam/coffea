@@ -12,7 +12,7 @@ and/or heavy dependencies.  Below lists the packages available in the ``coffea``
 Under that, we list documentation for some of the coffea packages that need to be
 imported explicitly.
 
-In ``coffea`` Namespace
+In coffea Namespace
 -----------------------
 
 .. autosummary::
@@ -34,9 +34,9 @@ In ``coffea`` Namespace
     coffea.processor
     coffea.util
 
-Not in ``coffea`` Namespace
+Not in coffea Namespace
 ---------------------------
 Here is documentation for some of the packages that are not automatically
 imported on a call to ``import coffea``.
 
-* :doc:`dataset_tools.rst`
+* :ref:`dataset-tools`.

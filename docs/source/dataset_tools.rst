@@ -1,3 +1,5 @@
+.. _dataset-tools:
+
 Dataset Tools
 *************
 
