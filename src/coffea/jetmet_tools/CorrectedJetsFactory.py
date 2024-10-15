@@ -149,6 +149,7 @@ class CorrectedJetsFactory:
             Contains the corrections that will be applied to the input jet array when calling
             `build`.
     """
+
     def __init__(self, name_map, jec_stack):
         # from PhysicsTools/PatUtils/interface/SmearedJetProducerT.h#L283
         self.forceStochastic = False
@@ -215,7 +216,7 @@ class CorrectedJetsFactory:
         ----------
             injets: (Awkward array[jets])
                 An array of uncorrected jets, to which we want to apply corrections.
-        
+
         Returns
         -------
             Awkward array of jets, representing the corrected jets, with shape matching
