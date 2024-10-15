@@ -1,7 +1,6 @@
 import os
 
 import awkward
-import numpy
 import pytest
 
 from coffea.nanoevents import FCC, NanoEventsFactory
@@ -18,67 +17,73 @@ def _events(**kwargs):
 
 @pytest.fixture(scope="module")
 def eager_events():
-    return _events(delayed=False, uproot_options={"filter_name": lambda x : "PARAMETERS" not in x})
+    return _events(
+        delayed=False, uproot_options={"filter_name": lambda x: "PARAMETERS" not in x}
+    )
 
 
 @pytest.fixture(scope="module")
 def delayed_events():
-    return _events(delayed=True, uproot_options={"filter_name": lambda x : "PARAMETERS" not in x})
+    return _events(
+        delayed=True, uproot_options={"filter_name": lambda x: "PARAMETERS" not in x}
+    )
 
 
 @pytest.mark.parametrize(
     "field",
-    ['CalorimeterHits',
-     'EFlowNeutralHadron',
-     'EFlowNeutralHadron_0',
-     'EFlowNeutralHadron_1',
-     'EFlowNeutralHadronidx0',
-     'EFlowNeutralHadronidx1',
-     'EFlowNeutralHadronidx2',
-     'EFlowPhoton',
-     'EFlowPhoton_0',
-     'EFlowPhoton_1',
-     'EFlowPhotonidx0',
-     'EFlowPhotonidx1',
-     'EFlowPhotonidx2',
-     'EFlowTrack',
-     'EFlowTrack_0',
-     'EFlowTrack_1',
-     'EFlowTrack_2',
-     'EFlowTrackidx0',
-     'EFlowTrackidx1',
-     'Electronidx0',
-     'Jet',
-     'Jetidx0',
-     'Jetidx1',
-     'Jetidx2',
-     'Jetidx3',
-     'Jetidx4',
-     'Jetidx5',
-     'MCRecoAssociations',
-     'MissingET',
-     'MissingETidx0',
-     'MissingETidx1',
-     'MissingETidx2',
-     'MissingETidx3',
-     'MissingETidx4',
-     'MissingETidx5',
-     'Muonidx0',
-     'Particle',
-     'ParticleIDs',
-     'ParticleIDs_0',
-     'Particleidx0',
-     'Particleidx1',
-     'Photonidx0',
-     'ReconstructedParticles',
-     'ReconstructedParticlesidx0',
-     'ReconstructedParticlesidx1',
-     'ReconstructedParticlesidx2',
-     'ReconstructedParticlesidx3',
-     'ReconstructedParticlesidx4',
-     'ReconstructedParticlesidx5',
-     'TrackerHits',
-     'TrackerHits_0']
+    [
+        "CalorimeterHits",
+        "EFlowNeutralHadron",
+        "EFlowNeutralHadron_0",
+        "EFlowNeutralHadron_1",
+        "EFlowNeutralHadronidx0",
+        "EFlowNeutralHadronidx1",
+        "EFlowNeutralHadronidx2",
+        "EFlowPhoton",
+        "EFlowPhoton_0",
+        "EFlowPhoton_1",
+        "EFlowPhotonidx0",
+        "EFlowPhotonidx1",
+        "EFlowPhotonidx2",
+        "EFlowTrack",
+        "EFlowTrack_0",
+        "EFlowTrack_1",
+        "EFlowTrack_2",
+        "EFlowTrackidx0",
+        "EFlowTrackidx1",
+        "Electronidx0",
+        "Jet",
+        "Jetidx0",
+        "Jetidx1",
+        "Jetidx2",
+        "Jetidx3",
+        "Jetidx4",
+        "Jetidx5",
+        "MCRecoAssociations",
+        "MissingET",
+        "MissingETidx0",
+        "MissingETidx1",
+        "MissingETidx2",
+        "MissingETidx3",
+        "MissingETidx4",
+        "MissingETidx5",
+        "Muonidx0",
+        "Particle",
+        "ParticleIDs",
+        "ParticleIDs_0",
+        "Particleidx0",
+        "Particleidx1",
+        "Photonidx0",
+        "ReconstructedParticles",
+        "ReconstructedParticlesidx0",
+        "ReconstructedParticlesidx1",
+        "ReconstructedParticlesidx2",
+        "ReconstructedParticlesidx3",
+        "ReconstructedParticlesidx4",
+        "ReconstructedParticlesidx5",
+        "TrackerHits",
+        "TrackerHits_0",
+    ],
 )
 def test_field_is_present(eager_events, delayed_events, field):
     eager_fields = eager_events.fields
@@ -116,6 +121,7 @@ def test_MCRecoAssociations(delayed_events):
     assert isinstance(mr, awkward.highlevel.Array)
     assert mr.layout.branch_depth[1] == 3
 
+
 def test_KaonParent_to_PionDaughters_Loop(eager_events):
     """Test to thoroughly check get_parents and get_daughters
     - We look at the decay of Kaon $K_S^0 \\rightarrow pions $
@@ -123,50 +129,45 @@ def test_KaonParent_to_PionDaughters_Loop(eager_events):
         $$ K_S^0 \\rightarrow \\pi^0 + \\pi^0 $$
         $$ K_S^0 \\rightarrow \\pi^+ + \\pi^- $$
     """
-    PDG_IDs = {
-        'K(S)0':310,
-        'pi+':211,
-        'pi-':-211,
-        'pi0':111
-    }
+    PDG_IDs = {"K(S)0": 310, "pi+": 211, "pi-": -211, "pi0": 111}
     mc = eager_events.Particle
-    
+
     # Find Single K(S)0
-    K_S0_cut = ( mc.PDG == PDG_IDs['K(S)0'] )
+    K_S0_cut = mc.PDG == PDG_IDs["K(S)0"]
     K_S0 = mc[K_S0_cut]
-    single_K_S0_cut = ( awkward.num(K_S0, axis = 1) == 1 )
+    single_K_S0_cut = awkward.num(K_S0, axis=1) == 1
     single_K_S0 = K_S0[single_K_S0_cut]
-    
+
     # Daughter Test
     # The Kaon K(S)0 must have only pions as the daughters
-    
+
     # Find the daughters of Single K(S)0
     daughters_of_K_S0 = single_K_S0.get_daughters
-    
+
     # Are these valid daughter particles (pi+ or pi- or pi0)?
     flat_PDG = awkward.ravel(daughters_of_K_S0.PDG)
-    is_pi_0 = ( flat_PDG == PDG_IDs['pi0'] )
-    is_pi_plus = ( flat_PDG == PDG_IDs['pi+'] )
-    is_pi_minus = ( flat_PDG == PDG_IDs['pi-'] )
+    is_pi_0 = flat_PDG == PDG_IDs["pi0"]
+    is_pi_plus = flat_PDG == PDG_IDs["pi+"]
+    is_pi_minus = flat_PDG == PDG_IDs["pi-"]
     names_valid = awkward.all(is_pi_0 | is_pi_plus | is_pi_minus)
     assert names_valid
-    
+
     # Do the daughters have valid charges (same or opposite)?
-    nested_bool = awkward.prod(daughters_of_K_S0.charge,axis=2) <= 0
+    nested_bool = awkward.prod(daughters_of_K_S0.charge, axis=2) <= 0
     charge_valid = awkward.all(awkward.ravel(nested_bool))
     assert charge_valid
-    
+
     # Parent Test
     # These pion daughters, just generated, must point back to the single parent K(S)0
-    
+
     p = daughters_of_K_S0.get_parents
-    
+
     # Do the daughters have a single parent?
     nested_bool_daughter = awkward.num(p, axis=3) == 1
     daughters_have_single_parent = awkward.all(awkward.ravel(nested_bool_daughter))
     assert daughters_have_single_parent
-    
+
     # Is that parent K(S)0 ?
-    nested_bool_parent = ( p.PDG == PDG_IDs['K(S)0'] )
+    nested_bool_parent = p.PDG == PDG_IDs["K(S)0"]
     daughters_have_K_S0_parent = awkward.all(awkward.ravel(nested_bool_parent))
     assert daughters_have_K_S0_parent
