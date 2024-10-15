@@ -108,13 +108,13 @@ class BTagScaleFactor:
                 f"The BTag csv file {filename} is in the new UL format which is not supported by coffea.btag_tools.\n"
                 "Instead one can use correctionlib for UL scale factors."
             )
-        cut = (df["jetFlavor"] == self._FLAV_B) & (df["measurementType"] == methods[0])
+        cut = (df["jetFlavor"] == self.FLAV_B) & (df["measurementType"] == methods[0])
         if len(methods) > 1:
-            cut |= (df["jetFlavor"] == self._FLAV_C) & (
+            cut |= (df["jetFlavor"] == self.FLAV_C) & (
                 df["measurementType"] == methods[1]
             )
         if len(methods) > 2:
-            cut |= (df["jetFlavor"] == self._FLAV_UDSG) & (
+            cut |= (df["jetFlavor"] == self.FLAV_UDSG) & (
                 df["measurementType"] == methods[2]
             )
         cut &= df["OperatingPoint"] == workingpoint
