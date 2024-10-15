@@ -117,6 +117,7 @@ def test_MCRecoAssociations(delayed_events):
     assert isinstance(mr, awkward.highlevel.Array)
     assert mr.layout.branch_depth[1] == 3
 
+
 def test_KaonParent_to_PionDaughters_Loop(eager_events):
     """Test to thoroughly check get_parents and get_daughters
     - We look at the decay of Kaon $K_S^0 \\rightarrow pions $
@@ -124,50 +125,45 @@ def test_KaonParent_to_PionDaughters_Loop(eager_events):
         $$ K_S^0 \\rightarrow \\pi^0 + \\pi^0 $$
         $$ K_S^0 \\rightarrow \\pi^+ + \\pi^- $$
     """
-    PDG_IDs = {
-        'K(S)0':310,
-        'pi+':211,
-        'pi-':-211,
-        'pi0':111
-    }
+    PDG_IDs = {"K(S)0": 310, "pi+": 211, "pi-": -211, "pi0": 111}
     mc = eager_events.Particle
-    
+
     # Find Single K(S)0
-    K_S0_cut = ( mc.PDG == PDG_IDs['K(S)0'] )
+    K_S0_cut = mc.PDG == PDG_IDs["K(S)0"]
     K_S0 = mc[K_S0_cut]
-    single_K_S0_cut = ( awkward.num(K_S0, axis = 1) == 1 )
+    single_K_S0_cut = awkward.num(K_S0, axis=1) == 1
     single_K_S0 = K_S0[single_K_S0_cut]
-    
+
     # Daughter Test
     # The Kaon K(S)0 must have only pions as the daughters
-    
+
     # Find the daughters of Single K(S)0
     daughters_of_K_S0 = single_K_S0.get_daughters
-    
+
     # Are these valid daughter particles (pi+ or pi- or pi0)?
     flat_PDG = awkward.ravel(daughters_of_K_S0.PDG)
-    is_pi_0 = ( flat_PDG == PDG_IDs['pi0'] )
-    is_pi_plus = ( flat_PDG == PDG_IDs['pi+'] )
-    is_pi_minus = ( flat_PDG == PDG_IDs['pi-'] )
+    is_pi_0 = flat_PDG == PDG_IDs["pi0"]
+    is_pi_plus = flat_PDG == PDG_IDs["pi+"]
+    is_pi_minus = flat_PDG == PDG_IDs["pi-"]
     names_valid = awkward.all(is_pi_0 | is_pi_plus | is_pi_minus)
     assert names_valid
-    
+
     # Do the daughters have valid charges (same or opposite)?
-    nested_bool = awkward.prod(daughters_of_K_S0.charge,axis=2) <= 0
+    nested_bool = awkward.prod(daughters_of_K_S0.charge, axis=2) <= 0
     charge_valid = awkward.all(awkward.ravel(nested_bool))
     assert charge_valid
-    
+
     # Parent Test
     # These pion daughters, just generated, must point back to the single parent K(S)0
-    
+
     p = daughters_of_K_S0.get_parents
-    
+
     # Do the daughters have a single parent?
     nested_bool_daughter = awkward.num(p, axis=3) == 1
     daughters_have_single_parent = awkward.all(awkward.ravel(nested_bool_daughter))
     assert daughters_have_single_parent
-    
+
     # Is that parent K(S)0 ?
-    nested_bool_parent = ( p.PDG == PDG_IDs['K(S)0'] )
+    nested_bool_parent = p.PDG == PDG_IDs["K(S)0"]
     daughters_have_K_S0_parent = awkward.all(awkward.ravel(nested_bool_parent))
     assert daughters_have_K_S0_parent
