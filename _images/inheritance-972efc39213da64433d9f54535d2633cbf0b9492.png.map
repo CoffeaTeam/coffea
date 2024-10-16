@@ -1,0 +1,33 @@
+<map id="inheritanced020675795" name="inheritanced020675795">
+<area shape="rect" id="node1" href="../api/coffea.nanoevents.methods.nanoaod.AssociatedPFCand.html#coffea.nanoevents.methods.nanoaod.AssociatedPFCand" target="_top" title="PFNano PF candidate to jet association object" alt="" coords="664,33,708,40"/>
+<area shape="rect" id="node2" href="../api/coffea.nanoevents.methods.base.NanoCollection.html#coffea.nanoevents.methods.base.NanoCollection" target="_top" title="A NanoEvents collection" alt="" coords="604,118,642,126"/>
+<area shape="rect" id="node3" href="../api/coffea.nanoevents.methods.nanoaod.AssociatedSV.html#coffea.nanoevents.methods.nanoaod.AssociatedSV" target="_top" title="PFNano secondary vertex to jet association object" alt="" coords="669,48,703,56"/>
+<area shape="rect" id="node6" href="../api/coffea.nanoevents.methods.nanoaod.Electron.html#coffea.nanoevents.methods.nanoaod.Electron" target="_top" title="NanoAOD electron object" alt="" coords="674,171,698,179"/>
+<area shape="rect" id="node9" href="../api/coffea.nanoevents.methods.nanoaod.FatJet.html#coffea.nanoevents.methods.nanoaod.FatJet" target="_top" title="NanoAOD large radius jet object" alt="" coords="675,187,697,195"/>
+<area shape="rect" id="node10" href="../api/coffea.nanoevents.methods.nanoaod.FsrPhoton.html#coffea.nanoevents.methods.nanoaod.FsrPhoton" target="_top" title="NanoAOD fsr photon object" alt="" coords="672,79,700,87"/>
+<area shape="rect" id="node11" href="../api/coffea.nanoevents.methods.nanoaod.GenParticle.html#coffea.nanoevents.methods.nanoaod.GenParticle" target="_top" title="NanoAOD generator&#45;level particle object, including parent and child self&#45;references" alt="" coords="671,2,701,10"/>
+<area shape="rect" id="node13" href="../api/coffea.nanoevents.methods.nanoaod.GenVisTau.html#coffea.nanoevents.methods.nanoaod.GenVisTau" target="_top" title="NanoAOD visible tau object" alt="" coords="672,94,700,102"/>
+<area shape="rect" id="node14" href="../api/coffea.nanoevents.methods.nanoaod.Jet.html#coffea.nanoevents.methods.nanoaod.Jet" target="_top" title="NanoAOD narrow radius jet object" alt="" coords="675,202,697,210"/>
+<area shape="rect" id="node22" href="../api/coffea.nanoevents.methods.nanoaod.LowPtElectron.html#coffea.nanoevents.methods.nanoaod.LowPtElectron" target="_top" title="NanoAOD low&#45;pt electron object" alt="" coords="668,218,704,226"/>
+<area shape="rect" id="node23" href="../api/coffea.nanoevents.methods.nanoaod.MissingET.html#coffea.nanoevents.methods.nanoaod.MissingET" target="_top" title="NanoAOD Missing transverse energy object" alt="" coords="672,233,700,241"/>
+<area shape="rect" id="node34" href="../api/coffea.nanoevents.methods.nanoaod.Muon.html#coffea.nanoevents.methods.nanoaod.Muon" target="_top" title="NanoAOD muon object" alt="" coords="675,125,697,133"/>
+<area shape="rect" id="node35" href="../api/coffea.nanoevents.methods.nanoaod.PFCand.html#coffea.nanoevents.methods.nanoaod.PFCand" target="_top" title="PFNano particle flow candidate object" alt="" coords="675,110,697,118"/>
+<area shape="rect" id="node36" href="../api/coffea.nanoevents.methods.nanoaod.Photon.html#coffea.nanoevents.methods.nanoaod.Photon" target="_top" title="NanoAOD photon object" alt="" coords="675,141,697,149"/>
+<area shape="rect" id="node39" href="../api/coffea.nanoevents.methods.nanoaod.PtEtaPhiMCollection.html#coffea.nanoevents.methods.nanoaod.PtEtaPhiMCollection" target="_top" title="Generic collection that has Lorentz vector properties" alt="" coords="662,17,710,25"/>
+<area shape="rect" id="node41" href="../api/coffea.nanoevents.methods.nanoaod.Vertex.html#coffea.nanoevents.methods.nanoaod.Vertex" target="_top" title="NanoAOD vertex object" alt="" coords="675,63,697,71"/>
+<area shape="rect" id="node42" href="../api/coffea.nanoevents.methods.nanoaod.Tau.html#coffea.nanoevents.methods.nanoaod.Tau" target="_top" title="NanoAOD tau object" alt="" coords="675,156,697,164"/>
+<area shape="rect" id="node4" href="../api/coffea.nanoevents.methods.candidate.Candidate.html#coffea.nanoevents.methods.candidate.Candidate" target="_top" title="A Lorentz vector with charge" alt="" coords="542,141,570,149"/>
+<area shape="rect" id="node7" href="../api/coffea.nanoevents.methods.candidate.PtEtaPhiMCandidate.html#coffea.nanoevents.methods.candidate.PtEtaPhiMCandidate" target="_top" title="A Lorentz vector in eta, mass coordinates with charge" alt="" coords="599,141,647,149"/>
+<area shape="rect" id="node5" href="../api/coffea.nanoevents.methods.vector.LorentzVector.html#coffea.nanoevents.methods.vector.LorentzVector" target="_top" title="A cartesian Lorentz vector" alt="" coords="477,141,511,149"/>
+<area shape="rect" id="node12" href="../api/coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector.html#coffea.nanoevents.methods.vector.PtEtaPhiMLorentzVector" target="_top" title="A Lorentz vector using pseudorapidity and mass" alt="" coords="528,94,584,102"/>
+<area shape="rect" id="node8" href="../api/coffea.nanoevents.methods.base.Systematic.html#coffea.nanoevents.methods.base.Systematic" target="_top" title="A base mixin class to describe and build variations on a feature of a nanoevents object." alt="" coords="608,179,638,187"/>
+<area shape="rect" id="node29" title="Four dimensional momentum vector class for the Awkward backend." alt="" coords="346,165,390,173"/>
+<area shape="rect" id="node21" title="Four dimensional momentum vector class for the Awkward backend." alt="" coords="405,142,460,150"/>
+<area shape="rect" id="node24" href="../api/coffea.nanoevents.methods.vector.PolarTwoVector.html#coffea.nanoevents.methods.vector.PolarTwoVector" target="_top" title="A polar coordinate 2&#45;dimensional vector" alt="" coords="475,228,513,236"/>
+<area shape="rect" id="node26" title="Two dimensional momentum vector class for the Awkward backend." alt="" coords="272,199,326,207"/>
+<area shape="rect" id="node38" href="../api/coffea.nanoevents.methods.vector.TwoVector.html#coffea.nanoevents.methods.vector.TwoVector" target="_top" title="A cartesian 2&#45;dimensional vector" alt="" coords="419,219,447,227"/>
+<area shape="rect" id="node28" title="Two dimensional vector class for the Awkward backend." alt="" coords="200,199,244,207"/>
+<area shape="rect" id="node40" href="../api/coffea.nanoevents.methods.nanoaod.SecondaryVertex.html#coffea.nanoevents.methods.nanoaod.SecondaryVertex" target="_top" title="NanoAOD secondary vertex object" alt="" coords="725,63,766,71"/>
+<area shape="rect" id="node44" title="Attributes:" alt="" coords="2,168,38,176"/>
+<area shape="rect" id="node47" title="Mixin class for Awkward vectors." alt="" coords="128,207,166,215"/>
+</map>

@@ -1,0 +1,6 @@
+max_chunks
+==========
+
+.. currentmodule:: coffea.dataset_tools
+
+.. autofunction:: max_chunks

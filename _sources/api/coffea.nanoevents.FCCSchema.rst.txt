@@ -1,0 +1,31 @@
+FCCSchema
+=========
+
+.. currentmodule:: coffea.nanoevents
+
+.. autoclass:: FCCSchema
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~FCCSchema.all_cross_references
+      ~FCCSchema.mc_relations
+      ~FCCSchema.mixins_dictionary
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~FCCSchema.behavior
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: all_cross_references
+   .. autoattribute:: mc_relations
+   .. autoattribute:: mixins_dictionary
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: behavior

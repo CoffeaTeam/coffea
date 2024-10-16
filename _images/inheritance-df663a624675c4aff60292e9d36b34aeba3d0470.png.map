@@ -1,0 +1,13 @@
+<map id="inheritance0c72f4e8b8" name="inheritance0c72f4e8b8">
+<area shape="rect" id="node1" href="../api/coffea.nanoevents.BaseSchema.html#coffea.nanoevents.BaseSchema" target="_top" title="Base schema builder" alt="" coords="25,129,132,155"/>
+<area shape="rect" id="node2" href="../api/coffea.nanoevents.DelphesSchema.html#coffea.nanoevents.DelphesSchema" target="_top" title="Delphes schema builder" alt="" coords="207,5,334,31"/>
+<area shape="rect" id="node4" href="../api/coffea.nanoevents.FCCSchema.html#coffea.nanoevents.FCCSchema" target="_top" title="Schema&#45;builder for Future Circular Collider pregenerated samples." alt="" coords="221,55,321,80"/>
+<area shape="rect" id="node5" href="../api/coffea.nanoevents.NanoAODSchema.html#coffea.nanoevents.NanoAODSchema" target="_top" title="NanoAOD schema builder" alt="" coords="202,104,339,129"/>
+<area shape="rect" id="node7" href="../api/coffea.nanoevents.PDUNESchema.html#coffea.nanoevents.PDUNESchema" target="_top" title="PDUNESchema" alt="" coords="211,153,331,179"/>
+<area shape="rect" id="node9" href="../api/coffea.nanoevents.PHYSLITESchema.html#coffea.nanoevents.PHYSLITESchema" target="_top" title="PHYSLITE schema builder &#45; work in progress." alt="" coords="203,203,338,228"/>
+<area shape="rect" id="node11" href="../api/coffea.nanoevents.TreeMakerSchema.html#coffea.nanoevents.TreeMakerSchema" target="_top" title="TreeMaker schema builder" alt="" coords="200,252,341,277"/>
+<area shape="rect" id="node3" href="../api/coffea.nanoevents.FCC.html#coffea.nanoevents.FCC" target="_top" title="Class to choose the required variant of FCCSchema" alt="" coords="43,80,115,105"/>
+<area shape="rect" id="node8" href="../api/coffea.nanoevents.PFNanoAODSchema.html#coffea.nanoevents.PFNanoAODSchema" target="_top" title="PFNano schema builder" alt="" coords="409,80,563,105"/>
+<area shape="rect" id="node10" href="../api/coffea.nanoevents.ScoutingNanoAODSchema.html#coffea.nanoevents.ScoutingNanoAODSchema" target="_top" title="ScoutingNano schema builder" alt="" coords="389,129,583,155"/>
+<area shape="rect" id="node6" href="../api/coffea.nanoevents.NanoEventsFactory.html#coffea.nanoevents.NanoEventsFactory" target="_top" title="A factory class to build NanoEvents objects." alt="" coords="5,31,152,56"/>
+</map>

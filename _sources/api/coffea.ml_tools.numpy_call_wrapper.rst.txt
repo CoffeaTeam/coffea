@@ -1,0 +1,27 @@
+numpy_call_wrapper
+==================
+
+.. currentmodule:: coffea.ml_tools
+
+.. autoclass:: numpy_call_wrapper
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~numpy_call_wrapper.__call__
+      ~numpy_call_wrapper.get_awkward_lib
+      ~numpy_call_wrapper.numpy_call
+      ~numpy_call_wrapper.postprocess_awkward
+      ~numpy_call_wrapper.prepare_awkward
+      ~numpy_call_wrapper.validate_numpy_input
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: __call__
+   .. automethod:: get_awkward_lib
+   .. automethod:: numpy_call
+   .. automethod:: postprocess_awkward
+   .. automethod:: prepare_awkward
+   .. automethod:: validate_numpy_input

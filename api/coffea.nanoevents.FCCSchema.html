@@ -1,0 +1,254 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FCCSchema &mdash; coffea 2024.10.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+
+  
+    <link rel="shortcut icon" href="../_static/coffea_favicon.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=2443068e"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=83e3a9fa"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="coffea.nanoevents.methods.base" href="../modules/coffea.nanoevents.methods.base.html" />
+    <link rel="prev" title="FCC" href="coffea.nanoevents.FCC.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            coffea
+              <img src="../_static/coffea_favicon.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installing coffea</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Coffea by Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Coffea concepts</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../reference.html">API Reference Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../reference.html#in-coffea-namespace">In coffea Namespace</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.analysis_tools.html">coffea.analysis_tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.btag_tools.html">coffea.btag_tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.dataset_tools.html">coffea.dataset_tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.jetmet_tools.html">coffea.jetmet_tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.lookup_tools.html">coffea.lookup_tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.lumi_tools.html">coffea.lumi_tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.ml_tools.html">coffea.ml_tools</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../modules/coffea.nanoevents.html">coffea.nanoevents</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="../modules/coffea.nanoevents.html#classes">Classes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../modules/coffea.nanoevents.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.nanoevents.methods.base.html">coffea.nanoevents.methods.base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.nanoevents.methods.candidate.html">coffea.nanoevents.methods.candidate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.nanoevents.methods.nanoaod.html">coffea.nanoevents.methods.nanoaod</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.nanoevents.methods.vector.html">coffea.nanoevents.methods.vector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.processor.html">coffea.processor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../modules/coffea.util.html">coffea.util</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../reference.html#not-in-coffea-namespace">Not in coffea Namespace</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">coffea</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../reference.html">API Reference Guide</a></li>
+          <li class="breadcrumb-item"><a href="../modules/coffea.nanoevents.html">coffea.nanoevents</a></li>
+      <li class="breadcrumb-item active">FCCSchema</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/coffea.nanoevents.FCCSchema.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fccschema">
+<h1>FCCSchema<a class="headerlink" href="#fccschema" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="coffea.nanoevents.FCCSchema">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">coffea.nanoevents.</span></span><span class="sig-name descname"><span class="pre">FCCSchema</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_form</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'latest'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/9c3a49ce09849e5654abafe3e7f0a28357ab693b//opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/coffea/nanoevents/schemas/fcc.py#L35"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#coffea.nanoevents.FCCSchema" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="coffea.nanoevents.BaseSchema.html#coffea.nanoevents.BaseSchema" title="coffea.nanoevents.schemas.base.BaseSchema"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseSchema</span></code></a></p>
+<p>Schema-builder for Future Circular Collider pregenerated samples.
+<a class="reference external" href="https://fcc-physics-events.web.cern.ch/">https://fcc-physics-events.web.cern.ch/</a></p>
+<p>This version is tested on the Spring2021 p8_ee_ZH_ecm240 sample
+<a class="reference external" href="https://fcc-physics-events.web.cern.ch/FCCee/delphes/spring2021/idea/">https://fcc-physics-events.web.cern.ch/FCCee/delphes/spring2021/idea/</a>
+/eos/experiment/fcc/ee/generation/DelphesEvents/spring2021/IDEA/p8_ee_ZH_ecm240/events_082532938.root
+The FCC samples follow the edm4hep structure.
+<a class="reference external" href="https://edm4hep.web.cern.ch/index.html">https://edm4hep.web.cern.ch/index.html</a></p>
+<p>FCCSchema inherits from the BaseSchema and returns all the collections as a base.Nanoevents record.
+- Branches with vector components like</p>
+<blockquote>
+<div><blockquote>
+<div><p>“ReconstructedParticles/ReconstructedParticles.referencePoint.x”,
+“ReconstructedParticles/ReconstructedParticles.referencePoint.y” and
+“ReconstructedParticles/ReconstructedParticles.referencePoint.z”,
+are zipped together to form the “ReconstructedParticles/ReconstructedParticles.referencePoint” subcollection.
+(see FCCSchema._create_subcollections)</p>
+</div></blockquote>
+<p>This is done for all the branches except the momentum.[x,y,z] branches</p>
+</div></blockquote>
+<ul>
+<li><dl>
+<dt>Branches like</dt><dd><blockquote>
+<div><p>“ReconstructedParticles/ReconstructedParticles.energy”,
+“ReconstructedParticles/ReconstructedParticles.charge”,
+“ReconstructedParticles/ReconstructedParticles.mass”,
+“ReconstructedParticles/ReconstructedParticles.referencePoint”(subcollection containing x,y,z),
+…
+etc
+are zipped together to form the “ReconstructedParticles” collection.
+(see FCCSchema._main_collections)</p>
+</div></blockquote>
+<p>The momentum.[x,y,z] branches along with the energy branch (if available) are used to provide the vector.LorentzVector behavior to the collection.</p>
+</dd>
+</dl>
+</li>
+<li><dl>
+<dt>Branches with ObjectIDs(indices to another collection) , example</dt><dd><dl class="simple">
+<dt>“ReconstructedParticles#0/ReconstructedParticles#0.index”</dt><dd><p>and</p>
+</dd>
+</dl>
+<p>“ReconstructedParticles#0/ReconstructedParticles#0.collectionID”
+are zipped together to form the “”ReconstructedParticlesidx0” collection.
+(see FCCSchema._idx_collections)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Branches with a trailing underscore followed by an integer, example</dt><dd><p>“EFlowTrack_1/EFlowTrack_1.location”,
+“EFlowTrack_1/EFlowTrack_1.D0”,
+“EFlowTrack_1/EFlowTrack_1.phi”,
+…
+etc
+are zipped together to form the “EFlowTrack_1” collection.
+(see FCCSchema._trailing_underscore_collections)</p>
+</dd>
+</dl>
+</li>
+<li><p>Other Unknown, empty, or faulty branches are dealt by FCCSchema._unknown_collections on a case by case basis</p></li>
+</ul>
+<p class="rubric">Attributes Summary</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.nanoevents.FCCSchema.all_cross_references" title="coffea.nanoevents.FCCSchema.all_cross_references"><code class="xref py py-obj docutils literal notranslate"><span class="pre">all_cross_references</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#coffea.nanoevents.FCCSchema.mc_relations" title="coffea.nanoevents.FCCSchema.mc_relations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mc_relations</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.nanoevents.FCCSchema.mixins_dictionary" title="coffea.nanoevents.FCCSchema.mixins_dictionary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mixins_dictionary</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Summary</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#coffea.nanoevents.FCCSchema.behavior" title="coffea.nanoevents.FCCSchema.behavior"><code class="xref py py-obj docutils literal notranslate"><span class="pre">behavior</span></code></a>()</p></td>
+<td><p>Behaviors necessary to implement this schema</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes Documentation</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="coffea.nanoevents.FCCSchema.all_cross_references">
+<span class="sig-name descname"><span class="pre">all_cross_references</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'Electron#0.index':</span> <span class="pre">'ReconstructedParticles',</span> <span class="pre">'MCRecoAssociations#0.index':</span> <span class="pre">'ReconstructedParticles',</span> <span class="pre">'MCRecoAssociations#1.index':</span> <span class="pre">'Particle',</span> <span class="pre">'Muon#0.index':</span> <span class="pre">'ReconstructedParticles'}</span></em><a class="headerlink" href="#coffea.nanoevents.FCCSchema.all_cross_references" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="coffea.nanoevents.FCCSchema.mc_relations">
+<span class="sig-name descname"><span class="pre">mc_relations</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'daughters':</span> <span class="pre">'Particle#1.index',</span> <span class="pre">'parents':</span> <span class="pre">'Particle#0.index'}</span></em><a class="headerlink" href="#coffea.nanoevents.FCCSchema.mc_relations" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="coffea.nanoevents.FCCSchema.mixins_dictionary">
+<span class="sig-name descname"><span class="pre">mixins_dictionary</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'*idx':</span> <span class="pre">'ObjectID',</span> <span class="pre">'AllMuon':</span> <span class="pre">'ReconstructedParticle',</span> <span class="pre">'EFlowNeutralHadron':</span> <span class="pre">'Cluster',</span> <span class="pre">'EFlowPhoton':</span> <span class="pre">'Cluster',</span> <span class="pre">'EFlowTrack':</span> <span class="pre">'Track',</span> <span class="pre">'Electron':</span> <span class="pre">'ReconstructedParticle',</span> <span class="pre">'Jet':</span> <span class="pre">'ReconstructedParticle',</span> <span class="pre">'MCRecoAssociations':</span> <span class="pre">'RecoMCParticleLink',</span> <span class="pre">'MissingET':</span> <span class="pre">'ReconstructedParticle',</span> <span class="pre">'Muon':</span> <span class="pre">'ReconstructedParticle',</span> <span class="pre">'Particle':</span> <span class="pre">'MCParticle',</span> <span class="pre">'ParticleIDs':</span> <span class="pre">'ParticleID',</span> <span class="pre">'Photon':</span> <span class="pre">'ReconstructedParticle',</span> <span class="pre">'ReconstructedParticles':</span> <span class="pre">'ReconstructedParticle'}</span></em><a class="headerlink" href="#coffea.nanoevents.FCCSchema.mixins_dictionary" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="coffea.nanoevents.FCCSchema.behavior">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">behavior</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="http://github.com/CoffeaTeam/coffea/blob/9c3a49ce09849e5654abafe3e7f0a28357ab693b//opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/coffea/nanoevents/schemas/fcc.py#L585"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#coffea.nanoevents.FCCSchema.behavior" title="Link to this definition"></a></dt>
+<dd><p>Behaviors necessary to implement this schema</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="coffea.nanoevents.FCC.html" class="btn btn-neutral float-left" title="FCC" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../modules/coffea.nanoevents.methods.base.html" class="btn btn-neutral float-right" title="coffea.nanoevents.methods.base" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Fermi National Accelerator Laboratory.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

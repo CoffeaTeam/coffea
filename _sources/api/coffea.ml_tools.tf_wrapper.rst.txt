@@ -1,0 +1,19 @@
+tf_wrapper
+==========
+
+.. currentmodule:: coffea.ml_tools
+
+.. autoclass:: tf_wrapper
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~tf_wrapper.numpy_call
+      ~tf_wrapper.validate_numpy_input
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: numpy_call
+   .. automethod:: validate_numpy_input

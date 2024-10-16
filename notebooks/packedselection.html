@@ -1,0 +1,1242 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PackedSelection in Coffea 2023 &mdash; coffea 2024.10.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+    <link rel="shortcut icon" href="../_static/coffea_favicon.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=2443068e"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=83e3a9fa"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Coffea concepts" href="../concepts.html" />
+    <link rel="prev" title="Dataset discovery tools" href="dataset_discovery.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            coffea
+              <img src="../_static/coffea_favicon.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installing coffea</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../examples.html">Coffea by Example</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="nanoevents.html">Reading data with coffea NanoEvents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="applying_corrections.html">Applying corrections to columnar data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="processor.html">Coffea Processors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mltools.html">Running inference tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dataset_discovery.html">Dataset discovery tools</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">PackedSelection in Coffea 2023</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Coffea concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">API Reference Guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">coffea</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../examples.html">Coffea by Example</a></li>
+      <li class="breadcrumb-item active">PackedSelection in Coffea 2023</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/notebooks/packedselection.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="PackedSelection-in-Coffea-2023">
+<h1>PackedSelection in Coffea 2023<a class="headerlink" href="#PackedSelection-in-Coffea-2023" title="Link to this heading"></a></h1>
+<p>In <code class="docutils literal notranslate"><span class="pre">coffea</span></code>, <code class="docutils literal notranslate"><span class="pre">PackedSelection</span></code> is a class that can store several boolean arrays in a memory-efficient manner and evaluate arbitrary combinations of boolean requirements in an CPU-efficient way. Supported inputs include 1D numpy or awkward arrays and it has built-in functionalities to form analysis in signal and control regions, and to implement cutflow or “N-1” plots.</p>
+<p>Although <code class="docutils literal notranslate"><span class="pre">coffea</span></code> 2023 should be used in delayed mode (using <code class="docutils literal notranslate"><span class="pre">dask-awkward</span></code>), we will first present these functionalities eagerly (like in <code class="docutils literal notranslate"><span class="pre">coffea</span></code> 0.7) to showcase this better. Let’s first read a sample file of 40 Drell-Yan events to demonstrate the utilities using our <code class="docutils literal notranslate"><span class="pre">NanoAODSchema</span></code> as our schema.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">awkward</span> <span class="k">as</span> <span class="nn">ak</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">coffea.nanoevents</span> <span class="kn">import</span> <span class="n">NanoEventsFactory</span><span class="p">,</span> <span class="n">NanoAODSchema</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+
+<span class="n">events</span> <span class="o">=</span> <span class="n">NanoEventsFactory</span><span class="o">.</span><span class="n">from_root</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">&quot;../tests/samples/nano_dy.root&quot;</span><span class="p">:</span> <span class="s2">&quot;Events&quot;</span><span class="p">},</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;dataset&quot;</span><span class="p">:</span> <span class="s2">&quot;nano_dy&quot;</span><span class="p">},</span>
+    <span class="n">schemaclass</span><span class="o">=</span><span class="n">NanoAODSchema</span><span class="p">,</span>
+    <span class="n">permit_dask</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span><span class="o">.</span><span class="n">events</span><span class="p">()</span>
+
+<span class="n">events</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/iason/fun/coffea_dev/coffea/binder/coffea/nanoevents/schemas/nanoaod.py:215: RuntimeWarning: Missing cross-reference index for FatJet_genJetAK8Idx =&gt; GenJetAK8
+  warnings.warn(
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<pre>[{FsrPhoton: [], Electron: [], SoftActivityJetHT5: 63.5, RawMET: {...}, ...},
+ {FsrPhoton: [], Electron: [{...}], SoftActivityJetHT5: 64, RawMET: {...}, ...},
+ {FsrPhoton: [], Electron: [Electron, Electron], SoftActivityJetHT5: 130, ...},
+ {FsrPhoton: [], Electron: [Electron, Electron], SoftActivityJetHT5: 25.8, ...},
+ {FsrPhoton: [], Electron: [], SoftActivityJetHT5: 172, RawMET: {...}, ...},
+ {FsrPhoton: [], Electron: [{...}], SoftActivityJetHT5: 54.4, RawMET: ..., ...},
+ {FsrPhoton: [], Electron: [{...}], SoftActivityJetHT5: 96.2, RawMET: ..., ...},
+ {FsrPhoton: [], Electron: [], SoftActivityJetHT5: 19, RawMET: {...}, ...},
+ {FsrPhoton: [], Electron: [], SoftActivityJetHT5: 9.36, RawMET: {...}, ...},
+ {FsrPhoton: [], Electron: [{...}], SoftActivityJetHT5: 115, RawMET: ..., ...},
+ ...,
+ {FsrPhoton: [], Electron: [{...}], SoftActivityJetHT5: 49.6, RawMET: ..., ...},
+ {FsrPhoton: [], Electron: [], SoftActivityJetHT5: 14.7, RawMET: {...}, ...},
+ {FsrPhoton: [], Electron: [{...}], SoftActivityJetHT5: 22.1, RawMET: ..., ...},
+ {FsrPhoton: [], Electron: [], SoftActivityJetHT5: 33.9, RawMET: {...}, ...},
+ {FsrPhoton: [], Electron: [{...}], SoftActivityJetHT5: 16.2, RawMET: ..., ...},
+ {FsrPhoton: [], Electron: [], SoftActivityJetHT5: 28.4, RawMET: {...}, ...},
+ {FsrPhoton: [], Electron: [{...}], SoftActivityJetHT5: 16.1, RawMET: ..., ...},
+ {FsrPhoton: [], Electron: [], SoftActivityJetHT5: 28.5, RawMET: {...}, ...},
+ {FsrPhoton: [], Electron: [], SoftActivityJetHT5: 7, RawMET: {...}, ...}]
+--------------------------------------------------------------------------------
+type: 40 * event</pre></div>
+</div>
+<p>Now let’s import <code class="docutils literal notranslate"><span class="pre">PackedSelection</span></code>, and create an instance of it.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">coffea.analysis_tools</span> <span class="kn">import</span> <span class="n">PackedSelection</span>
+
+<span class="n">selection</span> <span class="o">=</span> <span class="n">PackedSelection</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<p>We can create a boolean mask and add this to our selection by using the <code class="docutils literal notranslate"><span class="pre">add</span></code> method. This adds the following “cut” to our selection and names it “twoElectron”.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">selection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;twoElectron&quot;</span><span class="p">,</span> <span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">Electron</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>We’ve added one “cut” to our selection. Now let’s add a couple more.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">selection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;eleOppSign&quot;</span><span class="p">,</span> <span class="n">ak</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">Electron</span><span class="o">.</span><span class="n">charge</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">selection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;noElectron&quot;</span><span class="p">,</span> <span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">Electron</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>To avoid repeating calling <code class="docutils literal notranslate"><span class="pre">add</span></code> multiple times, we can just use the <code class="docutils literal notranslate"><span class="pre">add_multiple</span></code> method which does just that.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">selection</span><span class="o">.</span><span class="n">add_multiple</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;twoMuon&quot;</span><span class="p">:</span> <span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">Muon</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s2">&quot;muOppSign&quot;</span><span class="p">:</span> <span class="n">ak</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">Muon</span><span class="o">.</span><span class="n">charge</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;noMuon&quot;</span><span class="p">:</span> <span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">Muon</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;leadPt20&quot;</span><span class="p">:</span> <span class="n">ak</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">Electron</span><span class="o">.</span><span class="n">pt</span> <span class="o">&gt;=</span> <span class="mf">20.0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="o">|</span> <span class="n">ak</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">Muon</span><span class="o">.</span><span class="n">pt</span> <span class="o">&gt;=</span> <span class="mf">20.0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>By viewing the <code class="docutils literal notranslate"><span class="pre">PackedSelection</span></code> instance, one can see the names of the added selections, whether it is operating in delayed mode or not, the number of added selections and the maximum supported number of selections.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">selection</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+PackedSelection(selections=(&#39;twoElectron&#39;, &#39;eleOppSign&#39;, &#39;noElectron&#39;, &#39;twoMuon&#39;, &#39;muOppSign&#39;, &#39;noMuon&#39;, &#39;leadPt20&#39;), delayed_mode=False, items=7, maxitems=32)
+</pre></div></div>
+</div>
+<p>To evaluate a boolean mask (e.g. to filter events) we can use the <code class="docutils literal notranslate"><span class="pre">selection.all(*names)</span></code> function, which will compute the logical AND of all listed boolean selections.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">selection</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="s2">&quot;twoElectron&quot;</span><span class="p">,</span> <span class="s2">&quot;noMuon&quot;</span><span class="p">,</span> <span class="s2">&quot;leadPt20&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+array([False, False,  True, False, False, False, False, False, False,
+       False, False, False, False, False, False, False, False, False,
+       False, False,  True,  True, False, False, False, False, False,
+       False, False, False, False, False, False, False, False, False,
+       False, False, False, False])
+</pre></div></div>
+</div>
+<p>We can also be more specific and require that a specific set of selections have a given value (with the unspecified ones allowed to be either true or false) using <code class="docutils literal notranslate"><span class="pre">selection.require</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">selection</span><span class="o">.</span><span class="n">require</span><span class="p">(</span><span class="n">twoElectron</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">noMuon</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">eleOppSign</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+array([False, False, False,  True, False, False, False, False, False,
+       False, False, False, False, False, False, False, False, False,
+       False, False, False, False, False, False, False, False, False,
+       False, False, False, False, False, False, False, False, False,
+       False, False, False, False])
+</pre></div></div>
+</div>
+<p>There exist also the <code class="docutils literal notranslate"><span class="pre">allfalse</span></code> and <code class="docutils literal notranslate"><span class="pre">any</span></code> methods where the first one is the opposite of <code class="docutils literal notranslate"><span class="pre">all</span></code> and the second one is a logical OR between all listed boolean selections.</p>
+<p>Using <code class="docutils literal notranslate"><span class="pre">PackedSelection</span></code>, we are now able to perform an N-1 style selection using the <code class="docutils literal notranslate"><span class="pre">nminusone(*names)</span></code> method. This will perform an N-1 style selection by using as “N” the provided names and will exclude each named cut one at a time in order. In the end it will also peform a selection using all N cuts.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nminusone</span> <span class="o">=</span> <span class="n">selection</span><span class="o">.</span><span class="n">nminusone</span><span class="p">(</span><span class="s2">&quot;twoElectron&quot;</span><span class="p">,</span> <span class="s2">&quot;noMuon&quot;</span><span class="p">,</span> <span class="s2">&quot;leadPt20&quot;</span><span class="p">)</span>
+<span class="n">nminusone</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+NminusOne(selections=(&#39;twoElectron&#39;, &#39;noMuon&#39;, &#39;leadPt20&#39;))
+</pre></div></div>
+</div>
+<p>This returns an <code class="docutils literal notranslate"><span class="pre">NminusOne</span></code> object which has the following methods: <code class="docutils literal notranslate"><span class="pre">result()</span></code>, <code class="docutils literal notranslate"><span class="pre">print()</span></code>, <code class="docutils literal notranslate"><span class="pre">yieldhist()</span></code>, <code class="docutils literal notranslate"><span class="pre">to_npz()</span></code> and <code class="docutils literal notranslate"><span class="pre">plot_vars()</span></code></p>
+<p>Let’s look at the results of the N-1 selection.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">res</span> <span class="o">=</span> <span class="n">nminusone</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">res</span><span class="p">),</span> <span class="n">res</span><span class="o">.</span><span class="n">_fields</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;class &#39;coffea.analysis_tools.NminusOneResult&#39;&gt; (&#39;labels&#39;, &#39;nev&#39;, &#39;masks&#39;)
+</pre></div></div>
+</div>
+<p>This is just a <code class="docutils literal notranslate"><span class="pre">namedtuple</span></code> with the attributes <code class="docutils literal notranslate"><span class="pre">labels</span></code>, <code class="docutils literal notranslate"><span class="pre">nev</span></code> and <code class="docutils literal notranslate"><span class="pre">masks</span></code>. So we can say:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">labels</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">masks</span> <span class="o">=</span> <span class="n">res</span>
+<span class="n">labels</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">masks</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+([&#39;initial&#39;, &#39;N - twoElectron&#39;, &#39;N - noMuon&#39;, &#39;N - leadPt20&#39;, &#39;N&#39;],
+ [40, 10, 3, 5, 3],
+ [array([False,  True,  True, False, False, False, False, False, False,
+          True, False, False, False, False, False,  True,  True, False,
+         False, False,  True,  True, False, False, False, False, False,
+          True, False,  True, False, False, False,  True, False, False,
+         False, False, False, False]),
+  array([False, False,  True, False, False, False, False, False, False,
+         False, False, False, False, False, False, False, False, False,
+         False, False,  True,  True, False, False, False, False, False,
+         False, False, False, False, False, False, False, False, False,
+         False, False, False, False]),
+  array([False, False,  True,  True, False, False, False, False, False,
+         False, False, False, False, False, False, False, False, False,
+          True, False,  True,  True, False, False, False, False, False,
+         False, False, False, False, False, False, False, False, False,
+         False, False, False, False]),
+  array([False, False,  True, False, False, False, False, False, False,
+         False, False, False, False, False, False, False, False, False,
+         False, False,  True,  True, False, False, False, False, False,
+         False, False, False, False, False, False, False, False, False,
+         False, False, False, False])])
+</pre></div></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">labels</span></code> is a list of labels of each mask that is applied, <code class="docutils literal notranslate"><span class="pre">nev</span></code> is a list of the number of events that survive each mask, and <code class="docutils literal notranslate"><span class="pre">masks</span></code> is a list of boolean masks (arrays) of which events survive each selection. You can also choose to print the statistics of your N-1 selection in a similar fashion to <code class="docutils literal notranslate"><span class="pre">RDataFrame</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nminusone</span><span class="o">.</span><span class="n">print</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+N-1 selection stats:
+Ignoring twoElectron         : pass = 10                                  all = 40                                  -- eff = 25.0 %
+Ignoring noMuon              : pass = 3                                   all = 40                                  -- eff = 7.5 %
+Ignoring leadPt20            : pass = 5                                   all = 40                                  -- eff = 12.5 %
+All cuts                     : pass = 3                                   all = 40                                  -- eff = 7.5 %
+</pre></div></div>
+</div>
+<p>Or get a histogram of your total event yields. This just returns a <code class="docutils literal notranslate"><span class="pre">hist.Hist</span></code> object and we can plot it with its backends to <code class="docutils literal notranslate"><span class="pre">mplhep</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">h</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">nminusone</span><span class="o">.</span><span class="n">yieldhist</span><span class="p">()</span>
+<span class="n">h</span><span class="o">.</span><span class="n">plot1d</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">get_xticks</span><span class="p">(),</span> <span class="n">labels</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_packedselection_27_0.png" src="../_images/notebooks_packedselection_27_0.png" />
+</div>
+</div>
+<p>You can also save the results of the N-1 selection to a <code class="docutils literal notranslate"><span class="pre">.npz</span></code> file for later use.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nminusone</span><span class="o">.</span><span class="n">to_npz</span><span class="p">(</span><span class="s2">&quot;nminusone_results.npz&quot;</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;nminusone_results.npz&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+labels: [&#39;initial&#39; &#39;N - twoElectron&#39; &#39;N - noMuon&#39; &#39;N - leadPt20&#39; &#39;N&#39;]
+nev: [40 10  3  5  3]
+masks: [[False  True  True False False False False False False  True False False
+  False False False  True  True False False False  True  True False False
+  False False False  True False  True False False False  True False False
+  False False False False]
+ [False False  True False False False False False False False False False
+  False False False False False False False False  True  True False False
+  False False False False False False False False False False False False
+  False False False False]
+ [False False  True  True False False False False False False False False
+  False False False False False False  True False  True  True False False
+  False False False False False False False False False False False False
+  False False False False]
+ [False False  True False False False False False False False False False
+  False False False False False False False False  True  True False False
+  False False False False False False False False False False False False
+  False False False False]]
+</pre></div></div>
+</div>
+<p>Finally, we can ask from this object to create histograms of different variables, masking them with our N-1 selection. What it will output is a list of histograms, one for each requested variable, where the x-axis is the distribution of the variable, and the y-axis is the mask that was applied. It is essentially slices of how the variable distribution evolves as each N-1 or N selection is applied. It does also return a list of labels of the masks to keep track.</p>
+<p>Note that the variables are parsed using a dictonary of <code class="docutils literal notranslate"><span class="pre">name:</span> <span class="pre">array</span></code> pairs and that the arrays will of course be flattened to be histogrammed.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">hs</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">nminusone</span><span class="o">.</span><span class="n">plot_vars</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">&quot;Ept&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Electron</span><span class="o">.</span><span class="n">pt</span><span class="p">,</span> <span class="s2">&quot;Ephi&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Electron</span><span class="o">.</span><span class="n">phi</span><span class="p">}</span>
+<span class="p">)</span>
+<span class="n">hs</span><span class="p">,</span> <span class="n">labels</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+([Hist(
+    Regular(20, 5.81891, 60.0685, name=&#39;Ept&#39;),
+    Integer(0, 5, name=&#39;N-1&#39;),
+    storage=Double()) # Sum: 60.0,
+  Hist(
+    Regular(20, -2.93115, 3.11865, name=&#39;Ephi&#39;),
+    Integer(0, 5, name=&#39;N-1&#39;),
+    storage=Double()) # Sum: 60.0],
+ [&#39;initial&#39;, &#39;N - twoElectron&#39;, &#39;N - noMuon&#39;, &#39;N - leadPt20&#39;, &#39;N&#39;])
+</pre></div></div>
+</div>
+<p>And we can actually plot those histograms using again the <code class="docutils literal notranslate"><span class="pre">mplhep</span></code> backend.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hs</span><span class="p">:</span>
+    <span class="n">h</span><span class="o">.</span><span class="n">plot2d</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">get_yticks</span><span class="p">(),</span> <span class="n">labels</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_packedselection_33_0.png" src="../_images/notebooks_packedselection_33_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_packedselection_33_1.png" src="../_images/notebooks_packedselection_33_1.png" />
+</div>
+</div>
+<p>You can slice these histograms to view and plot the 1D histogram at each step of the selection. For example, if we want the <span class="math notranslate nohighlight">\(P_T\)</span> of the electrons at the final step (index 4) of the selection, we can do the following.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">hs</span><span class="p">[</span><span class="mi">0</span><span class="p">][:,</span> <span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">plot1d</span><span class="p">(</span><span class="n">yerr</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">yscale</span><span class="p">(</span><span class="s2">&quot;log&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_packedselection_35_0.png" src="../_images/notebooks_packedselection_35_0.png" />
+</div>
+</div>
+<p>Because this automatic bining doesn’t look great, for <span class="math notranslate nohighlight">\(P_T\)</span> at least, the user has the ability to customize the axes or pass in their own axes objects.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">help</span><span class="p">(</span><span class="n">nminusone</span><span class="o">.</span><span class="n">plot_vars</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Help on method plot_vars in module coffea.analysis_tools:
+
+plot_vars(vars, axes=None, bins=None, start=None, stop=None, edges=None, transform=None) method of coffea.analysis_tools.NminusOne instance
+    Plot the histograms of variables for each step of the N-1 selection
+
+    Parameters
+    ----------
+        vars : dict
+            A dictionary in the form ``{name: array}`` where ``name`` is the name of the variable,
+            and ``array`` is the corresponding array of values.
+            The arrays must be the same length as each mask of the N-1 selection.
+        axes : list of hist.axis objects, optional
+            The axes objects to histogram the variables on. This will override all the following arguments that define axes.
+            Must be the same length as ``vars``.
+        bins : iterable of integers or Nones, optional
+            The number of bins for each variable histogram. If not specified, it defaults to 20.
+            Must be the same length as ``vars``.
+        start : iterable of floats or integers or Nones, optional
+            The lower edge of the first bin for each variable histogram. If not specified, it defaults to the minimum value of the variable array.
+            Must be the same length as ``vars``.
+        stop : iterable of floats or integers or Nones, optional
+            The upper edge of the last bin for each variable histogram. If not specified, it defaults to the maximum value of the variable array.
+            Must be the same length as ``vars``.
+        edges : list of iterables of floats or integers, optional
+            The bin edges for each variable histogram. This overrides ``bins``, ``start``, and ``stop`` if specified.
+            Must be the same length as ``vars``.
+        transform : iterable of hist.axis.transform objects or Nones, optional
+            The transforms to apply to each variable histogram axis. If not specified, it defaults to None.
+            Must be the same length as ``vars``.
+
+    Returns
+    -------
+        hists : list of hist.Hist or hist.dask.Hist objects
+            A list of 2D histograms of the variables for each step of the N-1 selection.
+            The first axis is the variable, the second axis is the N-1 selection step.
+        labels : list of strings
+            The bin labels of y axis of the histogram.
+
+</pre></div></div>
+</div>
+<p>Cutflow is implemented in a similar manner to the N-1 selection. We just have to use the <code class="docutils literal notranslate"><span class="pre">cutflow(*names)</span></code> function which will return a <code class="docutils literal notranslate"><span class="pre">Cutflow</span></code> object</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">cutflow</span> <span class="o">=</span> <span class="n">selection</span><span class="o">.</span><span class="n">cutflow</span><span class="p">(</span><span class="s2">&quot;noMuon&quot;</span><span class="p">,</span> <span class="s2">&quot;twoElectron&quot;</span><span class="p">,</span> <span class="s2">&quot;leadPt20&quot;</span><span class="p">)</span>
+<span class="n">cutflow</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Cutflow(selections=(&#39;noMuon&#39;, &#39;twoElectron&#39;, &#39;leadPt20&#39;))
+</pre></div></div>
+</div>
+<p>The methods of this object are similar to the <code class="docutils literal notranslate"><span class="pre">NminusOne</span></code> object. The only difference is that now we seperate things in either “onecut” or “cutflow”. “onecut” represents results where each cut is applied alone, while “cutflow” represents results where the cuts are applied cumulatively in order.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">res</span> <span class="o">=</span> <span class="n">cutflow</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">res</span><span class="p">),</span> <span class="n">res</span><span class="o">.</span><span class="n">_fields</span><span class="p">)</span>
+<span class="n">labels</span><span class="p">,</span> <span class="n">nevonecut</span><span class="p">,</span> <span class="n">nevcutflow</span><span class="p">,</span> <span class="n">masksonecut</span><span class="p">,</span> <span class="n">maskscutflow</span> <span class="o">=</span> <span class="n">res</span>
+<span class="n">labels</span><span class="p">,</span> <span class="n">nevonecut</span><span class="p">,</span> <span class="n">nevcutflow</span><span class="p">,</span> <span class="n">masksonecut</span><span class="p">,</span> <span class="n">maskscutflow</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;class &#39;coffea.analysis_tools.CutflowResult&#39;&gt; (&#39;labels&#39;, &#39;nevonecut&#39;, &#39;nevcutflow&#39;, &#39;masksonecut&#39;, &#39;maskscutflow&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+([&#39;initial&#39;, &#39;noMuon&#39;, &#39;twoElectron&#39;, &#39;leadPt20&#39;],
+ [40, 28, 5, 17],
+ [40, 28, 5, 3],
+ [array([ True,  True,  True,  True, False, False, False,  True,  True,
+          True, False,  True,  True,  True, False,  True,  True,  True,
+          True,  True,  True,  True,  True, False, False,  True, False,
+          True, False,  True, False, False,  True,  True, False,  True,
+          True,  True,  True,  True]),
+  array([False, False,  True,  True, False, False, False, False, False,
+         False, False, False, False, False, False, False, False, False,
+          True, False,  True,  True, False, False, False, False, False,
+         False, False, False, False, False, False, False, False, False,
+         False, False, False, False]),
+  array([False,  True,  True, False,  True,  True,  True, False, False,
+          True, False, False, False, False, False,  True,  True, False,
+         False, False,  True,  True, False,  True,  True, False,  True,
+          True, False,  True, False,  True, False,  True, False, False,
+         False, False, False, False])],
+ [array([ True,  True,  True,  True, False, False, False,  True,  True,
+          True, False,  True,  True,  True, False,  True,  True,  True,
+          True,  True,  True,  True,  True, False, False,  True, False,
+          True, False,  True, False, False,  True,  True, False,  True,
+          True,  True,  True,  True]),
+  array([False, False,  True,  True, False, False, False, False, False,
+         False, False, False, False, False, False, False, False, False,
+          True, False,  True,  True, False, False, False, False, False,
+         False, False, False, False, False, False, False, False, False,
+         False, False, False, False]),
+  array([False, False,  True, False, False, False, False, False, False,
+         False, False, False, False, False, False, False, False, False,
+         False, False,  True,  True, False, False, False, False, False,
+         False, False, False, False, False, False, False, False, False,
+         False, False, False, False])])
+</pre></div></div>
+</div>
+<p>As you can see, again we have the same <code class="docutils literal notranslate"><span class="pre">labels</span></code>, <code class="docutils literal notranslate"><span class="pre">nev</span></code> and <code class="docutils literal notranslate"><span class="pre">masks</span></code> only now we have two “versions” of them since they’ve been split into “onecut” and “cutflow”. You can again print the statistics of the cutflow exactly like <code class="docutils literal notranslate"><span class="pre">RDataFrame</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">cutflow</span><span class="o">.</span><span class="n">print</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Cutflow stats:
+Cut noMuon              : pass = 28                                  cumulative pass = 28                                  all = 40                                  --  eff = 70.0 %                -- cumulative eff = 70.0 %
+Cut twoElectron         : pass = 5                                   cumulative pass = 5                                   all = 40                                  --  eff = 12.5 %                -- cumulative eff = 12.5 %
+Cut leadPt20            : pass = 17                                  cumulative pass = 3                                   all = 40                                  --  eff = 42.5 %                -- cumulative eff = 7.5 %
+</pre></div></div>
+</div>
+<p>Again, you can extract yield hists, only now there are two of them.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">honecut</span><span class="p">,</span> <span class="n">hcutflow</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">cutflow</span><span class="o">.</span><span class="n">yieldhist</span><span class="p">()</span>
+
+<span class="n">honecut</span><span class="o">.</span><span class="n">plot1d</span><span class="p">(</span><span class="n">yerr</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">get_xticks</span><span class="p">(),</span> <span class="n">labels</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="n">hcutflow</span><span class="o">.</span><span class="n">plot1d</span><span class="p">(</span><span class="n">yerr</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">get_xticks</span><span class="p">(),</span> <span class="n">labels</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_packedselection_45_0.png" src="../_images/notebooks_packedselection_45_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_packedselection_45_1.png" src="../_images/notebooks_packedselection_45_1.png" />
+</div>
+</div>
+<p>Saving to <code class="docutils literal notranslate"><span class="pre">.npz</span></code> files is again there.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">cutflow</span><span class="o">.</span><span class="n">to_npz</span><span class="p">(</span><span class="s2">&quot;cutflow_results.npz&quot;</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;cutflow_results.npz&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+labels: [&#39;initial&#39; &#39;noMuon&#39; &#39;twoElectron&#39; &#39;leadPt20&#39;]
+nevonecut: [40 28  5 17]
+nevcutflow: [40 28  5  3]
+masksonecut: [[ True  True  True  True False False False  True  True  True False  True
+   True  True False  True  True  True  True  True  True  True  True False
+  False  True False  True False  True False False  True  True False  True
+   True  True  True  True]
+ [False False  True  True False False False False False False False False
+  False False False False False False  True False  True  True False False
+  False False False False False False False False False False False False
+  False False False False]
+ [False  True  True False  True  True  True False False  True False False
+  False False False  True  True False False False  True  True False  True
+   True False  True  True False  True False  True False  True False False
+  False False False False]]
+maskscutflow: [[ True  True  True  True False False False  True  True  True False  True
+   True  True False  True  True  True  True  True  True  True  True False
+  False  True False  True False  True False False  True  True False  True
+   True  True  True  True]
+ [False False  True  True False False False False False False False False
+  False False False False False False  True False  True  True False False
+  False False False False False False False False False False False False
+  False False False False]
+ [False False  True False False False False False False False False False
+  False False False False False False False False  True  True False False
+  False False False False False False False False False False False False
+  False False False False]]
+</pre></div></div>
+</div>
+<p>And finally, <code class="docutils literal notranslate"><span class="pre">plot_vars</span></code> is also there with the same axes customizability while now it returns two lists of histograms, one for “onecut” and one for “cutflow”. Those can of course be plotted in a similar fashion.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">h1</span><span class="p">,</span> <span class="n">h2</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">cutflow</span><span class="o">.</span><span class="n">plot_vars</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">&quot;ept&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Electron</span><span class="o">.</span><span class="n">pt</span><span class="p">,</span> <span class="s2">&quot;ephi&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Electron</span><span class="o">.</span><span class="n">phi</span><span class="p">}</span>
+<span class="p">)</span>
+<span class="n">h1</span><span class="p">,</span> <span class="n">h2</span><span class="p">,</span> <span class="n">labels</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+([Hist(
+    Regular(20, 5.81891, 60.0685, name=&#39;ept&#39;),
+    Integer(0, 4, name=&#39;onecut&#39;),
+    storage=Double()) # Sum: 73.0,
+  Hist(
+    Regular(20, -2.93115, 3.11865, name=&#39;ephi&#39;),
+    Integer(0, 4, name=&#39;onecut&#39;),
+    storage=Double()) # Sum: 73.0],
+ [Hist(
+    Regular(20, 5.81891, 60.0685, name=&#39;ept&#39;),
+    Integer(0, 4, name=&#39;cutflow&#39;),
+    storage=Double()) # Sum: 63.0,
+  Hist(
+    Regular(20, -2.93115, 3.11865, name=&#39;ephi&#39;),
+    Integer(0, 4, name=&#39;cutflow&#39;),
+    storage=Double()) # Sum: 63.0],
+ [&#39;initial&#39;, &#39;noMuon&#39;, &#39;twoElectron&#39;, &#39;leadPt20&#39;])
+</pre></div></div>
+</div>
+<p>Now, in <code class="docutils literal notranslate"><span class="pre">coffea</span></code> 2023, everything happens in a delayed fashion. Therefore, <code class="docutils literal notranslate"><span class="pre">PackedSelection</span></code> can also operate in delayed or lazy mode and fully support <code class="docutils literal notranslate"><span class="pre">dask_awkward</span></code> arrays. Use is still the same, but everything now is a delayed <code class="docutils literal notranslate"><span class="pre">dask</span></code> type object which can be computed whenever the user wants to. This can be done by either calling <code class="docutils literal notranslate"><span class="pre">.compute()</span></code> on the object or <code class="docutils literal notranslate"><span class="pre">dask.compute(*things)</span></code>.</p>
+<p>PackedSelection can be initialized to operate in delayed mode by adding a delayed <code class="docutils literal notranslate"><span class="pre">dask_awkward</span></code> array for the first time instead of a materialized <code class="docutils literal notranslate"><span class="pre">numpy</span></code> or <code class="docutils literal notranslate"><span class="pre">awkward</span></code> one. I would like to note that we only support delayed <code class="docutils literal notranslate"><span class="pre">dask_awkward</span></code> arrays and not <code class="docutils literal notranslate"><span class="pre">dask.array</span></code> arrays. Please convert your <code class="docutils literal notranslate"><span class="pre">dask</span></code> arrays to <code class="docutils literal notranslate"><span class="pre">dask_awkward</span></code> via <code class="docutils literal notranslate"><span class="pre">dask_awkward.from_dask_array(array)</span></code>. I would also like to note that you cannot mix materialized and delayed arrays in the same <code class="docutils literal notranslate"><span class="pre">PackedSelection</span></code>.
+Let’s now read the same events using dask and perform the exact same things.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">dask</span>
+<span class="kn">import</span> <span class="nn">dask_awkward</span> <span class="k">as</span> <span class="nn">dak</span>
+
+<span class="n">dakevents</span> <span class="o">=</span> <span class="n">NanoEventsFactory</span><span class="o">.</span><span class="n">from_root</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">&quot;../tests/samples/nano_dy.root&quot;</span><span class="p">:</span> <span class="s2">&quot;Events&quot;</span><span class="p">},</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;dataset&quot;</span><span class="p">:</span> <span class="s2">&quot;nano_dy&quot;</span><span class="p">},</span>
+    <span class="n">schemaclass</span><span class="o">=</span><span class="n">NanoAODSchema</span><span class="p">,</span>
+    <span class="n">permit_dask</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span><span class="o">.</span><span class="n">events</span><span class="p">()</span>
+
+<span class="n">dakevents</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/iason/fun/coffea_dev/coffea/binder/coffea/nanoevents/schemas/nanoaod.py:215: RuntimeWarning: Missing cross-reference index for FatJet_genJetAK8Idx =&gt; GenJetAK8
+  warnings.warn(
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+dask.awkward&lt;from-uproot, npartitions=1&gt;
+</pre></div></div>
+</div>
+<p>Now <code class="docutils literal notranslate"><span class="pre">dakevents</span></code> is a delayed <code class="docutils literal notranslate"><span class="pre">dask_awkward</span></code> version of our events and if we compute it we get our normal events.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dakevents</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<pre>[{FsrPhoton: [], Electron: [], SoftActivityJetHT5: 63.5, RawMET: {...}, ...},
+ {FsrPhoton: [], Electron: [{...}], SoftActivityJetHT5: 64, RawMET: {...}, ...},
+ {FsrPhoton: [], Electron: [Electron, Electron], SoftActivityJetHT5: 130, ...},
+ {FsrPhoton: [], Electron: [Electron, Electron], SoftActivityJetHT5: 25.8, ...},
+ {FsrPhoton: [], Electron: [], SoftActivityJetHT5: 172, RawMET: {...}, ...},
+ {FsrPhoton: [], Electron: [{...}], SoftActivityJetHT5: 54.4, RawMET: ..., ...},
+ {FsrPhoton: [], Electron: [{...}], SoftActivityJetHT5: 96.2, RawMET: ..., ...},
+ {FsrPhoton: [], Electron: [], SoftActivityJetHT5: 19, RawMET: {...}, ...},
+ {FsrPhoton: [], Electron: [], SoftActivityJetHT5: 9.36, RawMET: {...}, ...},
+ {FsrPhoton: [], Electron: [{...}], SoftActivityJetHT5: 115, RawMET: ..., ...},
+ ...,
+ {FsrPhoton: [], Electron: [{...}], SoftActivityJetHT5: 49.6, RawMET: ..., ...},
+ {FsrPhoton: [], Electron: [], SoftActivityJetHT5: 14.7, RawMET: {...}, ...},
+ {FsrPhoton: [], Electron: [{...}], SoftActivityJetHT5: 22.1, RawMET: ..., ...},
+ {FsrPhoton: [], Electron: [], SoftActivityJetHT5: 33.9, RawMET: {...}, ...},
+ {FsrPhoton: [], Electron: [{...}], SoftActivityJetHT5: 16.2, RawMET: ..., ...},
+ {FsrPhoton: [], Electron: [], SoftActivityJetHT5: 28.4, RawMET: {...}, ...},
+ {FsrPhoton: [], Electron: [{...}], SoftActivityJetHT5: 16.1, RawMET: ..., ...},
+ {FsrPhoton: [], Electron: [], SoftActivityJetHT5: 28.5, RawMET: {...}, ...},
+ {FsrPhoton: [], Electron: [], SoftActivityJetHT5: 7, RawMET: {...}, ...}]
+--------------------------------------------------------------------------------
+type: 40 * event</pre></div>
+</div>
+<p>Now we have to use <code class="docutils literal notranslate"><span class="pre">dask_awkward</span></code> instead of <code class="docutils literal notranslate"><span class="pre">awkward</span></code> and <code class="docutils literal notranslate"><span class="pre">dakevents</span></code> instead of <code class="docutils literal notranslate"><span class="pre">events</span></code> to do the same things. Let’s add the same (now delayed) arrays to PackedSelection.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">selection</span> <span class="o">=</span> <span class="n">PackedSelection</span><span class="p">()</span>
+
+<span class="n">selection</span><span class="o">.</span><span class="n">add_multiple</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;twoElectron&quot;</span><span class="p">:</span> <span class="n">dak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">dakevents</span><span class="o">.</span><span class="n">Electron</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s2">&quot;eleOppSign&quot;</span><span class="p">:</span> <span class="n">dak</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dakevents</span><span class="o">.</span><span class="n">Electron</span><span class="o">.</span><span class="n">charge</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;noElectron&quot;</span><span class="p">:</span> <span class="n">dak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">dakevents</span><span class="o">.</span><span class="n">Electron</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;twoMuon&quot;</span><span class="p">:</span> <span class="n">dak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">dakevents</span><span class="o">.</span><span class="n">Muon</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s2">&quot;muOppSign&quot;</span><span class="p">:</span> <span class="n">dak</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dakevents</span><span class="o">.</span><span class="n">Muon</span><span class="o">.</span><span class="n">charge</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;noMuon&quot;</span><span class="p">:</span> <span class="n">dak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">dakevents</span><span class="o">.</span><span class="n">Muon</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;leadPt20&quot;</span><span class="p">:</span> <span class="n">dak</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">dakevents</span><span class="o">.</span><span class="n">Electron</span><span class="o">.</span><span class="n">pt</span> <span class="o">&gt;=</span> <span class="mf">20.0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="o">|</span> <span class="n">dak</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">dakevents</span><span class="o">.</span><span class="n">Muon</span><span class="o">.</span><span class="n">pt</span> <span class="o">&gt;=</span> <span class="mf">20.0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">selection</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+PackedSelection(selections=(&#39;twoElectron&#39;, &#39;eleOppSign&#39;, &#39;noElectron&#39;, &#39;twoMuon&#39;, &#39;muOppSign&#39;, &#39;noMuon&#39;, &#39;leadPt20&#39;), delayed_mode=True, items=7, maxitems=32)
+</pre></div></div>
+</div>
+<p>Now, the same functions will return <code class="docutils literal notranslate"><span class="pre">dask_awkward</span></code> objects that have to be computed.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">selection</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="s2">&quot;twoElectron&quot;</span><span class="p">,</span> <span class="s2">&quot;noMuon&quot;</span><span class="p">,</span> <span class="s2">&quot;leadPt20&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+dask.awkward&lt;equal, npartitions=1&gt;
+</pre></div></div>
+</div>
+<p>When computing those arrays we should get the same arrays that we got when operating in eager mode.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">selection</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="s2">&quot;twoElectron&quot;</span><span class="p">,</span> <span class="s2">&quot;noMuon&quot;</span><span class="p">,</span> <span class="s2">&quot;leadPt20&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">selection</span><span class="o">.</span><span class="n">require</span><span class="p">(</span><span class="n">twoElectron</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">noMuon</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">eleOppSign</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[False, False, True, False, False, ..., False, False, False, False, False]
+[False, False, False, True, False, ..., False, False, False, False, False]
+</pre></div></div>
+</div>
+<p>Now, N-1 and cutflow will just return only delayed objects that must be computed.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nminusone</span> <span class="o">=</span> <span class="n">selection</span><span class="o">.</span><span class="n">nminusone</span><span class="p">(</span><span class="s2">&quot;twoElectron&quot;</span><span class="p">,</span> <span class="s2">&quot;noMuon&quot;</span><span class="p">,</span> <span class="s2">&quot;leadPt20&quot;</span><span class="p">)</span>
+<span class="n">nminusone</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+NminusOne(selections=(&#39;twoElectron&#39;, &#39;noMuon&#39;, &#39;leadPt20&#39;))
+</pre></div></div>
+</div>
+<p>It is again an <code class="docutils literal notranslate"><span class="pre">NminusOne</span></code> object which has the same methods.</p>
+<p>Let’s look at the results of the N-1 selection in the same way</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">labels</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">masks</span> <span class="o">=</span> <span class="n">nminusone</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+<span class="n">labels</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">masks</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+([&#39;initial&#39;, &#39;N - twoElectron&#39;, &#39;N - noMuon&#39;, &#39;N - leadPt20&#39;, &#39;N&#39;],
+ [dask.awkward&lt;count, type=Scalar, dtype=int64&gt;,
+  dask.awkward&lt;sum, type=Scalar, dtype=int64&gt;,
+  dask.awkward&lt;sum, type=Scalar, dtype=int64&gt;,
+  dask.awkward&lt;sum, type=Scalar, dtype=int64&gt;,
+  dask.awkward&lt;sum, type=Scalar, dtype=int64&gt;],
+ [dask.awkward&lt;equal, npartitions=1&gt;,
+  dask.awkward&lt;equal, npartitions=1&gt;,
+  dask.awkward&lt;equal, npartitions=1&gt;,
+  dask.awkward&lt;equal, npartitions=1&gt;])
+</pre></div></div>
+</div>
+<p>Now however, you can see that everything is a dask awkward object (apart from the labels of course). If we compute them we should get the same things as before and indeed we do:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dask</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="o">*</span><span class="n">nev</span><span class="p">),</span> <span class="n">dask</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="o">*</span><span class="n">masks</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+((40, 10, 3, 5, 3),
+ (&lt;Array [False, True, True, False, ..., False, False, False] type=&#39;40 * bool&#39;&gt;,
+  &lt;Array [False, False, True, False, ..., False, False, False] type=&#39;40 * bool&#39;&gt;,
+  &lt;Array [False, False, True, True, ..., False, False, False] type=&#39;40 * bool&#39;&gt;,
+  &lt;Array [False, False, True, False, ..., False, False, False] type=&#39;40 * bool&#39;&gt;))
+</pre></div></div>
+</div>
+<p>We can again print the statistics, however for this to happen, the object must of course compute the delayed <code class="docutils literal notranslate"><span class="pre">nev</span></code> list.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nminusone</span><span class="o">.</span><span class="n">print</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+N-1 selection stats:
+Ignoring twoElectron         : pass = 10                                  all = 40                                  -- eff = 25.0 %
+Ignoring noMuon              : pass = 3                                   all = 40                                  -- eff = 7.5 %
+Ignoring leadPt20            : pass = 5                                   all = 40                                  -- eff = 12.5 %
+All cuts                     : pass = 3                                   all = 40                                  -- eff = 7.5 %
+</pre></div></div>
+</div>
+<p>And now if we call <code class="docutils literal notranslate"><span class="pre">result()</span></code> again, the <code class="docutils literal notranslate"><span class="pre">nev</span></code> list is materialized.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nminusone</span><span class="o">.</span><span class="n">result</span><span class="p">()</span><span class="o">.</span><span class="n">nev</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[40, 10, 3, 5, 3]
+</pre></div></div>
+</div>
+<p>Again the histogram of your total event yields works. This time it is returns a <code class="docutils literal notranslate"><span class="pre">hist.dask.Hist</span></code> object.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">h</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">nminusone</span><span class="o">.</span><span class="n">yieldhist</span><span class="p">()</span>
+<span class="n">h</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<html>
+<div style="display:flex; align-items:center;">
+<div style="width:290px;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -105 270 120">
+<line x1="-5" y1="0" x2="255" y2="0" style="fill:none;stroke-width:2;stroke:currentColor"/>
+<text text-anchor="middle" x="0" y="15" style="fill:currentColor;">
+0
+</text>
+<text text-anchor="middle" x="250" y="15" style="fill:currentColor;">
+5
+</text>
+<text text-anchor="middle" x="125.0" y="15" style="fill:currentColor;">
+N-1
+</text>
+<polyline points="  0,0   0,-0  50,-0  50,-0 100,-0 100,-0 150,-0 150,-0 200,-0 200,-0 250,-0 250,0" style="fill:none; stroke:currentColor;"/>
+</svg>
+</div>
+<div style="flex=grow:1;">
+Integer(0, 5, name='N-1')<br/>
+<hr style="margin-top:.2em; margin-bottom:.2em;"/>
+Double() Σ=0.0
+
+</div>
+</div>
+</html></div>
+</div>
+<p>It appears empty because it hasn’t been computed yet. Let’s do that.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">h</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<html>
+<div style="display:flex; align-items:center;">
+<div style="width:290px;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -105 270 120">
+<line x1="-5" y1="0" x2="255" y2="0" style="fill:none;stroke-width:2;stroke:currentColor"/>
+<text text-anchor="middle" x="0" y="15" style="fill:currentColor;">
+0
+</text>
+<text text-anchor="middle" x="250" y="15" style="fill:currentColor;">
+5
+</text>
+<text text-anchor="middle" x="125.0" y="15" style="fill:currentColor;">
+N-1
+</text>
+<polyline points="  0,0   0,-100  50,-100  50,-25 100,-25 100,-7.5 150,-7.5 150,-12.5 200,-12.5 200,-7.5 250,-7.5 250,0" style="fill:none; stroke:currentColor;"/>
+</svg>
+</div>
+<div style="flex=grow:1;">
+Integer(0, 5, name='N-1')<br/>
+<hr style="margin-top:.2em; margin-bottom:.2em;"/>
+Double() Σ=61.0
+
+</div>
+</div>
+</html></div>
+</div>
+<p>Notice that this doesn’t happen in place as <code class="docutils literal notranslate"><span class="pre">h</span></code> is still not computed.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">h</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<html>
+<div style="display:flex; align-items:center;">
+<div style="width:290px;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -105 270 120">
+<line x1="-5" y1="0" x2="255" y2="0" style="fill:none;stroke-width:2;stroke:currentColor"/>
+<text text-anchor="middle" x="0" y="15" style="fill:currentColor;">
+0
+</text>
+<text text-anchor="middle" x="250" y="15" style="fill:currentColor;">
+5
+</text>
+<text text-anchor="middle" x="125.0" y="15" style="fill:currentColor;">
+N-1
+</text>
+<polyline points="  0,0   0,-0  50,-0  50,-0 100,-0 100,-0 150,-0 150,-0 200,-0 200,-0 250,-0 250,0" style="fill:none; stroke:currentColor;"/>
+</svg>
+</div>
+<div style="flex=grow:1;">
+Integer(0, 5, name='N-1')<br/>
+<hr style="margin-top:.2em; margin-bottom:.2em;"/>
+Double() Σ=0.0
+
+</div>
+</div>
+</html></div>
+</div>
+<p>We can again plot this histogram but we have to call plot on the computed one, otherwise it will just be empty.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[38]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">h</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span><span class="o">.</span><span class="n">plot1d</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">get_xticks</span><span class="p">(),</span> <span class="n">labels</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_packedselection_78_0.png" src="../_images/notebooks_packedselection_78_0.png" />
+</div>
+</div>
+<p>And we got exactly the same thing. Saving to <code class="docutils literal notranslate"><span class="pre">.npz</span></code> files is still possible but the delayed arrays will be naturally materalized while saving.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[39]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nminusone</span><span class="o">.</span><span class="n">to_npz</span><span class="p">(</span><span class="s2">&quot;nminusone_results.npz&quot;</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;nminusone_results.npz&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+labels: [&#39;initial&#39; &#39;N - twoElectron&#39; &#39;N - noMuon&#39; &#39;N - leadPt20&#39; &#39;N&#39;]
+nev: [40 10  3  5  3]
+masks: [[False  True  True False False False False False False  True False False
+  False False False  True  True False False False  True  True False False
+  False False False  True False  True False False False  True False False
+  False False False False]
+ [False False  True False False False False False False False False False
+  False False False False False False False False  True  True False False
+  False False False False False False False False False False False False
+  False False False False]
+ [False False  True  True False False False False False False False False
+  False False False False False False  True False  True  True False False
+  False False False False False False False False False False False False
+  False False False False]
+ [False False  True False False False False False False False False False
+  False False False False False False False False  True  True False False
+  False False False False False False False False False False False False
+  False False False False]]
+</pre></div></div>
+</div>
+<p>Same logic applies to the <code class="docutils literal notranslate"><span class="pre">plot_vars</span></code> function. Remember to use <code class="docutils literal notranslate"><span class="pre">dakevents</span></code> now and not <code class="docutils literal notranslate"><span class="pre">events</span></code>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[40]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">hs</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">nminusone</span><span class="o">.</span><span class="n">plot_vars</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">&quot;Ept&quot;</span><span class="p">:</span> <span class="n">dakevents</span><span class="o">.</span><span class="n">Electron</span><span class="o">.</span><span class="n">pt</span><span class="p">,</span> <span class="s2">&quot;Ephi&quot;</span><span class="p">:</span> <span class="n">dakevents</span><span class="o">.</span><span class="n">Electron</span><span class="o">.</span><span class="n">phi</span><span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Those histograms are also delayed and have to be computed before plotting them.</p>
+<p>Exactly the same things apply to the cutflow in delayed mode.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="dataset_discovery.html" class="btn btn-neutral float-left" title="Dataset discovery tools" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../concepts.html" class="btn btn-neutral float-right" title="Coffea concepts" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Fermi National Accelerator Laboratory.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

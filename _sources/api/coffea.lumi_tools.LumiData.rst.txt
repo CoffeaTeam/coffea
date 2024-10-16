@@ -1,0 +1,27 @@
+LumiData
+========
+
+.. currentmodule:: coffea.lumi_tools
+
+.. autoclass:: LumiData
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~LumiData.seconds_per_lumi_LHC
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~LumiData.get_lumi
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: seconds_per_lumi_LHC
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get_lumi

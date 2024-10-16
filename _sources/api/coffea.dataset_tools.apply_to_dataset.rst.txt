@@ -1,0 +1,6 @@
+apply_to_dataset
+================
+
+.. currentmodule:: coffea.dataset_tools
+
+.. autofunction:: apply_to_dataset

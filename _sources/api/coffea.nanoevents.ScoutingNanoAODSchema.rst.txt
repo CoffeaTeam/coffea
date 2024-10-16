@@ -1,0 +1,19 @@
+ScoutingNanoAODSchema
+=====================
+
+.. currentmodule:: coffea.nanoevents
+
+.. autoclass:: ScoutingNanoAODSchema
+   :show-inheritance:
+
+   .. rubric:: Attributes Summary
+
+   .. autosummary::
+
+      ~ScoutingNanoAODSchema.all_cross_references
+      ~ScoutingNanoAODSchema.mixins
+
+   .. rubric:: Attributes Documentation
+
+   .. autoattribute:: all_cross_references
+   .. autoattribute:: mixins

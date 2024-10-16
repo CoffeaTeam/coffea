@@ -1,0 +1,772 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coffea Processors &mdash; coffea 2024.10.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+    <link rel="shortcut icon" href="../_static/coffea_favicon.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=2443068e"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=83e3a9fa"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Running inference tools" href="mltools.html" />
+    <link rel="prev" title="Applying corrections to columnar data" href="applying_corrections.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            coffea
+              <img src="../_static/coffea_favicon.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installing coffea</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../examples.html">Coffea by Example</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="nanoevents.html">Reading data with coffea NanoEvents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="applying_corrections.html">Applying corrections to columnar data</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Coffea Processors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Getting-fancy">Getting fancy</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mltools.html">Running inference tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dataset_discovery.html">Dataset discovery tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="packedselection.html">PackedSelection in Coffea 2023</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Coffea concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">API Reference Guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">coffea</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../examples.html">Coffea by Example</a></li>
+      <li class="breadcrumb-item active">Coffea Processors</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/notebooks/processor.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Coffea-Processors">
+<h1>Coffea Processors<a class="headerlink" href="#Coffea-Processors" title="Link to this heading"></a></h1>
+<p>This is a rendered copy of <a class="reference external" href="https://github.com/CoffeaTeam/coffea/blob/master/binder/processor.ipynb">processor.ipynb</a>. You can optionally run it interactively on <a class="reference external" href="https://mybinder.org/v2/gh/coffeateam/coffea/master?filepath=binder%2Fprocessor.ipynb">binder at this link</a></p>
+<p>Coffea relies mainly on <a class="reference external" href="https://github.com/scikit-hep/uproot">uproot</a> to provide access to ROOT files for analysis. As a usual analysis will involve processing tens to thousands of files, totalling gigabytes to terabytes of data, there is a certain amount of work to be done to build a parallelized framework to process the data in a reasonable amount of time. Of course, one can work directly within uproot to achieve this, as we’ll show in the beginning, but coffea provides the
+<code class="docutils literal notranslate"><span class="pre">coffea.processor</span></code> module, which allows users to worry just about the actual analysis code and not about how to implement efficient parallelization, assuming that the parallization is a trivial map-reduce operation (e.g. filling histograms and adding them together). The module provides the following key features:</p>
+<ul class="simple">
+<li><p>A <code class="docutils literal notranslate"><span class="pre">ProcessorABC</span></code> abstract base class that can be derived from to implement the analysis code;</p></li>
+<li><p>A <a class="reference external" href="https://coffeateam.github.io/coffea/notebooks/nanoevents.html">NanoEvents</a> interface to the arrays being read from the TTree as inputs;</p></li>
+<li><p>A generic <code class="docutils literal notranslate"><span class="pre">accumulate()</span></code> utility to reduce the outputs to a single result, as showin in the accumulators notebook tutorial; and</p></li>
+<li><p>A set of parallel executors to access multicore processing or distributed computing systems such as <a class="reference external" href="https://distributed.dask.org/en/latest/">Dask</a>, <a class="reference external" href="http://parsl-project.org/">Parsl</a>, <a class="reference external" href="https://spark.apache.org/">Spark</a>, <a class="reference external" href="https://cctools.readthedocs.io/en/latest/work_queue/">WorkQueue</a>, and others.</p></li>
+</ul>
+<p>Let’s start by writing a simple processor class that reads some CMS open data and plots a dimuon mass spectrum. We’ll start by copying the <a class="reference external" href="https://coffeateam.github.io/coffea/api/coffea.processor.ProcessorABC.html#coffea.processor.ProcessorABC">ProcessorABC</a> skeleton and filling in some details:</p>
+<ul class="simple">
+<li><p>Remove <code class="docutils literal notranslate"><span class="pre">flag</span></code>, as we won’t use it</p></li>
+<li><p>Adding a new histogram for <span class="math notranslate nohighlight">\(m_{\mu \mu}\)</span></p></li>
+<li><p>Building a <a class="reference external" href="https://coffeateam.github.io/coffea/api/coffea.nanoevents.methods.candidate.PtEtaPhiMCandidate.html#coffea.nanoevents.methods.candidate.PtEtaPhiMCandidate">Candidate</a> record for muons, since we will read it with <code class="docutils literal notranslate"><span class="pre">BaseSchema</span></code> interpretation (the files used here could be read with <code class="docutils literal notranslate"><span class="pre">NanoAODSchema</span></code> but we want to show how to build vector objects from other TTree formats)</p></li>
+<li><p>Calculating the dimuon invariant mass</p></li>
+</ul>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">hist</span>
+<span class="kn">import</span> <span class="nn">dask</span>
+<span class="kn">import</span> <span class="nn">awkward</span> <span class="k">as</span> <span class="nn">ak</span>
+<span class="kn">import</span> <span class="nn">hist.dask</span> <span class="k">as</span> <span class="nn">hda</span>
+<span class="kn">import</span> <span class="nn">dask_awkward</span> <span class="k">as</span> <span class="nn">dak</span>
+
+<span class="kn">from</span> <span class="nn">coffea</span> <span class="kn">import</span> <span class="n">processor</span>
+<span class="kn">from</span> <span class="nn">coffea.nanoevents.methods</span> <span class="kn">import</span> <span class="n">candidate</span>
+<span class="kn">from</span> <span class="nn">coffea.dataset_tools</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">apply_to_fileset</span><span class="p">,</span>
+    <span class="n">max_chunks</span><span class="p">,</span>
+    <span class="n">preprocess</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">distributed</span> <span class="kn">import</span> <span class="n">Client</span>
+
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">MyProcessor</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">ProcessorABC</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">events</span><span class="p">):</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">events</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;dataset&#39;</span><span class="p">]</span>
+        <span class="n">muons</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">zip</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;pt&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_pt</span><span class="p">,</span>
+                <span class="s2">&quot;eta&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_eta</span><span class="p">,</span>
+                <span class="s2">&quot;phi&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_phi</span><span class="p">,</span>
+                <span class="s2">&quot;mass&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_mass</span><span class="p">,</span>
+                <span class="s2">&quot;charge&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_charge</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">with_name</span><span class="o">=</span><span class="s2">&quot;PtEtaPhiMCandidate&quot;</span><span class="p">,</span>
+            <span class="n">behavior</span><span class="o">=</span><span class="n">candidate</span><span class="o">.</span><span class="n">behavior</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">h_mass</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">hda</span><span class="o">.</span><span class="n">Hist</span><span class="o">.</span><span class="n">new</span>
+            <span class="o">.</span><span class="n">StrCat</span><span class="p">([</span><span class="s2">&quot;opposite&quot;</span><span class="p">,</span> <span class="s2">&quot;same&quot;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sign&quot;</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">Log</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">200.</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;mass&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;$m_{\mu\mu}$ [GeV]&quot;</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">Int64</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="n">cut</span> <span class="o">=</span> <span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">muons</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">muons</span><span class="o">.</span><span class="n">charge</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># add first and second muon in every event together</span>
+        <span class="n">dimuon</span> <span class="o">=</span> <span class="n">muons</span><span class="p">[</span><span class="n">cut</span><span class="p">][:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">muons</span><span class="p">[</span><span class="n">cut</span><span class="p">][:,</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">h_mass</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">sign</span><span class="o">=</span><span class="s2">&quot;opposite&quot;</span><span class="p">,</span> <span class="n">mass</span><span class="o">=</span><span class="n">dimuon</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
+
+        <span class="n">cut</span> <span class="o">=</span> <span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">muons</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">muons</span><span class="o">.</span><span class="n">charge</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">dimuon</span> <span class="o">=</span> <span class="n">muons</span><span class="p">[</span><span class="n">cut</span><span class="p">][:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">muons</span><span class="p">[</span><span class="n">cut</span><span class="p">][:,</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">h_mass</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">sign</span><span class="o">=</span><span class="s2">&quot;same&quot;</span><span class="p">,</span> <span class="n">mass</span><span class="o">=</span><span class="n">dimuon</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">dataset</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;entries&quot;</span><span class="p">:</span> <span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+                <span class="s2">&quot;mass&quot;</span><span class="p">:</span> <span class="n">h_mass</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">postprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accumulator</span><span class="p">):</span>
+        <span class="k">pass</span>
+</pre></div>
+</div>
+</div>
+<p>If we were to just use bare uproot to execute this processor, we could do that with the following example, which:</p>
+<ul class="simple">
+<li><p>Opens a CMS open data file</p></li>
+<li><p>Creates a NanoEvents object using <code class="docutils literal notranslate"><span class="pre">BaseSchema</span></code> (roughly equivalent to the output of <code class="docutils literal notranslate"><span class="pre">uproot.lazy</span></code>)</p></li>
+<li><p>Creates a <code class="docutils literal notranslate"><span class="pre">MyProcessor</span></code> instance</p></li>
+<li><p>Runs the <code class="docutils literal notranslate"><span class="pre">process()</span></code> function, which returns our accumulators</p></li>
+</ul>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">coffea.nanoevents</span> <span class="kn">import</span> <span class="n">NanoEventsFactory</span><span class="p">,</span> <span class="n">BaseSchema</span>
+
+<span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;file://Run2012B_DoubleMuParked.root&quot;</span>
+<span class="n">events</span> <span class="o">=</span> <span class="n">NanoEventsFactory</span><span class="o">.</span><span class="n">from_root</span><span class="p">(</span>
+    <span class="p">{</span><span class="n">filename</span><span class="p">:</span> <span class="s2">&quot;Events&quot;</span><span class="p">},</span>
+    <span class="n">steps_per_file</span><span class="o">=</span><span class="mi">2_000</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;dataset&quot;</span><span class="p">:</span> <span class="s2">&quot;DoubleMuon&quot;</span><span class="p">},</span>
+    <span class="n">schemaclass</span><span class="o">=</span><span class="n">BaseSchema</span><span class="p">,</span>
+<span class="p">)</span><span class="o">.</span><span class="n">events</span><span class="p">()</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">MyProcessor</span><span class="p">()</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>
+<span class="p">(</span><span class="n">computed</span><span class="p">,)</span> <span class="o">=</span> <span class="n">dask</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">computed</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/saransh/Code/HEP/coffea/.env/lib/python3.11/site-packages/coffea/nanoevents/factory.py:299: RuntimeWarning: You have set steps_per_file to 2000, this should only be used for a
+                small number of inputs (e.g. for early-stage/exploratory analysis) since it does not
+                inform dask of each chunk lengths at creation time, which can cause unexpected
+                slowdowns at scale. If you would like to process larger datasets please specify steps
+                using the appropriate uproot &#34;files&#34; specification:
+                    https://github.com/scikit-hep/uproot5/blob/v5.1.2/src/uproot/_dask.py#L109-L132.
+
+  warnings.warn(
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;DoubleMuon&#39;: {&#39;entries&#39;: 26084708, &#39;mass&#39;: Hist(
+  StrCategory([&#39;opposite&#39;, &#39;same&#39;], name=&#39;sign&#39;),
+  Regular(1000, 0.2, 200, transform=log, name=&#39;mass&#39;, label=&#39;$m_{\\mu\\mu}$ [GeV]&#39;),
+  storage=Int64()) # Sum: 12819609.0 (12835141.0 with flow)}}
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">computed</span><span class="p">[</span><span class="s2">&quot;DoubleMuon&quot;</span><span class="p">][</span><span class="s2">&quot;mass&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">plot1d</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="s2">&quot;log&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Dimuon charge&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x29782ba10&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_processor_4_1.png" src="../_images/notebooks_processor_4_1.png" />
+</div>
+</div>
+<p>One could expand on this code to run over several chunks of the file, setting <code class="docutils literal notranslate"><span class="pre">entry_start</span></code> and <code class="docutils literal notranslate"><span class="pre">entry_stop</span></code> as appropriate. Then, several datasets could be processed by iterating over several files. However, the <code class="docutils literal notranslate"><span class="pre">dask.compute</span></code> and <code class="docutils literal notranslate"><span class="pre">coffea.dataset_tools</span></code> can help with this! We can <code class="docutils literal notranslate"><span class="pre">preprocess</span></code> multiple files and then use our custom <code class="docutils literal notranslate"><span class="pre">MyProcessor</span></code> class to generate the relevant dask task graph. Finally, the result can be obtained by calling <code class="docutils literal notranslate"><span class="pre">dask.compute</span></code>. Since these files are very
+large, we limit to just reading the first few chunks of events from each dataset with <code class="docutils literal notranslate"><span class="pre">maxchunks</span></code>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fileset</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;DoubleMuon&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;files&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;file://Run2012B_DoubleMuParked.root&#39;</span><span class="p">:</span> <span class="s2">&quot;Events&quot;</span><span class="p">,</span>
+            <span class="s1">&#39;file://Run2012C_DoubleMuParked.root&#39;</span><span class="p">:</span> <span class="s2">&quot;Events&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;ZZ to 4mu&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;files&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;file://ZZTo4mu.root&#39;</span><span class="p">:</span> <span class="s2">&quot;Events&quot;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+
+<span class="n">dataset_runnable</span><span class="p">,</span> <span class="n">dataset_updated</span> <span class="o">=</span> <span class="n">preprocess</span><span class="p">(</span>
+    <span class="n">fileset</span><span class="p">,</span>
+    <span class="n">align_clusters</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">step_size</span><span class="o">=</span><span class="mi">100_000</span><span class="p">,</span>
+    <span class="n">files_per_batch</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">skip_bad_files</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">save_form</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">to_compute</span> <span class="o">=</span> <span class="n">apply_to_fileset</span><span class="p">(</span>
+                <span class="n">MyProcessor</span><span class="p">(),</span>
+                <span class="n">max_chunks</span><span class="p">(</span><span class="n">dataset_runnable</span><span class="p">,</span> <span class="mi">300</span><span class="p">),</span>
+                <span class="n">schemaclass</span><span class="o">=</span><span class="n">BaseSchema</span><span class="p">,</span>
+            <span class="p">)</span>
+<span class="p">(</span><span class="n">out</span><span class="p">,)</span> <span class="o">=</span> <span class="n">dask</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">to_compute</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;DoubleMuon&#39;: {&#39;DoubleMuon&#39;: {&#39;entries&#39;: 56084708, &#39;mass&#39;: Hist(
+  StrCategory([&#39;opposite&#39;, &#39;same&#39;], name=&#39;sign&#39;),
+  Regular(1000, 0.2, 200, transform=log, name=&#39;mass&#39;, label=&#39;$m_{\\mu\\mu}$ [GeV]&#39;),
+  storage=Int64()) # Sum: 28258324.0 (28290486.0 with flow)}}, &#39;ZZ to 4mu&#39;: {&#39;ZZ to 4mu&#39;: {&#39;entries&#39;: 1499064, &#39;mass&#39;: Hist(
+  StrCategory([&#39;opposite&#39;, &#39;same&#39;], name=&#39;sign&#39;),
+  Regular(1000, 0.2, 200, transform=log, name=&#39;mass&#39;, label=&#39;$m_{\\mu\\mu}$ [GeV]&#39;),
+  storage=Int64()) # Sum: 288707.0 (289326.0 with flow)}}}
+</pre></div></div>
+</div>
+<p>The run may depend on how many cores are available on the machine you are running this notebook and your connection to <code class="docutils literal notranslate"><span class="pre">eospublic.cern.ch</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">out</span><span class="p">[</span><span class="s2">&quot;DoubleMuon&quot;</span><span class="p">][</span><span class="s2">&quot;DoubleMuon&quot;</span><span class="p">][</span><span class="s2">&quot;mass&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">plot1d</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="s2">&quot;log&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Dimuon charge&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.legend.Legend at 0x297ca0710&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_processor_9_1.png" src="../_images/notebooks_processor_9_1.png" />
+</div>
+</div>
+<section id="Getting-fancy">
+<h2>Getting fancy<a class="headerlink" href="#Getting-fancy" title="Link to this heading"></a></h2>
+<p>Let’s flesh out this analysis into a 4-muon analysis, searching for diboson events:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">import</span> <span class="nn">numba</span>
+
+
+<span class="nd">@numba</span><span class="o">.</span><span class="n">njit</span>
+<span class="k">def</span> <span class="nf">find_4lep_kernel</span><span class="p">(</span><span class="n">events_leptons</span><span class="p">,</span> <span class="n">builder</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Search for valid 4-lepton combinations from an array of events * leptons {charge, ...}</span>
+
+<span class="sd">    A valid candidate has two pairs of leptons that each have balanced charge</span>
+<span class="sd">    Outputs an array of events * candidates {indices 0..3} corresponding to all valid</span>
+<span class="sd">    permutations of all valid combinations of unique leptons in each event</span>
+<span class="sd">    (omitting permutations of the pairs)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">leptons</span> <span class="ow">in</span> <span class="n">events_leptons</span><span class="p">:</span>
+        <span class="n">builder</span><span class="o">.</span><span class="n">begin_list</span><span class="p">()</span>
+        <span class="n">nlep</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">leptons</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i0</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nlep</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i1</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i0</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">nlep</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">leptons</span><span class="p">[</span><span class="n">i0</span><span class="p">]</span><span class="o">.</span><span class="n">charge</span> <span class="o">+</span> <span class="n">leptons</span><span class="p">[</span><span class="n">i1</span><span class="p">]</span><span class="o">.</span><span class="n">charge</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">for</span> <span class="n">i2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nlep</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">i3</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">nlep</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">({</span><span class="n">i0</span><span class="p">,</span> <span class="n">i1</span><span class="p">,</span> <span class="n">i2</span><span class="p">,</span> <span class="n">i3</span><span class="p">})</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+                            <span class="k">continue</span>
+                        <span class="k">if</span> <span class="n">leptons</span><span class="p">[</span><span class="n">i2</span><span class="p">]</span><span class="o">.</span><span class="n">charge</span> <span class="o">+</span> <span class="n">leptons</span><span class="p">[</span><span class="n">i3</span><span class="p">]</span><span class="o">.</span><span class="n">charge</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="k">continue</span>
+                        <span class="n">builder</span><span class="o">.</span><span class="n">begin_tuple</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+                        <span class="n">builder</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">integer</span><span class="p">(</span><span class="n">i0</span><span class="p">)</span>
+                        <span class="n">builder</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">integer</span><span class="p">(</span><span class="n">i1</span><span class="p">)</span>
+                        <span class="n">builder</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">integer</span><span class="p">(</span><span class="n">i2</span><span class="p">)</span>
+                        <span class="n">builder</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">integer</span><span class="p">(</span><span class="n">i3</span><span class="p">)</span>
+                        <span class="n">builder</span><span class="o">.</span><span class="n">end_tuple</span><span class="p">()</span>
+        <span class="n">builder</span><span class="o">.</span><span class="n">end_list</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">builder</span>
+
+
+<span class="k">def</span> <span class="nf">find_4lep</span><span class="p">(</span><span class="n">events_leptons</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">ak</span><span class="o">.</span><span class="n">backend</span><span class="p">(</span><span class="n">events_leptons</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;typetracer&quot;</span><span class="p">:</span>
+        <span class="c1"># here we fake the output of find_4lep_kernel since</span>
+        <span class="c1"># operating on length-zero data returns the wrong layout!</span>
+        <span class="n">ak</span><span class="o">.</span><span class="n">typetracer</span><span class="o">.</span><span class="n">length_zero_if_typetracer</span><span class="p">(</span><span class="n">events_leptons</span><span class="o">.</span><span class="n">charge</span><span class="p">)</span> <span class="c1"># force touching of the necessary data</span>
+        <span class="k">return</span> <span class="n">ak</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">Array</span><span class="p">([[(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)]])</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">to_typetracer</span><span class="p">(</span><span class="n">forget_length</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">find_4lep_kernel</span><span class="p">(</span><span class="n">events_leptons</span><span class="p">,</span> <span class="n">ak</span><span class="o">.</span><span class="n">ArrayBuilder</span><span class="p">())</span><span class="o">.</span><span class="n">snapshot</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">FancyDimuonProcessor</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">ProcessorABC</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">events</span><span class="p">):</span>
+        <span class="n">dataset_axis</span> <span class="o">=</span> <span class="n">hist</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">StrCategory</span><span class="p">([],</span> <span class="n">growth</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;dataset&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Primary dataset&quot;</span><span class="p">)</span>
+        <span class="n">mass_axis</span> <span class="o">=</span> <span class="n">hist</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">Regular</span><span class="p">(</span><span class="mi">300</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;mass&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;$m_{\mu\mu}$ [GeV]&quot;</span><span class="p">)</span>
+        <span class="n">pt_axis</span> <span class="o">=</span> <span class="n">hist</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">Regular</span><span class="p">(</span><span class="mi">300</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;$p_{T,\mu}$ [GeV]&quot;</span><span class="p">)</span>
+
+        <span class="n">h_nMuons</span> <span class="o">=</span> <span class="n">hda</span><span class="o">.</span><span class="n">Hist</span><span class="p">(</span>
+            <span class="n">dataset_axis</span><span class="p">,</span>
+            <span class="n">hda</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">IntCategory</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;nMuons&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Number of good muons&quot;</span><span class="p">),</span>
+            <span class="n">storage</span><span class="o">=</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Counts&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">h_m4mu</span> <span class="o">=</span> <span class="n">hda</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">Hist</span><span class="p">(</span><span class="n">dataset_axis</span><span class="p">,</span> <span class="n">mass_axis</span><span class="p">,</span> <span class="n">storage</span><span class="o">=</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Counts&quot;</span><span class="p">)</span>
+        <span class="n">h_mZ1</span> <span class="o">=</span> <span class="n">hda</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">Hist</span><span class="p">(</span><span class="n">dataset_axis</span><span class="p">,</span> <span class="n">mass_axis</span><span class="p">,</span> <span class="n">storage</span><span class="o">=</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Counts&quot;</span><span class="p">)</span>
+        <span class="n">h_mZ2</span> <span class="o">=</span> <span class="n">hda</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">Hist</span><span class="p">(</span><span class="n">dataset_axis</span><span class="p">,</span> <span class="n">mass_axis</span><span class="p">,</span> <span class="n">storage</span><span class="o">=</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Counts&quot;</span><span class="p">)</span>
+        <span class="n">h_ptZ1mu1</span> <span class="o">=</span> <span class="n">hda</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">Hist</span><span class="p">(</span><span class="n">dataset_axis</span><span class="p">,</span> <span class="n">pt_axis</span><span class="p">,</span> <span class="n">storage</span><span class="o">=</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Counts&quot;</span><span class="p">)</span>
+        <span class="n">h_ptZ1mu2</span> <span class="o">=</span> <span class="n">hda</span><span class="o">.</span><span class="n">hist</span><span class="o">.</span><span class="n">Hist</span><span class="p">(</span><span class="n">dataset_axis</span><span class="p">,</span> <span class="n">pt_axis</span><span class="p">,</span> <span class="n">storage</span><span class="o">=</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Counts&quot;</span><span class="p">)</span>
+
+        <span class="n">cutflow</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">events</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;dataset&#39;</span><span class="p">]</span>
+        <span class="n">muons</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">zip</span><span class="p">({</span>
+            <span class="s2">&quot;pt&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_pt</span><span class="p">,</span>
+            <span class="s2">&quot;eta&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_eta</span><span class="p">,</span>
+            <span class="s2">&quot;phi&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_phi</span><span class="p">,</span>
+            <span class="s2">&quot;mass&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_mass</span><span class="p">,</span>
+            <span class="s2">&quot;charge&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_charge</span><span class="p">,</span>
+            <span class="s2">&quot;isolation&quot;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">Muon_pfRelIso03_all</span><span class="p">,</span>
+        <span class="p">},</span> <span class="n">with_name</span><span class="o">=</span><span class="s2">&quot;PtEtaPhiMCandidate&quot;</span><span class="p">,</span> <span class="n">behavior</span><span class="o">=</span><span class="n">candidate</span><span class="o">.</span><span class="n">behavior</span><span class="p">)</span>
+
+        <span class="c1"># make sure they are sorted by transverse momentum</span>
+        <span class="n">muons</span> <span class="o">=</span> <span class="n">muons</span><span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">muons</span><span class="o">.</span><span class="n">pt</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)]</span>
+
+        <span class="n">cutflow</span><span class="p">[</span><span class="s1">&#39;all events&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">muons</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># impose some quality and minimum pt cuts on the muons</span>
+        <span class="n">muons</span> <span class="o">=</span> <span class="n">muons</span><span class="p">[</span>
+            <span class="p">(</span><span class="n">muons</span><span class="o">.</span><span class="n">pt</span> <span class="o">&gt;</span> <span class="mi">5</span><span class="p">)</span>
+            <span class="o">&amp;</span> <span class="p">(</span><span class="n">muons</span><span class="o">.</span><span class="n">isolation</span> <span class="o">&lt;</span> <span class="mf">0.2</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">cutflow</span><span class="p">[</span><span class="s1">&#39;at least 4 good muons&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">ak</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">muons</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="n">h_nMuons</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span> <span class="n">nMuons</span><span class="o">=</span><span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">muons</span><span class="p">))</span>
+
+        <span class="c1"># reduce first axis: skip events without enough muons</span>
+        <span class="n">muons</span> <span class="o">=</span> <span class="n">muons</span><span class="p">[</span><span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">muons</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">]</span>
+
+        <span class="c1"># find all candidates with helper function</span>
+        <span class="n">fourmuon</span> <span class="o">=</span> <span class="n">dak</span><span class="o">.</span><span class="n">map_partitions</span><span class="p">(</span><span class="n">find_4lep</span><span class="p">,</span> <span class="n">muons</span><span class="p">)</span>
+        <span class="n">fourmuon</span> <span class="o">=</span> <span class="p">[</span><span class="n">muons</span><span class="p">[</span><span class="n">fourmuon</span><span class="p">[</span><span class="n">idx</span><span class="p">]]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="s2">&quot;0123&quot;</span><span class="p">]</span>
+
+        <span class="n">fourmuon</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">zip</span><span class="p">({</span>
+            <span class="s2">&quot;z1&quot;</span><span class="p">:</span> <span class="n">ak</span><span class="o">.</span><span class="n">zip</span><span class="p">({</span>
+                <span class="s2">&quot;lep1&quot;</span><span class="p">:</span> <span class="n">fourmuon</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="s2">&quot;lep2&quot;</span><span class="p">:</span> <span class="n">fourmuon</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                <span class="s2">&quot;p4&quot;</span><span class="p">:</span> <span class="n">fourmuon</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">fourmuon</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="p">}),</span>
+            <span class="s2">&quot;z2&quot;</span><span class="p">:</span> <span class="n">ak</span><span class="o">.</span><span class="n">zip</span><span class="p">({</span>
+                <span class="s2">&quot;lep1&quot;</span><span class="p">:</span> <span class="n">fourmuon</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                <span class="s2">&quot;lep2&quot;</span><span class="p">:</span> <span class="n">fourmuon</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+                <span class="s2">&quot;p4&quot;</span><span class="p">:</span> <span class="n">fourmuon</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">fourmuon</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+            <span class="p">}),</span>
+        <span class="p">})</span>
+
+        <span class="n">cutflow</span><span class="p">[</span><span class="s1">&#39;at least one candidate&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">ak</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">fourmuon</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># require minimum dimuon mass</span>
+        <span class="n">fourmuon</span> <span class="o">=</span> <span class="n">fourmuon</span><span class="p">[(</span><span class="n">fourmuon</span><span class="o">.</span><span class="n">z1</span><span class="o">.</span><span class="n">p4</span><span class="o">.</span><span class="n">mass</span> <span class="o">&gt;</span> <span class="mf">60.</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">fourmuon</span><span class="o">.</span><span class="n">z2</span><span class="o">.</span><span class="n">p4</span><span class="o">.</span><span class="n">mass</span> <span class="o">&gt;</span> <span class="mf">20.</span><span class="p">)]</span>
+        <span class="n">cutflow</span><span class="p">[</span><span class="s1">&#39;minimum dimuon mass&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">ak</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">num</span><span class="p">(</span><span class="n">fourmuon</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># choose permutation with z1 mass closest to nominal Z boson mass</span>
+        <span class="n">bestz1</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">singletons</span><span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">fourmuon</span><span class="o">.</span><span class="n">z1</span><span class="o">.</span><span class="n">p4</span><span class="o">.</span><span class="n">mass</span> <span class="o">-</span> <span class="mf">91.1876</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">fourmuon</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">fourmuon</span><span class="p">[</span><span class="n">bestz1</span><span class="p">])</span>
+
+        <span class="n">h_m4mu</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">mass</span><span class="o">=</span><span class="p">(</span><span class="n">fourmuon</span><span class="o">.</span><span class="n">z1</span><span class="o">.</span><span class="n">p4</span> <span class="o">+</span> <span class="n">fourmuon</span><span class="o">.</span><span class="n">z2</span><span class="o">.</span><span class="n">p4</span><span class="p">)</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">h_mZ1</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">mass</span><span class="o">=</span><span class="n">fourmuon</span><span class="o">.</span><span class="n">z1</span><span class="o">.</span><span class="n">p4</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">h_mZ2</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">mass</span><span class="o">=</span><span class="n">fourmuon</span><span class="o">.</span><span class="n">z2</span><span class="o">.</span><span class="n">p4</span><span class="o">.</span><span class="n">mass</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">h_ptZ1mu1</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">pt</span><span class="o">=</span><span class="n">fourmuon</span><span class="o">.</span><span class="n">z1</span><span class="o">.</span><span class="n">lep1</span><span class="o">.</span><span class="n">pt</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">h_ptZ1mu2</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">pt</span><span class="o">=</span><span class="n">fourmuon</span><span class="o">.</span><span class="n">z1</span><span class="o">.</span><span class="n">lep2</span><span class="o">.</span><span class="n">pt</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;nMuons&#39;</span><span class="p">:</span> <span class="n">h_nMuons</span><span class="p">,</span>
+            <span class="s1">&#39;mass&#39;</span><span class="p">:</span> <span class="n">h_m4mu</span><span class="p">,</span>
+            <span class="s1">&#39;mass_z1&#39;</span><span class="p">:</span> <span class="n">h_mZ1</span><span class="p">,</span>
+            <span class="s1">&#39;mass_z2&#39;</span><span class="p">:</span> <span class="n">h_mZ2</span><span class="p">,</span>
+            <span class="s1">&#39;pt_z1_mu1&#39;</span><span class="p">:</span> <span class="n">h_ptZ1mu1</span><span class="p">,</span>
+            <span class="s1">&#39;pt_z1_mu2&#39;</span><span class="p">:</span> <span class="n">h_ptZ1mu2</span><span class="p">,</span>
+            <span class="s1">&#39;cutflow&#39;</span><span class="p">:</span> <span class="p">{</span><span class="n">dataset</span><span class="p">:</span> <span class="n">cutflow</span><span class="p">},</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">postprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accumulator</span><span class="p">):</span>
+        <span class="k">pass</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">time</span>
+
+<span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="n">to_compute</span> <span class="o">=</span> <span class="n">apply_to_fileset</span><span class="p">(</span>
+                <span class="n">FancyDimuonProcessor</span><span class="p">(),</span>
+                <span class="n">max_chunks</span><span class="p">(</span><span class="n">dataset_runnable</span><span class="p">,</span> <span class="mi">300</span><span class="p">),</span>
+                <span class="n">schemaclass</span><span class="o">=</span><span class="n">BaseSchema</span><span class="p">,</span>
+            <span class="p">)</span>
+<span class="p">(</span><span class="n">out</span><span class="p">,)</span> <span class="o">=</span> <span class="n">dask</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">to_compute</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+
+<span class="n">elapsed</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">tstart</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">elapsed</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+{&#39;DoubleMuon&#39;: {&#39;nMuons&#39;: Hist(
+  StrCategory([&#39;DoubleMuon&#39;], growth=True, name=&#39;dataset&#39;, label=&#39;Primary dataset&#39;),
+  IntCategory([0, 1, 2, 3, 4, 5], name=&#39;nMuons&#39;, label=&#39;Number of good muons&#39;),
+  storage=Weight()) # Sum: WeightedSum(value=5.59547e+07, variance=5.59547e+07) (WeightedSum(value=5.60847e+07, variance=5.60847e+07) with flow), &#39;mass&#39;: Hist(
+  StrCategory([&#39;DoubleMuon&#39;], growth=True, name=&#39;dataset&#39;, label=&#39;Primary dataset&#39;),
+  Regular(300, 0, 300, name=&#39;mass&#39;, label=&#39;$m_{\\mu\\mu}$ [GeV]&#39;),
+  storage=Weight()) # Sum: WeightedSum(value=54219, variance=54219) (WeightedSum(value=60748, variance=60748) with flow), &#39;mass_z1&#39;: Hist(
+  StrCategory([&#39;DoubleMuon&#39;], growth=True, name=&#39;dataset&#39;, label=&#39;Primary dataset&#39;),
+  Regular(300, 0, 300, name=&#39;mass&#39;, label=&#39;$m_{\\mu\\mu}$ [GeV]&#39;),
+  storage=Weight()) # Sum: WeightedSum(value=60314, variance=60314) (WeightedSum(value=60748, variance=60748) with flow), &#39;mass_z2&#39;: Hist(
+  StrCategory([&#39;DoubleMuon&#39;], growth=True, name=&#39;dataset&#39;, label=&#39;Primary dataset&#39;),
+  Regular(300, 0, 300, name=&#39;mass&#39;, label=&#39;$m_{\\mu\\mu}$ [GeV]&#39;),
+  storage=Weight()) # Sum: WeightedSum(value=60079, variance=60079) (WeightedSum(value=60748, variance=60748) with flow), &#39;pt_z1_mu1&#39;: Hist(
+  StrCategory([&#39;DoubleMuon&#39;], growth=True, name=&#39;dataset&#39;, label=&#39;Primary dataset&#39;),
+  Regular(300, 0, 300, name=&#39;pt&#39;, label=&#39;$p_{T,\\mu}$ [GeV]&#39;),
+  storage=Weight()) # Sum: WeightedSum(value=60736, variance=60736) (WeightedSum(value=60748, variance=60748) with flow), &#39;pt_z1_mu2&#39;: Hist(
+  StrCategory([&#39;DoubleMuon&#39;], growth=True, name=&#39;dataset&#39;, label=&#39;Primary dataset&#39;),
+  Regular(300, 0, 300, name=&#39;pt&#39;, label=&#39;$p_{T,\\mu}$ [GeV]&#39;),
+  storage=Weight()) # Sum: WeightedSum(value=57002, variance=57002) (WeightedSum(value=60748, variance=60748) with flow), &#39;cutflow&#39;: {&#39;DoubleMuon&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;all events&#39;: dask.awkward&lt;numaxis0, type=Scalar, dtype=int64&gt;, &#39;at least 4 good muons&#39;: dask.awkward&lt;add, type=Scalar, dtype=int64&gt;, &#39;at least one candidate&#39;: dask.awkward&lt;add, type=Scalar, dtype=int64&gt;, &#39;minimum dimuon mass&#39;: dask.awkward&lt;add, type=Scalar, dtype=int64&gt;})}}, &#39;ZZ to 4mu&#39;: {&#39;nMuons&#39;: Hist(
+  StrCategory([&#39;ZZ to 4mu&#39;], growth=True, name=&#39;dataset&#39;, label=&#39;Primary dataset&#39;),
+  IntCategory([0, 1, 2, 3, 4, 5], name=&#39;nMuons&#39;, label=&#39;Number of good muons&#39;),
+  storage=Weight()) # Sum: WeightedSum(value=1.49776e+06, variance=1.49776e+06) (WeightedSum(value=1.49906e+06, variance=1.49906e+06) with flow), &#39;mass&#39;: Hist(
+  StrCategory([&#39;ZZ to 4mu&#39;], growth=True, name=&#39;dataset&#39;, label=&#39;Primary dataset&#39;),
+  Regular(300, 0, 300, name=&#39;mass&#39;, label=&#39;$m_{\\mu\\mu}$ [GeV]&#39;),
+  storage=Weight()) # Sum: WeightedSum(value=79350, variance=79350) (WeightedSum(value=98261, variance=98261) with flow), &#39;mass_z1&#39;: Hist(
+  StrCategory([&#39;ZZ to 4mu&#39;], growth=True, name=&#39;dataset&#39;, label=&#39;Primary dataset&#39;),
+  Regular(300, 0, 300, name=&#39;mass&#39;, label=&#39;$m_{\\mu\\mu}$ [GeV]&#39;),
+  storage=Weight()) # Sum: WeightedSum(value=98198, variance=98198) (WeightedSum(value=98261, variance=98261) with flow), &#39;mass_z2&#39;: Hist(
+  StrCategory([&#39;ZZ to 4mu&#39;], growth=True, name=&#39;dataset&#39;, label=&#39;Primary dataset&#39;),
+  Regular(300, 0, 300, name=&#39;mass&#39;, label=&#39;$m_{\\mu\\mu}$ [GeV]&#39;),
+  storage=Weight()) # Sum: WeightedSum(value=97699, variance=97699) (WeightedSum(value=98261, variance=98261) with flow), &#39;pt_z1_mu1&#39;: Hist(
+  StrCategory([&#39;ZZ to 4mu&#39;], growth=True, name=&#39;dataset&#39;, label=&#39;Primary dataset&#39;),
+  Regular(300, 0, 300, name=&#39;pt&#39;, label=&#39;$p_{T,\\mu}$ [GeV]&#39;),
+  storage=Weight()) # Sum: WeightedSum(value=98259, variance=98259) (WeightedSum(value=98261, variance=98261) with flow), &#39;pt_z1_mu2&#39;: Hist(
+  StrCategory([&#39;ZZ to 4mu&#39;], growth=True, name=&#39;dataset&#39;, label=&#39;Primary dataset&#39;),
+  Regular(300, 0, 300, name=&#39;pt&#39;, label=&#39;$p_{T,\\mu}$ [GeV]&#39;),
+  storage=Weight()) # Sum: WeightedSum(value=97998, variance=97998) (WeightedSum(value=98261, variance=98261) with flow), &#39;cutflow&#39;: {&#39;ZZ to 4mu&#39;: defaultdict(&lt;class &#39;int&#39;&gt;, {&#39;all events&#39;: dask.awkward&lt;numaxis0, type=Scalar, dtype=int64&gt;, &#39;at least 4 good muons&#39;: dask.awkward&lt;add, type=Scalar, dtype=int64&gt;, &#39;at least one candidate&#39;: dask.awkward&lt;add, type=Scalar, dtype=int64&gt;, &#39;minimum dimuon mass&#39;: dask.awkward&lt;add, type=Scalar, dtype=int64&gt;})}}}
+109.41525983810425
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nevt</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="s1">&#39;ZZ to 4mu&#39;</span><span class="p">][</span><span class="s1">&#39;cutflow&#39;</span><span class="p">][</span><span class="s1">&#39;ZZ to 4mu&#39;</span><span class="p">][</span><span class="s1">&#39;all events&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">out</span><span class="p">[</span><span class="s1">&#39;DoubleMuon&#39;</span><span class="p">][</span><span class="s1">&#39;cutflow&#39;</span><span class="p">][</span><span class="s1">&#39;DoubleMuon&#39;</span><span class="p">][</span><span class="s1">&#39;all events&#39;</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Events/s:&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">nevt</span> <span class="o">/</span> <span class="n">elapsed</span><span class="p">)</span><span class="o">.</span><span class="n">compute</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Events/s: 526286.4803794603
+</pre></div></div>
+</div>
+<p>What follows is just us looking at the output, you can execute it if you wish</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># scale ZZ simulation to expected yield</span>
+<span class="n">lumi</span> <span class="o">=</span> <span class="mf">11.6</span>  <span class="c1"># 1/fb</span>
+<span class="n">zzxs</span> <span class="o">=</span> <span class="mi">7200</span> <span class="o">*</span> <span class="mf">0.0336</span><span class="o">**</span><span class="mi">2</span>  <span class="c1"># approximate 8 TeV ZZ(4mu)</span>
+<span class="n">nzz</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="s1">&#39;ZZ to 4mu&#39;</span><span class="p">][</span><span class="s1">&#39;cutflow&#39;</span><span class="p">][</span><span class="s1">&#39;ZZ to 4mu&#39;</span><span class="p">][</span><span class="s1">&#39;all events&#39;</span><span class="p">]</span>
+
+<span class="n">scaled</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">name1</span><span class="p">,</span> <span class="n">h1</span><span class="p">),</span> <span class="p">(</span><span class="n">nam2</span><span class="p">,</span> <span class="n">h2</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s1">&#39;ZZ to 4mu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">out</span><span class="p">[</span><span class="s1">&#39;DoubleMuon&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h1</span><span class="p">,</span> <span class="n">hist</span><span class="o">.</span><span class="n">Hist</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h2</span><span class="p">,</span> <span class="n">hist</span><span class="o">.</span><span class="n">Hist</span><span class="p">):</span>
+        <span class="n">scaled</span><span class="p">[</span><span class="n">name1</span><span class="p">]</span> <span class="o">=</span> <span class="n">h1</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="o">+</span> <span class="n">h2</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">scaled</span><span class="p">[</span><span class="n">name1</span><span class="p">]</span><span class="o">.</span><span class="n">view</span><span class="p">()[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span> <span class="o">*=</span> <span class="n">lumi</span> <span class="o">*</span> <span class="n">zzxs</span> <span class="o">/</span> <span class="n">nzz</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">scaled</span><span class="p">[</span><span class="s1">&#39;nMuons&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">plot1d</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">overlay</span><span class="o">=</span><span class="s1">&#39;dataset&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(1, 54961323.59635242)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_processor_16_1.png" src="../_images/notebooks_processor_16_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+
+<span class="n">scaled</span><span class="p">[</span><span class="s1">&#39;mass&#39;</span><span class="p">][:,</span> <span class="p">::</span><span class="n">hist</span><span class="o">.</span><span class="n">rebin</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span><span class="o">.</span><span class="n">plot1d</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">overlay</span><span class="o">=</span><span class="s1">&#39;dataset&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_processor_17_0.png" src="../_images/notebooks_processor_17_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+
+<span class="n">scaled</span><span class="p">[</span><span class="s1">&#39;mass_z1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">plot1d</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">overlay</span><span class="o">=</span><span class="s1">&#39;dataset&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_processor_18_0.png" src="../_images/notebooks_processor_18_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+
+<span class="n">scaled</span><span class="p">[</span><span class="s1">&#39;mass_z2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">plot1d</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">overlay</span><span class="o">=</span><span class="s1">&#39;dataset&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(2.0, 300.0)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_processor_19_1.png" src="../_images/notebooks_processor_19_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+
+<span class="n">scaled</span><span class="p">[</span><span class="s1">&#39;pt_z1_mu1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">plot1d</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">overlay</span><span class="o">=</span><span class="s1">&#39;dataset&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_processor_20_0.png" src="../_images/notebooks_processor_20_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+
+<span class="n">scaled</span><span class="p">[</span><span class="s1">&#39;pt_z1_mu2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">plot1d</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">overlay</span><span class="o">=</span><span class="s1">&#39;dataset&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_processor_21_0.png" src="../_images/notebooks_processor_21_0.png" />
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="applying_corrections.html" class="btn btn-neutral float-left" title="Applying corrections to columnar data" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mltools.html" class="btn btn-neutral float-right" title="Running inference tools" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Fermi National Accelerator Laboratory.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

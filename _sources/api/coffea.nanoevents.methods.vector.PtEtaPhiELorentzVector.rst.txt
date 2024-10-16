@@ -1,0 +1,21 @@
+PtEtaPhiELorentzVector
+======================
+
+.. currentmodule:: coffea.nanoevents.methods.vector
+
+.. autoclass:: PtEtaPhiELorentzVector
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~PtEtaPhiELorentzVector.divide
+      ~PtEtaPhiELorentzVector.multiply
+      ~PtEtaPhiELorentzVector.negative
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: divide
+   .. automethod:: multiply
+   .. automethod:: negative

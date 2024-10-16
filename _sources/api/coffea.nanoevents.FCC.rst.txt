@@ -1,0 +1,17 @@
+FCC
+===
+
+.. currentmodule:: coffea.nanoevents
+
+.. autoclass:: FCC
+   :show-inheritance:
+
+   .. rubric:: Methods Summary
+
+   .. autosummary::
+
+      ~FCC.get_schema
+
+   .. rubric:: Methods Documentation
+
+   .. automethod:: get_schema

@@ -1,0 +1,604 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Running inference tools &mdash; coffea 2024.10.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=fd3f3429" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+    <link rel="shortcut icon" href="../_static/coffea_favicon.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=2443068e"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=83e3a9fa"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Dataset discovery tools" href="dataset_discovery.html" />
+    <link rel="prev" title="Coffea Processors" href="processor.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            coffea
+              <img src="../_static/coffea_favicon.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installing coffea</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../examples.html">Coffea by Example</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="nanoevents.html">Reading data with coffea NanoEvents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="applying_corrections.html">Applying corrections to columnar data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="processor.html">Coffea Processors</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Running inference tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Why-these-wrapper-tools-are-needed">Why these wrapper tools are needed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Example-using-ParticleNet-like-jet-variable-calculation-using-PyTorch">Example using ParticleNet-like jet variable calculation using PyTorch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Comments-about-generalizing-to-other-ML-tools">Comments about generalizing to other ML tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Additional-comments-on-common-prepare_awkward-patterns">Additional comments on common <code class="docutils literal notranslate"><span class="pre">prepare_awkward</span></code> patterns</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Casting-multiple-fields-a-collection-to-be-separate-axis">Casting multiple fields a collection to be separate axis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Fixing-collection-dimensions">Fixing collection dimensions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dataset_discovery.html">Dataset discovery tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="packedselection.html">PackedSelection in Coffea 2023</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">Coffea concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">API Reference Guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">coffea</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../examples.html">Coffea by Example</a></li>
+      <li class="breadcrumb-item active">Running inference tools</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/notebooks/mltools.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Running-inference-tools">
+<h1>Running inference tools<a class="headerlink" href="#Running-inference-tools" title="Link to this heading"></a></h1>
+<p>As machine learning (ML) becomes more popular in HEP analysis, <code class="docutils literal notranslate"><span class="pre">coffea</span></code> also provide tools to assist with using ML tools within the coffea framework. For training and validation, you would likely need custom data mangling tools to convert HEP data formats (<a class="reference external" href="https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookNanoAOD">NanoAOD</a>, <a class="reference external" href="https://github.com/cms-jet/PFNano">PFNano</a>) to a format that best interfaces with the ML tool of choice, as for training and validation, you typical want to
+have fine control over what computation is done. For more advanced use cases of data mangling and data saving, refer to the <a class="reference external" href="https://awkward-array.org/doc/main/user-guide/how-to-restructure.html">awkward array manual</a> and <a class="reference external" href="https://uproot.readthedocs.io/en/latest/basic.html#writing-ttrees-to-a-file">uproot</a>/<a class="reference external" href="https://awkward-array.org/doc/main/reference/generated/ak.to_parquet.html">parquet</a> write operations for saving intermediate states. The helper tools provided in coffea focuses on ML
+inference, where ML tool outputs are used as another variable to be used in the event/object selection chain.</p>
+<section id="Why-these-wrapper-tools-are-needed">
+<h2>Why these wrapper tools are needed<a class="headerlink" href="#Why-these-wrapper-tools-are-needed" title="Link to this heading"></a></h2>
+<p>The typical operation of using ML inference tools in the awkward/coffea analysis tools involves the conversion and padding of awkward array to ML tool containers (usually something that is <code class="docutils literal notranslate"><span class="pre">numpy</span></code>-compatible), run the inference, then convert-and-truncate back into the awkward array syntax required for the analysis chain to continue. With awkward arrays’ laziness now being handled entirely by <code class="docutils literal notranslate"><span class="pre">`dask</span></code> &lt;<a class="reference external" href="https://dask-awkward.readthedocs.io/en/stable/gs-limitations.html">https://dask-awkward.readthedocs.io/en/stable/gs-limitations.html</a>&gt;`__, the conversion
+operation of awkward array to other array types needs to be wrapped in a way that is understandable to <code class="docutils literal notranslate"><span class="pre">dask</span></code>. The packages in the <code class="docutils literal notranslate"><span class="pre">ml_tools</span></code> package attempts to wrap the common tools used by the HEP community with a common interface to reduce the verbosity of the code on the analysis side.</p>
+</section>
+<section id="Example-using-ParticleNet-like-jet-variable-calculation-using-PyTorch">
+<h2>Example using ParticleNet-like jet variable calculation using PyTorch<a class="headerlink" href="#Example-using-ParticleNet-like-jet-variable-calculation-using-PyTorch" title="Link to this heading"></a></h2>
+<p>The example given in this notebook be using <code class="docutils literal notranslate"><span class="pre">`pytorch</span></code> &lt;<a class="reference external" href="https://pytorch.org/">https://pytorch.org/</a>&gt;`__ to calculate a jet-level discriminant using its constituent particles. An example for how to construct such a <code class="docutils literal notranslate"><span class="pre">pytorch</span></code> network can be found in the docs file, but for <code class="docutils literal notranslate"><span class="pre">mltools</span></code> in coffea, we only support the <a class="reference external" href="https://pytorch.org/">TorchScript</a> format files to load models to ensure operability when scaling to clusters. Let us first start by downloading the example ParticleNet model file and a small
+<code class="docutils literal notranslate"><span class="pre">PFNano</span></code> compatible file, and a simple function to open the <code class="docutils literal notranslate"><span class="pre">PFNano</span></code> with and without dask.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">!</span>wget<span class="w"> </span>--quiet<span class="w"> </span>-O<span class="w"> </span>model.pt<span class="w"> </span>https://github.com/CoffeaTeam/coffea/raw/master/tests/samples/triton_models_test/pn_test/1/model.pt
+<span class="o">!</span>wget<span class="w"> </span>--quiet<span class="w"> </span>-O<span class="w"> </span>pfnano.root<span class="w"> </span>https://github.com/CoffeaTeam/coffea/raw/master/tests/samples/pfnano.root
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">coffea.nanoevents</span> <span class="kn">import</span> <span class="n">NanoEventsFactory</span>
+<span class="kn">from</span> <span class="nn">coffea.nanoevents.schemas</span> <span class="kn">import</span> <span class="n">PFNanoAODSchema</span>
+
+
+<span class="k">def</span> <span class="nf">open_events</span><span class="p">():</span>
+    <span class="n">factory</span> <span class="o">=</span> <span class="n">NanoEventsFactory</span><span class="o">.</span><span class="n">from_root</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;file:./pfnano.root&quot;</span><span class="p">:</span> <span class="s2">&quot;Events&quot;</span><span class="p">},</span>
+        <span class="n">schemaclass</span><span class="o">=</span><span class="n">PFNanoAODSchema</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">factory</span><span class="o">.</span><span class="n">events</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<p>Now we prepare a class to handle inference request by extending the <code class="docutils literal notranslate"><span class="pre">mltools.torch_wrapper</span></code> class. As the base class cannot know anything about the data mangling required for the users particular model, we will need to overload at least the method <code class="docutils literal notranslate"><span class="pre">prepare_awkward</span></code>:</p>
+<ul>
+<li><p>The input can be an arbitrary number of awkward arrays or dask awkward array (but never a mix of dask/non-dask array). In this example, we will be passing in the event array.</p></li>
+<li><p>The output should be single tuple <code class="docutils literal notranslate"><span class="pre">a</span></code> + single dictionary <code class="docutils literal notranslate"><span class="pre">b</span></code>, this is to ensure that arbitrarily complicated outputs can be passed to the underlying <code class="docutils literal notranslate"><span class="pre">pytorch</span></code> model instance like <code class="docutils literal notranslate"><span class="pre">model(*a,</span> <span class="pre">**b)</span></code>. The contents of <code class="docutils literal notranslate"><span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">b</span></code> should be <code class="docutils literal notranslate"><span class="pre">numpy</span></code>-compatible awkward-like arrays: if the inputs are non-dask awkward arrays, the return should also be non-dask awkward arrays that can be trivially converted to <code class="docutils literal notranslate"><span class="pre">numpy</span></code> arrays via a <code class="docutils literal notranslate"><span class="pre">ak.to_numpy</span></code> call; if the inputs are dask awkward
+arrays, the return should be still be dask awkward arrays that can be trivially converted via a <code class="docutils literal notranslate"><span class="pre">to_awkward().to_numpy()</span></code> call.</p>
+<p>In this ParticleNet-like example, the model expects the following inputs:</p>
+<ul class="simple">
+<li><p>A <code class="docutils literal notranslate"><span class="pre">N</span></code> jets x <code class="docutils literal notranslate"><span class="pre">2</span></code> coordinate x <code class="docutils literal notranslate"><span class="pre">100</span></code> constituents “points” array, representing the constituent coordinates.</p></li>
+<li><p>A <code class="docutils literal notranslate"><span class="pre">N</span></code> jets x <code class="docutils literal notranslate"><span class="pre">5</span></code> feature x <code class="docutils literal notranslate"><span class="pre">100</span></code> constituents “features” array, representing the constituent features of interest to be used for inference.</p></li>
+<li><p>A <code class="docutils literal notranslate"><span class="pre">N</span></code> jets x <code class="docutils literal notranslate"><span class="pre">1</span></code> mask x <code class="docutils literal notranslate"><span class="pre">100</span></code> constituent “mask” array, representing whether a constituent should be masked from the inference request.</p></li>
+</ul>
+<p>In this case, we will need to flatten the <code class="docutils literal notranslate"><span class="pre">E</span></code> events x <code class="docutils literal notranslate"><span class="pre">N</span></code> jets structure, then, we will need to stack the constituent attributes of interest via <code class="docutils literal notranslate"><span class="pre">ak.concatenate</span></code> into a single array.</p>
+</li>
+</ul>
+<p>After defining this minimum class, we can attempt to run inference using the <code class="docutils literal notranslate"><span class="pre">__call__</span></code> method defined in the base class.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">coffea.ml_tools.torch_wrapper</span> <span class="kn">import</span> <span class="n">torch_wrapper</span>
+<span class="kn">import</span> <span class="nn">awkward</span> <span class="k">as</span> <span class="nn">ak</span>
+<span class="kn">import</span> <span class="nn">dask_awkward</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<span class="k">class</span> <span class="nc">ParticleNetExample1</span><span class="p">(</span><span class="n">torch_wrapper</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">prepare_awkward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">events</span><span class="p">):</span>
+        <span class="n">jets</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">Jet</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">pad</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">ak</span><span class="o">.</span><span class="n">fill_none</span><span class="p">(</span>
+                <span class="n">ak</span><span class="o">.</span><span class="n">pad_none</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">clip</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                <span class="mf">0.0</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Human readable version of what the inputs are</span>
+        <span class="c1"># Each array is a N jets x 100 constituent array</span>
+        <span class="n">imap</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;points&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;deta&quot;</span><span class="p">:</span> <span class="n">pad</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">eta</span> <span class="o">-</span> <span class="n">jets</span><span class="o">.</span><span class="n">constituents</span><span class="o">.</span><span class="n">pf</span><span class="o">.</span><span class="n">eta</span><span class="p">),</span>
+                <span class="s2">&quot;dphi&quot;</span><span class="p">:</span> <span class="n">pad</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">delta_phi</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">constituents</span><span class="o">.</span><span class="n">pf</span><span class="p">)),</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;features&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;dr&quot;</span><span class="p">:</span> <span class="n">pad</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">delta_r</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">constituents</span><span class="o">.</span><span class="n">pf</span><span class="p">)),</span>
+                <span class="s2">&quot;lpt&quot;</span><span class="p">:</span> <span class="n">pad</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">constituents</span><span class="o">.</span><span class="n">pf</span><span class="o">.</span><span class="n">pt</span><span class="p">)),</span>
+                <span class="s2">&quot;lptf&quot;</span><span class="p">:</span> <span class="n">pad</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">constituents</span><span class="o">.</span><span class="n">pf</span><span class="o">.</span><span class="n">pt</span> <span class="o">/</span> <span class="n">jets</span><span class="o">.</span><span class="n">pt</span><span class="p">)),</span>
+                <span class="s2">&quot;f1&quot;</span><span class="p">:</span> <span class="n">pad</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">constituents</span><span class="o">.</span><span class="n">pf</span><span class="o">.</span><span class="n">d0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
+                <span class="s2">&quot;f2&quot;</span><span class="p">:</span> <span class="n">pad</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">constituents</span><span class="o">.</span><span class="n">pf</span><span class="o">.</span><span class="n">dz</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;mask&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;mask&quot;</span><span class="p">:</span> <span class="n">pad</span><span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">constituents</span><span class="o">.</span><span class="n">pf</span><span class="o">.</span><span class="n">pt</span><span class="p">)),</span>
+            <span class="p">},</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Compacting the array elements into the desired dimension using</span>
+        <span class="c1"># ak.concatenate</span>
+        <span class="n">retmap</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="n">ak</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">x</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">imap</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">()],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">imap</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Returning everything using a dictionary. Also perform type conversion!</span>
+        <span class="k">return</span> <span class="p">(),</span> <span class="p">{</span>
+            <span class="s2">&quot;points&quot;</span><span class="p">:</span> <span class="n">ak</span><span class="o">.</span><span class="n">values_astype</span><span class="p">(</span><span class="n">retmap</span><span class="p">[</span><span class="s2">&quot;points&quot;</span><span class="p">],</span> <span class="s2">&quot;float32&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;features&quot;</span><span class="p">:</span> <span class="n">ak</span><span class="o">.</span><span class="n">values_astype</span><span class="p">(</span><span class="n">retmap</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">],</span> <span class="s2">&quot;float32&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;mask&quot;</span><span class="p">:</span> <span class="n">ak</span><span class="o">.</span><span class="n">values_astype</span><span class="p">(</span><span class="n">retmap</span><span class="p">[</span><span class="s2">&quot;mask&quot;</span><span class="p">],</span> <span class="s2">&quot;float16&quot;</span><span class="p">),</span>
+        <span class="p">}</span>
+
+
+<span class="c1"># Setting up the model container</span>
+<span class="n">pn_example1</span> <span class="o">=</span> <span class="n">ParticleNetExample1</span><span class="p">(</span><span class="s2">&quot;model.pt&quot;</span><span class="p">)</span>
+
+<span class="c1"># Running on dask_awkward array</span>
+<span class="n">dask_events</span> <span class="o">=</span> <span class="n">open_events</span><span class="p">()</span>
+<span class="n">dask_results</span> <span class="o">=</span> <span class="n">pn_example1</span><span class="p">(</span><span class="n">dask_events</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Dask awkward results:&quot;</span><span class="p">,</span> <span class="n">dask_results</span><span class="o">.</span><span class="n">compute</span><span class="p">())</span>  <span class="c1"># Runs file!</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/saransh/Code/HEP/coffea/.env/lib/python3.11/site-packages/coffea/ml_tools/helper.py:175: UserWarning: No format checks were performed on input!
+  warnings.warn(&#34;No format checks were performed on input!&#34;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Dask awkward results: [[0.0693, -0.0448], [0.0678, -0.0451], ..., [0.0616, ...], [0.0587, -0.0172]]
+</pre></div></div>
+</div>
+<p>For each jet in the input to the <code class="docutils literal notranslate"><span class="pre">torch</span></code> model, the model returns a 2-tuple probability value. Without additional specification, the <code class="docutils literal notranslate"><span class="pre">torch_wrapper</span></code> class performs a trival conversion of <code class="docutils literal notranslate"><span class="pre">ak.from_numpy</span></code> of the torch model’s output. We can specify that we want to fold this back into nested structure by overloading the <code class="docutils literal notranslate"><span class="pre">postprocess_awkward</span></code> method of the class.</p>
+<p>For the ParticleNet example we are going perform additional computation for the conversion back to awkward array formats:</p>
+<ul class="simple">
+<li><p>Calculate the <code class="docutils literal notranslate"><span class="pre">softmax</span></code> method for the return of each jet (commonly used as the singular ML inference “scores”)</p></li>
+<li><p>Fold the computed <code class="docutils literal notranslate"><span class="pre">softmax</span></code> array back into nested structure that is compatible with the original events.Jet array.</p></li>
+</ul>
+<p>Notice that the inputs of the <code class="docutils literal notranslate"><span class="pre">postprocess_awkward</span></code> method is different from the <code class="docutils literal notranslate"><span class="pre">prepare_awkward</span></code> method, only by that the first argument is the return array of the model inference after the trivial <code class="docutils literal notranslate"><span class="pre">from_numpy</span></code> conversion. Notice that the return_array is a dask array.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ParticleNetExample2</span><span class="p">(</span><span class="n">ParticleNetExample1</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">postprocess_awkward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">return_array</span><span class="p">,</span> <span class="n">events</span><span class="p">):</span>
+        <span class="n">softmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">return_array</span><span class="p">)[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">ak</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">return_array</span><span class="p">),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">njets</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">Jet</span><span class="o">.</span><span class="n">pt</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ak</span><span class="o">.</span><span class="n">unflatten</span><span class="p">(</span><span class="n">softmax</span><span class="p">,</span> <span class="n">njets</span><span class="p">)</span>
+
+
+<span class="n">pn_example2</span> <span class="o">=</span> <span class="n">ParticleNetExample2</span><span class="p">(</span><span class="s2">&quot;model.pt&quot;</span><span class="p">)</span>
+
+<span class="c1"># Running on dask awkward</span>
+<span class="n">dask_events</span> <span class="o">=</span> <span class="n">open_events</span><span class="p">()</span>
+<span class="n">dask_jets</span> <span class="o">=</span> <span class="n">dask_events</span><span class="o">.</span><span class="n">Jet</span>
+<span class="n">dask_jets</span><span class="p">[</span><span class="s2">&quot;MLresults&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pn_example2</span><span class="p">(</span><span class="n">dask_events</span><span class="p">)</span>
+<span class="n">dask_events</span><span class="p">[</span><span class="s2">&quot;Jet&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dask_jets</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dask_events</span><span class="o">.</span><span class="n">Jet</span><span class="o">.</span><span class="n">MLresults</span><span class="o">.</span><span class="n">compute</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/saransh/Code/HEP/coffea/.env/lib/python3.11/site-packages/dask_awkward/lib/structure.py:901: UserWarning: Please ensure that dask.awkward&lt;count, npartitions=1&gt;
+        is partitionwise-compatible with dask.awkward&lt;divide, npartitions=1&gt;
+        (e.g. counts comes from a dak.num(array, axis=1)),
+        otherwise this unflatten operation will fail when computed!
+  warnings.warn(
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[[0.528, 0.528, 0.524, 0.523, 0.521, 0.52, 0.519, 0.519], ..., [0.528, ...]]
+</pre></div></div>
+</div>
+<p>Of course, the implementation of the classes above can be written in a single class. Here is a copy-and-paste implementation of the class with all the functionality described in the cells above:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ParticleNetExample</span><span class="p">(</span><span class="n">torch_wrapper</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">prepare_awkward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">events</span><span class="p">):</span>
+        <span class="n">jets</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">Jet</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">pad</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">ak</span><span class="o">.</span><span class="n">fill_none</span><span class="p">(</span>
+                <span class="n">ak</span><span class="o">.</span><span class="n">pad_none</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">clip</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                <span class="mf">0.0</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Human readable version of what the inputs are</span>
+        <span class="c1"># Each array is a N jets x 100 constituent array</span>
+        <span class="n">imap</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;points&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;deta&quot;</span><span class="p">:</span> <span class="n">pad</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">eta</span> <span class="o">-</span> <span class="n">jets</span><span class="o">.</span><span class="n">constituents</span><span class="o">.</span><span class="n">pf</span><span class="o">.</span><span class="n">eta</span><span class="p">),</span>
+                <span class="s2">&quot;dphi&quot;</span><span class="p">:</span> <span class="n">pad</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">delta_phi</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">constituents</span><span class="o">.</span><span class="n">pf</span><span class="p">)),</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;features&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;dr&quot;</span><span class="p">:</span> <span class="n">pad</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">delta_r</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">constituents</span><span class="o">.</span><span class="n">pf</span><span class="p">)),</span>
+                <span class="s2">&quot;lpt&quot;</span><span class="p">:</span> <span class="n">pad</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">constituents</span><span class="o">.</span><span class="n">pf</span><span class="o">.</span><span class="n">pt</span><span class="p">)),</span>
+                <span class="s2">&quot;lptf&quot;</span><span class="p">:</span> <span class="n">pad</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">constituents</span><span class="o">.</span><span class="n">pf</span><span class="o">.</span><span class="n">pt</span> <span class="o">/</span> <span class="n">jets</span><span class="o">.</span><span class="n">pt</span><span class="p">)),</span>
+                <span class="s2">&quot;f1&quot;</span><span class="p">:</span> <span class="n">pad</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">constituents</span><span class="o">.</span><span class="n">pf</span><span class="o">.</span><span class="n">d0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
+                <span class="s2">&quot;f2&quot;</span><span class="p">:</span> <span class="n">pad</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">constituents</span><span class="o">.</span><span class="n">pf</span><span class="o">.</span><span class="n">dz</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;mask&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;mask&quot;</span><span class="p">:</span> <span class="n">pad</span><span class="p">(</span><span class="n">ak</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">jets</span><span class="o">.</span><span class="n">constituents</span><span class="o">.</span><span class="n">pf</span><span class="o">.</span><span class="n">pt</span><span class="p">)),</span>
+            <span class="p">},</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Compacting the array elements into the desired dimension using</span>
+        <span class="c1"># ak.concatenate</span>
+        <span class="n">retmap</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="n">ak</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">x</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">imap</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">()],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">imap</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Returning everything using a dictionary. Also take care of type</span>
+        <span class="c1"># conversion here.</span>
+        <span class="k">return</span> <span class="p">(),</span> <span class="p">{</span>
+            <span class="s2">&quot;points&quot;</span><span class="p">:</span> <span class="n">ak</span><span class="o">.</span><span class="n">values_astype</span><span class="p">(</span><span class="n">retmap</span><span class="p">[</span><span class="s2">&quot;points&quot;</span><span class="p">],</span> <span class="s2">&quot;float32&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;features&quot;</span><span class="p">:</span> <span class="n">ak</span><span class="o">.</span><span class="n">values_astype</span><span class="p">(</span><span class="n">retmap</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">],</span> <span class="s2">&quot;float32&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;mask&quot;</span><span class="p">:</span> <span class="n">ak</span><span class="o">.</span><span class="n">values_astype</span><span class="p">(</span><span class="n">retmap</span><span class="p">[</span><span class="s2">&quot;mask&quot;</span><span class="p">],</span> <span class="s2">&quot;float16&quot;</span><span class="p">),</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">postprocess_awkward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">return_array</span><span class="p">,</span> <span class="n">events</span><span class="p">):</span>
+        <span class="n">softmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">return_array</span><span class="p">)[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">ak</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">return_array</span><span class="p">),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">njets</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">Jet</span><span class="o">.</span><span class="n">pt</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ak</span><span class="o">.</span><span class="n">unflatten</span><span class="p">(</span><span class="n">softmax</span><span class="p">,</span> <span class="n">njets</span><span class="p">)</span>
+
+
+<span class="n">pn_example</span> <span class="o">=</span> <span class="n">ParticleNetExample</span><span class="p">(</span><span class="s2">&quot;model.pt&quot;</span><span class="p">)</span>
+
+<span class="c1"># Running on dask awkward arrays</span>
+<span class="n">dask_events</span> <span class="o">=</span> <span class="n">open_events</span><span class="p">()</span>
+<span class="n">dask_jets</span> <span class="o">=</span> <span class="n">dask_events</span><span class="o">.</span><span class="n">Jet</span>
+<span class="n">dask_jets</span><span class="p">[</span><span class="s2">&quot;MLresults&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pn_example</span><span class="p">(</span><span class="n">dask_events</span><span class="p">)</span>
+<span class="n">dask_events</span><span class="p">[</span><span class="s2">&quot;Jet&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dask_jets</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dask_events</span><span class="o">.</span><span class="n">Jet</span><span class="o">.</span><span class="n">MLresults</span><span class="o">.</span><span class="n">compute</span><span class="p">())</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">dask_awkward</span><span class="o">.</span><span class="n">necessary_columns</span><span class="p">(</span><span class="n">dask_events</span><span class="o">.</span><span class="n">Jet</span><span class="o">.</span><span class="n">MLresults</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[[0.528, 0.528, 0.524, 0.523, 0.521, 0.52, 0.519, 0.519], ..., [0.528, ...]]
+{&#39;from-uproot-3196a0c383555cda3738c112acd1c70e&#39;: frozenset({&#39;nJetPFCands&#39;, &#39;PFCands_dz&#39;, &#39;nPFCands&#39;, &#39;Jet_eta&#39;, &#39;Jet_nConstituents&#39;, &#39;PFCands_phi&#39;, &#39;PFCands_d0&#39;, &#39;nJet&#39;, &#39;PFCands_pt&#39;, &#39;JetPFCands_pFCandsIdx&#39;, &#39;PFCands_eta&#39;, &#39;Jet_phi&#39;, &#39;Jet_pt&#39;})}
+</pre></div></div>
+</div>
+<p>In particular, analyzers should check that the last line contains only the branches required for ML inference; if there are many non-required branches, this may lead the significant performance penalties.</p>
+<p>As per other dask tools, the users can extract how dask is analyzing the processing the computation routines using the following snippet.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">dask_results</span><span class="o">.</span><span class="n">dask</span><span class="p">)</span>
+<span class="n">dask_results</span><span class="o">.</span><span class="n">visualize</span><span class="p">(</span><span class="n">optimize_graph</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+HighLevelGraph with 104 layers.
+&lt;dask.highlevelgraph.HighLevelGraph object at 0x29169cc10&gt;
+ 0. from-uproot-3196a0c383555cda3738c112acd1c70e
+ 1. JetPFCands-dd2ea51f30214bf71538143d483f24f9
+ 2. PFCands-bc578074fd7542d617f1a321b55033b8
+ 3. JetPFCands-2022a279fa9f32fb5958ee0196c7bc9c
+ 4. PFCands-83b1509b3ea29e972a2c83951cb53cb6
+ 5. JetPFCands-c3abed82cbd768736fc7d2efe53b1bfb
+ 6. PFCands-1082ee2cc592b1a0c1b8219ddbb9df76
+ 7. JetPFCands-95b391cea3695b0e90f6ff4136821900
+ 8. PFCands-448b56417f7e6e78f111bda34eb8ba7e
+ 9. JetPFCands-31a2eb013adf67227780245e9f6e7654
+ 10. PFCands-80d89bc6034885fc4a99e252f4c76d87
+ 11. JetPFCands-fa15abc1502f6fa51ba0d6608dac9af8
+ 12. PFCands-4b547af5e660141b1c5163448bc75e50
+ 13. JetPFCands-65dd6ed1fed0463a350740a761960f79
+ 14. PFCands-18a47bdc7f8227a81fc30fa63c20e0b8
+ 15. JetPFCands-a30dac67296389d5ee6ed32d038d9a29
+ 16. PFCands-16b38f51395d73298b304b5b74560b87
+ 17. Jet-2a79d0b5a69da035a6f63a34642205aa
+ 18. flatten-645563137107a3dabf8c0252326c099b
+ 19. pFCandsIdxG-be948845416432cfc7843dc1818979ba
+ 20. apply-global-index-5d46f157ea0ed464f14667860b7f9fa0
+ 21. pFCandsIdxG-3658836fb2e3ea21bc533848c17dbf9c
+ 22. apply-global-index-7ea60f265dccb1ecc1371332dda18513
+ 23. pt-e2b62bfe096c321d604a32fbf89668b2
+ 24. ones-like-d424640d3caa1d220630da9879f9a6d4
+ 25. pad-none-61123924df10b8c261bbc98bc5c2b24f
+ 26. fill-none-16100aa7cabf6e0f37054b3cda2d9d7e
+ 27. getitem-fad74ed67d4b95383a9d0afde0e454b4
+ 28. concatenate-axisgt0-0615838b6257bb1dd9e0ad365df899a7
+ 29. values-astype-2f87bb6f27689b84fbd8379d88089848
+ 30. pFCandsIdxG-91d61065f2be395629a7f7c2f4c75a4c
+ 31. apply-global-index-0920d60e59835d92a5dacb96a448cb0d
+ 32. pFCandsIdxG-a081c6286992ba2fccaa2f2a11518923
+ 33. apply-global-index-e509f72064969e949a238db289c45072
+ 34. dz-1730bacc99456e5ba3253a49df42e172
+ 35. absolute-e01baff37424469f75445b90028366da
+ 36. add-a70004667fa4b10107c6efb1f2a97989
+ 37. log-a3603e25871acedaabcc3e2099d4bcb2
+ 38. pad-none-4a4dedef54637f16ef2b271c1475f31a
+ 39. fill-none-c5a035e8e95e0c9e361ff39d1ebd9f2d
+ 40. getitem-bc1fb20d7b9e5fbc6a51534ccd3054f3
+ 41. pFCandsIdxG-d6802f98055e2806250a9c3227728372
+ 42. apply-global-index-e35fa5ba3d7597da70c007766683a812
+ 43. pFCandsIdxG-632a8052988ed5a2a8938a273ab2d333
+ 44. apply-global-index-b5e8f87704f5d545cf817d2762944d25
+ 45. d0-29e79e5b5a7de17a03a3d475ff89c599
+ 46. absolute-c8d09ca24f3086d1e1e2b9414b4ed022
+ 47. add-8761d4cf88a177af713d19002a764f4f
+ 48. log-ddae64d2513ac33f2660b46d6854a3dc
+ 49. pad-none-d886677ded46c3f4e8d87456e6e680e2
+ 50. fill-none-d45149e4990e4da381d842d166e7c5ba
+ 51. getitem-836d4f0d5523ecbd8d6db1e90ae2b3b6
+ 52. pt-10e04c1e9f951b6eea81cb85c498833a
+ 53. pFCandsIdxG-f039caebcf4c11cb6e22e91d73d58061
+ 54. apply-global-index-b7778b7df69d732f785a0b8c9d57ca7c
+ 55. pFCandsIdxG-32fb1e5b834c5af2cfb38c19c71f7901
+ 56. apply-global-index-75fa94598ada38bc2c7ac256829aba69
+ 57. pt-35cd28a2662d400d82c8b0e0bf1043be
+ 58. divide-b70f48381fa00780673100850a77be64
+ 59. log-59467169551d668c177b279d7ce41e08
+ 60. pad-none-d5344cecf02aace568fb6048ed540975
+ 61. fill-none-82e8626d15b47f726ea132d0ce2172db
+ 62. getitem-4404eac5ca31322afe93d2f586df1bc7
+ 63. pFCandsIdxG-f0b011a50db292fb2b871686ee0a4ca4
+ 64. apply-global-index-adabd8aa56e51de7d7da71bbc78e54d7
+ 65. pFCandsIdxG-61b55e563c2ef8da75531d37f4588e46
+ 66. apply-global-index-4ddf80eb0996d4e224663e3718eea052
+ 67. pt-54e90537bdb3fe376c28a70cd79127a6
+ 68. log-8784340a02993c5f7a0a94affb9303b7
+ 69. pad-none-8e9507bad08a1e98574503d852bb8e08
+ 70. fill-none-35f0eb9a5380d8e9b99d3fdd92720c63
+ 71. getitem-3122b07919ce90a875c60fe3379baaf2
+ 72. pFCandsIdxG-6751177f307689956c9a5195ee32bf1c
+ 73. apply-global-index-7d0b6c07be47f20e367642fb8e283891
+ 74. pFCandsIdxG-5057f535f83a536bfa670cd1be195413
+ 75. apply-global-index-35c83043c8ca14ca9330f4e462ee80d3
+ 76. delta-r-a4e12fdba83dc2391ced6c43b1f899fd
+ 77. pad-none-529c1a1cfc95ddd8615681183fb06572
+ 78. fill-none-ea30a23fe8ebad07ad2326697bc04680
+ 79. getitem-9f44943e437f2bb256ccc100cc97f2da
+ 80. concatenate-axisgt0-b5c7c2098dc5ed82427a7f31eb5ed39a
+ 81. values-astype-e8e2df120704dbe38f61b0a4b0263819
+ 82. pFCandsIdxG-aa02ecbc510ba5db2b1bec3d1007c8a7
+ 83. apply-global-index-149b1ad33ead558e3b736d22c3a261fc
+ 84. pFCandsIdxG-988a4723504c8a86b25fce7b6dcd1ed0
+ 85. apply-global-index-ac5938c59513f8973b8a0cc39f69be2a
+ 86. delta-phi-f7ff1ff2df14e7932e2b711fb13b15ab
+ 87. pad-none-4fbed45948badcca50ce362c653eefff
+ 88. fill-none-1f7d59ea6f5c76a6b81dbf2e358271e1
+ 89. getitem-0dc813c8eeffc021339d7e91776fa416
+ 90. pFCandsIdxG-e798cc4121bd681e903080f4f1389924
+ 91. apply-global-index-d7b8b6b56eeeb86c9683ebc761346f24
+ 92. pFCandsIdxG-f6807458d1b798c1765dc82431de0630
+ 93. apply-global-index-97d92fe2282fbbc36a1d400cebc3f8d6
+ 94. eta-f24b1fc33dca394d0f6803cc7784e37e
+ 95. eta-d97bf469e0213a29c85425c1e3d91b04
+ 96. subtract-6138b5e5f850f64d920c23efa39303ca
+ 97. pad-none-9b25781acc91d8b6517bb37dae719dd0
+ 98. fill-none-d0965fb8ec4099be0707b78aecaf4a1b
+ 99. getitem-9f41b44078a5993adc37fbadf25ee227
+ 100. concatenate-axisgt0-fae11878826f65e15ee7d9eb1e0043d7
+ 101. values-astype-bf0acc24ca1d686bc7e4dc91eee546e8
+ 102. ParticleNetExample1-d4d79650-ea96-4f0d-9187-9a87f15fe12c
+ 103. numpy-call-ParticleNetExample1-906b63a30d0298bea4410f9b6ff1d666
+
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_mltools_12_1.png" src="../_images/notebooks_mltools_12_1.png" />
+</div>
+</div>
+<p>Or a peek at the optimized results:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dask_results</span><span class="o">.</span><span class="n">visualize</span><span class="p">(</span><span class="n">optimize_graph</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/saransh/Code/HEP/coffea/.env/lib/python3.11/site-packages/coffea/ml_tools/helper.py:175: UserWarning: No format checks were performed on input!
+  warnings.warn(&#34;No format checks were performed on input!&#34;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_mltools_14_1.png" src="../_images/notebooks_mltools_14_1.png" />
+</div>
+</div>
+</section>
+<section id="Comments-about-generalizing-to-other-ML-tools">
+<h2>Comments about generalizing to other ML tools<a class="headerlink" href="#Comments-about-generalizing-to-other-ML-tools" title="Link to this heading"></a></h2>
+<p>All ML wrappers provided in the <code class="docutils literal notranslate"><span class="pre">coffea.mltools</span></code> module (<code class="docutils literal notranslate"><span class="pre">triton_wrapper</span></code> for <a class="reference external" href="https://catalog.ngc.nvidia.com/orgs/nvidia/containers/tritonserver">triton</a> server inference, <code class="docutils literal notranslate"><span class="pre">torch_wrapper</span></code> for pytorch, <code class="docutils literal notranslate"><span class="pre">xgboost_wrapper</span></code> for <a class="reference external" href="https://xgboost.readthedocs.io/en/stable/">xgboost</a> inference, <code class="docutils literal notranslate"><span class="pre">tf_wrapper</span></code> for tensorflow) follow the same design: analyzers is responsible for providing the model of interest, along with providing an inherited class that overloads of the following methods
+to data type conversion:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">prepare_awkward</span></code>: converting awkward arrays to <code class="docutils literal notranslate"><span class="pre">numpy</span></code>-compatible awkward arrays, the output arrays should be in the format of a tuple <code class="docutils literal notranslate"><span class="pre">a</span></code> and a dictionary <code class="docutils literal notranslate"><span class="pre">b</span></code>, which can be expanded out to the input of the ML tool like <code class="docutils literal notranslate"><span class="pre">model(*a,</span> <span class="pre">**b)</span></code>. Notice some additional trivial conversion, such as the conversion to available kernels for <code class="docutils literal notranslate"><span class="pre">pytorch</span></code>, converting to a matrix format for <code class="docutils literal notranslate"><span class="pre">xgboost</span></code>, and slice of array for <code class="docutils literal notranslate"><span class="pre">triton</span></code> is handled automatically by the respective wrappers.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">postprocess_awkward</span></code> (optional): converting the trivial converted numpy array results back to the analysis specific format. If this is not provided, then a simple <code class="docutils literal notranslate"><span class="pre">ak.from_numpy</span></code> conversion results is returned.</p></li>
+</ul>
+<p>If the ML tool of choice for your analysis has not been implemented by the <code class="docutils literal notranslate"><span class="pre">coffea.mltools</span></code> modules, consider constructing your own with the provided <code class="docutils literal notranslate"><span class="pre">numpy_call_wrapper</span></code> base class in <code class="docutils literal notranslate"><span class="pre">coffea.mltools</span></code>. Aside from the functions listed above, you will also need to provide the <code class="docutils literal notranslate"><span class="pre">numpy_call</span></code> method to perform any additional data format conversions, and call the ML tool of choice. If you think your implementation is general, also consider submitting a PR to the <code class="docutils literal notranslate"><span class="pre">coffea</span></code> repository!</p>
+</section>
+<section id="Additional-comments-on-common-prepare_awkward-patterns">
+<h2>Additional comments on common <code class="docutils literal notranslate"><span class="pre">prepare_awkward</span></code> patterns<a class="headerlink" href="#Additional-comments-on-common-prepare_awkward-patterns" title="Link to this heading"></a></h2>
+<p>The key requirement of all wrapper classes in <code class="docutils literal notranslate"><span class="pre">ml_tools</span></code> pacakge, is that to convert awkward arrays into <code class="docutils literal notranslate"><span class="pre">numpy</span></code>-compatible formats using just <code class="docutils literal notranslate"><span class="pre">awkward</span></code> related tools, which ensures that no eager data conversion is performed on dask arrays. Below are some common patterns that are useful when defining a user-level class.</p>
+<section id="Casting-multiple-fields-a-collection-to-be-separate-axis">
+<h3>Casting multiple fields a collection to be separate axis<a class="headerlink" href="#Casting-multiple-fields-a-collection-to-be-separate-axis" title="Link to this heading"></a></h3>
+<p>Given our collection of particles of length <span class="math notranslate nohighlight">\(N\)</span>, our tool is interested in just a sub-set of fields is to be represented as an <span class="math notranslate nohighlight">\(N\time M\)</span> array. You can do acheive this using just <code class="docutils literal notranslate"><span class="pre">ak.concatenate</span></code> and dimension expansion with <code class="docutils literal notranslate"><span class="pre">np.newaxis</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fields_of_interest</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;field1&quot;</span><span class="p">,</span> <span class="s2">&quot;field2&quot;</span><span class="p">,</span> <span class="s2">&quot;field3&quot;</span><span class="p">]</span>
+<span class="n">part_np_array</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="n">part</span><span class="p">[</span><span class="n">field</span><span class="p">][:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span> <span class="c1"># Expanding length N array to Nx1</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields_of_interest</span>
+    <span class="p">],</span>
+    <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span> <span class="c1"># This should now be a Nx3 array</span>
+</pre></div>
+</div>
+</section>
+<section id="Fixing-collection-dimensions">
+<h3>Fixing collection dimensions<a class="headerlink" href="#Fixing-collection-dimensions" title="Link to this heading"></a></h3>
+<p>Many ML inteference tools work with fixed dimension inputs, with missing entries being set to a placeholder values. A common method for achieving this in awkward is with <code class="docutils literal notranslate"><span class="pre">pad_none</span></code>/<code class="docutils literal notranslate"><span class="pre">fill_none</span></code> calls, for example to pad the number of particles passed to the inference tool in each event to be a fixed length of 128:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">part_padded</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">fill_none</span><span class="p">(</span>
+    <span class="n">ak</span><span class="o">.</span><span class="n">pad_none</span><span class="p">(</span><span class="n">part</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">clip</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+    <span class="o">-</span><span class="mi">1000</span><span class="p">,</span> <span class="c1"># Placeholder value</span>
+    <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The dimensions of this resulting <code class="docutils literal notranslate"><span class="pre">part_padded</span></code> array is still <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">x</span> <span class="pre">var</span></code>, indicating that the number of entries <code class="docutils literal notranslate"><span class="pre">axis=1</span></code> can potentially be variable. Depending on the ML tools being used, this axis dimension may to be fixed. To strictly convert this to a <code class="docutils literal notranslate"><span class="pre">Nx128</span></code> array, one can call <code class="docutils literal notranslate"><span class="pre">flatten</span></code>/<code class="docutils literal notranslate"><span class="pre">unflatten</span></code> pairs:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">part_padded</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">part_padded</span><span class="p">)</span>
+<span class="n">part_padded</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">unflatten</span><span class="p">(</span><span class="n">part_padded</span><span class="p">,</span> <span class="mi">128</span><span class="p">)</span> <span class="c1"># Now this is a Nx128 array</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="processor.html" class="btn btn-neutral float-left" title="Coffea Processors" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dataset_discovery.html" class="btn btn-neutral float-right" title="Dataset discovery tools" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Fermi National Accelerator Laboratory.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
