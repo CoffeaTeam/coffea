@@ -73,7 +73,7 @@ jobs:
         uv pip install --system --upgrade pip setuptools wheel
         # mltool installs
         # c.f. https://github.com/astral-sh/uv/issues/3437
-        python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu # torchaudio
+        python -m pip install torch --index-url https://download.pytorch.org/whl/cpu # torchvision torchaudio
         uv pip install --system xgboost
         uv pip install --system 'tritonclient[grpc,http]!=2.41.0'
         # install checked out coffea
