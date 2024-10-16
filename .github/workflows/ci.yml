@@ -42,7 +42,7 @@ jobs:
         os: [ubuntu-latest, macOS-latest, windows-latest]
         java-version: [17]
         java-distribution: ["corretto"]
-        python-version: ["3.9", "3.12"]
+        python-version: ["3.9", "3.13"]
 
     name: test coffea (${{ matrix.os }}) - python ${{ matrix.python-version }}, JDK${{ matrix.java-version }}
 
@@ -114,21 +114,21 @@ jobs:
       run: |
         python -m pytest --cov-report=xml --cov=coffea --deselect=test_taskvine
     - name: Upload codecov
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.13
       uses: codecov/codecov-action@v4
     - name: Install graphviz
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.13
       uses: ts-graphviz/setup-graphviz@v2
     - name: Install pandoc
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.13
       uses: r-lib/actions/setup-pandoc@v2
     - name: Build documentation
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.13
       run: |
         cd docs && make html
         touch build/html/.nojekyll
     - name: Deploy documentation
-      if: github.event_name == 'push' && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12
+      if: github.event_name == 'push' && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.13
       uses: crazy-max/ghaction-github-pages@v4
       with:
         target_branch: gh-pages
@@ -195,7 +195,7 @@ jobs:
       contents: read
     strategy:
       matrix:
-        python-version: ["3.12"]
+        python-version: ["3.13"]
     name: deploy release
 
     steps:
