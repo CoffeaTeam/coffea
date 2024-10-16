@@ -148,7 +148,7 @@ def test_KaonParent_to_PionDaughters_Loop(eager_events):
     names_valid = awkward.all(is_pi_0 | is_pi_plus | is_pi_minus)
     assert names_valid
 
-    # Do the daughters have valid charges (same or opposite)?
+    # Do the daughters have valid charges (-1 or 0)?
     nested_bool = awkward.prod(daughters_of_K_S0.charge, axis=2) <= 0
     charge_valid = awkward.all(awkward.ravel(nested_bool))
     assert charge_valid
