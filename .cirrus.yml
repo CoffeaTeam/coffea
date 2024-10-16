@@ -12,7 +12,7 @@ task:
         memory: 7G
         matrix:
           - image: python:3.9
-          - image: python:3.12
+          - image: python:3.13
 
       create_venv_script: |
         python -m venv ../venv
