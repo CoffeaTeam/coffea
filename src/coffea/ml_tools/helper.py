@@ -136,13 +136,13 @@ class numpy_call_wrapper(abc.ABC):
 
     For tools outside the coffea package (like for ML inference), the inputs
     typically expect a numpy-like input. This class wraps up the user-level
-    awkward->numpy data mangling and the underling numpy evaluation calls to
+    awkward->numpy data mangling and the underlying numpy evaluation calls to
     recognizable to dask.
 
     For the class to be fully functional, the user must overload these methods:
 
-    - numpy_call: How the evaluation using all numpy tool be performed
-    - prepare_awkward: How awkward arrays should be translated to the a numpy
+    - numpy_call: How the evaluation using all-numpy tool be performed
+    - prepare_awkward: How awkward arrays should be translated to a numpy
       format that is compatible with the numpy_call
 
     Additionally, the following helper functions can be omitted, but will help
@@ -150,7 +150,7 @@ class numpy_call_wrapper(abc.ABC):
 
     - validate_numpy_input: makes sure the computation routine understand the
       input.
-    - numpy_to_awkward: Additional translation to convert numpy outputs to
+    - postprocess_awkward: Additional translation to convert numpy outputs to
       awkward (defaults to a simple `awkward.from_numpy` conversion)
     """
 
@@ -233,7 +233,7 @@ class numpy_call_wrapper(abc.ABC):
     def _call_awkward(self, *args, **kwargs):
         """
         The common routine of prepare_awkward conversion, numpy evaluation,
-        then numpy_to_awkward conversion.
+        then postprocess_awkward conversion.
         """
         ak_args, ak_kwargs = self.prepare_awkward(*args, **kwargs)
         (np_args, np_kwargs), _ = self._ak_to_np_(*ak_args, **ak_kwargs)
@@ -246,7 +246,7 @@ class numpy_call_wrapper(abc.ABC):
         Wrapper required for dask awkward calls.
 
         Here we create a new callable class (_callable_wrap) that packs the
-        prepare_awkward/numpy_call/numpy_to_awkward call routines to be
+        prepare_awkward/numpy_call/postprocess_awkward call routines to be
         passable to the dask_awkward.map_partition method.
 
         In addition, because map_partition by default expects the callable's

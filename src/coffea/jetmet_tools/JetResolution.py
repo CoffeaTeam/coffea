@@ -45,15 +45,19 @@ class JetResolution:
     You can use this class as follows::
 
         jr = JetResolution(name1=corrL1,...)
-        jetRes = jr(JetParameter1=jet.parameter1,...)
+        jetRes = jr.getResolution(JetParameter1=jet.parameter1,...)
 
+    in which `jetRes` are the resolutions, with the same shape as the input parameters.
+    In order to see what parameters must be passed to `getResolution`, one can do
+    `jr.signature`.
+
+    You construct a JetResolution object by passing in a dict of names and functions.
+    Names must be formatted as '<campaign>_<dataera>_<datatype>_<level>_<jettype>'. You
+    can use coffea.lookup_tools' `extractor` and `evaluator` to get the functions from
+    some input files.
     """
 
     def __init__(self, **kwargs):
-        """
-        You construct a JetResolution by passing in a dict of names and functions.
-        Names must be formatted as '<campaign>_<dataera>_<datatype>_<level>_<jettype>'.
-        """
         jettype = None
         levels = []
         funcs = []

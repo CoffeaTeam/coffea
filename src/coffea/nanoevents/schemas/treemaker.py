@@ -166,7 +166,7 @@ class TreeMakerSchema(BaseSchema):
 
     @classmethod
     def behavior(cls):
-        """Behaviors necessary to implement this schema"""
+        """Behaviors necessary to implement this schema (dict)"""
         from coffea.nanoevents.methods import base, vector
 
         behavior = {}
@@ -181,6 +181,17 @@ class TreeMakerSchema(BaseSchema):
         writeable. Based off the discussion thread here [1], but added specific
         cased to handled the nested structures define for TreeMaker n-tuples.
         [1] https://github.com/CoffeaTeam/coffea/discussions/735
+
+        Parameters
+        ----------
+            events: TreeMakerSchema events
+                The TreeMakerSchema events to be turned into something uproot-writeable
+
+        Returns
+        -------
+            out: dict
+                An uproot-writeable dictionary representing the same information as the input
+                TreeMakerSchema events
         """
         import awkward as ak
 

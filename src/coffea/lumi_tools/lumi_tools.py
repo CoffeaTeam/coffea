@@ -33,13 +33,17 @@ class LumiData:
     Parameters
     ----------
         lumi_csv : str
-            The path the the luminosity csv output file
+            The path to the luminosity csv file to read from. Generally, this is the output file from brilcalc.
+        is_inst_lumi: bool, default False
+            If True, treats the values read in from `lumi_csv` as average instantaneous luminosities, instead of integrated luminosities.
 
-    The values are extracted from the csv output as returned by brilcalc, e.g. with a command such as::
+    The values are extracted from the csv output as returned by brilcalc_, e.g. with a command such as::
 
         brilcalc lumi -c /cvmfs/cms.cern.ch/SITECONF/local/JobConfig/site-local-config.xml \
                  -b "STABLE BEAMS" --normtag=/cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_PHYSICS.json \
                  -u /pb --byls --output-style csv -i Cert_294927-306462_13TeV_PromptReco_Collisions17_JSON.txt > lumi2017.csv
+
+    .. _brilcalc: https://cms-service-lumi.web.cern.ch/cms-service-lumi/brilwsdoc.html
 
     Note that some brilcalc files may be in different units than inverse picobarns, including possibly average instantaneous luminosity.
     You should make sure that you understand the units of the LumiData file you are using before calculating luminosity with this tool.
@@ -73,7 +77,12 @@ class LumiData:
         ----------
             runlumis : numpy.ndarray or LumiList
                 A 2d numpy array of ``[[run,lumi], [run,lumi], ...]`` or `LumiList` object
-                of the lumiSections to integrate over.
+                of the lumiSections to integrate over, where `run` is a run number and `lumi` is a
+                lumisection number.
+
+        Returns
+        -------
+            (float) The total integrated luminosity of the runs and lumisections indicated in `runlumis`.
         """
         if self.index is None:
             self.index = Dict.empty(
@@ -132,14 +141,15 @@ class LumiData:
 
 
 class LumiMask:
-    """Holds a luminosity mask index, and provides vectorized lookup
+    """
+    Holds a luminosity mask index, and provides vectorized lookup, retaining only valid (run,lumisection) pairs.
 
     Parameters
     ----------
         jsonfile : str
             Path the the 'golden json' file or other valid lumiSection database in json format.
 
-    This class parses a CMS lumi json into an efficient valid lumiSection lookup table
+    This class parses a CMS lumi json into an efficient valid lumiSection lookup table.
     """
 
     def __init__(self, jsonfile):
@@ -154,7 +164,8 @@ class LumiMask:
             self._masks[numpy.uint32(run)] = mask
 
     def __call__(self, runs, lumis):
-        """Check if run and lumi are valid
+        """
+        Check pairs of runs and lumis for validity, and produce a mask retaining the valid pairs.
 
         Parameters
         ----------
