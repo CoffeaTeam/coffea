@@ -207,7 +207,12 @@ class _map_schema_parquet(_map_schema_base):
 
 
 class NanoEventsFactory:
-    """A factory class to build NanoEvents objects"""
+    """
+    A factory class to build NanoEvents objects.
+
+    For most users, it is advisable to construct instances via methods like `from_root` so that
+    the constructor args are properly set.
+    """
 
     def __init__(self, schema, mapping, partition_key, cache=None, is_dask=False):
         self._is_dask = is_dask
@@ -292,6 +297,11 @@ class NanoEventsFactory:
                 see: https://github.com/scikit-hep/uproot5/blob/main/src/uproot/_dask.py#L109
             interpretation_executor (None or Executor with a ``submit`` method):
                 see: https://github.com/scikit-hep/uproot5/blob/main/src/uproot/_dask.py#L113
+
+        Returns
+        -------
+            out: NanoEventsFactory
+                A NanoEventsFactory instance built from the file at `file`.
         """
 
         if treepath is not uproot._util.unset and not isinstance(
@@ -442,6 +452,11 @@ class NanoEventsFactory:
                 Pass a list instance to record which branches were lazily accessed by this instance
             delayed:
                 Nanoevents will use dask as a backend to construct a delayed task graph representing your analysis.
+
+        Returns
+        -------
+            out: NanoEventsFactory
+                A NanoEventsFactory instance built from the file at `file`.
         """
         import pyarrow
         import pyarrow.dataset as ds
@@ -581,6 +596,11 @@ class NanoEventsFactory:
                 Arbitrary metadata to add to the `base.NanoEvents` object
             access_log : list, optional
                 Pass a list instance to record which branches were lazily accessed by this instance
+
+        Returns
+        -------
+            out: NanoEventsFactory
+                A NanoEventsFactory instance built from information in `array_source`.
         """
         if not isinstance(array_source, Mapping):
             raise TypeError(
@@ -679,7 +699,18 @@ class NanoEventsFactory:
         return stop - start
 
     def events(self):
-        """Build events"""
+        """
+        Build events
+
+        Returns
+        -------
+            out:
+                If the NanoEventsFactory is running in delayed mode (Dask), this is
+                a Dask awkward array of the events. If the mapping also produces a
+                report, the output will be a tuple (events, report).
+                If the factory is not running in delayed mode, this is an awkward
+                array of the events.
+        """
         if self._is_dask:
             events = self._mapping(form_mapping=self._schema)
             report = None

@@ -21,9 +21,37 @@ class triton_wrapper(nonserializable_attribute, numpy_call_wrapper):
     Wrapper for running triton inference.
 
     The target of this class is such that all triton specific operations are
-    wrapped and abstracted-away from the users. The users should then only needs
+    wrapped and abstracted-away from the users. The user should then only need
     to handle awkward-level operations to mangle the arrays into the expected
-    input format required by the the model of interest.
+    input format required by the the model of interest. This must be done by
+    overriding the `prepare_awkward` method.
+
+    Once an instance `wrapper` of this class is created, it can be called on inputs
+    like `wrapper(*args)`, where `args` are the inputs to `prepare_awkward` (see
+    next paragraph).
+
+    In order to actually use the class, the user must override the method
+    `prepare_awkward`. The input to this method is an arbitrary number of awkward
+    arrays or dask awkward arrays (but never a mix of dask/non-dask array). The
+    output is two objects: a tuple `a` and a dictionary `b` such that the underlying
+    `tritonclient` instance calls like `client(*a,**b)`. The contents of a and b
+    should be numpy-compatible awkward-like arrays: if the inputs are non-dask awkward
+    arrays, the return should also be non-dask awkward arrays that can be trivially
+    converted to numpy arrays via a ak.to_numpy call; if the inputs are dask awkward
+    arrays, the return should be still be dask awkward arrays that can be trivially
+    converted via a to_awkward().to_numpy() call.
+
+    Parameters
+    ----------
+        model_url: str
+            A string in the format of: `triton+<protocol>://<address>/<model>/<version>`
+
+        client_args: dict[str,str], optional
+            Optional keyword arguments to pass to the underlying `InferenceServerClient` objects.
+
+        batch_size: int, default -1
+            How the input arrays should be split up for analysis processing. Leave negative to
+            have this automatically resolved.
     """
 
     batch_size_fallback = 10  # Fall back should batch size not be determined.
@@ -32,19 +60,6 @@ class triton_wrapper(nonserializable_attribute, numpy_call_wrapper):
     def __init__(
         self, model_url: str, client_args: Optional[Dict] = None, batch_size=-1
     ):
-        """
-        Parameters
-        ----------
-
-        - model_url: A string in the format of:
-          triton+<protocol>://<address>/<model>/<version>
-
-        - client_args: optional keyword arguments to pass to the underlying
-          `InferenceServerClient` objects.
-
-        - batch_size: How the input arrays should be split up for analysis
-          processing. Leave negative to have this automatically resolved.
-        """
         if _triton_import_error is not None:
             warnings.warn(
                 "Users should make sure the tritonclient package is installed before proceeding!\n"
@@ -157,8 +172,28 @@ class triton_wrapper(nonserializable_attribute, numpy_call_wrapper):
         self, output_list: List[str], input_dict: Dict[str, numpy.array]
     ) -> None:
         """
-        tritonclient can return the expected input array dimensions and
-        available output values.
+        Check that tritonclient can return the expected input array dimensions and
+        available output values. Can be useful when ensuring that data is being properly
+        mangled for Triton. This method is called just before passing to the Triton client
+        when an inference request is made.
+
+        If no errors are raised, it is understood that the input is validated by this function.
+
+        Parameters
+        ----------
+            output_list: list[str]
+                List of string corresponding to the name of the outputs
+                of interest. These strings will be automatically translated into the
+                required `tritonclient.InferRequestedOutput` objects. This is identical
+                to the first argument the user passes in when calling the `triton_wrapper`
+                instance.
+
+            input_dict: dict[str,np.array]
+                Dictionary with the model's input-names as the key and the
+                appropriate numpy array as the dictionary value. This dictionary is
+                automatically translated into a list of `tritonclient.InferInput`
+                objects. This is identical to the second argument the user passes in when
+                calling the `triton_wrapper` instance.
         """
         # Input value checking
         for iname, iarr in input_dict.items():
@@ -213,22 +248,23 @@ class triton_wrapper(nonserializable_attribute, numpy_call_wrapper):
         """
         Parameters
         ----------
+            output_list: list[str]
+                List of string corresponding to the name of the outputs
+                of interest. These strings will be automatically translated into the
+                required `tritonclient.InferRequestedOutput` objects.
 
-        - output_list: List of string corresponding to the name of the outputs
-          of interest. These strings will be automatically translated into the
-          required `tritonclient.InferRequestedOutput` objects.
-
-        - input_dict: Dictionary with the model's input-names as the key and the
-          appropriate numpy array as the dictionary value. This dictionary is
-          automatically translated into a list of `tritonclient.InferInput`
-          objects.
+            input_dict: dict[str,np.array]
+                Dictionary with the model's input-names as the key and the
+                appropriate numpy array as the dictionary value. This dictionary is
+                automatically translated into a list of `tritonclient.InferInput`
+                objects.
 
 
-        Return
-        ------
-
-        The return will be the dictionary of numpy arrays that have the
-        output_list arguments as keys.
+        Returns
+        -------
+            dict[str,np.array]
+                The return will be the dictionary of numpy arrays that have the
+                output_list arguments as keys.
         """
 
         # Setting up the inference input containers
