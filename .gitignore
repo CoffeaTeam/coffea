@@ -114,3 +114,6 @@ dask-worker-space/
 
 # VCS versioning
 src/coffea/_version.py
+
+# pyright LSP
+pyrightconfig.json

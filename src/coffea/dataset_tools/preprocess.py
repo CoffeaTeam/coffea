@@ -75,7 +75,7 @@ def get_steps(
             else:
                 raise e
 
-        num_entries = tree.num_entries
+        num_entries = next(uproot.num_entries(f"{arg.file}:{arg.object_path}"))[-1]
 
         form_json = None
         form_hash = None
