@@ -375,7 +375,11 @@ class NanoEventsFactory:
         if entry_start is None or entry_start < 0:
             entry_start = 0
         if entry_stop is None or entry_stop > tree.num_entries:
-            entry_stop = tree.num_entries
+            if treepath is not None:
+                # if treepath exists, attempt the faster uproot.num_entries method
+                entry_stop = next(uproot.num_entries(f"{file}:{treepath}"))[-1]
+            else:
+                entry_stop = tree.num_entries
 
         partition_key = (
             str(tree.file.uuid),
