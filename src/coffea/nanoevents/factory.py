@@ -377,7 +377,7 @@ class NanoEventsFactory:
         # should use uproot.num_entries instead...
         nentries = tree.num_entries
         if entry_stop is None or entry_stop > nentries:
-                entry_stop = nentries
+            entry_stop = nentries
 
         partition_key = (
             str(tree.file.uuid),
