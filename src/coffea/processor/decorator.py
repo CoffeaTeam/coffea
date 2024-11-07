@@ -1,7 +1,6 @@
-from dataclasses import dataclass
-from functools import wraps
-import typing as tp
 import inspect
+import typing as tp
+from dataclasses import dataclass
 
 import awkward as ak
 
@@ -23,7 +22,7 @@ class mapfilter:
     Parameters
     ----------
     base_fn : Callable
-        Function to apply on all partitions, this will get wraped to
+        Function to apply on all partitions, this will get wrapped to
         handle kwargs, including dask collections.
     label : str, optional
         Label for the Dask graph layer; if left to ``None`` (default),
@@ -52,10 +51,15 @@ class mapfilter:
     needs: dict, optional
         If ``None`` (the default), nothing is touched in addition to the
         standard typetracer report. In certain cases, it is necessary to
-        touch additional objects **explicitely** to get the correct typetracer report.
+        touch additional objects **explicitly** to get the correct typetracer report.
         For this, provide a dictionary that maps input argument that's an array to
         the columns/slice of that array that should be touched.
     out_like: tp.Any, optional
+        If ``None`` (the default), the output will be computed through the default
+        typetracing pass. If a ak.Array is provided, the output will be mocked for the typetracing
+        pass as the provided array. This is useful for cases where the output can not be
+        computed through the default typetracing pass.
+
 
     Returns
     -------
@@ -122,6 +126,7 @@ class mapfilter:
     {'from-uproot-0e54dc3659a3c020608e28b03f22b0f4': frozenset({'Electron_eta', 'Jet_eta', 'nElectron', 'Jet_pt', 'Electron_pt', 'nJet'})}
 
     """
+
     base_fn: tp.Callable
     label: str | None = None
     token: str | None = None
@@ -131,7 +136,6 @@ class mapfilter:
     # additional options that are not available in dak.map_partitions
     needs: dict | None = None
     out_like: ak.Array | None = None
-
 
     def wrapped_fn(self, *args: tp.Any, **kwargs: tp.Any):
         ba = inspect.signature(self.base_fn).bind(*args, **kwargs)
@@ -155,7 +159,9 @@ class mapfilter:
                         ak.typetracer.touch_data(array[slce])
         if self.out_like is not None:
             # check if we're in the typetracing step
-            if any(ak.backend(array) == "typetracer" for array in in_arguments.values()):
+            if any(
+                ak.backend(array) == "typetracer" for array in in_arguments.values()
+            ):
                 # mock the output as the specified type
                 if not isinstance(self.out_like, ak.Array):
                     raise ValueError("out_like must be an awkward array")
@@ -165,10 +171,8 @@ class mapfilter:
 
         return self.base_fn(*args, **kwargs)
 
-
     def __call__(self, *args: tp.Any, **kwargs: tp.Any):
         from dask_awkward.lib.core import map_partitions
-
 
         return map_partitions(
             self.wrapped_fn,
