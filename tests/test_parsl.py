@@ -5,15 +5,6 @@ import multiprocessing
 import sys
 import pytest
 
-if (
-    sys.version_info.major == 3
-    and sys.version_info.minor >= 8
-    and sys.platform.startswith("darwin")
-):
-    pytest.skip(
-        "parsl not yet functional in python 3.8+ on macs", allow_module_level=True
-    )
-
 
 def test_parsl_start_stop():
     pytest.importorskip("parsl", minversion="0.7.2")
@@ -55,19 +46,25 @@ def test_parsl_htex_executor():
     from parsl.executors import HighThroughputExecutor
     from parsl.config import Config
 
+    parsl_version = tuple(map(int, parsl.__version__.split(".")))
+    if parsl_version >= (2024, 3, 4):
+        max_workers_arg = {"max_workers_per_node": 1}
+    else:
+        max_workers_arg = {"max_workers": 1}
+
     parsl_config = Config(
         executors=[
             HighThroughputExecutor(
                 label="coffea_parsl_default",
                 address="127.0.0.1",
                 cores_per_worker=max(multiprocessing.cpu_count() // 2, 1),
-                max_workers=1,
                 provider=LocalProvider(
                     channel=LocalChannel(),
                     init_blocks=1,
                     max_blocks=1,
                     nodes_per_block=1,
                 ),
+                **max_workers_arg,
             )
         ],
         strategy=None,
