@@ -167,12 +167,12 @@ def test_packed_selection():
     sel = PackedSelection()
 
     shape = (10,)
-    all_true = np.full(shape=shape, fill_value=True, dtype=np.bool)
-    all_false = np.full(shape=shape, fill_value=False, dtype=np.bool)
+    all_true = np.full(shape=shape, fill_value=True, dtype=bool)
+    all_false = np.full(shape=shape, fill_value=False, dtype=bool)
     fizz = np.arange(shape[0]) % 3 == 0
     buzz = np.arange(shape[0]) % 5 == 0
     ones = np.ones(shape=shape, dtype=np.uint64)
-    wrong_shape = ones = np.ones(shape=(shape[0] - 5,), dtype=np.bool)
+    wrong_shape = ones = np.ones(shape=(shape[0] - 5,), dtype=bool)
 
     sel.add("all_true", all_true)
     sel.add("all_false", all_false)

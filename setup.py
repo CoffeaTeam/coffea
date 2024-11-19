@@ -56,6 +56,7 @@ def get_description():
 
 
 INSTALL_REQUIRES = [
+    "setuptools<71",
     "awkward>=1.10.3,<2",
     "uproot>=4.1.6,==4.*,!=4.2.4,!=4.3.0,!=4.3.1",
     "uproot3-methods>=0.10.0",
@@ -64,10 +65,8 @@ INSTALL_REQUIRES = [
     "pyarrow>=1.0.0",
     "fsspec",
     "matplotlib>=3",
-    'numba>=0.50.0;python_version<"3.7"',
-    'numba>=0.56.0;python_version>"3.6"',
-    'numpy>=1.16.0,<1.22;python_version<"3.7"',  # <1.22 for numba version restrictions with 1.55 series
-    'numpy>=1.18.0,<1.24;python_version>"3.6"',  # numba 1.56 available for python > 3.6, upper requirement for higher python versions
+    "numba>=0.56.0",
+    "numpy>=1.18.0,<2",
     "scipy>=1.1.0",
     "tqdm>=4.27.0",
     "lz4",
@@ -93,7 +92,7 @@ EXTRAS_REQUIRE["dask"] = [
 EXTRAS_REQUIRE["servicex"] = [
     "aiostream",
     "tenacity",
-    "servicex>=2.5.3",
+    "servicex>=2.5.3,<3",
     "func-adl_servicex",
 ]
 EXTRAS_REQUIRE["dev"] = [
@@ -146,11 +145,10 @@ setup(
         "Operating System :: POSIX",
         "Operating System :: Unix",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Topic :: Scientific/Engineering",
         "Topic :: Scientific/Engineering :: Information Analysis",
         "Topic :: Scientific/Engineering :: Mathematics",
@@ -159,4 +157,5 @@ setup(
         "Topic :: Utilities",
     ],
     platforms="Any",
+    python_requires=">=3.8,<3.12",
 )
