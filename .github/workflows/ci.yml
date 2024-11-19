@@ -154,7 +154,7 @@ jobs:
     - name: Test work_queue
       shell: bash -l {0}
       run: |
-        conda create --yes --name coffea-env -c conda-forge python=${{ matrix.python-version }} ndcctools dill conda-pack conda
+        conda create --yes --name coffea-env -c conda-forge python=${{ matrix.python-version }} ndcctools dill conda-pack conda 'setuptools<71'
         conda activate coffea-env
         python -m pip install --ignore-installed .
         cd tests
