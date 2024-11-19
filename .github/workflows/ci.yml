@@ -77,7 +77,7 @@ jobs:
         uv pip install --system xgboost
         uv pip install --system 'tritonclient[grpc,http]!=2.41.0'
         # install checked out coffea
-        uv pip install --system -q '.[dev,parsl,dask,spark]' --upgrade
+        uv pip install --system -q '.[dev,parsl,dask]' --upgrade
         uv pip list --system
         java -version
     - name: Install dependencies (MacOS)
@@ -89,7 +89,7 @@ jobs:
         python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
         uv pip install --system xgboost
         # install checked out coffea
-        uv pip install --system -q '.[dev,dask,spark]' --upgrade
+        uv pip install --system -q '.[dev,dask]' --upgrade
         uv pip list --system
         java -version
     - name: Install dependencies (Windows)
