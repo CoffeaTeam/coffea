@@ -1,0 +1,126 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "coffea"
+version = "0.7.23"
+description = "Tools for doing Collider HEP style analysis with columnar operations"
+readme = "README.rst"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Lindsey Gray (Fermilab)", email = "lagray@fnal.gov"}
+]
+maintainers = [
+    {name = "Lindsey Gray (Fermilab)", email = "lagray@fnal.gov"}
+]
+homepage = "https://github.com/CoffeaTeam/coffea"
+repository = "https://github.com/CoffeaTeam/coffea"
+documentation = "https://github.com/CoffeaTeam/coffea"
+keywords = ["HEP", "Physics", "Data Analysis", "Columnar Operations"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Software Development",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "setuptools<71",
+    "awkward>=1.10.3,<2",
+    "uproot>=4.1.6,==4.*,!=4.2.4,!=4.3.0,!=4.3.1",
+    "uproot3-methods>=0.10.0",
+    "uproot3>=3.14.1",
+    "correctionlib>=2.0.0",
+    "pyarrow>=1.0.0",
+    "fsspec",
+    "matplotlib>=3",
+    "numba>=0.56.0",
+    "numpy>=1.18.0,<2",
+    "scipy>=1.1.0",
+    "tqdm>=4.27.0",
+    "lz4",
+    "cloudpickle>=1.2.3",
+    "toml>=0.10.2",
+    "mplhep>=0.1.18",
+    "packaging",
+    "pandas",
+    "hist>=2",
+    "typing-extensions; python_version<'3.8'",
+    "cachetools",
+    "dataclasses; python_version<'3.7'",
+]
+python-requires = ">=3.8,<3.12"
+
+[project.optional-dependencies]
+spark = ["ipywidgets", "pyspark>=2.4.1,<3.0.0", "jinja2"]
+parsl = ["parsl>=1.1"]
+dask = [
+    "dask[dataframe]>=2.6.0",
+    "distributed>=2.6.0",
+    "bokeh>=1.3.4",
+    "blosc",
+]
+servicex = [
+    "aiostream",
+    "tenacity",
+    "servicex>=2.5.3,<3",
+    "func-adl_servicex",
+]
+dev = [
+    "flake8",
+    "black",
+    "pytest",
+    "pytest-cov",
+    "pytest-mpl",
+    "pytest-asyncio",
+    "pytest-mock",
+    "sphinx",
+    "nbsphinx",
+    "sphinx-rtd-theme",
+    "sphinx-automodapi",
+    "sphinx-copybutton>=0.3.2",
+    "pyinstrument",
+    "ipython",
+]
+rucio = [
+    "rucio-clients>=32; python_version>'3.8'",
+    "rucio-clients<32; python_version<'3.9'",
+    "pyyaml",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["coffea"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "README.rst",
+    "LICENSE",
+    "coffea/processor/templates/*.tmpl",
+]
+
+[tool.hatch.build.targets.wheel.hooks.version]
+path = "coffea/_version.py"
+
+[tool.pytest.ini_options]
+addopts = "-rfesxX -v"
+testpaths = ["tests"]
+
+[tool.mypy]
+files = "src"
+python_version = "3.8"
+ignore_missing_imports = true

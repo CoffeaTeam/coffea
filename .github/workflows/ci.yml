@@ -4,109 +4,132 @@ on:
   push:
     branches:
       - master
+      - backports-v0.7.x
       - backports-v0.6.x
     tags:
       - v*.*.*
   pull_request:
     branches:
       - master
+      - backports-v0.7.x
       - backports-v0.6.x
   # Run daily at 0:01 UTC
   schedule:
     - cron:  '1 0 * * *'
 
-jobs:
-  linter:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.10"]
-    name: linter - flake8/black - python ${{ matrix.python-version }}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
+jobs:
+  pre-commit:
+    name: pre-commit
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.python-version }}
-    - name: Lint with flake8 and black
-      run: |
-        python -m pip install -q flake8 black
-        flake8 coffea tests setup.py
-        black --check --diff coffea tests setup.py
+        python-version: "3.13"
+    - uses: pre-commit/action@v3.0.1
+      with:
+        extra_args: --hook-stage manual --all-files
 
   test:
     runs-on: ${{ matrix.os }}
-    needs: linter
+    needs: pre-commit
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
-        java-version: [8]
+        java-version: [17]
         java-distribution: ["corretto"]
-        python-version: ["3.7", "3.10"]
+        python-version: ["3.9", "3.11"]
+
     name: test coffea (${{ matrix.os }}) - python ${{ matrix.python-version }}, JDK${{ matrix.java-version }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Set up JDK ${{ matrix.java-version }}
-      if: matrix.os != 'windows-latest'
-      uses: actions/setup-java@v3
+    - name: Set up JDK ${{ matrix.java-distribution }}/${{ matrix.java-version }}
+      uses: actions/setup-java@v4
       with:
         java-version: ${{ matrix.java-version }}
         distribution: ${{ matrix.java-distribution }}
 
-    - name: Set python 3.6 test settings
+    - name: Set python test settings
       run: |
-        echo "INSTALL_EXTRAS=[dev,parsl,dask,spark]" >> $GITHUB_ENV
-      if: matrix.python-version == 3.6
+        echo "INSTALL_EXTRAS='[dev,parsl,dask,servicex]'" >> $GITHUB_ENV
 
-    - name: Set python newer than 3.6 test settings
-      run: |
-        echo "INSTALL_EXTRAS=[dev,parsl,dask,spark,servicex]" >> $GITHUB_ENV
-      if: matrix.python-version != 3.6
+    - name: Install uv
+      run: python -m pip install --upgrade uv
 
-    - name: Install dependencies (Linux/MacOS)
-      if: matrix.os != 'windows-latest'
+    - name: Install dependencies (Linux)
+      if: matrix.os == 'ubuntu-latest'
       run: |
-        python -m pip install --upgrade pip setuptools wheel
-        python -m pip install -q -e .${{env.INSTALL_EXTRAS}}
-        python -m pip list
+        uv pip install --system --upgrade pip setuptools wheel
+        # mltool installs
+        # c.f. https://github.com/astral-sh/uv/issues/3437
+        python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+        uv pip install --system xgboost
+        uv pip install --system 'tritonclient[grpc,http]!=2.41.0'
+        # install checked out coffea
+        uv pip install --system -q '.[dev,parsl,dask]' --upgrade
+        uv pip list --system
+        java -version
+    - name: Install dependencies (MacOS)
+      if: matrix.os == 'macOS-latest'
+      run: |
+        uv pip install --system --upgrade pip setuptools wheel
+        # mltool installs
+        # c.f. https://github.com/astral-sh/uv/issues/3437
+        python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+        uv pip install --system xgboost
+        # install checked out coffea
+        uv pip install --system -q '.[dev,dask]' --upgrade
+        uv pip list --system
         java -version
     - name: Install dependencies (Windows)
       if: matrix.os == 'windows-latest'
       run: |
-        python -m pip install --upgrade pip setuptools wheel
-        python -m pip install -q -e .[dev]
-        python -m pip list
+        uv pip install --system --upgrade pip setuptools wheel
+        # mltool installs
+        # c.f. https://github.com/astral-sh/uv/issues/3437
+        python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+        uv pip install --system xgboost
+        # install checked out coffea
+        uv pip install --system -q '.[dev,dask]' 'numpy<2' --upgrade
+        uv pip list --system
+        java -version
+
+    - name: Start triton server with example model
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        docker run -d --rm -p 8000:8000 -p 8001:8001 -p 8002:8002 -v ${{ github.workspace }}/tests/samples/triton_models_test:/models nvcr.io/nvidia/tritonserver:23.04-pyt-python-py3 tritonserver --model-repository=/models
+
     - name: Test with pytest
-      env:
-        ARROW_PRE_0_15_IPC_FORMAT: 1
       run: |
-        pytest --cov-report=xml --cov=coffea tests
+        python -m pytest --cov-report=xml --cov=coffea --deselect=test_taskvine
     - name: Upload codecov
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.10
-      run: |
-        python -m pip install codecov
-        codecov
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11
+      uses: codecov/codecov-action@v5
     - name: Install graphviz
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.10
-      uses: kamiazya/setup-graphviz@v1
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11
+      uses: ts-graphviz/setup-graphviz@v2
     - name: Install pandoc
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.10
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11
       uses: r-lib/actions/setup-pandoc@v2
     - name: Build documentation
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.10
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11
       run: |
         cd docs && make html
         touch build/html/.nojekyll
     - name: Deploy documentation
-      if: github.event_name == 'push' && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.10
-      uses: crazy-max/ghaction-github-pages@v3.1.0
+      if: github.event_name == 'push' && matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11
+      uses: crazy-max/ghaction-github-pages@v4
       with:
         target_branch: gh-pages
         build_dir: docs/build/html
@@ -115,10 +138,10 @@ jobs:
 
   testwq:
     runs-on: ubuntu-latest
-    needs: linter
+    needs: pre-commit
     strategy:
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.11"]
     name: test coffea-workqueue
 
     steps:
@@ -131,20 +154,21 @@ jobs:
     - name: Test work_queue
       shell: bash -l {0}
       run: |
-        conda create --yes --name coffea-env -c conda-forge python=${{ matrix.python-version }} ndcctools dill conda-pack conda
+        conda create --yes --name coffea-env -c conda-forge python=${{ matrix.python-version }} ndcctools dill conda-pack conda 'setuptools<71'
         conda activate coffea-env
         python -m pip install --ignore-installed .
         cd tests
         conda-pack --output coffea-env.tar.gz
         python wq.py coffea-env.tar.gz
 
+
 #  testskyhookjob:
 #    runs-on: ubuntu-latest
-#    needs: linter
+#    needs: pre-commit
 #    name: test coffea-skyhook-job
 #
 #    steps:
-#    - uses: actions/checkout@3.2.0
+#    - uses: actions/checkout@3
 #    - name: Test Coffea Skyhook Bindings
 #      shell: bash -l {0}
 #      run: |
@@ -163,30 +187,32 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     needs: [test, testwq]
+    permissions:
+      id-token: write
+      attestations: write
+      contents: read
     strategy:
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.11"]
     name: deploy release
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Build package for PyPI
       run: |
-        python -m pip install --upgrade pip setuptools wheel
-        python setup.py sdist bdist_wheel --universal
-    - name: Create Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_OAUTH }}
+        pipx run hatch build -t sdist -t wheel
+    - name: Verify the distribution
+      run: pipx run twine check --strict dist/*
+    - name: Generate artifact attestation for sdist and wheel
+      uses: actions/attest-build-provenance@ef244123eb79f2f7a7e75d99086184180e6d0018 # v1.4.4
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        subject-path: "dist/coffea-*"
     - name: Publish package to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.8.4
+      uses: pypa/gh-action-pypi-publish@v1.12.2
       with:
         user: __token__
         password: ${{ secrets.PYPI_TOKEN }}
