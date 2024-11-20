@@ -13,7 +13,6 @@ build:
   jobs:
     post_install:
       - python -m pip install '.[dev]'
-      - sudo apt update && sudo apt install -y pandoc graphviz
     # You can also specify other tool versions:
     # nodejs: "19"
     # rust: "1.64"
