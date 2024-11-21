@@ -1,5 +1,5 @@
 html: source/modules
-	pushd .. && sed -i.bak s/docs\\\/source\\\/// README.rst && popd
+        pushd .. && sed -i.bak s/docs\\\/source\\\/// README.rst && popd
         sphinx-build -M html source build
         pushd .. && mv README.rst.bak README.rst && popd
 
