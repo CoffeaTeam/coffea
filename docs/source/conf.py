@@ -32,7 +32,7 @@ version = coffea.__version__.rsplit(".", 1)[0]
 release = coffea.__version__
 githash = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode("ascii")
 
-language = 'en'
+language = "en"
 
 # -- General configuration ---------------------------------------------------
 
