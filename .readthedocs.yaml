@@ -14,7 +14,7 @@ build:
     - graphviz
   jobs:
     post_checkout:
-      - "sed 's/docs\/source\///' -i.bak README.rst"
+      - "sed \'s/docs\/source\///\' -i.bak README.rst"
     post_install:
       - python -m pip install '.[dev]' rucio-clients
     pre_build:
