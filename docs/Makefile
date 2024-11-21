@@ -1,7 +1,7 @@
 html: source/modules
-	pushd .. && sed -i.bak s/docs\\\/source\\\/// README.rst && popd
+	cd .. && sed -i.bak s/docs\\\/source\\\/// README.rst && cd docs
 	sphinx-build -M html source build
-	pushd .. && mv README.rst.bak README.rst && popd
+	cd .. && mv README.rst.bak README.rst && cd docs
 
 source/modules: source/reference.rst
 	sphinx-autogen source/reference.rst -t source/_templates -o source/modules
