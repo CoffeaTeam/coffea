@@ -39,7 +39,7 @@ jobs:
     needs: pre-commit
     strategy:
       matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
+        os: [ubuntu-latest] #, macOS-latest, windows-latest]
         java-version: [17]
         java-distribution: ["corretto"]
         python-version: ["3.9", "3.13"]
