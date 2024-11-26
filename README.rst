@@ -93,7 +93,7 @@ The following are installed automatically when you install coffea with pip:
 
 Documentation
 =============
-All documentation is hosted at https://coffeateam.github.io/coffea/
+All documentation is hosted at https://coffea-hep.readthedocs.io/
 
 Citation
 ========

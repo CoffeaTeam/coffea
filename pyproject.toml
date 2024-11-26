@@ -83,12 +83,6 @@ spark = [
 parsl = [
   "parsl>=2022.12.1"
 ]
-servicex = [
-  "aiostream",
-  "tenacity",
-  "servicex>=2.5.3",
-  "func-adl_servicex",
-]
 rucio = [
   "rucio-clients>=32;python_version>'3.8'",
   "rucio-clients<32;python_version<'3.9'",
