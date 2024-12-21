@@ -723,7 +723,7 @@ def test_corrected_jets_factory(optimization_enabled):
     from coffea.nanoevents import NanoEventsFactory
 
     with (
-        Client(), 
+        Client(),
         dask.config.set({"awkward.optimization.enabled": optimization_enabled}),
     ):
         events = NanoEventsFactory.from_root(
