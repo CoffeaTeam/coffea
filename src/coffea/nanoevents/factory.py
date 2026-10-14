@@ -871,6 +871,7 @@ class NanoEventsFactory:
                 ``\"virtual\"`` or ``\"eager\"`` mode an ``awkward.Array`` is returned.
         """
         if self._mode == "graphed":
+            _import_graphed()
             from coffea.nanoevents import _graphed
 
             # built per call because its behavior dict does not pickle; the typetracer the

@@ -241,6 +241,33 @@ def test_missing_graphed_names_the_install(tests_directory):
     assert "pip install coffea[graphed]" in done.stdout
 
 
+_MISSING_GRAPHED_AT_EVENTS = _GRAPHED_ABSENT.format(body="""
+import pickle
+
+with open(sys.argv[1], "rb") as file:
+    factory = pickle.load(file)
+try:
+    factory.events()
+except ModuleNotFoundError as err:
+    print(err)
+else:
+    raise AssertionError("events() did not notice the missing install")
+""")
+
+
+def test_missing_graphed_at_events_names_the_install(tests_directory, tmp_path):
+    factory = NanoEventsFactory.from_root(
+        {_sample(tests_directory, "nano_dy.root"): "Events"},
+        schemaclass=NanoAODSchema,
+        mode="graphed",
+    )
+    blob = tmp_path / "factory.pkl"
+    blob.write_bytes(pickle.dumps(factory))
+    done = _run(_MISSING_GRAPHED_AT_EVENTS, str(blob))
+    assert done.returncode == 0, done.stderr
+    assert "pip install coffea[graphed]" in done.stdout
+
+
 # ---- the mapping the plan pickles -------------------------------------------------------------
 def test_the_uproot_mapping_pickles_its_base_form_extras():
     """The podio shape: file-level extras the form cannot be rebuilt without."""
