@@ -32,7 +32,6 @@ from coffea.nanoevents.factory import _map_schema_uproot  # noqa: E402
 from coffea.util import (  # noqa: E402
     _is_interpretable,
     dask_property,
-    maybe_map_partitions,
 )
 
 
@@ -62,18 +61,6 @@ def nanoaod(tests_directory):
     return _record(_sample(tests_directory, "nano_dy.root"))
 
 
-# ---- coffea.util.maybe_map_partitions ---------------------------------------------------------
-def test_a_dask_argument_still_maps_where_graphed_is_imported():
-    dask_awkward = pytest.importorskip("dask_awkward")
-    assert (
-        "graphed" in sys.modules
-    ), "the guard is vacuous unless graphed is loaded here"
-    deferred = dask_awkward.from_awkward(ak.Array([[1.0, 2.0], [3.0]]), 1)
-    assert isinstance(
-        maybe_map_partitions(lambda a: a * 2, deferred), dask_awkward.Array
-    )
-
-
 #: run with graphed made unimportable, so an arm that imports it eagerly cannot survive
 _GRAPHED_ABSENT = """
 import sys
@@ -90,29 +77,12 @@ sys.meta_path.insert(0, _Blocked())
 {body}
 """
 
-_MAP_PARTITIONS_WITHOUT_GRAPHED = _GRAPHED_ABSENT.format(body="""
-import numpy as np
-
-from coffea.util import maybe_map_partitions
-
-doubled = maybe_map_partitions(lambda a: a * 2, np.array([1.0, 2.0]))
-assert list(doubled) == [2.0, 4.0], doubled
-assert "graphed" not in sys.modules
-print("ok")
-""")
-
 
 def _run(script, *args):
     """``script`` in a fresh interpreter, inheriting this one's import path."""
     return subprocess.run(
         [sys.executable, "-c", script, *args], capture_output=True, text=True
     )
-
-
-def test_maybe_map_partitions_works_with_graphed_absent():
-    done = _run(_MAP_PARTITIONS_WITHOUT_GRAPHED)
-    assert done.returncode == 0, done.stderr
-    assert done.stdout.strip() == "ok"
 
 
 # ---- GraphedNanoArray.__getattr__ -------------------------------------------------------------

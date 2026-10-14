@@ -399,18 +399,27 @@ def test_refuses_user_callables_and_coffea_systematics(nanoaod):
 
 
 def _bare_graphed_array():
-    """A deferred graphed array owing nothing to coffea, for the two analysis_tools guards."""
+    """A deferred graphed array owing nothing to coffea, for the PackedSelection guard."""
     from graphed.awkward import AwkwardBackend, from_awkward
 
     session = graphed.Session(AwkwardBackend())
     return from_awkward(session, "cut", ak.Array([True, False, True]))
 
 
-def test_refuses_map_partitions_on_a_graphed_array():
+@pytest.mark.skipif(
+    not hasattr(graphed.awkward, "AwkwardArray"),
+    reason="graphed<0.0.7 has no ak.* dispatch",
+)
+def test_maybe_map_partitions_records_on_a_graphed_array(nanoaod):
     from coffea.util import maybe_map_partitions
 
-    with pytest.raises(NotImplementedError):
-        maybe_map_partitions(lambda x: x, _bare_graphed_array())
+    def func(pt, cut):
+        return ak.sum(ak.where(pt > cut, pt, 0.0), axis=-1)
+
+    events, eager = nanoaod
+    recorded = maybe_map_partitions(func, events.Muon.pt, cut=25.0, label="sum")
+    assert isinstance(recorded, graphed.Array)
+    assert_same(events.session.materialize(recorded), func(eager.Muon.pt, 25.0))
 
 
 def test_refuses_parquet_input(tests_directory):

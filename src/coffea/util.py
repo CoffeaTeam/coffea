@@ -3,7 +3,6 @@
 import base64
 import gzip
 import hashlib
-import sys
 import warnings
 from functools import partial, update_wrapper
 from typing import Any
@@ -455,18 +454,6 @@ def dask_method(maybe_func=None, *, no_dispatch=False):
 
 
 def maybe_map_partitions(func, *args, **kwargs):
-    # A graphed array is not a dask collection and has no partitions to map over: unguarded, the
-    # call below silently returns None (or runs func eagerly where dask is absent). Looked up in
-    # sys.modules so that importing coffea never imports graphed.
-    graphed = sys.modules.get("graphed")
-    if graphed is not None and any(
-        isinstance(arg, graphed.Array) for arg in (*args, *kwargs.values())
-    ):
-        raise NotImplementedError(
-            "maybe_map_partitions has no graphed arm; record the operation on the graph "
-            "instead, with graphed.apply or graphed.awkward.gak"
-        )
-
     _MP_ONLY = {
         "label",
         "token",
