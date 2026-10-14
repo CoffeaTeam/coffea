@@ -78,9 +78,7 @@ class GraphedNanoArray(_GraphedAwkwardArray):
     __slots__ = ()
 
     def __getattr__(self, name):
-        # The order is the contract, not an optimisation: a record field shadows a behavior of
-        # the same name, and a descriptor that declined dispatch is answered before the arms
-        # that record.
+        # order matters: a record field shadows a behavior of the same name
         if name.startswith("__"):
             raise AttributeError(name)
         session = self.session
@@ -95,13 +93,9 @@ class GraphedNanoArray(_GraphedAwkwardArray):
             raise NotImplementedError(_VARY_POINTER)
         if isinstance(static, _DaskProperty):
             return static._dask_get(tracer, type(tracer), self)
-        # ak.Array's own attributes describe the array, not its elements
         own = static is not None and static is getattr_static(awkward.Array, name, None)
         if own and name.startswith("_"):
             raise AttributeError(name)  # display hooks such as _repr_mimebundle_
-        # everything left is graphed's own dispatch, reusing its method/property split; unlike
-        # graphed.Array.__getattr__ it is reached for underscore names too, which the behavior
-        # classes use for their internals
         if session.backend.attribute_kind(form, name) == "method":
             return _GraphedBoundMethod(self, name)
         if own:
