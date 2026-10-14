@@ -120,7 +120,13 @@ def test_protocol_probing_does_not_reach_the_dispatcher(nanoaod):
     """``np.asarray`` asks for ``__array__``; answering it with a recorded op would record an
     operation the caller never wrote."""
     pt = nanoaod.Muon.pt
-    assert np.asarray(pt).item() is pt
+    before = pt.session.node_count()
+    if "__array__" in vars(graphed.Array):
+        with pytest.raises(graphed.GraphedError, match="no numpy value"):
+            np.asarray(pt)
+    else:
+        assert np.asarray(pt).item() is pt
+    assert pt.session.node_count() == before
 
 
 def test_the_recorded_array_carries_no_instance_dict(nanoaod):
