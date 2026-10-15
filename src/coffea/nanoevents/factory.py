@@ -413,14 +413,17 @@ class NanoEventsFactory:
             from coffea.nanoevents import _graphed
 
             uproot_options = _graphed.check_from_root(
-                schemaclass, steps_per_file, uproot_options
+                schemaclass,
+                steps_per_file,
+                uproot_options,
+                entry_start=entry_start,
+                entry_stop=entry_stop,
             )
-            map_schema = _map_schema_uproot(
-                schemaclass=schemaclass,
-                behavior=dict(schemaclass.behavior()),
-                metadata=metadata,
-                version="latest",
+            map_schema = _rebuild_map_schema_uproot(
+                schemaclass, metadata, "latest", None
             )
+            if isinstance(file, str) and treepath is not uproot._util.unset:
+                file = {file: treepath}
             opener = partial(
                 uproot.graphed,
                 _tree_to_open(file, treepath),

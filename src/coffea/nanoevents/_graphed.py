@@ -1,19 +1,7 @@
 """The ``graphed`` arm of :class:`coffea.nanoevents.NanoEventsFactory`.
 
-``mode="graphed"`` records an analysis into a ``graphed`` graph instead of materialising it. The
-graph is built against the :class:`GraphedNanoArray` subclass installed here through the recording
-backend, so every name a NanoEvents collection can be asked for takes exactly one route:
-
-* a record field of the schema'd form, recorded as a ``field`` op;
-* a ``no_dispatch`` descriptor, run eagerly on the record-time typetracer;
-* a name graphed mode refuses, which raises :exc:`NotImplementedError` with a pointer;
-* a :class:`coffea.util._DaskProperty`, whose ``.dask`` body runs with the graphed array in the
-  deferred array's place;
-* ``ak.Array``'s own metadata (``fields``, ``ndim``, ...), answered from the record-time
-  typetracer or refused with :exc:`AttributeError`;
-* anything else, through ``graphed``'s own attribute dispatch.
-
-Cross-references come out as ordinary graph edges with both collections as operands, so a worker
+``mode="graphed"`` records an analysis into a ``graphed`` graph instead of materialising it, through
+the :class:`GraphedNanoArray` subclass installed here. Cross-references come out as ordinary graph edges with both collections as operands, so a worker
 needs nothing but the recorded graph to replay them.
 
 This is the only module in coffea that imports ``graphed``, and only ``mode="graphed"`` imports it.
@@ -38,26 +26,11 @@ _REFUSED = frozenset({"_ensure_systematics", "add_systematic"})
 
 _VARY_POINTER = "graphed mode does not carry coffea systematics; build the variations with graphed.vary(...)"
 
-#: ak.Array descriptors the record-time typetracer answers as the data would; the rest (attrs,
-#: behavior, layout, mask, nbytes, ...) are refused, the same split graphed-org/graphed#42 makes
-_INTROSPECT_EAGER = frozenset(
-    {"fields", "type", "typestr", "ndim", "is_tuple", "positional_axis"}
-)
-
-
-def _introspect(tracer, name):
-    if name not in _INTROSPECT_EAGER:
-        hint = (
-            "use gak.mask(array, condition)"
-            if name == "mask"
-            else "materialize the array and read it there"
-        )
-        raise AttributeError(f"a deferred graphed array cannot answer {name!r}; {hint}")
-    return getattr(tracer, name)
-
 
 class _GraphedBoundMethod(BoundMethod):
     """A behavior method call on a graphed array, recorded as a ``method`` op."""
+
+    __slots__ = ()
 
     def __call__(self, *args, **kwargs):
         if any(callable(arg) for arg in (*args, *kwargs.values())):
@@ -83,23 +56,24 @@ class GraphedNanoArray(_GraphedAwkwardArray):
             raise AttributeError(name)
         session = self.session
         form = session.form(self)
-        tracer = session.backend._with_behavior(form.tt)
-        if name in tracer.fields:
+        if name in form.tt.fields:
             return session.record_op("field", [self], {"field": name})
-        static = getattr_static(tracer, name, None)
-        if getattr(static, "_no_dispatch", False):
-            return static._dask_get(tracer, type(tracer), self)
         if name in _REFUSED:
             raise NotImplementedError(_VARY_POINTER)
-        if isinstance(static, _DaskProperty):
+        tracer = session.backend._with_behavior(form.tt)
+        static = getattr_static(tracer, name, None)
+        if getattr(static, "_no_dispatch", False) or isinstance(static, _DaskProperty):
             return static._dask_get(tracer, type(tracer), self)
-        own = static is not None and static is getattr_static(awkward.Array, name, None)
-        if own and name.startswith("_"):
-            raise AttributeError(name)  # display hooks such as _repr_mimebundle_
-        if session.backend.attribute_kind(form, name) == "method":
+        kind = session.backend.attribute_kind(form, name)
+        if name.startswith("_") and (
+            kind != "method" or static is getattr_static(awkward.Array, name, None)
+        ):
+            # ak.Array internals (_layout, ...) and display hooks (_repr_mimebundle_) are no data
+            raise AttributeError(name)
+        if kind == "method":
             return _GraphedBoundMethod(self, name)
-        if own:
-            return _introspect(form.tt, name)
+        if kind == "introspection":
+            return session.backend.introspect(form, name)
         return session.record_op("field", [self], {"field": name})
 
 
@@ -110,9 +84,16 @@ class GraphedNanoBackend(AwkwardBackend):
         return GraphedNanoArray
 
 
-def check_from_root(schemaclass, steps_per_file, uproot_options):
+def check_from_root(
+    schemaclass, steps_per_file, uproot_options, entry_start=None, entry_stop=None
+):
     """Refuse the ``from_root`` arguments and schemas graphed mode cannot honour, and return the
     uproot options to forward."""
+    if entry_start is not None or entry_stop is not None:
+        raise NotImplementedError(
+            "graphed mode does not take entry_start/entry_stop; bound the entries in the files "
+            'spec, {path: {"object_path": tree, "steps": [[start, stop]]}}'
+        )
     if steps_per_file is not uproot._util.unset:
         raise NotImplementedError(
             "graphed mode does not partition files here; pass steps_per_file where the plan is "

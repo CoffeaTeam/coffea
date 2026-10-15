@@ -255,6 +255,14 @@ def test_recorded_form_equals_the_dask_meta_form(tests_directory):
     assert events.session.form(events).tt.layout.form == meta.layout.form
 
 
+def test_a_string_file_takes_its_tree_from_treepath(tests_directory):
+    path = os.path.join(tests_directory, "samples", "nano_dy.root")
+    events = NanoEventsFactory.from_root(
+        path, treepath="Events", schemaclass=NanoAODSchema, mode="graphed"
+    ).events()
+    assert events.session.materialize(gak.num(events.Muon, axis=0)) == 40
+
+
 # ---- parity, materialised -------------------------------------------------------------------
 @pytest.mark.parametrize("analysis", NANOAOD_ANALYSES, ids=lambda a: a.__name__)
 def test_nanoaod_matches_eager(nanoaod, analysis):
@@ -364,6 +372,9 @@ def test_refuses_arguments_that_belong_to_the_plan(tests_directory):
     path = os.path.join(tests_directory, "samples", "nano_dy.root")
     with pytest.raises(NotImplementedError, match=r"aggregate_plan\(.*steps_per_file"):
         _factory(path, NanoAODSchema, "graphed", steps_per_file=2)
+    for bound in ({"entry_start": 1}, {"entry_stop": 5}):
+        with pytest.raises(NotImplementedError, match=r"steps"):
+            _factory(path, NanoAODSchema, "graphed", **bound)
     with pytest.raises(
         NotImplementedError, match=r"graphed\.checkpoint\.run_resumable"
     ):

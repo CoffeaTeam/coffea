@@ -168,6 +168,7 @@ where the capability lives instead:
 | Refused | Instead |
 | --- | --- |
 | `from_root(..., steps_per_file=...)` | `graphed.aggregate_plan(..., steps_per_file=...)` |
+| `from_root(..., entry_start=..., entry_stop=...)` | `{path: {"object_path": tree, "steps": [[start, stop]]}}` |
 | `uproot_options={"allow_read_errors_with_report": True}` | `graphed.checkpoint.run_resumable` |
 | `add_systematic`, `_ensure_systematics` | `graphed.vary(...)` |
 | a callable argument, e.g. `metric_table(..., metric=fn)` | `graphed.vary(...)` for a variation; otherwise record the metric with array operations |

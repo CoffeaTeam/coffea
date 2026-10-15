@@ -99,6 +99,15 @@ def test_protocol_probing_does_not_reach_the_dispatcher(nanoaod):
     assert pt.session.node_count() == before
 
 
+@pytest.mark.parametrize("name", ["_layout", "_systematic_kinds"])
+def test_a_private_non_method_name_is_no_field(nanoaod, name):
+    """An ak.Array instance slot or a behavior class constant is not event data to record."""
+    muons = nanoaod.Muon
+    before = muons.session.node_count()
+    assert not hasattr(muons, name)
+    assert muons.session.node_count() == before
+
+
 def test_the_recorded_array_carries_no_instance_dict(nanoaod):
     """graphed.Array is slotted so that interning can rely on its identity."""
     assert not hasattr(nanoaod.Muon.pt, "__dict__")
