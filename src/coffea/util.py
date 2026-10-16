@@ -151,21 +151,59 @@ pip install graphed"""
     return graphed
 
 
+def _is_graphed(arg: Any) -> bool:
+    """Return True if arg is a deferred graphed array."""
+    return _isinstance(arg, "graphed.array.Array")
+
+
+def _meta(array):
+    """The typetracer a dask_awkward or graphed array stands for, else the array itself."""
+    if _isinstance(array, "dask_awkward.lib.core.Array"):
+        return array._meta
+    if _is_graphed(array):
+        return array.session.form(array).tt
+    return array
+
+
+def _behavior_kwargs(array):
+    """``behavior=`` for an awkward.zip like ``array``; graphed carries behavior on its backend instead."""
+    return {} if _is_graphed(array) else {"behavior": array.behavior}
+
+
+def _graphed_map(func, *args, meta=None, **kwargs):
+    """Record ``func(*args, **kwargs)`` as one graphed node over its graphed arguments, as
+    ``dask_awkward.map_partitions`` does over partitions; ``meta`` defaults to ``func`` on typetracers.
+    """
+    graphed = _import_graphed()
+    slots = [i for i, arg in enumerate(args) if _is_graphed(arg)]
+    keys = [k for k, v in kwargs.items() if _is_graphed(v)]
+
+    def call(*arrays):
+        full, kw = list(args), dict(kwargs)
+        for i, array in zip(slots, arrays):
+            full[i] = array
+        for k, array in zip(keys, arrays[len(slots) :]):
+            kw[k] = array
+        return func(*full, **kw)
+
+    arrays = [args[i] for i in slots] + [kwargs[k] for k in keys]
+    if meta is None:
+        meta = call(*(_meta(array) for array in arrays))
+    return graphed.apply(call, *arrays, output_type=ak.type(meta))
+
+
 def _ensure_flat(array, allow_missing=False):
     """Normalize an array to a flat numpy array, or ensure it is a flat dask-awkward array, or raise ValueError"""
     if not _isinstance(
         array,
         "dask_awkward.lib.core.Array",
+        "graphed.array.Array",
         "awkward.highlevel.Array",
         "numpy.ndarray",
     ):
         raise ValueError("Expected a numpy or awkward array, received: %r" % array)
 
-    aktype = (
-        ak.type(array._meta)
-        if _isinstance(array, "dask_awkward.lib.core.Array")
-        else ak.type(array)
-    )
+    aktype = ak.type(_meta(array))
     if not isinstance(aktype, ak.types.ArrayType):
         raise ValueError("Expected an array type, received: %r" % aktype)
     isprimitive = isinstance(aktype.content, ak.types.NumpyType)
@@ -465,6 +503,9 @@ def maybe_map_partitions(func, *args, **kwargs):
     traverse = kwargs.pop("traverse", True)
 
     func_kwargs = {k: v for k, v in kwargs.items() if k not in _MP_ONLY}
+
+    if any(_is_graphed(arg) for arg in (*args, *func_kwargs.values())):
+        return _graphed_map(func, *args, meta=kwargs.get("meta"), **func_kwargs)
 
     try:
         dask = _import_dask()

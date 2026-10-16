@@ -7,7 +7,7 @@ from coffea.lookup_tools.dense_lookup import dense_lookup
 # the PR can be merged
 # from scipy.stats import crystalball
 from coffea.lookup_tools.doublecrystalball import doublecrystalball
-from coffea.util import _import_dask_awkward, _isinstance
+from coffea.util import _graphed_map, _import_dask_awkward, _is_graphed, _isinstance
 
 
 class rochester_lookup:
@@ -229,8 +229,8 @@ class rochester_lookup:
 
         args = (u_flat, cbA_flat, cbA_flat, cbN_flat, cbN_flat, loc, cbS_flat)
 
-        if any(_isinstance(arg, "dask_awkward.lib.core.Array") for arg in args):
-            dak = _import_dask_awkward()
+        delayed = any(_isinstance(arg, "dask_awkward.lib.core.Array") for arg in args)
+        if delayed or any(_is_graphed(arg) for arg in args):
 
             def apply(*args):
                 args_lz = [
@@ -244,7 +244,10 @@ class rochester_lookup:
                     )
                 return out
 
-            invcdf = dak.map_partitions(apply, *args)
+            if delayed:
+                invcdf = _import_dask_awkward().map_partitions(apply, *args)
+            else:
+                invcdf = _graphed_map(apply, *args)
         else:
             invcdf = doublecrystalball.ppf(*args)
 
