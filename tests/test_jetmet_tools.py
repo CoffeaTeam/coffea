@@ -2289,6 +2289,8 @@ def _graphed_factory_outputs(events, type1, vary_jets=None):
         pfmet = ak.with_field(pfmet, delta, "MetUnclustEnUpDeltaY")
         corrt1 = events.CorrT1METJet
         corrt1 = ak.with_field(corrt1, ak.broadcast_arrays(rho, corrt1.rawPt)[0], "Rho")
+        if vary_jets is not None:
+            corrt1 = vary_jets(corrt1)
         met = CorrectedMETFactory(
             name_map,
             jec_L1L2L3=FactorizedJetCorrector(**{n: evaluator[n] for n in names[:4]}),
@@ -2328,7 +2330,10 @@ def test_corrected_jets_and_met_factories_graphed(sample, type1):
         assert values[key].to_list() == want[key].to_list(), key
 
 
-def test_corrected_jets_and_met_factories_graphed_varied():
+@pytest.mark.parametrize(
+    ("sample", "type1"), [("nano_dy.root", False), ("nano_tt_v15.root", True)]
+)
+def test_corrected_jets_and_met_factories_graphed_varied(sample, type1):
     import os
 
     graphed = pytest.importorskip("graphed")
@@ -2337,14 +2342,14 @@ def test_corrected_jets_and_met_factories_graphed_varied():
     def rho_up(jets):
         return ak.with_field(jets, jets.Rho * 1.5, "Rho")
 
-    path = {os.path.abspath("tests/samples/nano_dy.root"): "Events"}
+    path = {os.path.abspath(f"tests/samples/{sample}"): "Events"}
     deferred = NanoEventsFactory.from_root(path, mode="graphed").events()
     eager = NanoEventsFactory.from_root(path, mode="eager").events()
     got = _graphed_factory_outputs(
-        deferred, False, lambda jets: graphed.vary(jets, "rho", up=rho_up(jets))
+        deferred, type1, lambda jets: graphed.vary(jets, "rho", up=rho_up(jets))
     )
     for label, vary_jets in (("nominal", None), ("rho_up", rho_up)):
-        want = _graphed_factory_outputs(eager, False, vary_jets)
+        want = _graphed_factory_outputs(eager, type1, vary_jets)
         universe = {key: graphed.universe(value, label) for key, value in got.items()}
         values = deferred.session.materialize(ak.zip(universe, depth_limit=1))
         for key in want:

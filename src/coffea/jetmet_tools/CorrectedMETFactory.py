@@ -654,7 +654,7 @@ class CorrectedMETFactory:
         corrt1jets = in_CorrT1METJets
 
         # Ensure the jets carry a raw pT field (derive it if the user did not).
-        if self.name_map["ptRaw"] not in corrected_jets.fields:
+        if self.name_map["ptRaw"] not in awkward.fields(corrected_jets):
 
             def ensure_raw_pt(jets):
                 return _ensure_jet_raw_pt_field(jets, self.name_map)
@@ -889,7 +889,7 @@ class CorrectedMETFactory:
             if (
                 corrt1jets is not None
                 and unc.startswith("JER")
-                and unc in corrt1jets.fields
+                and unc in awkward.fields(corrt1jets)
             ):
                 smear_field = self.name_map.get("CorrT1JetJERSmearFactor")
                 if smear_field is not None:
