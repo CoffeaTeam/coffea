@@ -153,6 +153,7 @@ class JetResolutionScaleFactor:
             if _isinstance(
                 args[0],
                 "dask_awkward.lib.core.Array",
+                "graphed.array.Array",
                 "awkward.highlevel.Array",
                 "numpy.ndarray",
             ):

@@ -1,7 +1,7 @@
 import awkward
 import numpy
 
-from coffea.util import _isinstance, maybe_map_partitions
+from coffea.util import _behavior_kwargs, _isinstance, _meta, maybe_map_partitions
 
 
 def corrected_polar_met(
@@ -484,11 +484,15 @@ class CorrectedMETFactory:
                 Array of corrected MET values with shape matching ``in_MET``.
         """
         if not _isinstance(
-            in_MET, "awkward.highlevel.Array", "dask_awkward.lib.core.Array"
+            in_MET,
+            "awkward.highlevel.Array",
+            "dask_awkward.lib.core.Array",
+            "graphed.array.Array",
         ) or not _isinstance(
             in_corrected_jets,
             "awkward.highlevel.Array",
             "dask_awkward.lib.core.Array",
+            "graphed.array.Array",
         ):
             raise Exception(
                 "'MET' and 'corrected_jets' must be an (dask_)awkward array of some kind!"
@@ -629,9 +633,9 @@ class CorrectedMETFactory:
                 label=f"{unc}_met",
             )
 
-        out_parms = out.layout.parameters
+        out_parms = _meta(out).layout.parameters
         out = awkward.zip(
-            out_dict, depth_limit=1, parameters=out_parms, behavior=out.behavior
+            out_dict, depth_limit=1, parameters=out_parms, **_behavior_kwargs(out)
         )
 
         return out
@@ -1074,9 +1078,9 @@ class CorrectedMETFactory:
                 label=f"type1_{unc}_met",
             )
 
-        out_parms = out.layout.parameters
+        out_parms = _meta(out).layout.parameters
         out = awkward.zip(
-            out_dict, depth_limit=1, parameters=out_parms, behavior=out.behavior
+            out_dict, depth_limit=1, parameters=out_parms, **_behavior_kwargs(out)
         )
 
         return out
