@@ -233,6 +233,84 @@ def test_correctionlib_jec_stack_no_jer():
     assert stack.junc is not None
 
 
+def _formula_correction(name, expression, output):
+    return {
+        "name": name,
+        "version": 1,
+        "inputs": [
+            {"name": "JetEta", "type": "real"},
+            {"name": "JetPt", "type": "real"},
+        ],
+        "output": {"name": output, "type": "real"},
+        "data": {
+            "nodetype": "formula",
+            "expression": expression,
+            "parser": "TFormula",
+            "variables": ["JetEta", "JetPt"],
+        },
+    }
+
+
+@pytest.fixture
+def split_sfunc_file(tmp_path):
+    """JSON-POG file where the JER SF has no "systematic" input and the
+    uncertainty is a separate SFUncertainty correction (Summer24 layout)."""
+    import gzip
+    import json
+
+    with gzip.open(JERC_FILE, "rt") as f:
+        cset = json.load(f)
+    tag = f"Summer24Prompt24_JRV2_{DATA_TYPE}"
+    jer = next(
+        c
+        for c in cset["corrections"]
+        if c["name"] == f"{JER_TAG}_{DATA_TYPE}_PtResolution_{JET_TYPE}"
+    )
+    cset["corrections"] += [
+        {**jer, "name": f"{tag}_PtResolution_{JET_TYPE}"},
+        _formula_correction(f"{tag}_ScaleFactor_{JET_TYPE}", "1.1+0.0*x+0.0*y", "sf"),
+        _formula_correction(
+            f"{tag}_SFUncertainty_{JET_TYPE}", "0.05+0.0*x+0.0*y", "unc"
+        ),
+    ]
+    path = tmp_path / "jet_jerc_split.json"
+    path.write_text(json.dumps(cset))
+    return str(path)
+
+
+def test_correctionlib_jersf_separate_uncertainty(split_sfunc_file, flat_jet_arrays):
+    from coffea.jetmet_tools import CorrectionLibJECStack
+
+    _, _, test_eta, test_pt, _ = flat_jet_arrays
+    stack = CorrectionLibJECStack.from_file(
+        split_sfunc_file,
+        jec_tag=JEC_TAG,
+        data_type=DATA_TYPE,
+        jet_type=JET_TYPE,
+        jer_tag="Summer24Prompt24_JRV2",
+    )
+    assert stack.jersf.signature == ["JetEta", "JetPt"]
+
+    sf = stack.jersf.getScaleFactor(JetEta=ak.Array(test_eta), JetPt=ak.Array(test_pt))
+    arr = np.asarray(sf)
+    assert arr.shape == (len(test_eta), 3)
+    np.testing.assert_allclose(arr[:, 0], 1.1)
+    np.testing.assert_allclose(arr[:, 1], 1.15)
+    np.testing.assert_allclose(arr[:, 2], 1.05)
+
+
+def test_correctionlib_jersf_missing_uncertainty(split_sfunc_file):
+    import correctionlib
+
+    from coffea.jetmet_tools import CorrectionLibJERSF
+
+    cset = correctionlib.CorrectionSet.from_file(split_sfunc_file)
+    with pytest.raises(ValueError, match="no 'systematic' input"):
+        CorrectionLibJERSF(
+            cset[f"Summer24Prompt24_JRV2_{DATA_TYPE}_ScaleFactor_{JET_TYPE}"]
+        )
+
+
 # ---------------------------------------------------------------------------
 # End-to-end: CorrectedJetsFactory with correctionlib stack
 # ---------------------------------------------------------------------------
