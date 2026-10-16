@@ -3,8 +3,6 @@
 ``mode="graphed"`` records an analysis into a ``graphed`` graph instead of materialising it, through
 the :class:`GraphedNanoArray` subclass installed here. Cross-references come out as ordinary graph edges with both collections as operands, so a worker
 needs nothing but the recorded graph to replay them.
-
-This is the only module in coffea that imports ``graphed``, and only ``mode="graphed"`` imports it.
 """
 
 from inspect import getattr_static
@@ -30,10 +28,17 @@ _VARY_POINTER = "graphed mode does not carry coffea systematics; build the varia
 class _GraphedBoundMethod(BoundMethod):
     """A behavior method call on a graphed array, recorded as a ``method`` op."""
 
-    __slots__ = ()
+    __slots__ = ("_arm",)
+
+    def __init__(self, receiver, name, arm=None):
+        super().__init__(receiver, name)
+        self._arm = arm
 
     def __call__(self, *args, **kwargs):
         if any(callable(arg) for arg in (*args, *kwargs.values())):
+            if self._arm is not None:
+                # the method's dask arm builds its result from deferred ops, so a callable runs at record time
+                return self._arm(*args, **kwargs)
             raise NotImplementedError(
                 f"{self._name}() was passed a callable, and graphed mode has no way to record "
                 f"one; if it varies event data, spell the variation with graphed.vary(...)"
@@ -41,10 +46,24 @@ class _GraphedBoundMethod(BoundMethod):
         return super().__call__(*args, **kwargs)
 
 
+class _BranchDoc:
+    """``__doc__``: the array's branch doc, as ``ak.Array`` sets it, else the class docstring."""
+
+    def __init__(self, doc):
+        self.doc = doc
+
+    def __get__(self, obj, cls=None):
+        if obj is None:
+            return self.doc
+        doc = obj.session.form(obj).tt.layout.purelist_parameter("__doc__")
+        return doc if isinstance(doc, str) else self.doc
+
+
 class GraphedNanoArray(graphed.awkward.AwkwardArray):
     """The deferred NanoEvents surface, mirroring ``dask_awkward.Array.__getattr__``."""
 
     __slots__ = ()
+    __doc__ = _BranchDoc(__doc__)
 
     def __getattr__(self, name):
         # order matters: a record field shadows a behavior of the same name
@@ -67,7 +86,10 @@ class GraphedNanoArray(graphed.awkward.AwkwardArray):
             # ak.Array internals (_layout, ...) and display hooks (_repr_mimebundle_) are no data
             raise AttributeError(name)
         if kind == "method":
-            return _GraphedBoundMethod(self, name)
+            arm = getattr(static, "_dask_get", None)
+            return _GraphedBoundMethod(
+                self, name, arm and arm(tracer, type(tracer), self)
+            )
         if kind == "introspection":
             return session.backend.introspect(form, name)
         return session.record_op("field", [self], {"field": name})
@@ -100,6 +122,17 @@ def check_from_root(
             "graphed mode has no report tuple; failed partitions are dead-lettered and retried "
             "by graphed.checkpoint.run_resumable"
         )
+    check_schema(schemaclass)
+    # uproot.graphed refuses the report key by presence, even switched off
+    return {
+        key: value
+        for key, value in uproot_options.items()
+        if key != "allow_read_errors_with_report"
+    }
+
+
+def check_schema(schemaclass):
+    """Refuse a schema that does not declare graphed mode in its own class body."""
     if not isinstance(schemaclass, type) or not vars(schemaclass).get(
         "__graphed_capable__"
     ):
@@ -107,9 +140,56 @@ def check_from_root(
             f"graphed mode needs a schema declaring __graphed_capable__ = True in its own class "
             f"body, which {schemaclass!r} does not"
         )
-    # uproot.graphed refuses the report key by presence, even switched off
-    return {
-        key: value
-        for key, value in uproot_options.items()
-        if key != "allow_read_errors_with_report"
-    }
+
+
+class GraphedParquetSource:
+    """A ``graphed.write.PartitionedSource`` over parquet files, each partition read into eager
+    NanoEvents by :meth:`NanoEventsFactory.from_parquet`."""
+
+    def __init__(self, paths, options):
+        self._paths = paths
+        self._options = options
+
+    def factory(self, path, entry_start=None, entry_stop=None):
+        from coffea.nanoevents import NanoEventsFactory
+
+        return NanoEventsFactory.from_parquet(
+            path,
+            mode="eager",
+            entry_start=entry_start,
+            entry_stop=entry_stop,
+            **self._options,
+        )
+
+    def __call__(self):
+        parts = [self.factory(path).events() for path in self._paths]
+        return parts[0] if len(parts) == 1 else awkward.concatenate(parts)
+
+    def partitions(self, steps_per_file=1):
+        return tuple(
+            graphed.core.Partition.blind(str(path), "", step, steps_per_file)
+            for path in self._paths
+            for step in range(steps_per_file)
+        )
+
+    def read_partition(self, partition, columns, resources):
+        partition = partition.resolve(len(self.factory(partition.uri)))
+        return self.factory(
+            partition.uri, partition.entry_start, partition.entry_stop
+        ).events()
+
+
+def parquet_opener(paths, options):
+    """The ``mapping`` a graphed :class:`NanoEventsFactory` calls to record a parquet source."""
+
+    def open_source(form_mapping, backend):
+        source = GraphedParquetSource(paths, options)
+        form = source.factory(paths[0], 0, 0)._schema.form  # reads metadata only
+        typetracer = awkward.typetracer.typetracer_from_form(
+            form, highlevel=True, behavior=form_mapping.behavior
+        )
+        return graphed.Session(backend).source(
+            "Events", form=graphed.awkward.AwkwardForm(typetracer), data=source
+        )
+
+    return open_source

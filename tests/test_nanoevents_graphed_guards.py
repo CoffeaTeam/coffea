@@ -141,11 +141,6 @@ def test_a_record_field_shadows_a_colliding_descriptor():
     assert ak.to_list(session.materialize(recorded)) == ak.to_list(oracle.compute())
 
 
-def test_a_positional_callable_is_refused_too(nanoaod):
-    with pytest.raises(NotImplementedError, match=r"callable"):
-        nanoaod.Electron.nearest(nanoaod.Jet, 1, lambda a, b: a.delta_r(b))
-
-
 # ---- what the from_root arm hands to uproot ---------------------------------------------------
 def test_known_base_form_is_forwarded_and_opens_no_file(tests_directory, monkeypatch):
     path = _sample(tests_directory, "nano_dy.root")

@@ -16,6 +16,7 @@ from graphed.awkward import gak  # noqa: E402
 from graphed.core.execution import SequentialRunner  # noqa: E402
 
 from coffea.nanoevents import (  # noqa: E402
+    BaseSchema,
     NanoAODSchema,
     NanoEventsFactory,
     PFNanoAODSchema,
@@ -393,24 +394,39 @@ def test_admits_the_report_option_switched_off(tests_directory):
     assert isinstance(factory.events(), graphed.Array)
 
 
+def _abs_delta_eta(a, b):
+    return abs(a.eta - b.eta)
+
+
+@pytest.mark.parametrize(
+    "analysis",
+    [
+        lambda events: events.Jet.metric_table(events.Muon, metric=_abs_delta_eta),
+        lambda events: events.Muon.nearest(events.Jet, metric=_abs_delta_eta).pt,
+        lambda events: events.Muon.nearest(events.Jet, 1, _abs_delta_eta).pt,
+        lambda events: events.Muon.nearest(
+            events.Jet, metric=_abs_delta_eta, threshold=0.5, return_metric=True
+        )[1],
+    ],
+    ids=["metric_table", "nearest", "nearest_positional", "nearest_metric"],
+)
+def test_a_custom_metric_runs_the_dask_arm(nanoaod, analysis):
+    events, eager = nanoaod
+    recorded = analysis(events)
+    assert isinstance(recorded, graphed.Array)
+    assert_same(events.session.materialize(recorded), analysis(eager))
+
+
 def test_refuses_user_callables_and_coffea_systematics(nanoaod):
     events, _eager = nanoaod
     with pytest.raises(NotImplementedError, match=r"callable"):
-        events.Jet.metric_table(events.Muon, metric=lambda a, b: a.delta_r(b))
+        events.Muon.boost(lambda a: a)
     with pytest.raises(NotImplementedError, match=r"graphed\.vary"):
         events.Muon.add_systematic(
             "pt_scale", "UpDownSystematic", "pt", lambda x: x * 1.01
         )
     with pytest.raises(NotImplementedError, match=r"graphed\.vary"):
         events.Muon._ensure_systematics()
-
-
-def _bare_graphed_array():
-    """A deferred graphed array owing nothing to coffea, for the PackedSelection guard."""
-    from graphed.awkward import AwkwardBackend, from_awkward
-
-    session = graphed.Session(AwkwardBackend())
-    return from_awkward(session, "cut", ak.Array([True, False, True]))
 
 
 def test_maybe_map_partitions_records_on_a_graphed_array(nanoaod):
@@ -425,10 +441,82 @@ def test_maybe_map_partitions_records_on_a_graphed_array(nanoaod):
     assert_same(events.session.materialize(recorded), func(eager.Muon.pt, 25.0))
 
 
-def test_refuses_parquet_input(tests_directory):
+def test_maybe_map_partitions_binds_a_graphed_keyword_and_honours_meta(nanoaod):
+    from coffea.util import maybe_map_partitions
+
+    def func(pt, cut):
+        assert ak.backend(pt) != "typetracer"
+        return ak.sum(ak.where(pt > cut, pt, 0.0), axis=-1)
+
+    events, eager = nanoaod
+    meta = ak.Array(ak.Array([0.0]).layout.to_typetracer(forget_length=True))
+    recorded = maybe_map_partitions(
+        func, events.Muon.pt, cut=events.MET.pt * 0.5, meta=meta, label="sum"
+    )
+    assert isinstance(recorded, graphed.Array)
+    assert_same(
+        events.session.materialize(recorded), func(eager.Muon.pt, eager.MET.pt * 0.5)
+    )
+
+
+@pytest.mark.parametrize("path", ["Muon", "Muon.pt", "Jet.btagDeepB", "run"])
+def test_a_deferred_field_carries_its_branch_doc(nanoaod, path):
+    events, eager = nanoaod
+    for name in path.split("."):
+        events, eager = getattr(events, name), getattr(eager, name)
+    assert events.__doc__ == eager.__doc__
+    assert type(events).__doc__.startswith("The deferred NanoEvents surface")
+
+
+@pytest.mark.parametrize("steps_per_file", [1, 2])
+def test_parquet_plan_matches_eager(tests_directory, steps_per_file):
     path = os.path.join(tests_directory, "samples", "nano_dy.parquet")
-    with pytest.raises(NotImplementedError):
-        NanoEventsFactory.from_parquet(path, mode="graphed")
+    events = NanoEventsFactory.from_parquet(path, mode="graphed").events()
+    eager = NanoEventsFactory.from_parquet(path, mode="eager").events()
+    assert_same(
+        events.session.materialize(events.Muon.matched_gen.pt),
+        eager.Muon.matched_gen.pt,
+    )
+    plan = graphed.aggregate_plan(
+        *(analysis(events, gak) for analysis in NANOAOD_ANALYSES),
+        reduce=reduce_to_lists,
+        combine=combine_lists,
+        empty=no_lists,
+        steps_per_file=steps_per_file,
+    )
+    assert len(plan.tasks) == steps_per_file
+    expected = reduce_to_lists([analysis(eager, ak) for analysis in NANOAOD_ANALYSES])
+    for analysis, got, want in zip(
+        NANOAOD_ANALYSES, SequentialRunner().run(plan).value, expected
+    ):
+        assert _equal(got, want), analysis.__name__
+
+
+@pytest.mark.parametrize("reader", ["root", "parquet"])
+def test_base_schema_matches_eager(tests_directory, reader):
+    def factory(mode):
+        path = os.path.join(tests_directory, "samples", f"nano_dy.{reader}")
+        if reader == "root":
+            return NanoEventsFactory.from_root(
+                {path: "Events"}, schemaclass=BaseSchema, mode=mode
+            )
+        return NanoEventsFactory.from_parquet(path, schemaclass=BaseSchema, mode=mode)
+
+    events, eager = factory("graphed").events(), factory("eager").events()
+    assert_same(
+        events.session.materialize(gak.sum(events.Muon_pt, axis=1) + events.nJet),
+        ak.sum(eager.Muon_pt, axis=1) + eager.nJet,
+    )
+
+
+def test_parquet_refuses_entry_bounds_and_uncapable_schemas(tests_directory):
+    path = os.path.join(tests_directory, "samples", "nano_dy.parquet")
+    with pytest.raises(NotImplementedError, match="steps_per_file"):
+        NanoEventsFactory.from_parquet(path, mode="graphed", entry_stop=10)
+    with pytest.raises(NotImplementedError, match="__graphed_capable__"):
+        NanoEventsFactory.from_parquet(
+            path, mode="graphed", schemaclass=_UserNanoAODSchema
+        )
 
 
 class _UserNanoAODSchema(NanoAODSchema):
@@ -453,7 +541,9 @@ def test_refuses_schemas_that_do_not_declare_themselves(tests_directory, schemac
 
 
 @pytest.mark.parametrize(
-    "schemaclass", [NanoAODSchema, PFNanoAODSchema], ids=["nanoaod", "pfnano"]
+    "schemaclass",
+    [BaseSchema, NanoAODSchema, PFNanoAODSchema],
+    ids=["base", "nanoaod", "pfnano"],
 )
 def test_admitted_schemas_declare_the_flag_in_their_own_body(schemaclass):
     assert vars(schemaclass).get("__graphed_capable__") is True
@@ -479,11 +569,3 @@ def test_dask_cross_references_are_unchanged(tests_directory):
     events = _factory(path, NanoAODSchema, "dask").events()
     eager = _factory(path, NanoAODSchema, "eager").events()
     assert_same(events.Muon.matched_jet.pt.compute(), eager.Muon.matched_jet.pt)
-
-
-def test_packed_selection_still_refuses_a_deferred_graphed_mask():
-    """Admitting one here would turn ``add`` into a silent no-op, so it must keep refusing."""
-    from coffea.analysis_tools import PackedSelection
-
-    with pytest.raises(ValueError):
-        PackedSelection().add("cut", _bare_graphed_array())

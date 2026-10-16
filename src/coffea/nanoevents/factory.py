@@ -626,10 +626,32 @@ class NanoEventsFactory:
             raise ValueError(f"Invalid mode {mode}, valid modes are {_allowed_modes}")
 
         if mode == "graphed":
-            raise NotImplementedError(
-                "graphed mode reads ROOT files only; use "
-                "NanoEventsFactory.from_root(..., mode='graphed')"
+            _import_graphed()
+            from coffea.nanoevents import _graphed
+
+            if entry_start is not None or entry_stop is not None:
+                raise NotImplementedError(
+                    "graphed mode does not take entry_start/entry_stop; partition where the "
+                    "plan is built, graphed.aggregate_plan(..., steps_per_file=...)"
+                )
+            _graphed.check_schema(schemaclass)
+            paths = list(file) if isinstance(file, list) else [file]
+            opener = _graphed.parquet_opener(
+                paths,
+                dict(
+                    schemaclass=schemaclass,
+                    metadata=metadata,
+                    parquet_options=parquet_options,
+                    storage_options=storage_options,
+                ),
             )
+            map_schema = _map_schema_parquet(
+                schemaclass=schemaclass,
+                behavior=dict(schemaclass.behavior()),
+                metadata=metadata,
+                version="latest",
+            )
+            return cls(map_schema, opener, None, mode="graphed")
 
         if (
             mode == "dask"
