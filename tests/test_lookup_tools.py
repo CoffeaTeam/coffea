@@ -626,6 +626,13 @@ def test_root_scalefactors_graphed():
         evaluator["testSF2d"](jets.eta, jets.pt).to_list()
     )
 
+    varied = graphed.vary(deferred.pt, "scale", up=deferred.pt * 1.5)
+    out = evaluator["testSF2d"](deferred.eta, varied)
+    assert graphed.labels(out) == ("nominal", "scale_up")
+    for label, pt in (("nominal", jets.pt), ("scale_up", jets.pt * 1.5)):
+        got = session.materialize(graphed.universe(out, label)).to_list()
+        assert got == evaluator["testSF2d"](jets.eta, pt).to_list(), label
+
 
 def test_rochester_graphed(tests_directory):
     pytest.importorskip("graphed")

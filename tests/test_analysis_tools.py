@@ -2481,6 +2481,28 @@ def test_weights_graphed():
             assert value == getattr(stats, field), (name, field)
 
 
+def test_weights_graphed_varied():
+    graphed = pytest.importorskip("graphed")
+    from graphed.awkward import AwkwardBackend, from_awkward
+
+    from coffea.analysis_tools import Weights
+
+    sf, other = np.array([0.5, 1.5, 2.0]), np.array([1.1, 0.9, 1.3])
+    session = graphed.Session(AwkwardBackend())
+    deferred = from_awkward(session, "w", ak.zip({"sf": sf, "other": other}))
+    lazy = Weights(None)
+    lazy.add("sf", graphed.vary(deferred.sf, "sf", up=deferred.sf * 1.1))
+    lazy.add("other", deferred.other)
+    out = lazy.weight()
+    assert graphed.labels(out) == ("nominal", "sf_up")
+    for label, factor in (("nominal", 1.0), ("sf_up", 1.1)):
+        eager = Weights(3)
+        eager.add("sf", sf * factor)
+        eager.add("other", other.copy())
+        got = np.asarray(session.materialize(graphed.universe(out, label)))
+        assert got.tobytes() == eager.weight().tobytes(), label
+
+
 def test_packed_selection_graphed():
     graphed = pytest.importorskip("graphed")
     from graphed.awkward import AwkwardBackend, from_awkward

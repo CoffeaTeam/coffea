@@ -2222,7 +2222,7 @@ def test_corrected_met_type1_correctionlib_total_jes():
     assert not ak.all(corrected_met.JES_Total.up.pt == corrected_met.JES_Total.down.pt)
 
 
-def _graphed_factory_outputs(events, type1):
+def _graphed_factory_outputs(events, type1, vary_jets=None):
     from coffea.jetmet_tools import (
         CorrectedJetsFactory,
         CorrectedMETFactory,
@@ -2261,6 +2261,8 @@ def _graphed_factory_outputs(events, type1):
     jets = ak.with_field(jets, (1 - jets.rawFactor) * jets.mass, "mass_raw")
     jets = ak.with_field(jets, ak.fill_none(jets.matched_gen.pt, 0), "pt_gen")
     jets = ak.with_field(jets, ak.broadcast_arrays(rho, jets.pt)[0], "Rho")
+    if vary_jets is not None:
+        jets = vary_jets(jets)
     jet_factory = CorrectedJetsFactory(name_map, jec_stack)
     corrected_jets = jet_factory.build(jets)
     if not type1:
@@ -2324,3 +2326,26 @@ def test_corrected_jets_and_met_factories_graphed(sample, type1):
     values = deferred.session.materialize(ak.zip(got, depth_limit=1))
     for key in want:
         assert values[key].to_list() == want[key].to_list(), key
+
+
+def test_corrected_jets_and_met_factories_graphed_varied():
+    import os
+
+    graphed = pytest.importorskip("graphed")
+    from coffea.nanoevents import NanoEventsFactory
+
+    def rho_up(jets):
+        return ak.with_field(jets, jets.Rho * 1.5, "Rho")
+
+    path = {os.path.abspath("tests/samples/nano_dy.root"): "Events"}
+    deferred = NanoEventsFactory.from_root(path, mode="graphed").events()
+    eager = NanoEventsFactory.from_root(path, mode="eager").events()
+    got = _graphed_factory_outputs(
+        deferred, False, lambda jets: graphed.vary(jets, "rho", up=rho_up(jets))
+    )
+    for label, vary_jets in (("nominal", None), ("rho_up", rho_up)):
+        want = _graphed_factory_outputs(eager, False, vary_jets)
+        universe = {key: graphed.universe(value, label) for key, value in got.items()}
+        values = deferred.session.materialize(ak.zip(universe, depth_limit=1))
+        for key in want:
+            assert values[key].to_list() == want[key].to_list(), (label, key)

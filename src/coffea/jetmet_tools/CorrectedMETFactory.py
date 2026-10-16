@@ -1,7 +1,13 @@
 import awkward
 import numpy
 
-from coffea.util import _behavior_kwargs, _isinstance, _meta, maybe_map_partitions
+from coffea.util import (
+    _GRAPHED,
+    _behavior_kwargs,
+    _isinstance,
+    _meta,
+    maybe_map_partitions,
+)
 
 
 def corrected_polar_met(
@@ -487,12 +493,12 @@ class CorrectedMETFactory:
             in_MET,
             "awkward.highlevel.Array",
             "dask_awkward.lib.core.Array",
-            "graphed.array.Array",
+            *_GRAPHED,
         ) or not _isinstance(
             in_corrected_jets,
             "awkward.highlevel.Array",
             "dask_awkward.lib.core.Array",
-            "graphed.array.Array",
+            *_GRAPHED,
         ):
             raise Exception(
                 "'MET' and 'corrected_jets' must be an (dask_)awkward array of some kind!"

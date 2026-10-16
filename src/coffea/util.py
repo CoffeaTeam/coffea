@@ -151,15 +151,21 @@ pip install graphed"""
     return graphed
 
 
+# a graphed.vary output is a Varied, which is not a graphed.array.Array
+_GRAPHED = ("graphed.array.Array", "graphed.systematics.varied.Varied")
+
+
 def _is_graphed(arg: Any) -> bool:
-    """Return True if arg is a deferred graphed array."""
-    return _isinstance(arg, "graphed.array.Array")
+    """Return True if arg is a deferred graphed array or a graphed.vary output."""
+    return _isinstance(arg, *_GRAPHED)
 
 
 def _meta(array):
-    """The typetracer a dask_awkward or graphed array stands for, else the array itself."""
+    """The typetracer a dask_awkward or graphed array (a Varied's nominal) stands for, else the array itself."""
     if _isinstance(array, "dask_awkward.lib.core.Array"):
         return array._meta
+    if _isinstance(array, _GRAPHED[1]):
+        array = _import_graphed().nominal(array)
     if _is_graphed(array):
         return array.session.form(array).tt
     return array
@@ -197,7 +203,7 @@ def _ensure_flat(array, allow_missing=False):
     if not _isinstance(
         array,
         "dask_awkward.lib.core.Array",
-        "graphed.array.Array",
+        *_GRAPHED,
         "awkward.highlevel.Array",
         "numpy.ndarray",
     ):

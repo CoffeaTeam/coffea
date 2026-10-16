@@ -1,7 +1,7 @@
 import re
 
 from coffea.lookup_tools.jme_standard_function import jme_standard_function
-from coffea.util import _isinstance
+from coffea.util import _GRAPHED, _isinstance
 
 
 def _checkConsistency(against, tocheck):
@@ -158,7 +158,7 @@ class JetResolution:
             if _isinstance(
                 args[0],
                 "dask_awkward.lib.core.Array",
-                "graphed.array.Array",
+                *_GRAPHED,
                 "awkward.highlevel.Array",
                 "numpy.ndarray",
             ):

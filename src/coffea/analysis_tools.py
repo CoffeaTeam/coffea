@@ -15,6 +15,7 @@ import numpy
 import coffea.processor
 import coffea.util
 from coffea.util import (
+    _GRAPHED,
     _import_dask,
     _import_dask_awkward,
     _is_graphed,
@@ -131,9 +132,9 @@ def _delayed_awkward(array):
 
 def _same_delayed(array, current):
     """True if ``array`` is delayed and ``current`` is None or delayed by the same library."""
-    for prefix in ("dask_awkward.lib.core.Array", "graphed.array.Array"):
-        if _isinstance(array, prefix):
-            return current is None or _isinstance(current, prefix)
+    for prefixes in (("dask_awkward.lib.core.Array",), _GRAPHED):
+        if _isinstance(array, *prefixes):
+            return current is None or _isinstance(current, *prefixes)
     return False
 
 
@@ -550,7 +551,7 @@ class Weights:
         """
         if isinstance(weight, numpy.ndarray):
             self.__add_variation_eager(name, weight, weightUp, weightDown, shift)
-        elif _isinstance(weight, "dask_awkward.lib.core.Array", "graphed.array.Array"):
+        elif _isinstance(weight, "dask_awkward.lib.core.Array", *_GRAPHED):
             self.__add_variation_delayed(name, weight, weightUp, weightDown, shift)
 
     def weight(self, modifier=None):
@@ -621,9 +622,7 @@ class Weights:
         w = None
         if isinstance(self._weight, numpy.ndarray):
             w = numpy.ones(self._weight.size)
-        elif _isinstance(
-            self._weight, "dask_awkward.lib.core.Array", "graphed.array.Array"
-        ):
+        elif _isinstance(self._weight, "dask_awkward.lib.core.Array", *_GRAPHED):
             w = _delayed_awkward(self._weight).ones_like(self._weight)
 
         for name in names:
@@ -2166,9 +2165,7 @@ class PackedSelection:
             bool
                 True if the PackedSelection is in delayed mode.
         """
-        if _isinstance(
-            self._data, "dask_awkward.lib.core.Array", "graphed.array.Array"
-        ):
+        if _isinstance(self._data, "dask_awkward.lib.core.Array", *_GRAPHED):
             return True
         elif isinstance(self._data, numpy.ndarray):
             return False
@@ -2276,9 +2273,7 @@ class PackedSelection:
         selection = coffea.util._ensure_flat(selection, allow_missing=True)
         if isinstance(selection, numpy.ndarray):
             self.__add_eager(name, selection, fill_value)
-        elif _isinstance(
-            selection, "dask_awkward.lib.core.Array", "graphed.array.Array"
-        ):
+        elif _isinstance(selection, "dask_awkward.lib.core.Array", *_GRAPHED):
             self.__add_delayed(name, selection, fill_value)
 
     def add_multiple(self, selections, fill_value=False):

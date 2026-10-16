@@ -5,6 +5,7 @@ import awkward
 import numpy
 
 from coffea.util import (
+    _GRAPHED,
     _behavior_kwargs,
     _isinstance,
     _meta,
@@ -231,7 +232,7 @@ class CorrectedJetsFactory:
             injets,
             "awkward.highlevel.Array",
             "dask_awkward.lib.core.Array",
-            "graphed.array.Array",
+            *_GRAPHED,
         ):
             raise Exception("input jets must be an (dask_)awkward array of some kind!")
 
@@ -502,7 +503,7 @@ class CorrectedJetsFactory:
             out_dict, depth_limit=1, parameters=out_parms, **_behavior_kwargs(out)
         )
 
-        if _isinstance(jets, "dask_awkward.lib.core.Array", "graphed.array.Array"):
+        if _isinstance(jets, "dask_awkward.lib.core.Array", *_GRAPHED):
             out_meta = wrap(_meta(out))
 
             return maybe_map_partitions(
