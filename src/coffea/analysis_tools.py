@@ -14,7 +14,14 @@ import numpy
 
 import coffea.processor
 import coffea.util
-from coffea.util import _import_dask, _import_dask_awkward, _isinstance, coffea_console
+from coffea.util import (
+    _import_dask,
+    _import_dask_awkward,
+    _is_graphed,
+    _isinstance,
+    _meta,
+    coffea_console,
+)
 
 __all__ = [
     "WeightStatistics",
@@ -111,6 +118,23 @@ def boolean_masks_to_categorical_integers(
     # convert the boolean masks to categorical integers by calling local index and remove elements whose mask entry was false
     irregular_values = awkward.local_index(irregular_mask, axis=1)[irregular_mask]
     return irregular_values
+
+
+def _delayed_awkward(array):
+    """The array library of a delayed array: dask_awkward, or graphed's gak."""
+    if _is_graphed(array):
+        from graphed.awkward import gak
+
+        return gak
+    return _import_dask_awkward()
+
+
+def _same_delayed(array, current):
+    """True if ``array`` is delayed and ``current`` is None or delayed by the same library."""
+    for prefix in ("dask_awkward.lib.core.Array", "graphed.array.Array"):
+        if _isinstance(array, prefix):
+            return current is None or _isinstance(current, prefix)
+    return False
 
 
 class WeightStatistics:
@@ -246,26 +270,29 @@ class Weights:
 
     def __add_delayed(self, name, weight, weightUp, weightDown, shift):
         """Add a new weight with delayed calculation"""
-        dask_awkward = _import_dask_awkward()
+        lib = _delayed_awkward(weight)
 
-        if isinstance(dask_awkward.type(weight), awkward.types.OptionType):
+        if isinstance(_meta(weight).layout.form.type, awkward.types.OptionType):
             # TODO what to do with option-type? is it representative of unknown weight
             # and we default to one or is it an invalid weight and we should never use this
             # event in the first place (0) ?
-            weight = dask_awkward.fill_none(weight, 1.0)
+            weight = lib.fill_none(weight, 1.0)
         if self._weight is None:
-            self._weight = weight
+            # eager starts from float64 ones; graphed matches it, dask keeps the weight's dtype
+            self._weight = (
+                lib.values_astype(weight, "float64") if _is_graphed(weight) else weight
+            )
         else:
             self._weight = self._weight * weight
         if self._storeIndividual:
             self._weights[name] = weight
         self.__add_variation(name, weight, weightUp, weightDown, shift)
         self._weightStats[name] = {
-            "sumw": dask_awkward.sum(weight),
-            "sumw2": dask_awkward.sum(weight**2),
-            "minw": dask_awkward.min(weight, mask_identity=False),
-            "maxw": dask_awkward.max(weight, mask_identity=False),
-            "n": dask_awkward.num(weight, axis=0),
+            "sumw": lib.sum(weight),
+            "sumw2": lib.sum(weight**2),
+            "minw": lib.min(weight, mask_identity=False),
+            "maxw": lib.max(weight, mask_identity=False),
+            "n": lib.num(weight, axis=0),
         }
         self._names.append(name)
 
@@ -304,10 +331,7 @@ class Weights:
             self._weight, numpy.ndarray
         ):
             self.__add_eager(name, weight, weightUp, weightDown, shift)
-        elif _isinstance(weight, "dask_awkward.lib.core.Array") and (
-            _isinstance(self._weight, "dask_awkward.lib.core.Array")
-            or self._weight is None
-        ):
+        elif _same_delayed(weight, self._weight):
             self.__add_delayed(name, weight, weightUp, weightDown, shift)
         else:
             raise ValueError(
@@ -372,15 +396,18 @@ class Weights:
         self, name, weight, modifierNames, weightsUp, weightsDown, shift=False
     ):
         """Add a new weight with multiple variations in delayed mode"""
-        dask_awkward = _import_dask_awkward()
+        lib = _delayed_awkward(weight)
 
-        if isinstance(dask_awkward.type(weight), awkward.types.OptionType):
+        if isinstance(_meta(weight).layout.form.type, awkward.types.OptionType):
             # TODO what to do with option-type? is it representative of unknown weight
             # and we default to one or is it an invalid weight and we should never use this
             # event in the first place (0) ?
-            weight = dask_awkward.fill_none(weight, 1.0)
+            weight = lib.fill_none(weight, 1.0)
         if self._weight is None:
-            self._weight = weight
+            # eager starts from float64 ones; graphed matches it, dask keeps the weight's dtype
+            self._weight = (
+                lib.values_astype(weight, "float64") if _is_graphed(weight) else weight
+            )
         else:
             self._weight = self._weight * weight
         if self._storeIndividual:
@@ -399,11 +426,11 @@ class Weights:
             systName = f"{name}_{modifier}"
             self.__add_variation(systName, weight, weightUp, weightDown, shift)
         self._weightStats[name] = {
-            "sumw": dask_awkward.sum(weight),
-            "sumw2": dask_awkward.sum(weight**2),
-            "minw": dask_awkward.min(weight, mask_identity=False),
-            "maxw": dask_awkward.max(weight, mask_identity=False),
-            "n": dask_awkward.num(weight, axis=0),
+            "sumw": lib.sum(weight),
+            "sumw2": lib.sum(weight**2),
+            "minw": lib.min(weight, mask_identity=False),
+            "maxw": lib.max(weight, mask_identity=False),
+            "n": lib.num(weight, axis=0),
         }
         self._names.append(name)
 
@@ -448,10 +475,7 @@ class Weights:
             self.__add_multivariation_eager(
                 name, weight, modifierNames, weightsUp, weightsDown, shift
             )
-        elif _isinstance(weight, "dask_awkward.lib.core.Array") and (
-            _isinstance(self._weight, "dask_awkward.lib.core.Array")
-            or self._weight is None
-        ):
+        elif _same_delayed(weight, self._weight):
             self.__add_multivariation_delayed(
                 name, weight, modifierNames, weightsUp, weightsDown, shift
             )
@@ -481,25 +505,23 @@ class Weights:
 
     def __add_variation_delayed(self, name, weight, weightUp, weightDown, shift):
         """Helper function to add a delayed-calculation weight variation."""
-        dask_awkward = _import_dask_awkward()
+        lib = _delayed_awkward(weight)
 
         if weightUp is not None:
             weightUp = coffea.util._ensure_flat(weightUp, allow_missing=True)
-            if isinstance(dask_awkward.type(weightUp), awkward.types.OptionType):
-                weightUp = dask_awkward.fill_none(weightUp, 1.0)
+            if isinstance(_meta(weightUp).layout.form.type, awkward.types.OptionType):
+                weightUp = lib.fill_none(weightUp, 1.0)
             if shift:
                 weightUp = weightUp + weight
-            weightUp = dask_awkward.where(weight != 0.0, weightUp / weight, weightUp)
+            weightUp = lib.where(weight != 0.0, weightUp / weight, weightUp)
             self._modifiers[name + "Up"] = weightUp
         if weightDown is not None:
             weightDown = coffea.util._ensure_flat(weightDown, allow_missing=True)
-            if isinstance(dask_awkward.type(weightDown), awkward.types.OptionType):
-                weightDown = dask_awkward.fill_none(weightDown, 1.0)
+            if isinstance(_meta(weightDown).layout.form.type, awkward.types.OptionType):
+                weightDown = lib.fill_none(weightDown, 1.0)
             if shift:
                 weightDown = weight - weightDown
-            weightDown = dask_awkward.where(
-                weight != 0.0, weightDown / weight, weightDown
-            )
+            weightDown = lib.where(weight != 0.0, weightDown / weight, weightDown)
             self._modifiers[name + "Down"] = weightDown
 
     def __add_variation(
@@ -528,7 +550,7 @@ class Weights:
         """
         if isinstance(weight, numpy.ndarray):
             self.__add_variation_eager(name, weight, weightUp, weightDown, shift)
-        elif _isinstance(weight, "dask_awkward.lib.core.Array"):
+        elif _isinstance(weight, "dask_awkward.lib.core.Array", "graphed.array.Array"):
             self.__add_variation_delayed(name, weight, weightUp, weightDown, shift)
 
     def weight(self, modifier=None):
@@ -599,9 +621,10 @@ class Weights:
         w = None
         if isinstance(self._weight, numpy.ndarray):
             w = numpy.ones(self._weight.size)
-        elif _isinstance(self._weight, "dask_awkward.lib.core.Array"):
-            dask_awkward = _import_dask_awkward()
-            w = dask_awkward.ones_like(self._weight)
+        elif _isinstance(
+            self._weight, "dask_awkward.lib.core.Array", "graphed.array.Array"
+        ):
+            w = _delayed_awkward(self._weight).ones_like(self._weight)
 
         for name in names:
             w = w * self._weights[name]
@@ -2143,7 +2166,9 @@ class PackedSelection:
             bool
                 True if the PackedSelection is in delayed mode.
         """
-        if _isinstance(self._data, "dask_awkward.lib.core.Array"):
+        if _isinstance(
+            self._data, "dask_awkward.lib.core.Array", "graphed.array.Array"
+        ):
             return True
         elif isinstance(self._data, numpy.ndarray):
             return False
@@ -2167,21 +2192,18 @@ class PackedSelection:
 
     def __add_delayed(self, name, selection, fill_value):
         """Add a new delayed boolean array"""
-        dask_awkward = _import_dask_awkward()
+        lib = _delayed_awkward(selection)
 
         selection = coffea.util._ensure_flat(selection, allow_missing=True)
-        sel_type = dask_awkward.type(selection)
+        sel_type = _meta(selection).layout.form.type
         if isinstance(sel_type, awkward.types.OptionType):
-            selection = dask_awkward.fill_none(selection, fill_value)
-            sel_type = dask_awkward.type(selection)
+            selection = lib.fill_none(selection, fill_value)
+            sel_type = _meta(selection).layout.form.type
         if sel_type.primitive != "bool":
             raise ValueError(f"Expected a boolean array, received {sel_type.primitive}")
         if len(self._names) == 0:
-            self._data = dask_awkward.zeros_like(selection, dtype=self._dtype)
-        if (
-            _isinstance(selection, "dask_awkward.lib.core.Array")
-            and not self.delayed_mode
-        ):
+            self._data = lib.zeros_like(selection, dtype=self._dtype.name)
+        if not self.delayed_mode:
             raise ValueError(
                 f"New selection '{name}' is not eager while PackedSelection is!"
             )
@@ -2189,7 +2211,9 @@ class PackedSelection:
             raise RuntimeError(
                 f"Exhausted all slots in PackedSelection: {self}, consider a larger dtype or fewer selections"
             )
-        elif not dask_awkward.lib.core.compatible_partitions(self._data, selection):
+        elif not _is_graphed(selection) and not lib.lib.core.compatible_partitions(
+            self._data, selection
+        ):
             raise ValueError(
                 f"New selection '{name}' has a different partition structure than existing selections"
             )
@@ -2252,7 +2276,9 @@ class PackedSelection:
         selection = coffea.util._ensure_flat(selection, allow_missing=True)
         if isinstance(selection, numpy.ndarray):
             self.__add_eager(name, selection, fill_value)
-        elif _isinstance(selection, "dask_awkward.lib.core.Array"):
+        elif _isinstance(
+            selection, "dask_awkward.lib.core.Array", "graphed.array.Array"
+        ):
             self.__add_delayed(name, selection, fill_value)
 
     def add_multiple(self, selections, fill_value=False):
