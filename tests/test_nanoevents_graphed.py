@@ -492,6 +492,29 @@ def test_parquet_plan_matches_eager(tests_directory, steps_per_file):
         assert _equal(got, want), analysis.__name__
 
 
+def test_parquet_plan_reads_only_the_touched_columns(tests_directory, monkeypatch):
+    from coffea.nanoevents.mapping.parquet import TrivialParquetOpener
+
+    read = TrivialParquetOpener.UprootLikeShim.read
+    columns = set()
+
+    def spy(self, name):
+        columns.add(name)
+        return read(self, name)
+
+    path = os.path.join(tests_directory, "samples", "nano_dy.parquet")
+    events = NanoEventsFactory.from_parquet(path, mode="graphed").events()
+    monkeypatch.setattr(TrivialParquetOpener.UprootLikeShim, "read", spy)
+    plan = graphed.aggregate_plan(
+        gak.sum(events.Muon.pt[events.Muon.eta > 0], axis=None),
+        reduce=lambda values: float(values[0]),
+        combine=lambda a, b: a + b,
+        empty=lambda: 0.0,
+    )
+    SequentialRunner().run(plan)
+    assert columns == {"nMuon", "Muon_pt", "Muon_eta"}
+
+
 @pytest.mark.parametrize("reader", ["root", "parquet"])
 def test_base_schema_matches_eager(tests_directory, reader):
     def factory(mode):

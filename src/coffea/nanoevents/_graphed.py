@@ -143,8 +143,9 @@ def check_schema(schemaclass):
 
 
 class GraphedParquetSource:
-    """A ``graphed.write.PartitionedSource`` over parquet files, each partition read into eager
-    NanoEvents by :meth:`NanoEventsFactory.from_parquet`."""
+    """A ``graphed.write.PartitionedSource`` over parquet files, each partition read into virtual
+    NanoEvents by :meth:`NanoEventsFactory.from_parquet`, so only the columns evaluation touches are read.
+    """
 
     def __init__(self, paths, options):
         self._paths = paths
@@ -155,7 +156,7 @@ class GraphedParquetSource:
 
         return NanoEventsFactory.from_parquet(
             path,
-            mode="eager",
+            mode="virtual",
             entry_start=entry_start,
             entry_stop=entry_stop,
             **self._options,
