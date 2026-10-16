@@ -41,11 +41,7 @@ class _GraphedBoundMethod(BoundMethod):
         return super().__call__(*args, **kwargs)
 
 
-# graphed>=0.0.7's AwkwardArray routes ak.<fn>(deferred) to gak; older releases lack it.
-_GraphedAwkwardArray = getattr(graphed.awkward, "AwkwardArray", graphed.Array)
-
-
-class GraphedNanoArray(_GraphedAwkwardArray):
+class GraphedNanoArray(graphed.awkward.AwkwardArray):
     """The deferred NanoEvents surface, mirroring ``dask_awkward.Array.__getattr__``."""
 
     __slots__ = ()

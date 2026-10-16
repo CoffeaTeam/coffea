@@ -276,10 +276,6 @@ def test_pfnano_matches_eager(pfnano, analysis):
     assert_same(events.session.materialize(analysis(events, gak)), analysis(eager, ak))
 
 
-@pytest.mark.skipif(
-    not hasattr(graphed.awkward, "AwkwardArray"),
-    reason="graphed<0.0.7 has no ak.* dispatch",
-)
 @pytest.mark.parametrize("analysis", NANOAOD_ANALYSES, ids=lambda a: a.__name__)
 def test_ak_on_deferred_events_records_like_gak(nanoaod, analysis):
     events, eager = nanoaod
@@ -417,10 +413,6 @@ def _bare_graphed_array():
     return from_awkward(session, "cut", ak.Array([True, False, True]))
 
 
-@pytest.mark.skipif(
-    not hasattr(graphed.awkward, "AwkwardArray"),
-    reason="graphed<0.0.7 has no ak.* dispatch",
-)
 def test_maybe_map_partitions_records_on_a_graphed_array(nanoaod):
     from coffea.util import maybe_map_partitions
 
