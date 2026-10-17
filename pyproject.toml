@@ -90,7 +90,7 @@ dask-awkward = [
   "bokeh<3.10",
 ]
 graphed = [
-  "graphed>=0.0.7;python_version>='3.11'",
+  "graphed>=0.0.8;python_version>='3.11'",
 ]
 parsl = [
   "parsl>=2024.12.09"
