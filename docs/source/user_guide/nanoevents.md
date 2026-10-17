@@ -160,6 +160,33 @@ analysis line that recorded the operation, run the output with
 `graphed.debug.run(events.session, output)` after `import graphed.debug`, which raises a
 `StageError` naming that line.
 
+### Filesets in graphed mode
+
+`preprocess`, `apply_to_dataset` and `apply_to_fileset` take `mode="graphed"` as well, so a fileset
+is preprocessed and analysed without dask installed. In graphed mode `preprocess(scheduler=...)`
+takes a graphed executor, `SequentialRunner` by default, and its output is the same as dask mode's.
+The `steps` it writes become the plan's partitions, one task per step:
+
+```python
+from coffea.dataset_tools import apply_to_fileset, preprocess
+from coffea.dataset_tools.filespec import DataGroupSpec
+
+fileset = DataGroupSpec({"DY": {"files": {"nano_dy.root": "Events"}}})
+available, _ = preprocess(fileset, step_size=10, mode="graphed")
+
+out = apply_to_fileset(
+    lambda events: gak.num(events.Jet, axis=1),
+    available,
+    schemaclass=NanoAODSchema,
+    mode="graphed",
+)
+plan = graphed.aggregate_plan(
+    out["DY"], reduce=lambda v: len(v[0]), combine=lambda a, b: a + b, empty=int
+)
+print(len(plan.tasks), SequentialRunner().run(plan).value)
+# 4 40
+```
+
 ### What graphed mode refuses
 
 Graphed mode raises `NotImplementedError` instead of falling back silently, and each message names
@@ -172,11 +199,10 @@ where the capability lives instead:
 | `uproot_options={"allow_read_errors_with_report": True}` | `graphed.checkpoint.run_resumable` |
 | `add_systematic`, `_ensure_systematics` | `graphed.vary(...)` |
 | a callable argument, e.g. `metric_table(..., metric=fn)` | `graphed.vary(...)` for a variation; otherwise record the metric with array operations |
-| `from_parquet(..., mode="graphed")` | `from_root(..., mode="graphed")` |
 | `coffea.util.maybe_map_partitions` | record the operation on the graph |
 
 A schema is admitted only if it declares `__graphed_capable__ = True` in its own class body, which
-`NanoAODSchema` and `PFNanoAODSchema` do. Subclasses do not inherit the flag: declare it once the
+`BaseSchema`, `NanoAODSchema` and `PFNanoAODSchema` do. Subclasses do not inherit the flag: declare it once the
 schema's cross-references have been checked in graphed mode. A plan reaches workers through plain
 `pickle`, so its `reduce`/`combine`/`empty` callables and any custom schema class must live in a
 module the workers can import, not in a notebook or `__main__`.

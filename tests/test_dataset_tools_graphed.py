@@ -1,13 +1,17 @@
 import contextlib
 import pickle
+import subprocess
+import sys
+import textwrap
 
 import awkward as ak
 import numpy as np
 import pytest
 import uproot
 
-from coffea.dataset_tools import preprocess
+from coffea.dataset_tools import apply_to_dataset, apply_to_fileset, preprocess
 from coffea.dataset_tools.filespec import DataGroupSpec
+from coffea.nanoevents import BaseSchema
 from coffea.util import decompress_form
 
 pytest.importorskip("graphed")
@@ -111,6 +115,78 @@ def test_preprocess_graphed_matches_dask(
             assert "IndexedOption" in str(form)
 
 
+def _preprocessed_graphed(tmp_path):
+    has_root, missing_root, _, _ = _write_flag_files(tmp_path)
+    available, _ = preprocess(
+        DataGroupSpec({"ds": {"files": {has_root: "Events", missing_root: "Events"}}}),
+        step_size=7,
+        save_form=True,
+        mode="graphed",
+    )
+    return available
+
+
+def test_apply_to_dataset_graphed_union_form_maybe_missing_branch(tmp_path):
+    dataset = _preprocessed_graphed(tmp_path)["ds"]
+    assert "IndexedOption" in str(dataset.form)
+
+    (flag,) = apply_to_dataset(
+        lambda events: events["flag"], dataset, schemaclass=BaseSchema, mode="graphed"
+    )
+    values = flag.session.materialize(flag)
+    # file order is has, missing: real values first, then the absent branch as None
+    assert ak.to_list(values) == [True] * N + [None] * N
+
+
+def test_apply_to_dataset_graphed_refuses_read_error_report(tmp_path):
+    dataset = _preprocessed_graphed(tmp_path)["ds"]
+    with pytest.raises(NotImplementedError, match="graphed mode has no report tuple"):
+        apply_to_dataset(
+            lambda events: events["x"],
+            dataset,
+            schemaclass=BaseSchema,
+            uproot_options={"allow_read_errors_with_report": True},
+            mode="graphed",
+        )
+
+
+def test_apply_to_fileset_graphed(tmp_path):
+    has_root, missing_root, _, _ = _write_flag_files(tmp_path)
+    available, _ = preprocess(
+        DataGroupSpec(
+            {
+                "has": {"files": {has_root: "Events"}, "metadata": {"tag": "A"}},
+                "missing": {"files": {missing_root: "Events"}},
+            }
+        ),
+        step_size=7,
+        mode="graphed",
+    )
+
+    def analysis(events):
+        return {"x": events["x"], "dataset": events.metadata["dataset"]}
+
+    out = apply_to_fileset(analysis, available, schemaclass=BaseSchema, mode="graphed")
+    assert list(out) == ["has", "missing"]
+    for name, offset in [("has", 0), ("missing", 100)]:
+        x = out[name]["x"]
+        assert ak.to_list(x.session.materialize(x)) == list(range(offset, offset + N))
+        assert out[name]["dataset"] == name
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        lambda fs: preprocess(fs, mode="eager"),
+        lambda fs: apply_to_fileset(lambda e: e, fs, mode="eager"),
+    ],
+)
+def test_dataset_tools_refuse_unknown_mode(tmp_path, call):
+    has_root, *_ = _write_flag_files(tmp_path)
+    with pytest.raises(ValueError, match="mode must be"):
+        call(DataGroupSpec({"ds": {"files": {has_root: "Events"}}}))
+
+
 def test_preprocess_graphed_refuses_dask_scheduler(tmp_path):
     has_root, *_ = _write_flag_files(tmp_path)
     with pytest.raises(TypeError, match="graphed executor"):
@@ -119,3 +195,37 @@ def test_preprocess_graphed_refuses_dask_scheduler(tmp_path):
             scheduler="sync",
             mode="graphed",
         )
+
+
+def test_dataset_tools_graphed_without_dask(tmp_path):
+    has_root, missing_root, _, _ = _write_flag_files(tmp_path)
+    script = textwrap.dedent(f"""
+        import sys
+
+        class _BlockDask:
+            def find_spec(self, name, path=None, target=None):
+                if name.split(".")[0] in ("dask", "dask_awkward", "distributed"):
+                    raise ImportError(f"blocked {{name}}")
+
+        sys.meta_path.insert(0, _BlockDask())
+        import awkward as ak
+        from coffea.dataset_tools import apply_to_dataset, preprocess
+        from coffea.dataset_tools.filespec import DataGroupSpec
+        from coffea.nanoevents import BaseSchema
+
+        files = {{{has_root!r}: "Events", {missing_root!r}: "Events"}}
+        available, _ = preprocess(
+            DataGroupSpec({{"ds": {{"files": files}}}}), save_form=True, mode="graphed"
+        )
+        (flag,) = apply_to_dataset(
+            lambda e: e["flag"], available["ds"], schemaclass=BaseSchema, mode="graphed"
+        )
+        values = ak.to_list(flag.session.materialize(flag))
+        assert not any(m.split(".")[0] in ("dask", "dask_awkward") for m in sys.modules)
+        print(values.count(True), values.count(None))
+        """)
+    result = subprocess.run(
+        [sys.executable, "-c", script], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.split() == [str(N), str(N)]
