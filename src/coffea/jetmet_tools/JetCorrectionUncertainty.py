@@ -1,7 +1,7 @@
 import re
 
 from coffea.lookup_tools.jec_uncertainty_lookup import jec_uncertainty_lookup
-from coffea.util import _isinstance
+from coffea.util import _GRAPHED, _isinstance
 
 
 def _checkConsistency(against, tocheck):
@@ -170,6 +170,7 @@ class JetCorrectionUncertainty:
             if _isinstance(
                 args[0],
                 "dask_awkward.lib.core.Array",
+                *_GRAPHED,
                 "awkward.highlevel.Array",
                 "numpy.ndarray",
             ):

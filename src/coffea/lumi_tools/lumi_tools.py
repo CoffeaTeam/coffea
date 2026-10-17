@@ -8,7 +8,13 @@ import numpy
 from numba import types
 from numba.typed import Dict
 
-from coffea.util import _import_dask, _import_dask_awkward, _isinstance
+from coffea.util import (
+    _graphed_map,
+    _import_dask,
+    _import_dask_awkward,
+    _is_graphed,
+    _isinstance,
+)
 
 _numba_bool = None
 if hasattr(types, "bool"):
@@ -261,6 +267,8 @@ class LumiMask:
         if _isinstance(runs, "dask_awkward.lib.core.Array"):
             dask_awkward = _import_dask_awkward()
             return dask_awkward.map_partitions(apply, runs, lumis)
+        elif _is_graphed(runs):
+            return _graphed_map(apply, runs, lumis)
         else:
             return apply(runs, lumis)
 

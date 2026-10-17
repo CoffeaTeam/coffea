@@ -1,7 +1,13 @@
 import awkward
 import numpy
 
-from coffea.util import _isinstance, maybe_map_partitions
+from coffea.util import (
+    _GRAPHED,
+    _behavior_kwargs,
+    _isinstance,
+    _meta,
+    maybe_map_partitions,
+)
 
 
 def corrected_polar_met(
@@ -484,11 +490,15 @@ class CorrectedMETFactory:
                 Array of corrected MET values with shape matching ``in_MET``.
         """
         if not _isinstance(
-            in_MET, "awkward.highlevel.Array", "dask_awkward.lib.core.Array"
+            in_MET,
+            "awkward.highlevel.Array",
+            "dask_awkward.lib.core.Array",
+            *_GRAPHED,
         ) or not _isinstance(
             in_corrected_jets,
             "awkward.highlevel.Array",
             "dask_awkward.lib.core.Array",
+            *_GRAPHED,
         ):
             raise Exception(
                 "'MET' and 'corrected_jets' must be an (dask_)awkward array of some kind!"
@@ -629,9 +639,9 @@ class CorrectedMETFactory:
                 label=f"{unc}_met",
             )
 
-        out_parms = out.layout.parameters
+        out_parms = _meta(out).layout.parameters
         out = awkward.zip(
-            out_dict, depth_limit=1, parameters=out_parms, behavior=out.behavior
+            out_dict, depth_limit=1, parameters=out_parms, **_behavior_kwargs(out)
         )
 
         return out
@@ -644,7 +654,7 @@ class CorrectedMETFactory:
         corrt1jets = in_CorrT1METJets
 
         # Ensure the jets carry a raw pT field (derive it if the user did not).
-        if self.name_map["ptRaw"] not in corrected_jets.fields:
+        if self.name_map["ptRaw"] not in awkward.fields(corrected_jets):
 
             def ensure_raw_pt(jets):
                 return _ensure_jet_raw_pt_field(jets, self.name_map)
@@ -879,7 +889,7 @@ class CorrectedMETFactory:
             if (
                 corrt1jets is not None
                 and unc.startswith("JER")
-                and unc in corrt1jets.fields
+                and unc in awkward.fields(corrt1jets)
             ):
                 smear_field = self.name_map.get("CorrT1JetJERSmearFactor")
                 if smear_field is not None:
@@ -1074,9 +1084,9 @@ class CorrectedMETFactory:
                 label=f"type1_{unc}_met",
             )
 
-        out_parms = out.layout.parameters
+        out_parms = _meta(out).layout.parameters
         out = awkward.zip(
-            out_dict, depth_limit=1, parameters=out_parms, behavior=out.behavior
+            out_dict, depth_limit=1, parameters=out_parms, **_behavior_kwargs(out)
         )
 
         return out

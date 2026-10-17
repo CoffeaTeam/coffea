@@ -1,7 +1,7 @@
 import re
 
 from coffea.lookup_tools.jersf_lookup import jersf_lookup
-from coffea.util import _isinstance
+from coffea.util import _GRAPHED, _isinstance
 
 
 def _checkConsistency(against, tocheck):
@@ -153,6 +153,7 @@ class JetResolutionScaleFactor:
             if _isinstance(
                 args[0],
                 "dask_awkward.lib.core.Array",
+                *_GRAPHED,
                 "awkward.highlevel.Array",
                 "numpy.ndarray",
             ):
