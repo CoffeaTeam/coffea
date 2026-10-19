@@ -85,10 +85,29 @@ Merging (local)   0% ───────────────────�
 And the output ``dimuonmass.coffea`` can be plotted in the same way as before!
 
 The preprocessing step where the fileset is cut up into processing chunks took a significant amount of time (6.5 minutes relative to 28min for the actual processing).
-<!-- TODO link to docs on avoiding/caching preprocessing. -->
+
+:::{admonition} Cache Pre-Processing
+:class: tip, dropdown
+
+The pre-processing only needs to be done if the original fileset you are running over changes.
+With this in mind, you can cache the result of the pre-processing step into a local file so
+that later iterations of your analysis can skip that step.
+
+```{literalinclude} eg/pre-process-cache.py
+:caption: futures.py with preprocess caching
+:lineno-match:
+```
+
+Be careful with this though. The cached pickle file is strictly larger than the input JSON fileset
+(due to the preprocessing generating more information) and it is only re-created if the JSON fileset
+is modified more recently than the cache file (or the cache file doesn't exist).
+Integration of preprocess caching into a future refactor of ``coffea`` is under-development,
+see discussions surrounding ``coffea.compute`` to follow progress (e.g. [Issue #1482](https://github.com/scikit-hep/coffea/issues/1482)).
+
+:::
 
 :::{admonition} I/O Bound
-:class: tip
+:class: note
 
 This is where I feel obligated to make an important point:
 a vast majority of analyses are limited in time not by the computer doing calculations but by loading data into memory (so-called "I/O Bound").
