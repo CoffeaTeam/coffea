@@ -115,7 +115,7 @@ h_nmuons.fill(dataset = dataset, nmuons = ak.num(events.Muon))
 return { "h_nmuons": h_nmuons }
 ```
 
-The use of {any}`hist.chunked.ChunkedHist` requires hist v2.2.0 or newer, but it helpfully avoids memory issues when the number of categories is large (more than a few dozen). The ``ChunkedHist`` object does not have the same slicing and plotting features as the base ``Hist`` object, but you can convert between them pretty easily. In order to avoid multiple re-allocations of memory (the whole point of using ``ChunkedHist``), you should do the conversion after all of the histograms are filled.
+The use of {any}`hist.chunked.ChunkedHist` requires hist v2.11.0 or newer, but it helpfully avoids memory issues when the number of categories is large (more than a few dozen). The ``ChunkedHist`` object does not have the same slicing and plotting features as the base ``Hist`` object, but you can convert between them pretty easily. In order to avoid multiple re-allocations of memory (the whole point of using ``ChunkedHist``), you should do the conversion after all of the histograms are filled.
 
 ```python
     def postprocess(result):
